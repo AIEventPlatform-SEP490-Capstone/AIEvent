@@ -1,0 +1,14 @@
+﻿using AIEvent.Application.DTO.Auth;
+using AIEvent.Application.Helpers;
+
+namespace AIEvent.Application.Services.Interfaces
+{
+    public interface IAuthService
+    {
+        Task<Result<AuthResponse>> LoginAsync(LoginRequest request);
+        Task<Result<AuthResponse>> RegisterAsync(RegisterRequest request);
+        Task<Result<AuthResponse>> RefreshTokenAsync(string refreshToken);
+        Task<Result<bool>> ValidateRefreshTokenAsync(string refreshToken, string userId);
+        Task<Result> RevokeRefreshTokenAsync(string refreshToken);
+    }
+}

@@ -1,4 +1,3 @@
-﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34728.123
@@ -7,15 +6,17 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{545246F1-072
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{8E6F91A6-19F6-4656-9782-6C5229CB885B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIEvent.Domain", "AIEvent.Domain\AIEvent.Domain.csproj", "{683E5398-A116-497D-AC72-DA6DF3764DEF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AIEvent.Domain", "src\AIEvent.Domain\AIEvent.Domain.csproj", "{683E5398-A116-497D-AC72-DA6DF3764DEF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIEvent.Application", "AIEvent.Application\AIEvent.Application.csproj", "{F572EE9C-55F9-4738-A240-5B643FD314E9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AIEvent.Application", "src\AIEvent.Application\AIEvent.Application.csproj", "{F572EE9C-55F9-4738-A240-5B643FD314E9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIEvent.Infrastructure", "AIEvent.Infrastructure\AIEvent.Infrastructure.csproj", "{22702BA7-E49E-469F-AE63-4378A224495B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AIEvent.Infrastructure", "src\AIEvent.Infrastructure\AIEvent.Infrastructure.csproj", "{22702BA7-E49E-469F-AE63-4378A224495B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIEvent.API", "AIEvent.API\AIEvent.API.csproj", "{719F91C1-3EE4-4B25-BCFF-02E5DDFA8DA7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AIEvent.API", "src\AIEvent.API\AIEvent.API.csproj", "{719F91C1-3EE4-4B25-BCFF-02E5DDFA8DA7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIEvent.UnitTests", "AIEvent.UnitTests\AIEvent.UnitTests.csproj", "{24F34C4C-5DC9-4A60-92BB-A1D01744B1DC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AIEvent.Application.Test", "tests\AIEvent.Application.Test\AIEvent.Application.Test.csproj", "{892EA232-6D54-4677-BB9D-945391E4DABB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AIEvent.API.Test", "tests\AIEvent.API.Test\AIEvent.API.Test.csproj", "{4A977C32-33EB-430D-99A3-D034A1E22D60}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,10 +40,14 @@ Global
 		{719F91C1-3EE4-4B25-BCFF-02E5DDFA8DA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{719F91C1-3EE4-4B25-BCFF-02E5DDFA8DA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{719F91C1-3EE4-4B25-BCFF-02E5DDFA8DA7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{24F34C4C-5DC9-4A60-92BB-A1D01744B1DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{24F34C4C-5DC9-4A60-92BB-A1D01744B1DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{24F34C4C-5DC9-4A60-92BB-A1D01744B1DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{24F34C4C-5DC9-4A60-92BB-A1D01744B1DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{892EA232-6D54-4677-BB9D-945391E4DABB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{892EA232-6D54-4677-BB9D-945391E4DABB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{892EA232-6D54-4677-BB9D-945391E4DABB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{892EA232-6D54-4677-BB9D-945391E4DABB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A977C32-33EB-430D-99A3-D034A1E22D60}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A977C32-33EB-430D-99A3-D034A1E22D60}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A977C32-33EB-430D-99A3-D034A1E22D60}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A977C32-33EB-430D-99A3-D034A1E22D60}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -52,7 +57,8 @@ Global
 		{F572EE9C-55F9-4738-A240-5B643FD314E9} = {545246F1-0720-4253-A743-02F1B12EE8A6}
 		{22702BA7-E49E-469F-AE63-4378A224495B} = {545246F1-0720-4253-A743-02F1B12EE8A6}
 		{719F91C1-3EE4-4B25-BCFF-02E5DDFA8DA7} = {545246F1-0720-4253-A743-02F1B12EE8A6}
-		{24F34C4C-5DC9-4A60-92BB-A1D01744B1DC} = {8E6F91A6-19F6-4656-9782-6C5229CB885B}
+		{892EA232-6D54-4677-BB9D-945391E4DABB} = {8E6F91A6-19F6-4656-9782-6C5229CB885B}
+		{4A977C32-33EB-430D-99A3-D034A1E22D60} = {8E6F91A6-19F6-4656-9782-6C5229CB885B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2A78ABC5-0157-4633-ACE9-63C9A9B07338}
