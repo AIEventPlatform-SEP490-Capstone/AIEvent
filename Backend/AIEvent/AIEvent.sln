@@ -1,4 +1,4 @@
-﻿Microsoft Visual Studio Solution File, Format Version 12.00
+Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34728.123
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -6,7 +6,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{545246F1-072
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{8E6F91A6-19F6-4656-9782-6C5229CB885B}"
 EndProject
-
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AIEvent.Domain", "src\AIEvent.Domain\AIEvent.Domain.csproj", "{683E5398-A116-497D-AC72-DA6DF3764DEF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AIEvent.Application", "src\AIEvent.Application\AIEvent.Application.csproj", "{F572EE9C-55F9-4738-A240-5B643FD314E9}"
@@ -15,12 +14,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AIEvent.Infrastructure", "s
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AIEvent.API", "src\AIEvent.API\AIEvent.API.csproj", "{719F91C1-3EE4-4B25-BCFF-02E5DDFA8DA7}"
 EndProject
-
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIEvent.Application.Test", "tests\AIEvent.Application.Test\AIEvent.Application.Test.csproj", "{892EA232-6D54-4677-BB9D-945391E4DABB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AIEvent.Application.Test", "tests\AIEvent.Application.Test\AIEvent.Application.Test.csproj", "{892EA232-6D54-4677-BB9D-945391E4DABB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIEvent.API.Test", "tests\AIEvent.API.Test\AIEvent.API.Test.csproj", "{4A977C32-33EB-430D-99A3-D034A1E22D60}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AIEvent.API.Test", "tests\AIEvent.API.Test\AIEvent.API.Test.csproj", "{4A977C32-33EB-430D-99A3-D034A1E22D60}"
 EndProject
-
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
