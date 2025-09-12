@@ -32,9 +32,13 @@ namespace AIEvent.API.Middleware
             var response = ErrorResponse.FailureResult(
                 ErrorMessages.InternalServerError,
                 GetError((HttpStatusCode)context.Response.StatusCode),
-                ErrorCodes.InternalServerError);
+                exception.Message);
 
-            var json = JsonSerializer.Serialize(response);
+            var json = JsonSerializer.Serialize(response, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
+            });
             await context.Response.WriteAsync(json);
         }
 

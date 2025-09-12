@@ -3,6 +3,7 @@ using AIEvent.API.Middleware;
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTO.Common;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace AIEvent.API
@@ -16,7 +17,11 @@ namespace AIEvent.API
             // Add services to the container.
             builder.Services.AddControllers()
                             .AddJsonOptions(options =>
-                                            options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
+                            {
+                                options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                                options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                                options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
+                            })
                             .ConfigureApiBehaviorOptions(options =>
                             {
                                 options.InvalidModelStateResponseFactory = context =>
