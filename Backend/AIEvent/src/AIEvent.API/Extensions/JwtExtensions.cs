@@ -45,7 +45,11 @@ namespace AIEvent.API.Extensions
                         );
                         context.Response.StatusCode = 401;
                         context.Response.ContentType = "application/json";
-                        var result = JsonSerializer.Serialize(error);
+                        var result = JsonSerializer.Serialize(error, new JsonSerializerOptions
+                        {
+                            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                            DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
+                        });
                         return context.Response.WriteAsync(result);
                     },
                     OnForbidden = context =>
@@ -57,7 +61,11 @@ namespace AIEvent.API.Extensions
                         );
                         context.Response.StatusCode = 403;
                         context.Response.ContentType = "application/json"; 
-                        var result = JsonSerializer.Serialize(error); 
+                        var result = JsonSerializer.Serialize(error, new JsonSerializerOptions
+                        {
+                            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                            DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
+                        }); 
                         return context.Response.WriteAsync(result);
                     }
                 };
