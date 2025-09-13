@@ -24,7 +24,7 @@ namespace AIEvent.Infrastructure.Context
             base.OnModelCreating(builder);
 
             builder.Ignore<IdentityUserClaim<Guid>>();
-            builder.Entity<IdentityRoleClaim<Guid>>();
+            builder.Ignore<IdentityRoleClaim<Guid>>();
 
             builder.Entity<AppUser>(entity =>
             {
