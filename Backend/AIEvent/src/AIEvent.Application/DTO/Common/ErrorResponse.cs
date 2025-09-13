@@ -1,9 +1,11 @@
 ﻿using AIEvent.Application.Constants;
+using System.Text.Json.Serialization;
 
 namespace AIEvent.Application.DTO.Common
 {
     public class ErrorResponse : BaseResponse
     {
+        [JsonPropertyOrder(3)]
         public object? Errors { get; set; } 
 
         public static ErrorResponse FailureResult(

@@ -28,7 +28,6 @@ namespace AIEvent.Application.Services.Implements
             var key = Encoding.ASCII.GetBytes(_key);
             var claims = new List<Claim>
             {
-                new(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new(ClaimTypes.Name, user.UserName!),
                 new(ClaimTypes.Email, user.Email!),
                 new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
