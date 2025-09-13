@@ -2,6 +2,7 @@
 using AIEvent.Domain.Identity;
 using AIEvent.Infrastructure.Data;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -21,6 +22,9 @@ namespace AIEvent.Infrastructure.Context
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+            builder.Ignore<IdentityUserClaim<Guid>>();
+            builder.Entity<IdentityRoleClaim<Guid>>();
 
             builder.Entity<AppUser>(entity =>
             {

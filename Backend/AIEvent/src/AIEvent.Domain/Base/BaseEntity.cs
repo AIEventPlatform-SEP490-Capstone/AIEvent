@@ -1,4 +1,6 @@
-﻿namespace AIEvent.Domain.Base
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace AIEvent.Domain.Base
 {
     public abstract class BaseEntity
     {
@@ -7,6 +9,8 @@
             Id = Guid.NewGuid().ToString("N");
             IsDeleted = false;
         }
+
+        [Key]
         public string Id { get; private set; }
 
         public string? CreatedBy { get; set; }
@@ -22,6 +26,7 @@
         {
             CreatedBy = userId;
             CreatedTime = DateTimeOffset.Now;
+            UpdatedTime = DateTimeOffset.Now;
         }
         public void SetUpdated(string userId)
         {
