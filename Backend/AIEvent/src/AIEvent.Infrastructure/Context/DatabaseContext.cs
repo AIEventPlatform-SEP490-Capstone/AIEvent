@@ -25,7 +25,7 @@ namespace AIEvent.Infrastructure.Context
             builder.Ignore<IdentityRoleClaim<Guid>>();
 
             base.OnModelCreating(builder);
-
+ 
             builder.Entity<AppUser>(entity =>
             {
                 entity.Property(e => e.FullName).HasMaxLength(100);
