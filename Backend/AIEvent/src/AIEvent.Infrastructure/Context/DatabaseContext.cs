@@ -21,11 +21,11 @@ namespace AIEvent.Infrastructure.Context
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
-            base.OnModelCreating(builder);
-
             builder.Ignore<IdentityUserClaim<Guid>>();
             builder.Ignore<IdentityRoleClaim<Guid>>();
 
+            base.OnModelCreating(builder);
+ 
             builder.Entity<AppUser>(entity =>
             {
                 entity.Property(e => e.FullName).HasMaxLength(100);
