@@ -56,7 +56,7 @@ namespace AIEvent.API.Test.Integration
         {
             var registerRequest = new RegisterRequest
             {
-                Email = "newuser@example.com",
+                Email = $"newuser{Guid.NewGuid()}@example.com", // Use unique email
                 Password = "Password123!",
                 ConfirmPassword = "Password123!",
                 FullName = "New User"
@@ -64,6 +64,13 @@ namespace AIEvent.API.Test.Integration
             var response = await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
 
             response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.BadRequest);
+
+            // Verify response content
+            var content = await response.Content.ReadAsStringAsync();
+            content.Should().NotBeNullOrEmpty();
+
+            var isValidJson = IsValidJson(content);
+            isValidJson.Should().BeTrue();
         }
 
         [Fact]
@@ -80,6 +87,44 @@ namespace AIEvent.API.Test.Integration
             var response = await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
 
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        }
+
+        [Fact]
+        public async Task Register_WithDuplicateEmail_ShouldReturnBadRequest()
+        {
+            var email = $"duplicate{Guid.NewGuid()}@example.com";
+
+            var registerRequest = new RegisterRequest
+            {
+                Email = email,
+                Password = "Password123!",
+                ConfirmPassword = "Password123!",
+                FullName = "First User"
+            };
+
+            // First registration
+            var firstResponse = await _client.PostAsJsonAsync("/api/auth/register", registerRequest);
+
+            // Second registration with same email
+            var duplicateRequest = new RegisterRequest
+            {
+                Email = email, // Same email
+                Password = "Password456!",
+                ConfirmPassword = "Password456!",
+                FullName = "Second User"
+            };
+
+            var secondResponse = await _client.PostAsJsonAsync("/api/auth/register", duplicateRequest);
+
+            // Assert
+            // First might succeed or fail, but second should definitely fail
+            secondResponse.StatusCode.Should().BeOneOf(HttpStatusCode.BadRequest, HttpStatusCode.Conflict);
+
+            var content = await secondResponse.Content.ReadAsStringAsync();
+            content.Should().NotBeNullOrEmpty();
+
+            var isValidJson = IsValidJson(content);
+            isValidJson.Should().BeTrue();
         }
 
         [Fact]

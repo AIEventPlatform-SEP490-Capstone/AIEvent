@@ -77,7 +77,7 @@ namespace AIEvent.API.Controllers
             }
 
             return Ok(SuccessResponse<object>.SuccessResult(
-                null,
+                null!,
                 message: "Token revoked successfully"));
         }
     }

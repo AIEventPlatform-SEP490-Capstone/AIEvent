@@ -30,12 +30,12 @@ namespace AIEvent.Application.Test.Services
 
             var userStore = new Mock<IUserStore<AppUser>>();
             _mockUserManager = new Mock<UserManager<AppUser>>(
-                userStore.Object, null, null, null, null, null, null, null, null);
+                userStore.Object, null!, null!, null!, null!, null!, null!, null!, null!);
 
             var contextAccessor = new Mock<Microsoft.AspNetCore.Http.IHttpContextAccessor>();
             var claimsFactory = new Mock<IUserClaimsPrincipalFactory<AppUser>>();
             _mockSignInManager = new Mock<SignInManager<AppUser>>(
-                _mockUserManager.Object, contextAccessor.Object, claimsFactory.Object, null, null, null, null);
+                _mockUserManager.Object, contextAccessor.Object, claimsFactory.Object, null!, null!, null!, null!);
 
             _mockUnitOfWork.Setup(x => x.RefreshTokenRepository).Returns(_mockRefreshTokenRepository.Object);
 
@@ -368,6 +368,172 @@ namespace AIEvent.Application.Test.Services
             result.Value.RefreshToken.Should().Be(refreshToken);
 
             _mockJwtService.Verify(x => x.GenerateAccessToken(user, roles), Times.Once);
+        }
+
+        [Fact]
+        public async Task RegisterAsync_WithValidRequest_ShouldReturnSuccessResult()
+        {
+            // Arrange
+            var registerRequest = new RegisterRequest
+            {
+                Email = "newuser@example.com",
+                Password = "Password123!",
+                ConfirmPassword = "Password123!",
+                FullName = "New User"
+            };
+
+            var user = new AppUser
+            {
+                Id = Guid.NewGuid(),
+                Email = registerRequest.Email,
+                UserName = registerRequest.Email,
+                FullName = registerRequest.FullName,
+                IsActive = true
+            };
+
+            var roles = new List<string> { "User" };
+            var accessToken = "mock-access-token";
+            var refreshToken = "mock-refresh-token";
+
+            // Mock FindByEmailAsync instead of Users.AnyAsync to avoid async query provider issues
+            _mockUserManager.Setup(x => x.FindByEmailAsync(registerRequest.Email))
+                .ReturnsAsync((AppUser?)null);
+
+            _mockMapper.Setup(x => x.Map<AppUser>(registerRequest))
+                .Returns(user);
+
+            _mockUserManager.Setup(x => x.CreateAsync(user, registerRequest.Password))
+                .ReturnsAsync(IdentityResult.Success);
+
+            _mockUserManager.Setup(x => x.AddToRoleAsync(user, "User"))
+                .ReturnsAsync(IdentityResult.Success);
+
+            _mockUserManager.Setup(x => x.GetRolesAsync(user))
+                .ReturnsAsync(roles);
+
+            _mockJwtService.Setup(x => x.GenerateAccessToken(user, roles))
+                .Returns(accessToken);
+
+            _mockJwtService.Setup(x => x.GenerateRefreshToken())
+                .Returns(refreshToken);
+
+            _mockRefreshTokenRepository.Setup(x => x.AddAsync(It.IsAny<RefreshToken>()))
+                .ReturnsAsync((RefreshToken rt) => rt);
+
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync())
+                .ReturnsAsync(1);
+
+            // Act
+            var result = await _authService.RegisterAsync(registerRequest);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().NotBeNull();
+            result.Value!.AccessToken.Should().Be(accessToken);
+            result.Value.RefreshToken.Should().Be(refreshToken);
+            result.Value.ExpiresAt.Should().BeCloseTo(DateTime.UtcNow.AddHours(1), TimeSpan.FromMinutes(1));
+
+            _mockMapper.Verify(x => x.Map<AppUser>(registerRequest), Times.Once);
+            _mockUserManager.Verify(x => x.CreateAsync(user, registerRequest.Password), Times.Once);
+            _mockUserManager.Verify(x => x.AddToRoleAsync(user, "User"), Times.Once);
+            _mockJwtService.Verify(x => x.GenerateAccessToken(user, roles), Times.Once);
+            _mockJwtService.Verify(x => x.GenerateRefreshToken(), Times.Once);
+            _mockRefreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>()), Times.Once);
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once);
+        }
+
+        [Fact]
+        public async Task RegisterAsync_WithExistingEmail_ShouldReturnFailureResult()
+        {
+            // Arrange
+            var registerRequest = new RegisterRequest
+            {
+                Email = "existing@example.com",
+                Password = "Password123!",
+                ConfirmPassword = "Password123!",
+                FullName = "Existing User"
+            };
+
+            var existingUsers = new List<AppUser>
+            {
+                new AppUser
+                {
+                    Id = Guid.NewGuid(),
+                    Email = "existing@example.com",
+                    UserName = "existing@example.com",
+                    FullName = "Existing User",
+                    IsActive = true
+                }
+            };
+
+            // Mock FindByEmailAsync to return existing user
+            _mockUserManager.Setup(x => x.FindByEmailAsync(registerRequest.Email))
+                .ReturnsAsync(existingUsers.First());
+
+            // Act
+            var result = await _authService.RegisterAsync(registerRequest);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsFailure.Should().BeTrue();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Be("Email address is already registered");
+            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+
+            _mockMapper.Verify(x => x.Map<AppUser>(It.IsAny<RegisterRequest>()), Times.Never);
+            _mockUserManager.Verify(x => x.CreateAsync(It.IsAny<AppUser>(), It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task RegisterAsync_WhenUserCreationFails_ShouldReturnFailureResult()
+        {
+            // Arrange
+            var registerRequest = new RegisterRequest
+            {
+                Email = "newuser@example.com",
+                Password = "Password123!",
+                ConfirmPassword = "Password123!",
+                FullName = "New User"
+            };
+
+            var user = new AppUser
+            {
+                Id = Guid.NewGuid(),
+                Email = registerRequest.Email,
+                UserName = registerRequest.Email,
+                FullName = registerRequest.FullName,
+                IsActive = true
+            };
+
+            // Mock FindByEmailAsync to return null (no existing user)
+            _mockUserManager.Setup(x => x.FindByEmailAsync(registerRequest.Email))
+                .ReturnsAsync((AppUser?)null);
+
+            _mockMapper.Setup(x => x.Map<AppUser>(registerRequest))
+                .Returns(user);
+
+            var identityErrors = new[]
+            {
+                new IdentityError { Code = "PasswordTooShort", Description = "Password is too short" }
+            };
+
+            _mockUserManager.Setup(x => x.CreateAsync(user, registerRequest.Password))
+                .ReturnsAsync(IdentityResult.Failed(identityErrors));
+
+            // Act
+            var result = await _authService.RegisterAsync(registerRequest);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsFailure.Should().BeTrue();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Be("Failed to create user account");
+            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+
+            _mockMapper.Verify(x => x.Map<AppUser>(registerRequest), Times.Once);
+            _mockUserManager.Verify(x => x.CreateAsync(user, registerRequest.Password), Times.Once);
+            _mockUserManager.Verify(x => x.AddToRoleAsync(It.IsAny<AppUser>(), It.IsAny<string>()), Times.Never);
         }
     }
 }
