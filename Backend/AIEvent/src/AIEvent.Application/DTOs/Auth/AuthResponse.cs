@@ -1,4 +1,4 @@
-namespace AIEvent.Application.DTO.Auth
+namespace AIEvent.Application.DTOs.Auth
 {
     public class AuthResponse
     {

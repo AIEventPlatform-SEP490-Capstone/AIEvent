@@ -1,4 +1,4 @@
-﻿using AIEvent.Application.DTO.User;
+﻿using AIEvent.Application.DTOs.User;
 using AIEvent.Domain.Enums;
 
 namespace AIEvent.Application.DTOs.Organizer

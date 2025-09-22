@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
-using AIEvent.Application.DTO.Auth;
-using AIEvent.Application.DTO.Role;
-using AIEvent.Application.DTO.User;
+using AIEvent.Application.DTOs.Auth;
+using AIEvent.Application.DTOs.Role;
+using AIEvent.Application.DTOs.User;
 using AIEvent.Domain.Identity;
 using AIEvent.Application.DTOs.Organizer;
 using AIEvent.Domain.Entities;

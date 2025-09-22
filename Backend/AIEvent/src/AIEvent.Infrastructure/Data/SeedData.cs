@@ -69,8 +69,8 @@ namespace AIEvent.Infrastructure.Data
                 Id = adminUserId,
                 UserName = "admin@aievent.com",
                 NormalizedUserName = "ADMIN@AIEVENT.COM",
-                Email = "admin@aievent.com",
-                NormalizedEmail = "ADMIN@AIEVENT.COM",
+                Email = "admin@gmail.com",
+                NormalizedEmail = "ADMIN@GMAIL.COM", 
                 EmailConfirmed = true,
                 FullName = "System Administrator",
                 IsActive = true,
@@ -78,15 +78,15 @@ namespace AIEvent.Infrastructure.Data
                 SecurityStamp = Guid.NewGuid().ToString(),
                 ConcurrencyStamp = Guid.NewGuid().ToString()
             };
-            adminUser.PasswordHash = passwordHasher.HashPassword(adminUser, "Admin@123");
+            adminUser.PasswordHash = passwordHasher.HashPassword(adminUser, "123");
 
             var regularUser = new AppUser
             {
                 Id = regularUserId,
                 UserName = "user@aievent.com",
                 NormalizedUserName = "USER@AIEVENT.COM",
-                Email = "user@aievent.com",
-                NormalizedEmail = "USER@AIEVENT.COM",
+                Email = "user@gmail.com",
+                NormalizedEmail = "USER@GMAIL.COM", 
                 EmailConfirmed = true,
                 FullName = "Regular User",
                 IsActive = true,
@@ -94,15 +94,15 @@ namespace AIEvent.Infrastructure.Data
                 SecurityStamp = Guid.NewGuid().ToString(),
                 ConcurrencyStamp = Guid.NewGuid().ToString()
             };
-            regularUser.PasswordHash = passwordHasher.HashPassword(regularUser, "User@123");
+            regularUser.PasswordHash = passwordHasher.HashPassword(regularUser, "123");
 
             var eventManagerUser = new AppUser
             {
                 Id = eventManagerUserId,
                 UserName = "manager@aievent.com",
                 NormalizedUserName = "MANAGER@AIEVENT.COM",
-                Email = "manager@aievent.com",
-                NormalizedEmail = "MANAGER@AIEVENT.COM",
+                Email = "manager@gmail.com",
+                NormalizedEmail = "MANAGER@GMAIL.COM", 
                 EmailConfirmed = true,
                 FullName = "Event Manager",
                 IsActive = true,
@@ -110,15 +110,15 @@ namespace AIEvent.Infrastructure.Data
                 SecurityStamp = Guid.NewGuid().ToString(),
                 ConcurrencyStamp = Guid.NewGuid().ToString()
             };
-            eventManagerUser.PasswordHash = passwordHasher.HashPassword(eventManagerUser, "Manager@123");
+            eventManagerUser.PasswordHash = passwordHasher.HashPassword(eventManagerUser, "123");
 
             var testUser = new AppUser
             {
                 Id = testUserId,
                 UserName = "test@aievent.com",
                 NormalizedUserName = "TEST@AIEVENT.COM",
-                Email = "test@aievent.com",
-                NormalizedEmail = "TEST@AIEVENT.COM",
+                Email = "user2@gmail.com",
+                NormalizedEmail = "USER2@GMAIL.COM",
                 EmailConfirmed = true,
                 FullName = "Test User",
                 IsActive = true,
@@ -126,7 +126,7 @@ namespace AIEvent.Infrastructure.Data
                 SecurityStamp = Guid.NewGuid().ToString(),
                 ConcurrencyStamp = Guid.NewGuid().ToString()
             };
-            testUser.PasswordHash = passwordHasher.HashPassword(testUser, "Test@123");
+            testUser.PasswordHash = passwordHasher.HashPassword(testUser, "123");
 
             modelBuilder.Entity<AppUser>().HasData(adminUser, regularUser, eventManagerUser, testUser);
         }

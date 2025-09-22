@@ -1,5 +1,5 @@
-using AIEvent.Application.DTO.Auth;
-using AIEvent.Application.DTO.Common;
+using AIEvent.Application.DTOs.Auth;
+using AIEvent.Application.DTOs.Common;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using System.Net;

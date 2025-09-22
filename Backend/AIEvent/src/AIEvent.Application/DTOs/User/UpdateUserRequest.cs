@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace AIEvent.Application.DTO.User
+namespace AIEvent.Application.DTOs.User
 {
     public class UpdateUserRequest
     {

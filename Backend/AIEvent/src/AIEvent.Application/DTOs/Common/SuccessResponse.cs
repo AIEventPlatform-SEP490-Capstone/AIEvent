@@ -1,7 +1,7 @@
 ﻿using AIEvent.Application.Constants;
 using System.Text.Json.Serialization;
 
-namespace AIEvent.Application.DTO.Common
+namespace AIEvent.Application.DTOs.Common
 {
     public class SuccessResponse<T> : BaseResponse
     {

@@ -1,7 +1,7 @@
 using AIEvent.API.Extensions;
 using AIEvent.API.Middleware;
 using AIEvent.Application.Constants;
-using AIEvent.Application.DTO.Common;
+using AIEvent.Application.DTOs.Common;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using System.Text.Json.Serialization;

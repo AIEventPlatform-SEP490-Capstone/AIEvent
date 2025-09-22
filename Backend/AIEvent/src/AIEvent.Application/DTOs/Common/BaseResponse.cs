@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace AIEvent.Application.DTO.Common
+namespace AIEvent.Application.DTOs.Common
 {
     public class BaseResponse
     {
