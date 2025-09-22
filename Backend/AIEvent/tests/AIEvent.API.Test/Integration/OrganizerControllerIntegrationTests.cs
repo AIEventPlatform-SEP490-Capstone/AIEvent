@@ -1,4 +1,4 @@
-using AIEvent.Application.DTO.Auth;
+using AIEvent.Application.DTOs.Auth;
 using AIEvent.Application.DTOs.Organizer;
 using AIEvent.Domain.Enums;
 using FluentAssertions;

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace AIEvent.Application.DTO.Role
+namespace AIEvent.Application.DTOs.Role
 {
     public class CreateRoleRequest
     {

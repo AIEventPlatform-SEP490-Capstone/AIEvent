@@ -1,5 +1,5 @@
 using AIEvent.Application.Constants;
-using AIEvent.Application.DTO.Auth;
+using AIEvent.Application.DTOs.Auth;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Identity;

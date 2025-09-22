@@ -1,9 +1,8 @@
-using AIEvent.Application.DTOs.Auth;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Domain.Enums;
 using System.ComponentModel.DataAnnotations;
 
-namespace AIEvent.Application.DTO.Auth
+namespace AIEvent.Application.DTOs.Auth
 {
     public class RegisterRequest
     {
