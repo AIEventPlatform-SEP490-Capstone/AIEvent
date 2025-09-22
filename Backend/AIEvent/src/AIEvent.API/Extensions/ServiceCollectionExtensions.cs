@@ -1,4 +1,5 @@
-﻿using AIEvent.Application.Mappings;
+﻿using AIEvent.Application.Helpers;
+using AIEvent.Application.Mappings;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Identity;
@@ -17,11 +18,16 @@ namespace AIEvent.API.Extensions
             services.AddAutoMapper(typeof(MappingProfile).Assembly);
 
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>))
+                    .AddScoped<ITransactionHelper, TransactionHelper>()
                     .AddScoped<IUnitOfWork, UnitOfWork>()
                     .AddScoped<IJwtService, JwtService>()
+                    .AddScoped<ICloudinaryService, CloudinaryService>()
                     .AddScoped<IAuthService, AuthService>()
                     .AddScoped<IUserService, UserService>()
-                    .AddScoped<IRoleService, RoleService>();
+                    .AddScoped<IRoleService, RoleService>()
+                    .AddScoped<IEnumService, EnumService>()
+                    .AddScoped<IEvenFieldService, EvenFieldService>()
+                    .AddScoped<IOrganizerService, OrganizerService>();
 
             return services;
         }

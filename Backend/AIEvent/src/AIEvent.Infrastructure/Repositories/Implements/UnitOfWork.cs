@@ -1,3 +1,4 @@
+using AIEvent.Domain.Entities;
 using AIEvent.Domain.Identity;
 using AIEvent.Domain.Interfaces;
 using AIEvent.Infrastructure.Context;
@@ -5,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace AIEvent.Infrastructure.Implements
 {
-    public class UnitOfWork : IUnitOfWork, IDisposable
+    public class UnitOfWork : IUnitOfWork, IDisposable, IAsyncDisposable
     {
         private readonly DatabaseContext _context;
         private readonly Dictionary<Type, object> _repositories = new Dictionary<Type, object>();
@@ -14,6 +15,16 @@ namespace AIEvent.Infrastructure.Implements
         public IGenericRepository<AppUser> UserRepository => GetRepository<AppUser>();
         public IGenericRepository<AppRole> RoleRepository => GetRepository<AppRole>();
         public IGenericRepository<RefreshToken> RefreshTokenRepository => GetRepository<RefreshToken>();
+        public IGenericRepository<Event> EventRepository => GetRepository<Event>();     
+        public IGenericRepository<EventCategory> EventCategoryRepository => GetRepository<EventCategory>();
+        public IGenericRepository<Tag> TagRepository => GetRepository<Tag>();
+        public IGenericRepository<EventTag> EventTagRepository => GetRepository<EventTag>();
+        public IGenericRepository<Venue> VenueRepository => GetRepository<Venue>();
+        public IGenericRepository<OrganizerProfile> OrganizerProfileRepository => GetRepository<OrganizerProfile>();
+        public IGenericRepository<EventField> EventFieldRepository => GetRepository<EventField>();
+        public IGenericRepository<EventFieldAssignment> EventFieldAssignmentRepository => GetRepository<EventFieldAssignment>();      
+        public IGenericRepository<UserEventField> UserEventFieldRepository => GetRepository<UserEventField>();
+        public IGenericRepository<OrganizerFieldAssignment> OrganizerFieldAssignmentRepository => GetRepository<OrganizerFieldAssignment>();
 
         public UnitOfWork(DatabaseContext context)
         {
@@ -37,7 +48,8 @@ namespace AIEvent.Infrastructure.Implements
 
         public async Task BeginTransactionAsync()
         {
-            _transaction = await _context.Database.BeginTransactionAsync();
+            if (_transaction == null)
+                _transaction = await _context.Database.BeginTransactionAsync();
         }
 
         public async Task CommitTransactionAsync()
@@ -64,6 +76,14 @@ namespace AIEvent.Infrastructure.Implements
         {
             _transaction?.Dispose();
             _context.Dispose();
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (_transaction != null)
+                await _transaction.DisposeAsync();
+
+            await _context.DisposeAsync();
         }
     }
 }

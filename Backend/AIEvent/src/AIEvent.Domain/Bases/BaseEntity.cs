@@ -6,18 +6,18 @@ namespace AIEvent.Domain.Base
     {
         protected BaseEntity()
         {
-            Id = Guid.NewGuid().ToString("N");
+            Id = Guid.NewGuid();
             IsDeleted = false;
         }
 
         [Key]
-        public string Id { get; private set; }
+        public Guid Id { get; private set; }
 
-        public string? CreatedBy { get; private set; }
+        public string? CreatedBy { get; set; }
         public string? UpdatedBy { get; private set; }
         public string? DeletedBy { get; private set; }
 
-        public DateTimeOffset CreatedAt { get; private set; }
+        public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset? UpdatedAt { get; private set; }
         public DateTimeOffset? DeletedAt { get; private set; }
         public bool IsDeleted { get; private set; }

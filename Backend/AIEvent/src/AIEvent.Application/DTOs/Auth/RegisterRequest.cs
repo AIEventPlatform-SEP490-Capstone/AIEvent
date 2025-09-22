@@ -1,3 +1,6 @@
+using AIEvent.Application.DTOs.Auth;
+using AIEvent.Application.DTOs.Common;
+using AIEvent.Domain.Enums;
 using System.ComponentModel.DataAnnotations;
 
 namespace AIEvent.Application.DTO.Auth
@@ -19,5 +22,12 @@ namespace AIEvent.Application.DTO.Auth
 
         [Phone(ErrorMessage = "Invalid phone number format")]
         public string? PhoneNumber { get; set; }
+        public List<UserEventFieldRequest>? UserEventFields { get; set; }
+        public List<InterestedCities>? InterestedCities { get; set; }
+        public ParticipationFrequency ParticipationFrequency { get; set; }
+        public BudgetOption BudgetOption { get; set; }
+        public bool? IsEmailNotificationEnabled { get; set; } = false;
+        public bool? IsPushNotificationEnabled { get; set; } = false;
+        public bool? IsSmsNotificationEnabled { get; set; } = false;
     }
 }

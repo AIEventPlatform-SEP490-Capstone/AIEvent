@@ -22,9 +22,9 @@ namespace AIEvent.API.Controllers
 
         [HttpGet("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<SuccessResponse<UserResponse>>> GetUser(string id)
+        public async Task<ActionResult<SuccessResponse<UserResponse>>> GetUser(Guid id)
         {
-            var result = await _userService.GetUserByIdAsync(id);
+            var result = await _userService.GetUserByIdAsync(id.ToString());
 
             if (result.IsFailure)
             {
@@ -39,7 +39,7 @@ namespace AIEvent.API.Controllers
         [HttpGet("profile")]
         public async Task<ActionResult<SuccessResponse<UserResponse>>> GetProfile()
         {
-            var userId = User.GetRequiredUserId();
+            var userId = User.GetRequiredUserId().ToString();
 
             var result = await _userService.GetUserByIdAsync(userId);
 
@@ -56,7 +56,7 @@ namespace AIEvent.API.Controllers
         [HttpPut("profile")]
         public async Task<ActionResult<SuccessResponse<UserResponse>>> UpdateProfile([FromBody] UpdateUserRequest request)
         {
-            var userId = User.GetRequiredUserId();
+            var userId = User.GetRequiredUserId().ToString();
 
             var result = await _userService.UpdateUserAsync(userId, request);
 

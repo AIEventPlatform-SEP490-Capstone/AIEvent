@@ -3,6 +3,9 @@ using AIEvent.Application.DTO.Auth;
 using AIEvent.Application.DTO.Role;
 using AIEvent.Application.DTO.User;
 using AIEvent.Domain.Identity;
+using AIEvent.Application.DTOs.Organizer;
+using AIEvent.Domain.Entities;
+using Newtonsoft.Json;
 
 namespace AIEvent.Application.Mappings
 {
@@ -13,83 +16,87 @@ namespace AIEvent.Application.Mappings
             CreateUserMappings();
             CreateRoleMappings();
             CreateAuthMappings();
+            CreateOrganizerMappings();
         }
 
         private void CreateUserMappings()
         {
-            // AppUser -> UserResponse
-            CreateMap<AppUser, UserResponse>()
-                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))
-                .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email ?? string.Empty))
-                .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.FullName ?? string.Empty))
-                .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.PhoneNumber))
-                .ForMember(dest => dest.EmailConfirmed, opt => opt.MapFrom(src => src.EmailConfirmed))
-                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt))
-                .ForMember(dest => dest.Roles, opt => opt.Ignore()); // Roles will be populated separately
+            CreateMap<AppUser, UserResponse>();
 
-            // RegisterRequest -> AppUser
             CreateMap<RegisterRequest, AppUser>()
                 .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.Email))
                 .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
+                .ForMember(dest => dest.EmailConfirmed, opt => opt.MapFrom(src => false))
                 .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.FullName))
                 .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.PhoneNumber))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
                 .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true))
-                .ForMember(dest => dest.Id, opt => opt.Ignore())
-                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
-                .ForMember(dest => dest.RefreshTokens, opt => opt.Ignore())
-                .ForMember(dest => dest.SecurityStamp, opt => opt.Ignore())
-                .ForMember(dest => dest.ConcurrencyStamp, opt => opt.Ignore())
-                .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
-                .ForMember(dest => dest.NormalizedUserName, opt => opt.Ignore())
-                .ForMember(dest => dest.NormalizedEmail, opt => opt.Ignore())
-                .ForMember(dest => dest.EmailConfirmed, opt => opt.Ignore())
-                .ForMember(dest => dest.PhoneNumberConfirmed, opt => opt.Ignore())
-                .ForMember(dest => dest.TwoFactorEnabled, opt => opt.Ignore())
-                .ForMember(dest => dest.LockoutEnd, opt => opt.Ignore())
-                .ForMember(dest => dest.LockoutEnabled, opt => opt.Ignore())
-                .ForMember(dest => dest.AccessFailedCount, opt => opt.Ignore());
+                .ForMember(dest => dest.InterestedCitiesJson,
+                    opt => opt.MapFrom(src =>
+                        src.InterestedCities != null
+                            ? JsonConvert.SerializeObject(src.InterestedCities)
+                            : null))
+                .ForMember(dest => dest.UserEventFields,
+                    opt => opt.MapFrom(src =>
+                        src.UserEventFields != null
+                            ? src.UserEventFields.Select(f => new UserEventField
+                            {
+                                EventFieldId = Guid.Parse(f.EventFieldId)
+                            }).ToList()
+                            : new List<UserEventField>()))
+                .ForMember(dest => dest.ParticipationFrequency,
+                    opt => opt.MapFrom(src => src.ParticipationFrequency))
+                .ForMember(dest => dest.BudgetOption,
+                    opt => opt.MapFrom(src => src.BudgetOption))
+                .ForMember(dest => dest.IsEmailNotificationEnabled,
+                    opt => opt.MapFrom(src => src.IsEmailNotificationEnabled))
+                .ForMember(dest => dest.IsPushNotificationEnabled,
+                    opt => opt.MapFrom(src => src.IsPushNotificationEnabled))
+                .ForMember(dest => dest.IsSmsNotificationEnabled,
+                    opt => opt.MapFrom(src => src.IsSmsNotificationEnabled));
 
-            // UpdateUserRequest -> AppUser (for updating existing user)
-            CreateMap<UpdateUserRequest, AppUser>()
-                .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.FullName))
-                .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.PhoneNumber))
-                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
+            CreateMap<UpdateUserRequest, AppUser>();
         }
 
         private void CreateRoleMappings()
         {
-            // AppRole -> RoleResponse
-            CreateMap<AppRole, RoleResponse>()
-                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))
-                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name ?? string.Empty))
-                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
-                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt))
-                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt));
+            CreateMap<AppRole, RoleResponse>();
 
-            // CreateRoleRequest -> AppRole
             CreateMap<CreateRoleRequest, AppRole>()
-                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
-                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
-                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
-                .ForMember(dest => dest.Id, opt => opt.Ignore())
-                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
-                .ForMember(dest => dest.NormalizedName, opt => opt.Ignore())
-                .ForMember(dest => dest.ConcurrencyStamp, opt => opt.Ignore());
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
 
-            // UpdateRoleRequest -> AppRole (for updating existing role)
             CreateMap<UpdateRoleRequest, AppRole>()
-                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
         }
 
         private void CreateAuthMappings()
         {
-            // RefreshToken -> AuthResponse (partial mapping)
             CreateMap<RefreshToken, AuthResponse>()
-                .ForMember(dest => dest.RefreshToken, opt => opt.MapFrom(src => src.Token))
-                .ForMember(dest => dest.ExpiresAt, opt => opt.MapFrom(src => src.ExpiresAt))
-                .ForMember(dest => dest.AccessToken, opt => opt.Ignore()); // Will be set separately
+                .ForMember(dest => dest.RefreshToken, opt => opt.MapFrom(src => src.Token));
+        }
+
+        private void CreateOrganizerMappings()
+        {
+            CreateMap<RegisterOrganizerRequest, OrganizerProfile>()
+                .ForMember(dest => dest.OrganizerFieldAssignments,
+                    opt => opt.MapFrom(src =>
+                        src.OrganizerFields != null
+                            ? src.OrganizerFields.Select(f => new OrganizerFieldAssignment{
+                                EventFieldId = Guid.Parse(f.OrganizerFieldId)
+                            }).ToList()
+                            : new List<OrganizerFieldAssignment>()));
+
+
+            CreateMap<OrganizerProfile, OrganizerResponse>()
+                .ForMember(dest => dest.OrganizerId, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.UserInfo, opt => opt.MapFrom(src => src.User))
+                .ForMember(dest => dest.OrganizerFields, opt => opt.MapFrom(src => src.OrganizerFieldAssignments));
+
+            CreateMap<AppUser, UserOrganizerResponse>();
+
+            CreateMap<OrganizerFieldAssignment, OrganizerFieldResponse>()
+                .ForMember(dest => dest.EventFieldId, opt => opt.MapFrom(src => src.EventField.Id.ToString()))
+                .ForMember(dest => dest.EventFieldName, opt => opt.MapFrom(src => src.EventField.NameEventField));
         }
     }
 }

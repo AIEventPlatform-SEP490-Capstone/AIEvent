@@ -120,10 +120,7 @@ namespace AIEvent.Application.Services.Implements
             {
                 return ErrorResponse.FailureResult("Email address is already registered", ErrorCodes.InvalidInput);
             }
-
             var user = _mapper.Map<AppUser>(request);
-            user.UserName = request.Email;
-            user.EmailConfirmed = false;
 
             var result = await _userManager.CreateAsync(user, request.Password);
             if (!result.Succeeded)
@@ -133,7 +130,7 @@ namespace AIEvent.Application.Services.Implements
 
             await _userManager.AddToRoleAsync(user, "User");
 
-            var roles = await _userManager.GetRolesAsync(user);
+            var roles = new List<string> { "User" }; 
             var accessToken = _jwtService.GenerateAccessToken(user, roles);
             var refreshToken = _jwtService.GenerateRefreshToken();
 

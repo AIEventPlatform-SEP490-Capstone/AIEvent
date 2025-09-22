@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using AIEvent.Domain.Identity;
 using Microsoft.AspNetCore.Identity;
+using AIEvent.Domain.Entities;
 
 namespace AIEvent.Infrastructure.Data
 {
@@ -20,6 +21,7 @@ namespace AIEvent.Infrastructure.Data
             SeedRoles(modelBuilder);
             SeedUsers(modelBuilder);
             SeedUserRoles(modelBuilder);
+            SeedEventField(modelBuilder);
         }
 
         private static void SeedRoles(ModelBuilder modelBuilder)
@@ -127,6 +129,35 @@ namespace AIEvent.Infrastructure.Data
             testUser.PasswordHash = passwordHasher.HashPassword(testUser, "Test@123");
 
             modelBuilder.Entity<AppUser>().HasData(adminUser, regularUser, eventManagerUser, testUser);
+        }
+
+        private static void SeedEventField(ModelBuilder modelBuilder)
+        {
+            var fieldMusic = new EventField
+            {
+                NameEventField = "Music",
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = adminUserId.ToString(),
+            };
+            var fieldTechnology = new EventField
+            {
+                NameEventField = "Technology",
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = adminUserId.ToString(),
+            };
+            var fieldGaming = new EventField
+            {
+                NameEventField = "Gaming",
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = adminUserId.ToString(),
+            };
+            var fieldArt = new EventField
+            {
+                NameEventField = "Art",
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = adminUserId.ToString(),
+            };
+            modelBuilder.Entity<EventField>().HasData(fieldMusic, fieldTechnology, fieldGaming, fieldArt);
         }
 
         private static void SeedUserRoles(ModelBuilder modelBuilder)
