@@ -38,7 +38,7 @@ namespace AIEvent.Infrastructure.Context
 
             builder.Ignore<IdentityUserClaim<Guid>>();
             builder.Ignore<IdentityRoleClaim<Guid>>();
-
+            
             // ----------------- Identity -----------------
             builder.Entity<AppUser>(entity =>
             {
