@@ -24,6 +24,7 @@ namespace AIEvent.API.Extensions
                     .AddScoped<ICloudinaryService, CloudinaryService>()
                     .AddScoped<IAuthService, AuthService>()
                     .AddScoped<IUserService, UserService>()
+                    .AddScoped<IEventService, EventService>()
                     .AddScoped<IRoleService, RoleService>()
                     .AddScoped<IEnumService, EnumService>()
                     .AddScoped<IEvenFieldService, EvenFieldService>()

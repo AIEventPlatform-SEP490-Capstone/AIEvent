@@ -27,6 +27,7 @@ namespace AIEvent.Application.DTOs.Organizer
         public string? TaxCode { get; set; }
         public string? CompanyDescription { get; set; }
 
+        public string? ImgCompany { get; set; }
         public string? ImgFrontIdentity { get; set; }
         public string? ImgBackIdentity { get; set; }
         public string? ImgBusinessLicense { get; set; }

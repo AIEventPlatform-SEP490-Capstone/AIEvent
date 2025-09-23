@@ -1,11 +1,14 @@
-﻿using AIEvent.Domain.Base;
+﻿using AIEvent.Application.DTOs.EventField;
+using AIEvent.Application.DTOs.Organizer;
+using AIEvent.Application.DTOs.Tag;
+using AIEvent.Application.DTOs.Ticket;
 using AIEvent.Domain.Enums;
 
-namespace AIEvent.Domain.Entities
+namespace AIEvent.Application.DTOs.Event
 {
-    public partial class Event : BaseEntity
+    public class EventResponse
     {
-        public Guid OrganizerProfileId { get; set; }
+        public Guid EventId { get; set; }
         public required string Title { get; set; }
         public required string Description { get; set; }
         public required DateTime StartTime { get; set; }
@@ -13,8 +16,8 @@ namespace AIEvent.Domain.Entities
         public bool? isOnlineEvent { get; set; }
         public string? LocationName { get; set; }
         public string? DetailedDescription { get; set; }
-        public int TotalTickets { get; set; }
-        public int RemainingTickets { get; set; }
+        public int Capacity { get; set; }
+        public int CurrentTicket { get; set; }
         public TicketType TicketType { get; set; }
         public string? ImgListEvent { get; set; }
         public bool RequireApproval { get; set; }
@@ -22,9 +25,9 @@ namespace AIEvent.Domain.Entities
         public string? Address { get; set; }
         public float? Latitude { get; set; }
         public float? Longitude { get; set; }
-        public virtual OrganizerProfile? OrganizerProfile { get; set; }
-        public virtual ICollection<TicketDetail> TicketDetails { get; set; } = new List<TicketDetail>();
-        public virtual ICollection<EventTag> EventTags { get; set; } = new List<EventTag>();
-        public virtual ICollection<EventFieldAssignment> EventFieldAssignments { get; set; } = new List<EventFieldAssignment>();
+        public OrganizerEventResponse OrganizerEvent { get; set; } = default!;
+        public List<TagResponse> EventTags { get; set; } = new List<TagResponse>();
+        public List<EventFieldResponse> EventFields { get; set; } = new List<EventFieldResponse>();
+        public List<TicketDetailResponse> TicketDetails { get; set; } = new List<TicketDetailResponse>();
     }
 }

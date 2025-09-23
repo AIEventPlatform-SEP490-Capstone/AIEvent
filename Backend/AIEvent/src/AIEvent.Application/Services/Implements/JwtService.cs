@@ -31,7 +31,8 @@ namespace AIEvent.Application.Services.Implements
                 new(ClaimTypes.Name, user.UserName ?? string.Empty),
                 new(ClaimTypes.Email, user.Email ?? string.Empty),
                 new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new("organizer", user.OrganizerProfile?.Id.ToString() ?? string.Empty),
+                new(JwtRegisteredClaimNames.Sub, user.OrganizerProfile?.Id.ToString() ?? string.Empty),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
             };
