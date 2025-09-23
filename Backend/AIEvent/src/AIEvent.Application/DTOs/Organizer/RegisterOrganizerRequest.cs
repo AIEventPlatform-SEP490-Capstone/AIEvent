@@ -28,6 +28,7 @@ namespace AIEvent.Application.DTOs.Organizer
 
         public List<OrganizerFieldRequest>? OrganizerFields { get; set; }
 
+        public IFormFile? ImgCompany { get; set; }
         public IFormFile? ImgFrontIdentity { get; set; }
         public IFormFile? ImgBackIdentity { get; set; }
         public IFormFile? ImgBusinessLicense { get; set; }

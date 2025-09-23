@@ -4,7 +4,7 @@
     {
         public Guid EventId { get; set; }
         public Guid TagId { get; set; }
-        public required Event Event { get; set; }
-        public required Tag Tag { get; set; }
+        public Event Event { get; set; } = default!;
+        public Tag Tag { get; set; } = default!;
     }
 }

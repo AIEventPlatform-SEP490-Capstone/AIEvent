@@ -23,10 +23,9 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<OrganizerProfile> OrganizerProfiles { get; set; }
         public DbSet<Event> Events { get; set; }
-        public DbSet<EventCategory> EventCategories { get; set; }
+        public DbSet<TicketDetail> TicketDetails { get; set; }
         public DbSet<Tag> Tags { get; set; }
         public DbSet<EventTag> EventTags { get; set; }
-        public DbSet<Venue> Venues { get; set; }
         public DbSet<EventField> EventFields { get; set; }
         public DbSet<UserEventField> UserEventFields { get; set; }
         public DbSet<EventFieldAssignment> EventFieldAssignments { get; set; }
@@ -94,6 +93,7 @@ namespace AIEvent.Infrastructure.Context
                 entity.Property(e => e.ExperienceDescription).HasMaxLength(2000);
                 entity.Property(e => e.IdentityNumber).HasMaxLength(20);
                 entity.Property(e => e.ImgFrontIdentity).HasMaxLength(500);
+                entity.Property(e => e.ImgCompany).HasMaxLength(500);
                 entity.Property(e => e.ImgBackIdentity).HasMaxLength(500);
                 entity.Property(e => e.ImgBusinessLicense).HasMaxLength(500);
                 entity.Property(e => e.ApproveBy).HasMaxLength(100);
@@ -115,7 +115,7 @@ namespace AIEvent.Infrastructure.Context
             builder.Entity<Event>(entity =>
             {
                 // String properties with appropriate lengths
-                entity.Property(e => e.Title).HasMaxLength(200).IsRequired();
+                entity.Property(e => e.Title).HasMaxLength(500).IsRequired();
 
                 // Relationships
                 entity.HasOne(e => e.OrganizerProfile)
@@ -123,23 +123,9 @@ namespace AIEvent.Infrastructure.Context
                     .HasForeignKey(e => e.OrganizerProfileId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasOne(e => e.Venue)
-                    .WithMany(v => v.Events)
-                    .HasForeignKey(e => e.VenueId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(e => e.EventCategory)
-                    .WithMany(c => c.Events)
-                    .HasForeignKey(e => e.CategoryId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
                 // Performance indexes
                 entity.HasIndex(e => e.OrganizerProfileId).HasDatabaseName("IX_Event_OrganizerProfileId");
-                entity.HasIndex(e => e.VenueId).HasDatabaseName("IX_Event_VenueId");
-                entity.HasIndex(e => e.CategoryId).HasDatabaseName("IX_Event_CategoryId");
                 entity.HasIndex(e => new { e.OrganizerProfileId, e.CreatedAt }).HasDatabaseName("IX_Event_OrganizerProfileId_CreatedAt");
-                entity.HasIndex(e => new { e.CategoryId, e.IsDeleted }).HasDatabaseName("IX_Event_CategoryId_IsDeleted");
-                entity.HasIndex(e => new { e.VenueId, e.CreatedAt }).HasDatabaseName("IX_Event_VenueId_CreatedAt");
                 entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_Event_IsDeleted");
                 entity.HasIndex(e => e.Title).HasDatabaseName("IX_Event_Title");
             });
@@ -167,18 +153,6 @@ namespace AIEvent.Infrastructure.Context
 
                 entity.HasIndex(e => e.NameEventField).HasDatabaseName("IX_EventField_NameEventField");
                 entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_EventField_IsDeleted");
-            });
-
-            // ----------------- Venue -----------------
-            builder.Entity<Venue>(entity =>
-            {
-                entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_Venue_IsDeleted");
-            });
-
-            // ----------------- EventCategory -----------------
-            builder.Entity<EventCategory>(entity =>
-            {
-                entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_EventCategory_IsDeleted");
             });
 
             // ----------------- Tag -----------------
@@ -234,6 +208,21 @@ namespace AIEvent.Infrastructure.Context
                 .WithMany(f => f.OrganizerFieldAssignments)
                 .HasForeignKey(ofa => ofa.EventFieldId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // ----------------- TicketDetail -----------------
+            builder.Entity<TicketDetail>(entity =>
+            {
+                entity.HasOne(td => td.Event)
+                      .WithMany(e => e.TicketDetails)
+                      .HasForeignKey(td => td.EventId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.Property(e => e.TicketName).HasMaxLength(250).IsRequired();
+                entity.Property(td => td.TicketPrice).HasPrecision(18, 2);
+
+                entity.HasIndex(td => new { td.EventId, td.TicketName }).IsUnique();
+                entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_TicketDetail_IsDeleted");
+            });
 
             builder.Seed();
         }

@@ -62,6 +62,10 @@ namespace AIEvent.Application.Services.Implements
                     ? _cloudinaryService.UploadImageAsync(request.ImgBackIdentity)
                     : Task.FromResult<string?>(null));
 
+                uploadTasks.Add(request.ImgCompany != null
+                    ? _cloudinaryService.UploadImageAsync(request.ImgCompany)
+                    : Task.FromResult<string?>(null));
+
                 uploadTasks.Add(request.ImgFrontIdentity != null
                     ? _cloudinaryService.UploadImageAsync(request.ImgFrontIdentity)
                     : Task.FromResult<string?>(null));
@@ -72,8 +76,9 @@ namespace AIEvent.Application.Services.Implements
 
                 var results = await Task.WhenAll(uploadTasks);
                 organizer.ImgBackIdentity = results[0];
-                organizer.ImgFrontIdentity = results[1];
-                organizer.ImgBusinessLicense = results[2];
+                organizer.ImgCompany = results[1];
+                organizer.ImgFrontIdentity = results[2];
+                organizer.ImgBusinessLicense = results[3];
 
                 organizer.UserId = userId;
                 await _unitOfWork.OrganizerProfileRepository.AddAsync(organizer);

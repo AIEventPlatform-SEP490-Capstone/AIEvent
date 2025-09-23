@@ -21,11 +21,14 @@ namespace AIEvent.API.Controllers
         {
             var result = new
             {
+                BudgetOption = _enumService.GetEnumValues<BudgetOption>(),
                 EventExperienceLevel = _enumService.GetEnumValues<EventExperienceLevel>(),
                 EventFrequency = _enumService.GetEnumValues<EventFrequency>(),
                 EventSize = _enumService.GetEnumValues<EventSize>(),
                 OrganizationType = _enumService.GetEnumValues<OrganizationType>(),
-                OrganizerType = _enumService.GetEnumValues<OrganizerType>()
+                OrganizerType = _enumService.GetEnumValues<OrganizerType>(),
+                ParticipationFrequency = _enumService.GetEnumValues<ParticipationFrequency>(),
+                TicketType = _enumService.GetEnumValues<TicketType>(),
             };
 
             return Ok(SuccessResponse<object>.SuccessResult(

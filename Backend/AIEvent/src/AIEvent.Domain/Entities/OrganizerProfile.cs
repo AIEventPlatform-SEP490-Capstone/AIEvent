@@ -22,6 +22,7 @@ namespace AIEvent.Domain.Entities
         public string? UrlLinkedIn { get; set; }
         public string? ExperienceDescription { get; set; }
 
+        public string? ImgCompany { get; set; }
         public string? ImgFrontIdentity { get; set; }
         public string? ImgBackIdentity { get; set; }
         public string? ImgBusinessLicense { get; set; }
@@ -32,6 +33,7 @@ namespace AIEvent.Domain.Entities
         public string? TaxCode { get; set; }
         public string? CompanyDescription { get; set; }
 
+        public bool? IsApprove { get; set; } = false;
         public DateTime? ApproveAt { get; set; }
         public string? ApproveBy { get; set; }
 
