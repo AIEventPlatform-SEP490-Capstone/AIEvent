@@ -18,6 +18,7 @@ namespace AIEvent.Domain.Identity
         public string? InterestedCitiesJson { get; set; }
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
         public OrganizerProfile? OrganizerProfile { get; set; }
+        public ICollection<UserAction> UserActions { get; set; } = new List<UserAction>();
         public ICollection<UserEventField> UserEventFields { get; set; } = new List<UserEventField>();
     }
 }

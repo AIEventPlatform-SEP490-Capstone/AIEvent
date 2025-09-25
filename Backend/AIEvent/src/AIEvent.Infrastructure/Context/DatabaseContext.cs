@@ -116,6 +116,7 @@ namespace AIEvent.Infrastructure.Context
             {
                 // String properties with appropriate lengths
                 entity.Property(e => e.Title).HasMaxLength(500).IsRequired();
+                entity.Property(t => t.TotalTickets).IsRequired();
 
                 // Relationships
                 entity.HasOne(e => e.OrganizerProfile)
@@ -217,12 +218,35 @@ namespace AIEvent.Infrastructure.Context
                       .HasForeignKey(td => td.EventId)
                       .OnDelete(DeleteBehavior.Cascade);
 
+                entity.Property(t => t.TicketQuantity).IsRequired();
+
                 entity.Property(e => e.TicketName).HasMaxLength(250).IsRequired();
                 entity.Property(td => td.TicketPrice).HasPrecision(18, 2);
 
                 entity.HasIndex(td => new { td.EventId, td.TicketName }).IsUnique();
                 entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_TicketDetail_IsDeleted");
             });
+
+            // ----------------- UserAction -----------------
+            builder.Entity<UserAction>(entity =>
+            {
+                entity.HasOne(td => td.AppUser)
+                      .WithMany(e => e.UserActions)
+                      .HasForeignKey(td => td.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(td => new { td.UserId, td.ActionType }).HasDatabaseName("IX_UserActions_User_ActionType");
+            });
+
+            // ----------------- UserActionFilter -----------------
+            builder.Entity<UserActionFilter>(entity =>
+            {
+                entity.HasOne(td => td.UserAction)
+                      .WithMany(e => e.Filters)
+                      .HasForeignKey(td => td.UserActionId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
 
             builder.Seed();
         }

@@ -8,6 +8,7 @@ namespace AIEvent.Domain.Entities
         public required string TicketName { get; set; }
         public required decimal TicketPrice { get; set; }
         public required int TicketQuantity { get; set; }
+        public int SoldQuantity { get; set; } = 0;
         public int RemainingQuantity { get; set; }
         public string? TicketDescription { get; set; }
         public virtual Event Event { get; set; } = default!;

@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AIEvent.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/event-field")]
     [ApiController]
     public class EventFieldController : ControllerBase
     {
