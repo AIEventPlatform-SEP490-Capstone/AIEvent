@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AIEvent.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/user")]
     [Authorize]
     public class UserController : ControllerBase
     {

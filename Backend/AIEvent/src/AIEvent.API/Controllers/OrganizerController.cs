@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AIEvent.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/organizer")]
     [ApiController]
     public class OrganizerController : ControllerBase
     {

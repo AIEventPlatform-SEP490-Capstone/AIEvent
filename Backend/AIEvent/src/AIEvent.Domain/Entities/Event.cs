@@ -14,6 +14,7 @@ namespace AIEvent.Domain.Entities
         public string? LocationName { get; set; }
         public string? DetailedDescription { get; set; }
         public int TotalTickets { get; set; }
+        public int SoldQuantity { get; set; } = 0;
         public int RemainingTickets { get; set; }
         public TicketType TicketType { get; set; }
         public string? ImgListEvent { get; set; }

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AIEvent.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/enum")]
     [ApiController]
     public class EnumController : ControllerBase
     {
