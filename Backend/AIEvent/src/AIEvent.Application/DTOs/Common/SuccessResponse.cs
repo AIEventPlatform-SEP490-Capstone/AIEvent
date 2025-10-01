@@ -12,7 +12,6 @@ namespace AIEvent.Application.DTOs.Common
         {
             return new SuccessResponse<T>
             {
-                Success = true,
                 StatusCode = statusCode,
                 Message = message,
                 Data = data

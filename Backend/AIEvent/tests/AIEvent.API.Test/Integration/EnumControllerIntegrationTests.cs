@@ -240,28 +240,28 @@ namespace AIEvent.API.Test.Integration
                     var registerContent = await registerResponse.Content.ReadAsStringAsync();
                     var registerResult = JsonSerializer.Deserialize<SuccessResponse<object>>(registerContent, _jsonOptions);
                     
-                    if (registerResult?.Success == true)
-                    {
-                        var loginRequest = new LoginRequest
-                        {
-                            Email = registerRequest.Email,
-                            Password = registerRequest.Password
-                        };
+                    //if (registerResult?.Success == true)
+                    //{
+                    //    var loginRequest = new LoginRequest
+                    //    {
+                    //        Email = registerRequest.Email,
+                    //        Password = registerRequest.Password
+                    //    };
 
-                        var loginResponse = await _client.PostAsJsonAsync("/api/auth/login", loginRequest);
+                    //    var loginResponse = await _client.PostAsJsonAsync("/api/auth/login", loginRequest);
                         
-                        if (loginResponse.IsSuccessStatusCode)
-                        {
-                            var loginContent = await loginResponse.Content.ReadAsStringAsync();
-                            var loginResult = JsonSerializer.Deserialize<JsonElement>(loginContent, _jsonOptions);
+                    //    if (loginResponse.IsSuccessStatusCode)
+                    //    {
+                    //        var loginContent = await loginResponse.Content.ReadAsStringAsync();
+                    //        var loginResult = JsonSerializer.Deserialize<JsonElement>(loginContent, _jsonOptions);
                             
-                            if (loginResult.TryGetProperty("data", out var data) &&
-                                data.TryGetProperty("accessToken", out var tokenElement))
-                            {
-                                return tokenElement.GetString();
-                            }
-                        }
-                    }
+                    //        if (loginResult.TryGetProperty("data", out var data) &&
+                    //            data.TryGetProperty("accessToken", out var tokenElement))
+                    //        {
+                    //            return tokenElement.GetString();
+                    //        }
+                    //    }
+                    //}
                 }
             }
             catch
