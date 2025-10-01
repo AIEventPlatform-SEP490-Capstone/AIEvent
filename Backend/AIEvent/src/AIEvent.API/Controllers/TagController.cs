@@ -53,5 +53,55 @@ namespace AIEvent.API.Controllers
                 SuccessCodes.Success,
                 "Tag retrieved successfully"));
         }
+
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<SuccessResponse<object>>> DeleteTag(string id)
+        {
+            var result = await _tagService.DeleteTagAsync(id);
+            if (result.IsFailure)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new {id},
+                SuccessCodes.Success,
+                "Delete Tag successfully"));
+        }
+
+        [HttpGet("{id}")]
+        [AllowAnonymous]
+        [Authorize]
+        public async Task<ActionResult<SuccessResponse<TagResponse>>> GetTagById(string id)
+        {
+            var result = await _tagService.GetTagByIdAsync(id);
+            if (result.IsFailure)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<TagResponse>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Tag retrieved successfully"));
+        }
+
+        [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<SuccessResponse<TagResponse>>> UpdateTag(string id, UpdateTagRequest request)
+        {
+            var result = await _tagService.UpdateTagAsync(id, request);
+            if (result.IsFailure)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<TagResponse>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Update Tag successfully"));
+        }
     }
 }
