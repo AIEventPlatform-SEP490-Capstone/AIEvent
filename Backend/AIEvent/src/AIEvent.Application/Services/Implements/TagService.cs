@@ -66,5 +66,75 @@ namespace AIEvent.Application.Services.Implements
 
             return new BasePaginated<TagResponse>(result, totalCount, pageNumber, pageSize);
         }
+
+        public async Task<Result> DeleteTagAsync(string id)
+        {
+            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+            {
+                var tagId = Guid.Parse(id);
+                var existingTag = await _unitOfWork.TagRepository
+                                            .Query()
+                                            .FirstOrDefaultAsync(t => t.Id == tagId);
+
+                if (existingTag == null || existingTag.DeletedAt.HasValue)
+                {
+                    return ErrorResponse.FailureResult("Can not found or Tag is deleted", ErrorCodes.InvalidInput);
+                }
+
+                await _unitOfWork.TagRepository.DeleteAsync(existingTag);
+
+                return Result.Success();
+            });
+        }
+
+        public async Task<Result<TagResponse>> GetTagByIdAsync(string id)
+        {
+            var tagId = Guid.Parse(id);
+            var tag = await _unitOfWork.TagRepository
+                                .Query()    
+                                .AsNoTracking()
+                                .FirstOrDefaultAsync(t => t.Id == tagId);
+
+            if (tag == null || tag.DeletedAt.HasValue)
+            {
+                return ErrorResponse.FailureResult("Can not found or Tag is deleted", ErrorCodes.InvalidInput);
+            }
+
+            TagResponse tagResponse = new()
+            {
+                TagId = tag.Id.ToString(),
+                TagName = tag.NameTag,
+            };
+
+            return Result<TagResponse>.Success(tagResponse);
+        }
+
+        public async Task<Result<TagResponse>> UpdateTagAsync(string id, UpdateTagRequest request)
+        {
+            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+            {
+                var tagId = Guid.Parse(id);
+                var tag = await _unitOfWork.TagRepository
+                                            .Query()
+                                            .FirstOrDefaultAsync(t => t.Id == tagId);
+
+                if (tag == null || tag.DeletedAt.HasValue)
+                {
+                    return ErrorResponse.FailureResult("Can not found or Tag is deleted", ErrorCodes.InvalidInput);
+                }
+
+                tag.NameTag = request.TagName;
+
+                await _unitOfWork.TagRepository.UpdateAsync(tag);
+
+                var response = new TagResponse
+                {
+                    TagId = tag.Id.ToString(),
+                    TagName = tag.NameTag,
+                };
+
+                return Result<TagResponse>.Success(response);
+            });
+        }
     }
 }
