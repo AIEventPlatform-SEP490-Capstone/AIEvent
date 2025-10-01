@@ -67,8 +67,6 @@ namespace AIEvent.Application.Services.Implements
                 .Include(o => o.TicketDetails)
                 .Include(o => o.EventTags)
                     .ThenInclude(et => et.Tag)
-                .Include(o => o.EventFieldAssignments)
-                    .ThenInclude(ef => ef.EventField)
                 .ProjectTo<EventResponse>(_mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(e => e.EventId == Guid.Parse(eventId));
             if (events == null)

@@ -12,11 +12,9 @@ namespace AIEvent.Domain.Interfaces
         IGenericRepository<Tag> TagRepository { get; }
         IGenericRepository<EventTag> EventTagRepository { get; }
         IGenericRepository<OrganizerProfile> OrganizerProfileRepository { get; }
-        IGenericRepository<EventField> EventFieldRepository { get; }
-        IGenericRepository<EventFieldAssignment> EventFieldAssignmentRepository { get; }
-        IGenericRepository<UserEventField> UserEventFieldRepository { get; }
-        IGenericRepository<OrganizerFieldAssignment> OrganizerFieldAssignmentRepository { get; }
-        IGenericRepository<TicketDetail> TicketDetailRepository { get; }
+        IGenericRepository<Interest> InterestRepository { get; }
+        IGenericRepository<UserInterest> UserInterestRepository { get; }
+        IGenericRepository<TicketType> TicketDetailRepository { get; }
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();
         Task CommitTransactionAsync();
