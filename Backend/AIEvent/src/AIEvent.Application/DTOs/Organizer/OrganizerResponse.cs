@@ -32,6 +32,5 @@ namespace AIEvent.Application.DTOs.Organizer
         public string? ImgBackIdentity { get; set; }
         public string? ImgBusinessLicense { get; set; }
         public required UserOrganizerResponse UserInfo { get; set; }
-        public List<OrganizerFieldResponse>? OrganizerFields { get; set; }
     }
 }

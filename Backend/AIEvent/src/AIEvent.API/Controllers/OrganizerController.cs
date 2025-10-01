@@ -18,37 +18,37 @@ namespace AIEvent.API.Controllers
             _organizerService = organizerService;
         }
 
-        //[HttpGet]
-        //[Authorize]
-        //public async Task<ActionResult<SuccessResponse<List<OrganizerResponse>>>> GetOrganizer([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
-        //{
-        //    var result = await _organizerService.GetOrganizerAsync(page, pageSize);
-        //    if (result.IsFailure)
-        //    {
-        //        return BadRequest(result.Error!);
-        //    }
+        [HttpGet]
+        [Authorize]
+        public async Task<ActionResult<SuccessResponse<List<OrganizerResponse>>>> GetOrganizer([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            var result = await _organizerService.GetOrganizerAsync(page, pageSize);
+            if (result.IsFailure)
+            {
+                return BadRequest(result.Error!);
+            }
 
-        //    return Ok(SuccessResponse<List<OrganizerResponse>>.SuccessResult(
-        //        result.Value!,
-        //        SuccessCodes.Success,
-        //        "Organizer retrieved successfully"));
-        //}
+            return Ok(SuccessResponse<List<OrganizerResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Organizer retrieved successfully"));
+        }
 
-        //[HttpGet("{id}")]
-        //[Authorize]
-        //public async Task<ActionResult<SuccessResponse<OrganizerResponse>>> GetOrganizerById(string id)
-        //{
-        //    var result = await _organizerService.GetOrganizerByIdAsync(id);
-        //    if (result.IsFailure)
-        //    {
-        //        return BadRequest(result.Error!);
-        //    }
+        [HttpGet("{id}")]
+        [Authorize]
+        public async Task<ActionResult<SuccessResponse<OrganizerResponse>>> GetOrganizerById(string id)
+        {
+            var result = await _organizerService.GetOrganizerByIdAsync(id);
+            if (result.IsFailure)
+            {
+                return BadRequest(result.Error!);
+            }
 
-        //    return Ok(SuccessResponse<OrganizerResponse>.SuccessResult(
-        //        result.Value!,
-        //        SuccessCodes.Success,
-        //        "Organizer retrieved successfully"));
-        //}
+            return Ok(SuccessResponse<OrganizerResponse>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Organizer retrieved successfully"));
+        }
 
         [HttpPost]
         [Authorize(Roles = "User")]

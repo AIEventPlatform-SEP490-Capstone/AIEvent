@@ -21,7 +21,7 @@ namespace AIEvent.Infrastructure.Implements
         public IGenericRepository<OrganizerProfile> OrganizerProfileRepository => GetRepository<OrganizerProfile>();
         public IGenericRepository<Interest> InterestRepository => GetRepository<Interest>();
         public IGenericRepository<UserInterest> UserInterestRepository => GetRepository<UserInterest>();
-        public IGenericRepository<TicketType> TicketDetailRepository => GetRepository<TicketType>();
+        public IGenericRepository<TicketDetail> TicketDetailRepository => GetRepository<TicketDetail>();
 
         public UnitOfWork(DatabaseContext context)
         {

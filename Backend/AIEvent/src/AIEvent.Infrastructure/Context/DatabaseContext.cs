@@ -23,7 +23,8 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<OrganizerProfile> OrganizerProfiles { get; set; }
         public DbSet<Event> Events { get; set; }
-        public DbSet<TicketType> TicketDetails { get; set; }
+        public DbSet<EventCategory> EventCategories { get; set; }
+        public DbSet<TicketDetail> TicketDetails { get; set; }
         public DbSet<Tag> Tags { get; set; }
         public DbSet<EventTag> EventTags { get; set; }
         public DbSet<Interest> Intserest { get; set; }
@@ -122,6 +123,11 @@ namespace AIEvent.Infrastructure.Context
                     .HasForeignKey(e => e.OrganizerProfileId)
                     .OnDelete(DeleteBehavior.Restrict);
 
+                entity.HasOne(e => e.EventCategory)
+                    .WithMany(o => o.Events)
+                    .HasForeignKey(e => e.EventCategoryId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
                 // Performance indexes
                 entity.HasIndex(e => e.OrganizerProfileId).HasDatabaseName("IX_Event_OrganizerProfileId");
                 entity.HasIndex(e => new { e.OrganizerProfileId, e.CreatedAt }).HasDatabaseName("IX_Event_OrganizerProfileId_CreatedAt");
@@ -142,6 +148,13 @@ namespace AIEvent.Infrastructure.Context
                 .HasOne(et => et.Tag)
                 .WithMany(t => t.EventTags)
                 .HasForeignKey(et => et.TagId);
+
+            // ----------------- EventCategory -----------------
+            builder.Entity<EventCategory>(entity =>
+            {
+                entity.HasIndex(e => e.CategoryName).HasDatabaseName("IX_EventCategory_CategoryName");
+                entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_EventCategory_IsDeleted");
+            });
 
             // ----------------- Interest -----------------
             builder.Entity<Interest>(entity =>
@@ -177,7 +190,7 @@ namespace AIEvent.Infrastructure.Context
                 .OnDelete(DeleteBehavior.Cascade);
 
             // ----------------- TicketDetail -----------------
-            builder.Entity<TicketType>(entity =>
+            builder.Entity<TicketDetail>(entity =>
             {
                 entity.HasOne(td => td.Event)
                       .WithMany(e => e.TicketDetails)

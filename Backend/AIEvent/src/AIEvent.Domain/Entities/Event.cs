@@ -6,6 +6,7 @@ namespace AIEvent.Domain.Entities
     public partial class Event : BaseEntity
     {
         public Guid OrganizerProfileId { get; set; }
+        public Guid EventCategoryId { get; set; }
         public required string Title { get; set; }
         public required string Description { get; set; }
         public required DateTime StartTime { get; set; }
@@ -16,15 +17,16 @@ namespace AIEvent.Domain.Entities
         public int TotalTickets { get; set; }
         public int SoldQuantity { get; set; } = 0;
         public int RemainingTickets { get; set; }
-        public Enums.TicketType TicketType { get; set; }
+        public TicketType TicketType { get; set; }
         public string? ImgListEvent { get; set; }
         public bool RequireApproval { get; set; }
         public string? City { get; set; }
         public string? Address { get; set; }
         public float? Latitude { get; set; }
         public float? Longitude { get; set; }
+        public EventCategory EventCategory { get; set; } = default!;
         public virtual OrganizerProfile? OrganizerProfile { get; set; }
-        public virtual ICollection<TicketType> TicketDetails { get; set; } = new List<TicketType>();
+        public virtual ICollection<TicketDetail> TicketDetails { get; set; } = new List<TicketDetail>();
         public virtual ICollection<EventTag> EventTags { get; set; } = new List<EventTag>();
     }
 }
