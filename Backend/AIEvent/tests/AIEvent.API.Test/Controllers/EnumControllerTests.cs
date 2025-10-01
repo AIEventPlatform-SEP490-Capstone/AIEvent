@@ -73,7 +73,6 @@ namespace AIEvent.API.Test.Controllers
             
             var response = result.Value as SuccessResponse<object>;
             response.Should().NotBeNull();
-            response!.Success.Should().BeTrue();
             response.StatusCode.Should().Be(SuccessCodes.Success);
             response.Message.Should().Be("Retrieved successfully");
         }

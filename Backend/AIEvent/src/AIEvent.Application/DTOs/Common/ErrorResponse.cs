@@ -15,7 +15,6 @@ namespace AIEvent.Application.DTOs.Common
         {
             return new ErrorResponse
             {
-                Success = false,
                 StatusCode = statusCode,
                 Message = message,
                 Errors = error
