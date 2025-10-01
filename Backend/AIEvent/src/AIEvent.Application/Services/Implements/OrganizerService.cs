@@ -87,37 +87,37 @@ namespace AIEvent.Application.Services.Implements
             });
         }
 
-        public async Task<Result<List<OrganizerResponse>>> GetOrganizerAsync(int page = 1, int pageSize = 10)
-        {
-            var organizers = await _unitOfWork.OrganizerProfileRepository
-                .Query()
-                .Include(o => o.OrganizerFieldAssignments)
-                    .ThenInclude(ofa => ofa.EventField)
-                .Include(o => o.User)
-                .ProjectTo<OrganizerResponse>(_mapper.ConfigurationProvider)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-            if(organizers == null)
-                return ErrorResponse.FailureResult("Organizer code already exists.", ErrorCodes.InvalidInput);
+        //public async Task<Result<List<OrganizerResponse>>> GetOrganizerAsync(int page = 1, int pageSize = 10)
+        //{
+        //    var organizers = await _unitOfWork.OrganizerProfileRepository
+        //        .Query()
+        //        .Include(o => o.OrganizerFieldAssignments)
+        //            .ThenInclude(ofa => ofa.EventField)
+        //        .Include(o => o.User)
+        //        .ProjectTo<OrganizerResponse>(_mapper.ConfigurationProvider)
+        //        .Skip((page - 1) * pageSize)
+        //        .Take(pageSize)
+        //        .ToListAsync();
+        //    if(organizers == null)
+        //        return ErrorResponse.FailureResult("Organizer code already exists.", ErrorCodes.InvalidInput);
 
-            return Result<List<OrganizerResponse>>.Success(organizers);
-        }
+        //    return Result<List<OrganizerResponse>>.Success(organizers);
+        //}
 
-        public async Task<Result<OrganizerResponse>> GetOrganizerByIdAsync(string id)
-        {
-            var organizers = await _unitOfWork.OrganizerProfileRepository
-                .Query()
-                .AsNoTracking()
-                .Include(o => o.OrganizerFieldAssignments)
-                    .ThenInclude(ofa => ofa.EventField)
-                .Include(o => o.User)
-                .ProjectTo<OrganizerResponse>(_mapper.ConfigurationProvider)
-                .FirstOrDefaultAsync(o => o.OrganizerId == Guid.Parse(id));
-            if (organizers == null)
-                return ErrorResponse.FailureResult("Organizer code already exists.", ErrorCodes.InvalidInput);
+        //public async Task<Result<OrganizerResponse>> GetOrganizerByIdAsync(string id)
+        //{
+        //    var organizers = await _unitOfWork.OrganizerProfileRepository
+        //        .Query()
+        //        .AsNoTracking()
+        //        .Include(o => o.OrganizerFieldAssignments)
+        //            .ThenInclude(ofa => ofa.EventField)
+        //        .Include(o => o.User)
+        //        .ProjectTo<OrganizerResponse>(_mapper.ConfigurationProvider)
+        //        .FirstOrDefaultAsync(o => o.OrganizerId == Guid.Parse(id));
+        //    if (organizers == null)
+        //        return ErrorResponse.FailureResult("Organizer code already exists.", ErrorCodes.InvalidInput);
 
-            return Result<OrganizerResponse>.Success(organizers);
-        }
+        //    return Result<OrganizerResponse>.Success(organizers);
+        //}
     }
 }

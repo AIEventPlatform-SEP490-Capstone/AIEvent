@@ -19,11 +19,9 @@ namespace AIEvent.Infrastructure.Implements
         public IGenericRepository<Tag> TagRepository => GetRepository<Tag>();
         public IGenericRepository<EventTag> EventTagRepository => GetRepository<EventTag>();
         public IGenericRepository<OrganizerProfile> OrganizerProfileRepository => GetRepository<OrganizerProfile>();
-        public IGenericRepository<EventField> EventFieldRepository => GetRepository<EventField>();
-        public IGenericRepository<EventFieldAssignment> EventFieldAssignmentRepository => GetRepository<EventFieldAssignment>();      
-        public IGenericRepository<UserEventField> UserEventFieldRepository => GetRepository<UserEventField>();
-        public IGenericRepository<OrganizerFieldAssignment> OrganizerFieldAssignmentRepository => GetRepository<OrganizerFieldAssignment>();
-        public IGenericRepository<TicketDetail> TicketDetailRepository => GetRepository<TicketDetail>();
+        public IGenericRepository<Interest> InterestRepository => GetRepository<Interest>();
+        public IGenericRepository<UserInterest> UserInterestRepository => GetRepository<UserInterest>();
+        public IGenericRepository<TicketType> TicketDetailRepository => GetRepository<TicketType>();
 
         public UnitOfWork(DatabaseContext context)
         {

@@ -11,26 +11,26 @@ namespace AIEvent.API.Controllers
     [ApiController]
     public class EventFieldController : ControllerBase
     {
-        private readonly IEvenFieldService _evenFieldService;
-        public EventFieldController(IEvenFieldService evenFieldService)
-        {
-            _evenFieldService = evenFieldService;
-        }
+        //private readonly IEvenFieldService _evenFieldService;
+        //public EventFieldController(IEvenFieldService evenFieldService)
+        //{
+        //    _evenFieldService = evenFieldService;
+        //}
 
-        [HttpGet]
-        [AllowAnonymous]
-        public async Task<ActionResult<SuccessResponse<IEnumerable<EventFieldResponse>>>> GetEventField()
-        {
-            var result = await _evenFieldService.GetAllEventField();
-            if (result.IsFailure)
-            {
-                return BadRequest(result.Error!);
-            }
+        //[HttpGet]
+        //[AllowAnonymous]
+        //public async Task<ActionResult<SuccessResponse<IEnumerable<EventFieldResponse>>>> GetEventField()
+        //{
+        //    var result = await _evenFieldService.GetAllEventField();
+        //    if (result.IsFailure)
+        //    {
+        //        return BadRequest(result.Error!);
+        //    }
 
-            return Ok(SuccessResponse<IEnumerable<EventFieldResponse>>.SuccessResult(
-                result.Value!,
-                SuccessCodes.Success,
-                "Event field retrieved successfully"));
-        }
+        //    return Ok(SuccessResponse<IEnumerable<EventFieldResponse>>.SuccessResult(
+        //        result.Value!,
+        //        SuccessCodes.Success,
+        //        "Event field retrieved successfully"));
+        //}
     }
 }

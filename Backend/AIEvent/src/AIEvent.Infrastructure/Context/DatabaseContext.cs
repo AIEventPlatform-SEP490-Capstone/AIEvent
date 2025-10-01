@@ -23,13 +23,11 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<OrganizerProfile> OrganizerProfiles { get; set; }
         public DbSet<Event> Events { get; set; }
-        public DbSet<TicketDetail> TicketDetails { get; set; }
+        public DbSet<TicketType> TicketDetails { get; set; }
         public DbSet<Tag> Tags { get; set; }
         public DbSet<EventTag> EventTags { get; set; }
-        public DbSet<EventField> EventFields { get; set; }
-        public DbSet<UserEventField> UserEventFields { get; set; }
-        public DbSet<EventFieldAssignment> EventFieldAssignments { get; set; }
-        public DbSet<OrganizerFieldAssignment> OrganizerFieldAssignments { get; set; }
+        public DbSet<Interest> Intserest { get; set; }
+        public DbSet<UserInterest> UserInterests { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -145,14 +143,14 @@ namespace AIEvent.Infrastructure.Context
                 .WithMany(t => t.EventTags)
                 .HasForeignKey(et => et.TagId);
 
-            // ----------------- EventField -----------------
-            builder.Entity<EventField>(entity =>
+            // ----------------- Interest -----------------
+            builder.Entity<Interest>(entity =>
             {
-                entity.Property(e => e.NameEventField)
+                entity.Property(e => e.Name)
                       .HasMaxLength(100)
                       .IsRequired();
 
-                entity.HasIndex(e => e.NameEventField).HasDatabaseName("IX_EventField_NameEventField");
+                entity.HasIndex(e => e.Name).HasDatabaseName("IX_EventField_NameEventField");
                 entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_EventField_IsDeleted");
             });
 
@@ -162,56 +160,24 @@ namespace AIEvent.Infrastructure.Context
                 entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_Tag_IsDeleted");
             });
 
-            // ----------------- UserEventField -----------------
-            builder.Entity<UserEventField>()
-                .HasKey(ue => new { ue.UserId, ue.EventFieldId });
+            // ----------------- UserInterest -----------------
+            builder.Entity<UserInterest>()
+                .HasKey(ue => new { ue.UserId, ue.InterestId });
 
-            builder.Entity<UserEventField>()
+            builder.Entity<UserInterest>()
                 .HasOne(ue => ue.User)
-                .WithMany(u => u.UserEventFields)
+                .WithMany(u => u.UserInterests)
                 .HasForeignKey(ue => ue.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            builder.Entity<UserEventField>()
-                .HasOne(ue => ue.EventField)
-                .WithMany(f => f.UserEventFields)
-                .HasForeignKey(ue => ue.EventFieldId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            // ----------------- EventFieldAssignment (Event - Field) -----------------
-            builder.Entity<EventFieldAssignment>()
-                .HasKey(ea => new { ea.EventId, ea.EventFieldId });
-
-            builder.Entity<EventFieldAssignment>()
-                .HasOne(ea => ea.Event)
-                .WithMany(e => e.EventFieldAssignments)
-                .HasForeignKey(ea => ea.EventId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            builder.Entity<EventFieldAssignment>()
-                .HasOne(ea => ea.EventField)
-                .WithMany(f => f.EventFieldAssignments)
-                .HasForeignKey(ea => ea.EventFieldId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            // ----------------- OrganizerFieldAssignment (Organizer - Field) -----------------
-            builder.Entity<OrganizerFieldAssignment>()
-                .HasKey(ofa => new { ofa.OrganizerProfileId, ofa.EventFieldId });
-
-            builder.Entity<OrganizerFieldAssignment>()
-                .HasOne(ofa => ofa.OrganizerProfile)
-                .WithMany(o => o.OrganizerFieldAssignments)
-                .HasForeignKey(ofa => ofa.OrganizerProfileId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            builder.Entity<OrganizerFieldAssignment>()
-                .HasOne(ofa => ofa.EventField)
-                .WithMany(f => f.OrganizerFieldAssignments)
-                .HasForeignKey(ofa => ofa.EventFieldId)
+            builder.Entity<UserInterest>()
+                .HasOne(ue => ue.Interest)
+                .WithMany(f => f.UserInterests)
+                .HasForeignKey(ue => ue.InterestId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             // ----------------- TicketDetail -----------------
-            builder.Entity<TicketDetail>(entity =>
+            builder.Entity<TicketType>(entity =>
             {
                 entity.HasOne(td => td.Event)
                       .WithMany(e => e.TicketDetails)
