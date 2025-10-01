@@ -25,6 +25,6 @@ namespace AIEvent.Application.DTOs.Event
         public float? Longitude { get; set; }
         public List<TicketDetailRequest> TicketDetails { get; set; } = new List<TicketDetailRequest>();
         public List<EventTagRequest> Tags { get; set; } = new List<EventTagRequest>();
-        public List<EventFieldRequest> EventFields { get; set; } = new List<EventFieldRequest>();
+        public string? EventCategoryId { get; set; } 
     }
 }

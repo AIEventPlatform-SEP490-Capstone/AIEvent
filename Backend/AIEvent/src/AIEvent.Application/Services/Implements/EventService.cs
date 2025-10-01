@@ -59,20 +59,22 @@ namespace AIEvent.Application.Services.Implements
             });
         }
 
-        public async Task<Result<EventResponse>> GetEventById(string eventId)
+        public async Task<Result<EventDetailResponse>> GetEventById(string eventId)
         {
             var events = await _unitOfWork.EventRepository
                 .Query()
                 .Include(o => o.OrganizerProfile)
                 .Include(o => o.TicketDetails)
+                .Include(o => o.EventCategory)
                 .Include(o => o.EventTags)
                     .ThenInclude(et => et.Tag)
-                .ProjectTo<EventResponse>(_mapper.ConfigurationProvider)
+                .ProjectTo<EventDetailResponse>(_mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(e => e.EventId == Guid.Parse(eventId));
+
             if (events == null)
                 return ErrorResponse.FailureResult("Event code already exists.", ErrorCodes.InvalidInput);
 
-            return Result<EventResponse>.Success(events);
+            return Result<EventDetailResponse>.Success(events);
         }
     }
 }

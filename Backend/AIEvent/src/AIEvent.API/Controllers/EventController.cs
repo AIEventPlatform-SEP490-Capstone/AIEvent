@@ -21,7 +21,7 @@ namespace AIEvent.API.Controllers
         [HttpGet("{id}")]
         [AllowAnonymous]
         [Authorize]
-        public async Task<ActionResult<SuccessResponse<EventResponse>>> GetOrganizerById(string id)
+        public async Task<ActionResult<SuccessResponse<EventDetailResponse>>> GetOrganizerById(string id)
         {
             var result = await _eventService.GetEventById(id);
             if (result.IsFailure)
@@ -29,7 +29,7 @@ namespace AIEvent.API.Controllers
                 return BadRequest(result.Error!);
             }
 
-            return Ok(SuccessResponse<EventResponse>.SuccessResult(
+            return Ok(SuccessResponse<EventDetailResponse>.SuccessResult(
                 result.Value!,
                 SuccessCodes.Success,
                 "Event retrieved successfully"));

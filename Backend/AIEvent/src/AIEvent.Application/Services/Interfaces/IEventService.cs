@@ -6,6 +6,6 @@ namespace AIEvent.Application.Services.Interfaces
     public interface IEventService
     {
         Task<Result> CreateEvent(Guid organizerId, CreateEventRequest request);
-        Task<Result<EventResponse>> GetEventById(string eventId);
+        Task<Result<EventDetailResponse>> GetEventById(string eventId);
     }
 }

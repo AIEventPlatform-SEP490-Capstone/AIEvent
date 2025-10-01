@@ -2,7 +2,7 @@
 
 namespace AIEvent.Domain.Entities
 {
-    public partial class TicketType : BaseEntity
+    public partial class TicketDetail : BaseEntity
     {
         public Guid EventId { get; set; }
         public required string TicketName { get; set; }

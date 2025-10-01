@@ -21,6 +21,8 @@ namespace AIEvent.Infrastructure.Data
             SeedRoles(modelBuilder);
             SeedUsers(modelBuilder);
             SeedUserRoles(modelBuilder);
+            SeedEventCategory(modelBuilder);
+            SeedTag(modelBuilder);
         }
 
         private static void SeedRoles(ModelBuilder modelBuilder)
@@ -158,6 +160,74 @@ namespace AIEvent.Infrastructure.Data
             };
 
             modelBuilder.Entity<IdentityUserRole<Guid>>().HasData(userRoles);
+        }
+
+        private static void SeedEventCategory(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<EventCategory>().HasData(
+                new EventCategory
+                {
+                    Id = Guid.NewGuid(),
+                    CategoryName = "Music",
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System"
+                },
+                new EventCategory
+                {
+                    Id = Guid.NewGuid(),
+                    CategoryName = "Technology",
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System"
+                },
+                new EventCategory
+                {
+                    Id = Guid.NewGuid(),
+                    CategoryName = "Sports",
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System"
+                },
+                new EventCategory
+                {
+                    Id = Guid.NewGuid(),
+                    CategoryName = "Education",
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System"
+                }
+            );
+        }
+
+        public static void SeedTag(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Tag>().HasData(
+                new Tag
+                {
+                    Id = Guid.NewGuid(),
+                    NameTag = "Free",
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System"
+                },
+                new Tag
+                {
+                    Id = Guid.NewGuid(),
+                    NameTag = "Online",
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System"
+                },
+                new Tag
+                {
+                    Id = Guid.NewGuid(),
+                    NameTag = "VIP",
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System"
+                },
+                new Tag
+                {
+                    Id = Guid.NewGuid(),
+                    NameTag = "Workshop",
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System"
+                }
+            );
         }
     }
 }
