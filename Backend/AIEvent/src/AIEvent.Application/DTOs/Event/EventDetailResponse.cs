@@ -6,7 +6,7 @@ using AIEvent.Domain.Enums;
 
 namespace AIEvent.Application.DTOs.Event
 {
-    public class EventResponse
+    public class EventDetailResponse
     {
         public Guid EventId { get; set; }
         public required string Title { get; set; }
@@ -16,10 +16,11 @@ namespace AIEvent.Application.DTOs.Event
         public bool? isOnlineEvent { get; set; }
         public string? LocationName { get; set; }
         public string? DetailedDescription { get; set; }
-        public int Capacity { get; set; }
-        public int CurrentTicket { get; set; }
+        public int TotalTickets { get; set; }
+        public int SoldQuantity { get; set; } = 0;
+        public int RemainingTickets { get; set; }
         public TicketType TicketType { get; set; }
-        public string? ImgListEvent { get; set; }
+        public List<string>? ImgListEvent { get; set; }
         public bool RequireApproval { get; set; }
         public string? City { get; set; }
         public string? Address { get; set; }
@@ -27,7 +28,7 @@ namespace AIEvent.Application.DTOs.Event
         public float? Longitude { get; set; }
         public OrganizerEventResponse OrganizerEvent { get; set; } = default!;
         public List<TagResponse> EventTags { get; set; } = new List<TagResponse>();
-        public List<EventFieldResponse> EventFields { get; set; } = new List<EventFieldResponse>();
+        public EventCategoryResponse EventCategory { get; set; } = default!;
         public List<TicketDetailResponse> TicketDetails { get; set; } = new List<TicketDetailResponse>();
     }
 }
