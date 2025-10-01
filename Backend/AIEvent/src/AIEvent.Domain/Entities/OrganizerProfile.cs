@@ -39,6 +39,5 @@ namespace AIEvent.Domain.Entities
 
         public required AppUser User { get; set; }
         public ICollection<Event>? Events { get; set; }
-        public ICollection<OrganizerFieldAssignment> OrganizerFieldAssignments { get; set; } = new List<OrganizerFieldAssignment>();
     }
 }
