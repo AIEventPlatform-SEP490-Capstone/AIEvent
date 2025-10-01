@@ -1,6 +1,6 @@
 ﻿using AIEvent.Application.Constants;
-using AIEvent.Application.DTO.Auth;
-using AIEvent.Application.DTO.Common;
+using AIEvent.Application.DTOs.Auth;
+using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Identity;
@@ -35,7 +35,10 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result<AuthResponse>> LoginAsync(LoginRequest request)
         {
-            var user = await _userManager.FindByEmailAsync(request.Email);
+            var user = await _userManager
+                                .Users
+                                .Include(u => u.OrganizerProfile)
+                                .FirstOrDefaultAsync(u => u.Email == request.Email);
             if (user == null || !user.IsActive)
             {
                 return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
@@ -76,6 +79,7 @@ namespace AIEvent.Application.Services.Implements
             var tokenEntity = await _unitOfWork.RefreshTokenRepository
                 .Query()
                 .Include(rt => rt.User)
+                    .ThenInclude(rtu => rtu.OrganizerProfile)
                 .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
 
             if (tokenEntity == null || !tokenEntity.IsActive)

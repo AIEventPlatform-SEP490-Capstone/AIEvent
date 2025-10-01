@@ -1,6 +1,6 @@
 using AIEvent.API.Controllers;
 using AIEvent.Application.Constants;
-using AIEvent.Application.DTO.Common;
+using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Enums;
 using FluentAssertions;
@@ -18,7 +18,9 @@ namespace AIEvent.API.Test.Controllers
         {
             _mockEnumService = new Mock<IEnumService>();
 
-            // Setup mock to return actual enum values
+            // Setup mock to return actual enum values for all enums used in the controller
+            _mockEnumService.Setup(x => x.GetEnumValues<BudgetOption>())
+                .Returns(GetActualEnumValues<BudgetOption>());
             _mockEnumService.Setup(x => x.GetEnumValues<EventExperienceLevel>())
                 .Returns(GetActualEnumValues<EventExperienceLevel>());
             _mockEnumService.Setup(x => x.GetEnumValues<EventFrequency>())
@@ -29,6 +31,10 @@ namespace AIEvent.API.Test.Controllers
                 .Returns(GetActualEnumValues<OrganizationType>());
             _mockEnumService.Setup(x => x.GetEnumValues<OrganizerType>())
                 .Returns(GetActualEnumValues<OrganizerType>());
+            _mockEnumService.Setup(x => x.GetEnumValues<ParticipationFrequency>())
+                .Returns(GetActualEnumValues<ParticipationFrequency>());
+            _mockEnumService.Setup(x => x.GetEnumValues<TicketType>())
+                .Returns(GetActualEnumValues<TicketType>());
 
             _enumController = new EnumController(_mockEnumService.Object);
         }
@@ -67,7 +73,6 @@ namespace AIEvent.API.Test.Controllers
             
             var response = result.Value as SuccessResponse<object>;
             response.Should().NotBeNull();
-            response!.Success.Should().BeTrue();
             response.StatusCode.Should().Be(SuccessCodes.Success);
             response.Message.Should().Be("Retrieved successfully");
         }
@@ -86,12 +91,15 @@ namespace AIEvent.API.Test.Controllers
             // Use reflection to check the anonymous object properties
             var data = response.Data;
             var dataType = data!.GetType();
-            
+
+            dataType.GetProperty("BudgetOption").Should().NotBeNull();
             dataType.GetProperty("EventExperienceLevel").Should().NotBeNull();
             dataType.GetProperty("EventFrequency").Should().NotBeNull();
             dataType.GetProperty("EventSize").Should().NotBeNull();
             dataType.GetProperty("OrganizationType").Should().NotBeNull();
             dataType.GetProperty("OrganizerType").Should().NotBeNull();
+            dataType.GetProperty("ParticipationFrequency").Should().NotBeNull();
+            dataType.GetProperty("TicketType").Should().NotBeNull();
         }
 
         [Fact]
@@ -104,15 +112,23 @@ namespace AIEvent.API.Test.Controllers
 
             // Assert
             var dataType = data!.GetType();
+            var budgetOption = dataType.GetProperty("BudgetOption")!.GetValue(data);
             var eventExperienceLevel = dataType.GetProperty("EventExperienceLevel")!.GetValue(data);
             var eventFrequency = dataType.GetProperty("EventFrequency")!.GetValue(data);
             var eventSize = dataType.GetProperty("EventSize")!.GetValue(data);
             var organizationType = dataType.GetProperty("OrganizationType")!.GetValue(data);
+            var organizerType = dataType.GetProperty("OrganizerType")!.GetValue(data);
+            var participationFrequency = dataType.GetProperty("ParticipationFrequency")!.GetValue(data);
+            var ticketType = dataType.GetProperty("TicketType")!.GetValue(data);
 
+            budgetOption.Should().NotBeNull();
             eventExperienceLevel.Should().NotBeNull();
             eventFrequency.Should().NotBeNull();
             eventSize.Should().NotBeNull();
             organizationType.Should().NotBeNull();
+            organizerType.Should().NotBeNull();
+            participationFrequency.Should().NotBeNull();
+            ticketType.Should().NotBeNull();
         }
 
         [Fact]
@@ -209,7 +225,7 @@ namespace AIEvent.API.Test.Controllers
             var dataType = data!.GetType();
             var properties = dataType.GetProperties();
             
-            properties.Should().HaveCount(5); // Should have 5 enum properties
+            properties.Should().HaveCount(8); // Should have 8 enum properties
             
             foreach (var property in properties)
             {

@@ -25,9 +25,7 @@ namespace AIEvent.Application.DTOs.Organizer
         public string? CompanyName { get; set; }
         public string? TaxCode { get; set; }
         public string? CompanyDescription { get; set; }
-
-        public List<OrganizerFieldRequest>? OrganizerFields { get; set; }
-
+        public IFormFile? ImgCompany { get; set; }
         public IFormFile? ImgFrontIdentity { get; set; }
         public IFormFile? ImgBackIdentity { get; set; }
         public IFormFile? ImgBusinessLicense { get; set; }

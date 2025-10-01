@@ -7,6 +7,10 @@ namespace AIEvent.Domain.Identity
     public class AppUser : IdentityUser<Guid>
     {
         public string? FullName { get; set; }
+        public string? Address { get; set; }
+        public string? City { get; set; }
+        public string? Latitude { get; set; }
+        public string? Longitude { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
         public bool IsActive { get; set; } = true;
@@ -18,6 +22,7 @@ namespace AIEvent.Domain.Identity
         public string? InterestedCitiesJson { get; set; }
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
         public OrganizerProfile? OrganizerProfile { get; set; }
-        public ICollection<UserEventField> UserEventFields { get; set; } = new List<UserEventField>();
+        public ICollection<UserAction> UserActions { get; set; } = new List<UserAction>();
+        public ICollection<UserInterest> UserInterests { get; set; } = new List<UserInterest>();
     }
 }

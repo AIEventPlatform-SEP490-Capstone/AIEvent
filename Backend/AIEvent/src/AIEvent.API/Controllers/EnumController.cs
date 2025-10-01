@@ -1,12 +1,12 @@
 ﻿using AIEvent.Application.Constants;
-using AIEvent.Application.DTO.Common;
+using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AIEvent.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/enum")]
     [ApiController]
     public class EnumController : ControllerBase
     {
@@ -21,11 +21,14 @@ namespace AIEvent.API.Controllers
         {
             var result = new
             {
+                BudgetOption = _enumService.GetEnumValues<BudgetOption>(),
                 EventExperienceLevel = _enumService.GetEnumValues<EventExperienceLevel>(),
                 EventFrequency = _enumService.GetEnumValues<EventFrequency>(),
                 EventSize = _enumService.GetEnumValues<EventSize>(),
                 OrganizationType = _enumService.GetEnumValues<OrganizationType>(),
-                OrganizerType = _enumService.GetEnumValues<OrganizerType>()
+                OrganizerType = _enumService.GetEnumValues<OrganizerType>(),
+                ParticipationFrequency = _enumService.GetEnumValues<ParticipationFrequency>(),
+                TicketType = _enumService.GetEnumValues<TicketType>(),
             };
 
             return Ok(SuccessResponse<object>.SuccessResult(

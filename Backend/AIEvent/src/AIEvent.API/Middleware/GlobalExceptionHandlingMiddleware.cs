@@ -1,5 +1,5 @@
 using AIEvent.Application.Constants;
-using AIEvent.Application.DTO.Common;
+using AIEvent.Application.DTOs.Common;
 using System.Net;
 using System.Text.Json;
 

@@ -1,7 +1,7 @@
 using AIEvent.API.Controllers;
 using AIEvent.Application.Constants;
-using AIEvent.Application.DTO.Auth;
-using AIEvent.Application.DTO.Common;
+using AIEvent.Application.DTOs.Auth;
+using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using FluentAssertions;
@@ -50,7 +50,6 @@ namespace AIEvent.API.Test.Controllers
             okResult!.Value.Should().BeOfType<SuccessResponse<AuthResponse>>();
 
             var successResponse = okResult.Value as SuccessResponse<AuthResponse>;
-            successResponse!.Success.Should().BeTrue();
             successResponse.Data.Should().NotBeNull();
             successResponse.Data!.AccessToken.Should().Be("mock-access-token");
             successResponse.Data.RefreshToken.Should().Be("mock-refresh-token");
@@ -84,7 +83,6 @@ namespace AIEvent.API.Test.Controllers
             badRequestResult!.Value.Should().BeOfType<ErrorResponse>();
 
             var errorResponseResult = badRequestResult.Value as ErrorResponse;
-            errorResponseResult!.Success.Should().BeFalse();
             errorResponseResult.Message.Should().Be("Invalid email or password");
             errorResponseResult.StatusCode.Should().Be(ErrorCodes.Unauthorized);
 
@@ -122,7 +120,6 @@ namespace AIEvent.API.Test.Controllers
             okResult!.Value.Should().BeOfType<SuccessResponse<AuthResponse>>();
 
             var successResponse = okResult.Value as SuccessResponse<AuthResponse>;
-            successResponse!.Success.Should().BeTrue();
             successResponse.StatusCode.Should().Be(SuccessCodes.Created);
             successResponse.Message.Should().Be("Registration successful");
             successResponse.Data.Should().NotBeNull();
@@ -158,7 +155,6 @@ namespace AIEvent.API.Test.Controllers
             badRequestResult!.Value.Should().BeOfType<ErrorResponse>();
 
             var errorResponseResult = badRequestResult.Value as ErrorResponse;
-            errorResponseResult!.Success.Should().BeFalse();
             errorResponseResult.Message.Should().Be("Email address is already registered");
 
             _mockAuthService.Verify(x => x.RegisterAsync(registerRequest), Times.Once);
@@ -192,7 +188,6 @@ namespace AIEvent.API.Test.Controllers
             okResult!.Value.Should().BeOfType<SuccessResponse<AuthResponse>>();
 
             var successResponse = okResult.Value as SuccessResponse<AuthResponse>;
-            successResponse!.Success.Should().BeTrue();
             successResponse.Message.Should().Be("Token refreshed successfully");
             successResponse.Data.Should().NotBeNull();
 
@@ -224,7 +219,6 @@ namespace AIEvent.API.Test.Controllers
             badRequestResult!.Value.Should().BeOfType<ErrorResponse>();
 
             var errorResponseResult = badRequestResult.Value as ErrorResponse;
-            errorResponseResult!.Success.Should().BeFalse();
             errorResponseResult.Message.Should().Be("Invalid or expired refresh token");
 
             _mockAuthService.Verify(x => x.RefreshTokenAsync(refreshTokenRequest.RefreshToken), Times.Once);
@@ -251,7 +245,6 @@ namespace AIEvent.API.Test.Controllers
             okResult!.Value.Should().BeOfType<SuccessResponse<object>>();
 
             var successResponse = okResult.Value as SuccessResponse<object>;
-            successResponse!.Success.Should().BeTrue();
             successResponse.Message.Should().Be("Token revoked successfully");
 
             _mockAuthService.Verify(x => x.RevokeRefreshTokenAsync(refreshTokenRequest.RefreshToken), Times.Once);
@@ -282,7 +275,6 @@ namespace AIEvent.API.Test.Controllers
             badRequestResult!.Value.Should().BeOfType<ErrorResponse>();
 
             var errorResponseResult = badRequestResult.Value as ErrorResponse;
-            errorResponseResult!.Success.Should().BeFalse();
             errorResponseResult.Message.Should().Be("Invalid refresh token");
 
             _mockAuthService.Verify(x => x.RevokeRefreshTokenAsync(refreshTokenRequest.RefreshToken), Times.Once);

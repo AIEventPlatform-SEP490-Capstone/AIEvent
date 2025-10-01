@@ -1,6 +1,6 @@
 ﻿using AIEvent.API.Extensions;
 using AIEvent.Application.Constants;
-using AIEvent.Application.DTO.Common;
+using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Organizer;
 using AIEvent.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AIEvent.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/organizer")]
     [ApiController]
     public class OrganizerController : ControllerBase
     {

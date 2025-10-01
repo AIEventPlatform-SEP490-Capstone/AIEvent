@@ -1,4 +1,4 @@
-using AIEvent.Application.DTO.Common;
+using AIEvent.Application.DTOs.Common;
 
 namespace AIEvent.Application.Helpers
 {

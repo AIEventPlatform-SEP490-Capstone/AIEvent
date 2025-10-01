@@ -1,4 +1,4 @@
-using AIEvent.Application.DTO.Role;
+using AIEvent.Application.DTOs.Role;
 using AIEvent.Application.Helpers;
 
 namespace AIEvent.Application.Services.Interfaces

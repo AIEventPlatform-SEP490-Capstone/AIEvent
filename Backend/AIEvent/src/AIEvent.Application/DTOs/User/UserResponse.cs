@@ -1,4 +1,4 @@
-﻿namespace AIEvent.Application.DTO.User
+﻿namespace AIEvent.Application.DTOs.User
 {
     public class UserResponse
     {

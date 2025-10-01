@@ -1,9 +1,9 @@
-using AIEvent.Application.DTOs.Auth;
 using AIEvent.Application.DTOs.Common;
+using AIEvent.Application.DTOs.User;
 using AIEvent.Domain.Enums;
 using System.ComponentModel.DataAnnotations;
 
-namespace AIEvent.Application.DTO.Auth
+namespace AIEvent.Application.DTOs.Auth
 {
     public class RegisterRequest
     {
@@ -22,7 +22,7 @@ namespace AIEvent.Application.DTO.Auth
 
         [Phone(ErrorMessage = "Invalid phone number format")]
         public string? PhoneNumber { get; set; }
-        public List<UserEventFieldRequest>? UserEventFields { get; set; }
+        public List<UserInterestRequest>? UserInterests { get; set; }
         public List<InterestedCities>? InterestedCities { get; set; }
         public ParticipationFrequency ParticipationFrequency { get; set; }
         public BudgetOption BudgetOption { get; set; }

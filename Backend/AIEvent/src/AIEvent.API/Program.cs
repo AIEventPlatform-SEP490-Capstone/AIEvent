@@ -1,8 +1,9 @@
 using AIEvent.API.Extensions;
 using AIEvent.API.Middleware;
 using AIEvent.Application.Constants;
-using AIEvent.Application.DTO.Common;
+using AIEvent.Application.DTOs.Common;
 using Microsoft.AspNetCore.Mvc;
+using StackExchange.Redis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -44,8 +45,9 @@ namespace AIEvent.API
                                 };
                             });
 
-            builder.Services.AddApplicationServices();
-            builder.Services.AddInfrastructureServices(builder.Configuration);
+            builder.Services.AddApplicationServices(builder.Configuration)
+                            .AddInfrastructureServices(builder.Configuration);
+
             builder.Services.AddJwtAuthentication(builder.Configuration);
 
             builder.Services.AddCustomCors(builder.Configuration);

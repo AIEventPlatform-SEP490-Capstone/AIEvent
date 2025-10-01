@@ -1,7 +1,7 @@
 using AIEvent.API.Controllers;
 using AIEvent.Application.Constants;
-using AIEvent.Application.DTO.Common;
-using AIEvent.Application.DTO.User;
+using AIEvent.Application.DTOs.Common;
+using AIEvent.Application.DTOs.User;
 using AIEvent.Application.DTOs.Organizer;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
@@ -24,7 +24,7 @@ namespace AIEvent.API.Test.Controllers
         {
             _mockOrganizerService = new Mock<IOrganizerService>();
             _organizerController = new OrganizerController(_mockOrganizerService.Object);
-            
+
             // Setup user context for authorization tests
             SetupUserContext();
         }
@@ -38,7 +38,7 @@ namespace AIEvent.API.Test.Controllers
             };
             var identity = new ClaimsIdentity(claims, "Test");
             var principal = new ClaimsPrincipal(identity);
-            
+
             _organizerController.ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext
@@ -78,7 +78,7 @@ namespace AIEvent.API.Test.Controllers
             // Assert
             okResult.Should().NotBeNull();
             okResult!.Value.Should().BeOfType<SuccessResponse<List<OrganizerResponse>>>();
-            
+
             var response = okResult.Value as SuccessResponse<List<OrganizerResponse>>;
             response.Should().NotBeNull();
             response!.Success.Should().BeTrue();
@@ -346,13 +346,8 @@ namespace AIEvent.API.Test.Controllers
                 ContactName = "Test Organizer",
                 ContactEmail = "test@example.com",
                 ContactPhone = "0123456789",
-                Address = "123 Test St, Test City",
-                OrganizerFields = new List<OrganizerFieldRequest>
-                {
-                    new OrganizerFieldRequest { OrganizerFieldId = Guid.NewGuid().ToString() },
-                    new OrganizerFieldRequest { OrganizerFieldId = Guid.NewGuid().ToString() },
-                    new OrganizerFieldRequest { OrganizerFieldId = Guid.NewGuid().ToString() }
-                }
+                Address = "123 Test St, Test City"
+                // Remove OrganizerFields as it doesn't exist in the current DTO
             };
         }
     }

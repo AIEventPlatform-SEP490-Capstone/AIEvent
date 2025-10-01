@@ -1,5 +1,5 @@
 ﻿using AIEvent.Application.Constants;
-using AIEvent.Application.DTO.Common;
+using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Organizer;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
@@ -62,6 +62,10 @@ namespace AIEvent.Application.Services.Implements
                     ? _cloudinaryService.UploadImageAsync(request.ImgBackIdentity)
                     : Task.FromResult<string?>(null));
 
+                uploadTasks.Add(request.ImgCompany != null
+                    ? _cloudinaryService.UploadImageAsync(request.ImgCompany)
+                    : Task.FromResult<string?>(null));
+
                 uploadTasks.Add(request.ImgFrontIdentity != null
                     ? _cloudinaryService.UploadImageAsync(request.ImgFrontIdentity)
                     : Task.FromResult<string?>(null));
@@ -72,8 +76,9 @@ namespace AIEvent.Application.Services.Implements
 
                 var results = await Task.WhenAll(uploadTasks);
                 organizer.ImgBackIdentity = results[0];
-                organizer.ImgFrontIdentity = results[1];
-                organizer.ImgBusinessLicense = results[2];
+                organizer.ImgCompany = results[1];
+                organizer.ImgFrontIdentity = results[2];
+                organizer.ImgBusinessLicense = results[3];
 
                 organizer.UserId = userId;
                 await _unitOfWork.OrganizerProfileRepository.AddAsync(organizer);
@@ -86,14 +91,12 @@ namespace AIEvent.Application.Services.Implements
         {
             var organizers = await _unitOfWork.OrganizerProfileRepository
                 .Query()
-                .Include(o => o.OrganizerFieldAssignments)
-                    .ThenInclude(ofa => ofa.EventField)
                 .Include(o => o.User)
-                .ProjectTo<OrganizerResponse>(_mapper.ConfigurationProvider)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .ProjectTo<OrganizerResponse>(_mapper.ConfigurationProvider)
                 .ToListAsync();
-            if(organizers == null)
+            if (organizers == null)
                 return ErrorResponse.FailureResult("Organizer code already exists.", ErrorCodes.InvalidInput);
 
             return Result<List<OrganizerResponse>>.Success(organizers);
@@ -104,8 +107,6 @@ namespace AIEvent.Application.Services.Implements
             var organizers = await _unitOfWork.OrganizerProfileRepository
                 .Query()
                 .AsNoTracking()
-                .Include(o => o.OrganizerFieldAssignments)
-                    .ThenInclude(ofa => ofa.EventField)
                 .Include(o => o.User)
                 .ProjectTo<OrganizerResponse>(_mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(o => o.OrganizerId == Guid.Parse(id));

@@ -13,5 +13,15 @@ namespace AIEvent.API.Extensions
             }
             return guid;
         }
+
+        public static Guid GetRequiredOrganizerId(this ClaimsPrincipal principal)
+        {
+            var organizerId = principal.FindFirst("organizer")?.Value;
+            if (string.IsNullOrEmpty(organizerId) || !Guid.TryParse(organizerId, out var guid))
+            {
+                throw new UnauthorizedAccessException("Invalid Organizer ID in token");
+            }
+            return guid;
+        }
     }
 }

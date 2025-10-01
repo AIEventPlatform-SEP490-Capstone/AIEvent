@@ -24,13 +24,11 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<OrganizerProfile> OrganizerProfiles { get; set; }
         public DbSet<Event> Events { get; set; }
         public DbSet<EventCategory> EventCategories { get; set; }
+        public DbSet<TicketDetail> TicketDetails { get; set; }
         public DbSet<Tag> Tags { get; set; }
         public DbSet<EventTag> EventTags { get; set; }
-        public DbSet<Venue> Venues { get; set; }
-        public DbSet<EventField> EventFields { get; set; }
-        public DbSet<UserEventField> UserEventFields { get; set; }
-        public DbSet<EventFieldAssignment> EventFieldAssignments { get; set; }
-        public DbSet<OrganizerFieldAssignment> OrganizerFieldAssignments { get; set; }
+        public DbSet<Interest> Intserest { get; set; }
+        public DbSet<UserInterest> UserInterests { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -94,6 +92,7 @@ namespace AIEvent.Infrastructure.Context
                 entity.Property(e => e.ExperienceDescription).HasMaxLength(2000);
                 entity.Property(e => e.IdentityNumber).HasMaxLength(20);
                 entity.Property(e => e.ImgFrontIdentity).HasMaxLength(500);
+                entity.Property(e => e.ImgCompany).HasMaxLength(500);
                 entity.Property(e => e.ImgBackIdentity).HasMaxLength(500);
                 entity.Property(e => e.ImgBusinessLicense).HasMaxLength(500);
                 entity.Property(e => e.ApproveBy).HasMaxLength(100);
@@ -115,7 +114,8 @@ namespace AIEvent.Infrastructure.Context
             builder.Entity<Event>(entity =>
             {
                 // String properties with appropriate lengths
-                entity.Property(e => e.Title).HasMaxLength(200).IsRequired();
+                entity.Property(e => e.Title).HasMaxLength(500).IsRequired();
+                entity.Property(t => t.TotalTickets).IsRequired();
 
                 // Relationships
                 entity.HasOne(e => e.OrganizerProfile)
@@ -123,23 +123,14 @@ namespace AIEvent.Infrastructure.Context
                     .HasForeignKey(e => e.OrganizerProfileId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasOne(e => e.Venue)
-                    .WithMany(v => v.Events)
-                    .HasForeignKey(e => e.VenueId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
                 entity.HasOne(e => e.EventCategory)
-                    .WithMany(c => c.Events)
-                    .HasForeignKey(e => e.CategoryId)
+                    .WithMany(o => o.Events)
+                    .HasForeignKey(e => e.EventCategoryId)
                     .OnDelete(DeleteBehavior.Restrict);
 
                 // Performance indexes
                 entity.HasIndex(e => e.OrganizerProfileId).HasDatabaseName("IX_Event_OrganizerProfileId");
-                entity.HasIndex(e => e.VenueId).HasDatabaseName("IX_Event_VenueId");
-                entity.HasIndex(e => e.CategoryId).HasDatabaseName("IX_Event_CategoryId");
                 entity.HasIndex(e => new { e.OrganizerProfileId, e.CreatedAt }).HasDatabaseName("IX_Event_OrganizerProfileId_CreatedAt");
-                entity.HasIndex(e => new { e.CategoryId, e.IsDeleted }).HasDatabaseName("IX_Event_CategoryId_IsDeleted");
-                entity.HasIndex(e => new { e.VenueId, e.CreatedAt }).HasDatabaseName("IX_Event_VenueId_CreatedAt");
                 entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_Event_IsDeleted");
                 entity.HasIndex(e => e.Title).HasDatabaseName("IX_Event_Title");
             });
@@ -158,27 +149,22 @@ namespace AIEvent.Infrastructure.Context
                 .WithMany(t => t.EventTags)
                 .HasForeignKey(et => et.TagId);
 
-            // ----------------- EventField -----------------
-            builder.Entity<EventField>(entity =>
-            {
-                entity.Property(e => e.NameEventField)
-                      .HasMaxLength(100)
-                      .IsRequired();
-
-                entity.HasIndex(e => e.NameEventField).HasDatabaseName("IX_EventField_NameEventField");
-                entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_EventField_IsDeleted");
-            });
-
-            // ----------------- Venue -----------------
-            builder.Entity<Venue>(entity =>
-            {
-                entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_Venue_IsDeleted");
-            });
-
             // ----------------- EventCategory -----------------
             builder.Entity<EventCategory>(entity =>
             {
+                entity.HasIndex(e => e.CategoryName).HasDatabaseName("IX_EventCategory_CategoryName");
                 entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_EventCategory_IsDeleted");
+            });
+
+            // ----------------- Interest -----------------
+            builder.Entity<Interest>(entity =>
+            {
+                entity.Property(e => e.Name)
+                      .HasMaxLength(100)
+                      .IsRequired();
+
+                entity.HasIndex(e => e.Name).HasDatabaseName("IX_EventField_NameEventField");
+                entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_EventField_IsDeleted");
             });
 
             // ----------------- Tag -----------------
@@ -187,53 +173,59 @@ namespace AIEvent.Infrastructure.Context
                 entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_Tag_IsDeleted");
             });
 
-            // ----------------- UserEventField -----------------
-            builder.Entity<UserEventField>()
-                .HasKey(ue => new { ue.UserId, ue.EventFieldId });
+            // ----------------- UserInterest -----------------
+            builder.Entity<UserInterest>()
+                .HasKey(ue => new { ue.UserId, ue.InterestId });
 
-            builder.Entity<UserEventField>()
+            builder.Entity<UserInterest>()
                 .HasOne(ue => ue.User)
-                .WithMany(u => u.UserEventFields)
+                .WithMany(u => u.UserInterests)
                 .HasForeignKey(ue => ue.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            builder.Entity<UserEventField>()
-                .HasOne(ue => ue.EventField)
-                .WithMany(f => f.UserEventFields)
-                .HasForeignKey(ue => ue.EventFieldId)
+            builder.Entity<UserInterest>()
+                .HasOne(ue => ue.Interest)
+                .WithMany(f => f.UserInterests)
+                .HasForeignKey(ue => ue.InterestId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // ----------------- EventFieldAssignment (Event - Field) -----------------
-            builder.Entity<EventFieldAssignment>()
-                .HasKey(ea => new { ea.EventId, ea.EventFieldId });
+            // ----------------- TicketDetail -----------------
+            builder.Entity<TicketDetail>(entity =>
+            {
+                entity.HasOne(td => td.Event)
+                      .WithMany(e => e.TicketDetails)
+                      .HasForeignKey(td => td.EventId)
+                      .OnDelete(DeleteBehavior.Cascade);
 
-            builder.Entity<EventFieldAssignment>()
-                .HasOne(ea => ea.Event)
-                .WithMany(e => e.EventFieldAssignments)
-                .HasForeignKey(ea => ea.EventId)
-                .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(t => t.TicketQuantity).IsRequired();
 
-            builder.Entity<EventFieldAssignment>()
-                .HasOne(ea => ea.EventField)
-                .WithMany(f => f.EventFieldAssignments)
-                .HasForeignKey(ea => ea.EventFieldId)
-                .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(e => e.TicketName).HasMaxLength(250).IsRequired();
+                entity.Property(td => td.TicketPrice).HasPrecision(18, 2);
 
-            // ----------------- OrganizerFieldAssignment (Organizer - Field) -----------------
-            builder.Entity<OrganizerFieldAssignment>()
-                .HasKey(ofa => new { ofa.OrganizerProfileId, ofa.EventFieldId });
+                entity.HasIndex(td => new { td.EventId, td.TicketName }).IsUnique();
+                entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_TicketDetail_IsDeleted");
+            });
 
-            builder.Entity<OrganizerFieldAssignment>()
-                .HasOne(ofa => ofa.OrganizerProfile)
-                .WithMany(o => o.OrganizerFieldAssignments)
-                .HasForeignKey(ofa => ofa.OrganizerProfileId)
-                .OnDelete(DeleteBehavior.Cascade);
+            // ----------------- UserAction -----------------
+            builder.Entity<UserAction>(entity =>
+            {
+                entity.HasOne(td => td.AppUser)
+                      .WithMany(e => e.UserActions)
+                      .HasForeignKey(td => td.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
 
-            builder.Entity<OrganizerFieldAssignment>()
-                .HasOne(ofa => ofa.EventField)
-                .WithMany(f => f.OrganizerFieldAssignments)
-                .HasForeignKey(ofa => ofa.EventFieldId)
-                .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(td => new { td.UserId, td.ActionType }).HasDatabaseName("IX_UserActions_User_ActionType");
+            });
+
+            // ----------------- UserActionFilter -----------------
+            builder.Entity<UserActionFilter>(entity =>
+            {
+                entity.HasOne(td => td.UserAction)
+                      .WithMany(e => e.Filters)
+                      .HasForeignKey(td => td.UserActionId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
 
             builder.Seed();
         }

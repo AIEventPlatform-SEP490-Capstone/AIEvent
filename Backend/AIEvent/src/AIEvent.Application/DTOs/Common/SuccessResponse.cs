@@ -1,7 +1,7 @@
 ﻿using AIEvent.Application.Constants;
 using System.Text.Json.Serialization;
 
-namespace AIEvent.Application.DTO.Common
+namespace AIEvent.Application.DTOs.Common
 {
     public class SuccessResponse<T> : BaseResponse
     {
@@ -12,7 +12,6 @@ namespace AIEvent.Application.DTO.Common
         {
             return new SuccessResponse<T>
             {
-                Success = true,
                 StatusCode = statusCode,
                 Message = message,
                 Data = data

@@ -1,7 +1,7 @@
 using AIEvent.API.Extensions;
 using AIEvent.Application.Constants;
-using AIEvent.Application.DTO.Common;
-using AIEvent.Application.DTO.User;
+using AIEvent.Application.DTOs.Common;
+using AIEvent.Application.DTOs.User;
 using AIEvent.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AIEvent.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/user")]
     [Authorize]
     public class UserController : ControllerBase
     {
