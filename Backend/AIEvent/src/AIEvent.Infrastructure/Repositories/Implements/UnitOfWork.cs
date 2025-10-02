@@ -22,6 +22,8 @@ namespace AIEvent.Infrastructure.Implements
         public IGenericRepository<Interest> InterestRepository => GetRepository<Interest>();
         public IGenericRepository<UserInterest> UserInterestRepository => GetRepository<UserInterest>();
         public IGenericRepository<TicketDetail> TicketDetailRepository => GetRepository<TicketDetail>();
+        public IGenericRepository<RefundRule> RefundRuleRepository => GetRepository<RefundRule>();
+        public IGenericRepository<RefundRuleDetail> RefundRuleDetailRepository => GetRepository<RefundRuleDetail>();
 
         public UnitOfWork(DatabaseContext context)
         {

@@ -3,7 +3,6 @@ using AIEvent.Domain.Entities;
 using AIEvent.Domain.Identity;
 using AIEvent.Infrastructure.Data;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -27,15 +26,16 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<TicketDetail> TicketDetails { get; set; }
         public DbSet<Tag> Tags { get; set; }
         public DbSet<EventTag> EventTags { get; set; }
-        public DbSet<Interest> Intserest { get; set; }
+        public DbSet<Interest> Interests { get; set; }
+        public DbSet<UserAction> UserActions { get; set; }
+        public DbSet<UserActionFilter> UserActionFilters { get; set; }
         public DbSet<UserInterest> UserInterests { get; set; }
+        public DbSet<RefundRule> RefundRules { get; set; }
+        public DbSet<RefundRuleDetail> RefundRuleDetails { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
-
-            builder.Ignore<IdentityUserClaim<Guid>>();
-            builder.Ignore<IdentityRoleClaim<Guid>>();
             
             // ----------------- Identity -----------------
             builder.Entity<AppUser>(entity =>
@@ -113,11 +113,9 @@ namespace AIEvent.Infrastructure.Context
             // ----------------- Event -----------------
             builder.Entity<Event>(entity =>
             {
-                // String properties with appropriate lengths
                 entity.Property(e => e.Title).HasMaxLength(500).IsRequired();
                 entity.Property(t => t.TotalTickets).IsRequired();
 
-                // Relationships
                 entity.HasOne(e => e.OrganizerProfile)
                     .WithMany(o => o.Events)
                     .HasForeignKey(e => e.OrganizerProfileId)
@@ -128,7 +126,6 @@ namespace AIEvent.Infrastructure.Context
                     .HasForeignKey(e => e.EventCategoryId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // Performance indexes
                 entity.HasIndex(e => e.OrganizerProfileId).HasDatabaseName("IX_Event_OrganizerProfileId");
                 entity.HasIndex(e => new { e.OrganizerProfileId, e.CreatedAt }).HasDatabaseName("IX_Event_OrganizerProfileId_CreatedAt");
                 entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_Event_IsDeleted");
@@ -203,6 +200,7 @@ namespace AIEvent.Infrastructure.Context
                 entity.Property(td => td.TicketPrice).HasPrecision(18, 2);
 
                 entity.HasIndex(td => new { td.EventId, td.TicketName }).IsUnique();
+                entity.HasIndex(e => e.RefundRuleId).HasDatabaseName("IX_TicketDetail_RefundRuleId");
                 entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_TicketDetail_IsDeleted");
             });
 
@@ -226,6 +224,25 @@ namespace AIEvent.Infrastructure.Context
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
+            // ----------------- RefundRuleDetail -----------------
+            builder.Entity<RefundRule>(entity =>
+            {
+                entity.HasIndex(rd => rd.IsSystem).HasDatabaseName("IX_RefundRule_IsSystem");
+
+            });
+
+            // ----------------- RefundRuleDetail -----------------
+            builder.Entity<RefundRuleDetail>(entity =>
+            {
+                entity.HasOne(d => d.RefundRule)
+                      .WithMany(r => r.RefundRuleDetails)
+                      .HasForeignKey(d => d.RefundRuleId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.Property(d => d.RefundPercent).HasPrecision(5, 2);
+                entity.HasIndex(rd => new { rd.RefundRuleId, rd.MinDaysBeforeEvent, rd.MaxDaysBeforeEvent}).HasDatabaseName("IX_RefundRuleDetail_Range");
+
+            });
 
             builder.Seed();
         }

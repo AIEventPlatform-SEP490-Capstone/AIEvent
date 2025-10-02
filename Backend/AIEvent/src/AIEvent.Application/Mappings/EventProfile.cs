@@ -5,6 +5,7 @@ using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.DTOs.Ticket;
 using AIEvent.Domain.Entities;
 using AutoMapper;
+using Microsoft.IdentityModel.Tokens;
 using System.Text.Json;
 
 namespace AIEvent.Application.Mappings
@@ -32,7 +33,10 @@ namespace AIEvent.Application.Mappings
                                     TicketPrice = td.TicketPrice,
                                     TicketQuantity = td.TicketQuantity,
                                     TicketDescription = td.TicketDescription,
-                                    RemainingQuantity = td.TicketQuantity
+                                    RemainingQuantity = td.TicketQuantity,
+                                    RefundRuleId = !string.IsNullOrEmpty(td.RuleRefundRequestId) 
+                                                    ? Guid.Parse(td.RuleRefundRequestId) 
+                                                    : null
                                 }).ToList()
                                 : new List<TicketDetail>()));
 

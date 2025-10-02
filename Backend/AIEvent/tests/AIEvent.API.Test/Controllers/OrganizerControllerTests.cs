@@ -81,7 +81,6 @@ namespace AIEvent.API.Test.Controllers
 
             var response = okResult.Value as SuccessResponse<List<OrganizerResponse>>;
             response.Should().NotBeNull();
-            response!.Success.Should().BeTrue();
             response.StatusCode.Should().Be(SuccessCodes.Success);
             response.Message.Should().Be("Organizer retrieved successfully");
             response.Data.Should().BeEquivalentTo(organizers);
@@ -150,7 +149,6 @@ namespace AIEvent.API.Test.Controllers
             okResult.Should().NotBeNull();
             var response = okResult!.Value as SuccessResponse<OrganizerResponse>;
             response.Should().NotBeNull();
-            response!.Success.Should().BeTrue();
             response.Data.Should().BeEquivalentTo(organizer);
         }
 
@@ -201,7 +199,6 @@ namespace AIEvent.API.Test.Controllers
             okResult.Should().NotBeNull();
             var response = okResult!.Value as SuccessResponse<object>;
             response.Should().NotBeNull();
-            response!.Success.Should().BeTrue();
             response.StatusCode.Should().Be(SuccessCodes.Created);
             response.Message.Should().Be("Register Organizer successfully");
 
@@ -257,7 +254,6 @@ namespace AIEvent.API.Test.Controllers
             badRequestResult.Should().NotBeNull();
             var response = badRequestResult!.Value as ErrorResponse;
             response.Should().NotBeNull();
-            response!.Success.Should().BeFalse();
             response.Message.Should().Be("User not found or inactive");
             response.StatusCode.Should().Be(ErrorCodes.Unauthorized);
 

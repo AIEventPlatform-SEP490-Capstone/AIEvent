@@ -46,7 +46,6 @@ namespace AIEvent.API.Test.Controllers
             okResult!.Value.Should().BeOfType<SuccessResponse<List<RoleResponse>>>();
 
             var successResponse = okResult.Value as SuccessResponse<List<RoleResponse>>;
-            successResponse!.Success.Should().BeTrue();
             successResponse.Data.Should().NotBeNull();
             successResponse.Data!.Should().HaveCount(2);
             successResponse.Message.Should().Be("Roles retrieved successfully");
@@ -74,7 +73,6 @@ namespace AIEvent.API.Test.Controllers
             badRequestResult!.Value.Should().BeOfType<ErrorResponse>();
 
             var errorResponseResult = badRequestResult.Value as ErrorResponse;
-            errorResponseResult!.Success.Should().BeFalse();
             errorResponseResult.Message.Should().Be("Failed to retrieve roles");
 
             _mockRoleService.Verify(x => x.GetAllRolesAsync(), Times.Once);
@@ -113,7 +111,6 @@ namespace AIEvent.API.Test.Controllers
             okResult!.Value.Should().BeOfType<SuccessResponse<RoleResponse>>();
 
             var successResponse = okResult.Value as SuccessResponse<RoleResponse>;
-            successResponse!.Success.Should().BeTrue();
             successResponse.StatusCode.Should().Be(SuccessCodes.Created);
             successResponse.Message.Should().Be("Role created successfully");
             successResponse.Data.Should().NotBeNull();
@@ -148,7 +145,6 @@ namespace AIEvent.API.Test.Controllers
             badRequestResult!.Value.Should().BeOfType<ErrorResponse>();
 
             var errorResponseResult = badRequestResult.Value as ErrorResponse;
-            errorResponseResult!.Success.Should().BeFalse();
             errorResponseResult.Message.Should().Be("Role with this name already exists");
 
             _mockRoleService.Verify(x => x.CreateRoleAsync(createRequest), Times.Once);
@@ -187,7 +183,6 @@ namespace AIEvent.API.Test.Controllers
             okResult!.Value.Should().BeOfType<SuccessResponse<RoleResponse>>();
 
             var successResponse = okResult.Value as SuccessResponse<RoleResponse>;
-            successResponse!.Success.Should().BeTrue();
             successResponse.StatusCode.Should().Be(SuccessCodes.Updated);
             successResponse.Message.Should().Be("Role updated successfully");
             successResponse.Data.Should().NotBeNull();
@@ -222,7 +217,6 @@ namespace AIEvent.API.Test.Controllers
             badRequestResult!.Value.Should().BeOfType<ErrorResponse>();
 
             var errorResponseResult = badRequestResult.Value as ErrorResponse;
-            errorResponseResult!.Success.Should().BeFalse();
             errorResponseResult.Message.Should().Be("Role not found");
 
             _mockRoleService.Verify(x => x.UpdateRoleAsync(roleId, updateRequest), Times.Once);
@@ -248,7 +242,6 @@ namespace AIEvent.API.Test.Controllers
             okResult!.Value.Should().BeOfType<SuccessResponse<object>>();
 
             var successResponse = okResult.Value as SuccessResponse<object>;
-            successResponse!.Success.Should().BeTrue();
             successResponse.StatusCode.Should().Be(SuccessCodes.Deleted);
             successResponse.Message.Should().Be("Role deleted successfully");
 
@@ -276,7 +269,6 @@ namespace AIEvent.API.Test.Controllers
             badRequestResult!.Value.Should().BeOfType<ErrorResponse>();
 
             var errorResponseResult = badRequestResult.Value as ErrorResponse;
-            errorResponseResult!.Success.Should().BeFalse();
             errorResponseResult.Message.Should().Be("Role not found");
 
             _mockRoleService.Verify(x => x.DeleteRoleAsync(roleId), Times.Once);

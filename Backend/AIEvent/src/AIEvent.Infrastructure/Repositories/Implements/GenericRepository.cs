@@ -37,7 +37,7 @@ namespace AIEvent.Infrastructure.Implements
         {
             if (asNoTracking)
             {
-                return await _dbSet.AsNoTracking().FirstOrDefaultAsync(e => EF.Property<object>(e, "Id").Equals(id));
+                return await _dbSet.AsNoTracking().FirstOrDefaultAsync(e => EF.Property<object>(e, "Id") == id);
             }
             return await _dbSet.FindAsync(id);
         }

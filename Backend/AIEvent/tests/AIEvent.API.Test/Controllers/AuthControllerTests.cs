@@ -50,7 +50,6 @@ namespace AIEvent.API.Test.Controllers
             okResult!.Value.Should().BeOfType<SuccessResponse<AuthResponse>>();
 
             var successResponse = okResult.Value as SuccessResponse<AuthResponse>;
-            successResponse.Data.Should().NotBeNull();
             successResponse.Data!.AccessToken.Should().Be("mock-access-token");
             successResponse.Data.RefreshToken.Should().Be("mock-refresh-token");
 

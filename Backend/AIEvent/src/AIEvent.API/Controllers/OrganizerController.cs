@@ -23,7 +23,7 @@ namespace AIEvent.API.Controllers
         public async Task<ActionResult<SuccessResponse<List<OrganizerResponse>>>> GetOrganizer([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             var result = await _organizerService.GetOrganizerAsync(page, pageSize);
-            if (result.IsFailure)
+            if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
@@ -39,7 +39,7 @@ namespace AIEvent.API.Controllers
         public async Task<ActionResult<SuccessResponse<OrganizerResponse>>> GetOrganizerById(string id)
         {
             var result = await _organizerService.GetOrganizerByIdAsync(id);
-            if (result.IsFailure)
+            if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
@@ -56,7 +56,7 @@ namespace AIEvent.API.Controllers
         {
             var userId = User.GetRequiredUserId();
             var result = await _organizerService.RegisterOrganizerAsync(userId, request);
-            if (result.IsFailure)
+            if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
