@@ -8,7 +8,7 @@ namespace AIEvent.Application.Services.Interfaces
     {
         Task<Result> CreateRuleAsync(Guid userId, CreateRuleRefundRequest request);
         Task<Result> DeleteRuleAsync(Guid userId, string ruleId);
-        Task<Result> DeleteRuleDetailAsync(Guid userId, string ruleDetailId);
+        Task<Result> UpdateRuleAsync(Guid userId, string RuleRefundId, UpdateRuleRefundRequest request);
         Task<Result<BasePaginated<RuleRefundResponse>>> GetRuleRefundAsync(Guid userId, int pageNumber, int pageSize);
     }
 }

@@ -35,7 +35,6 @@ namespace AIEvent.API.Controllers
                 "Create rule successfully"));
         }
 
-
         [HttpGet]
         [Authorize]
         public async Task<ActionResult<SuccessResponse<BasePaginated<RuleRefundResponse>>>> GetRule([FromQuery] int pageNumber = 1,
@@ -52,6 +51,40 @@ namespace AIEvent.API.Controllers
                 result.Value!,
                 SuccessCodes.Success,
                 "Rule retrieved successfully"));
+        }
+
+        [HttpPut("{id}")]
+        public async Task<ActionResult<SuccessResponse<object>>> UpdateRule(string id,UpdateRuleRefundRequest request)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _ruleRefundService.UpdateRuleAsync(userId, id, request);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new {},
+                SuccessCodes.Updated,
+                "Rule updated successfully"));
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<ActionResult<SuccessResponse<object>>> DeleteRule(string id)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _ruleRefundService.DeleteRuleAsync(userId, id);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Deleted,
+                "Rule deleted successfully"));
         }
     }
 }

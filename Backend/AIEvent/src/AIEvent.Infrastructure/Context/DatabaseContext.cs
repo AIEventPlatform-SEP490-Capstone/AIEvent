@@ -66,8 +66,7 @@ namespace AIEvent.Infrastructure.Context
 
                 entity.HasOne(e => e.User)
                       .WithMany(u => u.RefreshTokens)
-                      .HasForeignKey(e => e.UserId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                      .HasForeignKey(e => e.UserId);
 
                 entity.HasIndex(e => e.Token).IsUnique().HasDatabaseName("IX_RefreshToken_Token");
                 entity.HasIndex(e => new { e.UserId, e.IsRevoked }).HasDatabaseName("IX_RefreshToken_UserId_IsRevoked");
@@ -191,8 +190,7 @@ namespace AIEvent.Infrastructure.Context
             {
                 entity.HasOne(td => td.Event)
                       .WithMany(e => e.TicketDetails)
-                      .HasForeignKey(td => td.EventId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                      .HasForeignKey(td => td.EventId);
 
                 entity.Property(t => t.TicketQuantity).IsRequired();
 
@@ -209,8 +207,7 @@ namespace AIEvent.Infrastructure.Context
             {
                 entity.HasOne(td => td.AppUser)
                       .WithMany(e => e.UserActions)
-                      .HasForeignKey(td => td.UserId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                      .HasForeignKey(td => td.UserId);
 
                 entity.HasIndex(td => new { td.UserId, td.ActionType }).HasDatabaseName("IX_UserActions_User_ActionType");
             });
@@ -236,8 +233,7 @@ namespace AIEvent.Infrastructure.Context
             {
                 entity.HasOne(d => d.RefundRule)
                       .WithMany(r => r.RefundRuleDetails)
-                      .HasForeignKey(d => d.RefundRuleId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                      .HasForeignKey(d => d.RefundRuleId);
 
                 entity.Property(d => d.RefundPercent).HasPrecision(5, 2);
                 entity.HasIndex(rd => new { rd.RefundRuleId, rd.MinDaysBeforeEvent, rd.MaxDaysBeforeEvent}).HasDatabaseName("IX_RefundRuleDetail_Range");
