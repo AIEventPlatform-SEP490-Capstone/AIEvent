@@ -17,6 +17,7 @@ namespace AIEvent.Infrastructure.Implements
         public IGenericRepository<RefreshToken> RefreshTokenRepository => GetRepository<RefreshToken>();
         public IGenericRepository<Event> EventRepository => GetRepository<Event>();     
         public IGenericRepository<Tag> TagRepository => GetRepository<Tag>();
+        public IGenericRepository<EventCategory> EventCategoryRepository => GetRepository<EventCategory>();
         public IGenericRepository<EventTag> EventTagRepository => GetRepository<EventTag>();
         public IGenericRepository<OrganizerProfile> OrganizerProfileRepository => GetRepository<OrganizerProfile>();
         public IGenericRepository<Interest> InterestRepository => GetRepository<Interest>();
