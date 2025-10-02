@@ -58,7 +58,7 @@ namespace AIEvent.API.Controllers
         public async Task<ActionResult<SuccessResponse<object>>> DeleteTag(string id)
         {
             var result = await _tagService.DeleteTagAsync(id);
-            if (result.IsFailure)
+            if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
@@ -75,7 +75,7 @@ namespace AIEvent.API.Controllers
         public async Task<ActionResult<SuccessResponse<TagResponse>>> GetTagById(string id)
         {
             var result = await _tagService.GetTagByIdAsync(id);
-            if (result.IsFailure)
+            if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
@@ -91,7 +91,7 @@ namespace AIEvent.API.Controllers
         public async Task<ActionResult<SuccessResponse<TagResponse>>> UpdateTag(string id, UpdateTagRequest request)
         {
             var result = await _tagService.UpdateTagAsync(id, request);
-            if (result.IsFailure)
+            if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
