@@ -1,8 +1,6 @@
 ﻿using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
-using AIEvent.Application.DTOs.Event;
 using AIEvent.Application.DTOs.Tag;
-using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using Microsoft.AspNetCore.Authorization;

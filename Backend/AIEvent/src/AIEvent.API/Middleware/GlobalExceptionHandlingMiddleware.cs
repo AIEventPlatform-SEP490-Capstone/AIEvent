@@ -28,7 +28,7 @@ namespace AIEvent.API.Middleware
         private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
             context.Response.ContentType = "application/json";
-
+            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
             var response = ErrorResponse.FailureResult(
                 ErrorMessages.InternalServerError,
                 GetError((HttpStatusCode)context.Response.StatusCode),
