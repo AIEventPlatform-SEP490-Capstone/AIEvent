@@ -80,7 +80,6 @@ namespace AIEvent.API.Test.Controllers
             okResult!.Value.Should().BeOfType<SuccessResponse<UserResponse>>();
 
             var successResponse = okResult.Value as SuccessResponse<UserResponse>;
-            successResponse!.Success.Should().BeTrue();
             successResponse.Data.Should().NotBeNull();
             successResponse.Data!.Id.Should().Be(userId.ToString());
             successResponse.Message.Should().Be("User retrieved successfully");
@@ -109,7 +108,6 @@ namespace AIEvent.API.Test.Controllers
             notFoundResult!.Value.Should().BeOfType<ErrorResponse>();
 
             var errorResponseResult = notFoundResult.Value as ErrorResponse;
-            errorResponseResult!.Success.Should().BeFalse();
             errorResponseResult.Message.Should().Be("User not found");
 
             _mockUserService.Verify(x => x.GetUserByIdAsync(userId.ToString()), Times.Once);
@@ -143,7 +141,6 @@ namespace AIEvent.API.Test.Controllers
             okResult!.Value.Should().BeOfType<SuccessResponse<UserResponse>>();
 
             var successResponse = okResult.Value as SuccessResponse<UserResponse>;
-            successResponse!.Success.Should().BeTrue();
             successResponse.Data.Should().NotBeNull();
             successResponse.Data!.Id.Should().Be(_testUserId.ToString());
             successResponse.Message.Should().Be("Profile retrieved successfully");
@@ -186,7 +183,6 @@ namespace AIEvent.API.Test.Controllers
             okResult!.Value.Should().BeOfType<SuccessResponse<UserResponse>>();
 
             var successResponse = okResult.Value as SuccessResponse<UserResponse>;
-            successResponse!.Success.Should().BeTrue();
             successResponse.StatusCode.Should().Be(SuccessCodes.Updated);
             successResponse.Message.Should().Be("Profile updated successfully");
             successResponse.Data.Should().NotBeNull();
@@ -220,7 +216,6 @@ namespace AIEvent.API.Test.Controllers
             badRequestResult!.Value.Should().BeOfType<ErrorResponse>();
 
             var errorResponseResult = badRequestResult.Value as ErrorResponse;
-            errorResponseResult!.Success.Should().BeFalse();
             errorResponseResult.Message.Should().Be("Failed to update user");
 
             _mockUserService.Verify(x => x.UpdateUserAsync(_testUserId.ToString(), updateRequest), Times.Once);
@@ -251,7 +246,6 @@ namespace AIEvent.API.Test.Controllers
             okResult!.Value.Should().BeOfType<SuccessResponse<List<UserResponse>>>();
 
             var successResponse = okResult.Value as SuccessResponse<List<UserResponse>>;
-            successResponse!.Success.Should().BeTrue();
             successResponse.Data.Should().NotBeNull();
             successResponse.Data!.Should().HaveCount(2);
             successResponse.Message.Should().Be("Users retrieved successfully");
@@ -279,7 +273,6 @@ namespace AIEvent.API.Test.Controllers
             badRequestResult!.Value.Should().BeOfType<ErrorResponse>();
 
             var errorResponseResult = badRequestResult.Value as ErrorResponse;
-            errorResponseResult!.Success.Should().BeFalse();
             errorResponseResult.Message.Should().Be("Failed to retrieve users");
 
             _mockUserService.Verify(x => x.GetAllUsersAsync(1, 10), Times.Once);

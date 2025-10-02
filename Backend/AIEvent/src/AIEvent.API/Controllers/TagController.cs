@@ -26,7 +26,7 @@ namespace AIEvent.API.Controllers
         public async Task<ActionResult<SuccessResponse<object>>> CreateTag([FromBody] CreateTagRequest request)
         {
             var result = await _tagService.CreateTagAsync(request);
-            if (result.IsFailure)
+            if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
@@ -43,7 +43,7 @@ namespace AIEvent.API.Controllers
         public async Task<ActionResult<SuccessResponse<BasePaginated<TagResponse>>>> GetTag(int pageNumber = 1, int pageSize = 5)
         {
             var result = await _tagService.GetListTagAsync(pageNumber, pageSize);
-            if (result.IsFailure)
+            if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }

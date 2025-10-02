@@ -5,10 +5,7 @@ namespace AIEvent.Application.Helpers
     public class Result<T>
     {
         public bool IsSuccess { get; private set; }
-        public bool IsFailure
-        {
-            get { return !IsSuccess; }
-        }
+
         public T? Value { get; private set; }
         public ErrorResponse? Error { get; private set; }
 
@@ -45,11 +42,6 @@ namespace AIEvent.Application.Helpers
         public bool IsSuccess { get; private set; }
         
         public ErrorResponse? Error { get; private set; }
-
-        public bool IsFailure
-        {
-            get { return !IsSuccess; }
-        }
 
         private Result(bool isSuccess, ErrorResponse? error)
         {

@@ -15,6 +15,8 @@ namespace AIEvent.Domain.Interfaces
         IGenericRepository<Interest> InterestRepository { get; }
         IGenericRepository<UserInterest> UserInterestRepository { get; }
         IGenericRepository<TicketDetail> TicketDetailRepository { get; }
+        IGenericRepository<RefundRule> RefundRuleRepository { get; }
+        IGenericRepository<RefundRuleDetail> RefundRuleDetailRepository { get; }
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();
         Task CommitTransactionAsync();
