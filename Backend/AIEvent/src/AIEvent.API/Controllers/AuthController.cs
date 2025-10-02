@@ -24,7 +24,7 @@ namespace AIEvent.API.Controllers
         {
             var result = await _authService.LoginAsync(request);
 
-            if (result.IsFailure)
+            if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
@@ -38,7 +38,7 @@ namespace AIEvent.API.Controllers
         {
             var result = await _authService.RegisterAsync(request);
 
-            if (result.IsFailure)
+            if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
@@ -55,7 +55,7 @@ namespace AIEvent.API.Controllers
         {
             var result = await _authService.RefreshTokenAsync(request.RefreshToken);
 
-            if (result.IsFailure)
+            if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
@@ -71,7 +71,7 @@ namespace AIEvent.API.Controllers
         {
             var result = await _authService.RevokeRefreshTokenAsync(request.RefreshToken);
 
-            if (result.IsFailure)
+            if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }

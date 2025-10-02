@@ -26,7 +26,7 @@ namespace AIEvent.API.Controllers
         {
             var result = await _userService.GetUserByIdAsync(id.ToString());
 
-            if (result.IsFailure)
+            if (!result.IsSuccess)
             {
                 return NotFound(result.Error!);
             }
@@ -43,7 +43,7 @@ namespace AIEvent.API.Controllers
 
             var result = await _userService.GetUserByIdAsync(userId);
 
-            if (result.IsFailure)
+            if (!result.IsSuccess)
             {
                 return NotFound(result.Error!);
             }
@@ -60,7 +60,7 @@ namespace AIEvent.API.Controllers
 
             var result = await _userService.UpdateUserAsync(userId, request);
 
-            if (result.IsFailure)
+            if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
@@ -77,7 +77,7 @@ namespace AIEvent.API.Controllers
         {
             var result = await _userService.GetAllUsersAsync(page, pageSize);
 
-            if (result.IsFailure)
+            if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }

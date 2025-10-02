@@ -31,7 +31,8 @@ namespace AIEvent.API.Extensions
                     .AddScoped<IEnumService, EnumService>()
                     .AddScoped<IOrganizerService, OrganizerService>()
                     .AddScoped<ITagService, TagService>()
-                    .AddScoped<IEventCategoryService, EventCategoryService>();
+                    .AddScoped<IRuleRefundService, RuleRefundService>()
+                .AddScoped<IEventCategoryService, EventCategoryService>();
 
             return services;
         }

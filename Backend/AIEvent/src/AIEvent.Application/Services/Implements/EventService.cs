@@ -3,7 +3,9 @@ using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
+using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
+using AIEvent.Domain.Enums;
 using AIEvent.Domain.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
@@ -25,14 +27,14 @@ namespace AIEvent.Application.Services.Implements
             _mapper = mapper;
             _cloudinaryService = cloudinaryService;
         }
-        public async Task<Result> CreateEvent(Guid organizerId, CreateEventRequest request)
+        public async Task<Result> CreateEventAsync(Guid organizerId, CreateEventRequest request)
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-                var organizer = await _unitOfWork.OrganizerProfileRepository.GetByIdAsync(organizerId);
+                var organizer = await _unitOfWork.OrganizerProfileRepository.GetByIdAsync(organizerId, true);
                 if (organizer?.IsApprove != true)
                 {
-                    return ErrorResponse.FailureResult("Event not found or inactive", ErrorCodes.Unauthorized);
+                    return ErrorResponse.FailureResult("Organizer not found or inactive", ErrorCodes.Unauthorized);
                 }
 
                 var events = _mapper.Map<Event>(request);
@@ -59,7 +61,92 @@ namespace AIEvent.Application.Services.Implements
             });
         }
 
-        public async Task<Result<EventDetailResponse>> GetEventById(string eventId)
+        public async Task<Result<BasePaginated<EventsResponse>>> GetEventAsync(string? search, string? eventCategoryId, TicketType? ticketType, string? city, TimeLine? timeLine, int pageNumber = 1, int pageSize = 5)
+        {
+            IQueryable<Event> events = _unitOfWork.EventRepository
+                                                .Query()
+                                                .Include(e => e.EventCategory)
+                                                .AsNoTracking()
+                                                .Where(e => e.StartTime > DateTime.Now && !e.DeletedAt.HasValue && e.RequireApproval == true);
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                events = events
+                            .Where(e => e.Title.ToLower().Contains(search.ToLower()));
+            }
+
+            if (!string.IsNullOrEmpty(eventCategoryId))
+            {
+                events = events
+                            .Where(e => e.EventCategoryId == Guid.Parse(eventCategoryId));
+            }
+
+            if (ticketType.HasValue)
+            {
+                events = events
+                            .Where(e => e.TicketType == ticketType);
+            }
+
+            if (!string.IsNullOrEmpty(city))
+            {
+                events = events
+                            .Where(e => (e.City ?? string.Empty).ToLower().Contains(city.ToLower()));
+            }
+
+            if (timeLine.HasValue)
+            {
+                var today = DateTime.Today;
+
+                switch (timeLine.Value)
+                {
+                    case TimeLine.Today:
+                        events = events.Where(e => e.StartTime.Date == today);
+                        break;
+
+                    case TimeLine.Tomorrow:
+                        events = events.Where(e => e.StartTime.Date == today.AddDays(1));
+                        break;
+
+                    case TimeLine.ThisWeek:
+                        var startOfWeek = today.AddDays(-(int)today.DayOfWeek + (int)DayOfWeek.Monday);
+                        var endOfWeek = startOfWeek.AddDays(6);
+                        events = events.Where(e => e.StartTime.Date >= startOfWeek && e.StartTime.Date <= endOfWeek);
+                        break;
+
+                    case TimeLine.ThisMonth:
+                        events = events.Where(e => e.StartTime.Month == today.Month && e.StartTime.Year == today.Year);
+                        break;
+                }
+            }
+
+            int totalCount = await events.CountAsync();
+
+            var result = await events
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(e => new EventsResponse
+                {
+                    EventId = e.Id,
+                    EventCategoryName = e.EventCategory.CategoryName,
+                    Title = e.Title,
+                    StartTime = e.StartTime,
+                    EndTime = e.EndTime,
+                    Description = e.Description,
+                    TicketType = e.TicketType,
+                    TotalTickets = e.TotalTickets,
+                    SoldQuantity = e.SoldQuantity,
+                    LocationName = e.LocationName,
+                    ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
+                        ? new List<string>()
+                        : JsonSerializer.Deserialize<List<string>>(e.ImgListEvent, new JsonSerializerOptions())
+                })
+                .ToListAsync();
+
+            return new BasePaginated<EventsResponse>(result, totalCount, pageNumber, pageSize);
+        }
+
+
+        public async Task<Result<EventDetailResponse>> GetEventByIdAsync(string eventId)
         {
             var events = await _unitOfWork.EventRepository
                 .Query()
@@ -75,6 +162,19 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("Event code already exists.", ErrorCodes.InvalidInput);
 
             return Result<EventDetailResponse>.Success(events);
+        }
+
+        public async Task<Result> DeleteEventAsync(string eventId)
+        {
+            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+            {
+                var existingEvent = await _unitOfWork.EventRepository.GetByIdAsync(Guid.Parse(eventId), true);
+                if (existingEvent == null)
+                    return ErrorResponse.FailureResult("Event not found or inactive", ErrorCodes.InvalidInput);
+
+                await _unitOfWork.EventRepository.DeleteAsync(existingEvent!);
+                return Result.Success();
+            });
         }
     }
 }
