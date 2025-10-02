@@ -12,6 +12,11 @@ namespace AIEvent.Application.Mappings
                 .ForMember(dest => dest.RefundRuleDetails, opt => opt.MapFrom(src => src.RuleRefundDetails));
 
             CreateMap<RuleRefundDetailRequest, RefundRuleDetail>();
+
+            CreateMap<UpdateRuleRefundRequest, RefundRule>()
+                .ForMember(dest => dest.RefundRuleDetails, opt => opt.Ignore());
+
+            CreateMap<UpdateRuleRefundDetailRequest, RefundRuleDetail>();
         }
     }
 }

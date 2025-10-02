@@ -11,6 +11,7 @@ using AIEvent.Domain.Interfaces;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -47,25 +48,17 @@ namespace AIEvent.Application.Services.Implements
         public async Task<Result> DeleteRuleAsync(Guid userId, string ruleId)
         {
             var user = await _userManager.FindByIdAsync(userId.ToString());
-            if (user == null)
-                return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
+            var isAdmin = await _userManager.IsInRoleAsync(user!, "Admin");
             var rules = await _unitOfWork.RefundRuleRepository.GetByIdAsync(Guid.Parse(ruleId));
+
             if (rules == null)
                 return ErrorResponse.FailureResult("Rule not found or inactive", ErrorCodes.InvalidInput);
-            await _unitOfWork.RefundRuleRepository.DeleteAsync(rules);
-            await _unitOfWork.SaveChangesAsync();
-            return Result.Success();
-        }
+            if (rules.IsSystem && !isAdmin)
+                return ErrorResponse.FailureResult("System rule cannot be modified by user", ErrorCodes.PermissionDenied);
+            if (!isAdmin && rules.CreatedBy != userId.ToString())
+                return ErrorResponse.FailureResult("You can only modify your own rules", ErrorCodes.PermissionDenied);
 
-        public async Task<Result> DeleteRuleDetailAsync(Guid userId, string ruleDetailId)
-        {
-            var user = await _userManager.FindByIdAsync(userId.ToString());
-            if (user == null)
-                return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
-            var ruleDetails = await _unitOfWork.RefundRuleDetailRepository.GetByIdAsync(Guid.Parse(ruleDetailId));
-            if (ruleDetails == null)
-                return ErrorResponse.FailureResult("Rule Details not found or inactive", ErrorCodes.InvalidInput);
-            await _unitOfWork.RefundRuleDetailRepository.DeleteAsync(ruleDetails);
+            await _unitOfWork.RefundRuleRepository.DeleteAsync(rules);
             await _unitOfWork.SaveChangesAsync();
             return Result.Success();
         }
@@ -108,6 +101,58 @@ namespace AIEvent.Application.Services.Implements
                 .ToListAsync();
 
             return new BasePaginated<RuleRefundResponse>(result, totalCount, pageNumber, pageSize);
+        }
+
+        public async Task<Result> UpdateRuleAsync(Guid userId, string RuleRefundId, UpdateRuleRefundRequest request)
+        {
+            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+            {
+                var user = await _userManager.FindByIdAsync(userId.ToString());
+                var isAdmin = await _userManager.IsInRoleAsync(user!, "Admin");
+                var ruleRefund = await _unitOfWork.RefundRuleRepository
+                                                    .Query()
+                                                    .Include(r => r.RefundRuleDetails)
+                                                    .FirstOrDefaultAsync(r => r.Id == Guid.Parse(RuleRefundId));
+                if (ruleRefund == null)
+                    return ErrorResponse.FailureResult("Rule not found", ErrorCodes.InvalidInput);
+                if (ruleRefund.IsSystem && !isAdmin)
+                    return ErrorResponse.FailureResult("System rule cannot be modified by user", ErrorCodes.PermissionDenied);
+                if (!isAdmin && ruleRefund.CreatedBy != userId.ToString())
+                    return ErrorResponse.FailureResult("You can only modify your own rules", ErrorCodes.PermissionDenied);
+
+                _mapper.Map(request, ruleRefund);
+                await _unitOfWork.RefundRuleRepository.UpdateAsync(ruleRefund);
+
+                var requestDetailIds = request.RuleRefundDetails
+                                      .Where(d => d.RuleRefundDetailId.HasValue)
+                                      .Select(d => d.RuleRefundDetailId)
+                                      .ToList();
+
+                var toRemove = ruleRefund.RefundRuleDetails
+                                         .Where(d => !requestDetailIds.Contains(d.Id))
+                                         .ToList();
+                foreach (var rd in toRemove)
+                {
+                    await _unitOfWork.RefundRuleDetailRepository.DeleteAsync(rd);
+                }
+
+                foreach (var rule in request.RuleRefundDetails)
+                {
+                    if (rule.RuleRefundDetailId.HasValue)
+                    {
+                        var ruleDetail = await _unitOfWork.RefundRuleDetailRepository.GetByIdAsync(rule.RuleRefundDetailId);
+                        _mapper.Map(rule, ruleDetail);
+                        await _unitOfWork.RefundRuleDetailRepository.UpdateAsync(ruleDetail!);
+                    }
+                    else
+                    {
+                        var newDetail = _mapper.Map<RefundRuleDetail>(rule);
+                        newDetail.RefundRuleId = Guid.Parse(RuleRefundId);
+                        await _unitOfWork.RefundRuleDetailRepository.AddAsync(newDetail);
+                    }
+                }
+                return Result.Success();
+            });
         }
     }
 }
