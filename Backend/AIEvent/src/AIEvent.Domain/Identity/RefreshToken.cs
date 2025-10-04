@@ -8,11 +8,8 @@ namespace AIEvent.Domain.Identity
         public DateTime ExpiresAt { get; set; }
         public bool IsRevoked { get; set; } = false;
         public DateTime? RevokedAt { get; set; }
-        public string? RevokedByIp { get; set; }
         public string? ReplacedByToken { get; set; }
-        public string? ReasonRevoked { get; set; }
         
-        // Foreign key
         public Guid UserId { get; set; }
         public AppUser User { get; set; } = null!;
 
