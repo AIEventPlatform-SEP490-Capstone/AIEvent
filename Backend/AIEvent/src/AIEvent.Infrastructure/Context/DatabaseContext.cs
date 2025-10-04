@@ -60,9 +60,7 @@ namespace AIEvent.Infrastructure.Context
             builder.Entity<RefreshToken>(entity =>
             {
                 entity.Property(e => e.Token).IsRequired().HasMaxLength(500);
-                entity.Property(e => e.RevokedByIp).HasMaxLength(50);
                 entity.Property(e => e.ReplacedByToken).HasMaxLength(500);
-                entity.Property(e => e.ReasonRevoked).HasMaxLength(200);
 
                 entity.HasOne(e => e.User)
                       .WithMany(u => u.RefreshTokens)

@@ -423,5 +423,303 @@ namespace AIEvent.Application.Test.Services
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
         #endregion
+
+        #region RefreshToken
+        [Fact]
+        public async Task RefreshTokenAsync_WithValidCredentials_ShouldReturnSuccessResult()
+        {
+            var request = "refresh-token";
+
+            var user = new AppUser
+            {
+                Id = Guid.NewGuid(),
+                Email = "test@gmail.com",
+                UserName = "Test",
+                FullName = "Test User",
+                IsActive = true
+            };
+            var roles = new List<string> { "User" };
+
+            var accessToken = "new-access-token";
+            var refreshToken = "new-refresh-token";
+
+            var exitingToken = new RefreshToken
+            {
+                Token = request,
+                User = user,
+                IsRevoked = false,
+                ExpiresAt = DateTime.UtcNow.AddDays(1)
+            };
+
+            var newTokenEntity = new RefreshToken
+            {
+                Token = refreshToken,
+                UserId = user.Id,
+                ExpiresAt = DateTime.UtcNow.AddDays(7)
+            };
+
+            var refreshTokens = new List<RefreshToken> { exitingToken }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(r => r.RefreshTokenRepository.Query(false)).Returns(refreshTokens.Object);
+
+            _mockUserManager.Setup(r => r.GetRolesAsync(exitingToken.User)).ReturnsAsync(roles);
+
+            _mockJwtService.Setup(x => x.GenerateAccessToken(exitingToken.User, roles)).Returns(accessToken);
+            _mockJwtService.Setup(x => x.GenerateRefreshToken()).Returns(refreshToken);
+            _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.UpdateAsync(exitingToken));
+            _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.AddAsync(newTokenEntity));
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync());
+
+
+            var result = await _authService.RefreshTokenAsync(request);
+
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeTrue();
+            result.Value!.AccessToken.Should().Be(accessToken);
+            result.Value!.RefreshToken.Should().Be(refreshToken);
+        }
+
+        [Fact]
+        public async Task RefreshTokenAsync_WithTokenIsRevoked_ShouldReturnFailureResult()
+        {
+            var request = "refresh-token";
+
+            var user = new AppUser
+            {
+                Id = Guid.NewGuid(),
+                Email = "test@gmail.com",
+                UserName = "Test",
+                FullName = "Test User",
+                IsActive = true
+            };
+            var roles = new List<string> { "User" };
+
+            var exitingToken = new RefreshToken
+            {
+                Token = request,
+                User = user,
+                IsRevoked = true,
+                ExpiresAt = DateTime.UtcNow.AddDays(1)
+            };
+
+            var refreshTokens = new List<RefreshToken> { exitingToken }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(r => r.RefreshTokenRepository.Query(false)).Returns(refreshTokens.Object);
+            
+            var result = await _authService.RefreshTokenAsync(request);
+
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid or expired refresh token");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
+        }
+
+        [Fact]
+        public async Task RefreshTokenAsync_WithExpiredToken_ShouldReturnFailureResult()
+        {
+            var request = "refresh-token";
+
+            var user = new AppUser
+            {
+                Id = Guid.NewGuid(),
+                Email = "test@gmail.com",
+                UserName = "Test",
+                FullName = "Test User",
+                IsActive = true
+            };
+            var roles = new List<string> { "User" };
+
+            var exitingToken = new RefreshToken
+            {
+                Token = request,
+                User = user,
+                IsRevoked = false,
+                ExpiresAt = DateTime.UtcNow.AddDays(-1)
+            };
+
+            var refreshTokens = new List<RefreshToken> { exitingToken }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(r => r.RefreshTokenRepository.Query(false)).Returns(refreshTokens.Object);
+
+            var result = await _authService.RefreshTokenAsync(request);
+
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid or expired refresh token");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
+        }
+
+        [Fact]
+        public async Task RefreshTokenAsync_WithNoRole_ShouldReturnFailureResult()
+        {
+            var request = "refresh-token";
+
+            var user = new AppUser
+            {
+                Id = Guid.NewGuid(),
+                Email = "test@gmail.com",
+                UserName = "Test",
+                FullName = "Test User",
+                IsActive = true
+            };
+            var roles = new List<string> { "User" };
+
+            var exitingToken = new RefreshToken
+            {
+                Token = request,
+                User = user,
+                IsRevoked = false,
+                ExpiresAt = DateTime.UtcNow.AddDays(1)
+            };
+
+            var refreshTokens = new List<RefreshToken> { exitingToken }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(r => r.RefreshTokenRepository.Query(false)).Returns(refreshTokens.Object);
+
+            _mockUserManager.Setup(r => r.GetRolesAsync(exitingToken.User))!.ReturnsAsync((IList<string>?)null);
+
+            var result = await _authService.RefreshTokenAsync(request);
+
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Role not found");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
+        }
+        #endregion
+
+        #region RevokeRefreshToken
+        [Fact]
+        public async Task RevokeRefreshTokenAsync_WithValidCredentials_ShouldReturnSuccessResult()
+        {
+            var request = "refresh-token";
+
+            var user = new AppUser
+            {
+                Id = Guid.NewGuid(),
+                Email = "test@gmail.com",
+                UserName = "Test",
+                FullName = "Test User",
+                IsActive = true
+            };
+
+            var exitingToken = new RefreshToken
+            {
+                Token = request,
+                User = user,
+                IsRevoked = false,
+                ExpiresAt = DateTime.UtcNow.AddDays(1)
+            };
+
+            var refreshTokens = new List<RefreshToken> { exitingToken }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(r => r.RefreshTokenRepository.Query(false)).Returns(refreshTokens.Object);
+
+            _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.UpdateAsync(exitingToken));
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync());
+
+            var result = await _authService.RevokeRefreshTokenAsync(request);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task RevokeRefreshTokenAsync_WithInValidCredentials_ShouldReturnFailureResult()
+        {
+            var request = "refresh-token";
+
+            var user = new AppUser
+            {
+                Id = Guid.NewGuid(),
+                Email = "test@gmail.com",
+                UserName = "Test",
+                FullName = "Test User",
+                IsActive = true
+            };
+
+            var exitingToken = new RefreshToken
+            {
+                Token = "old-refresh-token",
+                User = user,
+                IsRevoked = false,
+                ExpiresAt = DateTime.UtcNow.AddDays(1)
+            };
+
+            var refreshTokens = new List<RefreshToken> { exitingToken }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(r => r.RefreshTokenRepository.Query(false)).Returns(refreshTokens.Object);
+
+            var result = await _authService.RevokeRefreshTokenAsync(request);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid or expired refresh token");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
+        }
+
+        [Fact]
+        public async Task RevokeRefreshTokenAsync_WithTokenIsRevoked_ShouldReturnFailureResult()
+        {
+            var request = "refresh-token";
+
+            var user = new AppUser
+            {
+                Id = Guid.NewGuid(),
+                Email = "test@gmail.com",
+                UserName = "Test",
+                FullName = "Test User",
+                IsActive = true
+            };
+
+            var exitingToken = new RefreshToken
+            {
+                Token = request,
+                User = user,
+                IsRevoked = true,
+                ExpiresAt = DateTime.UtcNow.AddDays(1)
+            };
+
+            var refreshTokens = new List<RefreshToken> { exitingToken }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(r => r.RefreshTokenRepository.Query(false)).Returns(refreshTokens.Object);
+
+            var result = await _authService.RevokeRefreshTokenAsync(request);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid or expired refresh token");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
+        }
+
+        [Fact]
+        public async Task RevokeRefreshTokenAsync_WithTokenExpired_ShouldReturnFailureResult()
+        {
+            var request = "refresh-token";
+
+            var user = new AppUser
+            {
+                Id = Guid.NewGuid(),
+                Email = "test@gmail.com",
+                UserName = "Test",
+                FullName = "Test User",
+                IsActive = true
+            };
+
+            var exitingToken = new RefreshToken
+            {
+                Token = request,
+                User = user,
+                IsRevoked = false,
+                ExpiresAt = DateTime.UtcNow.AddDays(-1)
+            };
+
+            var refreshTokens = new List<RefreshToken> { exitingToken }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(r => r.RefreshTokenRepository.Query(false)).Returns(refreshTokens.Object);
+
+            var result = await _authService.RevokeRefreshTokenAsync(request);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid or expired refresh token");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
+        }
+        #endregion
     }
 }
