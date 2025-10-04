@@ -51,6 +51,10 @@ namespace AIEvent.Application.Services.Implements
             }
 
             var roles = await _userManager.GetRolesAsync(user);
+            if (roles == null)
+            {
+                return ErrorResponse.FailureResult("Role not found", ErrorCodes.Unauthorized);
+            }
             var accessToken = _jwtService.GenerateAccessToken(user, roles);
             var refreshToken = _jwtService.GenerateRefreshToken();
 
@@ -132,9 +136,13 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("Failed to create user account", ErrorCodes.InvalidInput);
             }
 
-            await _userManager.AddToRoleAsync(user, "User");
+            var userR = await _userManager.AddToRoleAsync(user, "User");
+            if (!userR.Succeeded)
+            {
+                return ErrorResponse.FailureResult("Failed to assign role to user", ErrorCodes.InvalidInput);
+            }
 
-            var roles = new List<string> { "User" }; 
+            var roles = new List<string> { "User" };
             var accessToken = _jwtService.GenerateAccessToken(user, roles);
             var refreshToken = _jwtService.GenerateRefreshToken();
 

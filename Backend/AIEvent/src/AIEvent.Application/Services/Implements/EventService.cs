@@ -169,7 +169,7 @@ namespace AIEvent.Application.Services.Implements
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
                 var existingEvent = await _unitOfWork.EventRepository.GetByIdAsync(Guid.Parse(eventId), true);
-                if (existingEvent == null)
+                if (existingEvent == null  || existingEvent.DeletedAt.HasValue)
                     return ErrorResponse.FailureResult("Event not found or inactive", ErrorCodes.InvalidInput);
 
                 await _unitOfWork.EventRepository.DeleteAsync(existingEvent!);
