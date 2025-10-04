@@ -1,0 +1,187 @@
+@import "tailwindcss";
+
+:root {
+  /* Updated to modern blue-purple theme, removing all green colors */
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 221.2 83.2% 53.3%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 98%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 98%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 262.1 83.3% 57.8%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 221.2 83.2% 53.3%;
+  --chart-1: 221.2 83.2% 53.3%;
+  --chart-2: 262.1 83.3% 57.8%;
+  --chart-3: 188 95% 68%;
+  --chart-4: 0 84.2% 60.2%;
+  --chart-5: 36 100% 67%;
+  --radius: 0.5rem;
+  --sidebar-background: 0 0% 98%;
+  --sidebar-foreground: 240 10% 3.9%;
+  --sidebar-primary: 221.2 83.2% 53.3%;
+  --sidebar-primary-foreground: 210 40% 98%;
+  --sidebar-accent: 262.1 83.3% 57.8%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 214.3 31.8% 91.4%;
+  --sidebar-ring: 221.2 83.2% 53.3%;
+}
+
+.dark {
+  /* Dark mode with blue-purple theme */
+  --background: 224 71.4% 4.1%;
+  --foreground: 210 20% 98%;
+  --card: 224 71.4% 4.1%;
+  --card-foreground: 210 20% 98%;
+  --popover: 224 71.4% 4.1%;
+  --popover-foreground: 210 20% 98%;
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 222.2 84% 4.9%;
+  --secondary: 215 27.9% 16.9%;
+  --secondary-foreground: 210 20% 98%;
+  --muted: 215 27.9% 16.9%;
+  --muted-foreground: 217.9 10.6% 64.9%;
+  --accent: 262.1 83.3% 57.8%;
+  --accent-foreground: 210 20% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 20% 98%;
+  --border: 215 27.9% 16.9%;
+  --input: 215 27.9% 16.9%;
+  --ring: 263.4 70% 50.4%;
+  --chart-1: 217.2 91.2% 59.8%;
+  --chart-2: 262.1 83.3% 57.8%;
+  --chart-3: 188 95% 68%;
+  --chart-4: 0 84.2% 60.2%;
+  --chart-5: 36 100% 67%;
+  --sidebar-background: 224 71.4% 4.1%;
+  --sidebar-foreground: 210 20% 98%;
+  --sidebar-primary: 217.2 91.2% 59.8%;
+  --sidebar-primary-foreground: 222.2 84% 4.9%;
+  --sidebar-accent: 262.1 83.3% 57.8%;
+  --sidebar-accent-foreground: 210 20% 98%;
+  --sidebar-border: 215 27.9% 16.9%;
+  --sidebar-ring: 263.4 70% 50.4%;
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+#root {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: bold;
+  line-height: 1.25;
+}
+
+h1 {
+  font-size: 2.25rem;
+}
+h2 {
+  font-size: 1.875rem;
+}
+h3 {
+  font-size: 1.5rem;
+}
+h4 {
+  font-size: 1.25rem;
+}
+h5 {
+  font-size: 1.125rem;
+}
+h6 {
+  font-size: 1rem;
+}
+
+p {
+  line-height: 1.625;
+  margin-bottom: 1rem;
+}
+
+/* Custom animations for AIEvent */
+@keyframes pulse-blue {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-pulse-blue {
+  animation: pulse-blue 2s infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s ease-out;
+}
+
+[data-slot="sidebar-inset"] {
+  display: flex;
+  justify-content: center; /* Căn giữa nội dung */
+  width: 200%; /* Đảm bảo chiều rộng toàn màn hình */
+  padding: 0 1rem; /* Thêm padding để tránh dính mép */
+}
+
+[data-slot="sidebar-inset"] > main {
+  max-width: 7xl; /* Giới hạn chiều rộng tối đa (tương ứng max-w-7xl trong Tailwind) */
+  width: 100%; /* Đảm bảo nội dung không vượt quá giới hạn */
+  transition: margin-left 0.3s ease-in-out, padding 0.3s ease-in-out;
+}
+
+[data-state="collapsed"][data-collapsible="icon"] ~ [data-slot="sidebar-inset"] {
+  margin-left: 0 !important; /* Đảm bảo margin-left về 0 khi sidebar thu gọn */
+  justify-content: center; /* Căn giữa nội dung */
+}
+
+@media (max-width: 768px) {
+  [data-collapsible="icon"][data-state="collapsed"] {
+    width: var(--sidebar-width-icon) !important;
+    left: 0 !important;
+  }
+  [data-collapsible="icon"][data-state="expanded"] {
+    width: var(--sidebar-width) !important;
+    left: 0 !important;
+  }
+  [data-slot="sidebar-inset"] {
+    padding-left: var(--sidebar-width-icon); /* Đẩy nội dung tránh bị che khi sidebar thu gọn */
+    margin-left: 0 !important;
+  }
+  [data-state="collapsed"][data-collapsible="icon"] ~ [data-slot="sidebar-inset"] {
+    padding-left: 0; /* Reset padding khi thu gọn trên mobile */
+    justify-content: center;
+  }
+}
