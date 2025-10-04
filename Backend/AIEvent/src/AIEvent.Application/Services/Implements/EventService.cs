@@ -1,6 +1,7 @@
 ﻿using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
+using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
@@ -31,11 +32,18 @@ namespace AIEvent.Application.Services.Implements
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
+
+                if (request.EndTime < request.StartTime)
+                {
+                    return ErrorResponse.FailureResult("EndTime cannot be before the StartTime", ErrorCodes.InvalidInput);
+                }
+
                 var organizer = await _unitOfWork.OrganizerProfileRepository.GetByIdAsync(organizerId, true);
                 if (organizer?.IsApprove != true)
                 {
                     return ErrorResponse.FailureResult("Organizer not found or inactive", ErrorCodes.Unauthorized);
                 }
+
 
                 var events = _mapper.Map<Event>(request);
 
@@ -66,6 +74,8 @@ namespace AIEvent.Application.Services.Implements
             IQueryable<Event> events = _unitOfWork.EventRepository
                                                 .Query()
                                                 .Include(e => e.EventCategory)
+                                                .Include(e => e.EventTags)
+                                                    .ThenInclude(e => e.Tag)
                                                 .AsNoTracking()
                                                 .Where(e => e.StartTime > DateTime.Now && !e.DeletedAt.HasValue && e.RequireApproval == true);
 
@@ -136,6 +146,11 @@ namespace AIEvent.Application.Services.Implements
                     TotalTickets = e.TotalTickets,
                     SoldQuantity = e.SoldQuantity,
                     LocationName = e.LocationName,
+                    Tags = e.EventTags.Select(t => new TagResponse
+                    {
+                        TagId = t.TagId.ToString(),
+                        TagName = t.Tag.NameTag
+                    }).ToList(),
                     ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
                         ? new List<string>()
                         : JsonSerializer.Deserialize<List<string>>(e.ImgListEvent, new JsonSerializerOptions())

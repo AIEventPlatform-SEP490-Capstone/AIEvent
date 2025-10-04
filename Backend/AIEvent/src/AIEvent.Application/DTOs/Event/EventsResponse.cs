@@ -1,4 +1,5 @@
-﻿using AIEvent.Domain.Enums;
+﻿using AIEvent.Application.DTOs.Tag;
+using AIEvent.Domain.Enums;
 
 namespace AIEvent.Application.DTOs.Event
 {
@@ -13,6 +14,7 @@ namespace AIEvent.Application.DTOs.Event
         public string? LocationName { get; set; }
         public int TotalTickets { get; set; }
         public int SoldQuantity { get; set; }
+        public List<TagResponse>? Tags { get; set; }
         public List<string>? ImgListEvent { get; set; }
         public TicketType TicketType { get; set; }
     }
