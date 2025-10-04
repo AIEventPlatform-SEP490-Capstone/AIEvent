@@ -7,14 +7,18 @@ namespace AIEvent.Infrastructure.Data
 {
     public static class SeedData
     {
-        private static readonly Guid adminRoleId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        private static readonly Guid userRoleId = Guid.Parse("22222222-2222-2222-2222-222222222222");
-        private static readonly Guid eventManagerRoleId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        private static readonly Guid adminRoleId = Guid.NewGuid();
+        private static readonly Guid userRoleId = Guid.NewGuid();
+        private static readonly Guid managerRoleId = Guid.NewGuid();
+        private static readonly Guid organizerRoleId = Guid.NewGuid();
+        private static readonly Guid staffRoleId = Guid.NewGuid();
 
-        private static readonly Guid adminUserId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-        private static readonly Guid regularUserId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
-        private static readonly Guid eventManagerUserId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
-        private static readonly Guid testUserId = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
+        private static readonly Guid adminUserId = Guid.NewGuid();
+        private static readonly Guid regularUserId = Guid.NewGuid();
+        private static readonly Guid managerUserId = Guid.NewGuid();
+        private static readonly Guid testUserId = Guid.NewGuid();
+        private static readonly Guid organizerUserId = Guid.NewGuid();
+        private static readonly Guid staffUserId = Guid.NewGuid();
 
         public static void Seed(this ModelBuilder modelBuilder)
         {
@@ -49,10 +53,28 @@ namespace AIEvent.Infrastructure.Data
                 },
                 new AppRole
                 {
-                    Id = eventManagerRoleId,
-                    Name = "EventManager",
-                    NormalizedName = "EVENTMANAGER",
-                    Description = "Event manager role for managing events",
+                    Id = managerRoleId,
+                    Name = "Manager",
+                    NormalizedName = "MANAGER",
+                    Description = "System management",
+                    CreatedAt = DateTime.UtcNow,
+                    ConcurrencyStamp = Guid.NewGuid().ToString()
+                },
+                new AppRole
+                {
+                    Id = staffRoleId,
+                    Name = "Staff",
+                    NormalizedName = "STAFF",
+                    Description = "Manager's collaborator",
+                    CreatedAt = DateTime.UtcNow,
+                    ConcurrencyStamp = Guid.NewGuid().ToString()
+                },
+                new AppRole
+                {
+                    Id = organizerRoleId,
+                    Name = "Organizer",
+                    NormalizedName = "ORGANIZER",
+                    Description = "Organizer role for managing events",
                     CreatedAt = DateTime.UtcNow,
                     ConcurrencyStamp = Guid.NewGuid().ToString()
                 }
@@ -97,21 +119,21 @@ namespace AIEvent.Infrastructure.Data
             };
             regularUser.PasswordHash = passwordHasher.HashPassword(regularUser, "123");
 
-            var eventManagerUser = new AppUser
+            var managerUser = new AppUser
             {
-                Id = eventManagerUserId,
+                Id = managerUserId,
                 UserName = "manager@aievent.com",
                 NormalizedUserName = "MANAGER@AIEVENT.COM",
                 Email = "manager@gmail.com",
                 NormalizedEmail = "MANAGER@GMAIL.COM", 
                 EmailConfirmed = true,
-                FullName = "Event Manager",
+                FullName = "Manager",
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
                 SecurityStamp = Guid.NewGuid().ToString(),
                 ConcurrencyStamp = Guid.NewGuid().ToString()
             };
-            eventManagerUser.PasswordHash = passwordHasher.HashPassword(eventManagerUser, "123");
+            managerUser.PasswordHash = passwordHasher.HashPassword(managerUser, "123");
 
             var testUser = new AppUser
             {
@@ -129,7 +151,39 @@ namespace AIEvent.Infrastructure.Data
             };
             testUser.PasswordHash = passwordHasher.HashPassword(testUser, "123");
 
-            modelBuilder.Entity<AppUser>().HasData(adminUser, regularUser, eventManagerUser, testUser);
+            var organizerUser = new AppUser
+            {
+                Id = organizerUserId,
+                UserName = "organizer@aievent.com",
+                NormalizedUserName = "ORGANIZER@AIEVENT.COM",
+                Email = "organizer@gmail.com",
+                NormalizedEmail = "ORGANIZER@GMAIL.COM",
+                EmailConfirmed = true,
+                FullName = "Organizer",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                SecurityStamp = Guid.NewGuid().ToString(),
+                ConcurrencyStamp = Guid.NewGuid().ToString()
+            };
+            organizerUser.PasswordHash = passwordHasher.HashPassword(organizerUser, "123");
+
+            var staffUser = new AppUser
+            {
+                Id = staffUserId,
+                UserName = "staff@aievent.com",
+                NormalizedUserName = "STAFF@AIEVENT.COM",
+                Email = "staff@gmail.com",
+                NormalizedEmail = "STAFF@GMAIL.COM",
+                EmailConfirmed = true,
+                FullName = "Staff",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                SecurityStamp = Guid.NewGuid().ToString(),
+                ConcurrencyStamp = Guid.NewGuid().ToString()
+            };
+            staffUser.PasswordHash = passwordHasher.HashPassword(staffUser, "123");
+
+            modelBuilder.Entity<AppUser>().HasData(adminUser, regularUser, managerUser, testUser, organizerUser, staffUser);
         }
 
 
@@ -149,8 +203,18 @@ namespace AIEvent.Infrastructure.Data
                 },
                 new IdentityUserRole<Guid>
                 {
-                    UserId = eventManagerUserId,
-                    RoleId = eventManagerRoleId
+                    UserId = managerUserId,
+                    RoleId = managerRoleId
+                },
+                new IdentityUserRole<Guid>
+                {
+                    UserId = organizerUserId,
+                    RoleId = organizerRoleId
+                },
+                new IdentityUserRole<Guid>
+                {
+                    UserId = staffUserId,
+                    RoleId = staffRoleId
                 },
                 new IdentityUserRole<Guid>
                 {

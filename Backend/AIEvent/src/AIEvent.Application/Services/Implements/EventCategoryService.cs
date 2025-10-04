@@ -26,6 +26,11 @@ namespace AIEvent.Application.Services.Implements
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
+                if (string.IsNullOrWhiteSpace(request.EventCategoryName))
+                {
+                    return ErrorResponse.FailureResult("Event category name is required", ErrorCodes.InvalidInput);
+                }
+
                 var existingCategory = await _unitOfWork.EventCategoryRepository
                                             .Query()
                                             .FirstOrDefaultAsync(t => t.CategoryName.ToLower() == request.EventCategoryName.ToLower());
@@ -50,7 +55,11 @@ namespace AIEvent.Application.Services.Implements
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-                var categoryId = Guid.Parse(id);
+                if (!Guid.TryParse(id, out var categoryId))
+                {
+                    return ErrorResponse.FailureResult("Invalid Guid format", ErrorCodes.InvalidInput);
+                }
+
                 var category = await _unitOfWork.EventCategoryRepository
                                             .Query()
                                             .FirstOrDefaultAsync(t => t.Id == categoryId);
@@ -119,7 +128,16 @@ namespace AIEvent.Application.Services.Implements
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-                var categoryId = Guid.Parse(id);
+                if (string.IsNullOrWhiteSpace(request.EventCategoryName))
+                {
+                    return ErrorResponse.FailureResult("Event category name is required", ErrorCodes.InvalidInput);
+                }
+
+                if (!Guid.TryParse(id, out var categoryId))
+                {
+                    return ErrorResponse.FailureResult("Invalid category ID format", ErrorCodes.InvalidInput);
+                }
+
                 var category = await _unitOfWork.EventCategoryRepository
                                             .Query()
                                             .FirstOrDefaultAsync(t => t.Id == categoryId);
@@ -127,6 +145,16 @@ namespace AIEvent.Application.Services.Implements
                 if (category == null || category.DeletedAt.HasValue)
                 {
                     return ErrorResponse.FailureResult("Can not found or EventCategory is deleted", ErrorCodes.InvalidInput);
+                }
+
+                var isNameTaken = await _unitOfWork.EventCategoryRepository
+                                .Query()
+                                .AnyAsync(t => t.Id != categoryId
+                                     && t.CategoryName.ToLower() == request.EventCategoryName.ToLower()
+                                     && !t.DeletedAt.HasValue);
+                if (isNameTaken)
+                {
+                    return ErrorResponse.FailureResult("Event category name already exists", ErrorCodes.InvalidInput);
                 }
 
                 category.CategoryName = request.EventCategoryName;
