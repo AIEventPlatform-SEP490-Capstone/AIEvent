@@ -179,3 +179,4 @@ lcov-report/
 .dockerignore
 docker-compose.override.yml
 docker-compose.override.yaml
+/Frontend/AIEventTemplate/
