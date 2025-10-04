@@ -14,12 +14,12 @@ namespace AIEvent.Domain.Base
         public Guid Id { get; set; }
 
         public string? CreatedBy { get; set; }
-        public string? UpdatedBy { get; private set; }
-        public string? DeletedBy { get; private set; }
+        public string? UpdatedBy { get; set; }
+        public string? DeletedBy { get; set; }
 
         public DateTimeOffset CreatedAt { get; set; }
-        public DateTimeOffset? UpdatedAt { get; private set; }
-        public DateTimeOffset? DeletedAt { get; private set; }
+        public DateTimeOffset? UpdatedAt { get; set; }
+        public DateTimeOffset? DeletedAt { get; set; }
         public bool IsDeleted { get; private set; }
 
         public void SetCreated(string userId)

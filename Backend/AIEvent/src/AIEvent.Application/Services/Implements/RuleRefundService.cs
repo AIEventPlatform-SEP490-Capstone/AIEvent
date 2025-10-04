@@ -34,10 +34,17 @@ namespace AIEvent.Application.Services.Implements
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
                 var user = await _userManager.FindByIdAsync(userId.ToString());
-                if (user == null)
+                if (user == null || !user.IsActive)
                     return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
+
                 var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
                 var rule = _mapper.Map<RefundRule>(request);
+
+                if (rule == null)
+                {
+                    return ErrorResponse.FailureResult("Failed to map refund rule", ErrorCodes.InternalServerError);
+                }
+
                 if (isAdmin)
                     rule.IsSystem = true;
                 await _unitOfWork.RefundRuleRepository.AddAsync(rule);
@@ -48,10 +55,13 @@ namespace AIEvent.Application.Services.Implements
         public async Task<Result> DeleteRuleAsync(Guid userId, string ruleId)
         {
             var user = await _userManager.FindByIdAsync(userId.ToString());
-            var isAdmin = await _userManager.IsInRoleAsync(user!, "Admin");
+            if (user == null)
+                return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
+
+            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
             var rules = await _unitOfWork.RefundRuleRepository.GetByIdAsync(Guid.Parse(ruleId));
 
-            if (rules == null)
+            if (rules == null || rules.DeletedAt.HasValue)
                 return ErrorResponse.FailureResult("Rule not found or inactive", ErrorCodes.InvalidInput);
             if (rules.IsSystem && !isAdmin)
                 return ErrorResponse.FailureResult("System rule cannot be modified by user", ErrorCodes.PermissionDenied);
@@ -82,13 +92,13 @@ namespace AIEvent.Application.Services.Implements
                 .Take(pageSize)
                 .Select(p => new RuleRefundResponse
                 {
-                   RuleRefundId = p.Id,
-                   RuleName = p.RuleName,
-                   RuleDescription = p.RuleDescription,
-                   CustomAt = p.UpdatedAt,
-                   IsCustom = !p.IsSystem,
-                   CustomBy = p.UpdatedBy ?? p.CreatedBy,
-                   RuleRefundDetails = p.RefundRuleDetails
+                    RuleRefundId = p.Id,
+                    RuleName = p.RuleName,
+                    RuleDescription = p.RuleDescription,
+                    CustomAt = p.UpdatedAt,
+                    IsCustom = !p.IsSystem,
+                    CustomBy = p.UpdatedBy ?? p.CreatedBy,
+                    RuleRefundDetails = p.RefundRuleDetails
                                        .Select(rd => new RuleRefundDetailResponse
                                        {
                                            RuleRefundDetailId = rd.Id,
