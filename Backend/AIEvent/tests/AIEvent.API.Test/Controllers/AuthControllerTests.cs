@@ -178,7 +178,7 @@ namespace AIEvent.API.Test.Controllers
             _mockAuthService.Setup(x => x.RefreshTokenAsync(refreshTokenRequest.RefreshToken))
                 .ReturnsAsync(serviceResult);
 
-            var result = await _authController.RefreshToken(refreshTokenRequest);
+            var result = await _authController.RefreshToken();
 
             result.Should().NotBeNull();
             result.Result.Should().BeOfType<OkObjectResult>();
@@ -187,7 +187,7 @@ namespace AIEvent.API.Test.Controllers
             okResult!.Value.Should().BeOfType<SuccessResponse<AuthResponse>>();
 
             var successResponse = okResult.Value as SuccessResponse<AuthResponse>;
-            successResponse.Message.Should().Be("Token refreshed successfully");
+            successResponse!.Message.Should().Be("Token refreshed successfully");
             successResponse.Data.Should().NotBeNull();
 
             _mockAuthService.Verify(x => x.RefreshTokenAsync(refreshTokenRequest.RefreshToken), Times.Once);
@@ -209,7 +209,7 @@ namespace AIEvent.API.Test.Controllers
             _mockAuthService.Setup(x => x.RefreshTokenAsync(refreshTokenRequest.RefreshToken))
                 .ReturnsAsync(serviceResult);
 
-            var result = await _authController.RefreshToken(refreshTokenRequest);
+            var result = await _authController.RefreshToken();
 
             result.Should().NotBeNull();
             result.Result.Should().BeOfType<BadRequestObjectResult>();
@@ -235,7 +235,7 @@ namespace AIEvent.API.Test.Controllers
             _mockAuthService.Setup(x => x.RevokeRefreshTokenAsync(refreshTokenRequest.RefreshToken))
                 .ReturnsAsync(serviceResult);
 
-            var result = await _authController.RevokeToken(refreshTokenRequest);
+            var result = await _authController.RevokeToken();
 
             result.Should().NotBeNull();
             result.Result.Should().BeOfType<OkObjectResult>();
@@ -265,7 +265,7 @@ namespace AIEvent.API.Test.Controllers
             _mockAuthService.Setup(x => x.RevokeRefreshTokenAsync(refreshTokenRequest.RefreshToken))
                 .ReturnsAsync(serviceResult);
 
-            var result = await _authController.RevokeToken(refreshTokenRequest);
+            var result = await _authController.RevokeToken();
 
             result.Should().NotBeNull();
             result.Result.Should().BeOfType<BadRequestObjectResult>();
