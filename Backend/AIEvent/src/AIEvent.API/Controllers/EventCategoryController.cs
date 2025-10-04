@@ -22,7 +22,7 @@ namespace AIEvent.API.Controllers
 
 
         [HttpPost]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Manager")]
         public async Task<ActionResult<SuccessResponse<object>>> CreateEventCategory([FromBody] CreateCategoryRequest request)
         {
             var result = await _eventCategoryService.CreateEventCategoryAsync(request);
@@ -38,7 +38,7 @@ namespace AIEvent.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Manager")]
         public async Task<ActionResult<SuccessResponse<object>>> DeleteEventCategory(string id)
         {
             var result = await _eventCategoryService.DeleteEventCategoryAsync(id);
@@ -90,7 +90,7 @@ namespace AIEvent.API.Controllers
 
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Manager")]
         public async Task<ActionResult<SuccessResponse<EventCategoryResponse>>> UpdateEventCategory(string id, CreateCategoryRequest request)
         {
             var result = await _eventCategoryService.UpdateEventCategoryAsync(id, request);
