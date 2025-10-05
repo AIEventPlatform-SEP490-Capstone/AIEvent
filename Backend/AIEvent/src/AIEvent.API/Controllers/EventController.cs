@@ -2,6 +2,7 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
+using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Enums;
@@ -40,13 +41,14 @@ namespace AIEvent.API.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<SuccessResponse<BasePaginated<EventsResponse>>>> GetEvent([FromQuery]string? search,
                                                                                                  [FromQuery] string? eventCategoryId,
+                                                                                                 [FromQuery] List<EventTagRequest> tags,
                                                                                                  [FromQuery] TicketType? ticketType, 
                                                                                                  [FromQuery] string? city, 
                                                                                                  [FromQuery] TimeLine? timeLine,
                                                                                                  [FromQuery] int pageNumber = 1,
                                                                                                  [FromQuery] int pageSize = 5)
         {
-            var result = await _eventService.GetEventAsync(search, eventCategoryId, ticketType, city, timeLine, pageNumber, pageSize);
+            var result = await _eventService.GetEventAsync(search, eventCategoryId, tags, ticketType, city, timeLine, pageNumber, pageSize);
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
@@ -59,7 +61,7 @@ namespace AIEvent.API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin, Organizer, Manager, User")]
+        [Authorize(Roles = "Admin, Organizer, Manager")]
         public async Task<ActionResult<SuccessResponse<object>>> CreateEvent([FromForm] CreateEventRequest request)
         {
             var organizerId = User.GetRequiredOrganizerId();

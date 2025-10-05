@@ -2,6 +2,7 @@ using AIEvent.API.Controllers;
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
+using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
@@ -141,12 +142,12 @@ namespace AIEvent.API.Test.Controllers
             var serviceResult = Result<BasePaginated<EventsResponse>>.Success(paginatedResult);
 
             _mockEventService.Setup(x => x.GetEventAsync(
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TicketType?>(), 
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<List<EventTagRequest>?>() ,It.IsAny<TicketType?>(), 
                 It.IsAny<string>(), It.IsAny<TimeLine?>(), It.IsAny<int>(), It.IsAny<int>()))
                 .ReturnsAsync(serviceResult);
 
             // Act
-            var result = await _eventController.GetEvent("tech", null, TicketType.Paid, "Ho Chi Minh", TimeLine.ThisWeek, 1, 5);
+            var result = await _eventController.GetEvent("tech", null, null,TicketType.Paid, "Ho Chi Minh", TimeLine.ThisWeek, 1, 5);
 
             // Assert
             result.Should().NotBeNull();
@@ -159,7 +160,7 @@ namespace AIEvent.API.Test.Controllers
             successResponse!.Data!.Items.Should().HaveCount(1);
             successResponse.Message.Should().Be("Event retrieved successfully");
 
-            _mockEventService.Verify(x => x.GetEventAsync("tech", null, TicketType.Paid, "Ho Chi Minh", TimeLine.ThisWeek, 1, 5), Times.Once);
+            _mockEventService.Verify(x => x.GetEventAsync("tech", null,null, TicketType.Paid, "Ho Chi Minh", TimeLine.ThisWeek, 1, 5), Times.Once);
         }
 
         [Fact]
@@ -170,18 +171,18 @@ namespace AIEvent.API.Test.Controllers
             var serviceResult = Result<BasePaginated<EventsResponse>>.Failure(errorResponse);
 
             _mockEventService.Setup(x => x.GetEventAsync(
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TicketType?>(), 
+                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<List<EventTagRequest>?>(), It.IsAny<TicketType?>(),
                 It.IsAny<string>(), It.IsAny<TimeLine?>(), It.IsAny<int>(), It.IsAny<int>()))
                 .ReturnsAsync(serviceResult);
 
             // Act
-            var result = await _eventController.GetEvent("", "", null, "", null, -1, 0);
+            var result = await _eventController.GetEvent("", "", null,null, "", null, -1, 0);
 
             // Assert
             result.Should().NotBeNull();
             result.Result.Should().BeOfType<BadRequestObjectResult>();
 
-            _mockEventService.Verify(x => x.GetEventAsync("", "", null, "", null, -1, 0), Times.Once);
+            _mockEventService.Verify(x => x.GetEventAsync("", "", null, null, "", null, -1, 0), Times.Once);
         }
 
         [Fact]
@@ -192,12 +193,12 @@ namespace AIEvent.API.Test.Controllers
             var serviceResult = Result<BasePaginated<EventsResponse>>.Success(emptyResult);
 
             _mockEventService.Setup(x => x.GetEventAsync(
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TicketType?>(), 
+                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<List<EventTagRequest>?>(), It.IsAny<TicketType?>(),
                 It.IsAny<string>(), It.IsAny<TimeLine?>(), It.IsAny<int>(), It.IsAny<int>()))
                 .ReturnsAsync(serviceResult);
 
             // Act
-            var result = await _eventController.GetEvent("nonexistent", null, null, null, null, 1, 5);
+            var result = await _eventController.GetEvent("nonexistent", null, null, null, null, TimeLine.ThisMonth, 1, 5);
 
             // Assert
             result.Should().NotBeNull();
@@ -208,7 +209,7 @@ namespace AIEvent.API.Test.Controllers
             successResponse!.Data!.Items.Should().BeEmpty();
             successResponse.Data.TotalItems.Should().Be(0);
 
-            _mockEventService.Verify(x => x.GetEventAsync("nonexistent", null, null, null, null, 1, 5), Times.Once);
+            _mockEventService.Verify(x => x.GetEventAsync("nonexistent", null, null, null, null, TimeLine.ThisMonth,1, 5), Times.Once);
         }
 
         #endregion

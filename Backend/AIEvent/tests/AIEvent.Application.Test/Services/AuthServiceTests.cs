@@ -17,7 +17,7 @@ using Moq;
 
 namespace AIEvent.Application.Test.Services
 {
-    public class AuthTest
+    public class AuthServiceTests
     {
         private readonly Mock<IUnitOfWork> _mockUnitOfWork;
         private readonly Mock<IJwtService> _mockJwtService;
@@ -26,7 +26,7 @@ namespace AIEvent.Application.Test.Services
         private readonly Mock<IMapper> _mockMapper;
         private readonly IAuthService _authService;
 
-        public AuthTest()
+        public AuthServiceTests()
         {
             // Khởi tạo mock cho các dependency
             _mockUnitOfWork = new Mock<IUnitOfWork>();

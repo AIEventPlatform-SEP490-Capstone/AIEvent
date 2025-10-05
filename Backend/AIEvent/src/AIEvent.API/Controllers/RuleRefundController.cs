@@ -20,7 +20,7 @@ namespace AIEvent.API.Controllers
         }
 
         [HttpPost]
-        [Authorize]
+        [Authorize(Roles = "Admin, Organizer, Manager")]
         public async Task<ActionResult<SuccessResponse<object>>> CreateRule(CreateRuleRefundRequest request)
         {
             var userId = User.GetRequiredUserId();
@@ -37,6 +37,7 @@ namespace AIEvent.API.Controllers
 
         [HttpGet]
         [Authorize]
+        [Authorize(Roles = "Admin, Organizer, Manager")]
         public async Task<ActionResult<SuccessResponse<BasePaginated<RuleRefundResponse>>>> GetRule([FromQuery] int pageNumber = 1,
                                                                                                     [FromQuery] int pageSize = 5)
         {
@@ -54,6 +55,7 @@ namespace AIEvent.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin, Organizer, Manager")]
         public async Task<ActionResult<SuccessResponse<object>>> UpdateRule(string id,UpdateRuleRefundRequest request)
         {
             var userId = User.GetRequiredUserId();
@@ -71,6 +73,7 @@ namespace AIEvent.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin, Organizer, Manager")]
         public async Task<ActionResult<SuccessResponse<object>>> DeleteRule(string id)
         {
             var userId = User.GetRequiredUserId();
