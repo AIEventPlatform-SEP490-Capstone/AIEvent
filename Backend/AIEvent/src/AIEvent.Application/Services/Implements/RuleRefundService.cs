@@ -59,7 +59,7 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
 
             var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
-            var rules = await _unitOfWork.RefundRuleRepository.GetByIdAsync(Guid.Parse(ruleId));
+            var rules = await _unitOfWork.RefundRuleRepository.GetByIdAsync(Guid.Parse(ruleId), true);
 
             if (rules == null || rules.DeletedAt.HasValue)
                 return ErrorResponse.FailureResult("Rule not found or inactive", ErrorCodes.InvalidInput);

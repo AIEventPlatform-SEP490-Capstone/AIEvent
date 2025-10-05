@@ -24,5 +24,6 @@ namespace AIEvent.Domain.Identity
         public OrganizerProfile? OrganizerProfile { get; set; }
         public ICollection<UserAction> UserActions { get; set; } = new List<UserAction>();
         public ICollection<UserInterest> UserInterests { get; set; } = new List<UserInterest>();
+        public ICollection<FavoriteEvent> FavoriteEvents { get; set; } = new List<FavoriteEvent>();
     }
 }
