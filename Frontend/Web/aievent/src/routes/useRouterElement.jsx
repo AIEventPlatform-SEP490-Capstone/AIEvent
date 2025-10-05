@@ -2,6 +2,7 @@ import { useRoutes, Navigate } from "react-router-dom";
 import { PATH } from "./path";
 import MainLayout from "../layouts/MainLayout";
 import HomePage from "../pages/Home/HomePage";
+import LoginPage from "../pages/Auth/LoginPage/LoginPage";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -37,7 +38,7 @@ export default function useRouterElement() {
     {
       path: PATH.AUTH,
       children: [
-        { path: "login", element: <div>Login Page</div> },
+        { path: "login", element: < LoginPage /> },
         { path: "register", element: <div>Register Page</div> },
       ],
     },
