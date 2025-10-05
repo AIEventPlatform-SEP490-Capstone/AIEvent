@@ -27,6 +27,7 @@ namespace AIEvent.Application.Services.Implements
             {
                 var existingTag = await _unitOfWork.TagRepository
                                             .Query()
+                                            .AsNoTracking()
                                             .FirstOrDefaultAsync(t => t.NameTag.ToLower() == request.NameTag.ToLower());
                 if(existingTag != null)
                 {

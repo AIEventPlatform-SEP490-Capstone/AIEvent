@@ -20,7 +20,7 @@ namespace AIEvent.API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Organizer,Manager")]
         public async Task<ActionResult<SuccessResponse<object>>> CreateTag([FromBody] CreateTagRequest request)
         {
             var result = await _tagService.CreateTagAsync(request);
@@ -54,7 +54,7 @@ namespace AIEvent.API.Controllers
 
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Organizer,Manager")]
         public async Task<ActionResult<SuccessResponse<object>>> DeleteTag(string id)
         {
             var result = await _tagService.DeleteTagAsync(id);
@@ -87,7 +87,7 @@ namespace AIEvent.API.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Organizer,Manager")]
         public async Task<ActionResult<SuccessResponse<TagResponse>>> UpdateTag(string id, UpdateTagRequest request)
         {
             var result = await _tagService.UpdateTagAsync(id, request);

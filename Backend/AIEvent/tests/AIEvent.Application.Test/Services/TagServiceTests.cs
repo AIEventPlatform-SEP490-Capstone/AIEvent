@@ -1,9 +1,7 @@
 ﻿using AIEvent.Application.Constants;
-using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Implements;
-using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Interfaces;
 using FluentAssertions;
@@ -33,15 +31,59 @@ namespace AIEvent.Application.Test.Services
         // ---------- CreateTagAsync ----------
 
         [Fact]
-        public async Task CreateTagAsync_WithValidRequest_ShouldReturnSuccessResult()
+        public async Task CreateTagAsync_WithExistingTag_ShouldReturnFailureResult()
         {
             // Arrange
-            var request = new CreateTagRequest { NameTag = "Technology" };
-            var tags = new List<Tag>().AsQueryable();
-            var mockQueryable = tags.BuildMock();
+            var request = new CreateTagRequest
+            {
+                NameTag = "Technology"
+            };
 
-            _tagRepoMock.Setup(r => r.Query(false)).Returns(mockQueryable);
-            _tagRepoMock.Setup(r => r.AddAsync(It.IsAny<Tag>())).ReturnsAsync((Tag t) => t);
+            var existingTag = new Tag
+            {
+                Id = Guid.Parse("d4a76e8b-6b14-4f8d-8c3f-42eae2dbeac1"),
+                NameTag = "Technology"
+            };
+
+            var tags = new List<Tag> { existingTag }.AsQueryable().BuildMock();
+
+            _transactionHelperMock
+                .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _tagRepoMock.Setup(r => r.Query(false)).Returns(tags.AsNoTracking());
+
+            // Act
+            var result = await _tagService.CreateTagAsync(request);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error.Message.Should().Be("Tag is already existing");
+            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+
+            _tagRepoMock.Verify(r => r.AddAsync(It.IsAny<Tag>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task CreateTagAsync_WhenTagDoesNotExist_ShouldReturnSuccess()
+        {
+            // Arrange
+            var request = new CreateTagRequest
+            {
+                NameTag = "Science"
+            };
+
+            // Không có tag nào trong DB
+            var tags = new List<Tag>().AsQueryable().BuildMock();
+            _tagRepoMock.Setup(r => r.Query(false)).Returns(tags);
+
+            Tag addedTag = null!;
+            _tagRepoMock
+                .Setup(r => r.AddAsync(It.IsAny<Tag>()))
+                .Callback<Tag>(t => addedTag = t)
+                .ReturnsAsync(() => addedTag);
 
             _transactionHelperMock
                 .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
@@ -53,30 +95,12 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeTrue();
-            _tagRepoMock.Verify(r => r.AddAsync(It.Is<Tag>(t => t.NameTag == "Technology")), Times.Once);
-        }
+            result.Error.Should().BeNull();
 
-        [Fact]
-        public async Task CreateTagAsync_WhenTagAlreadyExists_ShouldReturnFailure()
-        {
-            // Arrange
-            var request = new CreateTagRequest { NameTag = "Technology" };
-            var tags = new List<Tag> { new Tag { Id = Guid.NewGuid(), NameTag = "Technology" } }.AsQueryable();
-            var mockQueryable = tags.BuildMock();
+            addedTag.Should().NotBeNull();
+            addedTag.NameTag.Should().Be("Science");
 
-            _tagRepoMock.Setup(r => r.Query(false)).Returns(mockQueryable);
-
-            _transactionHelperMock
-                .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-                .Returns<Func<Task<Result>>>(func => func());
-
-            // Act
-            var result = await _tagService.CreateTagAsync(request);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Message.Should().Be("Tag is already existing");
-            _tagRepoMock.Verify(r => r.AddAsync(It.IsAny<Tag>()), Times.Never);
+            _tagRepoMock.Verify(r => r.AddAsync(It.IsAny<Tag>()), Times.Once);
         }
 
         // ---------- GetTagByIdAsync ----------
@@ -84,7 +108,7 @@ namespace AIEvent.Application.Test.Services
         [Fact]
         public async Task GetTagByIdAsync_WhenTagExists_ShouldReturnSuccess()
         {
-            var tagId = Guid.NewGuid();
+            var tagId = Guid.Parse("a3f6b2d4-8f0e-4f3a-9c5a-9c7c1a2f4b89");
             var tags = new List<Tag> { new Tag { Id = tagId, NameTag = "Science" } }.AsQueryable();
             var mockQueryable = tags.BuildMock();
 
@@ -100,12 +124,13 @@ namespace AIEvent.Application.Test.Services
         [Fact]
         public async Task GetTagByIdAsync_WhenTagNotFound_ShouldReturnFailure()
         {
+            var nonExistentId = Guid.Parse("c9e0f1a2-5b34-4d87-bf8a-7e5f2e0a4c12");
             var tags = new List<Tag>().AsQueryable();
             var mockQueryable = tags.BuildMock();
 
             _tagRepoMock.Setup(r => r.Query(false)).Returns(mockQueryable);
 
-            var result = await _tagService.GetTagByIdAsync(Guid.NewGuid().ToString());
+            var result = await _tagService.GetTagByIdAsync(nonExistentId.ToString());
 
             result.IsSuccess.Should().BeFalse();
             result.Error.Message.Should().Be("Can not found or Tag is deleted");
@@ -116,7 +141,13 @@ namespace AIEvent.Application.Test.Services
         [Fact]
         public async Task DeleteTagAsync_WhenTagExists_ShouldReturnSuccess()
         {
-            var tag = new Tag { Id = Guid.NewGuid(), NameTag = "DeleteMe" };
+            // Arrange
+            var tagId = Guid.Parse("a3f6b2d4-8f0e-4f3a-9c5a-9c7c1a2f4b89"); 
+            var tag = new Tag 
+            { 
+                Id = tagId, 
+                NameTag = "DeleteMe" 
+            };
             var tags = new List<Tag> { tag }.AsQueryable();
             var mockQueryable = tags.BuildMock();
 
@@ -127,15 +158,19 @@ namespace AIEvent.Application.Test.Services
                 .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(func => func());
 
-            var result = await _tagService.DeleteTagAsync(tag.Id.ToString());
+            // Act
+            var result = await _tagService.DeleteTagAsync(tagId.ToString());
 
+            // Assert
             result.IsSuccess.Should().BeTrue();
-            _tagRepoMock.Verify(r => r.DeleteAsync(It.Is<Tag>(t => t.Id == tag.Id)), Times.Once);
+            _tagRepoMock.Verify(r => r.DeleteAsync(It.Is<Tag>(t => t.Id == tagId)), Times.Once);
         }
 
         [Fact]
         public async Task DeleteTagAsync_WhenTagNotFound_ShouldReturnFailure()
         {
+            // Arrange
+            var nonExistentId = Guid.Parse("c9e0f1a2-5b34-4d87-bf8a-7e5f2e0a4c12"); 
             var tags = new List<Tag>().AsQueryable();
             var mockQueryable = tags.BuildMock();
 
@@ -145,11 +180,14 @@ namespace AIEvent.Application.Test.Services
                 .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(func => func());
 
-            var result = await _tagService.DeleteTagAsync(Guid.NewGuid().ToString());
+            // Act
+            var result = await _tagService.DeleteTagAsync(nonExistentId.ToString());
 
+            // Assert
             result.IsSuccess.Should().BeFalse();
             result.Error.Message.Should().Be("Can not found or Tag is deleted");
         }
+
 
         // ---------- UpdateTagAsync ----------
 
@@ -157,7 +195,8 @@ namespace AIEvent.Application.Test.Services
         public async Task UpdateTagAsync_WhenTagExists_ShouldReturnSuccess()
         {
             // Arrange
-            var tag = new Tag { Id = Guid.NewGuid(), NameTag = "OldName" };
+            var id = Guid.Parse("a3f6b2d4-8f0e-4f3a-9c5a-9c7c1a2f4b89");
+            var tag = new Tag { Id = id, NameTag = "OldName" };
             var tags = new List<Tag> { tag }.AsQueryable();
             var mockQueryable = tags.BuildMock();
 
@@ -173,8 +212,8 @@ namespace AIEvent.Application.Test.Services
             var request = new UpdateTagRequest { TagName = "NewName" };
 
             // Act
-            var tagId = tag.Id.ToString();
-            var result = await _tagService.UpdateTagAsync(tagId, request);
+            var tagID = tag.Id.ToString();
+            var result = await _tagService.UpdateTagAsync(tagID, request);
 
             // Assert
             result.Should().NotBeNull();
@@ -191,6 +230,7 @@ namespace AIEvent.Application.Test.Services
         [Fact]
         public async Task UpdateTagAsync_WhenTagNotFound_ShouldReturnFailure()
         {
+            var nonExistentId = Guid.Parse("c9e0f1a2-5b34-4d87-bf8a-7e5f2e0a4c12");
             var tags = new List<Tag>().AsQueryable();
             var mockQueryable = tags.BuildMock();
 
@@ -201,7 +241,7 @@ namespace AIEvent.Application.Test.Services
                 .Returns<Func<Task<Result<TagResponse>>>>(func => func());
 
             var request = new UpdateTagRequest { TagName = "NewName" };
-            var result = await _tagService.UpdateTagAsync(Guid.NewGuid().ToString(), request);
+            var result = await _tagService.UpdateTagAsync(nonExistentId.ToString(), request);
 
             result.IsSuccess.Should().BeFalse();
             result.Error.Message.Should().Be("Can not found or Tag is deleted");
