@@ -141,7 +141,7 @@ namespace AIEvent.API.Test.Controllers
             var paginatedResult = new BasePaginated<EventsResponse>(eventsResponse, 1, 1, 5);
             var serviceResult = Result<BasePaginated<EventsResponse>>.Success(paginatedResult);
 
-            _mockEventService.Setup(x => x.GetEventAsync(
+            _mockEventService.Setup(x => x.GetEventAsync(It.IsAny<Guid>(),
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<List<EventTagRequest>?>() ,It.IsAny<TicketType?>(), 
                 It.IsAny<string>(), It.IsAny<TimeLine?>(), It.IsAny<int>(), It.IsAny<int>()))
                 .ReturnsAsync(serviceResult);
@@ -160,7 +160,7 @@ namespace AIEvent.API.Test.Controllers
             successResponse!.Data!.Items.Should().HaveCount(1);
             successResponse.Message.Should().Be("Event retrieved successfully");
 
-            _mockEventService.Verify(x => x.GetEventAsync("tech", null,null, TicketType.Paid, "Ho Chi Minh", TimeLine.ThisWeek, 1, 5), Times.Once);
+            _mockEventService.Verify(x => x.GetEventAsync(null,"tech", null,null, TicketType.Paid, "Ho Chi Minh", TimeLine.ThisWeek, 1, 5), Times.Once);
         }
 
         [Fact]
@@ -170,7 +170,7 @@ namespace AIEvent.API.Test.Controllers
             var errorResponse = ErrorResponse.FailureResult("Invalid search parameters", ErrorCodes.InvalidInput);
             var serviceResult = Result<BasePaginated<EventsResponse>>.Failure(errorResponse);
 
-            _mockEventService.Setup(x => x.GetEventAsync(
+            _mockEventService.Setup(x => x.GetEventAsync(It.IsAny<Guid>(),
                  It.IsAny<string>(), It.IsAny<string>(), It.IsAny<List<EventTagRequest>?>(), It.IsAny<TicketType?>(),
                 It.IsAny<string>(), It.IsAny<TimeLine?>(), It.IsAny<int>(), It.IsAny<int>()))
                 .ReturnsAsync(serviceResult);
@@ -182,7 +182,7 @@ namespace AIEvent.API.Test.Controllers
             result.Should().NotBeNull();
             result.Result.Should().BeOfType<BadRequestObjectResult>();
 
-            _mockEventService.Verify(x => x.GetEventAsync("", "", null, null, "", null, -1, 0), Times.Once);
+            _mockEventService.Verify(x => x.GetEventAsync(null,"", "", null, null, "", null, -1, 0), Times.Once);
         }
 
         [Fact]
@@ -192,7 +192,7 @@ namespace AIEvent.API.Test.Controllers
             var emptyResult = new BasePaginated<EventsResponse>(new List<EventsResponse>(), 0, 1, 5);
             var serviceResult = Result<BasePaginated<EventsResponse>>.Success(emptyResult);
 
-            _mockEventService.Setup(x => x.GetEventAsync(
+            _mockEventService.Setup(x => x.GetEventAsync(It.IsAny<Guid>(),
                  It.IsAny<string>(), It.IsAny<string>(), It.IsAny<List<EventTagRequest>?>(), It.IsAny<TicketType?>(),
                 It.IsAny<string>(), It.IsAny<TimeLine?>(), It.IsAny<int>(), It.IsAny<int>()))
                 .ReturnsAsync(serviceResult);
@@ -209,7 +209,7 @@ namespace AIEvent.API.Test.Controllers
             successResponse!.Data!.Items.Should().BeEmpty();
             successResponse.Data.TotalItems.Should().Be(0);
 
-            _mockEventService.Verify(x => x.GetEventAsync("nonexistent", null, null, null, null, TimeLine.ThisMonth,1, 5), Times.Once);
+            _mockEventService.Verify(x => x.GetEventAsync(null,"nonexistent", null, null, null, null, TimeLine.ThisMonth,1, 5), Times.Once);
         }
 
         #endregion

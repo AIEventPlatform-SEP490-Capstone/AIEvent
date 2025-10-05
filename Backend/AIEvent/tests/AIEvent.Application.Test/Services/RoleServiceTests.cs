@@ -45,20 +45,38 @@ namespace AIEvent.Application.Test.Services
                 Description = "Existing role description"
             };
 
-            var existingRole = new AppRole
+            var mapRole = new AppRole
             {
-                Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
-                Name = "Admin"
+                Id = Guid.NewGuid(),
+                Name = request.Name,
+                Description = request.Description
             };
 
             _mockRoleManager.Setup(x => x.FindByNameAsync(request.Name))
-                .ReturnsAsync(existingRole);
+                .ReturnsAsync((AppRole?)null);
+
+            _mockRoleManager.Setup(x => x.CreateAsync(It.IsAny<AppRole>()))
+                .ReturnsAsync(IdentityResult.Success);
+
+            _mockMapper.Setup(m => m.Map<AppRole>(It.IsAny<CreateRoleRequest>()))
+                .Returns(mapRole);
+
+            _mockMapper.Setup(m => m.Map<RoleResponse>(It.IsAny<AppRole>()))
+                .Returns(new RoleResponse
+                {
+                    Id = mapRole.Id.ToString(),
+                    Name = mapRole.Name,
+                    Description = mapRole.Description
+                });
 
             var result = await _roleService.CreateRoleAsync(request);
 
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeTrue();
+            result.Value!.Should().NotBeNull();
+            result.Value!.Name.Should().Be(request.Name);
         }
+
 
         [Fact]
         public async Task CreateRoleAsync_WithExistingName_ShouldReturnFailureResult()

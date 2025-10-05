@@ -65,11 +65,17 @@ namespace AIEvent.Application.Services.Implements
                 events.OrganizerProfileId = organizerId;
                 await _unitOfWork.EventRepository.AddAsync(events);
 
+                if(request.Publish == true)
+                {
+                    //Request đến Manager để duyệt event
+                }
+
                 return Result.Success();
             });
         }
 
-        public async Task<Result<BasePaginated<EventsResponse>>> GetEventAsync(string? search, 
+        public async Task<Result<BasePaginated<EventsResponse>>> GetEventAsync(Guid? userId,
+                                                                                string? search, 
                                                                                 string? eventCategoryId, 
                                                                                 List<EventTagRequest> tags, 
                                                                                 TicketType? ticketType, 
@@ -81,6 +87,7 @@ namespace AIEvent.Application.Services.Implements
             IQueryable<Event> events = _unitOfWork.EventRepository
                                                 .Query()
                                                 .Include(e => e.EventCategory)
+                                                .Include(e => e.FavoriteEvents)
                                                 .Include(e => e.EventTags)
                                                     .ThenInclude(e => e.Tag)
                                                 .AsNoTracking()
@@ -165,6 +172,7 @@ namespace AIEvent.Application.Services.Implements
                         TagId = t.TagId.ToString(),
                         TagName = t.Tag.NameTag
                     }).ToList(),
+                    IsFavorite = userId != null && e.FavoriteEvents.Any(fe => fe.UserId == userId),
                     ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
                         ? new List<string>()
                         : JsonSerializer.Deserialize<List<string>>(e.ImgListEvent, new JsonSerializerOptions())
