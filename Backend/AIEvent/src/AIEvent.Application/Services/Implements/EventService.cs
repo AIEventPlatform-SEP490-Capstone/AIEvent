@@ -69,7 +69,14 @@ namespace AIEvent.Application.Services.Implements
             });
         }
 
-        public async Task<Result<BasePaginated<EventsResponse>>> GetEventAsync(string? search, string? eventCategoryId, TicketType? ticketType, string? city, TimeLine? timeLine, int pageNumber = 1, int pageSize = 5)
+        public async Task<Result<BasePaginated<EventsResponse>>> GetEventAsync(string? search, 
+                                                                                string? eventCategoryId, 
+                                                                                List<EventTagRequest> tags, 
+                                                                                TicketType? ticketType, 
+                                                                                string? city, 
+                                                                                TimeLine? timeLine, 
+                                                                                int pageNumber = 1, 
+                                                                                int pageSize = 5)
         {
             IQueryable<Event> events = _unitOfWork.EventRepository
                                                 .Query()
@@ -89,6 +96,13 @@ namespace AIEvent.Application.Services.Implements
             {
                 events = events
                             .Where(e => e.EventCategoryId == Guid.Parse(eventCategoryId));
+            }
+
+            if (tags != null || tags!.Count > 0)
+            {
+                var tagIds = tags.Select(t => t.TagId).ToList();
+                events = events
+                            .Where(e => e.EventTags.Any(et => tagIds.Contains(et.TagId)));
             }
 
             if (ticketType.HasValue)

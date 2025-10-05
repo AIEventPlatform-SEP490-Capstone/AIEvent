@@ -37,6 +37,7 @@ namespace AIEvent.API.Controllers
         }
 
         [HttpGet("profile")]
+        [Authorize]
         public async Task<ActionResult<SuccessResponse<UserResponse>>> GetProfile()
         {
             var userId = User.GetRequiredUserId().ToString();
@@ -54,6 +55,7 @@ namespace AIEvent.API.Controllers
         }
 
         [HttpPut("profile")]
+        [Authorize]
         public async Task<ActionResult<SuccessResponse<UserResponse>>> UpdateProfile([FromBody] UpdateUserRequest request)
         {
             var userId = User.GetRequiredUserId().ToString();

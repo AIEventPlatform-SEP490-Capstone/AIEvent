@@ -1,3 +1,4 @@
+using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Role;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Implements;
@@ -36,9 +37,8 @@ namespace AIEvent.Application.Test.Services
         }
 
         [Fact]
-        public async Task CreateRoleAsync_WithExistingName_ShouldReturnFailureResult()
+        public async Task CreateRoleAsync_ValidWith_ShouldReturnSuccessResult()
         {
-            // Arrange
             var request = new CreateRoleRequest
             {
                 Name = "ExistingRole",
@@ -47,26 +47,49 @@ namespace AIEvent.Application.Test.Services
 
             var existingRole = new AppRole
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+                Name = "Admin"
+            };
+
+            _mockRoleManager.Setup(x => x.FindByNameAsync(request.Name))
+                .ReturnsAsync(existingRole);
+
+            var result = await _roleService.CreateRoleAsync(request);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task CreateRoleAsync_WithExistingName_ShouldReturnFailureResult()
+        {
+            var request = new CreateRoleRequest
+            {
+                Name = "ExistingRole",
+                Description = "Existing role description"
+            };
+
+            var existingRole = new AppRole
+            {
+                Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
                 Name = request.Name
             };
 
             _mockRoleManager.Setup(x => x.FindByNameAsync(request.Name))
                 .ReturnsAsync(existingRole);
 
-            // Act
             var result = await _roleService.CreateRoleAsync(request);
 
-            // Assert
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Role with this name already exists");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
         [Fact]
         public async Task UpdateRoleAsync_WithInvalidId_ShouldReturnFailureResult()
         {
-            // Arrange
-            var roleId = Guid.NewGuid().ToString();
+            var roleId = Guid.Parse("22222222-2222-2222-2222-222222222222").ToString();
             var request = new UpdateRoleRequest
             {
                 Description = "Updated role description"

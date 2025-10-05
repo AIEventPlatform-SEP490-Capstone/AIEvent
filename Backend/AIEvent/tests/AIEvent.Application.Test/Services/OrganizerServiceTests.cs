@@ -15,7 +15,7 @@ using Moq;
 
 namespace AIEvent.Application.Test.Services
 {
-    public class OrgTest
+    public class OrganizerServiceTests
     {
         private readonly Mock<IUnitOfWork> _mockUnitOfWork;
         private readonly Mock<ITransactionHelper> _mockTransactionHelper;
@@ -23,7 +23,7 @@ namespace AIEvent.Application.Test.Services
         private readonly Mock<IMapper> _mockMapper;
         private readonly Mock<ICloudinaryService> _mockCloudinaryService;
         private readonly IOrganizerService _organizerService;
-        public OrgTest()
+        public OrganizerServiceTests()
         {
             _mockUnitOfWork = new Mock<IUnitOfWork>();
             _mockCloudinaryService = new Mock<ICloudinaryService>();
