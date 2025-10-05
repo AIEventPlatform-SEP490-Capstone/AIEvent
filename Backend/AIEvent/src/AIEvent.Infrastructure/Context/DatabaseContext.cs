@@ -32,6 +32,7 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<UserInterest> UserInterests { get; set; }
         public DbSet<RefundRule> RefundRules { get; set; }
         public DbSet<RefundRuleDetail> RefundRuleDetails { get; set; }
+        public DbSet<FavoriteEvent> FavoriteEvents { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -235,6 +236,25 @@ namespace AIEvent.Infrastructure.Context
 
                 entity.Property(d => d.RefundPercent).HasPrecision(5, 2);
                 entity.HasIndex(rd => new { rd.RefundRuleId, rd.MinDaysBeforeEvent, rd.MaxDaysBeforeEvent}).HasDatabaseName("IX_RefundRuleDetail_Range");
+
+            });
+
+            // ----------------- FavoriteEvent -----------------
+            builder.Entity<FavoriteEvent>(entity =>
+            {
+                entity.HasKey(fe => new { fe.UserId, fe.EventId });
+
+                entity.HasOne(ue => ue.User)
+                    .WithMany(u => u.FavoriteEvents)
+                    .HasForeignKey(ue => ue.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(ue => ue.Event)
+                    .WithMany(f => f.FavoriteEvents)
+                    .HasForeignKey(ue => ue.EventId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(fe => new { fe.UserId, fe.EventId }).HasDatabaseName("IX_FavoriteEvent_User_Event");
 
             });
 

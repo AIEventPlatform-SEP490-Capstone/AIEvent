@@ -314,7 +314,7 @@ namespace AIEvent.Application.Test.Services
                .Returns<Func<Task<Result>>>(func => func());
             _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
             _mockUserManager.Setup(x => x.IsInRoleAsync(user, roles[0])).ReturnsAsync(true);
-            _mockUnitOfWork.Setup(x => x.RefundRuleRepository.GetByIdAsync(ruleId, false)).ReturnsAsync(systemRule);
+            _mockUnitOfWork.Setup(x => x.RefundRuleRepository.GetByIdAsync(ruleId, true)).ReturnsAsync(systemRule);
             _mockUnitOfWork.Setup(x => x.RefundRuleRepository.DeleteAsync(systemRule));
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 
@@ -358,7 +358,7 @@ namespace AIEvent.Application.Test.Services
                .Returns<Func<Task<Result>>>(func => func());
             _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
             _mockUserManager.Setup(x => x.IsInRoleAsync(user, roles[1])).ReturnsAsync(true);
-            _mockUnitOfWork.Setup(x => x.RefundRuleRepository.GetByIdAsync(ruleId, false)).ReturnsAsync(systemRule);
+            _mockUnitOfWork.Setup(x => x.RefundRuleRepository.GetByIdAsync(ruleId, true)).ReturnsAsync(systemRule);
             _mockUnitOfWork.Setup(x => x.RefundRuleRepository.DeleteAsync(systemRule));
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 
@@ -441,7 +441,7 @@ namespace AIEvent.Application.Test.Services
                .Returns<Func<Task<Result>>>(func => func());
             _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
             _mockUserManager.Setup(x => x.IsInRoleAsync(user, roles[1])).ReturnsAsync(true);
-            _mockUnitOfWork.Setup(x => x.RefundRuleRepository.GetByIdAsync(ruleId, false)).ReturnsAsync(systemRule);
+            _mockUnitOfWork.Setup(x => x.RefundRuleRepository.GetByIdAsync(ruleId, true)).ReturnsAsync(systemRule);
 
             var result = await _ruleService.DeleteRuleAsync(userId, ruleId.ToString());
 
@@ -480,7 +480,7 @@ namespace AIEvent.Application.Test.Services
               .Returns<Func<Task<Result>>>(func => func());
             _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
             _mockUserManager.Setup(x => x.IsInRoleAsync(user, roles[0])).ReturnsAsync(false);
-            _mockUnitOfWork.Setup(x => x.RefundRuleRepository.GetByIdAsync(ruleId, false)).ReturnsAsync(systemRule);
+            _mockUnitOfWork.Setup(x => x.RefundRuleRepository.GetByIdAsync(ruleId, true)).ReturnsAsync(systemRule);
 
             var result = await _ruleService.DeleteRuleAsync(userId, ruleId.ToString());
 
@@ -520,7 +520,7 @@ namespace AIEvent.Application.Test.Services
               .Returns<Func<Task<Result>>>(func => func());
             _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
             _mockUserManager.Setup(x => x.IsInRoleAsync(user, roles[0])).ReturnsAsync(false);
-            _mockUnitOfWork.Setup(x => x.RefundRuleRepository.GetByIdAsync(ruleId, false)).ReturnsAsync(systemRule);
+            _mockUnitOfWork.Setup(x => x.RefundRuleRepository.GetByIdAsync(ruleId, true)).ReturnsAsync(systemRule);
 
             var result = await _ruleService.DeleteRuleAsync(userId, ruleId.ToString());
 

@@ -48,7 +48,15 @@ namespace AIEvent.API.Controllers
                                                                                                  [FromQuery] int pageNumber = 1,
                                                                                                  [FromQuery] int pageSize = 5)
         {
-            var result = await _eventService.GetEventAsync(search, eventCategoryId, tags, ticketType, city, timeLine, pageNumber, pageSize);
+
+            Guid? userId = null;
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                userId = User.GetRequiredUserId();
+            }
+
+            var result = await _eventService.GetEventAsync(userId, search, eventCategoryId, tags, ticketType, city, timeLine, pageNumber, pageSize);
+            
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
