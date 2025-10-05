@@ -39,7 +39,7 @@ namespace AIEvent.Application.Services.Implements
                 }
 
                 var organizer = await _unitOfWork.OrganizerProfileRepository.GetByIdAsync(organizerId, true);
-                if (organizer?.IsApprove != true)
+                if (organizer?.Status != OrganizerStatus.Approve)
                 {
                     return ErrorResponse.FailureResult("Organizer not found or inactive", ErrorCodes.Unauthorized);
                 }
