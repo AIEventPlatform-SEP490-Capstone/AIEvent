@@ -33,9 +33,9 @@ namespace AIEvent.Domain.Entities
         public string? TaxCode { get; set; }
         public string? CompanyDescription { get; set; }
 
-        public bool? IsApprove { get; set; } = false;
-        public DateTime? ApproveAt { get; set; }
-        public string? ApproveBy { get; set; }
+        public OrganizerStatus Status { get; set; } = OrganizerStatus.NeedConfirm;
+        public DateTime? ConfirmAt { get; set; }
+        public string? ConfirmBy { get; set; }
 
         public required AppUser User { get; set; }
         public ICollection<Event>? Events { get; set; }

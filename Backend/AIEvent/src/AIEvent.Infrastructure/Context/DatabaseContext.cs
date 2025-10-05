@@ -93,7 +93,7 @@ namespace AIEvent.Infrastructure.Context
                 entity.Property(e => e.ImgCompany).HasMaxLength(500);
                 entity.Property(e => e.ImgBackIdentity).HasMaxLength(500);
                 entity.Property(e => e.ImgBusinessLicense).HasMaxLength(500);
-                entity.Property(e => e.ApproveBy).HasMaxLength(100);
+                entity.Property(e => e.ConfirmBy).HasMaxLength(100);
 
                 entity.HasOne(o => o.User)
                     .WithOne(u => u.OrganizerProfile)
@@ -102,7 +102,7 @@ namespace AIEvent.Infrastructure.Context
                 entity.HasIndex(o => o.UserId).HasDatabaseName("IX_OrganizerProfile_UserId");
                 entity.HasIndex(o => o.TaxCode).IsUnique().HasDatabaseName("IX_OrganizerProfile_TaxCode");
                 entity.HasIndex(o => new { o.UserId, o.IsDeleted }).HasDatabaseName("IX_OrganizerProfile_UserId_IsDeleted");
-                entity.HasIndex(o => o.ApproveAt).HasDatabaseName("IX_OrganizerProfile_ApproveAt");
+                entity.HasIndex(o => o.ConfirmAt).HasDatabaseName("IX_OrganizerProfile_ConfirmAt");
                 entity.HasIndex(o => o.ContactEmail).HasDatabaseName("IX_OrganizerProfile_ContactEmail");
                 entity.HasIndex(o => o.IdentityNumber).HasDatabaseName("IX_OrganizerProfile_IdentityNumber");
             });
