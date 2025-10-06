@@ -16,8 +16,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AIEvent.API", "src\AIEvent.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AIEvent.Application.Test", "tests\AIEvent.Application.Test\AIEvent.Application.Test.csproj", "{892EA232-6D54-4677-BB9D-945391E4DABB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AIEvent.API.Test", "tests\AIEvent.API.Test\AIEvent.API.Test.csproj", "{4A977C32-33EB-430D-99A3-D034A1E22D60}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -44,10 +42,6 @@ Global
 		{892EA232-6D54-4677-BB9D-945391E4DABB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{892EA232-6D54-4677-BB9D-945391E4DABB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{892EA232-6D54-4677-BB9D-945391E4DABB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4A977C32-33EB-430D-99A3-D034A1E22D60}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4A977C32-33EB-430D-99A3-D034A1E22D60}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4A977C32-33EB-430D-99A3-D034A1E22D60}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4A977C32-33EB-430D-99A3-D034A1E22D60}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -58,7 +52,6 @@ Global
 		{22702BA7-E49E-469F-AE63-4378A224495B} = {545246F1-0720-4253-A743-02F1B12EE8A6}
 		{719F91C1-3EE4-4B25-BCFF-02E5DDFA8DA7} = {545246F1-0720-4253-A743-02F1B12EE8A6}
 		{892EA232-6D54-4677-BB9D-945391E4DABB} = {8E6F91A6-19F6-4656-9782-6C5229CB885B}
-		{4A977C32-33EB-430D-99A3-D034A1E22D60} = {8E6F91A6-19F6-4656-9782-6C5229CB885B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2A78ABC5-0157-4633-ACE9-63C9A9B07338}
