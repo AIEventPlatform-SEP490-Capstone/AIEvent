@@ -17,11 +17,15 @@ namespace AIEvent.Infrastructure.Implements
         public IGenericRepository<RefreshToken> RefreshTokenRepository => GetRepository<RefreshToken>();
         public IGenericRepository<Event> EventRepository => GetRepository<Event>();     
         public IGenericRepository<Tag> TagRepository => GetRepository<Tag>();
+        public IGenericRepository<EventCategory> EventCategoryRepository => GetRepository<EventCategory>();
         public IGenericRepository<EventTag> EventTagRepository => GetRepository<EventTag>();
         public IGenericRepository<OrganizerProfile> OrganizerProfileRepository => GetRepository<OrganizerProfile>();
         public IGenericRepository<Interest> InterestRepository => GetRepository<Interest>();
         public IGenericRepository<UserInterest> UserInterestRepository => GetRepository<UserInterest>();
         public IGenericRepository<TicketDetail> TicketDetailRepository => GetRepository<TicketDetail>();
+        public IGenericRepository<RefundRule> RefundRuleRepository => GetRepository<RefundRule>();
+        public IGenericRepository<RefundRuleDetail> RefundRuleDetailRepository => GetRepository<RefundRuleDetail>();
+        public IGenericRepository<FavoriteEvent> FavoriteEventRepository => GetRepository<FavoriteEvent>();
 
         public UnitOfWork(DatabaseContext context)
         {

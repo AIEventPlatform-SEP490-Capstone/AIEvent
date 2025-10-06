@@ -1,3 +1,4 @@
+using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Organizer;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Implements;
@@ -9,47 +10,41 @@ using AIEvent.Domain.Interfaces;
 using AutoMapper;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
+using MockQueryable.Moq;
 using Moq;
-using Xunit;
 
 namespace AIEvent.Application.Test.Services
 {
     public class OrganizerServiceTests
     {
         private readonly Mock<IUnitOfWork> _mockUnitOfWork;
+        private readonly Mock<ITransactionHelper> _mockTransactionHelper;
         private readonly Mock<UserManager<AppUser>> _mockUserManager;
         private readonly Mock<IMapper> _mockMapper;
-        private readonly Mock<ITransactionHelper> _mockTransactionHelper;
         private readonly Mock<ICloudinaryService> _mockCloudinaryService;
-        private readonly OrganizerService _organizerService;
-
+        private readonly IOrganizerService _organizerService;
         public OrganizerServiceTests()
         {
             _mockUnitOfWork = new Mock<IUnitOfWork>();
-            _mockUserManager = CreateMockUserManager();
+            _mockCloudinaryService = new Mock<ICloudinaryService>();
             _mockMapper = new Mock<IMapper>();
             _mockTransactionHelper = new Mock<ITransactionHelper>();
-            _mockCloudinaryService = new Mock<ICloudinaryService>();
-
-            _organizerService = new OrganizerService(
-                _mockUnitOfWork.Object,
-                _mockUserManager.Object,
-                _mockMapper.Object,
-                _mockTransactionHelper.Object,
-                _mockCloudinaryService.Object);
-        }
-
-        private static Mock<UserManager<AppUser>> CreateMockUserManager()
-        {
             var store = new Mock<IUserStore<AppUser>>();
-            return new Mock<UserManager<AppUser>>(store.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+            _mockUserManager = new Mock<UserManager<AppUser>>(
+                store.Object, null, null, null, null, null, null, null, null
+            );
+            _organizerService = new OrganizerService(_mockUnitOfWork.Object,
+                                                    _mockUserManager.Object,
+                                                    _mockMapper.Object,
+                                                    _mockTransactionHelper.Object,
+                                                    _mockCloudinaryService.Object);
         }
+        #region RegisterOrganizer
 
         [Fact]
-        public async Task RegisterOrganizerAsync_WithInvalidUserId_ShouldReturnFailure()
+        public async Task RegisterOrganizerAsync_WithValidRequest_ShouldReturnSuccessResult()
         {
-            // Arrange
-            var userId = Guid.NewGuid();
+            var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
             var request = new RegisterOrganizerRequest
             {
                 OrganizationType = OrganizationType.PrivateCompany,
@@ -57,24 +52,394 @@ namespace AIEvent.Application.Test.Services
                 EventFrequency = EventFrequency.Monthly,
                 EventSize = EventSize.Medium,
                 EventExperienceLevel = EventExperienceLevel.Intermediate,
-                ContactName = "Test Contact",
-                ContactEmail = "test@example.com",
-                ContactPhone = "0123456789",
-                Address = "Test Address"
+                ContactName = "John Doe",
+                ContactEmail = "john.doe@company.com",
+                ContactPhone = "+84901234567",
+                Address = "123 Business Street, District 1, Ho Chi Minh City",
+                Website = "https://www.company.com",
+                UrlFacebook = "https://facebook.com/company",
+                UrlInstagram = "https://instagram.com/company",
+                UrlLinkedIn = "https://linkedin.com/company/company",
+                ExperienceDescription = "5 years of experience organizing corporate events and conferences",
+                IdentityNumber = "123456789012",
+                CompanyName = "ABC Event Company Ltd",
+                TaxCode = "0123456789",
+                CompanyDescription = "Professional event management company specializing in corporate events"
             };
 
-            _mockUserManager.Setup(x => x.FindByIdAsync(It.IsAny<string>()))
-                .ReturnsAsync((AppUser?)null);
+            var user = new AppUser
+            {
+                Id = userId,
+                Email = "user@example.com",
+                UserName = "user@example.com",
+                FullName = "Test User",
+                IsActive = true
+            };
 
-            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<AIEvent.Application.Helpers.Result>>>()))
-                .Returns<Func<Task<AIEvent.Application.Helpers.Result>>>(func => func());
+            var organizer = new OrganizerProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                OrganizationType = OrganizationType.PrivateCompany,
+                OrganizerType = OrganizerType.Business,
+                EventFrequency = EventFrequency.Weekly,
+                EventSize = EventSize.Small,
+                EventExperienceLevel = EventExperienceLevel.Beginner,
+                ContactName = "Tran Thi B",
+                ContactEmail = "tranthi.b@govedu.vn",
+                ContactPhone = "+84987654321",
+                Address = "12 Nguyen Hue Boulevard, District 1, Ho Chi Minh City",
+                Website = "https://www.govedu.vn",
+                UrlFacebook = "https://facebook.com/govedu",
+                UrlInstagram = "https://instagram.com/govedu",
+                UrlLinkedIn = "https://linkedin.com/company/govedu",
+                ExperienceDescription = "Recently started organizing educational workshops and government seminars.",
+                IdentityNumber = "456789123456",
+                CompanyName = "GovEdu Training Center",
+                TaxCode = "5647382910",
+                CompanyDescription = "Government-affiliated education and training center focusing on youth development programs.",
+                User = new AppUser
+                {
+                    Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+                    UserName = "tranthi.b",
+                    Email = "tranthi.b@govedu.vn",
+                    PhoneNumber = "+84987654321"
+                }
+            };
 
-            // Act
+            var mappedOrganizer = new OrganizerProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                OrganizationType = request.OrganizationType,
+                OrganizerType = request.OrganizerType,
+                EventFrequency = request.EventFrequency,
+                EventSize = request.EventSize,
+                EventExperienceLevel = request.EventExperienceLevel,
+                ContactName = request.ContactName,
+                ContactEmail = request.ContactEmail,
+                ContactPhone = request.ContactPhone,
+                Address = request.Address,
+                Website = request.Website,
+                UrlFacebook = request.UrlFacebook,
+                UrlInstagram = request.UrlInstagram,
+                UrlLinkedIn = request.UrlLinkedIn,
+                ExperienceDescription = request.ExperienceDescription,
+                IdentityNumber = request.IdentityNumber,
+                CompanyName = request.CompanyName,
+                TaxCode = request.TaxCode,
+                CompanyDescription = request.CompanyDescription,
+                User = user
+            };
+
+            var emptyOrganizerList = new List<OrganizerProfile>{ organizer }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(false)).Returns(emptyOrganizerList.Object);
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+            _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
+
+            _mockMapper.Setup(x => x.Map<OrganizerProfile>(request)).Returns(mappedOrganizer);
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.AddAsync(mappedOrganizer));
+
             var result = await _organizerService.RegisterOrganizerAsync(userId, request);
 
-            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task RegisterOrganizerAsync_WhenUserInactive_ShouldReturnUnauthorized()
+        {
+            var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+            var request = new RegisterOrganizerRequest
+            {
+                OrganizationType = OrganizationType.PrivateCompany,
+                OrganizerType = OrganizerType.Business,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                ContactName = "John Doe",
+                ContactEmail = "john.doe@company.com",
+                ContactPhone = "+84901234567",
+                Address = "123 Business Street, District 1, Ho Chi Minh City",
+                Website = "https://www.company.com",
+                UrlFacebook = "https://facebook.com/company",
+                UrlInstagram = "https://instagram.com/company",
+                UrlLinkedIn = "https://linkedin.com/company/company",
+                ExperienceDescription = "5 years of experience organizing corporate events and conferences",
+                IdentityNumber = "123456789012",
+                CompanyName = "ABC Event Company Ltd",
+                TaxCode = "0123456789",
+                CompanyDescription = "Professional event management company specializing in corporate events"
+            };
+
+            var user = new AppUser
+            {
+                Id = userId,
+                Email = "user@example.com",
+                UserName = "user@example.com",
+                FullName = "Test User",
+                IsActive = false
+            };
+
+            var organizer = new OrganizerProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                OrganizationType = OrganizationType.PrivateCompany,
+                OrganizerType = OrganizerType.Business,
+                EventFrequency = EventFrequency.Weekly,
+                EventSize = EventSize.Small,
+                EventExperienceLevel = EventExperienceLevel.Beginner,
+                ContactName = "Tran Thi B",
+                ContactEmail = "tranthi.b@govedu.vn",
+                ContactPhone = "+84987654321",
+                Address = "12 Nguyen Hue Boulevard, District 1, Ho Chi Minh City",
+                Website = "https://www.govedu.vn",
+                UrlFacebook = "https://facebook.com/govedu",
+                UrlInstagram = "https://instagram.com/govedu",
+                UrlLinkedIn = "https://linkedin.com/company/govedu",
+                ExperienceDescription = "Recently started organizing educational workshops and government seminars.",
+                IdentityNumber = "456789123456",
+                CompanyName = "GovEdu Training Center",
+                TaxCode = "5647382910",
+                CompanyDescription = "Government-affiliated education and training center focusing on youth development programs.",
+                User = new AppUser
+                {
+                    Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+                    UserName = "tranthi.b",
+                    Email = "tranthi.b@govedu.vn",
+                    PhoneNumber = "+84987654321"
+                }
+            };
+
+            var mappedOrganizer = new OrganizerProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                OrganizationType = request.OrganizationType,
+                OrganizerType = request.OrganizerType,
+                EventFrequency = request.EventFrequency,
+                EventSize = request.EventSize,
+                EventExperienceLevel = request.EventExperienceLevel,
+                ContactName = request.ContactName,
+                ContactEmail = request.ContactEmail,
+                ContactPhone = request.ContactPhone,
+                Address = request.Address,
+                Website = request.Website,
+                UrlFacebook = request.UrlFacebook,
+                UrlInstagram = request.UrlInstagram,
+                UrlLinkedIn = request.UrlLinkedIn,
+                ExperienceDescription = request.ExperienceDescription,
+                IdentityNumber = request.IdentityNumber,
+                CompanyName = request.CompanyName,
+                TaxCode = request.TaxCode,
+                CompanyDescription = request.CompanyDescription,
+                User = user
+            };
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+            _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
+
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("User not found or inactive");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
         }
+
+        [Fact]
+        public async Task RegisterOrganizerAsync_WhenTaxCodeAlreadyExists_ShouldReturnInvalidInput()
+        {
+            var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+            var request = new RegisterOrganizerRequest
+            {
+                OrganizationType = OrganizationType.PrivateCompany,
+                OrganizerType = OrganizerType.Business,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                ContactName = "John Doe",
+                ContactEmail = "john.doe@company.com",
+                ContactPhone = "+84901234567",
+                Address = "123 Business Street, District 1, Ho Chi Minh City",
+                Website = "https://www.company.com",
+                UrlFacebook = "https://facebook.com/company",
+                UrlInstagram = "https://instagram.com/company",
+                UrlLinkedIn = "https://linkedin.com/company/company",
+                ExperienceDescription = "5 years of experience organizing corporate events and conferences",
+                IdentityNumber = "123456789012",
+                CompanyName = "ABC Event Company Ltd",
+                TaxCode = "0123456789",
+                CompanyDescription = "Professional event management company specializing in corporate events"
+            };
+
+            var user = new AppUser
+            {
+                Id = userId,
+                Email = "user@example.com",
+                UserName = "user@example.com",
+                FullName = "Test User",
+                IsActive = true
+            };
+
+            var organizer = new OrganizerProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                OrganizationType = OrganizationType.PrivateCompany,
+                OrganizerType = OrganizerType.Business,
+                EventFrequency = EventFrequency.Weekly,
+                EventSize = EventSize.Small,
+                EventExperienceLevel = EventExperienceLevel.Beginner,
+                ContactName = "Tran Thi B",
+                ContactEmail = "tranthi.b@govedu.vn",
+                ContactPhone = "+84987654321",
+                Address = "12 Nguyen Hue Boulevard, District 1, Ho Chi Minh City",
+                Website = "https://www.govedu.vn",
+                UrlFacebook = "https://facebook.com/govedu",
+                UrlInstagram = "https://instagram.com/govedu",
+                UrlLinkedIn = "https://linkedin.com/company/govedu",
+                ExperienceDescription = "Recently started organizing educational workshops and government seminars.",
+                IdentityNumber = "456789123456",
+                CompanyName = "GovEdu Training Center",
+                TaxCode = "0123456789",
+                CompanyDescription = "Government-affiliated education and training center focusing on youth development programs.",
+                User = new AppUser
+                {
+                    Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+                    UserName = "tranthi.b",
+                    Email = "tranthi.b@govedu.vn",
+                    PhoneNumber = "+84987654321"
+                }
+            };
+
+            var mappedOrganizer = new OrganizerProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                OrganizationType = request.OrganizationType,
+                OrganizerType = request.OrganizerType,
+                EventFrequency = request.EventFrequency,
+                EventSize = request.EventSize,
+                EventExperienceLevel = request.EventExperienceLevel,
+                ContactName = request.ContactName,
+                ContactEmail = request.ContactEmail,
+                ContactPhone = request.ContactPhone,
+                Address = request.Address,
+                Website = request.Website,
+                UrlFacebook = request.UrlFacebook,
+                UrlInstagram = request.UrlInstagram,
+                UrlLinkedIn = request.UrlLinkedIn,
+                ExperienceDescription = request.ExperienceDescription,
+                IdentityNumber = request.IdentityNumber,
+                CompanyName = request.CompanyName,
+                TaxCode = request.TaxCode,
+                CompanyDescription = request.CompanyDescription,
+                User = user
+            };
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+            _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
+
+            var emptyOrganizerList = new List<OrganizerProfile> { organizer }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(false)).Returns(emptyOrganizerList.Object);
+
+
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Tax code already exists.");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task RegisterOrganizerAsync_WhenMapperReturnsNull_ShouldReturnInternalServerError()
+        {
+            var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+            var request = new RegisterOrganizerRequest
+            {
+                OrganizationType = OrganizationType.PrivateCompany,
+                OrganizerType = OrganizerType.Business,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                ContactName = "John Doe",
+                ContactEmail = "john.doe@company.com",
+                ContactPhone = "+84901234567",
+                Address = "123 Business Street, District 1, Ho Chi Minh City",
+                Website = "https://www.company.com",
+                UrlFacebook = "https://facebook.com/company",
+                UrlInstagram = "https://instagram.com/company",
+                UrlLinkedIn = "https://linkedin.com/company/company",
+                ExperienceDescription = "5 years of experience organizing corporate events and conferences",
+                IdentityNumber = "123456789012",
+                CompanyName = "ABC Event Company Ltd",
+                TaxCode = "0123456789",
+                CompanyDescription = "Professional event management company specializing in corporate events"
+            };
+
+            var user = new AppUser
+            {
+                Id = userId,
+                Email = "user@example.com",
+                UserName = "user@example.com",
+                FullName = "Test User",
+                IsActive = true
+            };
+
+            var organizer = new OrganizerProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                OrganizationType = OrganizationType.PrivateCompany,
+                OrganizerType = OrganizerType.Business,
+                EventFrequency = EventFrequency.Weekly,
+                EventSize = EventSize.Small,
+                EventExperienceLevel = EventExperienceLevel.Beginner,
+                ContactName = "Tran Thi B",
+                ContactEmail = "tranthi.b@govedu.vn",
+                ContactPhone = "+84987654321",
+                Address = "12 Nguyen Hue Boulevard, District 1, Ho Chi Minh City",
+                Website = "https://www.govedu.vn",
+                UrlFacebook = "https://facebook.com/govedu",
+                UrlInstagram = "https://instagram.com/govedu",
+                UrlLinkedIn = "https://linkedin.com/company/govedu",
+                ExperienceDescription = "Recently started organizing educational workshops and government seminars.",
+                IdentityNumber = "456789123456",
+                CompanyName = "GovEdu Training Center",
+                TaxCode = "5647382910",
+                CompanyDescription = "Government-affiliated education and training center focusing on youth development programs.",
+                User = new AppUser
+                {
+                    Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+                    UserName = "tranthi.b",
+                    Email = "tranthi.b@govedu.vn",
+                    PhoneNumber = "+84987654321"
+                }
+            };
+
+            var emptyOrganizerList = new List<OrganizerProfile> { organizer }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(false)).Returns(emptyOrganizerList.Object);
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+            _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
+
+            _mockMapper.Setup(x => x.Map<OrganizerProfile>(request)).Returns((OrganizerProfile)null);
+
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Failed to map organizer profile");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
+        }
+        #endregion
     }
 }

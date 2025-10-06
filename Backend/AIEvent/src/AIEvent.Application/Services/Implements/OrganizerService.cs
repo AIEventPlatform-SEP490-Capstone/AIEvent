@@ -3,7 +3,9 @@ using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Organizer;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
+using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
+using AIEvent.Domain.Enums;
 using AIEvent.Domain.Identity;
 using AIEvent.Domain.Interfaces;
 using AutoMapper;
@@ -114,6 +116,94 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("Organizer code already exists.", ErrorCodes.InvalidInput);
 
             return Result<OrganizerResponse>.Success(organizers);
+        }
+
+        public async Task<Result<OrganizerResponse>> GetOrgNeedApproveByIdAsync(string id)
+        {
+            if (!Guid.TryParse(id, out var organizerId))
+            {
+                return ErrorResponse.FailureResult("Invalid Guid format", ErrorCodes.InvalidInput);
+            }
+
+            var organizer = await _unitOfWork.OrganizerProfileRepository
+                .Query()
+                .AsNoTracking()
+                .Include(o => o.User)
+                .FirstOrDefaultAsync(o => o.Id == organizerId && !o.IsDeleted && o.Status == OrganizerStatus.NeedConfirm);
+
+            if (organizer == null)
+            {
+                return ErrorResponse.FailureResult("Organizer can not found or is deleted", ErrorCodes.InvalidInput);
+            }
+                
+            OrganizerResponse organizerResponse = _mapper.Map<OrganizerResponse>(organizer);
+
+            return Result<OrganizerResponse>.Success(organizerResponse);
+        }
+
+        public async Task<Result<BasePaginated<ListOrganizerNeedApprove>>> GetListOrganizerNeedApprove(int pageNumber, int pageSize)
+        {
+            IQueryable<OrganizerProfile> query = _unitOfWork.OrganizerProfileRepository
+                .Query()
+                .AsNoTracking()
+                .Where(p => !p.DeletedAt.HasValue && p.Status == OrganizerStatus.NeedConfirm); ;
+
+            var totalCount = await query.CountAsync();
+
+            var result = await query
+                .OrderBy(p => p.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(p => new ListOrganizerNeedApprove
+                {
+                    Id = p.Id.ToString(),
+                    OrganizationType = p.OrganizationType,
+                    CompanyName = p.CompanyName,
+                    ContactEmail = p.ContactEmail,
+                    ContactPhone = p.ContactPhone,
+                    Address = p.Address,
+                    ImgCompany = p.ImgCompany,
+                })
+                .ToListAsync();
+
+            return new BasePaginated<ListOrganizerNeedApprove>(result, totalCount, pageNumber, pageSize);
+        }
+
+        public async Task<Result> ConfirmBecomeOrganizerAsync(Guid userId, string id, ConfirmRequest request)
+        {
+            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+            {
+                if (!Guid.TryParse(id, out var Id))
+                {
+                    return ErrorResponse.FailureResult("Invalid Guid format", ErrorCodes.InvalidInput);
+                }
+
+                var organizer = await _unitOfWork.OrganizerProfileRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Include(o => o.User)
+                    .FirstOrDefaultAsync(o => o.Id == Id && !o.IsDeleted && o.Status == OrganizerStatus.NeedConfirm);
+
+                if (organizer == null)
+                {
+                    return ErrorResponse.FailureResult("Can not found Organizer", ErrorCodes.InvalidInput);
+                }
+
+                if (request.Status)
+                {
+                    organizer.Status = OrganizerStatus.Approve;
+                }
+                else
+                {
+                    organizer.Status = OrganizerStatus.Reject;
+                }
+
+                organizer.ConfirmAt = DateTime.UtcNow;
+                organizer.ConfirmBy = userId.ToString();
+                await _unitOfWork.OrganizerProfileRepository.UpdateAsync(organizer);
+
+                return Result.Success();
+            });
         }
     }
 }

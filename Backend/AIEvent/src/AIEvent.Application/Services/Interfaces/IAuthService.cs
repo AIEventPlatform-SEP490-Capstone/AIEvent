@@ -8,7 +8,6 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result<AuthResponse>> LoginAsync(LoginRequest request);
         Task<Result<AuthResponse>> RegisterAsync(RegisterRequest request);
         Task<Result<AuthResponse>> RefreshTokenAsync(string refreshToken);
-        Task<Result<bool>> ValidateRefreshTokenAsync(string refreshToken, string userId);
         Task<Result> RevokeRefreshTokenAsync(string refreshToken);
     }
 }

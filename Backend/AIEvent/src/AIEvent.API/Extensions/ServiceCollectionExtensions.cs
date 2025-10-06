@@ -30,7 +30,10 @@ namespace AIEvent.API.Extensions
                     .AddScoped<IRoleService, RoleService>()
                     .AddScoped<IEnumService, EnumService>()
                     .AddScoped<IOrganizerService, OrganizerService>()
-                    .AddScoped<ITagService, TagService>();
+                    .AddScoped<ITagService, TagService>()
+                    .AddScoped<IRuleRefundService, RuleRefundService>()
+                    .AddScoped<IFavoriteEventService, FavoriteEventService>()
+                    .AddScoped<IEventCategoryService, EventCategoryService>();
 
             return services;
         }

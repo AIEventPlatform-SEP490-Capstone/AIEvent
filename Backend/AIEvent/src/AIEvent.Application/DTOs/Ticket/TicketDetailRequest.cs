@@ -1,4 +1,6 @@
-﻿namespace AIEvent.Application.DTOs.Ticket
+﻿using AIEvent.Application.DTOs.RuleRefund;
+
+namespace AIEvent.Application.DTOs.Ticket
 {
     public class TicketDetailRequest
     {
@@ -6,5 +8,6 @@
         public required decimal TicketPrice { get; set; }
         public int TicketQuantity { get; set; }
         public string? TicketDescription { get; set; }
+        public required string RuleRefundRequestId { get; set; }
     }
 }

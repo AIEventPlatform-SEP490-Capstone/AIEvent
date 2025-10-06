@@ -24,7 +24,7 @@ namespace AIEvent.API.Controllers
         {
             var result = await _roleService.GetAllRolesAsync();
 
-            if (result.IsFailure)
+            if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
@@ -37,11 +37,12 @@ namespace AIEvent.API.Controllers
 
 
         [HttpPost]
+        [Authorize("Admin")]
         public async Task<ActionResult<SuccessResponse<RoleResponse>>> CreateRole([FromBody] CreateRoleRequest request)
         {
             var result = await _roleService.CreateRoleAsync(request);
-
-            if (result.IsFailure)
+                
+            if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
@@ -53,11 +54,12 @@ namespace AIEvent.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize("Admin")]
         public async Task<ActionResult<SuccessResponse<RoleResponse>>> UpdateRole(string id, [FromBody] UpdateRoleRequest request)
         {
             var result = await _roleService.UpdateRoleAsync(id, request);
 
-            if (result.IsFailure)
+            if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
@@ -69,11 +71,12 @@ namespace AIEvent.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize("Admin")]
         public async Task<ActionResult<SuccessResponse<object>>> DeleteRole(string id)
         {
             var result = await _roleService.DeleteRoleAsync(id);
 
-            if (result.IsFailure)
+            if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
