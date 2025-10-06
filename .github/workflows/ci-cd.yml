@@ -39,7 +39,7 @@ jobs:
 
     - name: Build and push Docker image
       run: |
-        docker build -t $IMAGE_NAME -f Backend/AIEvent/src/AIEvent.API/Dockerfile Backend/AIEvent/src
+        docker build -t $IMAGE_NAME -f Backend/AIEvent/src/AIEvent.API/Dockerfile .
         docker push $IMAGE_NAME
 
     - name: Deploy to VPS via SSH
@@ -49,9 +49,8 @@ jobs:
         username: deployuser
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u doublenh25 --password-stdin
+          docker login ghcr.io -u doublenh25 -p "${{ secrets.GHCR_TOKEN }}"
           cd "C:/Users/Administrator/Desktop/aievent"
-          docker pull $IMAGE_NAME
+          docker pull ghcr.io/doublenh25/aievent:latest
           docker-compose down
           docker-compose up -d --build
-
