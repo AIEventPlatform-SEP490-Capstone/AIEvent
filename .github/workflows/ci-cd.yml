@@ -52,7 +52,7 @@ jobs:
           powershell -Command "
             cd 'C:/Users/Administrator/Desktop/aievent'
 
-            # Login GHCR trực tiếp trên VPS
+            # Login GHCR trực tiếp trên VPS để tránh lỗi credential Windows
             docker login ghcr.io -u doublenh25 -p ${{ secrets.GHCR_TOKEN }}
 
             # Pull image từ GHCR
