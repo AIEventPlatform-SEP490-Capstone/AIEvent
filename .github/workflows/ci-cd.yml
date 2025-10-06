@@ -49,15 +49,10 @@ jobs:
           username: deployuser
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            powershell -Command "
-              cd 'C:/Users/Administrator/Desktop/aievent'
-              
-              # Login GHCR trên VPS
-              docker login ghcr.io -u doublenh25 -p ${{ secrets.GHCR_TOKEN }}
+            cd C:/Users/Administrator/Desktop/aievent
+            docker login ghcr.io -u doublenh25 -p ${{ secrets.GHCR_TOKEN }}
+            docker pull ghcr.io/doublenh25/aievent:latest
+            docker stop aievent-api || echo 'No container to stop'
+            docker rm aievent-api || echo 'No container to remove'
+            docker run -d --name aievent-api -p 5000:80 ghcr.io/doublenh25/aievent:latest
 
-              # Pull image mới
-              docker-compose pull
-
-              # Recreate container với image mới
-              docker-compose up -d --force-recreate
-            "
