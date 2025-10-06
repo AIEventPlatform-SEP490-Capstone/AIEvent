@@ -49,9 +49,5 @@ jobs:
         username: deployuser
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          cd "C:\Users\deployuser\Desktop\aievent"
-          docker pull $env:IMAGE_NAME
-          docker-compose down
-          docker-compose up -d
-        shell: powershell
+          powershell -Command "cd 'C:\Users\deployuser\Desktop\aievent'; docker pull $env:IMAGE_NAME; docker-compose down; docker-compose up -d"
 
