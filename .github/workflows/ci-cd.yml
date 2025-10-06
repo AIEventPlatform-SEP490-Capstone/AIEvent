@@ -52,22 +52,13 @@ jobs:
           script: |
             powershell -Command "& {
               Set-Location 'C:\Users\Administrator\Desktop\aievent';
-      
-              # Login GHCR trực tiếp với secret
               docker login ghcr.io -u 'doublenh25' -p '${{ secrets.GHCR_TOKEN }}';
-      
-              # Pull image mới
               docker pull ghcr.io/doublenh25/aievent:latest;
-      
-              # Dừng và xóa container cũ
               docker stop aievent-api;
               docker rm aievent-api;
-      
-              # Chạy container mới từ image mới
-              docker run -d --name aievent-api -p 5000:80 `
-                -v C:\Users\Administrator\Desktop\aievent\DataProtection-Keys:/root/.aspnet/DataProtection-Keys `
-                ghcr.io/doublenh25/aievent:latest;
+              docker run -d --name aievent-api -p 5000:80 -v C:\Users\Administrator\Desktop\aievent\DataProtection-Keys:/root/.aspnet/DataProtection-Keys ghcr.io/doublenh25/aievent:latest
             }"
+
 
 
 
