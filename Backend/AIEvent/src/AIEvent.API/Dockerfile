@@ -2,18 +2,18 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copy solution + csproj files
-COPY Backend/AIEvent/AIEvent.sln ./
-COPY Backend/AIEvent/src/AIEvent.API/AIEvent.API.csproj AIEvent.API/
-COPY Backend/AIEvent/src/AIEvent.Application/AIEvent.Application.csproj AIEvent.Application/
-COPY Backend/AIEvent/src/AIEvent.Domain/AIEvent.Domain.csproj AIEvent.Domain/
-COPY Backend/AIEvent/src/AIEvent.Infrastructure/AIEvent.Infrastructure.csproj AIEvent.Infrastructure/
+# Copy solution + csproj
+COPY AIEvent.API/AIEvent.API.csproj AIEvent.API/
+COPY AIEvent.Application/AIEvent.Application.csproj AIEvent.Application/
+COPY AIEvent.Domain/AIEvent.Domain.csproj AIEvent.Domain/
+COPY AIEvent.Infrastructure/AIEvent.Infrastructure.csproj AIEvent.Infrastructure/
+COPY ../AIEvent.sln ./   # nếu AIEvent.sln nằm ngoài src, cần copy ../
 
 # Restore dependencies
 RUN dotnet restore AIEvent.API/AIEvent.API.csproj
 
 # Copy tất cả source code
-COPY Backend/AIEvent/src ./
+COPY . .
 
 # Publish
 RUN dotnet publish AIEvent.API/AIEvent.API.csproj -c Release -o /app/publish /p:UseAppHost=false
