@@ -25,14 +25,14 @@ jobs:
 
     # 3️⃣ Restore & build
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore Backend/AIEvent/AIEvent.sln
 
     - name: Build project
-      run: dotnet build --configuration Release --no-restore
-
+      run: dotnet build Backend/AIEvent/AIEvent.sln --configuration Release --no-restore
+      
     # 4️⃣ Run tests (nếu có)
     - name: Run tests
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test Backend/AIEvent/AIEvent.sln --no-build --verbosity normal
 
     # 5️⃣ Đăng nhập GitHub Container Registry
     - name: Login to GitHub Container Registry
