@@ -1,4 +1,4 @@
-name: CI/CD - Deploy .NET API to VPS
+name: CI/CD - Deploy .NET API to Windows VPS
 
 on:
   push:
@@ -50,11 +50,15 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           powershell -Command "
-            cd 'C:/Users/Administrator/Desktop/aievent';
-            docker login ghcr.io -u doublenh25 -p ${{ secrets.GHCR_TOKEN }};
-            docker pull ghcr.io/doublenh25/aievent:latest;
-            docker-compose down;
+            cd 'C:/Users/Administrator/Desktop/aievent'
+
+            # Login GHCR trực tiếp trên VPS
+            docker login ghcr.io -u doublenh25 -p ${{ secrets.GHCR_TOKEN }}
+
+            # Pull image từ GHCR
+            docker pull ghcr.io/doublenh25/aievent:latest
+
+            # Chạy container bằng docker-compose
+            docker-compose down
             docker-compose up -d
           "
-
-
