@@ -45,7 +45,7 @@ jobs:
     # 6️⃣ Build và push Docker image
     - name: Build and push Docker image
       run: |
-        docker build -t $IMAGE_NAME .
+        docker build -t $IMAGE_NAME -f Backend/AIEvent/src/AIEvent.API/Dockerfile Backend/AIEvent/src/AIEvent.API
         docker push $IMAGE_NAME
 
     # 7️⃣ Deploy lên VPS qua SSH
