@@ -39,7 +39,7 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          docker build --no-cache -t $IMAGE_NAME -f Backend/AIEvent/src/AIEvent.API/Dockerfile Backend/AIEvent/src
+          docker build --no-cache -t $IMAGE_NAME -f Backend/AIEvent/src/AIEvent.API/Dockerfile Backend/AIEvent/src/AIEvent.API
           docker push $IMAGE_NAME
       
       - name: Deploy to VPS via SSH
