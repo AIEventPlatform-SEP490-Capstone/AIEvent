@@ -49,5 +49,12 @@ jobs:
         username: deployuser
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          powershell -Command "cd 'C:/Users/Administrator/Desktop/aievent'; docker pull $env:IMAGE_NAME; docker-compose down; docker-compose up -d"
+          powershell -Command "
+            cd 'C:/Users/Administrator/Desktop/aievent';
+            docker login ghcr.io -u doublenh25 -p ${{ secrets.GHCR_TOKEN }};
+            docker pull ghcr.io/doublenh25/aievent:latest;
+            docker-compose down;
+            docker-compose up -d
+          "
+
 
