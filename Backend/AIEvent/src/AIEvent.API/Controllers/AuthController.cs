@@ -18,6 +18,28 @@ namespace AIEvent.API.Controllers
             _authService = authService;
         }
 
+        [HttpGet("test-deploy")]
+        [AllowAnonymous]
+        public async Task<ActionResult<SuccessResponse<AuthResponse>>> LoginTestDeploy([FromBody] LoginRequest request)
+        {
+            var result = await _authService.LoginAsync(request);
+
+            if (!result.IsSuccess)
+            {
+                return Unauthorized(result.Error!);
+            }
+
+            Response.Cookies.Append("refreshToken", result.Value!.RefreshToken!, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTime.UtcNow.AddDays(7)
+            });
+
+            return Ok(SuccessResponse<AuthResponse>.SuccessResult(result.Value!));
+        }
+
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<ActionResult<SuccessResponse<AuthResponse>>> Login([FromBody] LoginRequest request)
