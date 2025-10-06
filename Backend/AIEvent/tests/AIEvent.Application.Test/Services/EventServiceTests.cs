@@ -58,7 +58,7 @@ namespace AIEvent.Application.Test.Services
             var organizer = new OrganizerProfile
             {
                 Id = organizerId,
-                IsApprove = true,
+                Status = OrganizerStatus.Approve,
                 OrganizationType = OrganizationType.PrivateCompany,
                 EventFrequency = EventFrequency.Monthly,
                 EventSize = EventSize.Medium,
@@ -125,7 +125,7 @@ namespace AIEvent.Application.Test.Services
             var organizer = new OrganizerProfile
             {
                 Id = organizerId,
-                IsApprove = false,
+                Status = OrganizerStatus.Reject,
                 OrganizationType = OrganizationType.PrivateCompany,
                 EventFrequency = EventFrequency.Monthly,
                 EventSize = EventSize.Medium,
@@ -232,7 +232,7 @@ namespace AIEvent.Application.Test.Services
             var organizer = new OrganizerProfile
             {
                 Id = organizerId,
-                IsApprove = true,
+                Status = OrganizerStatus.Approve,
                 OrganizationType = OrganizationType.PrivateCompany,
                 EventFrequency = EventFrequency.Monthly,
                 EventSize = EventSize.Medium,

@@ -33,7 +33,7 @@ namespace AIEvent.Application.Services.Implements
                     Transformation = new Transformation()
                                             .Width(500)
                                             .Height(500)
-                                            .Crop("auto")
+                                            .Crop("fill")
                                             .Gravity("auto")
                 };
                 var uploadResult = await _cloudinary.UploadAsync(uploadParams);
