@@ -6,13 +6,11 @@ import { VerticalNavigation } from "../components/VerticalNavigation/vertical-na
 export default function MainLayout() {
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-screen w-full bg-background">
         <VerticalNavigation />
-        <SidebarInset className="flex-1">
-          <main className="flex-1 p-6 transition-all duration-300 ease-in-out">
-            <div className="max-w-7xl mx-auto">
-              <Outlet />
-            </div>
+        <SidebarInset className="flex-1 overflow-x-hidden">
+          <main className="w-full transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]">
+            <Outlet />
           </main>
         </SidebarInset>
       </div>
