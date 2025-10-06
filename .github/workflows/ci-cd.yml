@@ -52,26 +52,25 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             powershell -Command "
-              Set-Location 'C:\Users\Administrator\Desktop\aievent'
-      
-              # Xóa DataProtection cũ (tùy chọn)
-              Remove-Item -Recurse -Force 'C:\Users\Administrator\Desktop\aievent\DataProtection-Keys' -ErrorAction SilentlyContinue
-      
+              Set-Location 'C:\Users\Administrator\Desktop\aievent';
+          
               # Login GHCR
-              docker login ghcr.io -u doublenh25 -p $env:GHCR_TOKEN
-      
+              docker login ghcr.io -u doublenh25 -p $env:GHCR_TOKEN;
+              if ($LASTEXITCODE -ne 0) { Write-Host 'Docker login failed'; exit 1 }
+          
               # Pull image mới
-              docker pull ghcr.io/doublenh25/aievent:latest
-      
+              docker pull ghcr.io/doublenh25/aievent:latest;
+              if ($LASTEXITCODE -ne 0) { Write-Host 'Docker pull failed'; exit 1 }
+          
               # Dừng và xóa container cũ
-              docker stop aievent-api -ErrorAction SilentlyContinue
-              docker rm aievent-api -ErrorAction SilentlyContinue
-      
-              # Chạy container mới từ image mới
-              docker run -d --name aievent-api -p 5000:80 `
-                -v C:\Users\Administrator\Desktop\aievent\DataProtection-Keys:/root/.aspnet/DataProtection-Keys `
-                ghcr.io/doublenh25/aievent:latest
+              docker stop aievent-api;
+              docker rm aievent-api;
+          
+              # Chạy container mới
+              docker run -d --name aievent-api -p 5000:80 -v C:\Users\Administrator\Desktop\aievent\DataProtection-Keys:/root/.aspnet/DataProtection-Keys ghcr.io/doublenh25/aievent:latest;
+              if ($LASTEXITCODE -ne 0) { Write-Host 'Docker run failed'; exit 1 }
             "
+
 
 
           
