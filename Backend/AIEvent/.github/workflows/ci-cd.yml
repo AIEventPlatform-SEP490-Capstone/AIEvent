@@ -1,0 +1,62 @@
+name: CI/CD - Deploy .NET API to VPS
+
+on:
+  push:
+    branches:
+      - dev
+
+env:
+  IMAGE_NAME: ghcr.io/DoubleNH25/AIEvent:latest
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1️⃣ Checkout code
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 2️⃣ Setup .NET SDK
+    - name: Setup .NET 8 SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    # 3️⃣ Restore & build
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build project
+      run: dotnet build --configuration Release --no-restore
+
+    # 4️⃣ Run tests (nếu có)
+    - name: Run tests
+      run: dotnet test --no-build --verbosity normal
+
+    # 5️⃣ Đăng nhập GitHub Container Registry
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    # 6️⃣ Build và push Docker image
+    - name: Build and push Docker image
+      run: |
+        docker build -t $IMAGE_NAME .
+        docker push $IMAGE_NAME
+
+    # 7️⃣ Deploy lên VPS qua SSH
+    - name: Deploy to VPS via SSH
+      uses: appleboy/ssh-action@v0.1.10
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: deployuser
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd "C:/Users/Administrator/Desktop/aievent"
+          docker pull $IMAGE_NAME
+          docker-compose down
+          docker-compose up -d --build
