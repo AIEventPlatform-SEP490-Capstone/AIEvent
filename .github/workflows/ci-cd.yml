@@ -39,7 +39,7 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          docker build -t $IMAGE_NAME -f Backend/AIEvent/src/AIEvent.API/Dockerfile Backend/AIEvent/src
+          docker build --no-cache -t $IMAGE_NAME -f Backend/AIEvent/src/AIEvent.API/Dockerfile Backend/AIEvent/src
           docker push $IMAGE_NAME
 
       - name: Deploy to Windows VPS via SSH
@@ -50,12 +50,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
-            powershell -Command "Set-Location 'C:\Users\Administrator\Desktop\aievent'; docker login ghcr.io -u 'doublenh25' -p '${{ secrets.GHCR_TOKEN }}'; docker pull ghcr.io/doublenh25/aievent:latest; docker stop aievent-api; docker rm aievent-api; docker run -d --name aievent-api -p 5000:80 -v C:\Users\Administrator\Desktop\aievent\DataProtection-Keys:/root/.aspnet/DataProtection-Keys ghcr.io/doublenh25/aievent:latest"
-
-
-
-
-
-
-          
-
+            powershell -Command "Set-Location 'C:\Users\Administrator\Desktop\aievent'; \
+            docker login ghcr.io -u 'doublenh25' -p '${{ secrets.GHCR_TOKEN }}'; \
+            docker pull ghcr.io/doublenh25/aievent:latest; \
+            docker stop aievent-api -ErrorAction SilentlyContinue; \
+            docker rm aievent-api -ErrorAction SilentlyContinue; \
+            docker run -d --name aievent-api -p 5000:80 -v C:\Users\Administrator\Desktop\aievent\DataProtection-Keys:/root/.aspnet/DataProtection-Keys ghcr.io/doublenh25/aievent:latest"
