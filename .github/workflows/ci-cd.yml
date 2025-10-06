@@ -55,7 +55,6 @@ jobs:
       with:
         host: ${{ secrets.VPS_HOST }}
         username: deployuser
-        password: ${{ secrets.VPS_PASSWORD }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           cd "C:/Users/Administrator/Desktop/aievent"
