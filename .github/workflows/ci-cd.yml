@@ -43,6 +43,8 @@ jobs:
           docker push $IMAGE_NAME
 
       - name: Deploy to Windows VPS via SSH
+        env:
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -50,22 +52,23 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             powershell -Command "
-            # Vào thư mục project trên VPS
-            Set-Location 'C:\Users\Administrator\Desktop\aievent'
-
-            # Login GHCR trực tiếp trên VPS
-            docker login ghcr.io -u doublenh25 -p $env:GHCR_TOKEN
-
-            # Pull image mới
-            docker pull ghcr.io/doublenh25/aievent:latest
-
-            # Dừng và xóa container cũ
-            docker stop aievent-api -ErrorAction SilentlyContinue
-            docker rm aievent-api -ErrorAction SilentlyContinue
-
-            # Chạy container mới từ image mới
-            docker run -d --name aievent-api -p 5000:80 ghcr.io/doublenh25/aievent:latest
+              Set-Location 'C:\Users\Administrator\Desktop\aievent'
+      
+              # Xóa DataProtection cũ
+              Remove-Item -Recurse -Force 'C:\Users\Administrator\Desktop\aievent\DataProtection-Keys' -ErrorAction SilentlyContinue
+      
+              # Login GHCR
+              docker login ghcr.io -u doublenh25 -p $env:GHCR_TOKEN
+      
+              # Pull image mới
+              docker pull ghcr.io/doublenh25/aievent:latest
+      
+              # Dừng và xóa container cũ
+              docker stop aievent-api -ErrorAction SilentlyContinue
+              docker rm aievent-api -ErrorAction SilentlyContinue
+      
+              # Chạy container mới
+              docker run -d --name aievent-api -p 5000:80 -v C:\Users\Administrator\Desktop\aievent\DataProtection-Keys:/root/.aspnet/DataProtection-Keys ghcr.io/doublenh25/aievent:latest
             "
-            env:
-              GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          
 
