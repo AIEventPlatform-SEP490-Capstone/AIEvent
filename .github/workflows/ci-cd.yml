@@ -49,8 +49,8 @@ jobs:
         username: deployuser
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u doublenh25 --password-stdin
           cd "C:/Users/Administrator/Desktop/aievent"
-          docker pull ghcr.io/doublenh25/aievent:latest
+          docker pull $IMAGE_NAME
           docker-compose down
           docker-compose up -d --build
+
