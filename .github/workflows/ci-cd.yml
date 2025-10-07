@@ -6,7 +6,7 @@ on:
       - dev
 
 env:
-  IMAGE_NAME: ghcr.io/doublenh25/aievent:latest
+  IMAGE_NAME: ghcr.io/doublenh25/aievent:${{ github.sha }}
 
 jobs:
   build-and-deploy:
