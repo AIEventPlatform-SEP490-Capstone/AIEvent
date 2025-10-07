@@ -55,7 +55,7 @@ jobs:
           script: |
             cd "C:\Users\Administrator\Desktop\aievent"
             echo $env:GHCR_TOKEN | docker login ghcr.io -u doublenh25 --password-stdin
-            docker rm -f aievent-api || echo "Container not exists"
+            docker rm -f aievent-api || echo "Container not running"
+            docker image prune -a -f
             docker-compose pull
             docker-compose up -d --force-recreate --remove-orphans --renew-anon-volumes
-            docker images -f "dangling=true" -q | ForEach-Object { docker rmi -f $_ }
