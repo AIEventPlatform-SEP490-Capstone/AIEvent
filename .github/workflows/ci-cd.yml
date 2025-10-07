@@ -53,14 +53,15 @@ jobs:
           port: 22
           script_stop: true
           script: |
-            powershell -Command "
-              Set-Location 'C:\Users\Administrator\Desktop\aievent';
-              # Login GHCR
-              echo $env:GHCR_TOKEN | docker login ghcr.io -u 'doublenh25' --password-stdin;
-              # Pull image mới
-              docker-compose pull;
-              # Recreate container
-              docker-compose up -d --force-recreate --remove-orphans --renew-anon-volumes"
+            # Chuyển đến thư mục chứa docker-compose.yml
+            cd "C:\Users\Administrator\Desktop\aievent"
+            
+            echo $env:GHCR_TOKEN | docker login ghcr.io -u doublenh25 --password-stdin
 
+            docker rm -f aievent-api || echo "Container not exists"
 
+            docker-compose pull
 
+            docker-compose up -d --force-recreate --remove-orphans --renew-anon-volumes
+
+            docker images -f "dangling=true" -q | ForEach-Object { docker rmi -f $_ }
