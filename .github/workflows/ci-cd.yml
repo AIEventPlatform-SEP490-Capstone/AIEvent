@@ -44,22 +44,21 @@ jobs:
 
 
       
-      - name: Deploy to VPS via SSH
+      - name: Deploy to Windows VPS via PowerShell
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.VPS_HOST }}
-          username: deployuser
+          username: Administrator
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
-          shell: powershell
           script_stop: true
+          command_timeout: 30m
           script: |
             cd C:\Users\Administrator\Desktop\aievent
-            echo $env:GHCR_TOKEN | docker login ghcr.io -u doublenh25 --password-stdin
-            docker stop aievent-api
-            docker rm aievent-api
-            docker image rm -f ghcr.io/doublenh25/aievent:latest
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u doublenh25 --password-stdin
+            docker stop aievent-api || echo "Container not running"
+            docker rm aievent-api || echo "No container to remove"
+            docker image rm -f ghcr.io/doublenh25/aievent:latest || echo "No old image"
             docker pull ghcr.io/doublenh25/aievent:latest
-            
             docker-compose -f docker-compose.yml up -d --force-recreate --remove-orphans
             docker image prune -f
