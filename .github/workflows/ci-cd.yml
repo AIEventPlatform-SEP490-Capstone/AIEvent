@@ -42,38 +42,24 @@ jobs:
           docker build --no-cache -t $IMAGE_NAME -f Backend/AIEvent/src/AIEvent.API/Dockerfile Backend/AIEvent
           docker push $IMAGE_NAME
 
+
+      
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.VPS_HOST }}
-          username: Administrator
+          username: deployuser
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
-          shell: powershell
           script_stop: true
           script: |
-            Write-Host "=== 🚀 Triển khai AIEvent API lên VPS Windows ==="
-    
-            # Di chuyển đến thư mục chứa docker-compose.yml
-            Set-Location "C:\Users\Administrator\Desktop\aievent"
-    
-            Write-Host "🔹 Đăng nhập GitHub Container Registry..."
-            echo $env:GHCR_TOKEN | docker login ghcr.io -u doublenh25 --password-stdin
-    
-            Write-Host "🔹 Dừng container cũ (nếu có)..."
-            docker-compose -f docker-compose.yml down
-    
-            Write-Host "🔹 Xóa image cũ để ép pull image mới..."
-            docker image rm -f ghcr.io/doublenh25/aievent:latest -ErrorAction SilentlyContinue
-    
-            Write-Host "🔹 Pull image mới nhất từ GHCR..."
+            cd C:/Users/Administrator/Desktop/aievent
+            echo %GHCR_TOKEN% | docker login ghcr.io -u doublenh25 --password-stdin
+            docker image rm -f ghcr.io/doublenh25/aievent:latest || echo "Không có image cũ."
             docker pull ghcr.io/doublenh25/aievent:latest
-            docker images ghcr.io/doublenh25/aievent
-    
-            Write-Host "🔹 Khởi động lại container..."
+            docker-compose -f docker-compose.yml down
             docker-compose -f docker-compose.yml up -d --force-recreate --remove-orphans
-    
-            Write-Host "🔹 Dọn dẹp image không còn dùng..."
+            # Xóa các image cũ, giữ lại image đang sử dụng
+            docker-compose down
+            docker-compose pull
             docker image prune -f
-    
-            Write-Host "✅ Hoàn tất triển khai AIEvent API!"
