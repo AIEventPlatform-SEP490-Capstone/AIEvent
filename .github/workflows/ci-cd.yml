@@ -54,15 +54,8 @@ jobs:
           shell: powershell
           script_stop: true
           script: |
-            # Chuyển đến folder chứa docker-compose.yml trên VPS
-            cd "C:\Users\Administrator\Desktop\aievent"
-
-            # Login GHCR trên VPS
-            echo $env:GHCR_TOKEN | docker login ghcr.io -u 'doublenh25' --password-stdin
-
-            # Pull image mới
-            docker-compose pull
-
-            # Stop & recreate container
-            docker-compose up -d --remove-orphans
+            powershell -Command "Set-Location 'C:\Users\Administrator\Desktop\aievent'; `
+            echo $env:GHCR_TOKEN | docker login ghcr.io -u 'doublenh25' --password-stdin; `
+            docker-compose pull; `
+            docker-compose up -d --remove-orphans"
 
