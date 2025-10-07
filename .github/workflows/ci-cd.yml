@@ -6,7 +6,7 @@ on:
       - dev
 
 env:
-  IMAGE_NAME: ghcr.io/doublenh25/aievent
+  IMAGE_NAME: ghcr.io/doublenh25/aievent:latest
 
 jobs:
   build-and-deploy:
@@ -39,10 +39,8 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          IMAGE_TAG=${{ github.sha }}
-          docker build -t $IMAGE_NAME:$IMAGE_TAG -t $IMAGE_NAME:latest -f Backend/AIEvent/src/AIEvent.API/Dockerfile Backend/AIEvent
-          docker push $IMAGE_NAME:$IMAGE_TAG
-          docker push $IMAGE_NAME:latest
+          docker build --no-cache -t $IMAGE_NAME -f Backend/AIEvent/src/AIEvent.API/Dockerfile Backend/AIEvent
+          docker push $IMAGE_NAME
 
 
       
@@ -56,11 +54,12 @@ jobs:
           shell: powershell
           script_stop: true
           script: |
-            $IMAGE_TAG="${{ github.sha }}"
             cd C:\Users\Administrator\Desktop\aievent
             echo $env:GHCR_TOKEN | docker login ghcr.io -u doublenh25 --password-stdin
-            docker pull ghcr.io/doublenh25/aievent:$IMAGE_TAG
             docker stop aievent-api
             docker rm aievent-api
-            docker run -d --name aievent-api -p 8080:8080 ghcr.io/doublenh25/aievent:$IMAGE_TAG
+            docker image rm -f ghcr.io/doublenh25/aievent:latest
+            docker pull ghcr.io/doublenh25/aievent:latest
+            
+            docker-compose -f docker-compose.yml up -d --force-recreate --remove-orphans
             docker image prune -f
