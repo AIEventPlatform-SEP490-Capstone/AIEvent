@@ -50,11 +50,10 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script_stop: true
-          shell: powershell
           script: |
             cd "C:\Users\Administrator\Desktop\aievent"
             docker logout ghcr.io
-            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u doublenh25 --password-stdin
+            echo $env:GHCR_TOKEN | docker login ghcr.io -u doublenh25 --password-stdin
             docker-compose down
             docker-compose pull
             docker-compose up -d --force-recreate
