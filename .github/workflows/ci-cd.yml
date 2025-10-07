@@ -53,4 +53,7 @@ jobs:
           port: 22
           shell: powershell
           script_stop: true
-          script: powershell -Command "Set-Location 'C:\Users\Administrator\Desktop\aievent'; echo $env:GHCR_TOKEN | docker login ghcr.io -u 'doublenh25' --password-stdin; docker-compose pull; docker-compose up -d --remove-orphans"
+          script: |
+            cd "C:\Users\Administrator\Desktop\aievent"
+            docker-compose pull
+            docker-compose up -d --remove-orphans
