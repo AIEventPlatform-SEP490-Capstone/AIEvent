@@ -58,9 +58,7 @@ jobs:
             Set-Location "C:\Users\Administrator\Desktop\aievent"
     
             Write-Host "🔹 Đăng nhập GitHub Container Registry..."
-            $env:GHCR_TOKEN = "${{ secrets.GHCR_TOKEN }}"
-            $env:GHCR_USER = "doublenh25"
-            echo $env:GHCR_TOKEN | docker login ghcr.io -u $env:GHCR_USER --password-stdin
+            echo $env:GHCR_TOKEN | docker login ghcr.io -u doublenh25 --password-stdin
     
             Write-Host "🔹 Dừng container cũ (nếu có)..."
             docker-compose -f docker-compose.yml down
@@ -70,6 +68,7 @@ jobs:
     
             Write-Host "🔹 Pull image mới nhất từ GHCR..."
             docker pull ghcr.io/doublenh25/aievent:latest
+            docker images ghcr.io/doublenh25/aievent
     
             Write-Host "🔹 Khởi động lại container..."
             docker-compose -f docker-compose.yml up -d --force-recreate --remove-orphans
