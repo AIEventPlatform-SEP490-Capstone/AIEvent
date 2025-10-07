@@ -44,25 +44,42 @@ jobs:
 
 
       
-      - name: Deploy to Windows VPS via PowerShell
+      - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.VPS_HOST }}
-          username: Administrator
+          username: deployuser
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
-          shell: powershell
           script_stop: true
-          command_timeout: 30m
-          envs: GHCR_TOKEN
           script: |
-            cd C:\Users\Administrator\Desktop\aievent
-            echo $env:GHCR_TOKEN | docker login ghcr.io -u doublenh25 --password-stdin
-            docker stop aievent-api || echo "Container not running"
-            docker rm aievent-api || echo "No container to remove"
-            docker image rm -f ghcr.io/doublenh25/aievent:latest || echo "No old image"
-            docker pull ghcr.io/doublenh25/aievent:latest
-            docker-compose -f docker-compose.yml up -d --force-recreate --remove-orphans
-            docker image prune -f
-        env:
-          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+            # 1️⃣ Tạo script deploy trên VPS (PowerShell)
+            $deployScript = @"
+            # Set GHCR token
+            \$Env:GHCR_TOKEN = '${{ secrets.GHCR_TOKEN }}'
+
+            # Chuyển tới thư mục dự án
+            Set-Location 'C:\Users\Administrator\Desktop\aievent'
+
+            # Login GHCR
+            \$Env:GHCR_TOKEN | docker login ghcr.io -u doublenh25 --password-stdin
+
+            # Stop container cũ và dọn volume
+            docker-compose down -v
+
+            # Pull image mới
+            docker-compose pull
+
+            # Up container mới (debug mode)
+            docker-compose up --build --force-recreate --remove-orphans --renew-anon-volumes
+
+            # Xem log container
+            docker logs aievent-api -f
+            "@
+
+            # Lưu script ra file trên VPS
+            $scriptPath = "C:\Users\Administrator\Desktop\aievent\deploy-debug.ps1"
+            Set-Content -Path $scriptPath -Value $deployScript -Force
+
+            # Chạy script PowerShell
+            powershell -ExecutionPolicy Bypass -File $scriptPath
