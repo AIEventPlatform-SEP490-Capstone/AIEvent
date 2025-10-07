@@ -57,7 +57,7 @@ jobs:
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u doublenh25 --password-stdin
             docker-compose down -v
             docker rmi ghcr.io/doublenh25/aievent:latest -f || echo "No existing image"
-            docker pull ghcr.io/doublenh25/aievent:latest
+            docker pull ghcr.io/doublenh25/aievent:latest || echo "Pull failed"
             docker-compose up -d --force-recreate --remove-orphans --renew-anon-volumes
             docker image prune -f
 
