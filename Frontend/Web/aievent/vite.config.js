@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://aievent.duckdns.org:8080',
+        target: 'https://localhost:7777',
         changeOrigin: true,
         secure: false, 
         configure: (proxy, _options) => {
