@@ -51,7 +51,6 @@ jobs:
           username: deployuser
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
-          shell: powershell
           script_stop: true
           script: |
             cd "C:\Users\Administrator\Desktop\aievent"
