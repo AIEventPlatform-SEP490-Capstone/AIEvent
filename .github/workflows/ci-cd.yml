@@ -55,31 +55,22 @@ jobs:
           script: |
             # 1️⃣ Tạo script deploy trên VPS (PowerShell)
             $deployScript = @"
-            # Set GHCR token
             \$Env:GHCR_TOKEN = '${{ secrets.GHCR_TOKEN }}'
 
-            # Chuyển tới thư mục dự án
             Set-Location 'C:\Users\Administrator\Desktop\aievent'
 
-            # Login GHCR
             \$Env:GHCR_TOKEN | docker login ghcr.io -u doublenh25 --password-stdin
 
-            # Stop container cũ và dọn volume
             docker-compose down -v
 
-            # Pull image mới
             docker-compose pull
 
-            # Up container mới (debug mode)
             docker-compose up --build --force-recreate --remove-orphans --renew-anon-volumes
 
-            # Xem log container
             docker logs aievent-api -f
             "@
 
-            # Lưu script ra file trên VPS
             $scriptPath = "C:\Users\Administrator\Desktop\aievent\deploy-debug.ps1"
             Set-Content -Path $scriptPath -Value $deployScript -Force
 
-            # Chạy script PowerShell
             powershell -ExecutionPolicy Bypass -File $scriptPath
