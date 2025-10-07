@@ -51,29 +51,18 @@ jobs:
           username: deployuser
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
+          shell: powershell
+          script_stop: true
           script: |
-            powershell -Command "
-              Set-Location 'C:\Users\Administrator\Desktop\aievent'
+            # Chuyển đến folder chứa docker-compose.yml trên VPS
+            cd "C:\Users\Administrator\Desktop\aievent"
 
-              # Login GHCR
-              echo $env:GHCR_TOKEN | docker login ghcr.io -u 'doublenh25' --password-stdin
+            # Login GHCR trên VPS
+            echo $env:GHCR_TOKEN | docker login ghcr.io -u 'doublenh25' --password-stdin
 
-              # Stop & remove old container
-              if (docker ps -a -q -f name=aievent-api) {
-                  docker rm -f aievent-api
-              }
+            # Pull image mới
+            docker-compose pull
 
-              # Remove old image
-              if (docker images -q ghcr.io/doublenh25/aievent:latest) {
-                  docker rmi -f ghcr.io/doublenh25/aievent:latest
-              }
-
-              # Pull new image
-              docker pull ghcr.io/doublenh25/aievent:latest
-
-              # Run new container
-              docker run -d --name aievent-api -p 5000:80 `
-                -v C:\Users\Administrator\Desktop\aievent\DataProtection-Keys:/root/.aspnet/DataProtection-Keys `
-                ghcr.io/doublenh25/aievent:latest
-            "
+            # Stop & recreate container
+            docker-compose up -d --remove-orphans
 
