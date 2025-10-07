@@ -6,7 +6,7 @@ on:
       - dev
 
 env:
-  IMAGE_NAME: ghcr.io/doublenh25/aievent:${{ github.sha }}
+  IMAGE_NAME: ghcr.io/doublenh25/aievent:latest
 
 jobs:
   build-and-deploy:
@@ -57,4 +57,4 @@ jobs:
             echo $env:GHCR_TOKEN | docker login ghcr.io -u doublenh25 --password-stdin
             docker-compose down
             docker-compose pull
-            docker-compose up -d --force-recreate --remove-orphans --renew-anon-volumes
+            docker-compose up -d --build --force-recreate --remove-orphans --renew-anon-volumes
