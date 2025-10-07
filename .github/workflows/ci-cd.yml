@@ -53,10 +53,10 @@ jobs:
           port: 22
           script_stop: true
           script: |
-            $Env:GHCR_TOKEN='${{ secrets.GHCR_TOKEN }}'
-            cd 'C:\Users\Administrator\Desktop\aievent'
-            echo GHCR_TOKEN | docker login ghcr.io -u doublenh25 --password-stdin
+            cd "C:\Users\Administrator\Desktop\aievent"
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u doublenh25 --password-stdin
             docker-compose down -v
             docker pull ghcr.io/doublenh25/aievent:latest
             docker-compose up -d --force-recreate --remove-orphans --renew-anon-volumes
+            docker image prune -f
 
