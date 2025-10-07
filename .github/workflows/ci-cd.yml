@@ -52,7 +52,6 @@ jobs:
           script_stop: true
           script: |
             cd "C:\Users\Administrator\Desktop\aievent"
-            docker logout ghcr.io
             echo $env:GHCR_TOKEN | docker login ghcr.io -u doublenh25 --password-stdin
             docker-compose down
             docker-compose pull
