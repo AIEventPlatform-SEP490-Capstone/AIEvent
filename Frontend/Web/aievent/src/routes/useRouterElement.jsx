@@ -3,6 +3,7 @@ import { PATH } from "./path";
 import MainLayout from "../layouts/MainLayout";
 import HomePage from "../pages/Home/HomePage";
 import LoginPage from "../pages/Auth/LoginPage/LoginPage";
+import ProtectedRoute from "../components/ProtectedRoute/ProtectedRoute";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -16,23 +17,23 @@ export default function useRouterElement() {
         { path: "timeline", element: <div>Timeline Page</div> },
         { path: "friends", element: <div>Friends Page</div> },
         { path: "friends/search", element: <div>Friend Search Page</div> },
-        { path: "favorites", element: <div>Favorites Page</div> },
-        { path: "wallet", element: <div>Wallet Page</div> },
-        { path: "my-tickets", element: <div>My Tickets Page</div> },
-        { path: "notifications", element: <div>Notifications Page</div> },
-        { path: "settings", element: <div>Settings Page</div> },
+        { path: "favorites", element: <ProtectedRoute><div>Favorites Page</div></ProtectedRoute> },
+        { path: "wallet", element: <ProtectedRoute><div>Wallet Page</div></ProtectedRoute> },
+        { path: "my-tickets", element: <ProtectedRoute><div>My Tickets Page</div></ProtectedRoute> },
+        { path: "notifications", element: <ProtectedRoute><div>Notifications Page</div></ProtectedRoute> },
+        { path: "settings", element: <ProtectedRoute><div>Settings Page</div></ProtectedRoute> },
         { path: "help", element: <div>Help Page</div> },
         { path: "about", element: <div>About Page</div> },
-        { path: "profile", element: <div>Profile Page</div> },
-        { path: "profile/:userId", element: <div>User Profile Page</div> },
+        { path: "profile", element: <ProtectedRoute><div>Profile Page</div></ProtectedRoute> },
+        { path: "profile/:userId", element: <ProtectedRoute><div>User Profile Page</div></ProtectedRoute> },
         { path: "event/:id", element: <div>Event Detail Page</div> },
-        { path: "booking/:id", element: <div>Booking Page</div> },
-        { path: "payment/:ticketId", element: <div>Payment Page</div> },
-        { path: "qr-viewer/:ticketId", element: <div>QR Viewer Page</div> },
-        { path: "event-invitations", element: <div>Event Invitations Page</div> },
-        { path: "application-status", element: <div>Application Status Page</div> },
-        { path: "social-sharing", element: <div>Social Sharing Page</div> },
-        { path: "become-organizer", element: <div>Become Organizer Page</div> },
+        { path: "booking/:id", element: <ProtectedRoute><div>Booking Page</div></ProtectedRoute> },
+        { path: "payment/:ticketId", element: <ProtectedRoute><div>Payment Page</div></ProtectedRoute> },
+        { path: "qr-viewer/:ticketId", element: <ProtectedRoute><div>QR Viewer Page</div></ProtectedRoute> },
+        { path: "event-invitations", element: <ProtectedRoute><div>Event Invitations Page</div></ProtectedRoute> },
+        { path: "application-status", element: <ProtectedRoute><div>Application Status Page</div></ProtectedRoute> },
+        { path: "social-sharing", element: <ProtectedRoute><div>Social Sharing Page</div></ProtectedRoute> },
+        { path: "become-organizer", element: <ProtectedRoute><div>Become Organizer Page</div></ProtectedRoute> },
       ],
     },
     {
@@ -44,7 +45,11 @@ export default function useRouterElement() {
     },
     {
       path: PATH.ORGANIZER,
-      element: <MainLayout />,
+      element: (
+        <ProtectedRoute allowedRoles={["Organizer", "Admin"]}>
+          <MainLayout />
+        </ProtectedRoute>
+      ),
       children: [
         { index: true, element: <div>Organizer Dashboard</div> },
         { path: "create", element: <div>Create Event Page</div> },
@@ -59,7 +64,11 @@ export default function useRouterElement() {
     },
     {
       path: PATH.ADMIN,
-      element: <MainLayout />,
+      element: (
+        <ProtectedRoute allowedRoles={["Admin"]}>
+          <MainLayout />
+        </ProtectedRoute>
+      ),
       children: [
         { index: true, element: <div>Admin Dashboard</div> },
         { path: "events", element: <div>Admin Events Page</div> },

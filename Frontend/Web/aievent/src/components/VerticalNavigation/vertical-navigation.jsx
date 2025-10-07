@@ -1,7 +1,10 @@
 import React from "react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
+import { useDispatch, useSelector } from "react-redux"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
+import { logout } from "../../store/slices/authSlice"
+import { showSuccess, showError, authMessages } from "../../lib/toastUtils"
 
 import {
   Search,
@@ -26,6 +29,7 @@ import {
   CheckSquare,
   ChevronLeft,
   ChevronRight,
+  ArrowRight,
 } from "lucide-react"
 import {
   Sidebar,
@@ -46,19 +50,30 @@ import { cn } from "../../lib/utils"
 export function VerticalNavigation() {
   const location = useLocation()
   const navigate = useNavigate()
+  const dispatch = useDispatch()
   const { state, toggleSidebar } = useSidebar()
 
-  // Mock user for now - you can implement actual auth later
-  const user = null // Set to null to simulate non-authenticated user
-  const isAuthenticated = false
+  // Get user data from Redux store
+  const { user, isAuthenticated } = useSelector((state) => state.auth)
   const pathname = location.pathname
+  
+  // Debug: Log current auth state
+  console.log("Auth state:", { user, isAuthenticated })
   
   const isOrganizerRoute = pathname.startsWith("/organizer")
   const isAdminRoute = pathname.startsWith("/admin")
 
-  const handleLogout = () => {
-    // Handle logout logic
-    navigate("/")
+  const handleLogout = async () => {
+    try {
+      await dispatch(logout()).unwrap()
+      showSuccess(authMessages.logoutSuccess)
+      navigate("/")
+    } catch (error) {
+      console.error("Logout failed:", error)
+      showError(authMessages.logoutError)
+      // Force logout even if API call fails
+      navigate("/")
+    }
   }
 
   const getNavigationItems = () => {
@@ -119,32 +134,8 @@ export function VerticalNavigation() {
       ]
     }
 
-    // Default user navigation
+    // Default user navigation - theo thứ tự trong ảnh
     return [
-      {
-        title: "Trang chủ",
-        url: "/",
-        icon: Home,
-        isActive: pathname === "/",
-      },
-      {
-        title: "Tìm kiếm",
-        url: "/search",
-        icon: Search,
-        isActive: pathname === "/search",
-      },
-      {
-        title: "Người dùng gần đây",
-        url: "/nearby",
-        icon: MapPin,
-        isActive: pathname === "/nearby",
-      },
-      {
-        title: "Bạn bè",
-        url: "/friends",
-        icon: Users,
-        isActive: pathname.startsWith("/friends"),
-      },
       {
         title: "Timeline",
         url: "/timeline",
@@ -184,15 +175,15 @@ export function VerticalNavigation() {
       <SidebarHeader className="border-b border-border/40 bg-background/80 backdrop-blur-sm">
         <div className="flex items-center justify-between px-4 py-3">
           <NavLink to="/" className="flex items-center gap-3 hover:scale-105 transition-all duration-300 ease-out">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">AIEvent Platform</span>
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-lg">★</span>
             </div>
             {state !== "collapsed" && (
               <div className="flex flex-col">
-                <span className="font-bold text-lg bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                <span className="font-bold text-lg text-foreground">
                   AIEvent
                 </span>
-                {/* <span className="text-xs text-muted-foreground font-medium">Platform</span> */}
+                <span className="text-xs text-muted-foreground font-medium">Event Platform</span>
               </div>
             )}
           </NavLink>
@@ -228,43 +219,133 @@ export function VerticalNavigation() {
       </SidebarHeader>
 
       <SidebarContent className="px-2 py-2">
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider px-3 py-2">
-            Navigation
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+        {isAuthenticated ? (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider px-3 py-2">
+              Navigation
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
+                {navigationItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={item.isActive}
+                      className={cn(
+                        "group relative overflow-hidden rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/15 data-[active=true]:text-primary data-[active=true]:shadow-sm",
+                        state === "collapsed" && "p-1 justify-center"
+                      )}
+                    >
+                      <NavLink to={item.url} className="flex items-center gap-3 px-3 py-2.5">
+                        <item.icon className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                        {state !== "collapsed" && <span className="font-medium text-sm">{item.title}</span>}
+                        {item.special && <Zap className="w-3 h-3 ml-auto text-amber-500 animate-pulse" />}
+                        {item.isActive && (
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-primary/70 rounded-r-full" />
+                        )}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ) : (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider px-3 py-2">
+              Đăng nhập
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
+                <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
-                    isActive={item.isActive}
                     className={cn(
-                      "group relative overflow-hidden rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/15 data-[active=true]:text-primary data-[active=true]:shadow-sm",
+                      "group rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary",
                       state === "collapsed" && "p-1 justify-center"
                     )}
                   >
-                    <NavLink to={item.url} className="flex items-center gap-3 px-3 py-2.5">
-                      <item.icon className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                      {state !== "collapsed" && <span className="font-medium text-sm">{item.title}</span>}
-                      {item.special && <Zap className="w-3 h-3 ml-auto text-amber-500 animate-pulse" />}
-                      {item.isActive && (
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-primary/70 rounded-r-full" />
-                      )}
+                    <NavLink to="/auth/login" className="flex items-center gap-3 px-3 py-2.5">
+                      <LogIn className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                      {state !== "collapsed" && <span className="font-medium text-sm">Đăng nhập</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    className={cn(
+                      "group rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary",
+                      state === "collapsed" && "p-1 justify-center"
+                    )}
+                  >
+                    <NavLink to="/auth/register" className="flex items-center gap-3 px-3 py-2.5">
+                      <UserPlus className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                      {state !== "collapsed" && <span className="font-medium text-sm">Đăng ký</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
-        {isAuthenticated && user?.role === "user" && (
+        {isAuthenticated && (
           <>
             <SidebarSeparator className="my-4 bg-gradient-to-r from-transparent via-border/60 to-transparent" />
             <SidebarGroup>
               <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider px-3 py-2">
-                Actions
+                NOTIFICATIONS
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="space-y-1">
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === "/notifications"}
+                      className={cn(
+                        "group rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/15 data-[active=true]:text-primary",
+                        state === "collapsed" && "p-1 justify-center"
+                      )}
+                    >
+                      <NavLink to="/notifications" className="flex items-center gap-3 px-3 py-2.5">
+                        <Bell className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                        {state !== "collapsed" && <span className="font-medium text-sm">Thông báo</span>}
+                        {state !== "collapsed" && (
+                          <div className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                            3
+                          </div>
+                        )}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === "/event-invitations"}
+                      className={cn(
+                        "group rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/15 data-[active=true]:text-primary",
+                        state === "collapsed" && "p-1 justify-center"
+                      )}
+                    >
+                      <NavLink to="/event-invitations" className="flex items-center gap-3 px-3 py-2.5">
+                        <Mail className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                        {state !== "collapsed" && <span className="font-medium text-sm">Lời mời sự kiện</span>}
+                        {state !== "collapsed" && (
+                          <div className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                            2
+                          </div>
+                        )}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+            <SidebarSeparator className="my-4 bg-gradient-to-r from-transparent via-border/60 to-transparent" />
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider px-3 py-2">
+                ACTIONS
               </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu className="space-y-1">
@@ -313,6 +394,50 @@ export function VerticalNavigation() {
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === "/about"}
+                      className={cn(
+                        "group rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/15 data-[active=true]:text-primary",
+                        state === "collapsed" && "p-1 justify-center"
+                      )}
+                    >
+                      <NavLink to="/about" className="flex items-center gap-3 px-3 py-2.5">
+                        <Info className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                        {state !== "collapsed" && <span className="font-medium text-sm">Về AIEvent</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === "/become-organizer"}
+                      className={cn(
+                        "group rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/15 data-[active=true]:text-primary",
+                        state === "collapsed" && "p-1 justify-center"
+                      )}
+                    >
+                      <NavLink to="/become-organizer" className="flex items-center gap-3 px-3 py-2.5">
+                        <Plus className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                        {state !== "collapsed" && <span className="font-medium text-sm">+ Trở thành Organizer</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={handleLogout}
+                      className={cn(
+                        "group rounded-lg transition-all duration-200 hover:bg-red-500/10 hover:text-red-500 text-red-600",
+                        state === "collapsed" && "p-1 justify-center"
+                      )}
+                    >
+                      <div className="flex items-center gap-3 px-3 py-2.5">
+                        <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                        {state !== "collapsed" && <span className="font-medium text-sm">Đăng xuất</span>}
+                      </div>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -320,39 +445,8 @@ export function VerticalNavigation() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-border/40 bg-background/80 backdrop-blur-sm p-2 sticky bottom-0 z-10">
-        {!isAuthenticated ? (
-          <SidebarMenu className="space-y-1">
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                className={cn(
-                  "group rounded-lg transition-all duration-200 hover:bg-gradient-to-r hover:from-primary/10 hover:to-primary/5 hover:text-primary",
-                  state === "collapsed" && "p-1 justify-center"
-                )}
-              >
-                <NavLink to="/auth/login" className="flex items-center gap-3 px-3 py-2.5">
-                  <LogIn className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                  {state !== "collapsed" && <span className="font-medium text-sm">Đăng nhập</span>}
-                </NavLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                className={cn(
-                  "group rounded-lg transition-all duration-200 hover:bg-gradient-to-r hover:from-primary/10 hover:to-primary/5 hover:text-primary",
-                  state === "collapsed" && "p-1 justify-center"
-                )}
-              >
-                <NavLink to="/auth/register" className="flex items-center gap-3 px-3 py-2.5">
-                  <UserPlus className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                  {state !== "collapsed" && <span className="font-medium text-sm">Đăng ký</span>}
-                </NavLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        ) : (
+      {isAuthenticated && (
+        <SidebarFooter className="border-t border-border/40 bg-background/80 backdrop-blur-sm p-2 sticky bottom-0 z-10">
           <SidebarMenu>
             <SidebarMenuItem>
               <div className={cn(
@@ -360,22 +454,36 @@ export function VerticalNavigation() {
                 state === "collapsed" && "justify-center"
               )}
               >
-                <div className="h-8 w-8 ring-2 ring-primary/20 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold flex items-center justify-center">
-                  {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center relative overflow-hidden border-2 border-blue-300">
+                  {user?.avatar ? (
+                    <img 
+                      src={user.avatar} 
+                      alt={user.unique_name || user.name || "User"} 
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <div className="w-full h-full rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                      <span className="text-white text-sm font-bold">
+                        {user?.unique_name ? user.unique_name.charAt(0).toUpperCase() : user?.name ? user.name.charAt(0).toUpperCase() : user?.email ? user.email.charAt(0).toUpperCase() : "N"}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 {state !== "collapsed" && (
                   <div className="flex flex-col items-start flex-1 min-w-0">
-                    <span className="text-sm font-semibold text-foreground truncate w-full">{user?.name || "User"}</span>
-                    <div className="text-xs bg-gradient-to-r from-primary/15 to-primary/10 text-primary border-primary/20 px-2 py-0.5 rounded font-medium">
-                      {user?.role === "admin" ? "Admin" : user?.role === "organizer" ? "Organizer" : "User"}
+                    <span className="text-sm font-semibold text-foreground truncate w-full">
+                      {user?.unique_name || user?.name || user?.email || "Người dùng"}
+                    </span>
+                    <div className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-medium">
+                      {user?.role || "User"}
                     </div>
                   </div>
                 )}
               </div>
             </SidebarMenuItem>
           </SidebarMenu>
-        )}
-      </SidebarFooter>
+        </SidebarFooter>
+      )}
     </Sidebar>
   )
 }

@@ -1,21 +1,24 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { PATH } from '../../../routes/path';
 import { Input } from '../../../components/ui/input';
 import { Button } from '../../../components/ui/button';
 import AIEventLogo from '../../../assets/AIEventLogo.png';
 import LoginPanelBackground from '../../../assets/loginpanel.jpg';
+import { login } from '../../../store/slices/authSlice';
+import { validationMessages, showError, showSuccess, authMessages, handleApiError } from '../../../lib/toastUtils';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({ 
     email: '', 
     password: '',
   });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { isLoading: authLoading } = useSelector((state) => state.auth);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -25,31 +28,47 @@ const LoginPage = () => {
     }));
   };
 
+  const validateForm = () => {
+    if (!formData.email.trim()) {
+      return validationMessages.required('Email');
+    }
+    if (!formData.password.trim()) {
+      return validationMessages.required('Mật khẩu');
+    }
+    if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      return validationMessages.email;
+    }
+    return null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
+    
+    const validationError = validateForm();
+    if (validationError) {
+      showError(validationError);
+      return;
+    }
 
-    //Gọi API đăng nhập
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        sessionStorage.setItem('token', data.token);
+      const result = await dispatch(login(formData)).unwrap();
+      if (result) {
+        showSuccess(authMessages.loginSuccess(result.user.unique_name || result.user.email || 'Bạn'));
         navigate(PATH.HOME);
-      } else {
-        throw new Error(data.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
       }
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      console.error('Login error:', err);
+      
+      // Hiển thị thông báo lỗi chung cho tất cả các lỗi đăng nhập
+      if (err.response?.status === 401 || err.response?.status === 403 || err.response?.status === 423) {
+        showError(authMessages.loginInvalidCredentials);
+      } else if (err.response?.status >= 500) {
+        showError(authMessages.loginServerError);
+      } else if (err.code === 'ECONNABORTED' || err.message?.includes('Network Error')) {
+        showError(authMessages.loginNetworkError);
+      } else {
+        showError(authMessages.loginInvalidCredentials);
+      }
     }
   };
 
@@ -156,14 +175,6 @@ const LoginPage = () => {
                 <p className="text-gray-600">Nhập thông tin tài khoản của bạn</p>
               </div>
 
-              {error && (
-                <div className="mb-6 bg-red-50 border-l-4 border-red-500 rounded-r-lg p-4 flex items-start gap-3">
-                  <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="text-sm text-red-700">{error}</p>
-                </div>
-              )}
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
@@ -246,17 +257,14 @@ const LoginPage = () => {
 
                 <Button 
                   type="submit" 
-                  disabled={loading} 
-                  className="w-full h-11 text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-60"
+                  disabled={authLoading}
+                  className="w-full h-11 text-base font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                        <circle cx="12" cy="12" r="10" className="opacity-25" />
-                        <path d="M4 12a8 8 0 018-8" className="opacity-75" />
-                      </svg>
-                      Đang xử lý...
-                    </span>
+                  {authLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Đang đăng nhập...
+                    </div>
                   ) : (
                     'Đăng nhập'
                   )}
