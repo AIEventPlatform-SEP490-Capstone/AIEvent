@@ -179,20 +179,20 @@ export function VerticalNavigation() {
     <Sidebar
       variant="inset"
       collapsible="icon"
-      className="border-r border-border/40 bg-gradient-to-b from-background to-muted/20 z-50"
+      className="border-r border-border/40 bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 z-50 shadow-sm"
     >
-      <SidebarHeader className="border-b border-border/40 bg-background/80 backdrop-blur-sm">
+      <SidebarHeader className="border-b border-border/40 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
         <div className="flex items-center justify-between px-4 py-3">
-          <NavLink to="/" className="flex items-center gap-3 hover:scale-105 transition-all duration-300 ease-out">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">AIEvent Platform</span>
+          <NavLink to="/" className="flex items-center gap-2 transition-all duration-300 hover:scale-105 group">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:shadow-blue-500/30 transition-all duration-300">
+              <Zap className="w-4 h-4 text-white" />
             </div>
             {state !== "collapsed" && (
               <div className="flex flex-col">
-                <span className="font-bold text-lg bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                <span className="font-bold text-base bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
                   AIEvent
                 </span>
-                {/* <span className="text-xs text-muted-foreground font-medium">Platform</span> */}
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">Event Platform</span>
               </div>
             )}
           </NavLink>
@@ -200,25 +200,25 @@ export function VerticalNavigation() {
             variant="ghost"
             size="icon"
             onClick={toggleSidebar}
-            className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors duration-200"
+            className="h-8 w-8 rounded-md hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 transition-all duration-200"
           >
             {state === "collapsed" ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </Button>
         </div>
 
         {!isOrganizerRoute && !isAdminRoute && isAuthenticated && state !== "collapsed" && (
-          <div className="px-4 pb-3">
+          <div className="px-4 pb-4 space-y-3">
             <div className="relative group">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 group-focus-within:text-primary transition-colors duration-200" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 group-focus-within:text-primary group-focus-within:scale-110 transition-all duration-300" />
               <Input
                 placeholder="Tìm kiếm sự kiện..."
-                className="pl-10 bg-background/50 border-border/60 focus:border-primary focus:ring-primary/20 focus:bg-background transition-all duration-200 rounded-lg"
+                className="pl-10 h-10 bg-background/50 border-border/60 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all duration-300 rounded-xl hover:border-border"
               />
             </div>
             <Button
               variant="outline"
               size="sm"
-              className="w-full mt-3 hover:bg-primary/10 hover:text-primary hover:border-primary bg-background/50 border-border/60 transition-all duration-200 rounded-lg font-medium"
+              className="w-full h-10 hover:bg-primary/10 hover:text-primary hover:border-primary hover:scale-[1.02] bg-background/50 border-border/60 transition-all duration-300 rounded-xl font-medium shadow-sm"
             >
               <MapPin className="w-4 h-4 mr-2" />
               Hà Nội
@@ -227,9 +227,9 @@ export function VerticalNavigation() {
         )}
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-2">
+      <SidebarContent className="px-3 py-4">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider px-3 py-2">
+          <SidebarGroupLabel className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide px-2 py-1.5">
             Navigation
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -240,16 +240,15 @@ export function VerticalNavigation() {
                     asChild
                     isActive={item.isActive}
                     className={cn(
-                      "group relative overflow-hidden rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/15 data-[active=true]:text-primary data-[active=true]:shadow-sm",
+                      "group relative overflow-hidden rounded-lg transition-all duration-200 hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 data-[active=true]:bg-gradient-to-r data-[active=true]:from-blue-50 data-[active=true]:to-blue-100/50 dark:data-[active=true]:from-slate-800 dark:data-[active=true]:to-slate-800/50 data-[active=true]:text-blue-600 dark:data-[active=true]:text-blue-400 data-[active=true]:shadow-sm",
                       state === "collapsed" && "p-1 justify-center"
                     )}
                   >
-                    <NavLink to={item.url} className="flex items-center gap-3 px-3 py-2.5">
+                    <NavLink to={item.url} className="flex items-center gap-3 px-3 py-2">
                       <item.icon className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
                       {state !== "collapsed" && <span className="font-medium text-sm">{item.title}</span>}
-                      {item.special && <Zap className="w-3 h-3 ml-auto text-amber-500 animate-pulse" />}
                       {item.isActive && (
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-primary/70 rounded-r-full" />
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-600 to-blue-700 rounded-r-full shadow-sm" />
                       )}
                     </NavLink>
                   </SidebarMenuButton>
@@ -259,121 +258,47 @@ export function VerticalNavigation() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {isAuthenticated && user?.role === "user" && (
-          <>
-            <SidebarSeparator className="my-4 bg-gradient-to-r from-transparent via-border/60 to-transparent" />
-            <SidebarGroup>
-              <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider px-3 py-2">
-                Actions
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu className="space-y-1">
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={pathname === "/profile"}
-                      className={cn(
-                        "group rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/15 data-[active=true]:text-primary",
-                        state === "collapsed" && "p-1 justify-center"
-                      )}
-                    >
-                      <NavLink to="/profile" className="flex items-center gap-3 px-3 py-2.5">
-                        <User className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                        {state !== "collapsed" && <span className="font-medium text-sm">Hồ sơ cá nhân</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={pathname === "/settings"}
-                      className={cn(
-                        "group rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/15 data-[active=true]:text-primary",
-                        state === "collapsed" && "p-1 justify-center"
-                      )}
-                    >
-                      <NavLink to="/settings" className="flex items-center gap-3 px-3 py-2.5">
-                        <Settings className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                        {state !== "collapsed" && <span className="font-medium text-sm">Cài đặt</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={pathname === "/help"}
-                      className={cn(
-                        "group rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/15 data-[active=true]:text-primary",
-                        state === "collapsed" && "p-1 justify-center"
-                      )}
-                    >
-                      <NavLink to="/help" className="flex items-center gap-3 px-3 py-2.5">
-                        <HelpCircle className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                        {state !== "collapsed" && <span className="font-medium text-sm">Trợ giúp</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </>
-        )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-border/40 bg-background/80 backdrop-blur-sm p-2 sticky bottom-0 z-10">
+      <SidebarFooter className="border-t border-border/40 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-3 sticky bottom-0">
         {!isAuthenticated ? (
-          <SidebarMenu className="space-y-1">
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                className={cn(
-                  "group rounded-lg transition-all duration-200 hover:bg-gradient-to-r hover:from-primary/10 hover:to-primary/5 hover:text-primary",
-                  state === "collapsed" && "p-1 justify-center"
-                )}
+          <div className="space-y-1.5">
+            <NavLink to="/auth/login">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start h-9 px-3 text-sm font-medium hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-all duration-200"
               >
-                <NavLink to="/auth/login" className="flex items-center gap-3 px-3 py-2.5">
-                  <LogIn className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                  {state !== "collapsed" && <span className="font-medium text-sm">Đăng nhập</span>}
-                </NavLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                className={cn(
-                  "group rounded-lg transition-all duration-200 hover:bg-gradient-to-r hover:from-primary/10 hover:to-primary/5 hover:text-primary",
-                  state === "collapsed" && "p-1 justify-center"
-                )}
+                <LogIn className="w-4 h-4 mr-2" />
+                {state !== "collapsed" && "Đăng nhập"}
+              </Button>
+            </NavLink>
+            <NavLink to="/auth/register">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start h-9 px-3 text-sm font-medium hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-all duration-200"
               >
-                <NavLink to="/auth/register" className="flex items-center gap-3 px-3 py-2.5">
-                  <UserPlus className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                  {state !== "collapsed" && <span className="font-medium text-sm">Đăng ký</span>}
-                </NavLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
+                <UserPlus className="w-4 h-4 mr-2" />
+                {state !== "collapsed" && "Đăng ký"}
+              </Button>
+            </NavLink>
+          </div>
         ) : (
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <div className={cn(
-                "flex items-center gap-3 w-full p-3 rounded-lg bg-muted/30",
-                state === "collapsed" && "justify-center"
-              )}
-              >
-                <div className="h-8 w-8 ring-2 ring-primary/20 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold flex items-center justify-center">
-                  {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
-                </div>
-                {state !== "collapsed" && (
-                  <div className="flex flex-col items-start flex-1 min-w-0">
-                    <span className="text-sm font-semibold text-foreground truncate w-full">{user?.name || "User"}</span>
-                    <div className="text-xs bg-gradient-to-r from-primary/15 to-primary/10 text-primary border-primary/20 px-2 py-0.5 rounded font-medium">
-                      {user?.role === "admin" ? "Admin" : user?.role === "organizer" ? "Organizer" : "User"}
-                    </div>
-                  </div>
-                )}
+          <div className={cn(
+            "flex items-center gap-2 p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-800 transition-all duration-200 cursor-pointer",
+            state === "collapsed" && "justify-center"
+          )}>
+            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold flex items-center justify-center text-sm shadow-md">
+              {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+            </div>
+            {state !== "collapsed" && (
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{user?.name || "User"}</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  {user?.role === "admin" ? "Admin" : user?.role === "organizer" ? "Organizer" : "User"}
+                </span>
               </div>
-            </SidebarMenuItem>
-          </SidebarMenu>
+            )}
+          </div>
         )}
       </SidebarFooter>
     </Sidebar>

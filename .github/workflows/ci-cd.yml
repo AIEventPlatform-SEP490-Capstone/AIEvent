@@ -1,0 +1,79 @@
+name: CI/CD - Deploy .NET API to Windows VPS
+
+on:
+  push:
+    branches:
+      - dev
+
+env:
+  IMAGE_NAME: ghcr.io/doublenh25/aievent:latest
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore Backend/AIEvent/AIEvent.sln
+
+      - name: Build project
+        run: dotnet build Backend/AIEvent/AIEvent.sln --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test Backend/AIEvent/AIEvent.sln --configuration Release --no-build --verbosity normal
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: doublenh25
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build and push Docker image
+        run: |
+          docker build --no-cache -t $IMAGE_NAME -f Backend/AIEvent/src/AIEvent.API/Dockerfile Backend/AIEvent
+          docker push $IMAGE_NAME
+
+
+      
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: deployuser
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            powershell -Command "
+              Set-Location 'C:\Users\Administrator\Desktop\aievent'
+
+              # Login GHCR
+              echo $env:GHCR_TOKEN | docker login ghcr.io -u 'doublenh25' --password-stdin
+
+              # Stop & remove old container
+              if (docker ps -a -q -f name=aievent-api) {
+                  docker rm -f aievent-api
+              }
+
+              # Remove old image
+              if (docker images -q ghcr.io/doublenh25/aievent:latest) {
+                  docker rmi -f ghcr.io/doublenh25/aievent:latest
+              }
+
+              # Pull new image
+              docker pull ghcr.io/doublenh25/aievent:latest
+
+              # Run new container
+              docker run -d --name aievent-api -p 5000:80 `
+                -v C:\Users\Administrator\Desktop\aievent\DataProtection-Keys:/root/.aspnet/DataProtection-Keys `
+                ghcr.io/doublenh25/aievent:latest
+            "
+

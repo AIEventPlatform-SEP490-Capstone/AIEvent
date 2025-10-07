@@ -126,18 +126,18 @@ export function EventDiscovery() {
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-300 px-8"
             >
               <TrendingUp className="w-5 h-5 mr-2" />
-              Xem tất cả gợi ý
             </Button>
           </div>
         </div>
       </div>
 
       {/* Event Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 transition-all duration-300">
-        {mockEvents.map((event) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 transition-all duration-300">
+        {mockEvents.map((event, index) => (
           <Card
             key={event.id}
-            className="group overflow-hidden hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 border-border/50 bg-card relative hover:-translate-y-1 transition-opacity duration-300"
+            className="group overflow-hidden hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-500 border-border/50 bg-card relative hover:-translate-y-2 rounded-2xl"
+            style={{ animationDelay: `${index * 100}ms` }}
           >
             <div className="absolute top-3 left-3 z-10">
               <div className="bg-blue-100 text-blue-900 font-bold shadow-lg border border-blue-200 px-3 py-1.5 rounded-full text-xs">
@@ -154,20 +154,20 @@ export function EventDiscovery() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-              <div className="absolute top-4 right-4 flex space-x-2">
+              <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
                 <Button
                   size="sm"
                   variant="secondary"
-                  className="w-10 h-10 p-0 bg-white/90 backdrop-blur-sm border border-white/20 hover:bg-white shadow-lg"
+                  className="w-10 h-10 p-0 bg-white/95 backdrop-blur-sm border border-white/20 hover:bg-white hover:scale-110 shadow-lg transition-all duration-300"
                 >
-                  <Heart className="w-4 h-4 text-gray-800" />
+                  <Heart className="w-4 h-4 text-gray-800 hover:text-red-500 transition-colors" />
                 </Button>
                 <Button
                   size="sm"
                   variant="secondary"
-                  className="w-10 h-10 p-0 bg-white/90 backdrop-blur-sm border border-white/20 hover:bg-white shadow-lg"
+                  className="w-10 h-10 p-0 bg-white/95 backdrop-blur-sm border border-white/20 hover:bg-white hover:scale-110 shadow-lg transition-all duration-300"
                 >
-                  <MessageCircle className="w-4 h-4 text-gray-800" />
+                  <MessageCircle className="w-4 h-4 text-gray-800 hover:text-blue-500 transition-colors" />
                 </Button>
               </div>
 
@@ -232,13 +232,13 @@ export function EventDiscovery() {
 
                 <div className="flex space-x-2 pt-4">
                   <Button
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 rounded-xl"
                     size="sm"
                   >
                     Đăng nhập
                   </Button>
                   <Button
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 rounded-xl"
                     size="sm"
                   >
                     Đăng ký
@@ -246,7 +246,7 @@ export function EventDiscovery() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="border-blue-200 hover:bg-blue-50 text-blue-600 bg-transparent hover:border-blue-300 transition-colors"
+                    className="border-blue-200 hover:bg-blue-50 text-blue-600 bg-transparent hover:border-blue-300 hover:scale-105 transition-all duration-300 rounded-xl"
                   >
                     Chi tiết
                   </Button>
@@ -258,11 +258,11 @@ export function EventDiscovery() {
       </div>
 
       {/* Load More Button */}
-      <div className="text-center mt-12">
+      <div className="text-center mt-16">
         <Button
           variant="outline"
           size="lg"
-          className="px-8 py-3 border-border hover:bg-muted text-foreground font-semibold bg-transparent"
+          className="px-10 py-6 text-base border-2 border-border hover:bg-muted text-foreground font-bold bg-transparent hover:scale-105 transition-all duration-300 rounded-xl shadow-md hover:shadow-lg"
         >
           Xem thêm sự kiện thú vị (0 sự kiện khác)
         </Button>

@@ -103,8 +103,8 @@ export function Sidebar({
       data-collapsible={collapsible}
       data-state={state}
       className={cn(
-        "bg-sidebar text-sidebar-foreground flex flex-col border-r z-50 backdrop-blur-md bg-gradient-to-b from-background/80 to-muted/60",
-        "transition-all duration-300 ease-in-out transform",
+        "bg-sidebar text-sidebar-foreground flex flex-col border-r z-50 backdrop-blur-xl bg-gradient-to-b from-background/95 to-muted/40",
+        "transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] transform",
         state === "collapsed" && collapsible === "icon"
           ? "w-[var(--sidebar-width-icon)] translate-x-0 opacity-100 scale-100"
           : "w-[var(--sidebar-width)] translate-x-0 opacity-100 scale-100",
@@ -113,7 +113,7 @@ export function Sidebar({
           : "translate-x-0 opacity-100 scale-100",
         className,
       )}
-      style={{
+      style={{ 
         position: "fixed",
         top: 0,
         left: openMobile || (state === "expanded" && collapsible === "icon") ? "0" : "-100%",
@@ -122,8 +122,8 @@ export function Sidebar({
           state === "collapsed" && collapsible === "icon"
             ? "var(--sidebar-width-icon)"
             : "var(--sidebar-width)",
-        transition: "left 0.3s ease-in-out, width 0.3s ease-in-out",
-        zIndex: 50, // Giảm zIndex để nội dung không bị che khuất
+        transition: "left 0.5s cubic-bezier(0.4, 0, 0.2, 1), width 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
+        zIndex: 50,
       }}
       {...props}
     >
@@ -140,19 +140,21 @@ export function SidebarInset({
 
   const marginLeft =
     state === "collapsed" && collapsible === "icon"
-      ? "0"
+      ? "var(--sidebar-width-icon)"
       : "var(--sidebar-width)";
 
   return (
     <main
       data-slot="sidebar-inset"
       className={cn(
-        "relative flex min-h-svh flex-1 flex-col bg-background transition-all duration-300 ease-in-out",
-        state === "collapsed" && collapsible === "icon" ? "ml-0" : `ml-[${marginLeft}]`,
+        "relative flex min-h-svh flex-1 flex-col bg-background transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]",
         "peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
         className,
       )}
-      style={{ "--margin-left": marginLeft }}
+      style={{ 
+        marginLeft: marginLeft,
+        transition: "margin-left 0.5s cubic-bezier(0.4, 0, 0.2, 1), width 0.5s cubic-bezier(0.4, 0, 0.2, 1)"
+      }}
       {...props}
     />
   );
