@@ -52,10 +52,11 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script_stop: true
+          shell: powershell
           command_timeout: 30m
           script: |
             cd C:\Users\Administrator\Desktop\aievent
-            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u doublenh25 --password-stdin
+            echo $env:GHCR_TOKEN | docker login ghcr.io -u doublenh25 --password-stdin
             docker stop aievent-api || echo "Container not running"
             docker rm aievent-api || echo "No container to remove"
             docker image rm -f ghcr.io/doublenh25/aievent:latest || echo "No old image"
