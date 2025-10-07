@@ -53,8 +53,13 @@ jobs:
           port: 22
           script_stop: true
           script: |
-            cd "C:\Users\Administrator\Desktop\aievent"
-            echo $env:GHCR_TOKEN | docker login ghcr.io -u doublenh25 --password-stdin
+            cd C:/Users/Administrator/Desktop/aievent
+            echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u doublenh25 --password-stdin
+            docker pull ghcr.io/doublenh25/aievent:latest
+            docker-compose -f docker-compose.yml down
+            docker-compose -f docker-compose.yml up -d --force-recreate --remove-orphans
+            # Xóa các image cũ, giữ lại image đang sử dụng
+            docker images ghcr.io/doublenh25/aievent --format "{{.ID}}" | findstr /V $(docker ps -q --filter ancestor=ghcr.io/doublenh25/aievent:latest --format "{{.Image}}") | sort | uniq | xargs docker rmi -f
             docker-compose down
             docker-compose pull
             docker-compose up -d --build --force-recreate --remove-orphans --renew-anon-volumes
