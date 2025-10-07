@@ -57,6 +57,6 @@ jobs:
             cd 'C:\Users\Administrator\Desktop\aievent'
             echo $Env:GHCR_TOKEN | docker login ghcr.io -u doublenh25 --password-stdin
             docker-compose down -v
-            docker-compose pull
-            docker-compose up --build --force-recreate --remove-orphans --renew-anon-volumes
-            docker logs aievent-api -f
+            docker pull ghcr.io/doublenh25/aievent:latest
+            docker-compose up -d --force-recreate --remove-orphans --renew-anon-volumes
+
