@@ -21,6 +21,7 @@ namespace AIEvent.Application.Services.Implements
             _key = configuration["Jwt:Key"] ?? throw new ArgumentNullException("JWT Key is not configured");
             _issuer = configuration["Jwt:Issuer"] ?? throw new ArgumentNullException("JWT Issuer is not configured");
             _audience = configuration["Jwt:Audience"] ?? throw new ArgumentNullException("JWT Audience is not configured");
+            Console.WriteLine($"[DEBUG] JWT Key from config: {_key}");
         }
 
         public string GenerateAccessToken(AppUser user, IList<string> roles)
