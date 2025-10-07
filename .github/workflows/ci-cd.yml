@@ -53,7 +53,6 @@ jobs:
           port: 22
           script_stop: true
           script: |
-            # 1️⃣ Tạo script deploy trên VPS (PowerShell)
             $deployScript = @"
             \$Env:GHCR_TOKEN = '${{ secrets.GHCR_TOKEN }}'
 
