@@ -56,4 +56,4 @@ jobs:
             echo $env:GHCR_TOKEN | docker login ghcr.io -u doublenh25 --password-stdin
             docker-compose down
             docker-compose pull
-            docker-compose up -d --force-recreate
+            docker-compose up -d --build --force-recreate --remove-orphans --renew-anon-volumes
