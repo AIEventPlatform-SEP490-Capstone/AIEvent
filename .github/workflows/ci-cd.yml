@@ -53,30 +53,11 @@ jobs:
           port: 22
           script_stop: true
           script: |
-            # Chạy PowerShell trong SSH session
-            powershell -Command "
-              # Tạo folder config tạm để tránh lỗi session Docker
-              $TempDockerConfig = 'C:\docker-temp-config'
-              mkdir $TempDockerConfig -Force
-
-              # Login GHCR online với token
-              echo '${{ secrets.GHCR_TOKEN }}' | docker --config $TempDockerConfig login ghcr.io -u doublenh25 --password-stdin
-
-              # Chuyển tới thư mục docker-compose
-              cd 'C:\Users\Administrator\Desktop\aievent'
-
-              # Dừng container hiện tại
-              docker-compose down -v
-
-              # Xoá image cũ nếu có
-              docker rmi ghcr.io/doublenh25/aievent:latest -f || Write-Host 'No existing image'
-
-              # Pull image mới
-              docker --config $TempDockerConfig pull ghcr.io/doublenh25/aievent:latest || Write-Host 'Pull failed'
-
-              # Khởi động lại container
-              docker-compose up -d --force-recreate --remove-orphans --renew-anon-volumes
-
-              # Dọn dẹp image dangling
-              docker image prune -f
-            "
+            powershell -Command "mkdir C:\docker-temp-config -Force"
+            powershell -Command "echo '${{ secrets.GHCR_TOKEN }}' | docker --config C:\docker-temp-config login ghcr.io -u doublenh25 --password-stdin"
+            powershell -Command "cd 'C:\Users\Administrator\Desktop\aievent'"
+            powershell -Command "docker-compose down -v"
+            powershell -Command "docker rmi ghcr.io/doublenh25/aievent:latest -f || Write-Host 'No existing image'"
+            powershell -Command "docker --config C:\docker-temp-config pull ghcr.io/doublenh25/aievent:latest || Write-Host 'Pull failed'"
+            powershell -Command "docker-compose up -d --force-recreate --remove-orphans --renew-anon-volumes"
+            powershell -Command "docker image prune -f"
