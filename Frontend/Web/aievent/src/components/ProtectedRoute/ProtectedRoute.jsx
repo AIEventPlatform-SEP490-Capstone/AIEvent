@@ -4,11 +4,19 @@ import { useSelector } from "react-redux";
 import { PATH } from "../../routes/path";
 
 const ProtectedRoute = ({ children, allowedRoles = [], allowAnonymous = false }) => {
-  const { user } = useSelector((state) => state.auth);
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
 
-  if (allowAnonymous && !user) return children;
-  if (!user) return <Navigate to={PATH.LOGIN} />;
-  if (allowedRoles.length && !allowedRoles.includes(user.role)) return <Navigate to={PATH.HOME} />;
+  // Nếu cho phép anonymous và user chưa login, hiển thị children
+  if (allowAnonymous && !isAuthenticated) return children;
+  
+  // Nếu user chưa login, redirect về home thay vì login
+  if (!isAuthenticated) return <Navigate to={PATH.HOME} />;
+  
+  // Kiểm tra role nếu có yêu cầu
+  if (allowedRoles.length && user && !allowedRoles.includes(user.role)) {
+    return <Navigate to={PATH.HOME} />;
+  }
+  
   return children;
 };
 

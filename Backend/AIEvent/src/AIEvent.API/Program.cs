@@ -45,6 +45,8 @@ namespace AIEvent.API
                                 };
                             });
 
+            builder.Configuration.AddEnvironmentVariables();
+
             builder.Services.AddApplicationServices(builder.Configuration)
                             .AddInfrastructureServices(builder.Configuration);
 
