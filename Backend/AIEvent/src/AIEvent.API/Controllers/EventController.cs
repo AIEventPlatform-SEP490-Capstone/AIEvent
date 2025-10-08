@@ -2,7 +2,9 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
+using AIEvent.Application.DTOs.Role;
 using AIEvent.Application.DTOs.Tag;
+using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Enums;
@@ -66,6 +68,26 @@ namespace AIEvent.API.Controllers
                 result.Value!,
                 SuccessCodes.Success,
                 "Event retrieved successfully"));
+        }
+
+        [HttpPut("{id}")]
+        [Authorize("Organizer, Manager")]
+        public async Task<ActionResult<SuccessResponse<object>>> UpdateEvent(Guid id, [FromForm] UpdateEventRequest request)
+        {
+            Guid userId = User.GetRequiredUserId();
+            Guid organizerId = User.GetRequiredOrganizerId();
+
+            var result = await _eventService.UpdateEventAsync(organizerId, userId, id, request);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Updated,
+                "Event updated successfully"));
         }
 
         [HttpPost]

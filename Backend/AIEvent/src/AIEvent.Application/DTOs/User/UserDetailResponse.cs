@@ -1,21 +1,16 @@
-using AIEvent.Application.DTOs.Common;
+﻿using AIEvent.Application.DTOs.Common;
 using AIEvent.Domain.Enums;
-using Microsoft.AspNetCore.Http;
-using System.ComponentModel.DataAnnotations;
 
 namespace AIEvent.Application.DTOs.User
 {
-    public class UpdateUserRequest
+    public class UserDetailResponse
     {
-        [Required(ErrorMessage = "Full name is required")]
-        public string FullName { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Email is required")]
+        public string Id { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
-
-        [Phone(ErrorMessage = "Invalid phone number format")]
+        public string FullName { get; set; } = string.Empty;
         public string? PhoneNumber { get; set; }
-        public List<UserInterestRequest>? UserInterests { get; set; }
+        public bool EmailConfirmed { get; set; }
+        public List<UserInterestResponse>? UserInterests { get; set; }
         public List<InterestedCities>? InterestedCities { get; set; }
         public ParticipationFrequency ParticipationFrequency { get; set; }
         public BudgetOption BudgetOption { get; set; }
@@ -23,7 +18,7 @@ namespace AIEvent.Application.DTOs.User
         public string? City { get; set; }
         public string? Latitude { get; set; }
         public string? Longitude { get; set; }
-        public IFormFile? AvatarImg { get; set; }
+        public string? AvatarImgUrl { get; set; }
         public bool? IsEmailNotificationEnabled { get; set; } = false;
         public bool? IsPushNotificationEnabled { get; set; } = false;
         public bool? IsSmsNotificationEnabled { get; set; } = false;

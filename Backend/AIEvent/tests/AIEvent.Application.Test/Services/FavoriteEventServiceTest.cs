@@ -27,7 +27,7 @@ namespace AIEvent.Application.Test.Services
 
             var store = new Mock<IUserStore<AppUser>>();
             _mockUserManager = new Mock<UserManager<AppUser>>(
-                store.Object, null, null, null, null, null, null, null, null
+                store.Object, null!, null!, null!, null!, null!, null!, null!, null!
             );
 
             _favoriteeventService = new FavoriteEventService(_mockUnitOfWork.Object,
