@@ -3,6 +3,7 @@ using AIEvent.API.Middleware;
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.FileProviders;
 using StackExchange.Redis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -80,6 +81,20 @@ namespace AIEvent.API
 
             app.UseAuthentication();
             app.UseAuthorization();
+
+            var wellKnownPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", ".well-known");
+            if (!Directory.Exists(wellKnownPath))
+            {
+                Directory.CreateDirectory(wellKnownPath);
+            }
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                ServeUnknownFileTypes = true,
+                FileProvider = new PhysicalFileProvider(wellKnownPath),
+                RequestPath = "/.well-known"
+            });
+
 
             app.MapControllers();
 
