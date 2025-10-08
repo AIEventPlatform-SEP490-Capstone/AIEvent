@@ -31,7 +31,7 @@ namespace AIEvent.Application.Test.Services
             _mockTransactionHelper = new Mock<ITransactionHelper>();
             var store = new Mock<IUserStore<AppUser>>();
             _mockUserManager = new Mock<UserManager<AppUser>>(
-                store.Object, null, null, null, null, null, null, null, null
+                store.Object, null!, null!, null!, null!, null!, null!, null!, null!
             );
             _organizerService = new OrganizerService(_mockUnitOfWork.Object,
                                                     _mockUserManager.Object,

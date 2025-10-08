@@ -182,6 +182,69 @@ namespace AIEvent.Application.Services.Implements
             return new BasePaginated<EventsResponse>(result, totalCount, pageNumber, pageSize);
         }
 
+        public async Task<Result> UpdateEventAsync(Guid organizerId, Guid userId, Guid eventId, UpdateEventRequest request)
+        {
+            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+            {
+
+                if (request.EndTime < request.StartTime)
+                {
+                    return ErrorResponse.FailureResult("EndTime cannot be before the StartTime", ErrorCodes.InvalidInput);
+                }
+
+                var organizer = await _unitOfWork.OrganizerProfileRepository.GetByIdAsync(organizerId, true);
+                if (organizer?.Status != OrganizerStatus.Approve)
+                {
+                    return ErrorResponse.FailureResult("Organizer not found or inactive", ErrorCodes.Unauthorized);
+                }
+                var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
+                if (user == null)
+                {
+                    return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
+                }
+
+                var events = await _unitOfWork.EventRepository.GetByIdAsync(eventId, true);
+                if (events == null)
+                {
+                    return ErrorResponse.FailureResult("Event not found or inactive", ErrorCodes.NotFound);
+                }
+
+
+                _mapper.Map(request, events);
+
+
+                var existingImages = string.IsNullOrEmpty(events.ImgListEvent)
+                                        ? new List<string>()
+                                        : JsonSerializer.Deserialize<List<string>>(events.ImgListEvent)!;
+
+                if (request.RemoveImageUrls != null && request.RemoveImageUrls.Any())
+                {
+                    foreach (var imageUrl in request.RemoveImageUrls)
+                    {
+                        existingImages.Remove(imageUrl);
+                        await _cloudinaryService.DeleteImageAsync(imageUrl);
+                    }
+                }
+
+                if (request.ImgListEvent != null && request.ImgListEvent.Any())
+                {
+                    var uploadTasks = request.ImgListEvent
+                        .Select(img => _cloudinaryService.UploadImageAsync(img)!)
+                        .ToList();
+
+                    var newImageUrls = await Task.WhenAll(uploadTasks);
+
+                    existingImages.AddRange(newImageUrls!);
+                }
+
+                events.ImgListEvent = JsonSerializer.Serialize(existingImages);
+
+                events.OrganizerProfileId = organizerId;
+                await _unitOfWork.EventRepository.UpdateAsync(events);
+
+                return Result.Success();
+            });
+        }
 
         public async Task<Result<EventDetailResponse>> GetEventByIdAsync(string eventId)
         {

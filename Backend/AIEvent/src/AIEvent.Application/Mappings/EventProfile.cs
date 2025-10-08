@@ -40,6 +40,17 @@ namespace AIEvent.Application.Mappings
                                 }).ToList()
                                 : new List<TicketDetail>()));
 
+            CreateMap<UpdateEventRequest, Event>()
+                    .ForMember(dest => dest.EventTags, 
+                        opt => opt.MapFrom(src =>
+                            src.EventTags != null
+                                ? src.EventTags.Select(f => new EventTag
+                                {
+                                    TagId = f.TagId
+                                }).ToList()
+                                : new List<EventTag>()))
+                    .ForMember(dest => dest.ImgListEvent, opt => opt.Ignore()); ;
+
             CreateMap<Event, EventDetailResponse>()
                 .ForMember(dest => dest.EventId, opt => opt.MapFrom(src => src.Id))
                 .ForMember(dest => dest.OrganizerEvent, opt => opt.MapFrom(src => src.OrganizerProfile))

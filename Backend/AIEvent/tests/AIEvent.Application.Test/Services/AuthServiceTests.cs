@@ -36,7 +36,7 @@ namespace AIEvent.Application.Test.Services
             // Fake IUserStore
             var store = new Mock<IUserStore<AppUser>>();
             _mockUserManager = new Mock<UserManager<AppUser>>(
-                store.Object, null, null, null, null, null, null, null, null
+                store.Object, null!, null!, null!, null!, null!, null!, null!, null!
             );
 
             var contextAccessor = new Mock<IHttpContextAccessor>();
@@ -47,10 +47,10 @@ namespace AIEvent.Application.Test.Services
                 _mockUserManager.Object,
                 contextAccessor.Object,
                 userPrincipalFactory.Object,
-                null,
+                null!,
                 signInLogger.Object,
-                null,
-                null
+                null!,
+                null!
             );
             _authService = new AuthService(_mockUnitOfWork.Object,
                                                _mockJwtService.Object,

@@ -14,18 +14,25 @@ namespace AIEvent.Application.Services.Implements
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly IMapper _mapper;
+        private readonly ICloudinaryService _cloudinaryService;
 
         public UserService(
             UserManager<AppUser> userManager,
-            IMapper mapper)
+            IMapper mapper,
+            ICloudinaryService loudinaryService)
         {
             _userManager = userManager;
             _mapper = mapper;
+            _cloudinaryService = loudinaryService;
         }
 
-        public async Task<Result<UserResponse>> GetUserByIdAsync(string userId)
+        public async Task<Result<UserDetailResponse>> GetUserByIdAsync(string userId)
         {
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await _userManager
+                                    .Users
+                                    .Include(u => u.UserInterests)
+                                        .ThenInclude(ui => ui.Interest)
+                                    .FirstOrDefaultAsync(u => u.Id == Guid.Parse(userId));
             if (user == null)
             {
                 return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
@@ -36,14 +43,12 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("User account is inactive", ErrorCodes.NotFound);
             }
 
-            var userResponse = _mapper.Map<UserResponse>(user);
-            var roles = await _userManager.GetRolesAsync(user);
-            userResponse.Roles = [.. roles];
+            var userResponse = _mapper.Map<UserDetailResponse>(user);
 
-            return Result<UserResponse>.Success(userResponse);
+            return Result<UserDetailResponse>.Success(userResponse);
         }
 
-        public async Task<Result<UserResponse>> UpdateUserAsync(string userId, UpdateUserRequest request)
+        public async Task<Result<UserDetailResponse>> UpdateUserAsync(string userId, UpdateUserRequest request)
         {
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
@@ -58,17 +63,20 @@ namespace AIEvent.Application.Services.Implements
 
             _mapper.Map(request, user);
 
+            if(request.AvatarImg != null && request.AvatarImg.Length > 0)
+            {
+                user.AvatarImgUrl = await _cloudinaryService.UploadImageAsync(request.AvatarImg);
+            }
+
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
             {
                 return ErrorResponse.FailureResult("Failed to update user", ErrorCodes.InvalidInput);
             }
 
-            var userResponse = _mapper.Map<UserResponse>(user);
-            var roles = await _userManager.GetRolesAsync(user);
-            userResponse.Roles = [.. roles];
+            var userResponse = _mapper.Map<UserDetailResponse>(user);
 
-            return Result<UserResponse>.Success(userResponse);
+            return Result<UserDetailResponse>.Success(userResponse);
         }
 
         public async Task<Result<List<UserResponse>>> GetAllUsersAsync(int page = 1, int pageSize = 10)

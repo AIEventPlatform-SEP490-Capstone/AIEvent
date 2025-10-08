@@ -29,7 +29,7 @@ namespace AIEvent.Application.Test.Services
             _mockTransactionHelper = new Mock<ITransactionHelper>();
             var store = new Mock<IUserStore<AppUser>>();
             _mockUserManager = new Mock<UserManager<AppUser>>(
-                store.Object, null, null, null, null, null, null, null, null
+                store.Object, null!, null!, null!, null!, null!, null!, null!, null!
             );
             _ruleService = new RuleRefundService(_mockUnitOfWork.Object,
                                                     _mockTransactionHelper.Object,
@@ -270,7 +270,7 @@ namespace AIEvent.Application.Test.Services
                .Returns<Func<Task<Result>>>(func => func());
             _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
             _mockUserManager.Setup(x => x.IsInRoleAsync(user, "Admin")).ReturnsAsync(true);
-            _mockMapper.Setup(x => x.Map<RefundRule>(request)).Returns((RefundRule?)null);
+            _mockMapper.Setup(x => x.Map<RefundRule>(request)).Returns((RefundRule?)null!);
 
             var result = await _ruleService.CreateRuleAsync(userId, request);
 

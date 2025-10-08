@@ -22,7 +22,7 @@ namespace AIEvent.API.Controllers
 
         [HttpGet("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<SuccessResponse<UserResponse>>> GetUser(Guid id)
+        public async Task<ActionResult<SuccessResponse<UserDetailResponse>>> GetUser(Guid id)
         {
             var result = await _userService.GetUserByIdAsync(id.ToString());
 
@@ -31,14 +31,14 @@ namespace AIEvent.API.Controllers
                 return NotFound(result.Error!);
             }
 
-            return Ok(SuccessResponse<UserResponse>.SuccessResult(
+            return Ok(SuccessResponse<UserDetailResponse>.SuccessResult(
                 result.Value!,
                 message: "User retrieved successfully"));
         }
 
         [HttpGet("profile")]
         [Authorize]
-        public async Task<ActionResult<SuccessResponse<UserResponse>>> GetProfile()
+        public async Task<ActionResult<SuccessResponse<UserDetailResponse>>> GetProfile()
         {
             var userId = User.GetRequiredUserId().ToString();
 
@@ -49,14 +49,14 @@ namespace AIEvent.API.Controllers
                 return NotFound(result.Error!);
             }
 
-            return Ok(SuccessResponse<UserResponse>.SuccessResult(
+            return Ok(SuccessResponse<UserDetailResponse>.SuccessResult(
                 result.Value!,
                 message: "Profile retrieved successfully"));
         }
 
         [HttpPut("profile")]
         [Authorize]
-        public async Task<ActionResult<SuccessResponse<UserResponse>>> UpdateProfile([FromBody] UpdateUserRequest request)
+        public async Task<ActionResult<SuccessResponse<UserDetailResponse>>> UpdateProfile([FromForm] UpdateUserRequest request)
         {
             var userId = User.GetRequiredUserId().ToString();
 
@@ -67,7 +67,7 @@ namespace AIEvent.API.Controllers
                 return BadRequest(result.Error!);
             }
 
-            return Ok(SuccessResponse<UserResponse>.SuccessResult(
+            return Ok(SuccessResponse<UserDetailResponse>.SuccessResult(
                 result.Value!,
                 SuccessCodes.Updated,
                 "Profile updated successfully"));

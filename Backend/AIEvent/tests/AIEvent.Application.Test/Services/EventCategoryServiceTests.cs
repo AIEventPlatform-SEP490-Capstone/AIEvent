@@ -90,7 +90,7 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
-            result.Error.Message.Should().Be("EventCateogry is already existing");
+            result.Error!.Message.Should().Be("EventCateogry is already existing");
             _categoryRepoMock.Verify(r => r.AddAsync(It.IsAny<EventCategory>()), Times.Never);
         }
 
@@ -120,7 +120,7 @@ namespace AIEvent.Application.Test.Services
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
             result.Error.Should().NotBeNull();
-            result.Error.Message.Should().Be("Event category name is required");
+            result.Error!.Message.Should().Be("Event category name is required");
 
             categoryRepoMock.Verify(r => r.AddAsync(It.IsAny<EventCategory>()), Times.Never);
         }
@@ -146,7 +146,7 @@ namespace AIEvent.Application.Test.Services
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
             result.Error.Should().NotBeNull();
-            result.Error.Message.Should().Be("Can not found or EventCategory is deleted");
+            result.Error!.Message.Should().Be("Can not found or EventCategory is deleted");
             result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
 
             _categoryRepoMock.Verify(r => r.DeleteAsync(It.IsAny<EventCategory>()), Times.Never);
@@ -176,7 +176,7 @@ namespace AIEvent.Application.Test.Services
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
             result.Error.Should().NotBeNull();
-            result.Error.Message.Should().Be("Can not found or EventCategory is deleted");
+            result.Error!.Message.Should().Be("Can not found or EventCategory is deleted");
 
             _categoryRepoMock.Verify(r => r.DeleteAsync(It.IsAny<EventCategory>()), Times.Never);
         }

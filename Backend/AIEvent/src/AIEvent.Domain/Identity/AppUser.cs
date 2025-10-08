@@ -16,10 +16,11 @@ namespace AIEvent.Domain.Identity
         public bool IsActive { get; set; } = true;
         public ParticipationFrequency ParticipationFrequency { get; set; }
         public BudgetOption BudgetOption { get; set; }
-        public bool? IsEmailNotificationEnabled { get; set; }
-        public bool? IsPushNotificationEnabled { get; set; }
-        public bool? IsSmsNotificationEnabled { get; set; }
+        public bool? IsEmailNotificationEnabled { get; set; } = true;
+        public bool? IsPushNotificationEnabled { get; set; } = true;
+        public bool? IsSmsNotificationEnabled { get; set; } = true;
         public string? InterestedCitiesJson { get; set; }
+        public string? AvatarImgUrl { get; set; }
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
         public OrganizerProfile? OrganizerProfile { get; set; }
         public ICollection<UserAction> UserActions { get; set; } = new List<UserAction>();

@@ -1,4 +1,5 @@
 ﻿using AIEvent.Application.DTOs.Auth;
+using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.User;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Identity;
@@ -13,13 +14,26 @@ namespace AIEvent.Application.Mappings
         {
             CreateMap<AppUser, UserResponse>();
 
+            CreateMap<AppUser, UserDetailResponse>()
+                .ForMember(dest => dest.InterestedCities,
+                    opt => opt.MapFrom(src =>
+                        !string.IsNullOrEmpty(src.InterestedCitiesJson)
+                            ? JsonConvert.DeserializeObject<List<InterestedCities>>(src.InterestedCitiesJson)
+                            : new List<InterestedCities>()))
+                .ForMember(dest => dest.UserInterests,
+                    opt => opt.MapFrom(src =>
+                        src.UserInterests != null
+                            ? src.UserInterests.Select(f => new UserInterestResponse
+                            {
+                                InterestId = f.InterestId,
+                                InterestName = f.Interest.Name
+                            }).ToList()
+                            : new List<UserInterestResponse>()));
+
             CreateMap<RegisterRequest, AppUser>()
                 .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.Email))
                 .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
                 .ForMember(dest => dest.EmailConfirmed, opt => opt.MapFrom(src => false))
-                .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.FullName))
-                .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.PhoneNumber))
-                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
                 .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true))
                 .ForMember(dest => dest.InterestedCitiesJson,
                     opt => opt.MapFrom(src =>
@@ -33,19 +47,24 @@ namespace AIEvent.Application.Mappings
                             {
                                 InterestId = Guid.Parse(f.UserInterestId)
                             }).ToList()
-                            : new List<UserInterest>()))
-                .ForMember(dest => dest.ParticipationFrequency,
-                    opt => opt.MapFrom(src => src.ParticipationFrequency))
-                .ForMember(dest => dest.BudgetOption,
-                    opt => opt.MapFrom(src => src.BudgetOption))
-                .ForMember(dest => dest.IsEmailNotificationEnabled,
-                    opt => opt.MapFrom(src => src.IsEmailNotificationEnabled))
-                .ForMember(dest => dest.IsPushNotificationEnabled,
-                    opt => opt.MapFrom(src => src.IsPushNotificationEnabled))
-                .ForMember(dest => dest.IsSmsNotificationEnabled,
-                    opt => opt.MapFrom(src => src.IsSmsNotificationEnabled));
+                            : new List<UserInterest>()));
 
-            CreateMap<UpdateUserRequest, AppUser>();
+            CreateMap<UpdateUserRequest, AppUser>()
+                .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true))
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
+                .ForMember(dest => dest.InterestedCitiesJson,
+                    opt => opt.MapFrom(src =>
+                        src.InterestedCities != null
+                            ? JsonConvert.SerializeObject(src.InterestedCities)
+                            : null))
+                .ForMember(dest => dest.UserInterests,
+                    opt => opt.MapFrom(src =>
+                        src.UserInterests != null
+                            ? src.UserInterests.Select(f => new UserInterest
+                            {
+                                InterestId = Guid.Parse(f.UserInterestId)
+                            }).ToList()
+                            : new List<UserInterest>()));
         }
     }
 }
