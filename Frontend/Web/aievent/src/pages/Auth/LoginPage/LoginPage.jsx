@@ -54,6 +54,8 @@ const LoginPage = () => {
       const result = await dispatch(login(formData)).unwrap();
       if (result) {
         showSuccess(authMessages.loginSuccess(result.user.unique_name || result.user.email || 'Bạn'));
+        
+        // Always redirect to homepage after successful login
         navigate(PATH.HOME);
       }
     } catch (err) {
