@@ -9,11 +9,11 @@ const ProtectedRoute = ({ children, allowedRoles = [], allowAnonymous = false })
   // Nếu cho phép anonymous và user chưa login, hiển thị children
   if (allowAnonymous && !isAuthenticated) return children;
   
-  // Nếu user chưa login, redirect về home thay vì login
-  if (!isAuthenticated) return <Navigate to={PATH.HOME} />;
+  // Nếu user chưa login, redirect về login
+  if (!isAuthenticated) return <Navigate to={PATH.LOGIN} />;
   
-  // Kiểm tra role nếu có yêu cầu
-  if (allowedRoles.length && user && !allowedRoles.includes(user.role)) {
+  // Kiểm tra role nếu có yêu cầu (case-insensitive)
+  if (allowedRoles.length && user && !allowedRoles.map(role => role.toLowerCase()).includes(user.role?.toLowerCase())) {
     return <Navigate to={PATH.HOME} />;
   }
   

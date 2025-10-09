@@ -57,8 +57,6 @@ export function VerticalNavigation() {
   const { user, isAuthenticated } = useSelector((state) => state.auth)
   const pathname = location.pathname
   
-  // Debug: Log current auth state
-  console.log("Auth state:", { user, isAuthenticated })
   
   const isOrganizerRoute = pathname.startsWith("/organizer")
   const isAdminRoute = pathname.startsWith("/admin")
@@ -88,7 +86,7 @@ export function VerticalNavigation() {
       ]
     }
 
-    if (user?.role === "admin") {
+    if (user?.role?.toLowerCase() === "admin") {
       return [
         {
           title: "Admin Panel",
@@ -111,7 +109,7 @@ export function VerticalNavigation() {
       ]
     }
 
-    if (user?.role === "organizer") {
+    if (user?.role?.toLowerCase() === "organizer" || user?.role?.toLowerCase() === "manager") {
       return [
         {
           title: "Dashboard",
@@ -127,8 +125,14 @@ export function VerticalNavigation() {
         },
         {
           title: "Sự kiện của tôi",
-          url: "/organizer/events",
+          url: "/organizer/my-events",
           icon: Calendar,
+          isActive: pathname === "/organizer/my-events",
+        },
+        {
+          title: "Quản lý sự kiện",
+          url: "/organizer/events",
+          icon: CheckSquare,
           isActive: pathname === "/organizer/events",
         },
       ]
