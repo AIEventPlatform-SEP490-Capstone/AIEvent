@@ -1,4 +1,4 @@
-﻿using AIEvent.Application.Services.Interfaces;
+using AIEvent.Application.Services.Interfaces;
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Http;

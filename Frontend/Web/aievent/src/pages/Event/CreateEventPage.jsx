@@ -215,11 +215,8 @@ const CreateEventPage = () => {
       return;
     }
 
-    // Filter out empty images and get actual File objects
-    const validImages = selectedImages.filter(img => img && img.file instanceof File).map(img => img.file);
-    
-    // Temporary: Skip images to test if that's causing the 500 error
-    const skipImages = true;
+    // Filter out empty images - selectedImages already contains File objects
+    const validImages = selectedImages.filter(img => img instanceof File);
     
     // Calculate total tickets
     const totalTickets = data.ticketDetails.reduce((sum, ticket) => sum + parseInt(ticket.ticketQuantity), 0);
@@ -240,7 +237,7 @@ const CreateEventPage = () => {
       ticketType: parseInt(data.ticketType),
       requireApproval: data.requireApproval || false,
       publish: data.publish || false,
-      images: skipImages ? [] : validImages,
+      images: validImages,
       // Use first category as main category (API expects single EventCategoryId)
       eventCategoryId: selectedCategories.length > 0 ? selectedCategories[0].eventCategoryId : null,
       // Map tags correctly for EventTagRequest
@@ -289,36 +286,7 @@ const CreateEventPage = () => {
     try {
       setIsLoading(true);
       
-      // Try with minimal data first to isolate the issue
-      const minimalEventData = {
-        title: data.title,
-        description: data.description,
-        detailedDescription: data.detailedDescription,
-        startTime: new Date(data.startTime).toISOString(),
-        endTime: new Date(data.endTime).toISOString(),
-        isOnlineEvent: data.isOnlineEvent || false,
-        totalTickets: totalTickets,
-        ticketType: parseInt(data.ticketType),
-        requireApproval: data.requireApproval || false,
-        publish: data.publish || false,
-        locationName: data.locationName,
-        address: data.address,
-        city: data.city || null, // Add city field
-        latitude: data.latitude || null, // Add latitude
-        longitude: data.longitude || null, // Add longitude
-        eventCategoryId: selectedCategories[0].eventCategoryId,
-        images: [],
-        tags: selectedTags.map(tag => ({ tagId: tag.tagId })),
-        ticketDetails: data.ticketDetails.map(ticket => ({
-          ticketName: ticket.ticketName,
-          ticketPrice: parseFloat(ticket.ticketPrice),
-          ticketQuantity: parseInt(ticket.ticketQuantity),
-          ticketDescription: ticket.ticketDescription || '',
-          ruleRefundRequestId: ticket.ruleRefundRequestId,
-        }))
-      };
-      
-      const response = await eventAPI.createEvent(minimalEventData);
+      const response = await eventAPI.createEvent(eventData);
       console.log('Create event response:', response);
 
       // Backend trả về statusCode thay vì isSuccess

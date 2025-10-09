@@ -112,6 +112,28 @@ export const eventAPI = {
     return response.data;
   },
 
+  // Get events by organizer (requires Organizer role)
+  getEventsByOrganizer: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    
+    if (params.search) queryParams.append('search', params.search);
+    if (params.eventCategoryId) queryParams.append('eventCategoryId', params.eventCategoryId);
+    if (params.ticketType) queryParams.append('ticketType', params.ticketType);
+    if (params.city) queryParams.append('city', params.city);
+    if (params.pageNumber) queryParams.append('pageNumber', params.pageNumber);
+    if (params.pageSize) queryParams.append('pageSize', params.pageSize);
+    
+    // Handle tags array
+    if (params.tags && params.tags.length > 0) {
+      params.tags.forEach((tag, index) => {
+        queryParams.append(`tags[${index}].TagId`, tag.TagId);
+      });
+    }
+
+    const response = await fetcher.get(`/event/organizer?${queryParams.toString()}`);
+    return response.data;
+  },
+
   // Delete event (requires Organizer role)
   deleteEvent: async (eventId) => {
     const response = await fetcher.delete(`/event?eventId=${eventId}`);
