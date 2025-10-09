@@ -106,7 +106,7 @@ namespace AIEvent.Application.Services.Implements
                             .Where(e => e.EventCategoryId == Guid.Parse(eventCategoryId));
             }
 
-            if (tags != null && tags!.Count > 0)
+            if (tags!.Count > 0)
             {
                 var tagIds = tags.Select(t => t.TagId).ToList();
                 events = events
@@ -302,7 +302,7 @@ namespace AIEvent.Application.Services.Implements
                             .Where(e => e.EventCategoryId == Guid.Parse(eventCategoryId));
             }
 
-            if (tags != null && tags!.Count > 0)
+            if (tags!.Count > 0)
             {
                 var tagIds = tags.Select(t => t.TagId).ToList();
                 events = events
