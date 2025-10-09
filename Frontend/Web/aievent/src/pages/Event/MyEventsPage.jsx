@@ -150,30 +150,56 @@ const MyEventsPage = () => {
   };
 
   const handleViewEvent = (eventId) => {
-    navigate(`/event/${eventId}`);
+    navigate(`/organizer/event/${eventId}`);
   };
 
   const handleEditEvent = (eventId) => {
-    // TODO: Navigate to edit page
-    toast.info('Chức năng chỉnh sửa đang được phát triển');
+    navigate(`/organizer/event/${eventId}/edit`);
   };
 
   const handleDeleteEvent = async (eventId) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa sự kiện này?')) {
+    // Find event name for better confirmation
+    const event = allEvents.find(e => e.eventId === eventId);
+    const eventName = event?.title || 'sự kiện này';
+    
+    const confirmMessage = `Bạn có chắc chắn muốn xóa "${eventName}"?\n\n⚠️ Hành động này không thể hoàn tác!`;
+    
+    if (!window.confirm(confirmMessage)) {
       return;
     }
 
     try {
+      const loadingToast = toast.loading('Đang xóa sự kiện...');
+      
       const response = await eventAPI.deleteEvent(eventId);
-      if (response?.statusCode?.startsWith('AIE201')) {
-        toast.success('Xóa sự kiện thành công!');
+      
+      toast.dismiss(loadingToast);
+      
+      if (response?.statusCode?.startsWith('AIE201') || response?.success) {
+        toast.success('✅ Xóa sự kiện thành công!', {
+          duration: 3000,
+        });
+        
+        // Update local state immediately for better UX
+        setAllEvents(prev => prev.filter(event => event.eventId !== eventId));
+        setEvents(prev => prev.filter(event => event.eventId !== eventId));
+        
+        // Reload to sync with server
         loadEvents();
       } else {
         toast.error(response?.message || 'Không thể xóa sự kiện');
       }
     } catch (error) {
       console.error('Error deleting event:', error);
-      toast.error('Có lỗi xảy ra khi xóa sự kiện');
+      if (error.response?.status === 403) {
+        toast.error('❌ Bạn không có quyền xóa sự kiện này');
+      } else if (error.response?.status === 404) {
+        toast.error('❌ Sự kiện không tồn tại');
+      } else if (error.response?.status === 400) {
+        toast.error('❌ Không thể xóa sự kiện đã có người đăng ký');
+      } else {
+        toast.error('❌ Có lỗi xảy ra khi xóa sự kiện');
+      }
     }
   };
 

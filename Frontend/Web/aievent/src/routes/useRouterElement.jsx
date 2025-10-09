@@ -5,6 +5,8 @@ import HomePage from "../pages/Home/HomePage";
 import LoginPage from "../pages/Auth/LoginPage/LoginPage";
 import CreateEventPage from "../pages/Event/CreateEventPage";
 import MyEventsPage from "../pages/Event/MyEventsPage";
+import EventDetailPage from "../pages/Event/EventDetailPage";
+import EditEventPage from "../pages/Event/EditEventPage";
 import OrganizerDashboard from "../pages/Organizer/OrganizerDashboard";
 import ProtectedRoute from "../components/ProtectedRoute/ProtectedRoute";
 
@@ -58,6 +60,8 @@ export default function useRouterElement() {
         { path: "create", element: <CreateEventPage /> },
         { path: "events", element: <div>Organizer Events Page</div> },
         { path: "my-events", element: <MyEventsPage /> },
+        { path: "event/:eventId", element: <EventDetailPage /> },
+        { path: "event/:eventId/edit", element: <EditEventPage /> },
         { path: "profile", element: <div>Organizer Profile Page</div> },
         { path: "settings", element: <div>Organizer Settings Page</div> },
         { path: "support", element: <div>Organizer Support Page</div> },
