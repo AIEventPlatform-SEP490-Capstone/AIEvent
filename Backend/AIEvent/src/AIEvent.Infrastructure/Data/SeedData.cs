@@ -2,6 +2,7 @@
 using AIEvent.Domain.Identity;
 using Microsoft.AspNetCore.Identity;
 using AIEvent.Domain.Entities;
+using AIEvent.Domain.Enums;
 
 namespace AIEvent.Infrastructure.Data
 {
@@ -27,6 +28,7 @@ namespace AIEvent.Infrastructure.Data
             SeedUserRoles(modelBuilder);
             SeedEventCategory(modelBuilder);
             SeedTag(modelBuilder);
+            SeedOrganizerProfile(modelBuilder);
         }
 
         private static void SeedRoles(ModelBuilder modelBuilder)
@@ -290,6 +292,45 @@ namespace AIEvent.Infrastructure.Data
                     NameTag = "Workshop",
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System"
+                }
+            );
+        }
+
+        private static void SeedOrganizerProfile(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<OrganizerProfile>().HasData(
+                new OrganizerProfile
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = organizerUserId,
+                    OrganizationType = OrganizationType.PrivateCompany,
+                    EventFrequency = EventFrequency.Monthly,
+                    EventSize = EventSize.Medium,
+                    OrganizerType = OrganizerType.Individual,
+                    EventExperienceLevel = EventExperienceLevel.Experienced,
+                    ContactName = "Nguyen Van A",
+                    ContactEmail = "contact@eventpro.vn",
+                    ContactPhone = "+84 987 654 321",
+                    Address = "123 Le Loi, District 1, Ho Chi Minh City",
+                    Website = "https://eventpro.vn",
+                    UrlFacebook = "https://facebook.com/eventpro",
+                    UrlInstagram = "https://instagram.com/eventpro.vn",
+                    UrlLinkedIn = "https://linkedin.com/company/eventpro",
+                    ExperienceDescription = "Chuyên tổ chức sự kiện doanh nghiệp, hội nghị, hội thảo và lễ ra mắt sản phẩm.",
+                    ImgCompany = "/uploads/organizers/company_logo.png",
+                    ImgFrontIdentity = "/uploads/organizers/front_id.png",
+                    ImgBackIdentity = "/uploads/organizers/back_id.png",
+                    ImgBusinessLicense = "/uploads/organizers/business_license.png",
+                    IdentityNumber = "079123456789",
+                    CompanyName = "EventPro Vietnam Co., Ltd",
+                    TaxCode = "0312345678",
+                    CompanyDescription = "Công ty hàng đầu trong lĩnh vực tổ chức sự kiện chuyên nghiệp tại Việt Nam.",
+                    Status = OrganizerStatus.Approve,
+                    ConfirmAt = DateTime.UtcNow,
+                    ConfirmBy = "SystemSeeder",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+
                 }
             );
         }

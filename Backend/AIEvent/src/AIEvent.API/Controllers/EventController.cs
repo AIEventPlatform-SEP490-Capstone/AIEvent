@@ -2,9 +2,7 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
-using AIEvent.Application.DTOs.Role;
 using AIEvent.Application.DTOs.Tag;
-using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Enums;
@@ -68,6 +66,33 @@ namespace AIEvent.API.Controllers
                 result.Value!,
                 SuccessCodes.Success,
                 "Event retrieved successfully"));
+        }
+
+        [HttpGet("organizer")]
+        [Authorize(Roles = "Organizer")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<EventsResponse>>>> GetEventOrganizer([FromQuery] string? search,
+                                                                                                          [FromQuery] string? eventCategoryId,
+                                                                                                          [FromQuery] List<EventTagRequest> tags,
+                                                                                                          [FromQuery] TicketType? ticketType,
+                                                                                                          [FromQuery] string? city,
+                                                                                                          [FromQuery] int pageNumber = 1,
+                                                                                                          [FromQuery] int pageSize = 5)
+        {
+
+            Guid userId = User.GetRequiredUserId();
+            Guid organizer = User.GetRequiredOrganizerId();
+
+            var result = await _eventService.GetEventByOrganizerAsync(userId, organizer, search, eventCategoryId, tags, ticketType, city, pageNumber, pageSize);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<EventsResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Event by Organizer retrieved successfully"));
         }
 
         [HttpPut("{id}")]
