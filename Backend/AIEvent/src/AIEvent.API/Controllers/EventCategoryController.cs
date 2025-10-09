@@ -55,7 +55,6 @@ namespace AIEvent.API.Controllers
 
         [HttpGet("{id}")]
         [AllowAnonymous]
-        [Authorize]
         public async Task<ActionResult<SuccessResponse<EventCategoryResponse>>> GetEventCategoryById(string id)
         {
             var result = await _eventCategoryService.GetEventCategoryByIdAsync(id);
@@ -73,7 +72,6 @@ namespace AIEvent.API.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        [Authorize]
         public async Task<ActionResult<SuccessResponse<BasePaginated<EventCategoryResponse>>>> GetEventCategory(int pageNumber = 1, int pageSize = 5)
         {
             var result = await _eventCategoryService.GetListCategoryAsync(pageNumber, pageSize);
