@@ -495,7 +495,7 @@ namespace AIEvent.Application.Test.Services
 
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("User not found");
-            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
         }
 
 
@@ -614,7 +614,7 @@ namespace AIEvent.Application.Test.Services
 
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("Can not found Organizer profile");
-            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
         }
 
         [Fact]
@@ -649,7 +649,7 @@ namespace AIEvent.Application.Test.Services
 
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("Can not found Organizer profile");
-            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
         }
 
     }

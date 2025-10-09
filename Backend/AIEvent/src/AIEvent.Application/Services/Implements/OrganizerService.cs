@@ -12,8 +12,6 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using System;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -185,11 +183,11 @@ namespace AIEvent.Application.Services.Implements
                     .FirstOrDefaultAsync(o => o.Id == organizerId && !o.IsDeleted && o.Status == OrganizerStatus.NeedConfirm);
 
                 if (organizer == null)
-                    return ErrorResponse.FailureResult("Can not found Organizer profile", ErrorCodes.InvalidInput);
+                    return ErrorResponse.FailureResult("Can not found Organizer profile", ErrorCodes.NotFound);
 
                 var organizerUser = await _userManager.FindByIdAsync(organizer.UserId.ToString());
                 if (organizerUser == null)
-                    return ErrorResponse.FailureResult("User not found", ErrorCodes.InvalidInput);
+                    return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
 
                 var currentRoles = await _userManager.GetRolesAsync(organizerUser);
                 if (currentRoles.Contains("Organizer"))
