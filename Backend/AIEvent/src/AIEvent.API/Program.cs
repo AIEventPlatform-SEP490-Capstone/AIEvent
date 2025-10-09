@@ -2,14 +2,11 @@
 using AIEvent.API.Middleware;
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
-using AIEvent.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
 using StackExchange.Redis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using static System.Net.WebRequestMethods;
-
 namespace AIEvent.API
 {
     public class Program
@@ -79,12 +76,6 @@ namespace AIEvent.API
 
 
             var app = builder.Build();
-
-            //Configure the HTTP request pipeline.
-            //if (app.Environment.IsDevelopment())
-            //{
-
-            //}
 
             app.UseSwagger();
             app.UseSwaggerUI();

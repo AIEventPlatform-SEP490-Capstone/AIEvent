@@ -276,5 +276,80 @@ namespace AIEvent.Application.Services.Implements
                 return Result.Success();
             });
         }
+
+        public async Task<Result<BasePaginated<EventsResponse>>> GetEventByOrganizerAsync(Guid? userId, Guid organizerId, string? search, string? eventCategoryId, List<EventTagRequest> tags, TicketType? ticketType, string? city, int pageNumber = 1, int pageSize = 5)
+        {
+
+            IQueryable<Event> events = _unitOfWork.EventRepository
+                                                .Query()
+                                                .Include(e => e.EventCategory)
+                                                .Include(e => e.FavoriteEvents)
+                                                .Include(e => e.EventTags)
+                                                    .ThenInclude(e => e.Tag)
+                                                .AsNoTracking()
+                                                .Where(e => e.OrganizerProfileId == organizerId);
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                events = events
+                            .Where(e => e.Title.ToLower().Contains(search.ToLower()));
+            }
+
+            if (!string.IsNullOrEmpty(eventCategoryId))
+            {
+                events = events
+                            .Where(e => e.EventCategoryId == Guid.Parse(eventCategoryId));
+            }
+
+            if (tags != null || tags!.Count > 0)
+            {
+                var tagIds = tags.Select(t => t.TagId).ToList();
+                events = events
+                            .Where(e => e.EventTags.Any(et => tagIds.Contains(et.TagId)));
+            }
+
+            if (ticketType.HasValue)
+            {
+                events = events
+                            .Where(e => e.TicketType == ticketType);
+            }
+
+            if (!string.IsNullOrEmpty(city))
+            {
+                events = events
+                            .Where(e => (e.City ?? string.Empty).ToLower().Contains(city.ToLower()));
+            }
+
+            int totalCount = await events.CountAsync();
+
+            var result = await events
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(e => new EventsResponse
+                {
+                    EventId = e.Id,
+                    EventCategoryName = e.EventCategory.CategoryName,
+                    Title = e.Title,
+                    StartTime = e.StartTime,
+                    EndTime = e.EndTime,
+                    Description = e.Description,
+                    TicketType = e.TicketType,
+                    TotalTickets = e.TotalTickets,
+                    SoldQuantity = e.SoldQuantity,
+                    LocationName = e.LocationName,
+                    Tags = e.EventTags.Select(t => new TagResponse
+                    {
+                        TagId = t.TagId.ToString(),
+                        TagName = t.Tag.NameTag
+                    }).ToList(),
+                    IsFavorite = userId != null && e.FavoriteEvents.Any(fe => fe.UserId == userId),
+                    ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
+                        ? new List<string>()
+                        : JsonSerializer.Deserialize<List<string>>(e.ImgListEvent, new JsonSerializerOptions())
+                })
+                .ToListAsync();
+
+            return new BasePaginated<EventsResponse>(result, totalCount, pageNumber, pageSize);
+        }
     }
 }

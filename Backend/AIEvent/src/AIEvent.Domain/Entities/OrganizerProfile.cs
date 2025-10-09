@@ -37,7 +37,7 @@ namespace AIEvent.Domain.Entities
         public DateTime? ConfirmAt { get; set; }
         public string? ConfirmBy { get; set; }
 
-        public required AppUser User { get; set; }
+        public AppUser User { get; set; } = default!;
         public ICollection<Event>? Events { get; set; }
     }
 }
