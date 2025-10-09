@@ -8,6 +8,9 @@ import MyEventsPage from "../pages/Event/MyEventsPage";
 import EventDetailPage from "../pages/Event/EventDetailPage";
 import EditEventPage from "../pages/Event/EditEventPage";
 import OrganizerDashboard from "../pages/Organizer/OrganizerDashboard";
+import AdminDashboard from "../pages/Admin/AdminDashboard";
+import RefundRulesManagement from "../pages/Admin/RefundRulesManagement";
+import AdminLayout from "../layouts/AdminLayout/AdminLayout";
 import ProtectedRoute from "../components/ProtectedRoute/ProtectedRoute";
 
 export default function useRouterElement() {
@@ -73,13 +76,14 @@ export default function useRouterElement() {
       path: PATH.ADMIN,
       element: (
         <ProtectedRoute allowedRoles={["Admin"]}>
-          <MainLayout />
+          <AdminLayout />
         </ProtectedRoute>
       ),
       children: [
-        { index: true, element: <div>Admin Dashboard</div> },
+        { index: true, element: <AdminDashboard /> },
         { path: "events", element: <div>Admin Events Page</div> },
         { path: "users", element: <div>Admin Users Page</div> },
+        { path: "refund-rules", element: <RefundRulesManagement /> },
         { path: "organizers", element: <div>Admin Organizers Page</div> },
         { path: "profile", element: <div>Admin Profile Page</div> },
         { path: "settings", element: <div>Admin Settings Page</div> },

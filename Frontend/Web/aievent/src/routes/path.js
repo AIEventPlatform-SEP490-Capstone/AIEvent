@@ -49,6 +49,7 @@ export const PATH = {
     ADMIN_DASHBOARD: "/admin/dashboard",
     ADMIN_EVENTS: "/admin/events",
     ADMIN_USERS: "/admin/users",
+    ADMIN_REFUND_RULES: "/admin/refund-rules",
     ADMIN_ORGANIZERS: "/admin/organizers",
     ADMIN_PROFILE: "/admin/profile",
     ADMIN_SETTINGS: "/admin/settings",

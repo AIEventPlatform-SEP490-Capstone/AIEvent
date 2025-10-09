@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { authAPI } from "../../api/fetcher";
 import Cookies from "js-cookie";
 import { getUserFromJWT, isJWTExpired } from "../../lib/jwtUtils";
+import { getCookieOptions, clearRememberedEmail } from "../../lib/rememberMeUtils";
 
 export const login = createAsyncThunk(
   "auth/login",
@@ -10,12 +11,11 @@ export const login = createAsyncThunk(
       const response = await authAPI.login(credentials);
       const { data } = response;
       
+      // Get cookie options based on rememberMe preference
+      const cookieOptions = getCookieOptions(credentials.rememberMe, data.expiresAt);
+      
       //lưu accessToken vào cookies
-      Cookies.set("accessToken", data.accessToken, {
-            expires: new Date(data.expiresAt),
-            secure : true,
-            sameSite : 'strict'
-    });
+      Cookies.set("accessToken", data.accessToken, cookieOptions);
 
      // Decode JWT token để lấy thông tin user
     const userData = getUserFromJWT(data.accessToken);
@@ -46,11 +46,15 @@ export const logout = createAsyncThunk(
       //Xoa tokens va user data
       Cookies.remove("accessToken");
       localStorage.removeItem("currentUser");
+      // Clear remembered email on logout
+      clearRememberedEmail();
 
       return null;
   } catch (error) {
     Cookies.remove("accessToken");
     localStorage.removeItem("currentUser");
+    // Clear remembered email even if logout fails
+    clearRememberedEmail();
     
     return rejectWithValue(error.response ? error.response.data : error.message);
   }
@@ -87,6 +91,7 @@ const authSlice = createSlice({
     isLoading: false,
     error: null,
     isAuthenticated: !!Cookies.get("accessToken") && !isJWTExpired(Cookies.get("accessToken")),
+    isInitialized: true, // Đánh dấu đã khởi tạo xong
   },
   reducers: {
     clearAuth: (state) => {

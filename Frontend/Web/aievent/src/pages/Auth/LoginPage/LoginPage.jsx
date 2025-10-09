@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { PATH } from '../../../routes/path';
@@ -8,6 +8,7 @@ import AIEventLogo from '../../../assets/AIEventLogo.png';
 import LoginPanelBackground from '../../../assets/loginpanel.jpg';
 import { login } from '../../../store/slices/authSlice';
 import { validationMessages, showError, showSuccess, authMessages, handleApiError } from '../../../lib/toastUtils';
+import { saveRememberedEmail, getRememberedEmail, clearRememberedEmail } from '../../../lib/rememberMeUtils';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({ 
@@ -15,10 +16,28 @@ const LoginPage = () => {
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { isLoading: authLoading } = useSelector((state) => state.auth);
+  const { isLoading: authLoading, isAuthenticated, user } = useSelector((state) => state.auth);
+
+  // Effect to handle redirection when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // Redirect về home, RoleBasedRedirect sẽ xử lý redirect theo role
+      navigate(PATH.HOME, { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
+
+  // Effect to load remembered email on component mount
+  useEffect(() => {
+    const rememberedEmail = getRememberedEmail();
+    if (rememberedEmail) {
+      setFormData(prev => ({ ...prev, email: rememberedEmail }));
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -51,12 +70,18 @@ const LoginPage = () => {
     }
 
     try {
-      const result = await dispatch(login(formData)).unwrap();
+      const result = await dispatch(login({ ...formData, rememberMe })).unwrap();
       if (result) {
         showSuccess(authMessages.loginSuccess(result.user.unique_name || result.user.email || 'Bạn'));
         
-        // Always redirect to homepage after successful login
-        navigate(PATH.HOME);
+        // Handle remember me functionality
+        if (rememberMe) {
+          saveRememberedEmail(formData.email);
+        } else {
+          clearRememberedEmail();
+        }
+        
+        // Redirection will be handled by useEffect when isAuthenticated becomes true
       }
     } catch (err) {
       console.error('Login error:', err);
@@ -73,6 +98,18 @@ const LoginPage = () => {
       }
     }
   };
+
+  // If user is authenticated, show loading while redirecting
+  if (isAuthenticated) {
+    return (
+      <div className="min-h-[100svh] w-full bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang chuyển hướng...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[100svh] w-full bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-100 relative overflow-hidden">
@@ -242,12 +279,30 @@ const LoginPage = () => {
                 </div>
 
                 <div className="flex items-center justify-between text-sm">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-center gap-2 cursor-pointer group">
                     <input 
                       type="checkbox" 
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors"
                     />
-                    <span className="text-gray-600">Ghi nhớ đăng nhập</span>
+                    <span className="text-gray-600 group-hover:text-gray-700 transition-colors">
+                      Ghi nhớ đăng nhập
+                    </span>
+                    <div className="relative group/tooltip">
+                      <svg 
+                        className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help transition-colors" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover/tooltip:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                        Lưu email và giữ đăng nhập trong 30 ngày
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                      </div>
+                    </div>
                   </label>
                   <Link 
                     to="/forgot-password" 
