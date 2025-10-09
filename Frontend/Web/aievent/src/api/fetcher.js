@@ -105,9 +105,9 @@ fetcher.interceptors.response.use(
 
     if (error.response) {
       const status = error.response.status;
-      // Không hiển thị toast cho các lỗi đăng nhập (401, 403, 423) vì đã xử lý trong LoginPage
-      if (status === 500) showError(apiMessages.serverError);
-      // Loại bỏ toast cho 403 vì đã xử lý trong LoginPage
+      // Không hiển thị toast tự động - để component xử lý
+      // Chỉ log error để debug
+      console.error('API Error:', status, error.response.data);
     }
 
     return Promise.reject(error);

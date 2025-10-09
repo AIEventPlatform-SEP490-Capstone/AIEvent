@@ -3,6 +3,9 @@ import { PATH } from "./path";
 import MainLayout from "../layouts/MainLayout";
 import HomePage from "../pages/Home/HomePage";
 import LoginPage from "../pages/Auth/LoginPage/LoginPage";
+import CreateEventPage from "../pages/Event/CreateEventPage";
+import MyEventsPage from "../pages/Event/MyEventsPage";
+import OrganizerDashboard from "../pages/Organizer/OrganizerDashboard";
 import ProtectedRoute from "../components/ProtectedRoute/ProtectedRoute";
 
 export default function useRouterElement() {
@@ -46,15 +49,15 @@ export default function useRouterElement() {
     {
       path: PATH.ORGANIZER,
       element: (
-        <ProtectedRoute allowedRoles={["Organizer", "Admin"]}>
+        <ProtectedRoute allowedRoles={["Organizer", "Admin", "Manager"]}>
           <MainLayout />
         </ProtectedRoute>
       ),
       children: [
-        { index: true, element: <div>Organizer Dashboard</div> },
-        { path: "create", element: <div>Create Event Page</div> },
+        { index: true, element: <OrganizerDashboard /> },
+        { path: "create", element: <CreateEventPage /> },
         { path: "events", element: <div>Organizer Events Page</div> },
-        { path: "my-events", element: <div>My Events Page</div> },
+        { path: "my-events", element: <MyEventsPage /> },
         { path: "profile", element: <div>Organizer Profile Page</div> },
         { path: "settings", element: <div>Organizer Settings Page</div> },
         { path: "support", element: <div>Organizer Support Page</div> },

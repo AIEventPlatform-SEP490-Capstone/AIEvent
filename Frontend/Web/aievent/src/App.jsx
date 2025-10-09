@@ -14,9 +14,25 @@ function App() {
           position="top-right"
           toastOptions={{
             duration: 4000,
-            style: {
-              background: '#ffffff',
-              color: '#000000',
+            success: {
+              style: {
+                background: '#10b981',
+                color: '#ffffff',
+              },
+              iconTheme: {
+                primary: '#ffffff',
+                secondary: '#10b981',
+              },
+            },
+            error: {
+              style: {
+                background: '#ef4444',
+                color: '#ffffff',
+              },
+              iconTheme: {
+                primary: '#ffffff',
+                secondary: '#ef4444',
+              },
             },
           }}
         />

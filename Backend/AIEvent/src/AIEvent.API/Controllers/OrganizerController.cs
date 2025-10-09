@@ -20,7 +20,7 @@ namespace AIEvent.API.Controllers
         }
 
         [HttpGet]
-        [Authorize("Organizer")]
+        [Authorize(Roles = "Organizer")]
         public async Task<ActionResult<SuccessResponse<List<OrganizerResponse>>>> GetOrganizer([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             var result = await _organizerService.GetOrganizerAsync(page, pageSize);
