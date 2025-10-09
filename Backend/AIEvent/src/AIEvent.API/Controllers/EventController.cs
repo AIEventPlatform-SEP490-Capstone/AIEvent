@@ -75,6 +75,7 @@ namespace AIEvent.API.Controllers
                                                                                                           [FromQuery] List<EventTagRequest> tags,
                                                                                                           [FromQuery] TicketType? ticketType,
                                                                                                           [FromQuery] string? city,
+                                                                                                          [FromQuery] bool? IsSortByNewest,
                                                                                                           [FromQuery] int pageNumber = 1,
                                                                                                           [FromQuery] int pageSize = 5)
         {
@@ -82,7 +83,7 @@ namespace AIEvent.API.Controllers
             Guid userId = User.GetRequiredUserId();
             Guid organizer = User.GetRequiredOrganizerId();
 
-            var result = await _eventService.GetEventByOrganizerAsync(userId, organizer, search, eventCategoryId, tags, ticketType, city, pageNumber, pageSize);
+            var result = await _eventService.GetEventByOrganizerAsync(userId, organizer, search, eventCategoryId, tags, ticketType, city, IsSortByNewest, pageNumber, pageSize);
 
             if (!result.IsSuccess)
             {

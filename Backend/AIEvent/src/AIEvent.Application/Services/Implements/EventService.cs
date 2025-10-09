@@ -12,6 +12,7 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -277,7 +278,7 @@ namespace AIEvent.Application.Services.Implements
             });
         }
 
-        public async Task<Result<BasePaginated<EventsResponse>>> GetEventByOrganizerAsync(Guid? userId, Guid organizerId, string? search, string? eventCategoryId, List<EventTagRequest> tags, TicketType? ticketType, string? city, int pageNumber = 1, int pageSize = 5)
+        public async Task<Result<BasePaginated<EventsResponse>>> GetEventByOrganizerAsync(Guid? userId, Guid organizerId, string? search, string? eventCategoryId, List<EventTagRequest> tags, TicketType? ticketType, string? city, bool? IsSortByNewest ,int pageNumber = 1, int pageSize = 5)
         {
 
             IQueryable<Event> events = _unitOfWork.EventRepository
@@ -319,6 +320,16 @@ namespace AIEvent.Application.Services.Implements
                 events = events
                             .Where(e => (e.City ?? string.Empty).ToLower().Contains(city.ToLower()));
             }
+
+            if (IsSortByNewest == true)
+            {
+                events = events.OrderByDescending(e => e.CreatedAt);
+            }  
+            else if (IsSortByNewest == false)
+            {
+                events = events.OrderBy(e => e.CreatedAt);
+            }
+
 
             int totalCount = await events.CountAsync();
 
