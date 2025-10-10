@@ -2,6 +2,6 @@
 {
     public class UserInterestRequest
     {
-        public required string UserInterestId { get; set; }
+        public Guid UserInterestId { get; set; }
     }
 }

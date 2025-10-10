@@ -45,7 +45,7 @@ namespace AIEvent.Application.Mappings
                         src.UserInterests != null
                             ? src.UserInterests.Select(f => new UserInterest
                             {
-                                InterestId = Guid.Parse(f.UserInterestId)
+                                InterestId = f.UserInterestId
                             }).ToList()
                             : new List<UserInterest>()));
 
@@ -62,7 +62,7 @@ namespace AIEvent.Application.Mappings
                         src.UserInterests != null
                             ? src.UserInterests.Select(f => new UserInterest
                             {
-                                InterestId = Guid.Parse(f.UserInterestId)
+                                InterestId = f.UserInterestId
                             }).ToList()
                             : new List<UserInterest>()));
         }

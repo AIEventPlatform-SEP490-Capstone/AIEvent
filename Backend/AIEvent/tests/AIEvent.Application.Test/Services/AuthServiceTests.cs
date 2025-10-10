@@ -228,7 +228,7 @@ namespace AIEvent.Application.Test.Services
                 PhoneNumber = "+1234567890",
                 UserInterests = new List<UserInterestRequest>
                 {
-                    new UserInterestRequest { UserInterestId = Guid.Parse("11111111-1111-1111-1111-111111111111").ToString() }
+                    new UserInterestRequest { UserInterestId = Guid.Parse("11111111-1111-1111-1111-111111111111") }
                 },
                 InterestedCities = new List<InterestedCities>
                 {
@@ -285,8 +285,8 @@ namespace AIEvent.Application.Test.Services
                 PhoneNumber = "+1234567890",
                 UserInterests = new List<UserInterestRequest>
                 {
-                    new UserInterestRequest { UserInterestId = Guid.Parse("11111111-1111-1111-1111-111111111111").ToString() },
-                    new UserInterestRequest { UserInterestId = Guid.Parse("22222222-2222-2222-2222-222222222222").ToString() }
+                    new UserInterestRequest { UserInterestId = Guid.Parse("11111111-1111-1111-1111-111111111111") },
+                    new UserInterestRequest { UserInterestId = Guid.Parse("22222222-2222-2222-2222-222222222222") }
                 },
                 InterestedCities = new List<InterestedCities>
                 {
@@ -332,8 +332,8 @@ namespace AIEvent.Application.Test.Services
                 PhoneNumber = "+1234567890",
                 UserInterests = new List<UserInterestRequest>
                 {
-                    new UserInterestRequest { UserInterestId = Guid.Parse("11111111-1111-1111-1111-111111111111").ToString() },
-                    new UserInterestRequest { UserInterestId = Guid.Parse("22222222-2222-2222-2222-222222222222").ToString() }
+                    new UserInterestRequest { UserInterestId = Guid.Parse("11111111-1111-1111-1111-111111111111")},
+                    new UserInterestRequest { UserInterestId = Guid.Parse("22222222-2222-2222-2222-222222222222") }
                 },
                 InterestedCities = new List<InterestedCities>
                 {
@@ -383,8 +383,8 @@ namespace AIEvent.Application.Test.Services
                 PhoneNumber = "+1234567890",
                 UserInterests = new List<UserInterestRequest>
                 {
-                    new UserInterestRequest { UserInterestId = Guid.Parse("11111111-1111-1111-1111-111111111111").ToString() },
-                    new UserInterestRequest { UserInterestId = Guid.Parse("22222222-2222-2222-2222-222222222222").ToString() }
+                    new UserInterestRequest { UserInterestId = Guid.Parse("11111111-1111-1111-1111-111111111111") },
+                    new UserInterestRequest { UserInterestId = Guid.Parse("22222222-2222-2222-2222-222222222222") }
                 },
                 InterestedCities = new List<InterestedCities>
                 {
