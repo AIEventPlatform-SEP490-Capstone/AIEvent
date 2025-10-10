@@ -1,7 +1,7 @@
 import fetcher from './fetcher';
 
 export const categoryAPI = {
-  // Get all categories
+  // Get all category
   getCategories: async (params = {}) => {
     const queryParams = new URLSearchParams();
     
