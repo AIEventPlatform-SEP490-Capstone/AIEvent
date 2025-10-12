@@ -5,7 +5,6 @@ using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.DTOs.Ticket;
 using AIEvent.Domain.Entities;
 using AutoMapper;
-using Microsoft.IdentityModel.Tokens;
 using System.Text.Json;
 
 namespace AIEvent.Application.Mappings

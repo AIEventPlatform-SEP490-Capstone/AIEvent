@@ -1,5 +1,4 @@
 ﻿using AIEvent.Application.DTOs.Tag;
-using AIEvent.Application.DTOs.Ticket;
 using Microsoft.AspNetCore.Http;
 
 namespace AIEvent.Application.DTOs.Event

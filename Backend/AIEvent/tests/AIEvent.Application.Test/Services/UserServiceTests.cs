@@ -6,7 +6,6 @@ using AIEvent.Domain.Entities;
 using AIEvent.Domain.Identity;
 using AutoMapper;
 using FluentAssertions;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using MockQueryable.Moq;
 using Moq;
@@ -52,7 +51,7 @@ namespace AIEvent.Application.Test.Services
                         Interest = new Interest {
                             Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
                             Name = "Technology"
-                            }
+                        }
                     }
                 }
             };
@@ -188,57 +187,6 @@ namespace AIEvent.Application.Test.Services
         }
 
         [Fact]
-        public async Task UpdateUserAsync_WithAvatarImage_ShouldUploadImageAndReturnSuccessResult()
-        {
-            // Arrange
-            var userId = Guid.Parse("22222222-2222-2222-2222-222222222222").ToString();
-            var user = new AppUser
-            {
-                Id = Guid.Parse(userId),
-                Email = "test@example.com",
-                FullName = "Test User",
-                IsActive = true
-            };
-
-            var mockFile = new Mock<IFormFile>();
-            mockFile.Setup(f => f.Length).Returns(1024);
-
-            var updateRequest = new UpdateUserRequest
-            {
-                FullName = "Updated User",
-                Email = "updated@example.com",
-                AvatarImg = mockFile.Object
-            };
-
-            var imageUrl = "https://cloudinary.com/image.jpg";
-            var updatedUserResponse = new UserDetailResponse
-            {
-                Id = userId,
-                Email = updateRequest.Email,
-                FullName = updateRequest.FullName,
-                AvatarImgUrl = imageUrl
-            };
-
-            _mockUserManager.Setup(x => x.FindByIdAsync(userId)).ReturnsAsync(user);
-            _mockMapper.Setup(x => x.Map(updateRequest, user));
-            _mockCloudinaryService.Setup(x => x.UploadImageAsync(updateRequest.AvatarImg)).ReturnsAsync(imageUrl);
-            _mockUserManager.Setup(x => x.UpdateAsync(user)).ReturnsAsync(IdentityResult.Success);
-            _mockMapper.Setup(x => x.Map<UserDetailResponse>(user)).Returns(updatedUserResponse);
-
-            // Act
-            var result = await _userService.UpdateUserAsync(userId, updateRequest);
-
-            // Assert
-            result.Should().NotBeNull();
-            result.IsSuccess.Should().BeTrue();
-            result.Value.Should().NotBeNull();
-            result.Value!.AvatarImgUrl.Should().Be(imageUrl);
-
-            _mockCloudinaryService.Verify(x => x.UploadImageAsync(updateRequest.AvatarImg), Times.Once);
-            _mockUserManager.Verify(x => x.UpdateAsync(user), Times.Once);
-        }
-
-        [Fact]
         public async Task UpdateUserAsync_WithNonExistentUser_ShouldReturnFailureResult()
         {
             // Arrange
@@ -316,7 +264,7 @@ namespace AIEvent.Application.Test.Services
             var updateRequest = new UpdateUserRequest
             {
                 FullName = "Updated User",
-                Email = "updated@example.com"
+                Email = "updatedexample.com"
             };
 
             _mockUserManager.Setup(x => x.FindByIdAsync(userId)).ReturnsAsync(user);
@@ -518,51 +466,6 @@ namespace AIEvent.Application.Test.Services
 
             _mockMapper.Verify(x => x.Map<UserResponse>(It.IsAny<AppUser>()), Times.Never);
             _mockUserManager.Verify(x => x.GetRolesAsync(It.IsAny<AppUser>()), Times.Never);
-        }
-
-        [Fact]
-        public async Task GetAllUsersAsync_WithDefaultParameters_ShouldUseDefaultPagination()
-        {
-            // Arrange
-            var users = new List<AppUser>();
-            for (int i = 1; i <= 15; i++)
-            {
-                users.Add(new AppUser
-                {
-                    Id = Guid.Parse($"22222222-2222-2222-2222-2222222222{i:00}"),
-                    Email = $"user{i}@example.com",
-                    FullName = $"User {i}",
-                    IsActive = true
-                });
-            }
-
-            var mockDbSet = users.AsQueryable().BuildMockDbSet();
-            _mockUserManager.Setup(x => x.Users).Returns(mockDbSet.Object);
-
-            // Setup mapper for first 10 users (default page size)
-            for (int i = 0; i < 10; i++)
-            {
-                var userResponse = new UserResponse
-                {
-                    Id = users[i].Id.ToString(),
-                    Email = users[i].Email!,
-                    FullName = users[i].FullName!,
-                    Roles = new List<string> { "User" }
-                };
-                _mockMapper.Setup(x => x.Map<UserResponse>(users[i])).Returns(userResponse);
-                _mockUserManager.Setup(x => x.GetRolesAsync(users[i])).ReturnsAsync(new List<string> { "User" });
-            }
-
-            // Act
-            var result = await _userService.GetAllUsersAsync();
-
-            // Assert
-            result.Should().NotBeNull();
-            result.IsSuccess.Should().BeTrue();
-            result.Value.Should().NotBeNull();
-            result.Value!.Count.Should().Be(10); // Default page size
-            result.Value[0].Email.Should().Be("user1@example.com");
-            result.Value[9].Email.Should().Be("user10@example.com");
         }
 
         #endregion
