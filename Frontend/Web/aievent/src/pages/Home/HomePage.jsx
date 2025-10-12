@@ -5,6 +5,7 @@ import { Hero } from "../../components/hero"
 import { EventDiscovery } from "../../components/event-discovery"
 import { PATH } from "../../routes/path";
 import LoadingSpinner from "../../components/LoadingSpinner/LoadingSpinner";
+import { Footer } from "../../components/Footer/Footer";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -79,6 +80,7 @@ const HomePage = () => {
           </div>
         </div>
       </div>
+      <Footer/>
     </div>
   );
 };

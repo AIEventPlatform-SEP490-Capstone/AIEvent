@@ -12,6 +12,7 @@ import AdminDashboard from "../pages/Admin/AdminDashboard";
 import RefundRulesManagement from "../pages/Admin/RefundRulesManagement";
 import AdminLayout from "../layouts/AdminLayout/AdminLayout";
 import ProtectedRoute from "../components/ProtectedRoute/ProtectedRoute";
+import RegisterPage from "../pages/Auth/RegisterPage/RegisterPage";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -25,30 +26,128 @@ export default function useRouterElement() {
         { path: "timeline", element: <div>Timeline Page</div> },
         { path: "friends", element: <div>Friends Page</div> },
         { path: "friends/search", element: <div>Friend Search Page</div> },
-        { path: "favorites", element: <ProtectedRoute><div>Favorites Page</div></ProtectedRoute> },
-        { path: "wallet", element: <ProtectedRoute><div>Wallet Page</div></ProtectedRoute> },
-        { path: "my-tickets", element: <ProtectedRoute><div>My Tickets Page</div></ProtectedRoute> },
-        { path: "notifications", element: <ProtectedRoute><div>Notifications Page</div></ProtectedRoute> },
-        { path: "settings", element: <ProtectedRoute><div>Settings Page</div></ProtectedRoute> },
+        {
+          path: "favorites",
+          element: (
+            <ProtectedRoute>
+              <div>Favorites Page</div>
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "wallet",
+          element: (
+            <ProtectedRoute>
+              <div>Wallet Page</div>
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "my-tickets",
+          element: (
+            <ProtectedRoute>
+              <div>My Tickets Page</div>
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "notifications",
+          element: (
+            <ProtectedRoute>
+              <div>Notifications Page</div>
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "settings",
+          element: (
+            <ProtectedRoute>
+              <div>Settings Page</div>
+            </ProtectedRoute>
+          ),
+        },
         { path: "help", element: <div>Help Page</div> },
         { path: "about", element: <div>About Page</div> },
-        { path: "profile", element: <ProtectedRoute><div>Profile Page</div></ProtectedRoute> },
-        { path: "profile/:userId", element: <ProtectedRoute><div>User Profile Page</div></ProtectedRoute> },
+        {
+          path: "profile",
+          element: (
+            <ProtectedRoute>
+              <div>Profile Page</div>
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "profile/:userId",
+          element: (
+            <ProtectedRoute>
+              <div>User Profile Page</div>
+            </ProtectedRoute>
+          ),
+        },
         { path: "event/:id", element: <div>Event Detail Page</div> },
-        { path: "booking/:id", element: <ProtectedRoute><div>Booking Page</div></ProtectedRoute> },
-        { path: "payment/:ticketId", element: <ProtectedRoute><div>Payment Page</div></ProtectedRoute> },
-        { path: "qr-viewer/:ticketId", element: <ProtectedRoute><div>QR Viewer Page</div></ProtectedRoute> },
-        { path: "event-invitations", element: <ProtectedRoute><div>Event Invitations Page</div></ProtectedRoute> },
-        { path: "application-status", element: <ProtectedRoute><div>Application Status Page</div></ProtectedRoute> },
-        { path: "social-sharing", element: <ProtectedRoute><div>Social Sharing Page</div></ProtectedRoute> },
-        { path: "become-organizer", element: <ProtectedRoute><div>Become Organizer Page</div></ProtectedRoute> },
+        {
+          path: "booking/:id",
+          element: (
+            <ProtectedRoute>
+              <div>Booking Page</div>
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "payment/:ticketId",
+          element: (
+            <ProtectedRoute>
+              <div>Payment Page</div>
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "qr-viewer/:ticketId",
+          element: (
+            <ProtectedRoute>
+              <div>QR Viewer Page</div>
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "event-invitations",
+          element: (
+            <ProtectedRoute>
+              <div>Event Invitations Page</div>
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "application-status",
+          element: (
+            <ProtectedRoute>
+              <div>Application Status Page</div>
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "social-sharing",
+          element: (
+            <ProtectedRoute>
+              <div>Social Sharing Page</div>
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "become-organizer",
+          element: (
+            <ProtectedRoute>
+              <div>Become Organizer Page</div>
+            </ProtectedRoute>
+          ),
+        },
       ],
     },
     {
       path: PATH.AUTH,
       children: [
-        { path: "login", element: < LoginPage /> },
-        { path: "register", element: <div>Register Page</div> },
+        { path: "login", element: <LoginPage /> },
+        { path: "register", element: <RegisterPage /> },
       ],
     },
     {
@@ -87,7 +186,10 @@ export default function useRouterElement() {
         { path: "organizers", element: <div>Admin Organizers Page</div> },
         { path: "profile", element: <div>Admin Profile Page</div> },
         { path: "settings", element: <div>Admin Settings Page</div> },
-        { path: "system-settings", element: <div>Admin System Settings Page</div> },
+        {
+          path: "system-settings",
+          element: <div>Admin System Settings Page</div>,
+        },
         { path: "documentation", element: <div>Admin Documentation Page</div> },
         { path: "help", element: <div>Admin Help Page</div> },
         { path: "quick-actions", element: <div>Admin Quick Actions Page</div> },
