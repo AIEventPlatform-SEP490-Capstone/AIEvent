@@ -1,13 +1,11 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Role;
-using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Domain.Identity;
 using AutoMapper;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Moq;
-using Xunit;
 
 namespace AIEvent.Application.Test.Services
 {

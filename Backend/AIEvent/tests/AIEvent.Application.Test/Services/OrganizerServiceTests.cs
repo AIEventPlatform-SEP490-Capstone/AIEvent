@@ -431,7 +431,7 @@ namespace AIEvent.Application.Test.Services
                 .Returns<Func<Task<Result>>>(func => func());
             _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
 
-            _mockMapper.Setup(x => x.Map<OrganizerProfile>(request)).Returns((OrganizerProfile)null);
+            _mockMapper.Setup(x => x.Map<OrganizerProfile>(request));
 
             var result = await _organizerService.RegisterOrganizerAsync(userId, request);
 

@@ -1,7 +1,4 @@
-﻿using AIEvent.Application.DTOs.Common;
-using AIEvent.Domain.Enums;
-
-namespace AIEvent.Application.DTOs.User
+﻿namespace AIEvent.Application.DTOs.User
 {
     public class UserResponse
     {

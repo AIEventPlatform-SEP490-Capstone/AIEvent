@@ -6,7 +6,6 @@ using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
 using AIEvent.Domain.Identity;
 using AIEvent.Domain.Interfaces;
-using AutoMapper;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using MockQueryable.Moq;
