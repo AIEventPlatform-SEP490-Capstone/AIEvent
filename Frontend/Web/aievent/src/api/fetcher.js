@@ -2,7 +2,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 import { showError, apiMessages } from "../lib/toastUtils";
 
-const BASE_URL = '/api';
+const BASE_URL = "/api";
 
 const fetcher = axios.create({
   baseURL: BASE_URL,
@@ -58,7 +58,10 @@ fetcher.interceptors.response.use(
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       // Không refresh token cho login request hoặc refresh token request
-      if (originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/auth/refresh-token')) {
+      if (
+        originalRequest.url?.includes("/auth/login") ||
+        originalRequest.url?.includes("/auth/refresh-token")
+      ) {
         return Promise.reject(error);
       }
 
@@ -80,7 +83,7 @@ fetcher.interceptors.response.use(
         Cookies.set("accessToken", data.accessToken, {
           expires: new Date(data.expiresAt),
           secure: true,
-          sameSite: 'strict',
+          sameSite: "strict",
         });
 
         isRefreshing = false;
@@ -107,7 +110,7 @@ fetcher.interceptors.response.use(
       const status = error.response.status;
       // Không hiển thị toast tự động - để component xử lý
       // Chỉ log error để debug
-      console.error('API Error:', status, error.response.data);
+      console.error("API Error:", status, error.response.data);
     }
 
     return Promise.reject(error);
@@ -117,17 +120,20 @@ fetcher.interceptors.response.use(
 // API Functions
 export const authAPI = {
   login: async (credentials) => {
-    const response = await fetcher.post('/auth/login', credentials);
+    const response = await fetcher.post("/auth/login", credentials);
     return response.data;
   },
-  
+  register: async (data) => {
+    const response = await fetcher.post("/auth/register", data);
+    return response.data;
+  },
   refreshToken: async () => {
-    const response = await fetcher.post('/auth/refresh-token');
+    const response = await fetcher.post("/auth/refresh-token");
     return response.data;
   },
-  
+
   logout: async () => {
-    const response = await fetcher.post('/auth/revoke-token');
+    const response = await fetcher.post("/auth/revoke-token");
     return response.data;
   },
 };
