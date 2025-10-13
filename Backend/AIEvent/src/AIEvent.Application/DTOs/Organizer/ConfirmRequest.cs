@@ -4,6 +4,6 @@ namespace AIEvent.Application.DTOs.Organizer
 {
     public class ConfirmRequest
     {
-        public OrganizerStatus Status { get; set; }
+        public ConfirmStatus Status { get; set; }
     }
 }

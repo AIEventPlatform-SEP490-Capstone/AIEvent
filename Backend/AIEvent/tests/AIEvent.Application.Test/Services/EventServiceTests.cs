@@ -51,14 +51,14 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(1).AddHours(2),
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
-                RequireApproval = true,
+                RequireApproval = ConfirmStatus.Approve,
                 EventCategoryId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa").ToString()
             };
 
             var organizer = new OrganizerProfile
             {
                 Id = organizerId,
-                Status = OrganizerStatus.Approve,
+                Status = ConfirmStatus.Approve,
                 OrganizationType = OrganizationType.PrivateCompany,
                 EventFrequency = EventFrequency.Monthly,
                 EventSize = EventSize.Medium,
@@ -118,14 +118,14 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(1).AddHours(2),
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
-                RequireApproval = true,
+                RequireApproval = ConfirmStatus.Approve,
                 EventCategoryId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa").ToString()
             };
 
             var organizer = new OrganizerProfile
             {
                 Id = organizerId,
-                Status = OrganizerStatus.Reject,
+                Status = ConfirmStatus.Reject,
                 OrganizationType = OrganizationType.PrivateCompany,
                 EventFrequency = EventFrequency.Monthly,
                 EventSize = EventSize.Medium,
@@ -167,7 +167,7 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(-1),
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
-                RequireApproval = true,
+                RequireApproval = ConfirmStatus.Approve,
                 EventCategoryId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa").ToString()
             };
 
@@ -194,7 +194,7 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(1).AddHours(2),
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
-                RequireApproval = true,
+                RequireApproval = ConfirmStatus.Approve,
                 EventCategoryId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa").ToString()
             };
 
@@ -225,14 +225,14 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(1).AddHours(2),
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
-                RequireApproval = true,
+                RequireApproval = ConfirmStatus.Approve,
                 EventCategoryId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa").ToString()
             };
 
             var organizer = new OrganizerProfile
             {
                 Id = organizerId,
-                Status = OrganizerStatus.Approve,
+                Status = ConfirmStatus.Approve,
                 OrganizationType = OrganizationType.PrivateCompany,
                 EventFrequency = EventFrequency.Monthly,
                 EventSize = EventSize.Medium,
@@ -288,7 +288,7 @@ namespace AIEvent.Application.Test.Services
             var organizer = new OrganizerProfile
             {
                 Id = organizerId,
-                Status = OrganizerStatus.Approve,
+                Status = ConfirmStatus.Approve,
                 OrganizationType = OrganizationType.PrivateCompany,
                 EventFrequency = EventFrequency.Monthly,
                 EventSize = EventSize.Medium,
@@ -367,7 +367,7 @@ namespace AIEvent.Application.Test.Services
             var organizer = new OrganizerProfile
             {
                 Id = organizerId,
-                Status = OrganizerStatus.Reject,
+                Status = ConfirmStatus.Reject,
                 OrganizationType = OrganizationType.PrivateCompany,
                 EventFrequency = EventFrequency.Monthly,
                 EventSize = EventSize.Medium,
@@ -472,7 +472,7 @@ namespace AIEvent.Application.Test.Services
             var organizer = new OrganizerProfile
             {
                 Id = organizerId,
-                Status = OrganizerStatus.Approve,
+                Status = ConfirmStatus.Approve,
                 OrganizationType = OrganizationType.PrivateCompany,
                 EventFrequency = EventFrequency.Monthly,
                 EventSize = EventSize.Medium,
@@ -523,7 +523,7 @@ namespace AIEvent.Application.Test.Services
             var organizer = new OrganizerProfile
             {
                 Id = organizerId,
-                Status = OrganizerStatus.Approve,
+                Status = ConfirmStatus.Approve,
                 OrganizationType = OrganizationType.PrivateCompany,
                 EventFrequency = EventFrequency.Monthly,
                 EventSize = EventSize.Medium,
@@ -592,7 +592,7 @@ namespace AIEvent.Application.Test.Services
             var organizer = new OrganizerProfile
             {
                 Id = organizerId,
-                Status = OrganizerStatus.Approve,
+                Status = ConfirmStatus.Approve,
                 OrganizationType = OrganizationType.PrivateCompany,
                 EventFrequency = EventFrequency.Monthly,
                 EventSize = EventSize.Medium,
@@ -729,7 +729,7 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(1).AddHours(2),
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
-                RequireApproval = true,
+                RequireApproval = ConfirmStatus.Approve,
                 EventCategoryId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
             };
 
@@ -784,7 +784,7 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(1).AddHours(2),
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
-                RequireApproval = true,
+                RequireApproval = ConfirmStatus.Approve,
                 EventCategoryId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
                 DeletedAt = new DateTimeOffset(DateTime.Now.AddDays(1)),
             };

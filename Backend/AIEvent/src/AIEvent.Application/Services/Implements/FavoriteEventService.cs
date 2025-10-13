@@ -6,6 +6,7 @@ using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
+using AIEvent.Domain.Enums;
 using AIEvent.Domain.Identity;
 using AIEvent.Domain.Interfaces;
 using Microsoft.AspNetCore.Identity;
@@ -35,7 +36,7 @@ namespace AIEvent.Application.Services.Implements
                     return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
                 }
                 var eventDetail = await _unitOfWork.EventRepository.GetByIdAsync(eventId, true);
-                if (eventDetail == null || eventDetail.RequireApproval == false)
+                if (eventDetail == null || eventDetail.RequireApproval == ConfirmStatus.Reject)
                 {
                     return ErrorResponse.FailureResult("Event not found or inactive", ErrorCodes.NotFound);
                 }
@@ -63,7 +64,7 @@ namespace AIEvent.Application.Services.Implements
                                                 .AsNoTracking()
                                                 .Where(e => e.FavoriteEvents.Any(x => x.UserId == userId) &&
                                                        !e.DeletedAt.HasValue && 
-                                                       e.RequireApproval == true);
+                                                       e.RequireApproval == ConfirmStatus.Approve);
 
             if (!string.IsNullOrEmpty(search))
             {

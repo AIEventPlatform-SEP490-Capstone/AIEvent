@@ -131,7 +131,7 @@ namespace AIEvent.Application.Services.Implements
                 .Query()
                 .AsNoTracking()
                 .Include(o => o.User)
-                .FirstOrDefaultAsync(o => o.Id == organizerId && !o.IsDeleted && o.Status == OrganizerStatus.NeedConfirm);
+                .FirstOrDefaultAsync(o => o.Id == organizerId && !o.IsDeleted && o.Status == ConfirmStatus.NeedConfirm);
 
             if (organizer == null)
             {
@@ -148,7 +148,7 @@ namespace AIEvent.Application.Services.Implements
             IQueryable<OrganizerProfile> query = _unitOfWork.OrganizerProfileRepository
                 .Query()
                 .AsNoTracking()
-                .Where(p => !p.DeletedAt.HasValue && p.Status == OrganizerStatus.NeedConfirm); ;
+                .Where(p => !p.DeletedAt.HasValue && p.Status == ConfirmStatus.NeedConfirm); ;
 
             var totalCount = await query.CountAsync();
 
@@ -180,7 +180,7 @@ namespace AIEvent.Application.Services.Implements
 
                 var organizer = await _unitOfWork.OrganizerProfileRepository
                     .Query()
-                    .FirstOrDefaultAsync(o => o.Id == organizerId && !o.IsDeleted && o.Status == OrganizerStatus.NeedConfirm);
+                    .FirstOrDefaultAsync(o => o.Id == organizerId && !o.IsDeleted && o.Status == ConfirmStatus.NeedConfirm);
 
                 if (organizer == null)
                     return ErrorResponse.FailureResult("Can not found Organizer profile", ErrorCodes.NotFound);
@@ -193,7 +193,7 @@ namespace AIEvent.Application.Services.Implements
                 if (currentRoles.Contains("Organizer"))
                     return ErrorResponse.FailureResult("User is already an Organizer", ErrorCodes.InvalidInput);
 
-                if (request.Status == OrganizerStatus.Approve)
+                if (request.Status == ConfirmStatus.Approve)
                 {
                     if (currentRoles.Any())
                         await _userManager.RemoveFromRolesAsync(organizerUser, currentRoles);
