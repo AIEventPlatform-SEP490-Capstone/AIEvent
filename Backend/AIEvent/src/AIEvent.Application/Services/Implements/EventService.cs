@@ -12,7 +12,6 @@ using AIEvent.Domain.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
-using System;
 using System.Text.Json;
 
 namespace AIEvent.Application.Services.Implements
