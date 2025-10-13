@@ -359,28 +359,43 @@ namespace AIEvent.Application.Services.Implements
             IQueryable<Event> events = _unitOfWork.EventRepository
                                                 .Query()
                                                 .AsNoTracking()
-                                                .Where(e => e.StartTime > DateTime.Now 
-                                                        && !e.DeletedAt.HasValue 
+                                                .Where(e => e.StartTime > DateTime.Now
+                                                        && !e.DeletedAt.HasValue
                                                         && e.RequireApproval == true);
 
             var eventDetail = await _unitOfWork.EventRepository
                                                .Query()
                                                .Include(e => e.EventTags)
                                                .FirstOrDefaultAsync(e => e.Id == eventId);
+            IQueryable<Event> eventsQuery;
 
             if (eventDetail != null)
             {
-                events = events.Where(e => e.Id != eventId && (e.EventCategoryId == eventDetail.EventCategoryId
-                                     || e.EventTags.Any(t => eventDetail.EventTags
-                                                                        .Select(x => x.TagId)
-                                                                        .Contains(t.TagId)
-                                         )
-                                     || e.City == eventDetail.City ));
+                var relatedTagIds = eventDetail.EventTags?
+                    .Select(t => t.TagId)
+                    .ToList() ?? new List<Guid>();
+
+                eventsQuery = events.Where(e =>
+                    e.Id != eventId &&
+                    (
+                        e.EventCategoryId == eventDetail.EventCategoryId
+                        || (relatedTagIds.Any() && e.EventTags.Any(t => relatedTagIds.Contains(t.TagId)))
+                        || e.City == eventDetail.City
+                    ));
+
+                if (!await eventsQuery.AnyAsync())
+                {
+                    eventsQuery = events.Where(e => e.Id != eventId);
+                }
+            }
+            else
+            {
+                eventsQuery = events;
             }
 
-            int totalCount = await events.CountAsync();
+            int totalCount = await eventsQuery.CountAsync();
 
-            var result = await events
+            var result = await eventsQuery
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(e => new EventsRelatedResponse
