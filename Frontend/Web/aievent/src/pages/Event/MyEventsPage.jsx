@@ -23,7 +23,8 @@ import {
   XCircle,
   BarChart3,
   Activity,
-  CalendarDays
+  CalendarDays,
+  DollarSign
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
@@ -32,7 +33,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Badge } from '../../components/ui/badge';
 import { Select } from '../../components/ui/select';
 import { Separator } from '../../components/ui/separator';
-import { eventAPI } from '../../api/eventAPI';
+import { useEvents } from '../../hooks/useEvents';
 import { PATH } from '../../routes/path';
 
 const MyEventsPage = () => {
@@ -41,6 +42,7 @@ const MyEventsPage = () => {
   const [events, setEvents] = useState([]);
   const [allEvents, setAllEvents] = useState([]); // Store all events for client-side filtering
   const [isLoading, setIsLoading] = useState(true);
+  const { getEventsByOrganizer, deleteEvent: deleteEventAPI, loading: eventLoading } = useEvents();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -69,7 +71,7 @@ const MyEventsPage = () => {
   const loadEvents = async () => {
     try {
       setIsLoading(true);
-      const response = await eventAPI.getEventsByOrganizer({
+      const response = await getEventsByOrganizer({
         search: '', // Load all events, we'll filter on client side
         pageNumber: 1,
         pageSize: 1000, // Get all events
@@ -77,8 +79,8 @@ const MyEventsPage = () => {
 
       console.log('My events response:', response);
 
-      if (response?.data) {
-        const eventsData = response.data.items || response.data || [];
+      if (response) {
+        const eventsData = response.items || response || [];
         setAllEvents(eventsData);
         // Apply initial filtering after setting allEvents
         setTimeout(() => applyFiltersAndSearch(eventsData), 0);
@@ -171,11 +173,11 @@ const MyEventsPage = () => {
     try {
       const loadingToast = toast.loading('Đang xóa sự kiện...');
       
-      const response = await eventAPI.deleteEvent(eventId);
+      const response = await deleteEventAPI(eventId);
       
       toast.dismiss(loadingToast);
       
-      if (response?.statusCode?.startsWith('AIE201') || response?.success) {
+      if (response) {
         toast.success('✅ Xóa sự kiện thành công!', {
           duration: 3000,
         });
@@ -186,8 +188,6 @@ const MyEventsPage = () => {
         
         // Reload to sync with server
         loadEvents();
-      } else {
-        toast.error(response?.message || 'Không thể xóa sự kiện');
       }
     } catch (error) {
       console.error('Error deleting event:', error);
@@ -667,6 +667,10 @@ const MyEventsPage = () => {
                                 <Users className="h-4 w-4" />
                                 0/{event.totalTickets}
                               </span>
+                              <span className="flex items-center gap-1">
+                                <DollarSign className="h-4 w-4" />
+                                {event.ticketType === 1 ? 'Miễn phí' : `${event.ticketPrice?.toLocaleString('vi-VN')} đ`}
+                              </span>
                             </div>
                             <div className="flex items-center gap-2">
                               <Badge className={statusConfig.color}>
@@ -707,9 +711,9 @@ const MyEventsPage = () => {
                             <p className="text-lg font-semibold">0</p>
                           </div>
                           <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-1">Doanh thu</p>
+                            <p className="text-sm text-gray-500 mb-1">Giá vé</p>
                             <p className="text-lg font-semibold">
-                              {event.ticketType === 1 ? 'Miễn phí' : '0 đ'}
+                              {event.ticketType === 1 ? 'Miễn phí' : `${event.ticketPrice?.toLocaleString('vi-VN')} đ`}
                             </p>
                           </div>
                           <div className="text-center">

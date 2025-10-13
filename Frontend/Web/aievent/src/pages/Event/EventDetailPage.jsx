@@ -28,7 +28,7 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Separator } from '../../components/ui/separator';
-import { eventAPI } from '../../api/eventAPI';
+import { useEvents } from '../../hooks/useEvents';
 import { PATH } from '../../routes/path';
 
 const EventDetailPage = () => {
@@ -37,6 +37,7 @@ const EventDetailPage = () => {
   const [event, setEvent] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const { getEventById, deleteEvent: deleteEventAPI, loading: eventLoading } = useEvents();
 
   useEffect(() => {
     if (eventId) {
@@ -47,11 +48,10 @@ const EventDetailPage = () => {
   const loadEventDetail = async () => {
     try {
       setIsLoading(true);
-      // Assuming there's an API endpoint to get event by ID
-      const response = await eventAPI.getEventById(eventId);
+      const eventData = await getEventById(eventId);
       
-      if (response?.data) {
-        setEvent(response.data);
+      if (eventData) {
+        setEvent(eventData);
       } else {
         toast.error('Không tìm thấy sự kiện');
         navigate(PATH.ORGANIZER_EVENTS || '/events');
@@ -109,7 +109,14 @@ const EventDetailPage = () => {
   };
 
   const handleDeleteEvent = async () => {
-    const confirmMessage = `Bạn có chắc chắn muốn xóa sự kiện "${event.title}"?\n\nHành động này không thể hoàn tác và sẽ xóa:\n• Toàn bộ thông tin sự kiện\n• Danh sách đăng ký\n• Lịch sử giao dịch liên quan\n\nNhấn OK để xác nhận xóa.`;
+    const confirmMessage = `Bạn có chắc chắn muốn xóa sự kiện "${event.title}"?
+
+Hành động này không thể hoàn tác và sẽ xóa:
+• Toàn bộ thông tin sự kiện
+• Danh sách đăng ký
+• Lịch sử giao dịch liên quan
+
+Nhấn OK để xác nhận xóa.`;
     
     if (!window.confirm(confirmMessage)) {
       return;
@@ -118,17 +125,15 @@ const EventDetailPage = () => {
     try {
       const loadingToast = toast.loading('Đang xóa sự kiện...');
       
-      const response = await eventAPI.deleteEvent(eventId);
+      const response = await deleteEventAPI(eventId);
       
       toast.dismiss(loadingToast);
       
-      if (response?.statusCode?.startsWith('AIE201') || response?.success) {
+      if (response) {
         toast.success('✅ Xóa sự kiện thành công!', {
           duration: 3000,
         });
         navigate(PATH.ORGANIZER_MY_EVENTS || '/organizer/my-events');
-      } else {
-        toast.error(response?.message || 'Không thể xóa sự kiện');
       }
     } catch (error) {
       console.error('Error deleting event:', error);
