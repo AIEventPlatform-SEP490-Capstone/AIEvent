@@ -68,6 +68,25 @@ namespace AIEvent.API.Controllers
                 "Event retrieved successfully"));
         }
 
+        [HttpGet("{id}/related")]
+        [AllowAnonymous]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<EventsRelatedResponse>>>> GetRelatedEvent(Guid id, 
+                                                                                                               [FromQuery] int pageNumber = 1,
+                                                                                                               [FromQuery] int pageSize = 5)
+        {
+            var result = await _eventService.GetRelatedEventAsync(id, pageNumber, pageSize);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<EventsRelatedResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Event related retrieved successfully"));
+        }
+
         [HttpGet("organizer")]
         [Authorize(Roles = "Organizer")]
         public async Task<ActionResult<SuccessResponse<BasePaginated<EventsResponse>>>> GetEventOrganizer([FromQuery] string? search,

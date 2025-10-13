@@ -361,5 +361,62 @@ namespace AIEvent.Application.Services.Implements
 
             return new BasePaginated<EventsResponse>(result, totalCount, pageNumber, pageSize);
         }
+
+        public async Task<Result<BasePaginated<EventsRelatedResponse>>> GetRelatedEventAsync(Guid eventId,
+                                                                                             int pageNumber = 1,
+                                                                                             int pageSize = 5)
+        {
+            IQueryable<Event> events = _unitOfWork.EventRepository
+                                                .Query()
+                                                .Include(e => e.EventCategory)
+                                                .Include(e => e.TicketDetails)
+                                                .Include(e => e.EventTags)
+                                                .AsNoTracking()
+                                                .Where(e => e.StartTime > DateTime.Now 
+                                                        && !e.DeletedAt.HasValue 
+                                                        && e.RequireApproval == true);
+
+            var eventDetail = await _unitOfWork.EventRepository
+                                               .Query()
+                                               .Include(e => e.EventTags)
+                                               .FirstOrDefaultAsync(e => e.Id == eventId);
+
+            if (eventDetail != null)
+            {
+                events = events.Where(e => e.EventCategoryId == eventDetail.EventCategoryId
+                                     || e.EventTags.Any(t => eventDetail.EventTags
+                                                                        .Select(x => x.TagId)
+                                                                        .Contains(t.TagId)
+                                         )
+                                     || e.City == eventDetail.City)
+                               .Distinct();
+            }
+
+            int totalCount = await events.CountAsync();
+
+            var result = await events
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(e => new EventsRelatedResponse
+                {
+                    EventId = e.Id,
+                    Title = e.Title,
+                    StartTime = e.StartTime,
+                    EndTime = e.EndTime,
+                    MinTicketPrice = e.TicketDetails.Any()
+                        ? e.TicketDetails.Min(t => t.TicketPrice)
+                        : 0,
+                    MaxTicketPrice = e.TicketDetails.Any() 
+                        ? e.TicketDetails.Max(t => t.TicketPrice)
+                        : 0,
+                    Description = e.Description,
+                    ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
+                        ? new List<string>()
+                        : JsonSerializer.Deserialize<List<string>>(e.ImgListEvent, new JsonSerializerOptions())
+                })
+                .ToListAsync();
+
+            return new BasePaginated<EventsRelatedResponse>(result, totalCount, pageNumber, pageSize);
+        }
     }
 }
