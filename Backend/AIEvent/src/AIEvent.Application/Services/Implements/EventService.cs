@@ -86,10 +86,6 @@ namespace AIEvent.Application.Services.Implements
         {
             IQueryable<Event> events = _unitOfWork.EventRepository
                                                 .Query()
-                                                .Include(e => e.EventCategory)
-                                                .Include(e => e.FavoriteEvents)
-                                                .Include(e => e.EventTags)
-                                                    .ThenInclude(e => e.Tag)
                                                 .AsNoTracking()
                                                 .Where(e => e.StartTime > DateTime.Now && !e.DeletedAt.HasValue && e.RequireApproval == true);
 
@@ -172,6 +168,9 @@ namespace AIEvent.Application.Services.Implements
                         TagId = t.TagId.ToString(),
                         TagName = t.Tag.NameTag
                     }).ToList(),
+                    TicketPrice = e.TicketDetails.Any()
+                        ? e.TicketDetails.Min(t => t.TicketPrice)
+                        : 0,
                     IsFavorite = userId != null && e.FavoriteEvents.Any(fe => fe.UserId == userId),
                     ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
                         ? new List<string>()
@@ -250,11 +249,6 @@ namespace AIEvent.Application.Services.Implements
         {
             var events = await _unitOfWork.EventRepository
                 .Query()
-                .Include(o => o.OrganizerProfile)
-                .Include(o => o.TicketDetails)
-                .Include(o => o.EventCategory)
-                .Include(o => o.EventTags)
-                    .ThenInclude(et => et.Tag)
                 .ProjectTo<EventDetailResponse>(_mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(e => e.EventId == Guid.Parse(eventId));
 
@@ -282,10 +276,6 @@ namespace AIEvent.Application.Services.Implements
 
             IQueryable<Event> events = _unitOfWork.EventRepository
                                                 .Query()
-                                                .Include(e => e.EventCategory)
-                                                .Include(e => e.FavoriteEvents)
-                                                .Include(e => e.EventTags)
-                                                    .ThenInclude(e => e.Tag)
                                                 .AsNoTracking()
                                                 .Where(e => e.OrganizerProfileId == organizerId);
 
@@ -368,9 +358,6 @@ namespace AIEvent.Application.Services.Implements
         {
             IQueryable<Event> events = _unitOfWork.EventRepository
                                                 .Query()
-                                                .Include(e => e.EventCategory)
-                                                .Include(e => e.TicketDetails)
-                                                .Include(e => e.EventTags)
                                                 .AsNoTracking()
                                                 .Where(e => e.StartTime > DateTime.Now 
                                                         && !e.DeletedAt.HasValue 
@@ -383,13 +370,12 @@ namespace AIEvent.Application.Services.Implements
 
             if (eventDetail != null)
             {
-                events = events.Where(e => e.EventCategoryId == eventDetail.EventCategoryId
+                events = events.Where(e => e.Id != eventId && (e.EventCategoryId == eventDetail.EventCategoryId
                                      || e.EventTags.Any(t => eventDetail.EventTags
                                                                         .Select(x => x.TagId)
                                                                         .Contains(t.TagId)
                                          )
-                                     || e.City == eventDetail.City)
-                               .Distinct();
+                                     || e.City == eventDetail.City ));
             }
 
             int totalCount = await events.CountAsync();
