@@ -1,6 +1,6 @@
 ﻿namespace AIEvent.Domain.Enums
 {
-    public enum OrganizerStatus
+    public enum ConfirmStatus
     {
         Approve,
         Reject,

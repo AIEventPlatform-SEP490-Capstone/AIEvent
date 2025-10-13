@@ -20,7 +20,7 @@ namespace AIEvent.Domain.Entities
         public TicketType TicketType { get; set; }
         public string? ImgListEvent { get; set; }
         public bool? Publish { get; set; } = false;
-        public bool RequireApproval { get; set; }
+        public ConfirmStatus? RequireApproval { get; set; }
         public DateTime? RequireApprovalAt { get; set; }
         public Guid? RequireApprovalBy { get; set; }
         public string? City { get; set; }

@@ -2,7 +2,9 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
+using AIEvent.Application.DTOs.Organizer;
 using AIEvent.Application.DTOs.Tag;
+using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Enums;
@@ -166,6 +168,42 @@ namespace AIEvent.API.Controllers
                 new { },
                 SuccessCodes.Success,
                 "Delete Event successfully"));
+        }
+
+        [HttpGet("need-approve")]
+        [Authorize(Roles = "Admin, Manager")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<ListEventNeedConfirm>>>> GetEvent(int pageNumber = 1, int pageSize = 10)
+        {
+
+            var result = await _eventService.GetAllEventNeedConfirmAsync(pageNumber, pageSize);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<ListEventNeedConfirm>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Event retrieved successfully"));
+        }
+
+
+        [HttpPatch("confirm/{id}")]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<ActionResult<SuccessResponse<object>>> ConfirmBecomeOrganizer(string id, [FromForm] ConfirmRequest request)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _eventService.ConfirmEventAsync(userId, id, request);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Updated,
+                "Confirm event successfully"));
         }
     }
 }

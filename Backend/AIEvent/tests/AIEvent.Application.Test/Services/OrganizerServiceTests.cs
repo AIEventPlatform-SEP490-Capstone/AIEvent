@@ -469,7 +469,7 @@ namespace AIEvent.Application.Test.Services
             {
                 Id = testId,
                 UserId = Guid.NewGuid(),
-                Status = OrganizerStatus.NeedConfirm,
+                Status = ConfirmStatus.NeedConfirm,
                 OrganizationType = OrganizationType.PrivateCompany,
                 OrganizerType = OrganizerType.Business,
                 EventFrequency = EventFrequency.Weekly,
@@ -491,7 +491,7 @@ namespace AIEvent.Application.Test.Services
                 .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(fn => fn());
 
-            var result = await _organizerService.ConfirmBecomeOrganizerAsync(Guid.NewGuid(), organizer.Id.ToString(), new ConfirmRequest { Status = OrganizerStatus.Approve });
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(Guid.NewGuid(), organizer.Id.ToString(), new ConfirmRequest { Status = ConfirmStatus.Approve });
 
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("User not found");
@@ -506,7 +506,7 @@ namespace AIEvent.Application.Test.Services
             {
                 Id = testId,
                 UserId = Guid.NewGuid(),
-                Status = OrganizerStatus.NeedConfirm,
+                Status = ConfirmStatus.NeedConfirm,
                 OrganizationType = OrganizationType.PrivateCompany,
                 OrganizerType = OrganizerType.Business,
                 EventFrequency = EventFrequency.Weekly,
@@ -536,10 +536,10 @@ namespace AIEvent.Application.Test.Services
                 .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(fn => fn());
 
-            var result = await _organizerService.ConfirmBecomeOrganizerAsync(Guid.NewGuid(), organizer.Id.ToString(), new ConfirmRequest { Status = OrganizerStatus.Approve });
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(Guid.NewGuid(), organizer.Id.ToString(), new ConfirmRequest { Status = ConfirmStatus.Approve });
 
             result.IsSuccess.Should().BeTrue();
-            organizer.Status.Should().Be(OrganizerStatus.Approve);
+            organizer.Status.Should().Be(ConfirmStatus.Approve);
             organizer.ConfirmAt.Should().NotBeNull();
             organizer.ConfirmBy.Should().NotBeNull();
         }
@@ -551,7 +551,7 @@ namespace AIEvent.Application.Test.Services
             {
                 Id = testId,
                 UserId = Guid.NewGuid(),
-                Status = OrganizerStatus.NeedConfirm,
+                Status = ConfirmStatus.NeedConfirm,
                 OrganizationType = OrganizationType.PrivateCompany,
                 OrganizerType = OrganizerType.Business,
                 EventFrequency = EventFrequency.Weekly,
@@ -576,7 +576,7 @@ namespace AIEvent.Application.Test.Services
                 .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(fn => fn());
 
-            var result = await _organizerService.ConfirmBecomeOrganizerAsync(Guid.NewGuid(), organizer.Id.ToString(), new ConfirmRequest { Status = OrganizerStatus.Approve });
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(Guid.NewGuid(), organizer.Id.ToString(), new ConfirmRequest { Status = ConfirmStatus.Approve });
 
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("User is already an Organizer");
@@ -590,7 +590,7 @@ namespace AIEvent.Application.Test.Services
             {
                 Id = testId,
                 UserId = Guid.NewGuid(),
-                Status = OrganizerStatus.Approve,
+                Status = ConfirmStatus.Approve,
                 OrganizationType = OrganizationType.PrivateCompany,
                 OrganizerType = OrganizerType.Business,
                 EventFrequency = EventFrequency.Weekly,
@@ -610,7 +610,7 @@ namespace AIEvent.Application.Test.Services
                 .Returns<Func<Task<Result>>>(fn => fn());
 
             var result = await _organizerService
-                .ConfirmBecomeOrganizerAsync(Guid.NewGuid(), organizer.Id.ToString(), new ConfirmRequest { Status = OrganizerStatus.Approve });
+                .ConfirmBecomeOrganizerAsync(Guid.NewGuid(), organizer.Id.ToString(), new ConfirmRequest { Status = ConfirmStatus.Approve });
 
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("Can not found Organizer profile");
@@ -624,7 +624,7 @@ namespace AIEvent.Application.Test.Services
             {
                 Id = testId,
                 UserId = Guid.NewGuid(),
-                Status = OrganizerStatus.NeedConfirm,
+                Status = ConfirmStatus.NeedConfirm,
                 OrganizationType = OrganizationType.PrivateCompany,
                 OrganizerType = OrganizerType.Business,
                 EventFrequency = EventFrequency.Weekly,
@@ -645,7 +645,7 @@ namespace AIEvent.Application.Test.Services
                 .Returns<Func<Task<Result>>>(fn => fn());
 
             var result = await _organizerService
-                .ConfirmBecomeOrganizerAsync(Guid.NewGuid(), organizer.Id.ToString(), new ConfirmRequest { Status = OrganizerStatus.Approve });
+                .ConfirmBecomeOrganizerAsync(Guid.NewGuid(), organizer.Id.ToString(), new ConfirmRequest { Status = ConfirmStatus.Approve });
 
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("Can not found Organizer profile");

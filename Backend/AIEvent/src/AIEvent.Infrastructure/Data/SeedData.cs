@@ -29,6 +29,8 @@ namespace AIEvent.Infrastructure.Data
             SeedEventCategory(modelBuilder);
             SeedTag(modelBuilder);
             SeedOrganizerProfile(modelBuilder);
+            SeedEvent(modelBuilder);
+            SeedEventTag(modelBuilder);
         }
 
         private static void SeedRoles(ModelBuilder modelBuilder)
@@ -228,26 +230,30 @@ namespace AIEvent.Infrastructure.Data
             modelBuilder.Entity<IdentityUserRole<Guid>>().HasData(userRoles);
         }
 
+
+        private static readonly Guid eventCategoryId1 = Guid.NewGuid();
+        private static readonly Guid eventCategoryId2 = Guid.NewGuid();
+        private static readonly Guid eventCategoryId3 = Guid.NewGuid();
         private static void SeedEventCategory(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<EventCategory>().HasData(
                 new EventCategory
                 {
-                    Id = Guid.NewGuid(),
+                    Id = eventCategoryId1,
                     CategoryName = "Music",
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System"
                 },
                 new EventCategory
                 {
-                    Id = Guid.NewGuid(),
+                    Id = eventCategoryId2,
                     CategoryName = "Technology",
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System"
                 },
                 new EventCategory
                 {
-                    Id = Guid.NewGuid(),
+                    Id = eventCategoryId3,
                     CategoryName = "Sports",
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System"
@@ -261,34 +267,37 @@ namespace AIEvent.Infrastructure.Data
                 }
             );
         }
-
+        private static readonly Guid tagId1 = Guid.NewGuid();
+        private static readonly Guid tagId2 = Guid.NewGuid();
+        private static readonly Guid tagId3 = Guid.NewGuid();
+        private static readonly Guid tagId4 = Guid.NewGuid();
         public static void SeedTag(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Tag>().HasData(
                 new Tag
                 {
-                    Id = Guid.NewGuid(),
+                    Id = tagId1,
                     NameTag = "Free",
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System"
                 },
                 new Tag
                 {
-                    Id = Guid.NewGuid(),
+                    Id = tagId2,
                     NameTag = "Online",
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System"
                 },
                 new Tag
                 {
-                    Id = Guid.NewGuid(),
+                    Id = tagId3,
                     NameTag = "VIP",
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System"
                 },
                 new Tag
                 {
-                    Id = Guid.NewGuid(),
+                    Id = tagId4,
                     NameTag = "Workshop",
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System"
@@ -296,12 +305,13 @@ namespace AIEvent.Infrastructure.Data
             );
         }
 
+        private static readonly Guid organizerProfileId = Guid.NewGuid();
         private static void SeedOrganizerProfile(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<OrganizerProfile>().HasData(
                 new OrganizerProfile
                 {
-                    Id = Guid.NewGuid(),
+                    Id = organizerProfileId,
                     UserId = organizerUserId,
                     OrganizationType = OrganizationType.PrivateCompany,
                     EventFrequency = EventFrequency.Monthly,
@@ -325,14 +335,122 @@ namespace AIEvent.Infrastructure.Data
                     CompanyName = "EventPro Vietnam Co., Ltd",
                     TaxCode = "0312345678",
                     CompanyDescription = "Công ty hàng đầu trong lĩnh vực tổ chức sự kiện chuyên nghiệp tại Việt Nam.",
-                    Status = OrganizerStatus.Approve,
+                    Status = ConfirmStatus.Approve,
                     ConfirmAt = DateTime.UtcNow,
                     ConfirmBy = "SystemSeeder",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
-
                 }
             );
         }
+
+        private static readonly Guid eventId1 = Guid.NewGuid();
+        private static readonly Guid eventId2 = Guid.NewGuid();
+        private static readonly Guid eventId3 = Guid.NewGuid();
+        private static readonly Guid eventId4 = Guid.NewGuid();
+        private static void SeedEvent(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Event>().HasData(
+                new Event
+                {
+                    Id = eventId1,
+                    OrganizerProfileId = organizerProfileId, 
+                    EventCategoryId = eventCategoryId1, 
+                    Title = "Hội Thảo Công Nghệ AI 2025",
+                    Description = "Sự kiện chia sẻ xu hướng AI mới nhất",
+                    StartTime = DateTime.UtcNow.AddDays(7),
+                    EndTime = DateTime.UtcNow.AddDays(7).AddHours(3),
+                    isOnlineEvent = true,
+                    LocationName = "Hà Nội tòa 3",
+                    TotalTickets = 200,
+                    RemainingTickets = 200,
+                    TicketType = TicketType.Free,
+                    Publish = true,
+                    RequireApproval = ConfirmStatus.Approve,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System",
+                },
+                new Event
+                {
+                    Id = eventId2,
+                    OrganizerProfileId = organizerProfileId,
+                    EventCategoryId = eventCategoryId2,
+                    Title = "Đêm Nhạc Trịnh Công Sơn",
+                    Description = "Chương trình nhạc Trịnh với nhiều nghệ sĩ nổi tiếng",
+                    StartTime = DateTime.UtcNow.AddDays(14),
+                    EndTime = DateTime.UtcNow.AddDays(14).AddHours(2),
+                    isOnlineEvent = false,
+                    City = "Hồ Chí Minh",
+                    Address = "Nhà hát Hòa Bình",
+                    TotalTickets = 500,
+                    RemainingTickets = 500,
+                    TicketType = TicketType.Paid,
+                    Publish = true,
+                    RequireApproval = ConfirmStatus.Approve,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System",
+                    LocationName = "Hà Nội tòa 3"
+                },
+                new Event
+                {
+                    Id = eventId3,
+                    OrganizerProfileId = organizerProfileId,
+                    EventCategoryId = eventCategoryId3,
+                    Title = "Workshop Khởi Nghiệp 4.0",
+                    Description = "Chia sẻ kinh nghiệm khởi nghiệp thành công",
+                    StartTime = DateTime.UtcNow.AddDays(21),
+                    EndTime = DateTime.UtcNow.AddDays(21).AddHours(4),
+                    isOnlineEvent = false,
+                    City = "Hà Nội",
+                    Address = "Tòa nhà Innovation Hub",
+                    TotalTickets = 100,
+                    RemainingTickets = 100,
+                    TicketType = TicketType.Free,
+                    Publish = false, // chưa publish
+                    RequireApproval = ConfirmStatus.NeedConfirm,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System",
+                    LocationName = "Hà Nội tòa 2"
+                },
+                new Event
+                {
+                    Id = eventId4,
+                    OrganizerProfileId = organizerProfileId,
+                    EventCategoryId = eventCategoryId3,
+                    Title = "Workshop Khởi Nghiệp 3.0",
+                    Description = "Chia sẻ kinh nghiệm khởi nghiệp thành công 1111111",
+                    StartTime = DateTime.UtcNow.AddDays(40),
+                    EndTime = DateTime.UtcNow.AddDays(40).AddHours(4),
+                    isOnlineEvent = false,
+                    City = "Hà Nội",
+                    Address = "Tòa nhà Innovation Hub 1111111",
+                    TotalTickets = 100,
+                    RemainingTickets = 100,
+                    TicketType = TicketType.Free,
+                    Publish = false, 
+                    RequireApproval = ConfirmStatus.NeedConfirm,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "System",
+                    LocationName = "Hà Nội tòa 1"
+                }
+            );
+        }
+
+        private static void SeedEventTag(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<EventTag>().HasData(
+                new EventTag { EventId = eventId1, TagId = tagId2 }, 
+                new EventTag { EventId = eventId1, TagId = tagId1 }, 
+
+                new EventTag { EventId = eventId2, TagId = tagId3 }, 
+
+                new EventTag { EventId = eventId3, TagId = tagId4 }, 
+                new EventTag { EventId = eventId3, TagId = tagId1 }, 
+
+                new EventTag { EventId = eventId4, TagId = tagId4 }  
+            );
+        }
+
+
     }
 }
