@@ -28,7 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Switch } from '../../components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 
-import { eventAPI } from '../../api/eventAPI';
+import { useEvents } from '../../hooks/useEvents';
 import TagSelector from '../../components/Event/TagSelector';
 import RefundRuleManager from '../../components/Event/RefundRuleManager';
 
@@ -75,6 +75,7 @@ const EditEventPage = () => {
   const { user } = useSelector((state) => state.auth);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [eventData, setEventData] = useState(null);
   const [selectedImages, setSelectedImages] = useState([]);
   const [imagePreview, setImagePreview] = useState([]);
   const [existingImages, setExistingImages] = useState([]);
@@ -84,6 +85,7 @@ const EditEventPage = () => {
   const { tags: reduxSelectedTags, clearAllSelectedTags, selectTagForForm } = useTags();
   const { selectedRules, clearSelectedRefundRules, selectRuleForForm } = useRefundRules();
   const { showLoading, hideLoading, updatePageTitle } = useApp();
+  const { getEventById, updateEvent: updateEventAPI, loading: eventLoading } = useEvents();
 
   const {
     register,
@@ -146,10 +148,10 @@ const EditEventPage = () => {
       setIsLoading(true);
       showLoading();
       
-      const response = await eventAPI.getEventById(eventId);
+      const event = await getEventById(eventId);
       
-      if (response?.data) {
-        const event = response.data;
+      if (event) {
+        setEventData(event);
         
         // Populate form with existing data
         const formData = {
@@ -160,7 +162,7 @@ const EditEventPage = () => {
           endTime: event.endTime ? new Date(event.endTime).toISOString().slice(0, 16) : '',
           locationName: event.locationName || '',
           address: event.address || '',
-          eventCategoryId: event.eventCategoryId || '',
+          eventCategoryId: event.eventCategoryId || event.eventCategory?.eventCategoryId || '',
           isOnlineEvent: event.isOnlineEvent || false,
           requireApproval: event.requireApproval || false,
           publish: event.publish || false,
@@ -198,6 +200,11 @@ const EditEventPage = () => {
             if (eventTag.tag) {
               selectTagForForm(eventTag.tag);
             }
+          });
+        } else if (event.tags && event.tags.length > 0) {
+          // Alternative structure
+          event.tags.forEach(tag => {
+            selectTagForForm(tag);
           });
         }
 
@@ -356,13 +363,11 @@ const EditEventPage = () => {
       showLoading();
       setIsSaving(true);
       
-      const response = await eventAPI.updateEvent(eventData);
+      const response = await updateEventAPI(eventData);
       
-      if (response?.statusCode?.startsWith('AIE200') || response?.statusCode === 'AIE20000') {
+      if (response) {
         toast.success('✅ Cập nhật sự kiện thành công!');
         navigate(`/organizer/event/${eventId}`);
-      } else {
-        toast.error(response?.message || 'Có lỗi xảy ra khi cập nhật sự kiện');
       }
     } catch (error) {
       console.error('Error updating event:', error);

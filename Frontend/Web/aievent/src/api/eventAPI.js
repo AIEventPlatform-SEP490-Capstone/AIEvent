@@ -16,18 +16,20 @@ export const eventAPI = {
     // Handle tags array
     if (params.tags && params.tags.length > 0) {
       params.tags.forEach((tag, index) => {
-        queryParams.append(`tags[${index}].TagId`, tag.TagId);
+        queryParams.append(`tags[${index}].TagId`, tag.tagId || tag.TagId);
       });
     }
 
     const response = await fetcher.get(`/event?${queryParams.toString()}`);
-    return response.data;
+    // Return the actual data from the paginated response
+    return response.data?.data || response.data;
   },
 
   // Get event by ID
   getEventById: async (eventId) => {
     const response = await fetcher.get(`/event/${eventId}`);
-    return response.data;
+    // Return the actual event data from the response
+    return response.data?.data || response.data;
   },
 
   // Create new event (requires Organizer role)
@@ -47,7 +49,7 @@ export const eventAPI = {
     
     // Optional fields
     if (eventData.isOnlineEvent !== undefined) {
-      formData.append('isOnlineEvent', eventData.isOnlineEvent);
+      formData.append('IsOnlineEvent', eventData.isOnlineEvent);
     }
     if (eventData.locationName) {
       formData.append('LocationName', eventData.locationName);
@@ -109,7 +111,8 @@ export const eventAPI = {
         'Content-Type': 'multipart/form-data',
       },
     });
-    return response.data;
+    // Return the actual response data
+    return response.data?.data || response.data;
   },
 
   // Get events by organizer (requires Organizer role)
@@ -120,18 +123,20 @@ export const eventAPI = {
     if (params.eventCategoryId) queryParams.append('eventCategoryId', params.eventCategoryId);
     if (params.ticketType) queryParams.append('ticketType', params.ticketType);
     if (params.city) queryParams.append('city', params.city);
+    if (params.IsSortByNewest !== undefined) queryParams.append('IsSortByNewest', params.IsSortByNewest);
     if (params.pageNumber) queryParams.append('pageNumber', params.pageNumber);
     if (params.pageSize) queryParams.append('pageSize', params.pageSize);
     
     // Handle tags array
     if (params.tags && params.tags.length > 0) {
       params.tags.forEach((tag, index) => {
-        queryParams.append(`tags[${index}].TagId`, tag.TagId);
+        queryParams.append(`tags[${index}].TagId`, tag.tagId || tag.TagId);
       });
     }
 
     const response = await fetcher.get(`/event/organizer?${queryParams.toString()}`);
-    return response.data;
+    // Return the actual data from the paginated response
+    return response.data?.data || response.data;
   },
 
   // Update event (requires Organizer role)
@@ -154,7 +159,7 @@ export const eventAPI = {
     
     // Optional fields
     if (eventData.isOnlineEvent !== undefined) {
-      formData.append('isOnlineEvent', eventData.isOnlineEvent);
+      formData.append('IsOnlineEvent', eventData.isOnlineEvent);
     }
     if (eventData.locationName) {
       formData.append('LocationName', eventData.locationName);
@@ -185,18 +190,20 @@ export const eventAPI = {
       console.log(`${key}:`, value);
     }
 
-    const response = await fetcher.put('/event', formData, {
+    const response = await fetcher.put(`/event/${eventData.eventId}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
-    return response.data;
+    // Return the actual response data
+    return response.data?.data || response.data;
   },
 
   // Delete event (requires Organizer role)
   deleteEvent: async (eventId) => {
-    const response = await fetcher.delete(`/event?eventId=${eventId}`);
-    return response.data;
+    const response = await fetcher.delete(`/event/${eventId}`);
+    // Return the actual response data
+    return response.data?.data || response.data;
   },
 };
 

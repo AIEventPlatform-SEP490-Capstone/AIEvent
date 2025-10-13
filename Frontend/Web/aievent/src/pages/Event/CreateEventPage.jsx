@@ -26,7 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Switch } from '../../components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 
-import { eventAPI } from '../../api/eventAPI';
+import { useEvents } from '../../hooks/useEvents';
 import TagSelector from '../../components/Event/TagSelector';
 import RefundRuleManager from '../../components/Event/RefundRuleManager';
 
@@ -71,6 +71,7 @@ const CreateEventPage = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
   const [imagePreview, setImagePreview] = useState([]);
 
@@ -79,6 +80,7 @@ const CreateEventPage = () => {
   const { tags: reduxSelectedTags, clearAllSelectedTags } = useTags();
   const { selectedRules, clearSelectedRefundRules } = useRefundRules();
   const { showLoading, hideLoading, updatePageTitle } = useApp();
+  const { createEvent: createEventAPI, loading: eventLoading } = useEvents();
 
   const {
     register,
@@ -270,17 +272,15 @@ const CreateEventPage = () => {
 
     try {
       showLoading();
-      setIsLoading(true);
+      setIsSubmitting(true);
       
-      const response = await eventAPI.createEvent(eventData);
+      const response = await createEventAPI(eventData);
       
-      if (response?.statusCode?.startsWith('AIE201') || response?.statusCode === 'AIE20100') {
+      if (response) {
         toast.success('✅ Tạo sự kiện thành công!');
         clearAllSelectedTags();
         clearSelectedRefundRules();
         navigate(PATH.ORGANIZER_MY_EVENTS);
-      } else {
-        toast.error(response?.message || 'Có lỗi xảy ra khi tạo sự kiện');
       }
     } catch (error) {
       console.error('Error creating event:', error);
@@ -304,7 +304,7 @@ const CreateEventPage = () => {
       toast.error(errorMessage);
     } finally {
       hideLoading();
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -721,10 +721,10 @@ const CreateEventPage = () => {
           <div className="lg:col-span-3 mt-12 text-center">
             <Button 
               type="submit" 
-              disabled={isLoading}
+              disabled={isSubmitting || isLoading}
               className="px-12 py-4 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
             >
-              {isLoading ? (
+              {isSubmitting || isLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
                   Đang tạo sự kiện...

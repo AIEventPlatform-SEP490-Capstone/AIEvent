@@ -1,6 +1,7 @@
 ﻿using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
+using AIEvent.Application.DTOs.Organizer;
 using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
@@ -39,7 +40,7 @@ namespace AIEvent.Application.Services.Implements
                 }
 
                 var organizer = await _unitOfWork.OrganizerProfileRepository.GetByIdAsync(organizerId, true);
-                if (organizer?.Status != OrganizerStatus.Approve)
+                if (organizer?.Status != ConfirmStatus.Approve)
                 {
                     return ErrorResponse.FailureResult("Organizer not found or inactive", ErrorCodes.Unauthorized);
                 }
@@ -87,7 +88,7 @@ namespace AIEvent.Application.Services.Implements
             IQueryable<Event> events = _unitOfWork.EventRepository
                                                 .Query()
                                                 .AsNoTracking()
-                                                .Where(e => e.StartTime > DateTime.Now && !e.DeletedAt.HasValue && e.RequireApproval == true);
+                                                .Where(e => e.StartTime > DateTime.Now && !e.DeletedAt.HasValue && e.RequireApproval == ConfirmStatus.Approve);
 
             if (!string.IsNullOrEmpty(search))
             {
@@ -192,7 +193,7 @@ namespace AIEvent.Application.Services.Implements
                 }
 
                 var organizer = await _unitOfWork.OrganizerProfileRepository.GetByIdAsync(organizerId, true);
-                if (organizer?.Status != OrganizerStatus.Approve)
+                if (organizer?.Status != ConfirmStatus.Approve)
                 {
                     return ErrorResponse.FailureResult("Organizer not found or inactive", ErrorCodes.Unauthorized);
                 }
@@ -249,8 +250,9 @@ namespace AIEvent.Application.Services.Implements
         {
             var events = await _unitOfWork.EventRepository
                 .Query()
+                .Where(e => e.Id == Guid.Parse(eventId))
                 .ProjectTo<EventDetailResponse>(_mapper.ConfigurationProvider)
-                .FirstOrDefaultAsync(e => e.EventId == Guid.Parse(eventId));
+                .FirstOrDefaultAsync();
 
             if (events == null)
                 return ErrorResponse.FailureResult("Event code already exists.", ErrorCodes.InvalidInput);
@@ -362,9 +364,9 @@ namespace AIEvent.Application.Services.Implements
             IQueryable<Event> events = _unitOfWork.EventRepository
                                                 .Query()
                                                 .AsNoTracking()
-                                                .Where(e => e.StartTime > DateTime.Now
-                                                        && !e.DeletedAt.HasValue
-                                                        && e.RequireApproval == true);
+                                                .Where(e => e.StartTime > DateTime.Now 
+                                                        && !e.DeletedAt.HasValue 
+                                                        && e.RequireApproval == ConfirmStatus.Approve);
 
             var eventDetail = await _unitOfWork.EventRepository
                                                .Query()
@@ -421,6 +423,67 @@ namespace AIEvent.Application.Services.Implements
                 .ToListAsync();
 
             return new BasePaginated<EventsRelatedResponse>(result, totalCount, pageNumber, pageSize);
+        }
+
+
+        public async Task<Result<BasePaginated<ListEventNeedConfirm>>> GetAllEventNeedConfirmAsync(int pageNumber, int pageSize)
+        {
+
+            IQueryable<Event> events = _unitOfWork.EventRepository
+                                                .Query()
+                                                .AsNoTracking()
+                                                .Where(e => e.RequireApproval == ConfirmStatus.NeedConfirm && !e.IsDeleted);
+
+            int totalCount = await events.CountAsync();
+
+            var result = await events
+                .OrderBy(p => p.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(e => new ListEventNeedConfirm
+                {
+                    EventId = e.Id.ToString(),
+                    Title = e.Title,
+                    StartTime = e.StartTime,
+                    EndTime = e.EndTime,
+                    TotalTickets = e.TotalTickets,
+                    City = e.City,
+                    Address = e.Address,
+                    OrganizerName = e.OrganizerProfile!.CompanyName!,
+                    LocationName = e.LocationName,
+                    EventCategory = e.EventCategory.CategoryName,
+                    ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
+                        ? new List<string>()
+                        : JsonSerializer.Deserialize<List<string>>(e.ImgListEvent, new JsonSerializerOptions())
+                })
+                .ToListAsync();
+
+            return new BasePaginated<ListEventNeedConfirm>(result, totalCount, pageNumber, pageSize);
+        }
+
+        public async Task<Result> ConfirmEventAsync(Guid userId, string id, ConfirmRequest request)
+        {
+            if (!Guid.TryParse(id, out var eventId))
+            {
+                return ErrorResponse.FailureResult("Invalid Guid format", ErrorCodes.InvalidInput);
+            }
+
+            var entity = await _unitOfWork.EventRepository
+                .Query()
+                .FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted && e.RequireApproval == ConfirmStatus.NeedConfirm);
+
+            if(entity == null)
+            {
+                return ErrorResponse.FailureResult("Event can not found or is deleted", ErrorCodes.NotFound);
+            }
+
+            entity.RequireApproval = request.Status;
+            entity.RequireApprovalAt = DateTime.UtcNow;
+            entity.RequireApprovalBy = userId;
+            await _unitOfWork.EventRepository.UpdateAsync(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return Result.Success();
         }
     }
 }
