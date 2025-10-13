@@ -60,10 +60,6 @@ namespace AIEvent.Application.Services.Implements
         {
             IQueryable<Event> events = _unitOfWork.EventRepository
                                                 .Query()
-                                                .Include(e => e.FavoriteEvents)
-                                                .Include(e => e.EventCategory)
-                                                .Include(e => e.EventTags)
-                                                    .ThenInclude(e => e.Tag)
                                                 .AsNoTracking()
                                                 .Where(e => e.FavoriteEvents.Any(x => x.UserId == userId) &&
                                                        !e.DeletedAt.HasValue && 
@@ -117,12 +113,10 @@ namespace AIEvent.Application.Services.Implements
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-                var user = await _unitOfWork.FavoriteEventRepository
-                                            .Query()
-                                            .FirstOrDefaultAsync(u => u.UserId == userId);
                 var favorite = await _unitOfWork.FavoriteEventRepository
                                                 .Query()
                                                 .FirstOrDefaultAsync(fe => fe.UserId == userId && fe.EventId == eventId);
+
                 if (favorite == null)
                 {
                     return ErrorResponse.FailureResult("Favorite event not found", ErrorCodes.NotFound);
