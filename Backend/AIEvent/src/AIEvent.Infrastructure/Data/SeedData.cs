@@ -330,7 +330,6 @@ namespace AIEvent.Infrastructure.Data
                     ConfirmBy = "SystemSeeder",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
-
                 }
             );
         }
