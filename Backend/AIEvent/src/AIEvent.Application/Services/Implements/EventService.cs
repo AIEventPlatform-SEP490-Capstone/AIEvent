@@ -336,6 +336,9 @@ namespace AIEvent.Application.Services.Implements
                     TicketType = e.TicketType,
                     TotalTickets = e.TotalTickets,
                     SoldQuantity = e.SoldQuantity,
+                    TicketPrice = e.TicketDetails.Any()
+                        ? e.TicketDetails.Min(t => t.TicketPrice)
+                        : 0,
                     LocationName = e.LocationName,
                     Tags = e.EventTags.Select(t => new TagResponse
                     {
