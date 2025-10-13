@@ -37,7 +37,6 @@ namespace AIEvent.API.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        [Authorize]
         public async Task<ActionResult<SuccessResponse<BasePaginated<TagResponse>>>> GetTag(int pageNumber = 1, int pageSize = 5)
         {
             var result = await _tagService.GetListTagAsync(pageNumber, pageSize);
@@ -71,7 +70,6 @@ namespace AIEvent.API.Controllers
 
         [HttpGet("{id}")]
         [AllowAnonymous]
-        [Authorize]
         public async Task<ActionResult<SuccessResponse<TagResponse>>> GetTagById(string id)
         {
             var result = await _tagService.GetTagByIdAsync(id);

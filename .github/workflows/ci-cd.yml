@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - dev
+    paths:
+      - 'Backend/**'              
+      - '.github/workflows/ci-cd.yml' 
 
 env:
   IMAGE_NAME: ghcr.io/doublenh25/aievent:latest
