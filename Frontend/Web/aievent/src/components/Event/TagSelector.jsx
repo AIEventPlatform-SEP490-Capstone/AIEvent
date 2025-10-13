@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, X, Tag } from 'lucide-react';
-import { showSuccess, showError } from '../../lib/toastUtils';
+import { toast } from 'react-hot-toast';
 
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -9,149 +9,86 @@ import { Badge } from '../ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 
-import { tagAPI } from '../../api/tagAPI';
+import { useTags } from '../../hooks/useTags';
 
-const TagSelector = ({ selectedTags = [], onTagsChange = () => {}, className = '' }) => {
-  const [availableTags, setAvailableTags] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+const TagSelector = ({ className = '' }) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newTagName, setNewTagName] = useState('');
-  const [isCreatingTag, setIsCreatingTag] = useState(false);
+  
+  // Use Redux store for tags
+  const {
+    tags: availableTags,
+    selectedTags,
+    loading: isLoading,
+    error,
+    createNewTag,
+    refreshTags,
+    selectTagForForm,
+    unselectTagFromForm,
+    clearTagsError
+  } = useTags();
 
-  // Load available tags
-  useEffect(() => {
-    try {
-      loadTags();
-    } catch (error) {
-      console.error('Error in TagSelector useEffect:', error);
-      showError('Có lỗi xảy ra khi tải TagSelector');
+  // Clear error when component mounts
+  React.useEffect(() => {
+    if (error) {
+      toast.error(`Lỗi tải tags: ${error}`);
+      clearTagsError();
     }
-  }, []);
+  }, [error]);
 
-  const loadTags = async () => {
-    console.log('Loading tags...');
-    setIsLoading(true);
-    try {
-      const response = await tagAPI.getTags(1, 100);
-      console.log('Tags API response:', response);
-      console.log('Response type:', typeof response);
-      console.log('Response keys:', Object.keys(response || {}));
-      console.log('Response.data:', response?.data);
-      console.log('Response.isSuccess:', response?.isSuccess);
-      
-      // Since isSuccess is undefined, check if we have data
-      if (response?.data) {
-        const tags = response.data.items || response.data || [];
-        console.log('Extracted tags:', tags);
-        console.log('Setting available tags to:', tags);
-        setAvailableTags(tags);
-      } else {
-        console.warn('No data in tags response:', response);
-        setAvailableTags([]);
-      }
-    } catch (error) {
-      console.error('Error loading tags:', error);
-      showError('Không thể tải danh sách tags');
-      setAvailableTags([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Force component update when tags change
+  React.useEffect(() => {
+    console.log('Available tags updated:', availableTags.length, availableTags);
+  }, [availableTags]);
 
-  // Add tag to selection
+  // Add tag to selection using Redux
   const handleAddTag = (tag) => {
-    console.log('Adding tag:', tag);
-    const isAlreadySelected = selectedTags.some(selectedTag => selectedTag.tagId === tag.tagId);
-    if (!isAlreadySelected) {
-      const newTags = [...selectedTags, { 
-        tagId: tag.tagId, 
-        tagName: tag.tagName || tag.nameTag // Handle both possible property names
-      }];
-      onTagsChange(newTags);
-    }
+    selectTagForForm(tag);
   };
 
-  // Remove tag from selection
+  // Remove tag from selection using Redux
   const handleRemoveTag = (tagId) => {
-    const newTags = selectedTags.filter(tag => tag.tagId !== tagId);
-    onTagsChange(newTags);
+    unselectTagFromForm(tagId);
   };
 
-  // Create new tag
+  // Create new tag using Redux
   const handleCreateTag = async () => {
-    console.log('=== CREATING NEW TAG ===');
-    console.log('Tag name:', newTagName.trim());
-    
     if (!newTagName.trim()) {
-      showError('Vui lòng nhập tên tag');
+      toast.error('Tên tag không được để trống');
       return;
     }
 
-    setIsCreatingTag(true);
     try {
-      console.log('Calling tagAPI.createTag...');
-      const response = await tagAPI.createTag({ nameTag: newTagName.trim() });
-      console.log('Create tag response:', response);
-      if (response && response.data) {
-        showSuccess('Tạo tag thành công!');
+      const result = await createNewTag({ nameTag: newTagName.trim() });
+      
+      if (result.meta.requestStatus === 'fulfilled') {
+        const newTag = result.payload;
+        toast.success('Tạo tag thành công!');
         setNewTagName('');
         setIsCreateDialogOpen(false);
         
-        // Reload tags and auto-select the new one
-        console.log('Reloading tags after creation...');
-        await loadTags();
-        
-        // Small delay to ensure state updates
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Auto-select the newly created tag
-        console.log('Response data:', response.data);
-        if (response.data && response.data.tagId) {
-          const newTag = { 
-            tagId: response.data.tagId, 
-            tagName: response.data.nameTag || response.data.tagName 
-          };
-          console.log('New tag to add:', newTag);
-          console.log('Current selected tags before adding:', selectedTags);
-          
-          const isAlreadySelected = selectedTags.some(selectedTag => selectedTag.tagId === newTag.tagId);
-          if (!isAlreadySelected) {
-            const newTags = [...selectedTags, newTag];
-            console.log('About to call onTagsChange with:', newTags);
-            onTagsChange(newTags);
-            
-            // Verify the change was applied
-            setTimeout(() => {
-              console.log('Selected tags after change should be:', newTags);
-            }, 200);
-          } else {
-            console.log('Tag already selected');
-          }
-        } else {
-          console.log('No tagId in response data');
-          console.log('Available response properties:', Object.keys(response.data || {}));
-        }
+        // Refresh tags để đảm bảo tag mới hiển thị
+        setTimeout(() => {
+          refreshTags();
+        }, 500);
       } else {
-        showError(response.message || 'Có lỗi xảy ra khi tạo tag');
+        toast.error('Không thể tạo tag. Vui lòng thử lại.');
       }
     } catch (error) {
       console.error('Error creating tag:', error);
-      showError(error.response?.data?.message || 'Có lỗi xảy ra khi tạo tag');
-    } finally {
-      setIsCreatingTag(false);
+      toast.error('Có lỗi xảy ra khi tạo tag');
     }
   };
 
-  try {
-    return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Tag className="h-5 w-5" />
-            Tags sự kiện
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+  return (
+    <Card className={className}>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Tag className="h-5 w-5" />
+          Tags sự kiện
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
         {/* Selected Tags */}
         {selectedTags.length > 0 && (
           <div>
@@ -220,9 +157,9 @@ const TagSelector = ({ selectedTags = [], onTagsChange = () => {}, className = '
                     <Button
                       type="button"
                       onClick={handleCreateTag}
-                      disabled={isCreatingTag}
+                      disabled={isLoading}
                     >
-                      {isCreatingTag ? 'Đang tạo...' : 'Tạo tag'}
+                      {isLoading ? 'Đang tạo...' : 'Tạo tag'}
                     </Button>
                   </div>
                 </div>
@@ -236,12 +173,12 @@ const TagSelector = ({ selectedTags = [], onTagsChange = () => {}, className = '
               <p className="text-sm text-muted-foreground mt-2">Đang tải tags...</p>
             </div>
           ) : (
-            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto" key={`tags-${availableTags.length}`}>
               {availableTags
                 .filter(tag => !selectedTags.some(selectedTag => selectedTag.tagId === tag.tagId))
                 .map((tag) => (
                   <Badge
-                    key={tag.tagId}
+                    key={`${tag.tagId}-${tag.tagName || tag.nameTag}`}
                     variant="outline"
                     className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
                     onClick={() => handleAddTag(tag)}
@@ -255,19 +192,9 @@ const TagSelector = ({ selectedTags = [], onTagsChange = () => {}, className = '
             </div>
           )}
         </div>
-        </CardContent>
-      </Card>
-    );
-  } catch (error) {
-    console.error('Error rendering TagSelector:', error);
-    return (
-      <Card className={className}>
-        <CardContent className="p-4">
-          <p className="text-red-500">Có lỗi xảy ra khi hiển thị TagSelector</p>
-        </CardContent>
-      </Card>
-    );
-  }
+      </CardContent>
+    </Card>
+  );
 };
 
 export default TagSelector;

@@ -112,6 +112,87 @@ export const eventAPI = {
     return response.data;
   },
 
+  // Get events by organizer (requires Organizer role)
+  getEventsByOrganizer: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    
+    if (params.search) queryParams.append('search', params.search);
+    if (params.eventCategoryId) queryParams.append('eventCategoryId', params.eventCategoryId);
+    if (params.ticketType) queryParams.append('ticketType', params.ticketType);
+    if (params.city) queryParams.append('city', params.city);
+    if (params.pageNumber) queryParams.append('pageNumber', params.pageNumber);
+    if (params.pageSize) queryParams.append('pageSize', params.pageSize);
+    
+    // Handle tags array
+    if (params.tags && params.tags.length > 0) {
+      params.tags.forEach((tag, index) => {
+        queryParams.append(`tags[${index}].TagId`, tag.TagId);
+      });
+    }
+
+    const response = await fetcher.get(`/event/organizer?${queryParams.toString()}`);
+    return response.data;
+  },
+
+  // Update event (requires Organizer role)
+  updateEvent: async (eventData) => {
+    console.log('Updating event with data:', eventData);
+    const formData = new FormData();
+    
+    // Add event ID
+    formData.append('EventId', eventData.eventId);
+    
+    // Add basic event fields
+    formData.append('Title', eventData.title);
+    formData.append('Description', eventData.description);
+    formData.append('StartTime', eventData.startTime);
+    formData.append('EndTime', eventData.endTime);
+    formData.append('TotalTickets', eventData.totalTickets);
+    formData.append('TicketType', eventData.ticketType);
+    formData.append('RequireApproval', eventData.requireApproval || false);
+    formData.append('Publish', eventData.publish || false);
+    
+    // Optional fields
+    if (eventData.isOnlineEvent !== undefined) {
+      formData.append('isOnlineEvent', eventData.isOnlineEvent);
+    }
+    if (eventData.locationName) {
+      formData.append('LocationName', eventData.locationName);
+    }
+    if (eventData.detailedDescription) {
+      formData.append('DetailedDescription', eventData.detailedDescription);
+    }
+    if (eventData.city) {
+      formData.append('City', eventData.city);
+    }
+    if (eventData.address) {
+      formData.append('Address', eventData.address);
+    }
+    if (eventData.eventCategoryId) {
+      formData.append('EventCategoryId', eventData.eventCategoryId);
+    }
+
+    // Add new images if any
+    if (eventData.images && eventData.images.length > 0) {
+      eventData.images.forEach((image) => {
+        formData.append('ImgListEvent', image);
+      });
+    }
+
+    // Debug FormData contents
+    console.log('Update FormData contents:');
+    for (let [key, value] of formData.entries()) {
+      console.log(`${key}:`, value);
+    }
+
+    const response = await fetcher.put('/event', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
   // Delete event (requires Organizer role)
   deleteEvent: async (eventId) => {
     const response = await fetcher.delete(`/event?eventId=${eventId}`);

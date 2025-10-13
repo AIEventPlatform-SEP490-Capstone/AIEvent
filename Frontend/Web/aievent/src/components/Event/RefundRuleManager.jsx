@@ -1,23 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit, Shield, Calendar } from 'lucide-react';
-import { showSuccess, showError } from '../../lib/toastUtils';
+import React, { useState } from 'react';
+import { Plus, Trash2, Shield } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Separator } from '../ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 
-import { refundRuleAPI } from '../../api/refundRuleAPI';
+import { useRefundRules } from '../../hooks/useRefundRules';
 
-const RefundRuleManager = ({ selectedRefundRules, onRulesChange, className }) => {
-  const [refundRules, setRefundRules] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+const RefundRuleManager = ({ className }) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isCreatingRule, setIsCreatingRule] = useState(false);
+  
   // Form state for creating new rule
   const [newRule, setNewRule] = useState({
     ruleName: '',
@@ -32,53 +28,41 @@ const RefundRuleManager = ({ selectedRefundRules, onRulesChange, className }) =>
     ],
   });
 
-  // Load refund rules
-  useEffect(() => {
-    loadRefundRules();
-  }, []);
+  // Use Redux store for refund rules
+  const {
+    refundRules,
+    selectedRules,
+    loading: isLoading,
+    error,
+    createNewRefundRule,
+    refreshRefundRules,
+    selectRuleForForm,
+    unselectRuleFromForm,
+    clearSelectedRefundRules,
+    clearRefundRulesError
+  } = useRefundRules();
 
-  // Add rule to selection
-  const handleAddRule = (ruleId) => {
-    const rule = refundRules.find(r => r.ruleRefundId === ruleId);
-    if (!rule) return;
-
-    const isAlreadySelected = selectedRefundRules.some(selected => selected.ruleRefundId === ruleId);
-    if (!isAlreadySelected) {
-      const newRules = [...selectedRefundRules, rule];
-      onRulesChange(newRules);
+  // Handle errors
+  React.useEffect(() => {
+    if (error) {
+      toast.error(`Lỗi tải refund rules: ${error}`);
+      clearRefundRulesError();
     }
+  }, [error]);
+
+  // Force component update when refund rules change
+  React.useEffect(() => {
+    console.log('Available refund rules updated:', refundRules.length, refundRules);
+  }, [refundRules]);
+
+  // Add rule to selection - Use Redux
+  const handleAddRule = (rule) => {
+    selectRuleForForm(rule);
   };
 
-  // Remove rule from selection
+  // Remove rule from selection - Use Redux  
   const handleRemoveRule = (ruleId) => {
-    const newRules = selectedRefundRules.filter(rule => rule.ruleRefundId !== ruleId);
-    onRulesChange(newRules);
-  };
-
-  const loadRefundRules = async () => {
-    setIsLoading(true);
-    try {
-      const response = await refundRuleAPI.getRefundRules(1, 100);
-      console.log('Refund Rules API response:', response);
-      console.log('Response type:', typeof response);
-      console.log('Response keys:', Object.keys(response || {}));
-      
-      // Since isSuccess is undefined, check if we have data
-      if (response?.data) {
-        const rules = response.data.items || response.data || [];
-        console.log('Extracted rules:', rules);
-        setRefundRules(rules);
-      } else {
-        console.warn('No data in refund rules response:', response);
-        setRefundRules([]);
-      }
-    } catch (error) {
-      console.error('Error loading refund rules:', error);
-      showError('Không thể tải danh sách quy tắc hoàn tiền');
-      setRefundRules([]);
-    } finally {
-      setIsLoading(false);
-    }
+    unselectRuleFromForm(ruleId);
   };
 
   // Add new refund detail
@@ -117,31 +101,29 @@ const RefundRuleManager = ({ selectedRefundRules, onRulesChange, className }) =>
     }));
   };
 
-  // Create refund rule
+  // Create refund rule using Redux
   const handleCreateRefundRule = async () => {
-    console.log('=== CREATING NEW REFUND RULE ===');
-    console.log('Rule data:', newRule);
-    
     if (!newRule.ruleName.trim()) {
-      showError('Tên quy tắc là bắt buộc');
+      toast.error('Tên quy tắc là bắt buộc');
       return;
     }
 
     // Validate refund details
     for (const detail of newRule.ruleRefundDetails) {
       if (detail.refundPercent < 0 || detail.refundPercent > 100) {
-        showError('Phần trăm hoàn tiền phải từ 0 đến 100');
+        toast.error('Phần trăm hoàn tiền phải từ 0 đến 100');
         return;
       }
     }
 
-    setIsCreatingRule(true);
     try {
-      console.log('Calling refundRuleAPI.createRefundRule...');
-      const response = await refundRuleAPI.createRefundRule(newRule);
-      console.log('Create refund rule response:', response);
-      if (response && response.data) {
-        showSuccess('Tạo quy tắc hoàn tiền thành công!');
+      const result = await createNewRefundRule(newRule);
+      
+      if (result.meta.requestStatus === 'fulfilled') {
+        const createdRule = result.payload;
+        toast.success('✅ Tạo quy tắc hoàn tiền thành công!');
+        
+        // Reset form
         setNewRule({
           ruleName: '',
           ruleDescription: '',
@@ -149,68 +131,29 @@ const RefundRuleManager = ({ selectedRefundRules, onRulesChange, className }) =>
             {
               minDaysBeforeEvent: null,
               maxDaysBeforeEvent: null,
+              refundPercent: 100,
               note: '',
             }
           ],
         });
         setIsCreateDialogOpen(false);
         
-        // Reload refund rules and auto-select the new one
-        console.log('Reloading refund rules after creation...');
-        await loadRefundRules();
-        
-        // Small delay to ensure state updates
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Refresh refund rules để đảm bảo rule mới hiển thị
+        setTimeout(() => {
+          refreshRefundRules();
+        }, 500);
         
         // Auto-select the newly created rule
-        console.log('Response data:', response.data);
-        if (response.data && response.data.ruleRefundId) {
-          const newRule = response.data;
-          console.log('New rule to add:', newRule);
-          console.log('Current selected rules before adding:', selectedRefundRules);
-          
-          const isAlreadySelected = selectedRefundRules.some(selected => selected.ruleRefundId === newRule.ruleRefundId);
-          if (!isAlreadySelected) {
-            const updatedRules = [...selectedRefundRules, newRule];
-            console.log('About to call onRulesChange with:', updatedRules);
-            onRulesChange(updatedRules);
-            
-            // Verify the change was applied
-            setTimeout(() => {
-              console.log('Selected rules after change should be:', updatedRules);
-            }, 200);
-          } else {
-            console.log('Rule already selected');
-          }
-        } else {
-          console.log('No ruleRefundId in response data');
-          console.log('Available response properties:', Object.keys(response.data || {}));
+        if (createdRule && createdRule.ruleRefundId) {
+          selectRuleForForm(createdRule);
         }
       } else {
-        showError(response.message || 'Có lỗi xảy ra khi tạo quy tắc');
+        toast.error('Không thể tạo quy tắc hoàn tiền. Vui lòng thử lại.');
       }
     } catch (error) {
       console.error('Error creating refund rule:', error);
-      showError(error.response?.data?.message || 'Có lỗi xảy ra khi tạo quy tắc');
-    } finally {
-      setIsCreatingRule(false);
+      toast.error('Có lỗi xảy ra khi tạo quy tắc hoàn tiền');
     }
-  };
-
-  // Reset form
-  const resetForm = () => {
-    setNewRule({
-      ruleName: '',
-      ruleDescription: '',
-      ruleRefundDetails: [
-        {
-          minDaysBeforeEvent: null,
-          maxDaysBeforeEvent: null,
-          refundPercent: 100,
-          note: '',
-        }
-      ],
-    });
   };
 
   return (
@@ -222,13 +165,13 @@ const RefundRuleManager = ({ selectedRefundRules, onRulesChange, className }) =>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Selected Rules Display */}
-        {selectedRefundRules && selectedRefundRules.length > 0 && (
+        {/* Selected Rules Display - Using Redux */}
+        {selectedRules.length > 0 && (
           <div className="mb-4">
-            <Label className="text-sm font-medium mb-2 block">Quy tắc đã chọn:</Label>
-            <div className="space-y-3">
-              {selectedRefundRules.map((rule) => (
-                <div key={rule.ruleRefundId} className="border rounded-lg p-3 bg-gray-50">
+            <Label className="text-sm font-medium mb-2 block">Quy tắc đã chọn ({selectedRules.length}):</Label>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {selectedRules.map((rule) => (
+                <div key={rule.ruleRefundId} className="border rounded-lg p-3 bg-blue-50 border-blue-200">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -237,6 +180,20 @@ const RefundRuleManager = ({ selectedRefundRules, onRulesChange, className }) =>
                       </div>
                       {rule.ruleDescription && (
                         <p className="text-xs text-gray-600 mb-2">{rule.ruleDescription}</p>
+                      )}
+                      {/* Rule Details Preview */}
+                      {rule.ruleRefundDetails && rule.ruleRefundDetails.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-xs font-medium text-gray-700 mb-1">Chi tiết hoàn tiền:</p>
+                          <div className="space-y-1">
+                            {rule.ruleRefundDetails.map((detail, index) => (
+                              <div key={index} className="text-xs text-gray-600 bg-white px-2 py-1 rounded">
+                                {detail.minDaysBeforeEvent}-{detail.maxDaysBeforeEvent} ngày trước: {detail.refundPercent}%
+                                {detail.note && <span className="ml-2 italic">({detail.note})</span>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       )}
                     </div>
                     <Button
@@ -249,43 +206,16 @@ const RefundRuleManager = ({ selectedRefundRules, onRulesChange, className }) =>
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
-                  
-                  {/* Rule Refund Details */}
-                  {rule.ruleRefundDetails && rule.ruleRefundDetails.length > 0 && (
-                    <div className="space-y-1">
-                      <h5 className="text-xs font-medium text-gray-700 mb-1">Chi tiết hoàn tiền:</h5>
-                      {rule.ruleRefundDetails.map((detail, index) => (
-                        <div key={index} className="text-xs bg-white p-2 rounded border border-gray-200">
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-700">
-                              {detail.minDaysBeforeEvent !== null && detail.maxDaysBeforeEvent !== null
-                                ? `${detail.minDaysBeforeEvent} - ${detail.maxDaysBeforeEvent} ngày trước`
-                                : detail.minDaysBeforeEvent !== null
-                                ? `Từ ${detail.minDaysBeforeEvent} ngày trước`
-                                : detail.maxDaysBeforeEvent !== null
-                                ? `Đến ${detail.maxDaysBeforeEvent} ngày trước`
-                                : 'Mọi thời điểm'
-                              }
-                            </span>
-                            <span className="font-medium text-green-600">{detail.refundPercent}% hoàn tiền</span>
-                          </div>
-                          {detail.note && (
-                            <p className="text-xs text-gray-500 mt-1 italic">{detail.note}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Rule Selection */}
+        {/* Available Rules */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <Label className="text-sm font-medium">Thêm quy tắc hoàn tiền:</Label>
+            <Label className="text-sm font-medium">Quy tắc có sẵn:</Label>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button type="button" variant="outline" size="sm" className="flex items-center gap-1">
@@ -293,118 +223,107 @@ const RefundRuleManager = ({ selectedRefundRules, onRulesChange, className }) =>
                   Tạo quy tắc mới
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-white">
+              <DialogContent className="bg-white max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Tạo quy tắc hoàn tiền mới</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-6">
-                  {/* Basic Info */}
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="ruleName">Tên quy tắc *</Label>
-                      <Input
-                        id="ruleName"
-                        value={newRule.ruleName}
-                        onChange={(e) => setNewRule(prev => ({ ...prev, ruleName: e.target.value }))}
-                        placeholder="Ví dụ: Hoàn tiền linh hoạt"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="ruleDescription">Mô tả quy tắc</Label>
-                      <Textarea
-                        id="ruleDescription"
-                        value={newRule.ruleDescription}
-                        onChange={(e) => setNewRule(prev => ({ ...prev, ruleDescription: e.target.value }))}
-                        placeholder="Mô tả chi tiết về quy tắc hoàn tiền"
-                        rows={3}
-                      />
-                    </div>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="ruleName">Tên quy tắc *</Label>
+                    <Input
+                      id="ruleName"
+                      value={newRule.ruleName}
+                      onChange={(e) => setNewRule(prev => ({ ...prev, ruleName: e.target.value }))}
+                      placeholder="Ví dụ: Quy tắc hoàn tiền linh hoạt"
+                    />
                   </div>
 
-                  <Separator />
-
-                  {/* Refund Details */}
                   <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <Label className="text-sm font-medium">Chi tiết hoàn tiền:</Label>
+                    <Label htmlFor="ruleDescription">Mô tả</Label>
+                    <Textarea
+                      id="ruleDescription"
+                      value={newRule.ruleDescription}
+                      onChange={(e) => setNewRule(prev => ({ ...prev, ruleDescription: e.target.value }))}
+                      placeholder="Mô tả về quy tắc hoàn tiền"
+                      rows={2}
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium">Chi tiết hoàn tiền</Label>
+                    <div className="space-y-3 mt-2">
+                      {newRule.ruleRefundDetails.map((detail, index) => (
+                        <div key={index} className="border rounded-lg p-3 bg-gray-50">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-medium">Cấp {index + 1}</span>
+                            {newRule.ruleRefundDetails.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeRefundDetail(index)}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                          
+                          <div className="grid grid-cols-3 gap-3">
+                            <div>
+                              <Label className="text-xs">Từ (ngày)</Label>
+                              <Input
+                                type="number"
+                                value={detail.minDaysBeforeEvent || ''}
+                                onChange={(e) => updateRefundDetail(index, 'minDaysBeforeEvent', parseInt(e.target.value) || null)}
+                                placeholder="0"
+                                min="0"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Đến (ngày)</Label>
+                              <Input
+                                type="number"
+                                value={detail.maxDaysBeforeEvent || ''}
+                                onChange={(e) => updateRefundDetail(index, 'maxDaysBeforeEvent', parseInt(e.target.value) || null)}
+                                placeholder="30"
+                                min="0"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Hoàn tiền (%)</Label>
+                              <Input
+                                type="number"
+                                value={detail.refundPercent}
+                                onChange={(e) => updateRefundDetail(index, 'refundPercent', parseInt(e.target.value) || 0)}
+                                placeholder="100"
+                                min="0"
+                                max="100"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="mt-2">
+                            <Label className="text-xs">Ghi chú</Label>
+                            <Input
+                              value={detail.note}
+                              onChange={(e) => updateRefundDetail(index, 'note', e.target.value)}
+                              placeholder="Ghi chú về cấp hoàn tiền này"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      
                       <Button
                         type="button"
                         variant="outline"
-                        size="sm"
                         onClick={addRefundDetail}
-                        className="flex items-center gap-1"
+                        className="w-full border-dashed"
                       >
-                        <Plus className="h-3 w-3" />
-                        Thêm mức hoàn tiền
+                        <Plus className="h-4 w-4 mr-2" />
+                        Thêm cấp hoàn tiền
                       </Button>
                     </div>
-
-                    {newRule.ruleRefundDetails.map((detail, index) => (
-                      <div key={index} className="border rounded-lg p-4 space-y-4 mb-4">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-medium">Mức hoàn tiền {index + 1}</h4>
-                          {newRule.ruleRefundDetails.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeRefundDetail(index)}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div>
-                            <Label>Tối thiểu (ngày trước sự kiện)</Label>
-                            <Input
-                              type="number"
-                              value={detail.minDaysBeforeEvent || ''}
-                              onChange={(e) => updateRefundDetail(index, 'minDaysBeforeEvent', 
-                                e.target.value ? parseInt(e.target.value) : null)}
-                              placeholder="Ví dụ: 7"
-                              min="0"
-                            />
-                          </div>
-
-                          <div>
-                            <Label>Tối đa (ngày trước sự kiện)</Label>
-                            <Input
-                              type="number"
-                              value={detail.maxDaysBeforeEvent || ''}
-                              onChange={(e) => updateRefundDetail(index, 'maxDaysBeforeEvent', 
-                                e.target.value ? parseInt(e.target.value) : null)}
-                              placeholder="Ví dụ: 30"
-                              min="0"
-                            />
-                          </div>
-
-                          <div>
-                            <Label>Phần trăm hoàn tiền (%)</Label>
-                            <Input
-                              type="number"
-                              value={detail.refundPercent}
-                              onChange={(e) => updateRefundDetail(index, 'refundPercent', 
-                                parseInt(e.target.value) || 0)}
-                              min="0"
-                              max="100"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label>Ghi chú</Label>
-                          <Textarea
-                            value={detail.note}
-                            onChange={(e) => updateRefundDetail(index, 'note', e.target.value)}
-                            placeholder="Ghi chú thêm về mức hoàn tiền này"
-                            rows={2}
-                          />
-                        </div>
-                      </div>
-                    ))}
                   </div>
 
                   <div className="flex justify-end gap-2">
@@ -413,7 +332,18 @@ const RefundRuleManager = ({ selectedRefundRules, onRulesChange, className }) =>
                       variant="outline"
                       onClick={() => {
                         setIsCreateDialogOpen(false);
-                        resetForm();
+                        setNewRule({
+                          ruleName: '',
+                          ruleDescription: '',
+                          ruleRefundDetails: [
+                            {
+                              minDaysBeforeEvent: null,
+                              maxDaysBeforeEvent: null,
+                              refundPercent: 100,
+                              note: '',
+                            }
+                          ],
+                        });
                       }}
                     >
                       Hủy
@@ -421,9 +351,9 @@ const RefundRuleManager = ({ selectedRefundRules, onRulesChange, className }) =>
                     <Button
                       type="button"
                       onClick={handleCreateRefundRule}
-                      disabled={isCreatingRule}
+                      disabled={isLoading}
                     >
-                      {isCreatingRule ? 'Đang tạo...' : 'Tạo quy tắc'}
+                      {isLoading ? 'Đang tạo...' : 'Tạo quy tắc'}
                     </Button>
                   </div>
                 </div>
@@ -432,37 +362,42 @@ const RefundRuleManager = ({ selectedRefundRules, onRulesChange, className }) =>
           </div>
 
           {isLoading ? (
-            <div className="text-center py-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mx-auto"></div>
+            <div className="text-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+              <p className="text-sm text-muted-foreground mt-2">Đang tải quy tắc...</p>
             </div>
           ) : (
-            <Select onValueChange={handleAddRule} className="bg-white">
-              <SelectTrigger>
-                <SelectValue placeholder="Chọn quy tắc để thêm" />
-              </SelectTrigger>
-              <SelectContent className="bg-white">
-                {refundRules
-                  .filter(rule => !selectedRefundRules.some(selected => selected.ruleRefundId === rule.ruleRefundId))
-                  .map((rule) => (
-                    <SelectItem key={rule.ruleRefundId} value={rule.ruleRefundId}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{rule.ruleName}</span>
-                        {rule.ruleDescription && (
-                          <span className="text-xs text-gray-500 truncate max-w-xs">{rule.ruleDescription}</span>
-                        )}
+            <div className="space-y-2 max-h-40 overflow-y-auto" key={`rules-${refundRules.length}`}>
+              {refundRules
+                .filter(rule => !selectedRules.some(selectedRule => selectedRule.ruleRefundId === rule.ruleRefundId))
+                .map((rule) => (
+                  <div
+                    key={`${rule.ruleRefundId}-${rule.ruleName}`}
+                    className="border rounded-lg p-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={() => handleAddRule(rule)}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Shield className="h-4 w-4 text-gray-600" />
+                      <span className="font-medium text-sm">{rule.ruleName}</span>
+                    </div>
+                    {rule.ruleDescription && (
+                      <p className="text-xs text-gray-600 mb-2">{rule.ruleDescription}</p>
+                    )}
+                    {rule.ruleRefundDetails && rule.ruleRefundDetails.length > 0 && (
+                      <div className="text-xs text-gray-500">
+                        {rule.ruleRefundDetails.length} cấp hoàn tiền
                       </div>
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+                    )}
+                  </div>
+                ))}
+              {refundRules.filter(rule => !selectedRules.some(selectedRule => selectedRule.ruleRefundId === rule.ruleRefundId)).length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Không có quy tắc nào khả dụng
+                </p>
+              )}
+            </div>
           )}
         </div>
-
-        {selectedRefundRules.length === 0 && (
-          <p className="text-sm text-gray-500 italic">
-            Chưa chọn quy tắc hoàn tiền nào. Vui lòng tạo và chọn quy tắc hoàn tiền.
-          </p>
-        )}
       </CardContent>
     </Card>
   );

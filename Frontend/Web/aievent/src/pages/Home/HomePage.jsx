@@ -1,7 +1,60 @@
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { Hero } from "../../components/hero"
 import { EventDiscovery } from "../../components/event-discovery"
+import { PATH } from "../../routes/path";
+import LoadingSpinner from "../../components/LoadingSpinner/LoadingSpinner";
+import { Footer } from "../../components/Footer/Footer";
 
 const HomePage = () => {
+  const navigate = useNavigate();
+  const { user, isAuthenticated, isLoading, isInitialized } = useSelector((state) => state.auth);
+
+  useEffect(() => {
+    // Chỉ redirect khi đã khởi tạo xong, đã xác thực và có user data
+    if (isInitialized && isAuthenticated && user && !isLoading) {
+      const role = user.role?.toLowerCase();
+      
+      switch (role) {
+        case 'admin':
+          navigate(PATH.ADMIN, { replace: true });
+          break;
+        case 'organizer':
+        case 'manager':
+          navigate(PATH.ORGANIZER, { replace: true });
+          break;
+        default:
+          // User thường - hiển thị HomePage bình thường
+          break;
+      }
+    }
+  }, [isInitialized, isAuthenticated, user, isLoading, navigate]);
+
+  // Hiển thị loading khi đang xác thực hoặc chưa khởi tạo xong
+  if (isLoading || !isInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // Nếu user đã authenticated và có role cần redirect, hiển thị loading
+  if (isAuthenticated && user) {
+    const role = user.role?.toLowerCase();
+    if (role === 'admin' || role === 'organizer' || role === 'manager') {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <LoadingSpinner size="lg" />
+            <p className="text-gray-600 mt-4">Đang chuyển hướng...</p>
+          </div>
+        </div>
+      );
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Hero />
@@ -27,6 +80,7 @@ const HomePage = () => {
           </div>
         </div>
       </div>
+      <Footer/>
     </div>
   );
 };

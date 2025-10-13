@@ -323,26 +323,29 @@ export function VerticalNavigation() {
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={pathname === "/event-invitations"}
-                      className={cn(
-                        "group rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/15 data-[active=true]:text-primary",
-                        state === "collapsed" && "p-1 justify-center"
-                      )}
-                    >
-                      <NavLink to="/event-invitations" className="flex items-center gap-3 px-3 py-2.5">
-                        <Mail className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                        {state !== "collapsed" && <span className="font-medium text-sm">Lời mời sự kiện</span>}
-                        {state !== "collapsed" && (
-                          <div className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                            2
-                          </div>
+                  {/* Only show "Lời mời sự kiện" for regular users, not for admin */}
+                  {user?.role?.toLowerCase() !== "admin" && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname === "/event-invitations"}
+                        className={cn(
+                          "group rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/15 data-[active=true]:text-primary",
+                          state === "collapsed" && "p-1 justify-center"
                         )}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                      >
+                        <NavLink to="/event-invitations" className="flex items-center gap-3 px-3 py-2.5">
+                          <Mail className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                          {state !== "collapsed" && <span className="font-medium text-sm">Lời mời sự kiện</span>}
+                          {state !== "collapsed" && (
+                            <div className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                              2
+                            </div>
+                          )}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -413,21 +416,24 @@ export function VerticalNavigation() {
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={pathname === "/become-organizer"}
-                      className={cn(
-                        "group rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/15 data-[active=true]:text-primary",
-                        state === "collapsed" && "p-1 justify-center"
-                      )}
-                    >
-                      <NavLink to="/become-organizer" className="flex items-center gap-3 px-3 py-2.5">
-                        <Plus className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                        {state !== "collapsed" && <span className="font-medium text-sm">+ Trở thành Organizer</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  {/* Only show "Trở thành Organizer" for regular users, not for admin */}
+                  {user?.role?.toLowerCase() !== "admin" && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname === "/become-organizer"}
+                        className={cn(
+                          "group rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/15 data-[active=true]:text-primary",
+                          state === "collapsed" && "p-1 justify-center"
+                        )}
+                      >
+                        <NavLink to="/become-organizer" className="flex items-center gap-3 px-3 py-2.5">
+                          <Plus className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                          {state !== "collapsed" && <span className="font-medium text-sm">+ Trở thành Organizer</span>}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       onClick={handleLogout}
