@@ -2,6 +2,7 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.RuleRefund;
+using AIEvent.Application.DTOs.RuleRefundDetail;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using Microsoft.AspNetCore.Authorization;
@@ -21,7 +22,7 @@ namespace AIEvent.API.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin, Organizer, Manager")]
-        public async Task<ActionResult<SuccessResponse<object>>> CreateRule(CreateRuleRefundRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> CreateRule([FromBody] CreateRuleRefundRequest request)
         {
             var userId = User.GetRequiredUserId();
             var result = await _ruleRefundService.CreateRuleAsync(userId, request);
@@ -88,6 +89,59 @@ namespace AIEvent.API.Controllers
                 new { },
                 SuccessCodes.Deleted,
                 "Rule deleted successfully"));
+        }
+
+        [HttpPost("detail")]
+        [Authorize(Roles = "Admin, Organizer, Manager")]
+        public async Task<ActionResult<SuccessResponse<object>>> CreateRuleDetail(string ruleRefundId, RuleRefundDetailRequest request)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _ruleRefundService.CreateRuleDetailAsync(userId, ruleRefundId, request);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Created,
+                "Create rule detail successfully"));
+        }
+
+
+        [HttpPut("detail/{id}")]
+        [Authorize(Roles = "Admin, Organizer, Manager")]
+        public async Task<ActionResult<SuccessResponse<object>>> UpdateRuleDetail(string id, UpdateRuleRefundDetailRequest request)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _ruleRefundService.UpdateRuleDetailAsync(userId, id, request);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Updated,
+                "Rule detail updated successfully"));
+        }
+
+        [HttpDelete("detail/{id}")]
+        [Authorize(Roles = "Admin, Organizer, Manager")]
+        public async Task<ActionResult<SuccessResponse<object>>> DeleteRuleDetail(string id)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _ruleRefundService.DeleteRuleDetailAsync(userId, id);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Deleted,
+                "Rule detail deleted successfully"));
         }
     }
 }
