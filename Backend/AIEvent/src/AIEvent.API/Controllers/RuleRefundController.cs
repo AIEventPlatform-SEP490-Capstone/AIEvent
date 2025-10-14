@@ -21,7 +21,7 @@ namespace AIEvent.API.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin, Organizer, Manager")]
-        public async Task<ActionResult<SuccessResponse<object>>> CreateRule(CreateRuleRefundRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> CreateRule([FromBody] CreateRuleRefundRequest request)
         {
             var userId = User.GetRequiredUserId();
             var result = await _ruleRefundService.CreateRuleAsync(userId, request);
