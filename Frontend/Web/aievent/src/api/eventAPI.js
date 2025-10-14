@@ -1,4 +1,5 @@
 import fetcher from './fetcher';
+import { ConfirmStatus } from '../constants/eventConstants';
 
 export const eventAPI = {
   // Get all events with filters
@@ -52,7 +53,7 @@ export const eventAPI = {
     formData.append('EndTime', eventData.endTime);
     formData.append('TotalTickets', eventData.totalTickets);
     formData.append('TicketType', eventData.ticketType);
-    formData.append('RequireApproval', eventData.requireApproval || false);
+    formData.append('RequireApproval', eventData.requireApproval || ConfirmStatus.NeedConfirm);
     formData.append('Publish', eventData.publish || false);
     
     // Optional fields
@@ -162,7 +163,7 @@ export const eventAPI = {
     formData.append('EndTime', eventData.endTime);
     formData.append('TotalTickets', eventData.totalTickets);
     formData.append('TicketType', eventData.ticketType);
-    formData.append('RequireApproval', eventData.requireApproval || false);
+    formData.append('RequireApproval', eventData.requireApproval || ConfirmStatus.NeedConfirm);
     formData.append('Publish', eventData.publish || false);
     
     // Optional fields
@@ -238,6 +239,29 @@ export const eventAPI = {
   deleteEvent: async (eventId) => {
     const response = await fetcher.delete(`/event/${eventId}`);
     // Return the actual response data
+    return response.data?.data || response.data;
+  },
+
+  // Get events needing approval (requires Manager role)
+  getEventsNeedApproval: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    
+    if (params.search) queryParams.append('search', params.search);
+    if (params.eventCategoryId) queryParams.append('eventCategoryId', params.eventCategoryId);
+    if (params.ticketType) queryParams.append('ticketType', params.ticketType);
+    if (params.city) queryParams.append('city', params.city);
+    if (params.pageNumber) queryParams.append('pageNumber', params.pageNumber);
+    if (params.pageSize) queryParams.append('pageSize', params.pageSize);
+    
+    // Handle tags array
+    if (params.tags && params.tags.length > 0) {
+      params.tags.forEach((tag, index) => {
+        queryParams.append(`tags[${index}].TagId`, tag.tagId || tag.TagId);
+      });
+    }
+
+    const response = await fetcher.get(`/event/need-approve?${queryParams.toString()}`);
+    // Return the actual data from the paginated response
     return response.data?.data || response.data;
   },
 };

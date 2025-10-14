@@ -6,6 +6,7 @@ import {
   fetchEventsByOrganizer,
   fetchEventById,
   fetchRelatedEvents,
+  fetchEventsNeedApproval,
   createEvent,
   updateEvent,
   deleteEvent,
@@ -72,6 +73,17 @@ export const useEvents = () => {
     }
   };
 
+  // Get events needing approval (requires Manager role)
+  const getEventsNeedApproval = async (params = {}) => {
+    try {
+      const response = await dispatch(fetchEventsNeedApproval(params)).unwrap();
+      return response;
+    } catch (err) {
+      toast.error('Không thể tải danh sách sự kiện cần phê duyệt');
+      return null;
+    }
+  };
+
   const createEventAPI = async (eventData) => {
     try {
       const response = await dispatch(createEvent(eventData)).unwrap();
@@ -120,6 +132,7 @@ export const useEvents = () => {
     getEventsByOrganizer,
     getEventById,
     getRelatedEvents,
+    getEventsNeedApproval,
     createEvent: createEventAPI,
     updateEvent: updateEventAPI,
     deleteEvent: deleteEventAPI,

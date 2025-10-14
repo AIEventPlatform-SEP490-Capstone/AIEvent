@@ -109,7 +109,7 @@ export function VerticalNavigation() {
       ]
     }
 
-    if (user?.role?.toLowerCase() === "organizer" || user?.role?.toLowerCase() === "manager") {
+    if (user?.role?.toLowerCase() === "organizer") {
       return [
         {
           title: "Dashboard",
@@ -134,6 +134,29 @@ export function VerticalNavigation() {
           url: "/organizer/events",
           icon: CheckSquare,
           isActive: pathname === "/organizer/events",
+        },
+      ]
+    }
+
+    if (user?.role?.toLowerCase() === "manager") {
+      return [
+        {
+          title: "Dashboard",
+          url: "/manager",
+          icon: BarChart3,
+          isActive: pathname === "/manager",
+        },
+        {
+          title: "Quản lý sự kiện",
+          url: "/manager/events",
+          icon: Calendar,
+          isActive: pathname === "/manager/events",
+        },
+        {
+          title: "Sự kiện cần duyệt",
+          url: "/manager/events/need-approval",
+          icon: CheckSquare,
+          isActive: pathname === "/manager/events/need-approval",
         },
       ]
     }
