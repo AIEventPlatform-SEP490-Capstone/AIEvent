@@ -21,15 +21,20 @@ import {
   MoreHorizontal,
   Download,
   Mail,
-  Phone
+  Phone,
+  Image as ImageIcon
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Separator } from '../../components/ui/separator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { useEvents } from '../../hooks/useEvents';
 import { PATH } from '../../routes/path';
+
+// Import the EventDetailGuestPage for preview
+import EventDetailGuestPage from '../Event/EventDetailGuestPage';
 
 const EventDetailPage = () => {
   const { eventId } = useParams();
@@ -37,6 +42,7 @@ const EventDetailPage = () => {
   const [event, setEvent] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const { getEventById, deleteEvent: deleteEventAPI, loading: eventLoading } = useEvents();
 
   useEffect(() => {
@@ -104,6 +110,22 @@ const EventDetailPage = () => {
     });
   };
 
+  // Format ticket price for individual tickets
+  const formatTicketPrice = (ticket) => {
+    if (ticket.ticketPrice === 0) {
+      return 'Miễn phí';
+    }
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(ticket.ticketPrice);
+  };
+
+  // Format ticket quantity as sold/total
+  const formatTicketQuantity = (ticket) => {
+    return `${ticket.soldQuantity || 0}/${ticket.ticketQuantity}`;
+  };
+
   const handleEditEvent = () => {
     navigate(`/organizer/event/${eventId}/edit`);
   };
@@ -160,6 +182,10 @@ Nhấn OK để xác nhận xóa.`;
       navigator.clipboard.writeText(window.location.href);
       toast.success('Đã sao chép link sự kiện!');
     }
+  };
+
+  const handleViewPublicPage = () => {
+    setIsPreviewOpen(true);
   };
 
   if (isLoading) {
@@ -244,15 +270,26 @@ Nhấn OK để xác nhận xóa.`;
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Event Image */}
+            {/* Event Image Gallery */}
             {event.imgListEvent && event.imgListEvent.length > 0 && (
               <Card>
-                <CardContent className="p-0">
-                  <img
-                    src={event.imgListEvent[0]}
-                    alt={event.title}
-                    className="w-full h-96 object-cover rounded-lg"
-                  />
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ImageIcon className="h-5 w-5" />
+                    Hình ảnh sự kiện
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {event.imgListEvent.map((img, index) => (
+                      <img
+                        key={index}
+                        src={img}
+                        alt={`${event.title} - ${index + 1}`}
+                        className="w-full h-64 object-cover rounded-lg shadow-md"
+                      />
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -316,7 +353,7 @@ Nhấn OK để xác nhận xóa.`;
                           <Users className="h-5 w-5 text-gray-400" />
                           <div>
                             <p className="text-sm text-gray-500">Số lượng vé</p>
-                            <p className="font-medium">{event.totalTickets} vé</p>
+                            <p className="font-medium">{event.soldQuantity || 0}/{event.totalTickets} vé</p>
                           </div>
                         </div>
                         {event.eventCategoryName && (
@@ -347,18 +384,46 @@ Nhấn OK để xác nhận xóa.`;
                 {activeTab === 'tickets' && (
                   <div className="space-y-4">
                     <h3 className="font-semibold text-gray-900">Thông tin vé</h3>
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium">Loại vé</span>
-                        <Badge className={event.ticketType === 1 ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}>
-                          {event.ticketType === 1 ? 'Miễn phí' : 'Có phí'}
-                        </Badge>
+                    {event.ticketDetails && event.ticketDetails.length > 0 ? (
+                      <div className="space-y-4">
+                        {event.ticketDetails.map((ticket, index) => (
+                          <Card key={index}>
+                            <CardContent className="p-4">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <h4 className="font-semibold text-gray-900">{ticket.ticketName}</h4>
+                                  <p className="text-sm text-gray-500 mt-1">{ticket.ticketDescription}</p>
+                                </div>
+                                <Badge variant="outline" className="text-lg font-bold">
+                                  {formatTicketPrice(ticket)}
+                                </Badge>
+                              </div>
+                              <div className="flex justify-between items-center mt-3">
+                                <span className="text-sm text-gray-500">Số lượng: {formatTicketQuantity(ticket)} vé</span>
+                                {ticket.ruleRefundRequestName && (
+                                  <span className="text-sm bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                                    {ticket.ruleRefundRequestName}
+                                  </span>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Tổng số vé</span>
-                        <span className="font-medium">{event.totalTickets}</span>
+                    ) : (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium">Loại vé</span>
+                          <Badge className={event.ticketType === 1 ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}>
+                            {event.ticketType === 1 ? 'Miễn phí' : 'Có phí'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Tổng số vé</span>
+                          <span className="font-medium">{event.totalTickets}</span>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
 
@@ -403,7 +468,7 @@ Nhấn OK để xác nhận xóa.`;
                   <Edit className="h-4 w-4 mr-2" />
                   Chỉnh sửa sự kiện
                 </Button>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={handleViewPublicPage}>
                   <Eye className="h-4 w-4 mr-2" />
                   Xem trang công khai
                 </Button>
@@ -445,7 +510,7 @@ Nhấn OK để xác nhận xóa.`;
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Hình thức</span>
                   <span className="font-medium">
-                    {event.isOnlineEvent ? 'Trực tuyến' : 'Tại địa điểm'}
+                    {event.isOnlineEvent ? 'Online' : 'Offline'}
                   </span>
                 </div>
               </CardContent>
@@ -470,6 +535,18 @@ Nhấn OK để xác nhận xóa.`;
           </div>
         </div>
       </div>
+
+      {/* Preview Dialog */}
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto p-0">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle className="text-2xl">Xem trước trang công khai</DialogTitle>
+          </DialogHeader>
+          <div className="p-6">
+            <EventDetailGuestPage previewData={event} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
