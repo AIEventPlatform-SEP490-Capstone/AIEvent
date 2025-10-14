@@ -31,6 +31,13 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result> CreateRuleAsync(Guid userId, CreateRuleRefundRequest request)
         {
+            var invalidDetail = request.RuleRefundDetails
+                                    .FirstOrDefault(d => d.MinDaysBeforeEvent > d.MaxDaysBeforeEvent);
+
+            if (invalidDetail != null)
+                return ErrorResponse.FailureResult(
+                    $"Invalid rule detail: MinDays ({invalidDetail.MinDaysBeforeEvent}) cannot be greater than MaxDays ({invalidDetail.MaxDaysBeforeEvent})",
+                    ErrorCodes.InvalidInput);
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
                 var user = await _userManager.FindByIdAsync(userId.ToString());
@@ -115,6 +122,14 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result> UpdateRuleAsync(Guid userId, string RuleRefundId, UpdateRuleRefundRequest request)
         {
+            var invalidDetail = request.RuleRefundDetails
+                                    .FirstOrDefault(d => d.MinDaysBeforeEvent > d.MaxDaysBeforeEvent);
+
+            if (invalidDetail != null)
+                return ErrorResponse.FailureResult(
+                    $"Invalid rule detail: MinDays ({invalidDetail.MinDaysBeforeEvent}) cannot be greater than MaxDays ({invalidDetail.MaxDaysBeforeEvent})",
+                    ErrorCodes.InvalidInput);
+
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
                 var user = await _userManager.FindByIdAsync(userId.ToString());
