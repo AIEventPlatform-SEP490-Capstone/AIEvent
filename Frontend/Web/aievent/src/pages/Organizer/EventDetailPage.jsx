@@ -445,7 +445,7 @@ Nhấn OK để xác nhận xóa.`;
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Hình thức</span>
                   <span className="font-medium">
-                    {event.isOnlineEvent ? 'Trực tuyến' : 'Tại địa điểm'}
+                    {event.isOnlineEvent ? 'Online' : 'Offline'}
                   </span>
                 </div>
               </CardContent>

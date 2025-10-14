@@ -3,16 +3,17 @@ import { PATH } from "./path";
 import MainLayout from "../layouts/MainLayout";
 import HomePage from "../pages/Home/HomePage";
 import LoginPage from "../pages/Auth/LoginPage/LoginPage";
-import CreateEventPage from "../pages/Event/CreateEventPage";
-import MyEventsPage from "../pages/Event/MyEventsPage";
-import EventDetailPage from "../pages/Event/EventDetailPage";
-import EditEventPage from "../pages/Event/EditEventPage";
+import CreateEventPage from "../pages/Organizer/CreateEventPage";
+import MyEventsPage from "../pages/Organizer/MyEventsPage";
+import EventDetailPage from "../pages/Organizer/EventDetailPage";
+import EditEventPage from "../pages/Organizer/EditEventPage";
 import OrganizerDashboard from "../pages/Organizer/OrganizerDashboard";
 import AdminDashboard from "../pages/Admin/AdminDashboard";
 import RefundRulesManagement from "../pages/Admin/RefundRulesManagement";
 import AdminLayout from "../layouts/AdminLayout/AdminLayout";
 import ProtectedRoute from "../components/ProtectedRoute/ProtectedRoute";
 import RegisterPage from "../pages/Auth/RegisterPage/RegisterPage";
+import EventDetailGuestPage from "../pages/Event/EventDetailGuestPage";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -84,7 +85,7 @@ export default function useRouterElement() {
             </ProtectedRoute>
           ),
         },
-        { path: "event/:id", element: <div>Event Detail Page</div> },
+        { path: "event/:id", element: <EventDetailGuestPage /> },
         {
           path: "booking/:id",
           element: (

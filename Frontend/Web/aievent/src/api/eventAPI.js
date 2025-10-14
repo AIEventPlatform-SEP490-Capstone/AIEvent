@@ -32,6 +32,14 @@ export const eventAPI = {
     return response.data?.data || response.data;
   },
 
+  // Get related events by event ID
+  getRelatedEvents: async (eventId) => {
+    const response = await fetcher.get(`/event/${eventId}/related`);
+    // Return the actual related events data from the paginated response
+    // The backend returns a paginated response, so we need to extract the items
+    return response.data?.data?.items || response.data?.data || response.data || [];
+  },
+
   // Create new event (requires Organizer role)
   createEvent: async (eventData) => {
     console.log('Creating FormData from:', eventData);
