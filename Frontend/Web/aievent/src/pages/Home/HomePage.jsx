@@ -30,8 +30,10 @@ const HomePage = () => {
           navigate(PATH.ADMIN, { replace: true });
           break;
         case 'organizer':
-        case 'manager':
           navigate(PATH.ORGANIZER, { replace: true });
+          break;
+        case 'manager':
+          navigate(PATH.MANAGER, { replace: true });
           break;
         default:
           // User thường - hiển thị HomePage bình thường
