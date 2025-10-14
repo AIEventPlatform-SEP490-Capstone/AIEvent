@@ -5,16 +5,19 @@ import {
   fetchEvents,
   fetchEventsByOrganizer,
   fetchEventById,
+  fetchRelatedEvents,
   createEvent,
   updateEvent,
   deleteEvent,
   selectEvents,
   selectCurrentEvent,
+  selectRelatedEvents,
   selectEventsLoading,
   selectEventsError,
   selectEventsTotalCount,
   clearCurrentEvent,
-  clearEvents
+  clearEvents,
+  clearRelatedEvents
 } from '../store/slices/eventsSlice';
 
 export const useEvents = () => {
@@ -23,6 +26,7 @@ export const useEvents = () => {
   // Selectors
   const events = useSelector(selectEvents);
   const currentEvent = useSelector(selectCurrentEvent);
+  const relatedEvents = useSelector(selectRelatedEvents);
   const loading = useSelector(selectEventsLoading);
   const error = useSelector(selectEventsError);
   const totalCount = useSelector(selectEventsTotalCount);
@@ -54,6 +58,16 @@ export const useEvents = () => {
       return response;
     } catch (err) {
       toast.error('Không thể tải thông tin sự kiện');
+      return null;
+    }
+  };
+
+  const getRelatedEvents = async (eventId) => {
+    try {
+      const response = await dispatch(fetchRelatedEvents(eventId)).unwrap();
+      return response;
+    } catch (err) {
+      toast.error('Không thể tải sự kiện liên quan');
       return null;
     }
   };
@@ -93,21 +107,25 @@ export const useEvents = () => {
 
   const clearCurrent = () => dispatch(clearCurrentEvent());
   const clearAllEvents = () => dispatch(clearEvents());
+  const clearRelated = () => dispatch(clearRelatedEvents());
 
   return {
     events,
     currentEvent,
+    relatedEvents,
     loading,
     error,
     totalCount,
     getEvents,
     getEventsByOrganizer,
     getEventById,
+    getRelatedEvents,
     createEvent: createEventAPI,
     updateEvent: updateEventAPI,
     deleteEvent: deleteEventAPI,
     clearCurrentEvent: clearCurrent,
-    clearEvents: clearAllEvents
+    clearEvents: clearAllEvents,
+    clearRelatedEvents: clearRelated
   };
 };
 

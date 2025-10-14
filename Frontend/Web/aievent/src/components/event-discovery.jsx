@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader } from "./ui/card";
 import {
@@ -59,6 +60,7 @@ export function EventDiscovery({
   error = null,
   onRefresh 
 }) {
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [likedEvents, setLikedEvents] = useState(new Set([2, 4]));
 
@@ -73,13 +75,13 @@ export function EventDiscovery({
   };
 
   const handleViewDetail = (eventId) => {
-    // Navigation removed
-    console.log(`View detail for event ${eventId}`);
+    // Navigate to guest event detail page
+    navigate(`/event/${eventId}`);
   };
 
   const handleRegister = (eventId) => {
-    // Navigation removed
-    console.log(`Register for event ${eventId}`);
+    // Navigate to booking page (requires authentication)
+    navigate(`/booking/${eventId}`);
   };
 
   const isEventPastAndAttended = (event) => {

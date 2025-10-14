@@ -13,6 +13,7 @@ import RefundRulesManagement from "../pages/Admin/RefundRulesManagement";
 import AdminLayout from "../layouts/AdminLayout/AdminLayout";
 import ProtectedRoute from "../components/ProtectedRoute/ProtectedRoute";
 import RegisterPage from "../pages/Auth/RegisterPage/RegisterPage";
+import EventDetailGuestPage from "../pages/Event/EventDetailGuestPage";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -84,7 +85,7 @@ export default function useRouterElement() {
             </ProtectedRoute>
           ),
         },
-        { path: "event/:id", element: <div>Event Detail Page</div> },
+        { path: "event/:id", element: <EventDetailGuestPage /> },
         {
           path: "booking/:id",
           element: (

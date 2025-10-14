@@ -38,6 +38,18 @@ export const fetchEventById = createAsyncThunk(
   }
 );
 
+export const fetchRelatedEvents = createAsyncThunk(
+  'events/fetchRelatedEvents',
+  async (eventId, { rejectWithValue }) => {
+    try {
+      const response = await eventAPI.getRelatedEvents(eventId);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to fetch related events');
+    }
+  }
+);
+
 export const createEvent = createAsyncThunk(
   'events/createEvent',
   async (eventData, { rejectWithValue }) => {
@@ -78,6 +90,7 @@ export const deleteEvent = createAsyncThunk(
 const initialState = {
   events: [],
   currentEvent: null,
+  relatedEvents: [],
   loading: false,
   error: null,
   totalCount: 0,
@@ -94,6 +107,9 @@ const eventsSlice = createSlice({
     clearEvents: (state) => {
       state.events = [];
       state.totalCount = 0;
+    },
+    clearRelatedEvents: (state) => {
+      state.relatedEvents = [];
     },
   },
   extraReducers: (builder) => {
@@ -136,6 +152,20 @@ const eventsSlice = createSlice({
         state.currentEvent = action.payload;
       })
       .addCase(fetchEventById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Fetch related events
+      .addCase(fetchRelatedEvents.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchRelatedEvents.fulfilled, (state, action) => {
+        state.loading = false;
+        // The related events are already extracted in the API layer
+        state.relatedEvents = action.payload || [];
+      })
+      .addCase(fetchRelatedEvents.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
@@ -200,11 +230,12 @@ const eventsSlice = createSlice({
 });
 
 // Export actions
-export const { clearCurrentEvent, clearEvents } = eventsSlice.actions;
+export const { clearCurrentEvent, clearEvents, clearRelatedEvents } = eventsSlice.actions;
 
 // Export selectors
 export const selectEvents = (state) => state.events.events;
 export const selectCurrentEvent = (state) => state.events.currentEvent;
+export const selectRelatedEvents = (state) => state.events.relatedEvents;
 export const selectEventsLoading = (state) => state.events.loading;
 export const selectEventsError = (state) => state.events.error;
 export const selectEventsTotalCount = (state) => state.events.totalCount;
