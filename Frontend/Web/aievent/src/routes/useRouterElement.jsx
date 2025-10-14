@@ -154,7 +154,7 @@ export default function useRouterElement() {
     {
       path: PATH.ORGANIZER,
       element: (
-        <ProtectedRoute allowedRoles={["Organizer"]}>
+        <ProtectedRoute allowedRoles={["Organizer", "Manager"]}>
           <MainLayout />
         </ProtectedRoute>
       ),
