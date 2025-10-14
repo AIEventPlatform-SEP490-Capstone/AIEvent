@@ -86,6 +86,19 @@ export const deleteEvent = createAsyncThunk(
   }
 );
 
+// Get events needing approval (requires Manager role)
+export const fetchEventsNeedApproval = createAsyncThunk(
+  'events/fetchEventsNeedApproval',
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      const response = await eventAPI.getEventsNeedApproval(params);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to fetch events needing approval');
+    }
+  }
+);
+
 // Initial state
 const initialState = {
   events: [],
@@ -223,6 +236,20 @@ const eventsSlice = createSlice({
         }
       })
       .addCase(deleteEvent.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Fetch events needing approval
+      .addCase(fetchEventsNeedApproval.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchEventsNeedApproval.fulfilled, (state, action) => {
+        state.loading = false;
+        state.events = action.payload?.items || action.payload || [];
+        state.totalCount = action.payload?.totalCount || 0;
+      })
+      .addCase(fetchEventsNeedApproval.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

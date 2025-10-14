@@ -7,7 +7,6 @@ import {
   MapPin, 
   Users, 
   Clock,
-  Plus,
   Search,
   Filter,
   Eye,
@@ -24,7 +23,9 @@ import {
   BarChart3,
   Activity,
   CalendarDays,
-  DollarSign
+  DollarSign,
+  ThumbsUp,
+  ThumbsDown
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
@@ -39,13 +40,13 @@ import { PATH } from '../../routes/path';
 // Import ConfirmStatus constants
 import { ConfirmStatus, ConfirmStatusDisplay } from '../../constants/eventConstants';
 
-const MyEventsPage = () => {
+const ManagerEventsNeedApprovalPage = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const [events, setEvents] = useState([]);
   const [allEvents, setAllEvents] = useState([]); // Store all events for client-side filtering
   const [isLoading, setIsLoading] = useState(true);
-  const { getEventsByOrganizer, deleteEvent: deleteEventAPI, loading: eventLoading } = useEvents();
+  const { getEventsNeedApproval, loading: eventLoading } = useEvents();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -74,13 +75,13 @@ const MyEventsPage = () => {
   const loadEvents = async () => {
     try {
       setIsLoading(true);
-      const response = await getEventsByOrganizer({
+      const response = await getEventsNeedApproval({
         search: '', // Load all events, we'll filter on client side
         pageNumber: 1,
         pageSize: 1000, // Get all events
       });
 
-      console.log('My events response:', response);
+      console.log('Events needing approval response:', response);
 
       if (response) {
         const eventsData = response.items || response || [];
@@ -92,8 +93,8 @@ const MyEventsPage = () => {
         setEvents([]);
       }
     } catch (error) {
-      console.error('Error loading events:', error);
-      toast.error('Không thể tải danh sách sự kiện');
+      console.error('Error loading events needing approval:', error);
+      toast.error('Không thể tải danh sách sự kiện cần phê duyệt');
       setAllEvents([]);
       setEvents([]);
     } finally {
@@ -155,55 +156,11 @@ const MyEventsPage = () => {
   };
 
   const handleViewEvent = (eventId) => {
-    navigate(`/organizer/event/${eventId}`);
+    navigate(`/manager/event/${eventId}`);
   };
 
   const handleEditEvent = (eventId) => {
-    navigate(`/organizer/event/${eventId}/edit`);
-  };
-
-  const handleDeleteEvent = async (eventId) => {
-    // Find event name for better confirmation
-    const event = allEvents.find(e => e.eventId === eventId);
-    const eventName = event?.title || 'sự kiện này';
-    
-    const confirmMessage = `Bạn có chắc chắn muốn xóa "${eventName}"?\n\n⚠️ Hành động này không thể hoàn tác!`;
-    
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
-
-    try {
-      const loadingToast = toast.loading('Đang xóa sự kiện...');
-      
-      const response = await deleteEventAPI(eventId);
-      
-      toast.dismiss(loadingToast);
-      
-      if (response) {
-        toast.success('✅ Xóa sự kiện thành công!', {
-          duration: 3000,
-        });
-        
-        // Update local state immediately for better UX
-        setAllEvents(prev => prev.filter(event => event.eventId !== eventId));
-        setEvents(prev => prev.filter(event => event.eventId !== eventId));
-        
-        // Reload to sync with server
-        loadEvents();
-      }
-    } catch (error) {
-      console.error('Error deleting event:', error);
-      if (error.response?.status === 403) {
-        toast.error('❌ Bạn không có quyền xóa sự kiện này');
-      } else if (error.response?.status === 404) {
-        toast.error('❌ Sự kiện không tồn tại');
-      } else if (error.response?.status === 400) {
-        toast.error('❌ Không thể xóa sự kiện đã có người đăng ký');
-      } else {
-        toast.error('❌ Có lỗi xảy ra khi xóa sự kiện');
-      }
-    }
+    navigate(`/manager/event/${eventId}/edit`);
   };
 
   const formatDate = (dateString) => {
@@ -299,24 +256,11 @@ const MyEventsPage = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-semibold text-gray-900 mb-1">
-              Sự kiện của tôi
+              Sự kiện cần phê duyệt
             </h1>
             <p className="text-sm text-gray-500">
-              Quản lý sự kiện đã tạo và theo dõi thành tích
+              Quản lý các sự kiện đang chờ phê duyệt
             </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Lần mới
-            </Button>
-            <Button 
-              onClick={() => navigate(PATH.ORGANIZER_CREATE)}
-              className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Tạo sự kiện mới
-            </Button>
           </div>
         </div>
 
@@ -403,7 +347,7 @@ const MyEventsPage = () => {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 font-medium">Chờ duyệt</p>
-                    <p className="text-xl font-semibold text-gray-900">4</p>
+                    <p className="text-xl font-semibold text-gray-900">{allEvents.length}</p>
                   </div>
                 </div>
               </CardContent>
@@ -413,32 +357,30 @@ const MyEventsPage = () => {
 
         {/* Search and Filter Bar */}
         <div className="flex items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">
-                Tất cả ({allEvents.length}) | Hiển thị ({events.length})
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">
+              Tất cả ({allEvents.length}) | Hiển thị ({events.length})
+            </span>
+            {searchTerm && (
+              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                Tìm: "{searchTerm}"
               </span>
-              {searchTerm && (
-                <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                  Tìm: "{searchTerm}"
-                </span>
-              )}
-              {filterStatus !== 'all' && (
-                <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded">
-                  Lọc: {filterStatus}
-                </span>
-              )}
-              {(searchTerm || filterStatus !== 'all') && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleClearFilters}
-                  className="text-xs text-blue-600 hover:text-blue-700"
-                >
-                  Xóa bộ lọc
-                </Button>
-              )}
-            </div>
+            )}
+            {filterStatus !== 'all' && (
+              <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded">
+                Lọc: {filterStatus}
+              </span>
+            )}
+            {(searchTerm || filterStatus !== 'all') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFilters}
+                className="text-xs text-blue-600 hover:text-blue-700"
+              >
+                Xóa bộ lọc
+              </Button>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
@@ -584,7 +526,7 @@ const MyEventsPage = () => {
         {isLoading ? (
           <div className="flex flex-col justify-center items-center py-20">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-500">Đang tải sự kiện...</p>
+            <p className="text-gray-500">Đang tải sự kiện cần phê duyệt...</p>
           </div>
         ) : events.length === 0 ? (
           <Card className="text-center py-20">
@@ -592,40 +534,24 @@ const MyEventsPage = () => {
               <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-700 mb-2">
                 {allEvents.length === 0 
-                  ? 'Chưa có sự kiện nào' 
+                  ? 'Chưa có sự kiện nào cần phê duyệt' 
                   : searchTerm || filterStatus !== 'all'
                     ? 'Không tìm thấy sự kiện phù hợp'
-                    : 'Không có sự kiện'
+                    : 'Không có sự kiện cần phê duyệt'
                 }
               </h3>
               <p className="text-gray-500 mb-6">
                 {allEvents.length === 0 
-                  ? 'Bắt đầu tạo sự kiện đầu tiên của bạn ngay bây giờ!'
+                  ? 'Hiện tại không có sự kiện nào đang chờ phê duyệt!'
                   : 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm để tìm sự kiện bạn cần.'
                 }
               </p>
-              {allEvents.length === 0 ? (
-                <Button
-                  onClick={() => navigate(PATH.ORGANIZER_CREATE)}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Tạo sự kiện mới
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleClearFilters}
-                  variant="outline"
-                >
-                  Xóa bộ lọc
-                </Button>
-              )}
             </CardContent>
           </Card>
         ) : (
           <Card className="bg-white border border-gray-200 shadow-sm">
             <CardContent className="p-0">
-              {/* Dynamic Events */}
+              {/* Events needing approval */}
               {paginatedEvents.map((event) => {
                 const status = getEventStatus(event);
                 const statusConfig = getStatusBadge(status);
@@ -645,7 +571,7 @@ const MyEventsPage = () => {
                           <Calendar className="h-6 w-6 text-blue-400" />
                         </div>
                       )}
-                        
+                      
                       <div className="flex-1">
                         <div className="flex items-start justify-between">
                           <div>
@@ -710,6 +636,12 @@ const MyEventsPage = () => {
                             </Button>
                             <Button variant="ghost" size="sm" onClick={() => handleEditEvent(event.eventId)}>
                               <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm">
+                              <ThumbsUp className="h-4 w-4 text-green-600" />
+                            </Button>
+                            <Button variant="ghost" size="sm">
+                              <ThumbsDown className="h-4 w-4 text-red-600" />
                             </Button>
                             <Button variant="ghost" size="sm">
                               <MoreVertical className="h-4 w-4" />
@@ -786,4 +718,4 @@ const MyEventsPage = () => {
   );
 };
 
-export default MyEventsPage;
+export default ManagerEventsNeedApprovalPage;
