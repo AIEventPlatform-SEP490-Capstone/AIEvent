@@ -18,7 +18,8 @@ import {
   AlertCircle,
   CheckCircle,
   Activity,
-  Star
+  Star,
+  User
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
@@ -148,6 +149,17 @@ const EventDetailGuestPage = () => {
     return event.ticketType === 1 ? 'Miễn phí' : 'Có phí';
   };
 
+  // Format ticket price for individual tickets
+  const formatTicketPrice = (ticket) => {
+    if (ticket.ticketPrice === 0) {
+      return 'Miễn phí';
+    }
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(ticket.ticketPrice);
+  };
+
   const handleRegister = () => {
     if (isAuthenticated) {
       // Redirect to booking page directly if user is authenticated
@@ -168,6 +180,21 @@ const EventDetailGuestPage = () => {
     } else {
       navigator.clipboard.writeText(window.location.href);
       toast.success('Đã sao chép link sự kiện!');
+    }
+  };
+
+  const handleInviteFriends = () => {
+    // Simple share functionality for inviting friends
+    const message = `Hãy cùng tham gia sự kiện "${event.title}" nhé! ${window.location.href}`;
+    if (navigator.share) {
+      navigator.share({
+        title: event.title,
+        text: message,
+        url: window.location.href,
+      });
+    } else {
+      navigator.clipboard.writeText(message);
+      toast.success('Đã sao chép lời mời!');
     }
   };
 
@@ -224,7 +251,18 @@ const EventDetailGuestPage = () => {
           </Button>
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-gray-900">{event.title}</h1>
-            <div className="flex items-center gap-2 mt-1">
+            {/* Tags display right below event title */}
+            {event.eventTags && event.eventTags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {event.eventTags.map((tag, index) => (
+                  <Badge key={index} className="bg-indigo-100 text-indigo-800">
+                    <Tag className="h-3 w-3 mr-1" />
+                    {tag.tagName}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-2 mt-3">
               <Badge className={statusConfig.color}>
                 <StatusIcon className="h-3 w-3 mr-1" />
                 {statusConfig.label}
@@ -238,6 +276,7 @@ const EventDetailGuestPage = () => {
                   Trực tuyến
                 </Badge>
               )}
+              {/* Remove tags from here since they're now displayed above */}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -326,7 +365,7 @@ const EventDetailGuestPage = () => {
                           <Users className="h-5 w-5 text-gray-400" />
                           <div>
                             <p className="text-sm text-gray-500">Số lượng vé</p>
-                            <p className="font-medium">{event.totalTickets} vé</p>
+                            <p className="font-medium">{event.soldQuantity || 0}/{event.totalTickets} vé</p>
                           </div>
                         </div>
                         {event.eventCategoryName && (
@@ -365,6 +404,43 @@ const EventDetailGuestPage = () => {
                 )}
               </CardContent>
             </Card>
+
+            {/* Ticket Information Section */}
+            {event.ticketDetails && event.ticketDetails.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Ticket className="h-5 w-5 text-blue-600" />
+                    Thông tin vé sự kiện
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {event.ticketDetails.map((ticket, index) => (
+                      <div key={index} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-semibold text-gray-900">{ticket.ticketName}</h4>
+                            <p className="text-sm text-gray-500 mt-1">{ticket.ticketDescription}</p>
+                          </div>
+                          <Badge variant="outline" className="text-lg font-bold">
+                            {formatTicketPrice(ticket)}
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center mt-3">
+                          <span className="text-sm text-gray-500">Số lượng: {ticket.soldQuantity || 0}/{ticket.ticketQuantity} vé</span>
+                          {ticket.ruleRefundRequestName && (
+                            <span className="text-sm bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                              {ticket.ruleRefundRequestName}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -381,23 +457,70 @@ const EventDetailGuestPage = () => {
                 <div className="bg-white rounded-lg p-4 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium">Loại vé</span>
-                    <Badge className={event.ticketType === 1 ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}>
-                      {event.ticketType === 1 ? 'Miễn phí' : 'Có phí'}
+                    <Badge className={event.ticketType === 1 || event.ticketType === 'Free' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}>
+                      {event.ticketType === 1 || event.ticketType === 'Free' ? 'Miễn phí' : 'Có phí'}
                     </Badge>
+                  </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-600">Giá vé</span>
+                    <span className="font-bold text-lg text-blue-600">
+                      {event.ticketDetails && event.ticketDetails.length > 0 ? (
+                        event.ticketDetails.length === 1 ? (
+                          formatTicketPrice(event.ticketDetails[0])
+                        ) : (
+                          <>
+                            {formatTicketPrice(
+                              event.ticketDetails.reduce((min, ticket) => 
+                                ticket.ticketPrice < min.ticketPrice ? ticket : min
+                              )
+                            )} - {formatTicketPrice(
+                              event.ticketDetails.reduce((max, ticket) => 
+                                ticket.ticketPrice > max.ticketPrice ? ticket : max
+                              )
+                            )}
+                          </>
+                        )
+                      ) : (
+                        event.minTicketPrice !== undefined && event.maxTicketPrice !== undefined ? (
+                          event.minTicketPrice === event.maxTicketPrice ? (
+                            formatPrice(event)
+                          ) : (
+                            <>
+                              {new Intl.NumberFormat('vi-VN', {
+                                style: 'currency',
+                                currency: 'VND'
+                              }).format(event.minTicketPrice)} - {formatPrice(event)}
+                            </>
+                          )
+                        ) : (
+                          formatPrice(event)
+                        )
+                      )}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Tổng số vé</span>
-                    <span className="font-medium">{event.totalTickets}</span>
+                    <span className="font-medium">{event.soldQuantity || 0}/{event.totalTickets}</span>
                   </div>
                 </div>
                 
-                <Button 
-                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3"
-                  onClick={handleRegister}
-                >
-                  <LogIn className="h-4 w-4 mr-2" />
-                  {isAuthenticated ? 'Đăng ký ngay' : 'Đăng nhập để đăng ký'}
-                </Button>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button 
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3"
+                    onClick={handleRegister}
+                  >
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Đăng ký
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="font-semibold py-3"
+                    onClick={handleInviteFriends}
+                  >
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Mời bạn
+                  </Button>
+                </div>
                 
                 {!isAuthenticated && (
                   <p className="text-xs text-gray-500 text-center">
@@ -439,6 +562,51 @@ const EventDetailGuestPage = () => {
               </CardContent>
             </Card>
 
+            {/* Organizer Information - Moved to bottom as per requirements */}
+            {event.organizerEvent && (
+              (event.organizerEvent.companyName || 
+               event.organizerEvent.imgCompany || 
+               event.organizerEvent.companyDescription) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5 text-blue-600" />
+                    Nhà tổ chức
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-3">
+                    {event.organizerEvent.imgCompany ? (
+                      <img 
+                        src={event.organizerEvent.imgCompany} 
+                        alt={event.organizerEvent.companyName || "Organizer"} 
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                        <User className="h-6 w-6 text-gray-500" />
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="font-semibold">
+                        {event.organizerEvent.companyName || "Nhà tổ chức"}
+                      </h4>
+                      <p className="text-sm text-gray-500">Nhà tổ chức sự kiện</p>
+                    </div>
+                  </div>
+                  {event.organizerEvent.companyDescription && (
+                    <p className="mt-3 text-sm text-gray-600">
+                      {event.organizerEvent.companyDescription}
+                    </p>
+                  )}
+                  <div className="mt-3 flex gap-2">
+                    <Button variant="outline" size="sm">
+                      Xem profile
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
             {/* Location Map - Show for physical events with location info */}
             {(!event.isOnlineEvent || event.isOnlineEvent === false) && (event.locationName || event.address) && (
               <Card>
@@ -559,6 +727,8 @@ const EventDetailGuestPage = () => {
                 )}
               </CardContent>
             </Card>
+
+           
           </div>
         </div>
       </div>
