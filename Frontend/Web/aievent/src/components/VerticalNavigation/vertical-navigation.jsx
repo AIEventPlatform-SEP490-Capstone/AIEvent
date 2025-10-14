@@ -417,7 +417,7 @@ export function VerticalNavigation() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   {/* Only show "Trở thành Organizer" for regular users, not for admin */}
-                  {user?.role?.toLowerCase() !== "admin" && (
+                  {user?.role?.toLowerCase() == "user" && (
                     <SidebarMenuItem>
                       <SidebarMenuButton
                         asChild
@@ -429,7 +429,7 @@ export function VerticalNavigation() {
                       >
                         <NavLink to="/become-organizer" className="flex items-center gap-3 px-3 py-2.5">
                           <Plus className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                          {state !== "collapsed" && <span className="font-medium text-sm">+ Trở thành Organizer</span>}
+                          {state !== "collapsed" && <span className="font-medium text-sm">Trở thành Organizer</span>}
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
