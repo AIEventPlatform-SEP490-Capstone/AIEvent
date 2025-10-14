@@ -1,4 +1,4 @@
-﻿using AIEvent.API.Extensions;
+﻿﻿using AIEvent.API.Extensions;
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
@@ -117,7 +117,7 @@ namespace AIEvent.API.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize("Organizer, Manager")]
+        [Authorize(Roles = "Organizer, Manager")]
         public async Task<ActionResult<SuccessResponse<object>>> UpdateEvent(Guid id, [FromForm] UpdateEventRequest request)
         {
             Guid userId = User.GetRequiredUserId();
