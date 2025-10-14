@@ -192,6 +192,33 @@ export const eventAPI = {
       });
     }
 
+    // Add existing images to keep (as URLs)
+    if (eventData.existingImages && eventData.existingImages.length > 0) {
+      eventData.existingImages.forEach((imageUrl) => {
+        formData.append('ImgListEvent', imageUrl);
+      });
+    }
+
+    // Add ticket details
+    if (eventData.ticketDetails && eventData.ticketDetails.length > 0) {
+      eventData.ticketDetails.forEach((ticket, index) => {
+        formData.append(`TicketDetails[${index}].TicketName`, ticket.ticketName);
+        formData.append(`TicketDetails[${index}].TicketPrice`, ticket.ticketPrice);
+        formData.append(`TicketDetails[${index}].TicketQuantity`, ticket.ticketQuantity);
+        if (ticket.ticketDescription) {
+          formData.append(`TicketDetails[${index}].TicketDescription`, ticket.ticketDescription);
+        }
+        formData.append(`TicketDetails[${index}].RuleRefundRequestId`, ticket.ruleRefundRequestId);
+      });
+    }
+
+    // Add tags
+    if (eventData.tags && eventData.tags.length > 0) {
+      eventData.tags.forEach((tag, index) => {
+        formData.append(`Tags[${index}].TagId`, tag.tagId);
+      });
+    }
+
     // Debug FormData contents
     console.log('Update FormData contents:');
     for (let [key, value] of formData.entries()) {
