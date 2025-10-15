@@ -1,10 +1,10 @@
-﻿using AIEvent.Domain.Identity;
+﻿using AIEvent.Domain.Entities;
 
 namespace AIEvent.Application.Services.Interfaces
 {
     public interface IJwtService
     { 
-        string GenerateAccessToken(AppUser user, IList<string> roles);
+        string GenerateAccessToken(User user);
         string GenerateRefreshToken();  
     }
 }

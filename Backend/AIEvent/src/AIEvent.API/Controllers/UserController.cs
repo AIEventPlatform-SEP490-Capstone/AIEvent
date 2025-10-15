@@ -3,6 +3,7 @@ using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.User;
 using AIEvent.Application.Services.Interfaces;
+using AIEvent.Domain.Bases;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,7 +25,7 @@ namespace AIEvent.API.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<SuccessResponse<UserDetailResponse>>> GetUser(Guid id)
         {
-            var result = await _userService.GetUserByIdAsync(id.ToString());
+            var result = await _userService.GetUserByIdAsync(id);
 
             if (!result.IsSuccess)
             {
@@ -40,7 +41,7 @@ namespace AIEvent.API.Controllers
         [Authorize]
         public async Task<ActionResult<SuccessResponse<UserDetailResponse>>> GetProfile()
         {
-            var userId = User.GetRequiredUserId().ToString();
+            var userId = User.GetRequiredUserId();
 
             var result = await _userService.GetUserByIdAsync(userId);
 
@@ -56,9 +57,9 @@ namespace AIEvent.API.Controllers
 
         [HttpPut("profile")]
         [Authorize]
-        public async Task<ActionResult<SuccessResponse<UserDetailResponse>>> UpdateProfile([FromForm] UpdateUserRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> UpdateProfile([FromForm] UpdateUserRequest request)
         {
-            var userId = User.GetRequiredUserId().ToString();
+            var userId = User.GetRequiredUserId();
 
             var result = await _userService.UpdateUserAsync(userId, request);
 
@@ -67,24 +68,24 @@ namespace AIEvent.API.Controllers
                 return BadRequest(result.Error!);
             }
 
-            return Ok(SuccessResponse<UserDetailResponse>.SuccessResult(
-                result.Value!,
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new {},
                 SuccessCodes.Updated,
                 "Profile updated successfully"));
         }
 
         [HttpGet]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<SuccessResponse<List<UserResponse>>>> GetAllUsers([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        public async Task<ActionResult<SuccessResponse<BasePaginated<UserResponse>>>> GetAllUsers([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
-            var result = await _userService.GetAllUsersAsync(page, pageSize);
+            var result = await _userService.GetAllUsersAsync(pageNumber, pageSize);
 
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
 
-            return Ok(SuccessResponse<List<UserResponse>>.SuccessResult(
+            return Ok(SuccessResponse<BasePaginated<UserResponse>>.SuccessResult(
                 result.Value!,
                 message: "Users retrieved successfully"));
         }

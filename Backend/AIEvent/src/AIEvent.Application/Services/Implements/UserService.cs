@@ -3,42 +3,43 @@ using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.User;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
-using AIEvent.Domain.Identity;
+using AIEvent.Domain.Bases;
+using AIEvent.Domain.Entities;
+using AIEvent.Domain.Interfaces;
 using AutoMapper;
-using Microsoft.AspNetCore.Identity;
+using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 
 namespace AIEvent.Application.Services.Implements
 {
     public class UserService : IUserService
     {
-        private readonly UserManager<AppUser> _userManager;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ICloudinaryService _cloudinaryService;
 
         public UserService(
-            UserManager<AppUser> userManager,
+            IUnitOfWork unitOfWork,
             IMapper mapper,
             ICloudinaryService loudinaryService)
         {
-            _userManager = userManager;
+            _unitOfWork = unitOfWork;
             _mapper = mapper;
             _cloudinaryService = loudinaryService;
         }
 
-        public async Task<Result<UserDetailResponse>> GetUserByIdAsync(string userId)
+        public async Task<Result<UserDetailResponse>> GetUserByIdAsync(Guid userId)
         {
-            var user = await _userManager
-                                    .Users
-                                    .Include(u => u.UserInterests)
-                                        .ThenInclude(ui => ui.Interest)
-                                    .FirstOrDefaultAsync(u => u.Id == Guid.Parse(userId));
+            var user = await _unitOfWork
+                                    .UserRepository
+                                    .Query()
+                                    .FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null)
             {
                 return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
             }
 
-            if (!user.IsActive)
+            if (!user.IsActive || user.DeletedAt.HasValue)
             {
                 return ErrorResponse.FailureResult("User account is inactive", ErrorCodes.NotFound);
             }
@@ -48,15 +49,15 @@ namespace AIEvent.Application.Services.Implements
             return Result<UserDetailResponse>.Success(userResponse);
         }
 
-        public async Task<Result<UserDetailResponse>> UpdateUserAsync(string userId, UpdateUserRequest request)
+        public async Task<Result> UpdateUserAsync(Guid userId, UpdateUserRequest request)
         {
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
             if (user == null)
             {
                 return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
             }
 
-            if (!user.IsActive)
+            if (!user.IsActive || user.DeletedAt.HasValue)
             {
                 return ErrorResponse.FailureResult("User account is inactive", ErrorCodes.NotFound);
             }
@@ -68,35 +69,28 @@ namespace AIEvent.Application.Services.Implements
                 user.AvatarImgUrl = await _cloudinaryService.UploadImageAsync(request.AvatarImg);
             }
 
-            var result = await _userManager.UpdateAsync(user);
-            if (!result.Succeeded)
-            {
-                return ErrorResponse.FailureResult("Failed to update user", ErrorCodes.InvalidInput);
-            }
+            await _unitOfWork.UserRepository.UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
 
-            var userResponse = _mapper.Map<UserDetailResponse>(user);
-
-            return Result<UserDetailResponse>.Success(userResponse);
+            return Result.Success();
         }
 
-        public async Task<Result<List<UserResponse>>> GetAllUsersAsync(int page = 1, int pageSize = 10)
+        public async Task<Result<BasePaginated<UserResponse>>> GetAllUsersAsync(int pageNumber = 1, int pageSize = 10)
         {
-            var users = await _userManager.Users
-                .Where(u => u.IsActive)
-                .Skip((page - 1) * pageSize)
+            IQueryable<User> userQuery = _unitOfWork.UserRepository
+                .Query()
+                .AsNoTracking()
+                .OrderByDescending(s => s.CreatedAt);
+
+            int totalCount = await userQuery.CountAsync();
+
+            var result = await userQuery
+                .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
+                .ProjectTo<UserResponse>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
-            var userResponses = new List<UserResponse>();
-            foreach (var user in users)
-            {
-                var userResponse = _mapper.Map<UserResponse>(user);
-                var roles = await _userManager.GetRolesAsync(user);
-                userResponse.Roles = [.. roles];
-                userResponses.Add(userResponse);
-            }
-
-            return Result<List<UserResponse>>.Success(userResponses);
+            return new BasePaginated<UserResponse>(result, totalCount, pageNumber, pageSize);
         }
 
     }

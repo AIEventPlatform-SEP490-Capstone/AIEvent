@@ -24,7 +24,7 @@ namespace AIEvent.API.Controllers
 
         [HttpGet("{id}")]
         [AllowAnonymous]
-        public async Task<ActionResult<SuccessResponse<EventDetailResponse>>> GetEventById(string id)
+        public async Task<ActionResult<SuccessResponse<EventDetailResponse>>> GetEventById(Guid id)
         {
             var result = await _eventService.GetEventByIdAsync(id);
             if (!result.IsSuccess)
@@ -155,7 +155,7 @@ namespace AIEvent.API.Controllers
 
         [HttpDelete]
         [Authorize(Roles = "Admin, Organizer, Manager")]
-        public async Task<ActionResult<SuccessResponse<object>>> DeleteEvent(string eventId)
+        public async Task<ActionResult<SuccessResponse<object>>> DeleteEvent(Guid eventId)
         {
             var result = await _eventService.DeleteEventAsync(eventId);
             if (    !result.IsSuccess)
@@ -190,7 +190,7 @@ namespace AIEvent.API.Controllers
 
         [HttpPatch("confirm/{id}")]
         [Authorize(Roles = "Admin,Manager")]
-        public async Task<ActionResult<SuccessResponse<object>>> ConfirmBecomeOrganizer(string id, [FromForm] ConfirmRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> ConfirmEvent(string id, [FromForm] ConfirmRequest request)
         {
             var userId = User.GetRequiredUserId();
             var result = await _eventService.ConfirmEventAsync(userId, id, request);

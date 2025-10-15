@@ -246,11 +246,11 @@ namespace AIEvent.Application.Services.Implements
             });
         }
 
-        public async Task<Result<EventDetailResponse>> GetEventByIdAsync(string eventId)
+        public async Task<Result<EventDetailResponse>> GetEventByIdAsync(Guid eventId)
         {
             var events = await _unitOfWork.EventRepository
                 .Query()
-                .Where(e => e.Id == Guid.Parse(eventId))
+                .Where(e => e.Id == eventId)
                 .ProjectTo<EventDetailResponse>(_mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync();
 
@@ -260,11 +260,11 @@ namespace AIEvent.Application.Services.Implements
             return Result<EventDetailResponse>.Success(events);
         }
 
-        public async Task<Result> DeleteEventAsync(string eventId)
+        public async Task<Result> DeleteEventAsync(Guid eventId)
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-                var existingEvent = await _unitOfWork.EventRepository.GetByIdAsync(Guid.Parse(eventId), true);
+                var existingEvent = await _unitOfWork.EventRepository.GetByIdAsync(eventId, true);
                 if (existingEvent == null  || existingEvent.DeletedAt.HasValue)
                     return ErrorResponse.FailureResult("Event not found or inactive", ErrorCodes.InvalidInput);
 
