@@ -23,8 +23,11 @@ namespace AIEvent.Domain.Identity
         public string? AvatarImgUrl { get; set; }
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
         public OrganizerProfile? OrganizerProfile { get; set; }
+        public Wallet Wallet { get; set; } = default!;
         public ICollection<UserAction> UserActions { get; set; } = new List<UserAction>();
         public ICollection<UserInterest> UserInterests { get; set; } = new List<UserInterest>();
         public ICollection<FavoriteEvent> FavoriteEvents { get; set; } = new List<FavoriteEvent>();
+        public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
+        public ICollection<PaymentTransaction> PaymentTransactions { get; set; } = new List<PaymentTransaction>();
     }
 }

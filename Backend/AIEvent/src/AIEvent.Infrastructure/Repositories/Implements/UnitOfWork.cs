@@ -26,6 +26,13 @@ namespace AIEvent.Infrastructure.Implements
         public IGenericRepository<RefundRule> RefundRuleRepository => GetRepository<RefundRule>();
         public IGenericRepository<RefundRuleDetail> RefundRuleDetailRepository => GetRepository<RefundRuleDetail>();
         public IGenericRepository<FavoriteEvent> FavoriteEventRepository => GetRepository<FavoriteEvent>();
+        public IGenericRepository<Booking> BookingRepository => GetRepository<Booking>();
+        public IGenericRepository<Ticket> TicketRepository => GetRepository<Ticket>();
+        public IGenericRepository<BookingItem> BookingItemRepository => GetRepository<BookingItem>();
+        public IGenericRepository<Wallet> WalletRepository => GetRepository<Wallet>();
+        public IGenericRepository<WalletTransaction> WalletTransactionRepository => GetRepository<WalletTransaction>();
+        public IGenericRepository<PaymentTransaction> PaymentTransactionRepository => GetRepository<PaymentTransaction>();
+        public IGenericRepository<TopupRequest> TopupRequestRepository => GetRepository<TopupRequest>();
 
         public UnitOfWork(DatabaseContext context)
         {

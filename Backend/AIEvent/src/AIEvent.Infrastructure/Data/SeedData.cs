@@ -31,6 +31,10 @@ namespace AIEvent.Infrastructure.Data
             SeedOrganizerProfile(modelBuilder);
             SeedEvent(modelBuilder);
             SeedEventTag(modelBuilder);
+            SeedRefundRule(modelBuilder);
+            SeedRefundRuleDetail(modelBuilder);
+            SeedTicketDetail(modelBuilder);
+            SeedWallet(modelBuilder);
         }
 
         private static void SeedRoles(ModelBuilder modelBuilder)
@@ -190,6 +194,23 @@ namespace AIEvent.Infrastructure.Data
             modelBuilder.Entity<AppUser>().HasData(adminUser, regularUser, managerUser, testUser, organizerUser, staffUser);
         }
 
+        private static void SeedWallet(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Wallet>().HasData(
+                new Wallet
+                {
+                    UserId = regularUserId,
+                    Balance = 1000000,
+                    Status = WalletStatus.Active,
+                },
+                new Wallet
+                {
+                    UserId = testUserId,
+                    Balance = 0,
+                    Status = WalletStatus.Active,
+                }
+            );
+        }
 
         private static void SeedUserRoles(ModelBuilder modelBuilder)
         {
@@ -348,12 +369,14 @@ namespace AIEvent.Infrastructure.Data
         private static readonly Guid eventId2 = Guid.NewGuid();
         private static readonly Guid eventId3 = Guid.NewGuid();
         private static readonly Guid eventId4 = Guid.NewGuid();
+        
         private static void SeedEvent(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Event>().HasData(
                 new Event
                 {
                     Id = eventId1,
+                    
                     OrganizerProfileId = organizerProfileId, 
                     EventCategoryId = eventCategoryId1, 
                     Title = "Hội Thảo Công Nghệ AI 2025",
@@ -363,8 +386,9 @@ namespace AIEvent.Infrastructure.Data
                     isOnlineEvent = true,
                     LocationName = "Hà Nội tòa 3",
                     TotalTickets = 200,
-                    RemainingTickets = 200,
-                    TicketType = TicketType.Free,
+                    SoldQuantity = 99,
+                    RemainingTickets = 101,
+                    TicketType = TicketType.Paid,
                     Publish = true,
                     RequireApproval = ConfirmStatus.Approve,
                     CreatedAt = DateTime.UtcNow,
@@ -405,7 +429,7 @@ namespace AIEvent.Infrastructure.Data
                     Address = "Tòa nhà Innovation Hub",
                     TotalTickets = 100,
                     RemainingTickets = 100,
-                    TicketType = TicketType.Free,
+                    TicketType = TicketType.Paid,
                     Publish = false, // chưa publish
                     RequireApproval = ConfirmStatus.NeedConfirm,
                     CreatedAt = DateTime.UtcNow,
@@ -427,14 +451,124 @@ namespace AIEvent.Infrastructure.Data
                     TotalTickets = 100,
                     RemainingTickets = 100,
                     TicketType = TicketType.Free,
-                    Publish = false, 
-                    RequireApproval = ConfirmStatus.NeedConfirm,
+                    Publish = true, 
+                    RequireApproval = ConfirmStatus.Approve,
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System",
                     LocationName = "Hà Nội tòa 1"
                 }
             );
         }
+
+        private static readonly Guid refundRuleId = Guid.NewGuid();
+        private static void SeedRefundRule(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<RefundRule>().HasData(
+                new RefundRule
+                {
+                    Id = refundRuleId,
+                    RuleName = "Hoan Ve",
+                    IsSystem = true,
+                }
+            );
+        }
+
+        private static readonly Guid refundRuleDetailId1 = Guid.NewGuid();
+        private static readonly Guid refundRuleDetailId2 = Guid.NewGuid();
+        private static void SeedRefundRuleDetail(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<RefundRuleDetail>().HasData(
+                new RefundRuleDetail
+                {
+                    Id = refundRuleDetailId1,
+                    RefundRuleId = refundRuleId,
+                    MinDaysBeforeEvent = 3,
+                    MaxDaysBeforeEvent = 7,
+                    RefundPercent = 90,
+                },
+                new RefundRuleDetail
+                {
+                    Id = refundRuleDetailId2,
+                    RefundRuleId = refundRuleId,
+                    MinDaysBeforeEvent = 7,
+                    MaxDaysBeforeEvent = 14,
+                    RefundPercent = 80,
+                }
+            );
+        }
+
+        private static readonly Guid ticketDetailId1 = Guid.NewGuid();
+        private static readonly Guid ticketDetailId2 = Guid.NewGuid();
+        private static readonly Guid ticketDetailId3 = Guid.NewGuid();
+        private static readonly Guid ticketDetailId4 = Guid.NewGuid();
+        private static readonly Guid ticketDetailId5 = Guid.NewGuid();
+        private static readonly Guid ticketDetailId6 = Guid.NewGuid();
+        private static void SeedTicketDetail(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<TicketDetail>().HasData(
+                new TicketDetail
+                {
+                    Id = ticketDetailId1,
+                    EventId = eventId1,
+                    TicketName = "Ve VipPro 1",
+                    RefundRuleId = refundRuleId,
+                    TicketPrice = 100000,
+                    TicketQuantity = 100,
+                    RemainingQuantity = 1,
+                    SoldQuantity = 99,
+                },
+                new TicketDetail
+                {
+                    Id = ticketDetailId2,
+                    EventId = eventId1,
+                    TicketName = "Ve VipPro 2",
+                    RefundRuleId = refundRuleId,
+                    TicketPrice = 150000,
+                    TicketQuantity = 100,
+                    RemainingQuantity = 100,
+                },
+                new TicketDetail
+                {
+                    Id = ticketDetailId3,
+                    EventId = eventId2,
+                    TicketName = "Ve VipPro 3",
+                    RefundRuleId = refundRuleId,
+                    TicketPrice = 150000,
+                    TicketQuantity = 250,
+                    RemainingQuantity = 250,
+                },
+                new TicketDetail
+                {
+                    Id = ticketDetailId4,
+                    EventId = eventId2,
+                    TicketName = "Ve VipPro 5",
+                    RefundRuleId = refundRuleId,
+                    TicketPrice = 200000,
+                    TicketQuantity = 250,
+                    RemainingQuantity = 250,
+                },
+                new TicketDetail
+                {
+                    Id = ticketDetailId5,
+                    EventId = eventId3,
+                    TicketName = "Ve VipPro 4",
+                    RefundRuleId = refundRuleId,
+                    TicketPrice = 50000,
+                    TicketQuantity = 100,
+                    RemainingQuantity = 100,
+                },
+                new TicketDetail
+                {
+                    Id = ticketDetailId6,
+                    EventId = eventId4,
+                    TicketName = "Ve Free",
+                    TicketPrice = 0,
+                    TicketQuantity = 100,
+                    RemainingQuantity = 100,
+                }
+            );
+        }
+
 
         private static void SeedEventTag(ModelBuilder modelBuilder)
         {

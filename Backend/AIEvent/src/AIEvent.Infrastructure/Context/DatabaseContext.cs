@@ -33,6 +33,9 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<RefundRule> RefundRules { get; set; }
         public DbSet<RefundRuleDetail> RefundRuleDetails { get; set; }
         public DbSet<FavoriteEvent> FavoriteEvents { get; set; }
+        public DbSet<Booking> Bookings { get; set; }
+        public DbSet<BookingItem> BookingItems { get; set; }
+        public DbSet<Ticket> Tickets { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -132,6 +135,99 @@ namespace AIEvent.Infrastructure.Context
 
             builder.Entity<EventTag>()
                 .HasKey(et => new { et.EventId, et.TagId });
+
+            //------------------Booking-------------------
+            builder.Entity<Booking>(entity =>
+            {
+                entity.HasOne(e => e.Event)
+                    .WithMany(o => o.Bookings)
+                    .HasForeignKey(e => e.EventId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.User)
+                    .WithMany(o => o.Bookings)
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.UserId).HasDatabaseName("IX_Booking_UserId");
+                entity.HasIndex(e => e.EventId).HasDatabaseName("IX_Booking_EventId");
+                entity.HasIndex(e => new { e.UserId, e.EventId }).HasDatabaseName("IX_Booking_User_Event");
+                entity.HasIndex(e => e.Status).HasDatabaseName("IX_Booking_Status");
+                entity.HasIndex(e => e.PaymentStatus).HasDatabaseName("IX_Booking_PaymentStatus");
+            });
+
+            //---------------BookingItem------------------
+            builder.Entity<BookingItem>(entity =>
+            {
+                entity.HasOne(e => e.Booking)
+                    .WithMany(o => o.BookingItems)
+                    .HasForeignKey(e => e.BookingId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.TicketType)
+                    .WithMany(o => o.BookingItems)
+                    .HasForeignKey(e => e.TicketTypeId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.BookingId).HasDatabaseName("IX_BookingItem_BookingId");
+                entity.HasIndex(e => e.TicketTypeId).HasDatabaseName("IX_BookingItem_TicketTypeId");
+            });
+
+            //---------------Ticket--------------------
+            builder.Entity<Ticket>(entity =>
+            {
+                entity.HasOne(e => e.BookingItem)
+                    .WithMany(o => o.Tickets)
+                    .HasForeignKey(e => e.BookingItemId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.TicketType)
+                    .WithMany(o => o.Tickets)
+                    .HasForeignKey(e => e.TicketTypeId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.UserId).HasDatabaseName("IX_Ticket_UserId");
+                entity.HasIndex(e => e.BookingItemId).HasDatabaseName("IX_Ticket_BookingItemId");
+                entity.HasIndex(e => e.TicketCode).IsUnique().HasDatabaseName("UQ_Ticket_Code"); // UNIQUE cho ticket code
+                entity.HasIndex(e => e.Status).HasDatabaseName("IX_Ticket_Status");
+            });
+
+
+            //------------------Wallet---------------------
+            builder.Entity<Wallet>(entity =>
+            {
+                entity.HasOne(e => e.User)
+                    .WithOne(o => o.Wallet)
+                    .HasForeignKey<Wallet>(o => o.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            //--------------WalletTransaction--------------
+            builder.Entity<WalletTransaction>(entity =>
+            {
+                entity.HasOne(e => e.Wallet)
+                    .WithMany(o => o.WalletTransactions)
+                    .HasForeignKey(e => e.WalletId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            //--------------TopupRequest--------------
+            builder.Entity<TopupRequest>(entity =>
+            {
+                entity.HasOne(e => e.Wallet)
+                    .WithMany(o => o.TopupRequests)
+                    .HasForeignKey(e => e.WalletId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            //--------------PaymentTransaction--------------
+            builder.Entity<PaymentTransaction>(entity =>
+            {
+                entity.HasOne(e => e.Booking)
+                    .WithMany(o => o.PaymentTransactions)
+                    .HasForeignKey(e => e.BookingId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
 
             // ----------------- EventTag -----------------
             builder.Entity<EventTag>()

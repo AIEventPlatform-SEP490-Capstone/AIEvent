@@ -195,8 +195,8 @@ namespace AIEvent.Application.Services.Implements
 
                 if (request.Status == ConfirmStatus.Approve)
                 {
-                    if (currentRoles.Any())
-                        await _userManager.RemoveFromRolesAsync(organizerUser, currentRoles);
+                    //if (currentRoles.Any())
+                    //    await _userManager.RemoveFromRolesAsync(organizerUser, currentRoles);
 
                     var addRoleResult = await _userManager.AddToRoleAsync(organizerUser, "Organizer");
                     if (!addRoleResult.Succeeded)
