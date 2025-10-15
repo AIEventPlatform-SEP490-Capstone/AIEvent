@@ -35,7 +35,38 @@ namespace AIEvent.Infrastructure.Data
             SeedRefundRuleDetail(modelBuilder);
             SeedTicketDetail(modelBuilder);
             SeedWallet(modelBuilder);
+            SeedInterest(modelBuilder);
+            SeedUserInterest(modelBuilder);
         }
+
+        private static readonly Guid InterestId1 = Guid.NewGuid();
+        private static readonly Guid InterestId2 = Guid.NewGuid();
+        private static readonly Guid InterestId3 = Guid.NewGuid();
+        private static readonly Guid InterestId4 = Guid.NewGuid();
+        private static readonly Guid InterestId5 = Guid.NewGuid();
+        private static readonly Guid InterestId6 = Guid.NewGuid();
+
+        private static void SeedInterest(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Interest>().HasData(
+                new Interest { Id = InterestId1, Name = "Công nghệ" },
+                new Interest { Id = InterestId2, Name = "Nghệ thuật" },
+                new Interest { Id = Guid.NewGuid(), Name = "Gaming" },
+                new Interest { Id = InterestId4, Name = "Ẩm thực" },
+                new Interest { Id = InterestId3, Name = "Kinh doanh" },
+                new Interest { Id = Guid.NewGuid(), Name = "Sức khỏe" },
+                new Interest { Id = Guid.NewGuid(), Name = "Thời trang" },
+                new Interest { Id = Guid.NewGuid(), Name = "Khởi nghiệp" },
+                new Interest { Id = Guid.NewGuid(), Name = "Giáo dục" },
+                new Interest { Id = Guid.NewGuid(), Name = "Thể thao" },
+                new Interest { Id = Guid.NewGuid(), Name = "Marketing" },
+                new Interest { Id = Guid.NewGuid(), Name = "Âm nhạc" },
+                new Interest { Id = Guid.NewGuid(), Name = "Nhiếp ảnh" },
+                new Interest { Id = InterestId5, Name = "Thiết kế" },
+                new Interest { Id = InterestId6, Name = "Du lịch" }
+            );
+        }
+
 
         private static void SeedRoles(ModelBuilder modelBuilder)
         {
@@ -194,17 +225,20 @@ namespace AIEvent.Infrastructure.Data
             modelBuilder.Entity<AppUser>().HasData(adminUser, regularUser, managerUser, testUser, organizerUser, staffUser);
         }
 
+
         private static void SeedWallet(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Wallet>().HasData(
                 new Wallet
                 {
+                    Id = Guid.NewGuid(),
                     UserId = regularUserId,
                     Balance = 1000000,
                     Status = WalletStatus.Active,
                 },
                 new Wallet
                 {
+                    Id = Guid.NewGuid(),
                     UserId = testUserId,
                     Balance = 0,
                     Status = WalletStatus.Active,
@@ -249,6 +283,42 @@ namespace AIEvent.Infrastructure.Data
             };
 
             modelBuilder.Entity<IdentityUserRole<Guid>>().HasData(userRoles);
+        }
+
+        private static void SeedUserInterest(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<UserInterest>().HasData(
+                new UserInterest
+                {
+                    UserId = regularUserId,
+                    InterestId = InterestId1,
+                },
+                new UserInterest
+                {
+                    UserId = regularUserId,
+                    InterestId = InterestId2,
+                },
+                new UserInterest
+                {
+                    UserId = regularUserId,
+                    InterestId = InterestId3,
+                },
+                new UserInterest
+                {
+                    UserId = testUserId,
+                    InterestId = InterestId4,
+                },
+                new UserInterest
+                {
+                    UserId = testUserId,
+                    InterestId = InterestId5,
+                },
+                new UserInterest
+                {
+                    UserId = testUserId,
+                    InterestId = InterestId6,
+                }
+            );
         }
 
 
