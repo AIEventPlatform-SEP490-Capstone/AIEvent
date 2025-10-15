@@ -1,7 +1,5 @@
 ﻿using AIEvent.Domain.Base;
 using AIEvent.Domain.Enums;
-using AIEvent.Domain.Identity;
-using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -13,7 +11,7 @@ namespace AIEvent.Domain.Entities
         public Guid UserId { get; set; }
 
         [ForeignKey("UserId")]
-        public virtual AppUser User { get; set; } = default!;
+        public virtual User User { get; set; } = default!;
 
         [Required]
         public Guid EventId { get; set; }
@@ -21,7 +19,7 @@ namespace AIEvent.Domain.Entities
         [ForeignKey("EventId")]
         public virtual Event Event { get; set; } = default!;
 
-        [Precision(18, 2)]
+        [Column(TypeName = "decimal(18,2)")]
         public decimal TotalAmount { get; set; }
         public required string Currency {  get; set; }
         public BookingStatus Status { get; set; }

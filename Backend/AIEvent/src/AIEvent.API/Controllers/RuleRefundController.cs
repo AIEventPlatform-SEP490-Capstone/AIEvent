@@ -57,7 +57,7 @@ namespace AIEvent.API.Controllers
 
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin, Organizer, Manager")]
-        public async Task<ActionResult<SuccessResponse<object>>> UpdateRule(string id,UpdateRuleRefundRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> UpdateRule(Guid id,UpdateRuleRefundRequest request)
         {
             var userId = User.GetRequiredUserId();
             var result = await _ruleRefundService.UpdateRuleAsync(userId, id, request);
@@ -75,7 +75,7 @@ namespace AIEvent.API.Controllers
 
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin, Organizer, Manager")]
-        public async Task<ActionResult<SuccessResponse<object>>> DeleteRule(string id)
+        public async Task<ActionResult<SuccessResponse<object>>> DeleteRule(Guid id)
         {
             var userId = User.GetRequiredUserId();
             var result = await _ruleRefundService.DeleteRuleAsync(userId, id);
@@ -93,7 +93,7 @@ namespace AIEvent.API.Controllers
 
         [HttpPost("detail")]
         [Authorize(Roles = "Admin, Organizer, Manager")]
-        public async Task<ActionResult<SuccessResponse<object>>> CreateRuleDetail(string ruleRefundId, RuleRefundDetailRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> CreateRuleDetail(Guid ruleRefundId, RuleRefundDetailRequest request)
         {
             var userId = User.GetRequiredUserId();
             var result = await _ruleRefundService.CreateRuleDetailAsync(userId, ruleRefundId, request);
@@ -110,7 +110,7 @@ namespace AIEvent.API.Controllers
 
         [HttpPut("detail/{id}")]
         [Authorize(Roles = "Admin, Organizer, Manager")]
-        public async Task<ActionResult<SuccessResponse<object>>> UpdateRuleDetail(string id, UpdateRuleRefundDetailRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> UpdateRuleDetail(Guid id, UpdateRuleRefundDetailRequest request)
         {
             var userId = User.GetRequiredUserId();
             var result = await _ruleRefundService.UpdateRuleDetailAsync(userId, id, request);
@@ -128,7 +128,7 @@ namespace AIEvent.API.Controllers
 
         [HttpDelete("detail/{id}")]
         [Authorize(Roles = "Admin, Organizer, Manager")]
-        public async Task<ActionResult<SuccessResponse<object>>> DeleteRuleDetail(string id)
+        public async Task<ActionResult<SuccessResponse<object>>> DeleteRuleDetail(Guid id)
         {
             var userId = User.GetRequiredUserId();
             var result = await _ruleRefundService.DeleteRuleDetailAsync(userId, id);

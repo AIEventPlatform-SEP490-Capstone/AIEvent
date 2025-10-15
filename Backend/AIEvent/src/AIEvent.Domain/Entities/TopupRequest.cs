@@ -1,7 +1,6 @@
 ﻿using AIEvent.Domain.Base;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
-using Microsoft.EntityFrameworkCore;
 using AIEvent.Domain.Enums;
 
 
@@ -15,7 +14,7 @@ namespace AIEvent.Domain.Entities
         [ForeignKey("WalletId")]
         public virtual Wallet Wallet { get; set; } = default!;
 
-        [Precision(18, 2)]
+        [Column(TypeName = "decimal(18,2)")]
         public decimal Amount { get; set; }
         public required string SepayTransId { get; set; }
         public TransactionStatus Status { get; set; }

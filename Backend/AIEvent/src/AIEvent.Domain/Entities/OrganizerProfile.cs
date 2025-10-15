@@ -1,6 +1,5 @@
 ﻿using AIEvent.Domain.Base;
 using AIEvent.Domain.Enums;
-using AIEvent.Domain.Identity;
 
 namespace AIEvent.Domain.Entities
 {
@@ -37,7 +36,7 @@ namespace AIEvent.Domain.Entities
         public DateTime? ConfirmAt { get; set; }
         public string? ConfirmBy { get; set; }
 
-        public AppUser User { get; set; } = default!;
+        public User User { get; set; } = default!;
         public ICollection<Event>? Events { get; set; }
     }
 }

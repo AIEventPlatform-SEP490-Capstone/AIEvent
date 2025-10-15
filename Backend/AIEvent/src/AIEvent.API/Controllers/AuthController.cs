@@ -1,6 +1,7 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Auth;
 using AIEvent.Application.DTOs.Common;
+using AIEvent.Application.DTOs.User;
 using AIEvent.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -42,7 +43,7 @@ namespace AIEvent.API.Controllers
 
         [HttpPost("register")]
         [AllowAnonymous]
-        public async Task<ActionResult<SuccessResponse<AuthResponse>>> Register([FromBody] RegisterRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> Register([FromBody] RegisterRequest request)
         {
             var result = await _authService.RegisterAsync(request);
 
@@ -51,18 +52,10 @@ namespace AIEvent.API.Controllers
                 return Unauthorized(result.Error!);
             }
 
-            Response.Cookies.Append("refreshToken", result.Value!.RefreshToken!, new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
-                Expires = DateTime.UtcNow.AddDays(7)
-            });
-
-            return Ok(SuccessResponse<AuthResponse>.SuccessResult(
-                result.Value!,
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
                 SuccessCodes.Created,
-                "Registration successful"));
+                "Registration successful. Send email successfully"));
         }
 
         [HttpPost("refresh-token")]
@@ -91,6 +84,28 @@ namespace AIEvent.API.Controllers
             return Ok(SuccessResponse<AuthResponse>.SuccessResult(
                 result.Value!,
                 message: "Token refreshed successfully"));
+        }
+
+        [HttpPost("verify-otp")]
+        [Authorize]
+        public async Task<ActionResult<SuccessResponse<object>>> VerifyOTP([FromBody] VerifyOTPRequest request)
+        {
+            var result = await _authService.VerifyOTPAsync(request);
+
+            if (!result.IsSuccess)
+            {
+                return Unauthorized(result.Error!);
+            }
+
+            Response.Cookies.Append("refreshToken", result.Value!.RefreshToken!, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTime.UtcNow.AddDays(7)
+            });
+
+            return Ok(SuccessResponse<AuthResponse>.SuccessResult(result.Value!));
         }
 
         [HttpPost("revoke-token")]

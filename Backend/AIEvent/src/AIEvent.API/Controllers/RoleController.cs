@@ -38,7 +38,7 @@ namespace AIEvent.API.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<SuccessResponse<RoleResponse>>> CreateRole([FromBody] CreateRoleRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> CreateRole([FromBody] CreateRoleRequest request)
         {
             var result = await _roleService.CreateRoleAsync(request);
                 
@@ -47,15 +47,15 @@ namespace AIEvent.API.Controllers
                 return BadRequest(result.Error!);
             }
 
-            return Ok(SuccessResponse<RoleResponse>.SuccessResult(
-                result.Value!,
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
                 SuccessCodes.Created,
                 "Role created successfully"));
         }
 
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<SuccessResponse<RoleResponse>>> UpdateRole(string id, [FromBody] UpdateRoleRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> UpdateRole(string id, [FromBody] UpdateRoleRequest request)
         {
             var result = await _roleService.UpdateRoleAsync(id, request);
 
@@ -64,8 +64,8 @@ namespace AIEvent.API.Controllers
                 return BadRequest(result.Error!);
             }
 
-            return Ok(SuccessResponse<RoleResponse>.SuccessResult(
-                result.Value!,
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
                 SuccessCodes.Updated,
                 "Role updated successfully"));
         }

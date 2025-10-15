@@ -5,11 +5,9 @@ using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
-using AIEvent.Domain.Identity;
 using AIEvent.Domain.Interfaces;
 using AutoMapper;
 using FluentAssertions;
-using Microsoft.AspNetCore.Identity;
 using MockQueryable.Moq;
 using Moq;
 
@@ -19,7 +17,6 @@ namespace AIEvent.Application.Test.Services
     {
         private readonly Mock<IUnitOfWork> _mockUnitOfWork;
         private readonly Mock<ITransactionHelper> _mockTransactionHelper;
-        private readonly Mock<UserManager<AppUser>> _mockUserManager;
         private readonly Mock<IMapper> _mockMapper;
         private readonly Mock<ICloudinaryService> _mockCloudinaryService;
         private readonly IOrganizerService _organizerService;
@@ -32,12 +29,8 @@ namespace AIEvent.Application.Test.Services
             _mockCloudinaryService = new Mock<ICloudinaryService>();
             _mockMapper = new Mock<IMapper>();
             _mockTransactionHelper = new Mock<ITransactionHelper>();
-            var store = new Mock<IUserStore<AppUser>>();
-            _mockUserManager = new Mock<UserManager<AppUser>>(
-                store.Object, null!, null!, null!, null!, null!, null!, null!, null!
-            );
+           
             _organizerService = new OrganizerService(_mockUnitOfWork.Object,
-                                                    _mockUserManager.Object,
                                                     _mockMapper.Object,
                                                     _mockTransactionHelper.Object,
                                                     _mockCloudinaryService.Object);
@@ -70,11 +63,10 @@ namespace AIEvent.Application.Test.Services
                 CompanyDescription = "Professional event management company specializing in corporate events"
             };
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = userId,
                 Email = "user@example.com",
-                UserName = "user@example.com",
                 FullName = "Test User",
                 IsActive = true
             };
@@ -101,12 +93,10 @@ namespace AIEvent.Application.Test.Services
                 CompanyName = "GovEdu Training Center",
                 TaxCode = "5647382910",
                 CompanyDescription = "Government-affiliated education and training center focusing on youth development programs.",
-                User = new AppUser
+                User = new User
                 {
                     Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
-                    UserName = "tranthi.b",
                     Email = "tranthi.b@govedu.vn",
-                    PhoneNumber = "+84987654321"
                 }
             };
 
@@ -140,7 +130,6 @@ namespace AIEvent.Application.Test.Services
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(func => func());
-            _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
 
             _mockMapper.Setup(x => x.Map<OrganizerProfile>(request)).Returns(mappedOrganizer);
             _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.AddAsync(mappedOrganizer));
@@ -177,11 +166,10 @@ namespace AIEvent.Application.Test.Services
                 CompanyDescription = "Professional event management company specializing in corporate events"
             };
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = userId,
                 Email = "user@example.com",
-                UserName = "user@example.com",
                 FullName = "Test User",
                 IsActive = false
             };
@@ -208,12 +196,10 @@ namespace AIEvent.Application.Test.Services
                 CompanyName = "GovEdu Training Center",
                 TaxCode = "5647382910",
                 CompanyDescription = "Government-affiliated education and training center focusing on youth development programs.",
-                User = new AppUser
+                User = new User
                 {
                     Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
-                    UserName = "tranthi.b",
                     Email = "tranthi.b@govedu.vn",
-                    PhoneNumber = "+84987654321"
                 }
             };
 
@@ -244,7 +230,6 @@ namespace AIEvent.Application.Test.Services
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(func => func());
-            _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
 
             var result = await _organizerService.RegisterOrganizerAsync(userId, request);
 
@@ -280,11 +265,10 @@ namespace AIEvent.Application.Test.Services
                 CompanyDescription = "Professional event management company specializing in corporate events"
             };
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = userId,
                 Email = "user@example.com",
-                UserName = "user@example.com",
                 FullName = "Test User",
                 IsActive = true
             };
@@ -311,12 +295,10 @@ namespace AIEvent.Application.Test.Services
                 CompanyName = "GovEdu Training Center",
                 TaxCode = "0123456789",
                 CompanyDescription = "Government-affiliated education and training center focusing on youth development programs.",
-                User = new AppUser
+                User = new User
                 {
                     Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
-                    UserName = "tranthi.b",
                     Email = "tranthi.b@govedu.vn",
-                    PhoneNumber = "+84987654321"
                 }
             };
 
@@ -347,7 +329,6 @@ namespace AIEvent.Application.Test.Services
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(func => func());
-            _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
 
             var emptyOrganizerList = new List<OrganizerProfile> { organizer }.AsQueryable().BuildMockDbSet();
             _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(false)).Returns(emptyOrganizerList.Object);
@@ -387,11 +368,10 @@ namespace AIEvent.Application.Test.Services
                 CompanyDescription = "Professional event management company specializing in corporate events"
             };
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = userId,
                 Email = "user@example.com",
-                UserName = "user@example.com",
                 FullName = "Test User",
                 IsActive = true
             };
@@ -418,12 +398,10 @@ namespace AIEvent.Application.Test.Services
                 CompanyName = "GovEdu Training Center",
                 TaxCode = "5647382910",
                 CompanyDescription = "Government-affiliated education and training center focusing on youth development programs.",
-                User = new AppUser
+                User = new User
                 {
                     Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
-                    UserName = "tranthi.b",
                     Email = "tranthi.b@govedu.vn",
-                    PhoneNumber = "+84987654321"
                 }
             };
 
@@ -432,7 +410,6 @@ namespace AIEvent.Application.Test.Services
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(func => func());
-            _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
 
             _mockMapper.Setup(x => x.Map<OrganizerProfile>(request));
 
@@ -484,9 +461,6 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(u => u.OrganizerProfileRepository.Query(false))
                 .Returns(new List<OrganizerProfile> { organizer }.AsQueryable().BuildMockDbSet().Object);
 
-            _mockUserManager.Setup(u => u.FindByIdAsync(It.IsAny<string>()))
-                .ReturnsAsync((AppUser)null!);
-
             _mockTransactionHelper
                 .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(fn => fn());
@@ -517,16 +491,10 @@ namespace AIEvent.Application.Test.Services
                 ContactPhone = "+84987654321",
                 Address = "12 Nguyen Hue Boulevard, District 1, Ho Chi Minh City",
             };
-            var user = new AppUser { Id = organizer.UserId };
+            var user = new User { Id = organizer.UserId };
 
             _mockUnitOfWork.Setup(u => u.OrganizerProfileRepository.Query(false))
                 .Returns(new List<OrganizerProfile> { organizer }.AsQueryable().BuildMockDbSet().Object);
-            _mockUserManager.Setup(u => u.FindByIdAsync(It.IsAny<string>())).ReturnsAsync(user);
-            _mockUserManager.Setup(u => u.GetRolesAsync(user)).ReturnsAsync(new List<string>());
-            _mockUserManager.Setup(u => u.RemoveFromRolesAsync(user, It.IsAny<IEnumerable<string>>()))
-                .ReturnsAsync(IdentityResult.Success);
-            _mockUserManager.Setup(u => u.AddToRoleAsync(user, "Organizer"))
-                .ReturnsAsync(IdentityResult.Success);
             _mockUnitOfWork
                 .Setup(u => u.OrganizerProfileRepository.UpdateAsync(organizer))
                 .ReturnsAsync(organizer);
@@ -562,12 +530,10 @@ namespace AIEvent.Application.Test.Services
                 ContactPhone = "+84987654321",
                 Address = "12 Nguyen Hue Boulevard, District 1, Ho Chi Minh City",
             };
-            var user = new AppUser { Id = organizer.UserId };
+            var user = new User { Id = organizer.UserId };
 
             _mockUnitOfWork.Setup(u => u.OrganizerProfileRepository.Query(false))
                 .Returns(new List<OrganizerProfile> { organizer }.AsQueryable().BuildMockDbSet().Object);
-            _mockUserManager.Setup(u => u.FindByIdAsync(It.IsAny<string>())).ReturnsAsync(user);
-            _mockUserManager.Setup(u => u.GetRolesAsync(user)).ReturnsAsync(new List<string> { "Organizer" });
             _mockUnitOfWork
                 .Setup(u => u.OrganizerProfileRepository.UpdateAsync(organizer))
                 .ReturnsAsync(organizer);

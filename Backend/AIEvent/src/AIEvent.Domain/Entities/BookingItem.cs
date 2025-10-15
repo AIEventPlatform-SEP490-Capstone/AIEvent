@@ -1,7 +1,6 @@
 ﻿using AIEvent.Domain.Base;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
-using Microsoft.EntityFrameworkCore;
 
 namespace AIEvent.Domain.Entities
 {
@@ -19,9 +18,9 @@ namespace AIEvent.Domain.Entities
         [ForeignKey("TicketTypeId")]
         public virtual TicketDetail TicketType { get; set; } = default!;
         public int Quantity { get; set; }
-        [Precision(18, 2)]
+        [Column(TypeName = "decimal(18,2)")]
         public decimal UnitPrice { get; set; }
-        [Precision(18, 2)]
+        [Column(TypeName = "decimal(18,2)")]
         public decimal TotalPrice { get; set; }
         public ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
     }
