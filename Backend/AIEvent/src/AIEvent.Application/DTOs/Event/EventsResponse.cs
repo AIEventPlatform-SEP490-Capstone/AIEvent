@@ -14,6 +14,7 @@ namespace AIEvent.Application.DTOs.Event
         public string? LocationName { get; set; }
         public int TotalTickets { get; set; }
         public int SoldQuantity { get; set; }
+        public decimal TicketPrice { get; set; }
         public List<TagResponse>? Tags { get; set; }
         public List<string>? ImgListEvent { get; set; }
         public bool? IsFavorite { get; set; }

@@ -20,7 +20,7 @@ namespace AIEvent.Domain.Base
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset? UpdatedAt { get; set; }
         public DateTimeOffset? DeletedAt { get; set; }
-        public bool IsDeleted { get; private set; }
+        public bool IsDeleted { get; set; }
 
         public void SetCreated(string userId)
         {

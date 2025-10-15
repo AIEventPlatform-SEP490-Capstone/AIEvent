@@ -1,4 +1,5 @@
 ﻿using AIEvent.Application.DTOs.Event;
+using AIEvent.Application.DTOs.Organizer;
 using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.Helpers;
 using AIEvent.Domain.Bases;
@@ -9,8 +10,13 @@ namespace AIEvent.Application.Services.Interfaces
     public interface IEventService
     {
         Task<Result> CreateEventAsync(Guid organizerId, CreateEventRequest request);
-        Task<Result<EventDetailResponse>> GetEventByIdAsync(string eventId);
-        Task<Result> DeleteEventAsync(string eventId);
+        Task<Result<EventDetailResponse>> GetEventByIdAsync(Guid eventId);
+        Task<Result> DeleteEventAsync(Guid eventId);
+        Task<Result> UpdateEventAsync(Guid organizerId, Guid userId, Guid eventId, UpdateEventRequest request);
+        Task<Result<BasePaginated<EventsRelatedResponse>>> GetRelatedEventAsync(Guid eventId, int pageNumber = 1, int pageSize = 5);
+        Task<Result<BasePaginated<EventsResponse>>> GetEventByOrganizerAsync(Guid? userId, Guid organizerId, string? search, string? eventCategoryId, List<EventTagRequest> tags, TicketType? ticketType, string? city, bool? IsSortByNewest, int pageNumber = 1, int pageSize = 5);
         Task<Result<BasePaginated<EventsResponse>>> GetEventAsync(Guid? userId, string? search, string? eventCategoryId, List<EventTagRequest> tags, TicketType? ticketType, string? city, TimeLine? timeLine, int pageNumber = 1, int pageSize = 5);
+        Task<Result<BasePaginated<ListEventNeedConfirm>>> GetAllEventNeedConfirmAsync(int pageNumber, int pageSize);
+        Task<Result> ConfirmEventAsync(Guid userId, string id, ConfirmRequest request);
     }
 }

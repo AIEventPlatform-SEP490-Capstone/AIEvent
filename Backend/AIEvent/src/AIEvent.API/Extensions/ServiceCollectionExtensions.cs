@@ -2,11 +2,9 @@
 using AIEvent.Application.Mappings;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
-using AIEvent.Domain.Identity;
 using AIEvent.Domain.Interfaces;
 using AIEvent.Infrastructure.Context;
 using AIEvent.Infrastructure.Implements;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 
@@ -29,11 +27,15 @@ namespace AIEvent.API.Extensions
                     .AddScoped<IEventService, EventService>()
                     .AddScoped<IRoleService, RoleService>()
                     .AddScoped<IEnumService, EnumService>()
+                    .AddScoped<IEmailService, EmailService>()
                     .AddScoped<IOrganizerService, OrganizerService>()
                     .AddScoped<ITagService, TagService>()
                     .AddScoped<IRuleRefundService, RuleRefundService>()
                     .AddScoped<IFavoriteEventService, FavoriteEventService>()
-                    .AddScoped<IEventCategoryService, EventCategoryService>();
+                    .AddScoped<IEventCategoryService, EventCategoryService>()
+                    .AddScoped<IBookingService, BookingService>()
+                    .AddScoped<IQrCodeService, QrCodeService>()
+                    .AddScoped<ITicketTokenService, TicketTokenService>();
 
             return services;
         }
@@ -43,10 +45,6 @@ namespace AIEvent.API.Extensions
         {
             services.AddDbContext<DatabaseContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
-
-            services.AddIdentity<AppUser, AppRole>()
-                    .AddEntityFrameworkStores<DatabaseContext>()
-                    .AddDefaultTokenProviders();
 
             return services;
         }

@@ -35,6 +35,8 @@ export const PATH = {
     ORGANIZER_CREATE: "/organizer/create",
     ORGANIZER_EVENTS: "/organizer/events",
     ORGANIZER_MY_EVENTS: "/organizer/my-events",
+    ORGANIZER_EVENT_DETAIL: "/organizer/event/:eventId",
+    ORGANIZER_EVENT_EDIT: "/organizer/event/:eventId/edit",
     ORGANIZER_PROFILE: "/organizer/profile",
     ORGANIZER_SETTINGS: "/organizer/settings",
     ORGANIZER_SUPPORT: "/organizer/support",
@@ -42,11 +44,22 @@ export const PATH = {
     ORGANIZER_CHECKIN: "/organizer/checkin/:id",
     BECOME_ORGANIZER: "/become-organizer",
     
+    // MANAGER
+    MANAGER: "/manager",
+    MANAGER_EVENTS: "/manager/events",
+    MANAGER_EVENTS_NEED_APPROVAL: "/manager/events/need-approval",
+    MANAGER_EVENT_DETAIL: "/manager/event/:eventId",
+    MANAGER_EVENT_EDIT: "/manager/event/:eventId/edit",
+    MANAGER_PROFILE: "/manager/profile",
+    MANAGER_SETTINGS: "/manager/settings",
+    MANAGER_SUPPORT: "/manager/support",
+    
     // ADMIN
     ADMIN: "/admin",
     ADMIN_DASHBOARD: "/admin/dashboard",
     ADMIN_EVENTS: "/admin/events",
     ADMIN_USERS: "/admin/users",
+    ADMIN_REFUND_RULES: "/admin/refund-rules",
     ADMIN_ORGANIZERS: "/admin/organizers",
     ADMIN_PROFILE: "/admin/profile",
     ADMIN_SETTINGS: "/admin/settings",

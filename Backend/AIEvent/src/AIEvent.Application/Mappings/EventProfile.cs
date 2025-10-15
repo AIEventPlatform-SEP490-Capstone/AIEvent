@@ -5,7 +5,6 @@ using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.DTOs.Ticket;
 using AIEvent.Domain.Entities;
 using AutoMapper;
-using Microsoft.IdentityModel.Tokens;
 using System.Text.Json;
 
 namespace AIEvent.Application.Mappings
@@ -39,6 +38,17 @@ namespace AIEvent.Application.Mappings
                                                     : null
                                 }).ToList()
                                 : new List<TicketDetail>()));
+
+            CreateMap<UpdateEventRequest, Event>()
+                    .ForMember(dest => dest.EventTags, 
+                        opt => opt.MapFrom(src =>
+                            src.EventTags != null
+                                ? src.EventTags.Select(f => new EventTag
+                                {
+                                    TagId = f.TagId
+                                }).ToList()
+                                : new List<EventTag>()))
+                    .ForMember(dest => dest.ImgListEvent, opt => opt.Ignore()); ;
 
             CreateMap<Event, EventDetailResponse>()
                 .ForMember(dest => dest.EventId, opt => opt.MapFrom(src => src.Id))

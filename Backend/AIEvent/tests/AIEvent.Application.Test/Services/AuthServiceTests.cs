@@ -1,17 +1,13 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Auth;
 using AIEvent.Application.DTOs.Common;
-using AIEvent.Application.DTOs.User;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
+using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
-using AIEvent.Domain.Identity;
 using AIEvent.Domain.Interfaces;
 using AutoMapper;
 using FluentAssertions;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Logging;
 using MockQueryable.Moq;
 using Moq;
 
@@ -21,9 +17,8 @@ namespace AIEvent.Application.Test.Services
     {
         private readonly Mock<IUnitOfWork> _mockUnitOfWork;
         private readonly Mock<IJwtService> _mockJwtService;
-        private readonly Mock<UserManager<AppUser>> _mockUserManager;
-        private readonly Mock<SignInManager<AppUser>> _mockSignInManager;
         private readonly Mock<IMapper> _mockMapper;
+        private readonly Mock<IEmailService> _mockEmailService;
         private readonly IAuthService _authService;
 
         public AuthServiceTests()
@@ -32,34 +27,13 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork = new Mock<IUnitOfWork>();
             _mockJwtService = new Mock<IJwtService>();
             _mockMapper = new Mock<IMapper>();
-
-            // Fake IUserStore
-            var store = new Mock<IUserStore<AppUser>>();
-            _mockUserManager = new Mock<UserManager<AppUser>>(
-                store.Object, null, null, null, null, null, null, null, null
-            );
-
-            var contextAccessor = new Mock<IHttpContextAccessor>();
-            var userPrincipalFactory = new Mock<IUserClaimsPrincipalFactory<AppUser>>();
-            var signInLogger = new Mock<ILogger<SignInManager<AppUser>>>();
-
-            _mockSignInManager = new Mock<SignInManager<AppUser>>(
-                _mockUserManager.Object,
-                contextAccessor.Object,
-                userPrincipalFactory.Object,
-                null,
-                signInLogger.Object,
-                null,
-                null
-            );
+            _mockEmailService = new Mock<IEmailService>();
             _authService = new AuthService(_mockUnitOfWork.Object,
                                                _mockJwtService.Object,
-                                               _mockUserManager.Object,
-                                               _mockSignInManager.Object,
-                                               _mockMapper.Object);
+                                               _mockMapper.Object,
+                                               _mockEmailService.Object);
         }
         #region Login
-
         [Fact]
         public async Task LoginAsync_WithValidCredentials_ShouldReturnSuccessResult()
         {
@@ -68,51 +42,41 @@ namespace AIEvent.Application.Test.Services
                 Email = "test@gmail.com",
                 Password = "123"
             };
-            var user = new AppUser
+
+            var user = new User
             {
                 Id = Guid.NewGuid(),
                 Email = "test@gmail.com",
-                UserName = "Test",
                 FullName = "Test User",
-                IsActive = true
+                IsActive = true,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("123") 
             };
-            var roles = new List<string> { "User" };
+
+            var users = new List<User> { user }.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
+                           .Returns(users.Object);
+
             var accessToken = "access-token";
             var refreshToken = "refresh-token";
 
-            // Giả lập danh sách Users trong DB, có sẵn 1 user test
-            var users = new List<AppUser> { user }.AsQueryable().BuildMockDbSet();
-            _mockUserManager.Setup(x => x.Users).Returns(users.Object);
+            _mockJwtService.Setup(x => x.GenerateAccessToken(user))
+                           .Returns(accessToken);
+            _mockJwtService.Setup(x => x.GenerateRefreshToken())
+                           .Returns(refreshToken);
 
-            // Khi kiểm tra mật khẩu user → giả lập kết quả đăng nhập thành công
-            _mockSignInManager.Setup(x => x.CheckPasswordSignInAsync(user, request.Password, false))
-                              .ReturnsAsync(SignInResult.Success);
-
-            // Khi lấy roles của user → giả lập trả về ["User"]
-            _mockUserManager.Setup(x => x.GetRolesAsync(user)).ReturnsAsync(roles);
-
-            // Khi tạo AccessToken → giả lập trả về "access-token"
-            _mockJwtService.Setup(x => x.GenerateAccessToken(user, roles)).Returns(accessToken);
-
-            // Khi tạo RefreshToken → giả lập trả về "refresh-token"
-            _mockJwtService.Setup(x => x.GenerateRefreshToken()).Returns(refreshToken);
-
-            // Khi thêm RefreshToken bất kì vào DB → giả lập thành công (không cần trả dữ liệu gì)
             _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.AddAsync(It.IsAny<RefreshToken>()));
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync())
+                           .ReturnsAsync(1);
 
-            // Khi lưu thay đổi vào DB → giả lập trả về 1 (tức là lưu thành công 1 bản ghi)
-            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
-
-
-            //Thực hiện func LoginAsync
             var result = await _authService.LoginAsync(request);
-
 
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeTrue();
             result.Value!.AccessToken.Should().Be(accessToken);
             result.Value!.RefreshToken.Should().Be(refreshToken);
         }
+
 
         [Fact]
         public async Task LoginAsync_WithInactiveUser_ShouldReturnFailureResult()
@@ -122,21 +86,19 @@ namespace AIEvent.Application.Test.Services
                 Email = "test@gmail.com",
                 Password = "123"
             };
-            var user = new AppUser
+            var user = new User
             {
                 Id = Guid.NewGuid(),
                 Email = "test@gmail.com",
-                UserName = "Test",
                 FullName = "Test User",
                 IsActive = false
             };
 
-            var users = new List<AppUser> { user }.AsQueryable().BuildMockDbSet();
-            _mockUserManager.Setup(x => x.Users).Returns(users.Object);
-
+            var users = new List<User> { user }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
+                            .Returns(users.Object);
 
             var result = await _authService.LoginAsync(request);
-
 
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
@@ -152,23 +114,19 @@ namespace AIEvent.Application.Test.Services
                 Email = "test@gmail.com",
                 Password = "321"
             };
-            var user = new AppUser
+            var user = new User
             {
                 Id = Guid.NewGuid(),
                 Email = "test@gmail.com",
-                UserName = "Test",
                 FullName = "Test User",
                 IsActive = true
             };
 
-            var users = new List<AppUser> { user }.AsQueryable().BuildMockDbSet();
-            _mockUserManager.Setup(x => x.Users).Returns(users.Object);
-
-            _mockSignInManager.Setup(x => x.CheckPasswordSignInAsync(user, request.Password, false))
-                              .ReturnsAsync(SignInResult.Failed);
+            var users = new List<User> { user }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
+                           .Returns(users.Object);
 
             var result = await _authService.LoginAsync(request);
-
 
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
@@ -184,28 +142,19 @@ namespace AIEvent.Application.Test.Services
                 Email = "test@gmail.com",
                 Password = "123"
             };
-            var user = new AppUser
+            var user = new User
             {
                 Id = Guid.NewGuid(),
                 Email = "test@gmail.com",
-                UserName = "Test",
                 FullName = "Test User",
                 IsActive = true
             };
             var roles = new List<string> { "User" };
 
-            var users = new List<AppUser> { user }.AsQueryable().BuildMockDbSet();
-            _mockUserManager.Setup(x => x.Users).Returns(users.Object);
+            var users = new List<User> { user }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(users.Object);
 
-            _mockSignInManager.Setup(x => x.CheckPasswordSignInAsync(user, request.Password, false))
-                              .ReturnsAsync(SignInResult.Success);
-
-            _mockUserManager.Setup(x => x.GetRolesAsync(user))!.ReturnsAsync((IList<string>?)null);
-
-
-            //Thực hiện func LoginAsync
             var result = await _authService.LoginAsync(request);
-
 
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
@@ -226,9 +175,9 @@ namespace AIEvent.Application.Test.Services
                 Password = "StrongPassword123!",
                 ConfirmPassword = "StrongPassword123!",
                 PhoneNumber = "+1234567890",
-                UserInterests = new List<UserInterestRequest>
+                UserInterests = new List<UserInterest>
                 {
-                    new UserInterestRequest { UserInterestId = Guid.Parse("11111111-1111-1111-1111-111111111111").ToString() }
+                    
                 },
                 InterestedCities = new List<InterestedCities>
                 {
@@ -241,24 +190,19 @@ namespace AIEvent.Application.Test.Services
                 IsSmsNotificationEnabled = false
             };
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = Guid.NewGuid(),
                 Email = request.Email,
-                UserName = request.Email,
                 FullName = request.FullName,
                 IsActive = true
             };
 
-            var roles = new List<string> { "User" };
             var accessToken = "access-token";
             var refreshToken = "refresh-token";
 
-            _mockUserManager.Setup(x => x.FindByEmailAsync(request.Email)).ReturnsAsync((AppUser?)null);
-            _mockMapper.Setup(x => x.Map<AppUser>(request)).Returns(user);
-            _mockUserManager.Setup(x => x.CreateAsync(user, request.Password)).ReturnsAsync(IdentityResult.Success);
-            _mockUserManager.Setup(x => x.AddToRoleAsync(user, roles[0])).ReturnsAsync(IdentityResult.Success);
-            _mockJwtService.Setup(x => x.GenerateAccessToken(user, roles)).Returns(accessToken);
+            _mockMapper.Setup(x => x.Map<User>(request)).Returns(user);
+            _mockJwtService.Setup(x => x.GenerateAccessToken(user)).Returns(accessToken);
             _mockJwtService.Setup(x => x.GenerateRefreshToken()).Returns(refreshToken);
             _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.AddAsync(It.IsAny<RefreshToken>()));
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
@@ -268,9 +212,6 @@ namespace AIEvent.Application.Test.Services
 
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeTrue();
-            result.Value!.AccessToken.Should().Be(accessToken);
-            result.Value!.RefreshToken.Should().Be(refreshToken);
-            result.Value!.ExpiresAt.Should().BeCloseTo(DateTime.UtcNow.AddHours(1), TimeSpan.FromSeconds(5));
         }
 
         [Fact]
@@ -283,10 +224,8 @@ namespace AIEvent.Application.Test.Services
                 Password = "StrongPassword123!",
                 ConfirmPassword = "StrongPassword123!",
                 PhoneNumber = "+1234567890",
-                UserInterests = new List<UserInterestRequest>
+                UserInterests = new List<UserInterest>
                 {
-                    new UserInterestRequest { UserInterestId = Guid.Parse("11111111-1111-1111-1111-111111111111").ToString() },
-                    new UserInterestRequest { UserInterestId = Guid.Parse("22222222-2222-2222-2222-222222222222").ToString() }
                 },
                 InterestedCities = new List<InterestedCities>
                 {
@@ -300,16 +239,13 @@ namespace AIEvent.Application.Test.Services
                 IsSmsNotificationEnabled = false
             };
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = Guid.NewGuid(),
                 Email = request.Email,
-                UserName = request.Email,
                 FullName = request.FullName,
                 IsActive = true
             };
-
-            _mockUserManager.Setup(x => x.FindByEmailAsync(request.Email)).ReturnsAsync(user);
 
             var result = await _authService.RegisterAsync(request);
 
@@ -330,10 +266,8 @@ namespace AIEvent.Application.Test.Services
                 Password = "StrongPassword123!",
                 ConfirmPassword = "StrongPassword123!",
                 PhoneNumber = "+1234567890",
-                UserInterests = new List<UserInterestRequest>
+                UserInterests = new List<UserInterest>
                 {
-                    new UserInterestRequest { UserInterestId = Guid.Parse("11111111-1111-1111-1111-111111111111").ToString() },
-                    new UserInterestRequest { UserInterestId = Guid.Parse("22222222-2222-2222-2222-222222222222").ToString() }
                 },
                 InterestedCities = new List<InterestedCities>
                 {
@@ -347,20 +281,15 @@ namespace AIEvent.Application.Test.Services
                 IsSmsNotificationEnabled = false
             };
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = Guid.NewGuid(),
                 Email = request.Email,
-                UserName = request.Email,
                 FullName = request.FullName,
                 IsActive = true
             };
 
-            var roles = new List<string> { "User" };
-
-            _mockUserManager.Setup(x => x.FindByEmailAsync(request.Email)).ReturnsAsync((AppUser?)null);
-            _mockMapper.Setup(x => x.Map<AppUser>(request)).Returns(user);
-            _mockUserManager.Setup(x => x.CreateAsync(user, request.Password)).ReturnsAsync(IdentityResult.Failed());
+            _mockMapper.Setup(x => x.Map<User>(request)).Returns(user);
 
             var result = await _authService.RegisterAsync(request);
 
@@ -381,10 +310,8 @@ namespace AIEvent.Application.Test.Services
                 Password = "StrongPassword123!",
                 ConfirmPassword = "StrongPassword321!",
                 PhoneNumber = "+1234567890",
-                UserInterests = new List<UserInterestRequest>
+                UserInterests = new List<UserInterest>
                 {
-                    new UserInterestRequest { UserInterestId = Guid.Parse("11111111-1111-1111-1111-111111111111").ToString() },
-                    new UserInterestRequest { UserInterestId = Guid.Parse("22222222-2222-2222-2222-222222222222").ToString() }
                 },
                 InterestedCities = new List<InterestedCities>
                 {
@@ -398,22 +325,17 @@ namespace AIEvent.Application.Test.Services
                 IsSmsNotificationEnabled = false
             };
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = Guid.NewGuid(),
                 Email = request.Email,
-                UserName = request.Email,
                 FullName = request.FullName,
                 IsActive = true
             };
 
             var roles = new List<string> { "User" };
 
-            _mockUserManager.Setup(x => x.FindByEmailAsync(request.Email)).ReturnsAsync((AppUser?)null);
-            _mockMapper.Setup(x => x.Map<AppUser>(request)).Returns(user);
-            _mockUserManager.Setup(x => x.CreateAsync(user, request.Password)).ReturnsAsync(IdentityResult.Success);
-            _mockUserManager.Setup(x => x.AddToRoleAsync(user, roles[0])).ReturnsAsync(IdentityResult.Failed());
-
+            _mockMapper.Setup(x => x.Map<User>(request)).Returns(user);
             var result = await _authService.RegisterAsync(request);
 
 
@@ -430,11 +352,10 @@ namespace AIEvent.Application.Test.Services
         {
             var request = "refresh-token";
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = Guid.NewGuid(),
                 Email = "test@gmail.com",
-                UserName = "Test",
                 FullName = "Test User",
                 IsActive = true
             };
@@ -461,9 +382,7 @@ namespace AIEvent.Application.Test.Services
             var refreshTokens = new List<RefreshToken> { exitingToken }.AsQueryable().BuildMockDbSet();
             _mockUnitOfWork.Setup(r => r.RefreshTokenRepository.Query(false)).Returns(refreshTokens.Object);
 
-            _mockUserManager.Setup(r => r.GetRolesAsync(exitingToken.User)).ReturnsAsync(roles);
-
-            _mockJwtService.Setup(x => x.GenerateAccessToken(exitingToken.User, roles)).Returns(accessToken);
+            _mockJwtService.Setup(x => x.GenerateAccessToken(exitingToken.User)).Returns(accessToken);
             _mockJwtService.Setup(x => x.GenerateRefreshToken()).Returns(refreshToken);
             _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.UpdateAsync(exitingToken));
             _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.AddAsync(newTokenEntity));
@@ -484,11 +403,10 @@ namespace AIEvent.Application.Test.Services
         {
             var request = "refresh-token";
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = Guid.NewGuid(),
                 Email = "test@gmail.com",
-                UserName = "Test",
                 FullName = "Test User",
                 IsActive = true
             };
@@ -519,11 +437,10 @@ namespace AIEvent.Application.Test.Services
         {
             var request = "refresh-token";
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = Guid.NewGuid(),
                 Email = "test@gmail.com",
-                UserName = "Test",
                 FullName = "Test User",
                 IsActive = true
             };
@@ -554,11 +471,10 @@ namespace AIEvent.Application.Test.Services
         {
             var request = "refresh-token";
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = Guid.NewGuid(),
                 Email = "test@gmail.com",
-                UserName = "Test",
                 FullName = "Test User",
                 IsActive = true
             };
@@ -575,7 +491,6 @@ namespace AIEvent.Application.Test.Services
             var refreshTokens = new List<RefreshToken> { exitingToken }.AsQueryable().BuildMockDbSet();
             _mockUnitOfWork.Setup(r => r.RefreshTokenRepository.Query(false)).Returns(refreshTokens.Object);
 
-            _mockUserManager.Setup(r => r.GetRolesAsync(exitingToken.User))!.ReturnsAsync((IList<string>?)null);
 
             var result = await _authService.RefreshTokenAsync(request);
 
@@ -593,11 +508,10 @@ namespace AIEvent.Application.Test.Services
         {
             var request = "refresh-token";
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = Guid.NewGuid(),
                 Email = "test@gmail.com",
-                UserName = "Test",
                 FullName = "Test User",
                 IsActive = true
             };
@@ -627,11 +541,10 @@ namespace AIEvent.Application.Test.Services
         {
             var request = "refresh-token";
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = Guid.NewGuid(),
                 Email = "test@gmail.com",
-                UserName = "Test",
                 FullName = "Test User",
                 IsActive = true
             };
@@ -660,11 +573,10 @@ namespace AIEvent.Application.Test.Services
         {
             var request = "refresh-token";
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = Guid.NewGuid(),
                 Email = "test@gmail.com",
-                UserName = "Test",
                 FullName = "Test User",
                 IsActive = true
             };
@@ -693,11 +605,10 @@ namespace AIEvent.Application.Test.Services
         {
             var request = "refresh-token";
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = Guid.NewGuid(),
                 Email = "test@gmail.com",
-                UserName = "Test",
                 FullName = "Test User",
                 IsActive = true
             };

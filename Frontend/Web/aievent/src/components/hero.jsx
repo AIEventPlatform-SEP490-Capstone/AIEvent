@@ -1,9 +1,12 @@
 import React from "react"
 import { NavLink } from "react-router-dom"
+import { useSelector } from "react-redux"
 import { Button } from "./ui/button"
-import { Sparkles, Calendar, Users, MapPin } from "lucide-react"
+import { Sparkles, Calendar, Users, MapPin, LogIn } from "lucide-react"
 
 export function Hero() {
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
+
   return (
     <section className="relative bg-orange-50 bg-gradient-to-br from-orange-50 via-white to-amber-50 py-20 lg:py-32 overflow-hidden">
       {/* Animated background elements */}
@@ -42,10 +45,19 @@ export function Hero() {
                 Khám phá sự kiện
               </Button>
 
-              <Button variant="outline" size="lg" className="px-8 py-6 text-base bg-white/80 backdrop-blur-sm hover:bg-white hover:scale-105 transition-all duration-300 rounded-xl shadow-md hover:shadow-lg border-2">
+              {!isAuthenticated ? (
+                <Button asChild variant="outline" size="lg" className="px-8 py-3 bg-transparent">
+                  <NavLink to="/auth/login">
+                    <LogIn className="w-5 h-5 mr-2" />
+                    Đăng nhập
+                  </NavLink>
+                </Button>
+              ) : (
+                 <Button variant="outline" size="lg" className="px-8 py-6 text-base bg-white/80 backdrop-blur-sm hover:bg-white hover:scale-105 transition-all duration-300 rounded-xl shadow-md hover:shadow-lg border-2">
                 <Users className="w-5 h-5 mr-2" />
                 Trở thành Organizer
               </Button>
+              )}
             </div>
 
             {/* Stats */}

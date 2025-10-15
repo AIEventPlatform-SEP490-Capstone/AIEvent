@@ -1,12 +1,12 @@
-using AIEvent.API.Extensions;
+﻿using AIEvent.API.Extensions;
 using AIEvent.API.Middleware;
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.FileProviders;
 using StackExchange.Redis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-
 namespace AIEvent.API
 {
     public class Program
@@ -14,6 +14,20 @@ namespace AIEvent.API
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            // Chỉ cấu hình HTTPS khi chạy Production
+            if (builder.Environment.IsProduction())
+            {
+                builder.WebHost.ConfigureKestrel(options =>
+                {
+                    options.ListenAnyIP(80); // HTTP để redirect hoặc ACME
+                    options.ListenAnyIP(443, listenOptions =>
+                    {
+                        listenOptions.UseHttps("/https/aievent.duckdns.org.pfx", builder.Configuration["PFX_PASSWORD"]);
+                    });
+                });
+            }
+
 
             // Add services to the container.
             builder.Services.AddControllers()
@@ -45,6 +59,8 @@ namespace AIEvent.API
                                 };
                             });
 
+            builder.Configuration.AddEnvironmentVariables();
+
             builder.Services.AddApplicationServices(builder.Configuration)
                             .AddInfrastructureServices(builder.Configuration);
 
@@ -61,12 +77,8 @@ namespace AIEvent.API
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+            app.UseSwagger();
+            app.UseSwaggerUI();
 
             app.UseHttpsRedirection();
 
@@ -76,6 +88,20 @@ namespace AIEvent.API
 
             app.UseAuthentication();
             app.UseAuthorization();
+
+            var wellKnownPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", ".well-known");
+            if (!Directory.Exists(wellKnownPath))
+            {
+                Directory.CreateDirectory(wellKnownPath);
+            }
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                ServeUnknownFileTypes = true,
+                FileProvider = new PhysicalFileProvider(wellKnownPath),
+                RequestPath = "/.well-known"
+            });
+
 
             app.MapControllers();
 

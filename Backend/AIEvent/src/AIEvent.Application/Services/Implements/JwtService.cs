@@ -1,5 +1,5 @@
 ﻿using AIEvent.Application.Services.Interfaces;
-using AIEvent.Domain.Identity;
+using AIEvent.Domain.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -23,24 +23,20 @@ namespace AIEvent.Application.Services.Implements
             _audience = configuration["Jwt:Audience"] ?? throw new ArgumentNullException("JWT Audience is not configured");
         }
 
-        public string GenerateAccessToken(AppUser user, IList<string> roles)
+        public string GenerateAccessToken(User user)
         {
             var key = Encoding.ASCII.GetBytes(_key);
             var claims = new List<Claim>
             {
-                new(ClaimTypes.Name, user.UserName ?? string.Empty),
+                new(ClaimTypes.Name, user.FullName ?? string.Empty),
                 new(ClaimTypes.Email, user.Email ?? string.Empty),
+                new(ClaimTypes.Role, user.Role.Name ?? string.Empty),
                 new(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new("organizer", user.OrganizerProfile?.Id.ToString() ?? string.Empty),
                 new(JwtRegisteredClaimNames.Sub, user.OrganizerProfile?.Id.ToString() ?? string.Empty),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
             };
-            
-            foreach (var role in roles)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, role));
-            }
 
             var credentials = new SigningCredentials(
                 new SymmetricSecurityKey(key),

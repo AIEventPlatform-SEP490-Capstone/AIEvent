@@ -38,7 +38,7 @@ namespace AIEvent.Application.Test.Services
         public async Task CreateEventCategoryAsync_ShouldReturnSuccess_WhenCategoryDoesNotExist()
         {
             // Arrange
-            var request = new CreateCategoryRequest 
+            var request = new EventCategoryRequest 
             { 
                 EventCategoryName = "Technology" 
             };
@@ -65,7 +65,7 @@ namespace AIEvent.Application.Test.Services
         public async Task CreateEventCategoryAsync_ShouldReturnFailure_WhenCategoryAlreadyExists()
         {
             // Arrange
-            var request = new CreateCategoryRequest 
+            var request = new EventCategoryRequest 
             { 
                 EventCategoryName = "Technology" 
             };
@@ -90,7 +90,7 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
-            result.Error.Message.Should().Be("EventCateogry is already existing");
+            result.Error!.Message.Should().Be("EventCateogry is already existing");
             _categoryRepoMock.Verify(r => r.AddAsync(It.IsAny<EventCategory>()), Times.Never);
         }
 
@@ -98,7 +98,7 @@ namespace AIEvent.Application.Test.Services
         public async Task CreateEventCategoryAsync_ShouldReturnFailure_WhenCategoryNameIsEmpty()
         {
             // Arrange
-            var request = new CreateCategoryRequest 
+            var request = new EventCategoryRequest 
             { 
                 EventCategoryName = "" 
             };
@@ -120,7 +120,7 @@ namespace AIEvent.Application.Test.Services
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
             result.Error.Should().NotBeNull();
-            result.Error.Message.Should().Be("Event category name is required");
+            result.Error!.Message.Should().Be("Event category name is required");
 
             categoryRepoMock.Verify(r => r.AddAsync(It.IsAny<EventCategory>()), Times.Never);
         }
@@ -146,7 +146,7 @@ namespace AIEvent.Application.Test.Services
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
             result.Error.Should().NotBeNull();
-            result.Error.Message.Should().Be("Can not found or EventCategory is deleted");
+            result.Error!.Message.Should().Be("Can not found or EventCategory is deleted");
             result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
 
             _categoryRepoMock.Verify(r => r.DeleteAsync(It.IsAny<EventCategory>()), Times.Never);
@@ -176,7 +176,7 @@ namespace AIEvent.Application.Test.Services
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
             result.Error.Should().NotBeNull();
-            result.Error.Message.Should().Be("Can not found or EventCategory is deleted");
+            result.Error!.Message.Should().Be("Can not found or EventCategory is deleted");
 
             _categoryRepoMock.Verify(r => r.DeleteAsync(It.IsAny<EventCategory>()), Times.Never);
         }
@@ -343,7 +343,7 @@ namespace AIEvent.Application.Test.Services
                 .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result<EventCategoryResponse>>>>()))
                 .Returns<Func<Task<Result<EventCategoryResponse>>>>(func => func());
 
-            var request = new CreateCategoryRequest { EventCategoryName = "New Name" };
+            var request = new EventCategoryRequest { EventCategoryName = "New Name" };
 
             // Act
             var result = await _eventCategoryService.UpdateEventCategoryAsync(TestCategoryId.ToString(), request);
@@ -363,7 +363,7 @@ namespace AIEvent.Application.Test.Services
                     .Returns<Func<Task<Result<EventCategoryResponse>>>>(func => func());
 
             // Arrange
-            var request = new CreateCategoryRequest { EventCategoryName = "" };
+            var request = new EventCategoryRequest { EventCategoryName = "" };
 
             // Act
             var result = await _eventCategoryService.UpdateEventCategoryAsync(TestCategoryId.ToString(), request);
@@ -386,7 +386,7 @@ namespace AIEvent.Application.Test.Services
                 .Returns<Func<Task<Result<EventCategoryResponse>>>>(func => func());
 
             // Arrange
-            var request = new CreateCategoryRequest 
+            var request = new EventCategoryRequest 
             { 
                 EventCategoryName = "Updated Name" 
             };
@@ -424,7 +424,7 @@ namespace AIEvent.Application.Test.Services
             var mockQueryable = new List<EventCategory> { category }.AsQueryable().BuildMock();
             _categoryRepoMock.Setup(r => r.Query(false)).Returns(mockQueryable);
 
-            var request = new CreateCategoryRequest { EventCategoryName = "New Name" };
+            var request = new EventCategoryRequest { EventCategoryName = "New Name" };
 
             _transactionHelperMock
                 .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result<EventCategoryResponse>>>>()))
@@ -450,7 +450,7 @@ namespace AIEvent.Application.Test.Services
 
             // Arrange
             var invalidId = "not-a-guid";
-            var request = new CreateCategoryRequest { EventCategoryName = "New Name" };
+            var request = new EventCategoryRequest { EventCategoryName = "New Name" };
 
             // Act
             var result = await _eventCategoryService.UpdateEventCategoryAsync(invalidId, request);
@@ -484,7 +484,7 @@ namespace AIEvent.Application.Test.Services
             var mockQueryable = new List<EventCategory> { category, category1 }.AsQueryable().BuildMock();
             _categoryRepoMock.Setup(r => r.Query(false)).Returns(mockQueryable);
 
-            var request = new CreateCategoryRequest { EventCategoryName = "New Name" };
+            var request = new EventCategoryRequest { EventCategoryName = "New Name" };
 
             _transactionHelperMock
                 .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result<EventCategoryResponse>>>>()))

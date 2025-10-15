@@ -1,7 +1,6 @@
 ﻿using AIEvent.Application.DTOs.Organizer;
 using AIEvent.Application.DTOs.User;
 using AIEvent.Domain.Entities;
-using AIEvent.Domain.Identity;
 using AutoMapper;
 
 namespace AIEvent.Application.Mappings
@@ -17,7 +16,7 @@ namespace AIEvent.Application.Mappings
                 .ForMember(dest => dest.OrganizerId, opt => opt.MapFrom(src => src.Id))
                 .ForMember(dest => dest.UserInfo, opt => opt.MapFrom(src => src.User));
 
-            CreateMap<AppUser, UserOrganizerResponse>();
+            CreateMap<User, UserOrganizerResponse>();
         }
     }
 }

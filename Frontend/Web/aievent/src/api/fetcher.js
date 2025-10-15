@@ -1,8 +1,8 @@
 import axios from "axios";
-import toast from "react-hot-toast";
 import Cookies from "js-cookie";
+import { showError, apiMessages } from "../lib/toastUtils";
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const BASE_URL = "/api";
 
 const fetcher = axios.create({
   baseURL: BASE_URL,
@@ -11,8 +11,12 @@ const fetcher = axios.create({
 
 let isRefreshing = false;
 let failedQueue = [];
+const MAX_QUEUE_SIZE = 50;
 
 const processQueue = (error, token = null) => {
+  if (failedQueue.length >= MAX_QUEUE_SIZE) {
+    failedQueue = failedQueue.slice(-MAX_QUEUE_SIZE);
+  }
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
@@ -43,16 +47,24 @@ fetcher.interceptors.response.use(
     const originalRequest = error.config;
 
     if (error.code === "ECONNABORTED") {
-      toast.error("Connection timed out. Please try again!");
+      showError(apiMessages.timeout);
       return Promise.reject(error);
     }
 
-    if (error.message === "Network Error") {
-      toast.error("Network error. Please check your connection!");
+    if (error.message.includes("Network Error")) {
+      showError(apiMessages.networkError);
       return Promise.reject(error);
     }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // Không refresh token cho login request hoặc refresh token request
+      if (
+        originalRequest.url?.includes("/auth/login") ||
+        originalRequest.url?.includes("/auth/refresh-token")
+      ) {
+        return Promise.reject(error);
+      }
+
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -65,16 +77,23 @@ fetcher.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await fetcher.post("/auth/refresh-token");
+        const refreshResponse = await fetcher.post("/auth/refresh-token");
+        const { data } = refreshResponse.data;
+
+        Cookies.set("accessToken", data.accessToken, {
+          expires: new Date(data.expiresAt),
+          secure: true,
+          sameSite: "strict",
+        });
+
         isRefreshing = false;
         processQueue(null);
         return fetcher(originalRequest);
       } catch (refreshError) {
-        toast.error("Session expired. Please log in again.");
+        showError("Phiên làm việc hết hạn. Vui lòng đăng nhập lại.");
 
         localStorage.removeItem("currentUser");
         Cookies.remove("accessToken");
-        Cookies.remove("refreshToken");
 
         isRefreshing = false;
         processQueue(refreshError);
@@ -89,12 +108,34 @@ fetcher.interceptors.response.use(
 
     if (error.response) {
       const status = error.response.status;
-      if (status === 500) toast.error("Server error!");
-      else if (status === 403) toast.error("Access denied!");
+      // Không hiển thị toast tự động - để component xử lý
+      // Chỉ log error để debug
+      console.error("API Error:", status, error.response.data);
     }
 
     return Promise.reject(error);
   }
 );
+
+// API Functions
+export const authAPI = {
+  login: async (credentials) => {
+    const response = await fetcher.post("/auth/login", credentials);
+    return response.data;
+  },
+  register: async (data) => {
+    const response = await fetcher.post("/auth/register", data);
+    return response.data;
+  },
+  refreshToken: async () => {
+    const response = await fetcher.post("/auth/refresh-token");
+    return response.data;
+  },
+
+  logout: async () => {
+    const response = await fetcher.post("/auth/revoke-token");
+    return response.data;
+  },
+};
 
 export default fetcher;

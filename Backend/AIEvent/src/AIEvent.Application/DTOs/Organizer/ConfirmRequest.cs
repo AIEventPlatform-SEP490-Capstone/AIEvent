@@ -1,7 +1,9 @@
-﻿namespace AIEvent.Application.DTOs.Organizer
+﻿using AIEvent.Domain.Enums;
+
+namespace AIEvent.Application.DTOs.Organizer
 {
     public class ConfirmRequest
     {
-        public bool Status { get; set; }
+        public ConfirmStatus Status { get; set; }
     }
 }

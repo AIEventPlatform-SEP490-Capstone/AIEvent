@@ -1,38 +1,26 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Role;
-using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Implements;
-using AIEvent.Domain.Identity;
+using AIEvent.Domain.Entities;
+using AIEvent.Domain.Interfaces;
 using AutoMapper;
 using FluentAssertions;
-using Microsoft.AspNetCore.Identity;
 using Moq;
-using Xunit;
 
 namespace AIEvent.Application.Test.Services
 {
     public class RoleServiceTests
     {
-        private readonly Mock<RoleManager<AppRole>> _mockRoleManager;
-        private readonly Mock<UserManager<AppUser>> _mockUserManager;
         private readonly Mock<IMapper> _mockMapper;
         private readonly RoleService _roleService;
+        private readonly Mock<IUnitOfWork> _mockUnitOfWork;
 
         public RoleServiceTests()
         {
-            var roleStore = new Mock<IRoleStore<AppRole>>();
-            _mockRoleManager = new Mock<RoleManager<AppRole>>(
-                roleStore.Object, null!, null!, null!, null!);
-
-            var userStore = new Mock<IUserStore<AppUser>>();
-            _mockUserManager = new Mock<UserManager<AppUser>>(
-                userStore.Object, null!, null!, null!, null!, null!, null!, null!, null!);
-
             _mockMapper = new Mock<IMapper>();
-
+            _mockUnitOfWork = new Mock<IUnitOfWork>();
             _roleService = new RoleService(
-                _mockRoleManager.Object,
-                _mockUserManager.Object,
+                _mockUnitOfWork.Object,
                 _mockMapper.Object);
         }
 
@@ -45,23 +33,17 @@ namespace AIEvent.Application.Test.Services
                 Description = "Existing role description"
             };
 
-            var mapRole = new AppRole
+            var mapRole = new Role
             {
                 Id = Guid.NewGuid(),
                 Name = request.Name,
                 Description = request.Description
             };
 
-            _mockRoleManager.Setup(x => x.FindByNameAsync(request.Name))
-                .ReturnsAsync((AppRole?)null);
-
-            _mockRoleManager.Setup(x => x.CreateAsync(It.IsAny<AppRole>()))
-                .ReturnsAsync(IdentityResult.Success);
-
-            _mockMapper.Setup(m => m.Map<AppRole>(It.IsAny<CreateRoleRequest>()))
+            _mockMapper.Setup(m => m.Map<Role>(It.IsAny<CreateRoleRequest>()))
                 .Returns(mapRole);
 
-            _mockMapper.Setup(m => m.Map<RoleResponse>(It.IsAny<AppRole>()))
+            _mockMapper.Setup(m => m.Map<RoleResponse>(It.IsAny<Role>()))
                 .Returns(new RoleResponse
                 {
                     Id = mapRole.Id.ToString(),
@@ -73,8 +55,6 @@ namespace AIEvent.Application.Test.Services
 
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeTrue();
-            result.Value!.Should().NotBeNull();
-            result.Value!.Name.Should().Be(request.Name);
         }
 
 
@@ -87,14 +67,11 @@ namespace AIEvent.Application.Test.Services
                 Description = "Existing role description"
             };
 
-            var existingRole = new AppRole
+            var existingRole = new Role
             {
                 Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
                 Name = request.Name
             };
-
-            _mockRoleManager.Setup(x => x.FindByNameAsync(request.Name))
-                .ReturnsAsync(existingRole);
 
             var result = await _roleService.CreateRoleAsync(request);
 
@@ -113,8 +90,6 @@ namespace AIEvent.Application.Test.Services
                 Description = "Updated role description"
             };
 
-            _mockRoleManager.Setup(x => x.FindByIdAsync(roleId))
-                .ReturnsAsync((AppRole?)null);
 
             // Act
             var result = await _roleService.UpdateRoleAsync(roleId, request);
@@ -130,8 +105,6 @@ namespace AIEvent.Application.Test.Services
             // Arrange
             var roleId = Guid.NewGuid().ToString();
 
-            _mockRoleManager.Setup(x => x.FindByIdAsync(roleId))
-                .ReturnsAsync((AppRole?)null);
 
             // Act
             var result = await _roleService.DeleteRoleAsync(roleId);

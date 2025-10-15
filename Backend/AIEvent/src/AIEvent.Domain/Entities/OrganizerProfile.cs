@@ -1,6 +1,5 @@
 ﻿using AIEvent.Domain.Base;
 using AIEvent.Domain.Enums;
-using AIEvent.Domain.Identity;
 
 namespace AIEvent.Domain.Entities
 {
@@ -33,11 +32,11 @@ namespace AIEvent.Domain.Entities
         public string? TaxCode { get; set; }
         public string? CompanyDescription { get; set; }
 
-        public OrganizerStatus Status { get; set; } = OrganizerStatus.NeedConfirm;
+        public ConfirmStatus Status { get; set; } = ConfirmStatus.NeedConfirm;
         public DateTime? ConfirmAt { get; set; }
         public string? ConfirmBy { get; set; }
 
-        public required AppUser User { get; set; }
+        public User User { get; set; } = default!;
         public ICollection<Event>? Events { get; set; }
     }
 }

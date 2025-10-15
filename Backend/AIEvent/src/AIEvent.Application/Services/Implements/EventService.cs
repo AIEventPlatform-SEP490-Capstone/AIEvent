@@ -1,6 +1,7 @@
 ﻿using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
+using AIEvent.Application.DTOs.Organizer;
 using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
@@ -39,7 +40,7 @@ namespace AIEvent.Application.Services.Implements
                 }
 
                 var organizer = await _unitOfWork.OrganizerProfileRepository.GetByIdAsync(organizerId, true);
-                if (organizer?.Status != OrganizerStatus.Approve)
+                if (organizer?.Status != ConfirmStatus.Approve)
                 {
                     return ErrorResponse.FailureResult("Organizer not found or inactive", ErrorCodes.Unauthorized);
                 }
@@ -86,12 +87,8 @@ namespace AIEvent.Application.Services.Implements
         {
             IQueryable<Event> events = _unitOfWork.EventRepository
                                                 .Query()
-                                                .Include(e => e.EventCategory)
-                                                .Include(e => e.FavoriteEvents)
-                                                .Include(e => e.EventTags)
-                                                    .ThenInclude(e => e.Tag)
                                                 .AsNoTracking()
-                                                .Where(e => e.StartTime > DateTime.Now && !e.DeletedAt.HasValue && e.RequireApproval == true);
+                                                .Where(e => e.StartTime > DateTime.Now && !e.DeletedAt.HasValue && e.RequireApproval == ConfirmStatus.Approve);
 
             if (!string.IsNullOrEmpty(search))
             {
@@ -105,7 +102,7 @@ namespace AIEvent.Application.Services.Implements
                             .Where(e => e.EventCategoryId == Guid.Parse(eventCategoryId));
             }
 
-            if (tags != null || tags!.Count > 0)
+            if (tags != null && tags.Count > 0)
             {
                 var tagIds = tags.Select(t => t.TagId).ToList();
                 events = events
@@ -172,6 +169,9 @@ namespace AIEvent.Application.Services.Implements
                         TagId = t.TagId.ToString(),
                         TagName = t.Tag.NameTag
                     }).ToList(),
+                    TicketPrice = e.TicketDetails.Any()
+                        ? e.TicketDetails.Min(t => t.TicketPrice)
+                        : 0,
                     IsFavorite = userId != null && e.FavoriteEvents.Any(fe => fe.UserId == userId),
                     ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
                         ? new List<string>()
@@ -182,18 +182,77 @@ namespace AIEvent.Application.Services.Implements
             return new BasePaginated<EventsResponse>(result, totalCount, pageNumber, pageSize);
         }
 
+        public async Task<Result> UpdateEventAsync(Guid organizerId, Guid userId, Guid eventId, UpdateEventRequest request)
+        {
+            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+            {
 
-        public async Task<Result<EventDetailResponse>> GetEventByIdAsync(string eventId)
+                if (request.EndTime < request.StartTime)
+                {
+                    return ErrorResponse.FailureResult("EndTime cannot be before the StartTime", ErrorCodes.InvalidInput);
+                }
+
+                var organizer = await _unitOfWork.OrganizerProfileRepository.GetByIdAsync(organizerId, true);
+                if (organizer?.Status != ConfirmStatus.Approve)
+                {
+                    return ErrorResponse.FailureResult("Organizer not found or inactive", ErrorCodes.Unauthorized);
+                }
+                var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
+                if (user == null)
+                {
+                    return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
+                }
+
+                var events = await _unitOfWork.EventRepository.GetByIdAsync(eventId, true);
+                if (events == null)
+                {
+                    return ErrorResponse.FailureResult("Event not found or inactive", ErrorCodes.NotFound);
+                }
+
+
+                _mapper.Map(request, events);
+
+
+                var existingImages = string.IsNullOrEmpty(events.ImgListEvent)
+                                        ? new List<string>()
+                                        : JsonSerializer.Deserialize<List<string>>(events.ImgListEvent)!;
+
+                if (request.RemoveImageUrls != null && request.RemoveImageUrls.Any())
+                {
+                    foreach (var imageUrl in request.RemoveImageUrls)
+                    {
+                        existingImages.Remove(imageUrl);
+                        await _cloudinaryService.DeleteImageAsync(imageUrl);
+                    }
+                }
+
+                if (request.ImgListEvent != null && request.ImgListEvent.Any())
+                {
+                    var uploadTasks = request.ImgListEvent
+                        .Select(img => _cloudinaryService.UploadImageAsync(img)!)
+                        .ToList();
+
+                    var newImageUrls = await Task.WhenAll(uploadTasks);
+
+                    existingImages.AddRange(newImageUrls!);
+                }
+
+                events.ImgListEvent = JsonSerializer.Serialize(existingImages);
+
+                events.OrganizerProfileId = organizerId;
+                await _unitOfWork.EventRepository.UpdateAsync(events);
+
+                return Result.Success();
+            });
+        }
+
+        public async Task<Result<EventDetailResponse>> GetEventByIdAsync(Guid eventId)
         {
             var events = await _unitOfWork.EventRepository
                 .Query()
-                .Include(o => o.OrganizerProfile)
-                .Include(o => o.TicketDetails)
-                .Include(o => o.EventCategory)
-                .Include(o => o.EventTags)
-                    .ThenInclude(et => et.Tag)
+                .Where(e => e.Id == eventId)
                 .ProjectTo<EventDetailResponse>(_mapper.ConfigurationProvider)
-                .FirstOrDefaultAsync(e => e.EventId == Guid.Parse(eventId));
+                .FirstOrDefaultAsync();
 
             if (events == null)
                 return ErrorResponse.FailureResult("Event code already exists.", ErrorCodes.InvalidInput);
@@ -201,17 +260,230 @@ namespace AIEvent.Application.Services.Implements
             return Result<EventDetailResponse>.Success(events);
         }
 
-        public async Task<Result> DeleteEventAsync(string eventId)
+        public async Task<Result> DeleteEventAsync(Guid eventId)
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-                var existingEvent = await _unitOfWork.EventRepository.GetByIdAsync(Guid.Parse(eventId), true);
+                var existingEvent = await _unitOfWork.EventRepository.GetByIdAsync(eventId, true);
                 if (existingEvent == null  || existingEvent.DeletedAt.HasValue)
                     return ErrorResponse.FailureResult("Event not found or inactive", ErrorCodes.InvalidInput);
 
                 await _unitOfWork.EventRepository.DeleteAsync(existingEvent!);
                 return Result.Success();
             });
+        }
+
+        public async Task<Result<BasePaginated<EventsResponse>>> GetEventByOrganizerAsync(Guid? userId, Guid organizerId, string? search, string? eventCategoryId, List<EventTagRequest> tags, TicketType? ticketType, string? city, bool? IsSortByNewest ,int pageNumber = 1, int pageSize = 5)
+        {
+
+            IQueryable<Event> events = _unitOfWork.EventRepository
+                                                .Query()
+                                                .AsNoTracking()
+                                                .Where(e => e.OrganizerProfileId == organizerId);
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                events = events
+                            .Where(e => e.Title.ToLower().Contains(search.ToLower()));
+            }
+
+            if (!string.IsNullOrEmpty(eventCategoryId))
+            {
+                events = events
+                            .Where(e => e.EventCategoryId == Guid.Parse(eventCategoryId));
+            }
+
+            if (tags != null && tags.Count > 0)
+            {
+                var tagIds = tags.Select(t => t.TagId).ToList();
+                events = events
+                            .Where(e => e.EventTags.Any(et => tagIds.Contains(et.TagId)));
+            }
+
+            if (ticketType.HasValue)
+            {
+                events = events
+                            .Where(e => e.TicketType == ticketType);
+            }
+
+            if (!string.IsNullOrEmpty(city))
+            {
+                events = events
+                            .Where(e => (e.City ?? string.Empty).ToLower().Contains(city.ToLower()));
+            }
+
+            if (IsSortByNewest == true)
+            {
+                events = events.OrderByDescending(e => e.CreatedAt);
+            }  
+            else if (IsSortByNewest == false)
+            {
+                events = events.OrderBy(e => e.CreatedAt);
+            }
+
+
+            int totalCount = await events.CountAsync();
+
+            var result = await events
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(e => new EventsResponse
+                {
+                    EventId = e.Id,
+                    EventCategoryName = e.EventCategory.CategoryName,
+                    Title = e.Title,
+                    StartTime = e.StartTime,
+                    EndTime = e.EndTime,
+                    Description = e.Description,
+                    TicketType = e.TicketType,
+                    TotalTickets = e.TotalTickets,
+                    SoldQuantity = e.SoldQuantity,
+                    TicketPrice = e.TicketDetails.Any()
+                        ? e.TicketDetails.Min(t => t.TicketPrice)
+                        : 0,
+                    LocationName = e.LocationName,
+                    Tags = e.EventTags.Select(t => new TagResponse
+                    {
+                        TagId = t.TagId.ToString(),
+                        TagName = t.Tag.NameTag
+                    }).ToList(),
+                    IsFavorite = userId != null && e.FavoriteEvents.Any(fe => fe.UserId == userId),
+                    ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
+                        ? new List<string>()
+                        : JsonSerializer.Deserialize<List<string>>(e.ImgListEvent, new JsonSerializerOptions())
+                })
+                .ToListAsync();
+
+            return new BasePaginated<EventsResponse>(result, totalCount, pageNumber, pageSize);
+        }
+
+        public async Task<Result<BasePaginated<EventsRelatedResponse>>> GetRelatedEventAsync(Guid eventId,
+                                                                                             int pageNumber = 1,
+                                                                                             int pageSize = 5)
+        {
+            IQueryable<Event> events = _unitOfWork.EventRepository
+                                                .Query()
+                                                .AsNoTracking()
+                                                .Where(e => e.StartTime > DateTime.Now 
+                                                        && !e.DeletedAt.HasValue 
+                                                        && e.RequireApproval == ConfirmStatus.Approve);
+
+            var eventDetail = await _unitOfWork.EventRepository
+                                               .Query()
+                                               .Include(e => e.EventTags)
+                                               .FirstOrDefaultAsync(e => e.Id == eventId);
+            IQueryable<Event> eventsQuery;
+
+            if (eventDetail != null)
+            {
+                var relatedTagIds = eventDetail.EventTags?
+                    .Select(t => t.TagId)
+                    .ToList() ?? new List<Guid>();
+
+                eventsQuery = events.Where(e =>
+                    e.Id != eventId &&
+                    (
+                        e.EventCategoryId == eventDetail.EventCategoryId
+                        || (relatedTagIds.Any() && e.EventTags.Any(t => relatedTagIds.Contains(t.TagId)))
+                        || e.City == eventDetail.City
+                    ));
+
+                if (!await eventsQuery.AnyAsync())
+                {
+                    eventsQuery = events.Where(e => e.Id != eventId);
+                }
+            }
+            else
+            {
+                eventsQuery = events;
+            }
+
+            int totalCount = await eventsQuery.CountAsync();
+
+            var result = await eventsQuery
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(e => new EventsRelatedResponse
+                {
+                    EventId = e.Id,
+                    Title = e.Title,
+                    StartTime = e.StartTime,
+                    EndTime = e.EndTime,
+                    MinTicketPrice = e.TicketDetails.Any()
+                        ? e.TicketDetails.Min(t => t.TicketPrice)
+                        : 0,
+                    MaxTicketPrice = e.TicketDetails.Any() 
+                        ? e.TicketDetails.Max(t => t.TicketPrice)
+                        : 0,
+                    Description = e.Description,
+                    ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
+                        ? new List<string>()
+                        : JsonSerializer.Deserialize<List<string>>(e.ImgListEvent, new JsonSerializerOptions())
+                })
+                .ToListAsync();
+
+            return new BasePaginated<EventsRelatedResponse>(result, totalCount, pageNumber, pageSize);
+        }
+
+
+        public async Task<Result<BasePaginated<ListEventNeedConfirm>>> GetAllEventNeedConfirmAsync(int pageNumber, int pageSize)
+        {
+
+            IQueryable<Event> events = _unitOfWork.EventRepository
+                                                .Query()
+                                                .AsNoTracking()
+                                                .Where(e => e.RequireApproval == ConfirmStatus.NeedConfirm && !e.IsDeleted);
+
+            int totalCount = await events.CountAsync();
+
+            var result = await events
+                .OrderBy(p => p.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(e => new ListEventNeedConfirm
+                {
+                    EventId = e.Id.ToString(),
+                    Title = e.Title,
+                    StartTime = e.StartTime,
+                    EndTime = e.EndTime,
+                    TotalTickets = e.TotalTickets,
+                    City = e.City,
+                    Address = e.Address,
+                    OrganizerName = e.OrganizerProfile!.CompanyName!,
+                    LocationName = e.LocationName,
+                    EventCategory = e.EventCategory.CategoryName,
+                    ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
+                        ? new List<string>()
+                        : JsonSerializer.Deserialize<List<string>>(e.ImgListEvent, new JsonSerializerOptions())
+                })
+                .ToListAsync();
+
+            return new BasePaginated<ListEventNeedConfirm>(result, totalCount, pageNumber, pageSize);
+        }
+
+        public async Task<Result> ConfirmEventAsync(Guid userId, string id, ConfirmRequest request)
+        {
+            if (!Guid.TryParse(id, out var eventId))
+            {
+                return ErrorResponse.FailureResult("Invalid Guid format", ErrorCodes.InvalidInput);
+            }
+
+            var entity = await _unitOfWork.EventRepository
+                .Query()
+                .FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted && e.RequireApproval == ConfirmStatus.NeedConfirm);
+
+            if(entity == null)
+            {
+                return ErrorResponse.FailureResult("Event can not found or is deleted", ErrorCodes.NotFound);
+            }
+
+            entity.RequireApproval = request.Status;
+            entity.RequireApprovalAt = DateTime.UtcNow;
+            entity.RequireApprovalBy = userId;
+            await _unitOfWork.EventRepository.UpdateAsync(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return Result.Success();
         }
     }
 }

@@ -6,11 +6,9 @@ using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
-using AIEvent.Domain.Identity;
 using AIEvent.Domain.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace AIEvent.Application.Services.Implements
@@ -18,14 +16,14 @@ namespace AIEvent.Application.Services.Implements
     public class OrganizerService : IOrganizerService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly UserManager<AppUser> _userManager;
         private readonly IMapper _mapper;
         private readonly ITransactionHelper _transactionHelper;
         private readonly ICloudinaryService _cloudinaryService;
-        public OrganizerService(IUnitOfWork unitOfWork, UserManager<AppUser> userManager, IMapper mapper, ITransactionHelper transactionHelper, ICloudinaryService cloudinaryService)
+
+        public OrganizerService(IUnitOfWork unitOfWork, IMapper mapper, 
+            ITransactionHelper transactionHelper, ICloudinaryService cloudinaryService)
         {
             _unitOfWork = unitOfWork;
-            _userManager = userManager;
             _mapper = mapper;
             _transactionHelper = transactionHelper;
             _cloudinaryService = cloudinaryService;
@@ -35,7 +33,7 @@ namespace AIEvent.Application.Services.Implements
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-                var user = await _userManager.FindByIdAsync(userId.ToString());
+                var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
                 if (user == null || !user.IsActive)
                 {
                     return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
@@ -129,7 +127,7 @@ namespace AIEvent.Application.Services.Implements
                 .Query()
                 .AsNoTracking()
                 .Include(o => o.User)
-                .FirstOrDefaultAsync(o => o.Id == organizerId && !o.IsDeleted && o.Status == OrganizerStatus.NeedConfirm);
+                .FirstOrDefaultAsync(o => o.Id == organizerId && !o.IsDeleted && o.Status == ConfirmStatus.NeedConfirm);
 
             if (organizer == null)
             {
@@ -146,7 +144,7 @@ namespace AIEvent.Application.Services.Implements
             IQueryable<OrganizerProfile> query = _unitOfWork.OrganizerProfileRepository
                 .Query()
                 .AsNoTracking()
-                .Where(p => !p.DeletedAt.HasValue && p.Status == OrganizerStatus.NeedConfirm); ;
+                .Where(p => !p.DeletedAt.HasValue && p.Status == ConfirmStatus.NeedConfirm); ;
 
             var totalCount = await query.CountAsync();
 
@@ -173,37 +171,48 @@ namespace AIEvent.Application.Services.Implements
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-                if (!Guid.TryParse(id, out var Id))
-                {
+                if (!Guid.TryParse(id, out var organizerId))
                     return ErrorResponse.FailureResult("Invalid Guid format", ErrorCodes.InvalidInput);
-                }
 
                 var organizer = await _unitOfWork.OrganizerProfileRepository
                     .Query()
-                    .AsNoTracking()
-                    .Include(o => o.User)
-                    .FirstOrDefaultAsync(o => o.Id == Id && !o.IsDeleted && o.Status == OrganizerStatus.NeedConfirm);
+                    .FirstOrDefaultAsync(o => o.Id == organizerId && !o.IsDeleted && o.Status == ConfirmStatus.NeedConfirm);
 
                 if (organizer == null)
+                    return ErrorResponse.FailureResult("Can not found Organizer profile", ErrorCodes.NotFound);
+
+                var organizerUser = await _unitOfWork.UserRepository
+                                                     .Query()
+                                                     .Include(u => u.Role)
+                                                     .FirstOrDefaultAsync(u => u.Id == organizer.UserId);
+                if (organizerUser == null)
+                    return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
+
+                if (organizerUser.Role == null)
+                    return ErrorResponse.FailureResult("Role not valid", ErrorCodes.NotFound);
+
+                if (organizerUser.Role.Name.Contains("Organizer"))
+                    return ErrorResponse.FailureResult("User is already an Organizer", ErrorCodes.InvalidInput);
+
+                if (request.Status == ConfirmStatus.Approve)
                 {
-                    return ErrorResponse.FailureResult("Can not found Organizer", ErrorCodes.InvalidInput);
+                    var organizerRoleId = await _unitOfWork.RoleRepository.Query().FirstOrDefaultAsync(r => r.Name.Equals("Organizer"));
+                    if(organizerRoleId == null)
+                    {
+                        return ErrorResponse.FailureResult("Role not found", ErrorCodes.NotFound);
+                    }
+                    organizerUser.RoleId = organizerRoleId.Id;
                 }
 
-                if (request.Status)
-                {
-                    organizer.Status = OrganizerStatus.Approve;
-                }
-                else
-                {
-                    organizer.Status = OrganizerStatus.Reject;
-                }
-
+                organizer.Status = request.Status;
                 organizer.ConfirmAt = DateTime.UtcNow;
                 organizer.ConfirmBy = userId.ToString();
+                await _unitOfWork.UserRepository.UpdateAsync(organizerUser);
                 await _unitOfWork.OrganizerProfileRepository.UpdateAsync(organizer);
 
                 return Result.Success();
             });
         }
+
     }
 }

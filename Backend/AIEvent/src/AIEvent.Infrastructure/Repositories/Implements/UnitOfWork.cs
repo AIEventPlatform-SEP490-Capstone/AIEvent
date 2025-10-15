@@ -1,5 +1,4 @@
 using AIEvent.Domain.Entities;
-using AIEvent.Domain.Identity;
 using AIEvent.Domain.Interfaces;
 using AIEvent.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -12,20 +11,27 @@ namespace AIEvent.Infrastructure.Implements
         private readonly Dictionary<Type, object> _repositories = new Dictionary<Type, object>();
         private IDbContextTransaction? _transaction;
 
-        public IGenericRepository<AppUser> UserRepository => GetRepository<AppUser>();
-        public IGenericRepository<AppRole> RoleRepository => GetRepository<AppRole>();
+        public IGenericRepository<User> UserRepository => GetRepository<User>();
+        public IGenericRepository<Role> RoleRepository => GetRepository<Role>();
         public IGenericRepository<RefreshToken> RefreshTokenRepository => GetRepository<RefreshToken>();
         public IGenericRepository<Event> EventRepository => GetRepository<Event>();     
         public IGenericRepository<Tag> TagRepository => GetRepository<Tag>();
         public IGenericRepository<EventCategory> EventCategoryRepository => GetRepository<EventCategory>();
         public IGenericRepository<EventTag> EventTagRepository => GetRepository<EventTag>();
         public IGenericRepository<OrganizerProfile> OrganizerProfileRepository => GetRepository<OrganizerProfile>();
-        public IGenericRepository<Interest> InterestRepository => GetRepository<Interest>();
-        public IGenericRepository<UserInterest> UserInterestRepository => GetRepository<UserInterest>();
         public IGenericRepository<TicketDetail> TicketDetailRepository => GetRepository<TicketDetail>();
         public IGenericRepository<RefundRule> RefundRuleRepository => GetRepository<RefundRule>();
         public IGenericRepository<RefundRuleDetail> RefundRuleDetailRepository => GetRepository<RefundRuleDetail>();
         public IGenericRepository<FavoriteEvent> FavoriteEventRepository => GetRepository<FavoriteEvent>();
+        public IGenericRepository<Booking> BookingRepository => GetRepository<Booking>();
+        public IGenericRepository<Ticket> TicketRepository => GetRepository<Ticket>();
+        public IGenericRepository<BookingItem> BookingItemRepository => GetRepository<BookingItem>();
+        public IGenericRepository<Wallet> WalletRepository => GetRepository<Wallet>();
+        public IGenericRepository<WalletTransaction> WalletTransactionRepository => GetRepository<WalletTransaction>();
+        public IGenericRepository<PaymentTransaction> PaymentTransactionRepository => GetRepository<PaymentTransaction>();
+        public IGenericRepository<TopupRequest> TopupRequestRepository => GetRepository<TopupRequest>();
+
+        public IGenericRepository<UserOtps> UserOtpsRepository => GetRepository<UserOtps>();
 
         public UnitOfWork(DatabaseContext context)
         {

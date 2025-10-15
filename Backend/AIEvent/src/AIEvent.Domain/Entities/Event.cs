@@ -20,7 +20,7 @@ namespace AIEvent.Domain.Entities
         public TicketType TicketType { get; set; }
         public string? ImgListEvent { get; set; }
         public bool? Publish { get; set; } = false;
-        public bool RequireApproval { get; set; }
+        public ConfirmStatus? RequireApproval { get; set; }
         public DateTime? RequireApprovalAt { get; set; }
         public Guid? RequireApprovalBy { get; set; }
         public string? City { get; set; }
@@ -32,5 +32,6 @@ namespace AIEvent.Domain.Entities
         public virtual ICollection<TicketDetail> TicketDetails { get; set; } = new List<TicketDetail>();
         public virtual ICollection<EventTag> EventTags { get; set; } = new List<EventTag>();
         public ICollection<FavoriteEvent> FavoriteEvents { get; set; } = new List<FavoriteEvent>();
+        public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
     }
 }

@@ -1,8 +1,9 @@
-﻿using AIEvent.Application.Services.Interfaces;
+using AIEvent.Application.Services.Interfaces;
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using System.Text.RegularExpressions;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -20,6 +21,36 @@ namespace AIEvent.Application.Services.Implements
             _key = cloudinarySettings["Key"] ?? throw new ArgumentNullException("Key is not configured");
             _secret = cloudinarySettings["Secret"] ?? throw new ArgumentNullException("Secret is not configured");
             _cloudinary = new Cloudinary(new Account(_name,_key, _secret));
+        }
+
+        public async Task DeleteImageAsync(string imgUrl)
+        {
+            if (string.IsNullOrWhiteSpace(imgUrl))
+                return;
+
+            var publicId = ExtractPublicIdFromUrl(imgUrl);
+            if (string.IsNullOrEmpty(publicId))
+                return;
+            var deletionParams = new DeletionParams(publicId)
+            {
+                ResourceType = ResourceType.Image
+            };
+
+            await _cloudinary.DestroyAsync(deletionParams);
+        }
+
+        private string? ExtractPublicIdFromUrl(string imgUrl)
+        {
+            try
+            {
+                var regex = new Regex(@"\/upload\/(?:v\d+\/)?(.+)\.\w+$");
+                var match = regex.Match(imgUrl);
+                return match.Success ? match.Groups[1].Value : null;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         public async Task<string?> UploadImageAsync(IFormFile file)

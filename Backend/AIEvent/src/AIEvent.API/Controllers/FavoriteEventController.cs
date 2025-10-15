@@ -43,10 +43,10 @@ namespace AIEvent.API.Controllers
 
         [HttpPost]
         [Authorize]
-        public async Task<ActionResult<SuccessResponse<object>>> AddFavoriteEvent(string eventId)
+        public async Task<ActionResult<SuccessResponse<object>>> AddFavoriteEvent(Guid eventId)
         {
             var userId = User.GetRequiredUserId();
-            var result = await _favoriteEventService.AddFavoriteEvent(userId, Guid.Parse(eventId));
+            var result = await _favoriteEventService.AddFavoriteEvent(userId, eventId);
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
@@ -60,10 +60,10 @@ namespace AIEvent.API.Controllers
 
         [HttpDelete]
         [Authorize]
-        public async Task<ActionResult<SuccessResponse<object>>> DeleteFavoriteEvent(string eventId)
+        public async Task<ActionResult<SuccessResponse<object>>> DeleteFavoriteEvent(Guid eventId)
         {
             var userId = User.GetRequiredUserId();
-            var result = await _favoriteEventService.RemoveFavoriteEvent(userId, Guid.Parse(eventId));
+            var result = await _favoriteEventService.RemoveFavoriteEvent(userId, eventId);
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);

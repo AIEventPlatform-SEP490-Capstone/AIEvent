@@ -60,7 +60,7 @@ namespace AIEvent.Application.Test.Services
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
             result.Error.Should().NotBeNull();
-            result.Error.Message.Should().Be("Tag is already existing");
+            result.Error!.Message.Should().Be("Tag is already existing");
             result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
 
             _tagRepoMock.Verify(r => r.AddAsync(It.IsAny<Tag>()), Times.Never);
@@ -118,7 +118,7 @@ namespace AIEvent.Application.Test.Services
 
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeTrue();
-            result.Value.TagName.Should().Be("Science");
+            result.Value!.TagName.Should().Be("Science");
         }
 
         [Fact]
@@ -133,7 +133,7 @@ namespace AIEvent.Application.Test.Services
             var result = await _tagService.GetTagByIdAsync(nonExistentId.ToString());
 
             result.IsSuccess.Should().BeFalse();
-            result.Error.Message.Should().Be("Can not found or Tag is deleted");
+            result.Error!.Message.Should().Be("Can not found or Tag is deleted");
         }
 
         // ---------- DeleteTagAsync ----------
@@ -185,7 +185,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error.Message.Should().Be("Can not found or Tag is deleted");
+            result.Error!.Message.Should().Be("Can not found or Tag is deleted");
         }
 
 
@@ -219,7 +219,7 @@ namespace AIEvent.Application.Test.Services
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeTrue();
             result.Value.Should().NotBeNull();
-            result.Value.TagName.Should().Be("NewName");
+            result.Value!.TagName.Should().Be("NewName");
 
 
             _tagRepoMock.Verify(r => r.Query(false), Times.Once);
@@ -244,7 +244,7 @@ namespace AIEvent.Application.Test.Services
             var result = await _tagService.UpdateTagAsync(nonExistentId.ToString(), request);
 
             result.IsSuccess.Should().BeFalse();
-            result.Error.Message.Should().Be("Can not found or Tag is deleted");
+            result.Error!.Message.Should().Be("Can not found or Tag is deleted");
         }
     }
 }

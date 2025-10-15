@@ -6,9 +6,8 @@ using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
-using AIEvent.Domain.Identity;
+using AIEvent.Domain.Enums;
 using AIEvent.Domain.Interfaces;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
@@ -18,24 +17,24 @@ namespace AIEvent.Application.Services.Implements
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ITransactionHelper _transactionHelper;
-        private readonly UserManager<AppUser> _userManager;
-        public FavoriteEventService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper, UserManager<AppUser> userManager)
+        public FavoriteEventService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper)
         {
             _unitOfWork = unitOfWork;
             _transactionHelper = transactionHelper;
-            _userManager = userManager;
         }
         public async Task<Result> AddFavoriteEvent(Guid userId, Guid eventId)
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-                var user = await _userManager.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                var user = await _unitOfWork.UserRepository
+                                            .Query()
+                                            .FirstOrDefaultAsync(u => u.Id == userId);
                 if (user == null || user.IsActive == false)
                 {
                     return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
                 }
                 var eventDetail = await _unitOfWork.EventRepository.GetByIdAsync(eventId, true);
-                if (eventDetail == null || eventDetail.RequireApproval == false)
+                if (eventDetail == null || eventDetail.RequireApproval == ConfirmStatus.Reject)
                 {
                     return ErrorResponse.FailureResult("Event not found or inactive", ErrorCodes.NotFound);
                 }
@@ -60,14 +59,10 @@ namespace AIEvent.Application.Services.Implements
         {
             IQueryable<Event> events = _unitOfWork.EventRepository
                                                 .Query()
-                                                .Include(e => e.FavoriteEvents)
-                                                .Include(e => e.EventCategory)
-                                                .Include(e => e.EventTags)
-                                                    .ThenInclude(e => e.Tag)
                                                 .AsNoTracking()
                                                 .Where(e => e.FavoriteEvents.Any(x => x.UserId == userId) &&
                                                        !e.DeletedAt.HasValue && 
-                                                       e.RequireApproval == true);
+                                                       e.RequireApproval == ConfirmStatus.Approve);
 
             if (!string.IsNullOrEmpty(search))
             {
@@ -117,12 +112,10 @@ namespace AIEvent.Application.Services.Implements
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-                var user = await _unitOfWork.FavoriteEventRepository
-                                            .Query()
-                                            .FirstOrDefaultAsync(u => u.UserId == userId);
                 var favorite = await _unitOfWork.FavoriteEventRepository
                                                 .Query()
                                                 .FirstOrDefaultAsync(fe => fe.UserId == userId && fe.EventId == eventId);
+
                 if (favorite == null)
                 {
                     return ErrorResponse.FailureResult("Favorite event not found", ErrorCodes.NotFound);

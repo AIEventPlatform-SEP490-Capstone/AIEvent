@@ -1,7 +1,7 @@
-﻿namespace AIEvent.Application.DTOs.EventField
+﻿namespace AIEvent.Application.DTOs.EventCategory
 {
     public class EventCategoryRequest
     {
-        public required string EventCategoryId { get; set; }
+        public required string EventCategoryName { get; set; }
     }
 }
