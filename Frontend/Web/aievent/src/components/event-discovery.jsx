@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader } from "./ui/card";
 import {
@@ -21,6 +22,7 @@ import {
   Stethoscope,
   MessageCircle,
   Star,
+  Loader2,
 } from "lucide-react";
 
 const categories = [
@@ -39,198 +41,6 @@ const categories = [
 
 const userAttendedEvents = new Set([1, 2, 3]); // Event IDs that user has attended
 
-const mockEvents = [
-  {
-    id: "1",
-    title: "Hội nghị Công nghệ 2025",
-    description: "Tham gia khám phá những đổi mới công nghệ mới nhất.",
-    date: "2025-10-15",
-    time: "10:00",
-    location: "Hà Nội",
-    address: "123 Đường Công Nghệ",
-    category: "Technology",
-    price: 500000,
-    isFree: false,
-    image: "/tech-conference.jpg",
-    averageRating: 4.5,
-    totalRatings: 120,
-    attendees: 500,
-    likesCount: 250,
-    commentsCount: 45,
-  },
-  {
-    id: "2",
-    title: "Buổi hòa nhạc Rock",
-    description: "Trải nghiệm âm nhạc sống động với các ban nhạc hàng đầu.",
-    date: "2025-09-20",
-    time: "19:00",
-    location: "TP. HCM",
-    address: "456 Đường Âm Nhạc",
-    category: "Music",
-    price: 300000,
-    isFree: false,
-    image: "/rock-concert.jpg",
-    averageRating: 4.2,
-    totalRatings: 89,
-    attendees: 300,
-    likesCount: 180,
-    commentsCount: 32,
-  },
-  {
-    id: "3",
-    title: "Workshop Networking",
-    description: "Kết nối với các chuyên gia trong lĩnh vực kinh doanh.",
-    date: "2025-10-10",
-    time: "14:00",
-    location: "Đà Nẵng",
-    address: "789 Đường Kết Nối",
-    category: "Networking",
-    price: 0,
-    isFree: true,
-    image: "/networking.jpg",
-    averageRating: 4.7,
-    totalRatings: 67,
-    attendees: 150,
-    likesCount: 120,
-    commentsCount: 25,
-  },
-  {
-    id: "4",
-    title: "Triển lãm Nghệ thuật Hiện Đại",
-    description: "Khám phá các tác phẩm nghệ thuật đương đại ấn tượng.",
-    date: "2025-11-05",
-    time: "09:00",
-    location: "Hà Nội",
-    address: "101 Đường Nghệ Thuật",
-    category: "Arts & Culture",
-    price: 150000,
-    isFree: false,
-    image: "/art-exhibition.jpg",
-    averageRating: 4.3,
-    totalRatings: 56,
-    attendees: 200,
-    likesCount: 95,
-    commentsCount: 18,
-  },
-  {
-    id: "5",
-    title: "Lớp học Nấu Ăn Ý",
-    description: "Học cách chế biến các món ăn Ý truyền thống.",
-    date: "2025-10-25",
-    time: "18:00",
-    location: "TP. HCM",
-    address: "202 Đường Ẩm Thực",
-    category: "Food & Drink",
-    price: 400000,
-    isFree: false,
-    image: "/cooking-class.jpg",
-    averageRating: 4.8,
-    totalRatings: 34,
-    attendees: 80,
-    likesCount: 70,
-    commentsCount: 12,
-  },
-  {
-    id: "6",
-    title: "Seminar Giáo dục Trực tuyến",
-    description: "Thảo luận về tương lai của giáo dục kỹ thuật số.",
-    date: "2025-09-30",
-    time: "16:00",
-    location: "Online",
-    address: "Zoom Meeting",
-    category: "Education",
-    price: 0,
-    isFree: true,
-    image: "/education-seminar.jpg",
-    averageRating: 4.1,
-    totalRatings: 45,
-    attendees: 250,
-    likesCount: 110,
-    commentsCount: 22,
-  },
-  {
-    id: "7",
-    title: "Giải chạy Marathon",
-    description: "Tham gia thử thách chạy bộ vì sức khỏe cộng đồng.",
-    date: "2025-11-15",
-    time: "07:00",
-    location: "Đà Nẵng",
-    address: "Công viên Biển",
-    category: "Sports & Fitness",
-    price: 200000,
-    isFree: false,
-    image: "/marathon.jpg",
-    averageRating: 4.6,
-    totalRatings: 78,
-    attendees: 1000,
-    likesCount: 300,
-    commentsCount: 50,
-  },
-  {
-    id: "8",
-    title: "Yoga Retreat",
-    description: "Nghỉ dưỡng và thực hành yoga để cân bằng tinh thần.",
-    date: "2025-10-20",
-    time: "08:00",
-    location: "Nha Trang",
-    address: "Bãi biển Yoga",
-    category: "Health & Wellness",
-    price: 800000,
-    isFree: false,
-    image: "/yoga-retreat.jpg",
-    averageRating: 4.9,
-    totalRatings: 23,
-    attendees: 50,
-    likesCount: 40,
-    commentsCount: 8,
-  },
-  {
-    id: "9",
-    title: "Hội thảo Bảo vệ Môi trường",
-    description: "Hành động vì một hành tinh xanh hơn.",
-    date: "2025-11-10",
-    time: "13:00",
-    location: "Hà Nội",
-    address: "Trung tâm Môi trường",
-    category: "Environment",
-    price: 0,
-    isFree: true,
-    image: "/environment-workshop.jpg",
-    averageRating: 4.4,
-    totalRatings: 61,
-    attendees: 120,
-    likesCount: 85,
-    commentsCount: 15,
-  },
-  {
-    id: "10",
-    title: "Startup Pitch Day",
-    description: "Xem các ý tưởng kinh doanh đột phá từ startup trẻ.",
-    date: "2025-10-30",
-    time: "15:00",
-    location: "TP. HCM",
-    address: "Tòa nhà Startup",
-    category: "Business",
-    price: 250000,
-    isFree: false,
-    image: "/startup-pitch.jpg",
-    averageRating: 4.0,
-    totalRatings: 52,
-    attendees: 300,
-    likesCount: 140,
-    commentsCount: 28,
-  },
-];
-
-const getRecommendedEvents = () => {
-  // Mock AI recommendations based on user interests
-  return mockEvents
-    .filter((event) =>
-      ["Technology", "Music", "Networking"].includes(event.category)
-    )
-    .slice(0, 6);
-};
-
 const getAIRecommendationReasons = (eventId) => {
   const reasons = {
     1: "Phù hợp với sở thích công nghệ của bạn và các sự kiện tương tự bạn đã tham gia.",
@@ -243,17 +53,16 @@ const getAIRecommendationReasons = (eventId) => {
   return reasons[eventId] || "Gợi ý dựa trên sở thích chung của bạn.";
 };
 
-export function EventDiscovery() {
+export function EventDiscovery({ 
+  allEvents = [], 
+  recommendedEvents = [], 
+  loading = false, 
+  error = null,
+  onRefresh 
+}) {
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [likedEvents, setLikedEvents] = useState(new Set([2, 4]));
-  const [recommendedEvents, setRecommendedEvents] = useState([]);
-  const [allEvents, setAllEvents] = useState([]);
-
-  useEffect(() => {
-    const recommended = getRecommendedEvents();
-    setRecommendedEvents(recommended);
-    setAllEvents(mockEvents);
-  }, []);
 
   const toggleLike = (eventId) => {
     const newLikedEvents = new Set(likedEvents);
@@ -266,35 +75,65 @@ export function EventDiscovery() {
   };
 
   const handleViewDetail = (eventId) => {
-    // Navigation removed
-    console.log(`View detail for event ${eventId}`);
+    // Navigate to guest event detail page
+    navigate(`/event/${eventId}`);
   };
 
   const handleRegister = (eventId) => {
-    // Navigation removed
-    console.log(`Register for event ${eventId}`);
+    // Navigate to booking page (requires authentication)
+    navigate(`/booking/${eventId}`);
   };
 
   const isEventPastAndAttended = (event) => {
-    const eventDate = new Date(event.date);
-    const today = new Date("2025-10-08"); // Current date: October 08, 2025
+    const eventDate = new Date(event.date || event.startTime);
+    const today = new Date();
     return (
-      eventDate < today && userAttendedEvents.has(Number.parseInt(event.id))
+      eventDate < today && userAttendedEvents.has(Number.parseInt(event.id || event.eventId))
     );
   };
 
   const filteredEvents =
     selectedCategory === "all"
       ? allEvents
-      : allEvents.filter((event) => event.category === selectedCategory);
+      : allEvents.filter((event) => {
+          // Handle both mock data and API data structure
+          const categoryName = event.category || event.eventCategoryName;
+          return categoryName === selectedCategory;
+        });
 
   const formatPrice = (price, isFree) => {
-    if (isFree || price === 0) return "Miễn phí";
+    // Handle both mock data and API data structure
+    const ticketType = isFree !== undefined ? (isFree ? 1 : 2) : price?.ticketType;
+    const actualPrice = price?.ticketPrice !== undefined ? price.ticketPrice : price;
+    
+    if (ticketType === 1 || actualPrice === 0) return "Miễn phí";
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
-    }).format(price);
+    }).format(actualPrice);
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-2" />
+          <p className="text-gray-600">Đang tải sự kiện...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error}</p>
+          <Button onClick={onRefresh}>Thử lại</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -377,12 +216,17 @@ export function EventDiscovery() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {recommendedEvents.slice(0, 6).map((event) => (
               <Card
-                key={event.id}
+                key={event.eventId || event.id}
                 className="group overflow-hidden hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 border-border/50 bg-card relative hover:-translate-y-1"
               >
                 <div className="relative">
+                  {/* Handle both mock and API image data */}
                   <img
-                    src={event.image || "/placeholder.svg"}
+                    src={
+                      event.image || 
+                      (event.imgListEvent && event.imgListEvent[0]) || 
+                      "/placeholder.svg"
+                    }
                     alt={event.title}
                     className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
                   />
@@ -393,11 +237,11 @@ export function EventDiscovery() {
                       size="sm"
                       variant="secondary"
                       className="w-10 h-10 p-0 bg-white/90 backdrop-blur-sm border border-white/20 hover:bg-white shadow-lg"
-                      onClick={() => toggleLike(event.id)}
+                      onClick={() => toggleLike(event.eventId || event.id)}
                     >
                       <Heart
                         className={`w-4 h-4 transition-colors ${
-                          likedEvents.has(event.id)
+                          likedEvents.has(event.eventId || event.id)
                             ? "fill-red-500 text-red-500"
                             : "text-gray-800"
                         }`}
@@ -407,7 +251,7 @@ export function EventDiscovery() {
                       size="sm"
                       variant="secondary"
                       className="w-10 h-10 p-0 bg-white/90 backdrop-blur-sm border border-white/20 hover:bg-white shadow-lg"
-                      onClick={() => handleViewDetail(event.id)}
+                      onClick={() => handleViewDetail(event.eventId || event.id)}
                     >
                       <MessageCircle className="w-4 h-4 text-gray-800" />
                     </Button>
@@ -415,7 +259,7 @@ export function EventDiscovery() {
 
                   <div className="absolute bottom-4 left-4">
                     <span className="bg-white/95 backdrop-blur-sm text-gray-900 font-bold px-3 py-1.5 shadow-lg border border-white/20">
-                      {formatPrice(event.price, event.isFree)}
+                      {formatPrice(event, event.ticketType === 1)}
                     </span>
                   </div>
                 </div>
@@ -447,7 +291,7 @@ export function EventDiscovery() {
                           Tại sao phù hợp với bạn:
                         </p>
                         <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed font-medium">
-                          {getAIRecommendationReasons(event.id)}
+                          {getAIRecommendationReasons(event.eventId || event.id)}
                         </p>
                       </div>
                     </div>
@@ -459,14 +303,14 @@ export function EventDiscovery() {
                     <div className="flex items-center text-sm text-gray-800 dark:text-gray-200">
                       <Calendar className="w-4 h-4 mr-2 text-blue-500" />
                       <span>
-                        {new Date(event.date).toLocaleDateString("vi-VN")} •{" "}
-                        {event.time}
+                        {new Date(event.startTime || event.date).toLocaleDateString("vi-VN")} •{" "}
+                        {event.time || new Date(event.startTime).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
 
                     <div className="flex items-center text-sm text-gray-800 dark:text-gray-200">
                       <MapPin className="w-4 h-4 mr-2 text-blue-500 flex-shrink-0" />
-                      <span className="truncate">{event.location}</span>
+                      <span className="truncate">{event.locationName || event.location}</span>
                     </div>
 
                     <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t border-border/50">
@@ -486,7 +330,7 @@ export function EventDiscovery() {
                       <Button
                         className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                         size="sm"
-                        onClick={() => handleRegister(event.id)}
+                        onClick={() => handleRegister(event.eventId || event.id)}
                       >
                         Đăng ký
                       </Button>
@@ -494,7 +338,7 @@ export function EventDiscovery() {
                         variant="outline"
                         size="sm"
                         className="border-blue-200 hover:bg-blue-50 text-blue-600 bg-transparent hover:border-blue-300 transition-colors"
-                        onClick={() => handleViewDetail(event.id)}
+                        onClick={() => handleViewDetail(event.eventId || event.id)}
                       >
                         Chi tiết
                       </Button>
@@ -553,12 +397,16 @@ export function EventDiscovery() {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
         {filteredEvents.map((event) => (
           <Card
-            key={event.id}
+            key={event.eventId || event.id}
             className="overflow-hidden hover:shadow-xl transition-all duration-300 border-border/50 bg-card"
           >
             <div className="relative">
               <img
-                src={event.image || "/placeholder.svg"}
+                src={
+                  event.image || 
+                  (event.imgListEvent && event.imgListEvent[0]) || 
+                  "/placeholder.svg"
+                }
                 alt={event.title}
                 className="w-full h-56 object-cover"
               />
@@ -567,11 +415,11 @@ export function EventDiscovery() {
                   size="sm"
                   variant="secondary"
                   className="w-10 h-10 p-0 bg-background/90 backdrop-blur-sm border border-border/50 hover:bg-background"
-                  onClick={() => toggleLike(event.id)}
+                  onClick={() => toggleLike(event.eventId || event.id)}
                 >
                   <Heart
                     className={`w-5 h-5 ${
-                      likedEvents.has(event.id)
+                      likedEvents.has(event.eventId || event.id)
                         ? "fill-red-500 text-red-500"
                         : "text-muted-foreground"
                     }`}
@@ -588,14 +436,14 @@ export function EventDiscovery() {
                   size="sm"
                   variant="secondary"
                   className="w-10 h-10 p-0 bg-background/90 backdrop-blur-sm border border-border/50 hover:bg-background"
-                  onClick={() => handleViewDetail(event.id)}
+                  onClick={() => handleViewDetail(event.eventId || event.id)}
                 >
                   <MessageCircle className="w-5 h-5 text-muted-foreground" />
                 </Button>
               </div>
               <div className="absolute bottom-4 left-4">
                 <span className="bg-background/90 backdrop-blur-sm text-foreground font-semibold px-3 py-1">
-                  {formatPrice(event.price, event.isFree)}
+                  {formatPrice(event, event.ticketType === 1)}
                 </span>
               </div>
               {isEventPastAndAttended(event) && (
@@ -633,22 +481,22 @@ export function EventDiscovery() {
                 <div className="flex items-center text-muted-foreground">
                   <Calendar className="w-5 h-5 mr-3 text-primary" />
                   <span className="font-medium">
-                    {new Date(event.date).toLocaleDateString("vi-VN")} •{" "}
-                    {event.time}
+                    {new Date(event.startTime || event.date).toLocaleDateString("vi-VN")} •{" "}
+                    {event.time || new Date(event.startTime).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
 
                 <div className="flex items-center text-muted-foreground">
                   <MapPin className="w-5 h-5 mr-3 text-primary flex-shrink-0" />
                   <span className="truncate font-medium">
-                    {event.location}, {event.address}
+                    {event.locationName || event.location}, {event.address}
                   </span>
                 </div>
 
                 <div className="flex items-center text-muted-foreground">
                   <Users className="w-5 h-5 mr-3 text-primary" />
                   <span className="font-medium">
-                    {event.attendees} người tham gia
+                    {event.soldQuantity || 0} / {event.totalTickets} người tham gia
                   </span>
                 </div>
 
@@ -670,7 +518,7 @@ export function EventDiscovery() {
                     <Button
                       className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold"
                       size="lg"
-                      onClick={() => console.log(`Rate event ${event.id}`)}
+                      onClick={() => console.log(`Rate event ${event.eventId || event.id}`)}
                     >
                       <Star className="w-4 h-4 mr-2" />
                       Đánh giá sự kiện
@@ -680,7 +528,7 @@ export function EventDiscovery() {
                       <Button
                         className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
                         size="lg"
-                        onClick={() => handleRegister(event.id)}
+                        onClick={() => handleRegister(event.eventId || event.id)}
                       >
                         Đăng ký ngay
                       </Button>
@@ -688,7 +536,7 @@ export function EventDiscovery() {
                         variant="outline"
                         size="lg"
                         className="border-border hover:bg-muted text-foreground bg-transparent"
-                        onClick={() => handleViewDetail(event.id)}
+                        onClick={() => handleViewDetail(event.eventId || event.id)}
                       >
                         Chi tiết
                       </Button>

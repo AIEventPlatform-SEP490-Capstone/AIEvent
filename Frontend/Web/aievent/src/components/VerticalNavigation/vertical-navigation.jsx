@@ -109,7 +109,7 @@ export function VerticalNavigation() {
       ]
     }
 
-    if (user?.role?.toLowerCase() === "organizer" || user?.role?.toLowerCase() === "manager") {
+    if (user?.role?.toLowerCase() === "organizer") {
       return [
         {
           title: "Dashboard",
@@ -134,6 +134,29 @@ export function VerticalNavigation() {
           url: "/organizer/events",
           icon: CheckSquare,
           isActive: pathname === "/organizer/events",
+        },
+      ]
+    }
+
+    if (user?.role?.toLowerCase() === "manager") {
+      return [
+        {
+          title: "Dashboard",
+          url: "/manager",
+          icon: BarChart3,
+          isActive: pathname === "/manager",
+        },
+        {
+          title: "Quản lý sự kiện",
+          url: "/manager/events",
+          icon: Calendar,
+          isActive: pathname === "/manager/events",
+        },
+        {
+          title: "Sự kiện cần duyệt",
+          url: "/manager/events/need-approval",
+          icon: CheckSquare,
+          isActive: pathname === "/manager/events/need-approval",
         },
       ]
     }
@@ -417,7 +440,7 @@ export function VerticalNavigation() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   {/* Only show "Trở thành Organizer" for regular users, not for admin */}
-                  {user?.role?.toLowerCase() !== "admin" && (
+                  {user?.role?.toLowerCase() == "user" && (
                     <SidebarMenuItem>
                       <SidebarMenuButton
                         asChild
@@ -429,7 +452,7 @@ export function VerticalNavigation() {
                       >
                         <NavLink to="/become-organizer" className="flex items-center gap-3 px-3 py-2.5">
                           <Plus className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                          {state !== "collapsed" && <span className="font-medium text-sm">+ Trở thành Organizer</span>}
+                          {state !== "collapsed" && <span className="font-medium text-sm">Trở thành Organizer</span>}
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

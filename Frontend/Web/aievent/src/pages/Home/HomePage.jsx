@@ -6,10 +6,19 @@ import { EventDiscovery } from "../../components/event-discovery"
 import { PATH } from "../../routes/path";
 import LoadingSpinner from "../../components/LoadingSpinner/LoadingSpinner";
 import { Footer } from "../../components/Footer/Footer";
+import { useHomepageEvents } from "../../hooks/useHomepageEvents";
 
 const HomePage = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading, isInitialized } = useSelector((state) => state.auth);
+  
+  const { 
+    allEvents, 
+    recommendedEvents, 
+    loading, 
+    error, 
+    refreshEvents 
+  } = useHomepageEvents();
 
   useEffect(() => {
     // Chỉ redirect khi đã khởi tạo xong, đã xác thực và có user data
@@ -21,8 +30,10 @@ const HomePage = () => {
           navigate(PATH.ADMIN, { replace: true });
           break;
         case 'organizer':
-        case 'manager':
           navigate(PATH.ORGANIZER, { replace: true });
+          break;
+        case 'manager':
+          navigate(PATH.MANAGER, { replace: true });
           break;
         default:
           // User thường - hiển thị HomePage bình thường
@@ -62,7 +73,13 @@ const HomePage = () => {
       <div className="container mx-auto px-4 py-12 max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
           <div className="lg:col-span-3">
-            <EventDiscovery />
+            <EventDiscovery 
+              allEvents={allEvents}
+              recommendedEvents={recommendedEvents}
+              loading={loading}
+              error={error}
+              onRefresh={refreshEvents}
+            />
           </div>
           
           <div className="space-y-6">

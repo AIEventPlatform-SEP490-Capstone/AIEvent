@@ -7,7 +7,6 @@ import {
   MapPin, 
   Users, 
   Clock,
-  Plus,
   Search,
   Filter,
   Eye,
@@ -36,13 +35,16 @@ import { Separator } from '../../components/ui/separator';
 import { useEvents } from '../../hooks/useEvents';
 import { PATH } from '../../routes/path';
 
-const MyEventsPage = () => {
+// Import ConfirmStatus constants
+import { ConfirmStatus, ConfirmStatusDisplay } from '../../constants/eventConstants';
+
+const ManagerEventsPage = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const [events, setEvents] = useState([]);
   const [allEvents, setAllEvents] = useState([]); // Store all events for client-side filtering
   const [isLoading, setIsLoading] = useState(true);
-  const { getEventsByOrganizer, deleteEvent: deleteEventAPI, loading: eventLoading } = useEvents();
+  const { getEvents, deleteEvent: deleteEventAPI, loading: eventLoading } = useEvents();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -71,13 +73,13 @@ const MyEventsPage = () => {
   const loadEvents = async () => {
     try {
       setIsLoading(true);
-      const response = await getEventsByOrganizer({
+      const response = await getEvents({
         search: '', // Load all events, we'll filter on client side
         pageNumber: 1,
         pageSize: 1000, // Get all events
       });
 
-      console.log('My events response:', response);
+      console.log('Events response:', response);
 
       if (response) {
         const eventsData = response.items || response || [];
@@ -152,11 +154,11 @@ const MyEventsPage = () => {
   };
 
   const handleViewEvent = (eventId) => {
-    navigate(`/organizer/event/${eventId}`);
+    navigate(`/manager/event/${eventId}`);
   };
 
   const handleEditEvent = (eventId) => {
-    navigate(`/organizer/event/${eventId}/edit`);
+    navigate(`/manager/event/${eventId}/edit`);
   };
 
   const handleDeleteEvent = async (eventId) => {
@@ -242,17 +244,22 @@ const MyEventsPage = () => {
   };
 
   const getEventStats = () => {
-    if (!allEvents.length) return { total: 0, upcoming: 0, ongoing: 0, completed: 0 };
+    if (!allEvents.length) return { total: 0, upcoming: 0, ongoing: 0, completed: 0, pendingApprovals: 0 };
     
     return allEvents.reduce((acc, event) => {
       const status = getEventStatus(event);
+      
+      // Count events needing approval
+      const pendingApproval = event.requireApproval === ConfirmStatus.NeedConfirm ? 1 : 0;
+      
       return {
         total: acc.total + 1,
         upcoming: acc.upcoming + (status === 'upcoming' ? 1 : 0),
         ongoing: acc.ongoing + (status === 'ongoing' ? 1 : 0),
-        completed: acc.completed + (status === 'completed' ? 1 : 0)
+        completed: acc.completed + (status === 'completed' ? 1 : 0),
+        pendingApprovals: acc.pendingApprovals + pendingApproval
       };
-    }, { total: 0, upcoming: 0, ongoing: 0, completed: 0 });
+    }, { total: 0, upcoming: 0, ongoing: 0, completed: 0, pendingApprovals: 0 });
   };
 
   // Handle search input change
@@ -296,25 +303,15 @@ const MyEventsPage = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-semibold text-gray-900 mb-1">
-              Sự kiện của tôi
+              Quản lý sự kiện
             </h1>
             <p className="text-sm text-gray-500">
-              Quản lý sự kiện đã tạo và theo dõi thành tích
+              Quản lý tất cả các sự kiện trong hệ thống
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Lần mới
-            </Button>
-            <Button 
-              onClick={() => navigate(PATH.ORGANIZER_CREATE)}
-              className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Tạo sự kiện mới
-            </Button>
-          </div>
+          <Button onClick={() => navigate(PATH.MANAGER_EVENTS_NEED_APPROVAL)}>
+            Sự kiện cần duyệt ({stats.pendingApprovals || 4})
+          </Button>
         </div>
 
         {/* Statistics Cards */}
@@ -410,32 +407,30 @@ const MyEventsPage = () => {
 
         {/* Search and Filter Bar */}
         <div className="flex items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">
-                Tất cả ({allEvents.length}) | Hiển thị ({events.length})
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">
+              Tất cả ({allEvents.length}) | Hiển thị ({events.length})
+            </span>
+            {searchTerm && (
+              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                Tìm: "{searchTerm}"
               </span>
-              {searchTerm && (
-                <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                  Tìm: "{searchTerm}"
-                </span>
-              )}
-              {filterStatus !== 'all' && (
-                <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded">
-                  Lọc: {filterStatus}
-                </span>
-              )}
-              {(searchTerm || filterStatus !== 'all') && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleClearFilters}
-                  className="text-xs text-blue-600 hover:text-blue-700"
-                >
-                  Xóa bộ lọc
-                </Button>
-              )}
-            </div>
+            )}
+            {filterStatus !== 'all' && (
+              <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded">
+                Lọc: {filterStatus}
+              </span>
+            )}
+            {(searchTerm || filterStatus !== 'all') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFilters}
+                className="text-xs text-blue-600 hover:text-blue-700"
+              >
+                Xóa bộ lọc
+              </Button>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
@@ -597,26 +592,10 @@ const MyEventsPage = () => {
               </h3>
               <p className="text-gray-500 mb-6">
                 {allEvents.length === 0 
-                  ? 'Bắt đầu tạo sự kiện đầu tiên của bạn ngay bây giờ!'
+                  ? 'Bắt đầu quản lý sự kiện trong hệ thống!'
                   : 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm để tìm sự kiện bạn cần.'
                 }
               </p>
-              {allEvents.length === 0 ? (
-                <Button
-                  onClick={() => navigate(PATH.ORGANIZER_CREATE)}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Tạo sự kiện mới
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleClearFilters}
-                  variant="outline"
-                >
-                  Xóa bộ lọc
-                </Button>
-              )}
             </CardContent>
           </Card>
         ) : (
@@ -686,6 +665,19 @@ const MyEventsPage = () => {
                               {event.eventCategoryName && (
                                 <Badge variant="outline">{event.eventCategoryName}</Badge>
                               )}
+                              {/* Display approval status */}
+                              {event.requireApproval && (
+                                <Badge 
+                                  variant="outline" 
+                                  className={
+                                    event.requireApproval === ConfirmStatus.Approve ? 'bg-green-100 text-green-800 border-green-200' :
+                                    event.requireApproval === ConfirmStatus.Reject ? 'bg-red-100 text-red-800 border-red-200' :
+                                    'bg-yellow-100 text-yellow-800 border-yellow-200'
+                                  }
+                                >
+                                  {ConfirmStatusDisplay[event.requireApproval] || event.requireApproval}
+                                </Badge>
+                              )}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -694,6 +686,9 @@ const MyEventsPage = () => {
                             </Button>
                             <Button variant="ghost" size="sm" onClick={() => handleEditEvent(event.eventId)}>
                               <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleDeleteEvent(event.eventId)}>
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                             <Button variant="ghost" size="sm">
                               <MoreVertical className="h-4 w-4" />
@@ -770,4 +765,4 @@ const MyEventsPage = () => {
   );
 };
 
-export default MyEventsPage;
+export default ManagerEventsPage;

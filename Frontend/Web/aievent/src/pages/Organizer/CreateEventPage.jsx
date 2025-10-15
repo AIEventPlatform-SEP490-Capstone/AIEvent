@@ -15,7 +15,8 @@ import {
   Clock,
   Users,
   Settings,
-  Globe
+  Globe,
+  Eye
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
@@ -25,6 +26,7 @@ import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Switch } from '../../components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
 
 import { useEvents } from '../../hooks/useEvents';
 import TagSelector from '../../components/Event/TagSelector';
@@ -35,6 +37,12 @@ import { useCategories } from '../../hooks/useCategories';
 import { useTags } from '../../hooks/useTags';
 import { useRefundRules } from '../../hooks/useRefundRules';
 import { useApp } from '../../hooks/useApp';
+
+// Import the EventDetailGuestPage component for preview
+import EventDetailGuestPage from '../Event/EventDetailGuestPage';
+
+// Import ConfirmStatus enum
+import { ConfirmStatus } from '../../constants/eventConstants';
 
 // Validation schema
 const createEventSchema = z.object({
@@ -48,7 +56,7 @@ const createEventSchema = z.object({
   address: z.string().optional(),
   eventCategoryId: z.string().optional(),
   ticketType: z.string().min(1, 'Loại vé là bắt buộc'),
-  requireApproval: z.boolean().default(false),
+  requireApproval: z.nativeEnum(ConfirmStatus).default(ConfirmStatus.NeedConfirm),
   publish: z.boolean().default(false),
   ticketDetails: z.array(z.object({
     ticketName: z.string().min(1, 'Tên vé là bắt buộc'),
@@ -74,6 +82,7 @@ const CreateEventPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
   const [imagePreview, setImagePreview] = useState([]);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   // Redux hooks
   const { categories, loading: categoriesLoading } = useCategories();
@@ -101,7 +110,7 @@ const CreateEventPage = () => {
       address: '',
       eventCategoryId: '',
       isOnlineEvent: false,
-      requireApproval: false,
+      requireApproval: ConfirmStatus.NeedConfirm,
       publish: false,
       ticketType: '1', // Free by default
       ticketDetails: [
@@ -176,6 +185,71 @@ const CreateEventPage = () => {
     }
   };
 
+  // Generate preview data from form values
+  const generatePreviewData = (formData) => {
+    // Get category name from selected category ID
+    const selectedCategory = categories.find(cat => cat.eventCategoryId === formData.eventCategoryId);
+    
+    // Use only selected tags, not all available tags
+    const eventTags = reduxSelectedTags.map(tag => ({
+      tagId: tag.tagId,
+      tagName: tag.tagName || tag.nameTag
+    }));
+    
+    // Format ticket details with refund rule names
+    const ticketDetails = formData.ticketDetails.map(ticket => {
+      const refundRule = selectedRules.find(rule => rule.ruleRefundId === ticket.ruleRefundRequestId);
+      return {
+        ...ticket,
+        ticketPrice: parseFloat(ticket.ticketPrice) || 0,
+        ticketQuantity: parseInt(ticket.ticketQuantity) || 0,
+        soldQuantity: 0, // Default for preview
+        remainingQuantity: parseInt(ticket.ticketQuantity) || 0, // Default for preview
+        ruleRefundRequestName: refundRule ? refundRule.ruleName : ''
+      };
+    });
+    
+    // Calculate total tickets
+    const totalTickets = ticketDetails.reduce((sum, ticket) => sum + (parseInt(ticket.ticketQuantity) || 0), 0);
+    
+    // Format image previews
+    const imgListEvent = imagePreview.length > 0 ? imagePreview : [];
+    
+    // Create preview event data
+    const previewData = {
+      eventId: 'preview-event-id',
+      title: formData.title || 'Tiêu đề sự kiện mẫu',
+      description: formData.description || 'Mô tả sự kiện mẫu',
+      detailedDescription: formData.detailedDescription || '',
+      startTime: formData.startTime || new Date(Date.now() + 86400000).toISOString(), // Tomorrow
+      endTime: formData.endTime || new Date(Date.now() + 172800000).toISOString(), // Day after tomorrow
+      isOnlineEvent: formData.isOnlineEvent || false,
+      locationName: formData.locationName || '',
+      address: formData.address || '',
+      city: null,
+      latitude: null,
+      longitude: null,
+      totalTickets: totalTickets,
+      soldQuantity: 0,
+      remainingTickets: totalTickets,
+      ticketType: parseInt(formData.ticketType) || 1,
+      imgListEvent: imgListEvent,
+      requireApproval: formData.requireApproval === ConfirmStatus.Approve ? 1 : 
+                     formData.requireApproval === ConfirmStatus.Reject ? -1 : 0, // For preview compatibility
+      eventCategoryName: selectedCategory ? selectedCategory.eventCategoryName : '',
+      eventTags: eventTags, // Only use selected tags
+      ticketDetails: ticketDetails,
+      organizerEvent: {
+        organizerId: user?.id || 'preview-organizer-id',
+        companyName: user?.fullName || 'Nhà tổ chức mẫu',
+        companyDescription: 'Mô tả nhà tổ chức mẫu',
+        imgCompany: null
+      }
+    };
+    
+    return previewData;
+  };
+
   // Handle form submission
   const onSubmit = async (data) => {
     // Check if user has organizer role
@@ -223,7 +297,7 @@ const CreateEventPage = () => {
       longitude: null, // Add longitude (từ logic cũ)
       totalTickets: totalTickets,
       ticketType: parseInt(data.ticketType),
-      requireApproval: data.requireApproval || false,
+      requireApproval: data.requireApproval,
       publish: data.publish || false,
       images: validImages, // Use validated images
       eventCategoryId: data.eventCategoryId,
@@ -595,6 +669,7 @@ const CreateEventPage = () => {
                             placeholder="Ví dụ: Vé VIP"
                             className="mt-1 border-2 focus:border-orange-500"
                           />
+                          {errors.ticketDetails?.[index]?.ticketName && <p className="text-red-500 text-sm mt-1">{errors.ticketDetails[index].ticketName.message}</p>}
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
@@ -608,6 +683,7 @@ const CreateEventPage = () => {
                               disabled={watchTicketType === '1'}
                               className="mt-1 border-2 focus:border-orange-500"
                             />
+                            {errors.ticketDetails?.[index]?.ticketPrice && <p className="text-red-500 text-sm mt-1">{errors.ticketDetails[index].ticketPrice.message}</p>}
                           </div>
 
                           <div>
@@ -619,6 +695,7 @@ const CreateEventPage = () => {
                               min="1"
                               className="mt-1 border-2 focus:border-orange-500"
                             />
+                            {errors.ticketDetails?.[index]?.ticketQuantity && <p className="text-red-500 text-sm mt-1">{errors.ticketDetails[index].ticketQuantity.message}</p>}
                           </div>
                         </div>
 
@@ -656,6 +733,7 @@ const CreateEventPage = () => {
                               ))}
                             </SelectContent>
                           </Select>
+                          {errors.ticketDetails?.[index]?.ruleRefundRequestId && <p className="text-red-500 text-sm mt-1">{errors.ticketDetails[index].ruleRefundRequestId.message}</p>}
                           {selectedRules.length === 0 && (
                             <p className="text-sm text-orange-600 mt-1">
                               Vui lòng tạo và chọn quy tắc hoàn tiền ở phần trên
@@ -717,8 +795,32 @@ const CreateEventPage = () => {
             </Card>
           </div>
 
-          {/* Submit Button */}
-          <div className="lg:col-span-3 mt-12 text-center">
+          {/* Submit and Preview Buttons */}
+          <div className="lg:col-span-3 mt-12 flex justify-center space-x-6">
+            <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  type="button"
+                  variant="outline"
+                  className="px-8 py-4 text-lg font-semibold border-2 border-blue-600 text-blue-600 hover:bg-blue-50 shadow-xl"
+                  onClick={() => setIsPreviewOpen(true)}
+                >
+                  <Eye className="h-5 w-5 mr-3" />
+                  Xem trước
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto p-0">
+                <DialogHeader className="p-6 pb-0">
+                  <DialogTitle className="text-2xl">Xem trước sự kiện</DialogTitle>
+                </DialogHeader>
+                <div className="p-6">
+                  {isPreviewOpen && (
+                    <EventDetailGuestPage previewData={generatePreviewData(watch())} />
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+            
             <Button 
               type="submit" 
               disabled={isSubmitting || isLoading}
