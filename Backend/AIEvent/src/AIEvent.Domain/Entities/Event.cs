@@ -32,5 +32,6 @@ namespace AIEvent.Domain.Entities
         public virtual ICollection<TicketDetail> TicketDetails { get; set; } = new List<TicketDetail>();
         public virtual ICollection<EventTag> EventTags { get; set; } = new List<EventTag>();
         public ICollection<FavoriteEvent> FavoriteEvents { get; set; } = new List<FavoriteEvent>();
+        public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
     }
 }

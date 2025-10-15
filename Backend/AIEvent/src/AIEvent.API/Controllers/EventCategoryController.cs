@@ -23,7 +23,7 @@ namespace AIEvent.API.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin,Manager")]
-        public async Task<ActionResult<SuccessResponse<object>>> CreateEventCategory([FromBody] CreateCategoryRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> CreateEventCategory([FromBody] EventCategoryRequest request)
         {
             var result = await _eventCategoryService.CreateEventCategoryAsync(request);
             if (!result.IsSuccess)
@@ -89,7 +89,7 @@ namespace AIEvent.API.Controllers
 
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin,Manager")]
-        public async Task<ActionResult<SuccessResponse<EventCategoryResponse>>> UpdateEventCategory(string id, CreateCategoryRequest request)
+        public async Task<ActionResult<SuccessResponse<EventCategoryResponse>>> UpdateEventCategory(string id, EventCategoryRequest request)
         {
             var result = await _eventCategoryService.UpdateEventCategoryAsync(id, request);
             if (!result.IsSuccess)
