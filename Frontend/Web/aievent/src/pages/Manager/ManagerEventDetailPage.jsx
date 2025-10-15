@@ -39,7 +39,7 @@ import EventDetailGuestPage from '../Event/EventDetailGuestPage';
 // Import ConfirmStatus constants
 import { ConfirmStatus, ConfirmStatusDisplay } from '../../constants/eventConstants';
 
-const EventDetailPage = () => {
+const ManagerEventDetailPage = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const [event, setEvent] = useState(null);
@@ -63,12 +63,12 @@ const EventDetailPage = () => {
         setEvent(eventData);
       } else {
         toast.error('Không tìm thấy sự kiện');
-        navigate(PATH.ORGANIZER_EVENTS || '/events');
+        navigate(PATH.MANAGER_EVENTS || '/manager/events');
       }
     } catch (error) {
       console.error('Error loading event detail:', error);
       toast.error('Không thể tải thông tin sự kiện');
-      navigate(PATH.ORGANIZER_EVENTS || '/events');
+      navigate(PATH.MANAGER_EVENTS || '/manager/events');
     } finally {
       setIsLoading(false);
     }
@@ -130,7 +130,7 @@ const EventDetailPage = () => {
   };
 
   const handleEditEvent = () => {
-    navigate(`/organizer/event/${eventId}/edit`);
+    navigate(`/manager/event/${eventId}/edit`);
   };
 
   const handleDeleteEvent = async () => {
@@ -158,7 +158,7 @@ Nhấn OK để xác nhận xóa.`;
         toast.success('✅ Xóa sự kiện thành công!', {
           duration: 3000,
         });
-        navigate(PATH.ORGANIZER_EVENTS || '/events');
+        navigate(PATH.MANAGER_EVENTS || '/manager/events');
       }
     } catch (error) {
       console.error('Error deleting event:', error);
@@ -210,7 +210,7 @@ Nhấn OK để xác nhận xóa.`;
             <AlertCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-700 mb-2">Không tìm thấy sự kiện</h3>
             <p className="text-gray-500 mb-6">Sự kiện có thể đã bị xóa hoặc bạn không có quyền truy cập.</p>
-            <Button onClick={() => navigate(PATH.ORGANIZER_EVENTS || '/events')}>
+            <Button onClick={() => navigate(PATH.MANAGER_EVENTS || '/manager/events')}>
               Quay lại danh sách sự kiện
             </Button>
           </CardContent>
@@ -567,4 +567,4 @@ Nhấn OK để xác nhận xóa.`;
   );
 };
 
-export default EventDetailPage;
+export default ManagerEventDetailPage;

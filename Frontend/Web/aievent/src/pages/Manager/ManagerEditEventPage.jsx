@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,7 +16,8 @@ import {
   Users,
   Settings,
   Globe,
-  Eye
+  ArrowLeft,
+  Loader2
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
@@ -26,7 +27,6 @@ import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Switch } from '../../components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
 
 import { useEvents } from '../../hooks/useEvents';
 import TagSelector from '../../components/Event/TagSelector';
@@ -38,14 +38,11 @@ import { useTags } from '../../hooks/useTags';
 import { useRefundRules } from '../../hooks/useRefundRules';
 import { useApp } from '../../hooks/useApp';
 
-// Import the EventDetailGuestPage component for preview
-import EventDetailGuestPage from '../Event/EventDetailGuestPage';
-
 // Import ConfirmStatus enum
 import { ConfirmStatus } from '../../constants/eventConstants';
 
-// Validation schema
-const createEventSchema = z.object({
+// Validation schema (same as CreateEventPage)
+const editEventSchema = z.object({
   title: z.string().min(1, 'Tiêu đề sự kiện là bắt buộc').max(200, 'Tiêu đề không được vượt quá 200 ký tự'),
   description: z.string().min(1, 'Mô tả sự kiện là bắt buộc').max(1000, 'Mô tả không được vượt quá 1000 ký tự'),
   detailedDescription: z.string().optional(),
@@ -75,21 +72,23 @@ const createEventSchema = z.object({
   path: ['locationName'],
 });
 
-const CreateEventPage = () => {
+const ManagerEditEventPage = () => {
+  const { eventId } = useParams();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [eventData, setEventData] = useState(null);
   const [selectedImages, setSelectedImages] = useState([]);
   const [imagePreview, setImagePreview] = useState([]);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [existingImages, setExistingImages] = useState([]);
 
   // Redux hooks
   const { categories, loading: categoriesLoading } = useCategories();
-  const { tags: reduxSelectedTags, clearAllSelectedTags } = useTags();
-  const { selectedRules, clearSelectedRefundRules } = useRefundRules();
+  const { tags: reduxSelectedTags, clearAllSelectedTags, selectTagForForm } = useTags();
+  const { selectedRules, clearSelectedRefundRules, selectRuleForForm } = useRefundRules();
   const { showLoading, hideLoading, updatePageTitle } = useApp();
-  const { createEvent: createEventAPI, loading: eventLoading } = useEvents();
+  const { getEventById, updateEvent: updateEventAPI, loading: eventLoading } = useEvents();
 
   const {
     register,
@@ -97,9 +96,10 @@ const CreateEventPage = () => {
     handleSubmit,
     watch,
     setValue,
+    reset,
     formState: { errors },
   } = useForm({
-    resolver: zodResolver(createEventSchema),
+    resolver: zodResolver(editEventSchema),
     defaultValues: {
       title: '',
       description: '',
@@ -112,14 +112,14 @@ const CreateEventPage = () => {
       isOnlineEvent: false,
       requireApproval: ConfirmStatus.NeedConfirm,
       publish: false,
-      ticketType: '1', // Free by default
+      ticketType: '1',
       ticketDetails: [
         {
           ticketName: 'Vé thường',
           ticketPrice: 0,
           ticketQuantity: 1,
           ticketDescription: '',
-          ruleRefundRequestId: '', // Will be set when refund rule is selected
+          ruleRefundRequestId: '',
         }
       ],
     },
@@ -133,31 +133,137 @@ const CreateEventPage = () => {
   const watchIsOnline = watch('isOnlineEvent');
   const watchTicketType = watch('ticketType');
 
-  // Set page title and cleanup on mount
+  // Set page title and load event data
   useEffect(() => {
-    updatePageTitle('Tạo sự kiện mới');
+    updatePageTitle('Chỉnh sửa sự kiện');
+    if (eventId) {
+      loadEventData();
+    }
     
     return () => {
       clearAllSelectedTags();
       clearSelectedRefundRules();
     };
-  }, []); // Empty dependency array - only run on mount/unmount
+  }, [eventId]);
+
+  const loadEventData = async () => {
+    try {
+      setIsLoading(true);
+      showLoading();
+      
+      const event = await getEventById(eventId);
+      
+      if (event) {
+        setEventData(event);
+        
+        // Convert backend enum value to frontend enum
+        let requireApprovalValue = ConfirmStatus.NeedConfirm;
+        if (event.requireApproval === 'Approve') {
+          requireApprovalValue = ConfirmStatus.Approve;
+        } else if (event.requireApproval === 'Reject') {
+          requireApprovalValue = ConfirmStatus.Reject;
+        } else if (event.requireApproval === 'NeedConfirm') {
+          requireApprovalValue = ConfirmStatus.NeedConfirm;
+        }
+        
+        // Populate form with existing data
+        const formData = {
+          title: event.title || '',
+          description: event.description || '',
+          detailedDescription: event.detailedDescription || '',
+          startTime: event.startTime ? new Date(event.startTime).toISOString().slice(0, 16) : '',
+          endTime: event.endTime ? new Date(event.endTime).toISOString().slice(0, 16) : '',
+          locationName: event.locationName || '',
+          address: event.address || '',
+          eventCategoryId: event.eventCategoryId || event.eventCategory?.eventCategoryId || '',
+          isOnlineEvent: event.isOnlineEvent || false,
+          requireApproval: requireApprovalValue,
+          publish: event.publish || false,
+          ticketType: String(event.ticketType || 1),
+          ticketDetails: event.ticketDetails && event.ticketDetails.length > 0 
+            ? event.ticketDetails.map(ticket => ({
+                ticketName: ticket.ticketName || '',
+                ticketPrice: ticket.ticketPrice || 0,
+                ticketQuantity: ticket.ticketQuantity || 1,
+                ticketDescription: ticket.ticketDescription || '',
+                ruleRefundRequestId: ticket.ruleRefundRequestId || '',
+              }))
+            : [
+                {
+                  ticketName: 'Vé thường',
+                  ticketPrice: 0,
+                  ticketQuantity: event.totalTickets || 1,
+                  ticketDescription: '',
+                  ruleRefundRequestId: '',
+                }
+              ],
+        };
+
+        // Reset form with loaded data
+        reset(formData);
+
+        // Load existing images
+        if (event.imgListEvent && event.imgListEvent.length > 0) {
+          setExistingImages(event.imgListEvent);
+        }
+
+        // Load existing tags if any
+        if (event.eventTags && event.eventTags.length > 0) {
+          event.eventTags.forEach(eventTag => {
+            if (eventTag.tag) {
+              selectTagForForm(eventTag.tag);
+            }
+          });
+        } else if (event.tags && event.tags.length > 0) {
+          // Alternative structure
+          event.tags.forEach(tag => {
+            selectTagForForm(tag);
+          });
+        }
+
+        // Load existing refund rule if any
+        if (event.ticketDetails && event.ticketDetails.length > 0) {
+          const firstTicket = event.ticketDetails[0];
+          if (firstTicket.ruleRefundRequestId && firstTicket.refundRule) {
+            selectRuleForForm(firstTicket.refundRule);
+          }
+        }
+
+        toast.success('Đã tải thông tin sự kiện');
+      } else {
+        toast.error('Không tìm thấy sự kiện');
+        navigate(PATH.MANAGER_MY_EVENTS);
+      }
+    } catch (error) {
+      console.error('Error loading event:', error);
+      toast.error('Không thể tải thông tin sự kiện');
+      navigate(PATH.MANAGER_MY_EVENTS);
+    } finally {
+      setIsLoading(false);
+      hideLoading();
+    }
+  };
 
   // Handle image upload
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
-    if (files.length > 5) {
+    if (files.length + existingImages.length + selectedImages.length > 5) {
       toast.error('Chỉ được tải lên tối đa 5 hình ảnh');
       return;
     }
 
-    setSelectedImages(files);
+    setSelectedImages(prev => [...prev, ...files]);
     const previews = files.map(file => URL.createObjectURL(file));
-    setImagePreview(previews);
+    setImagePreview(prev => [...prev, ...previews]);
   };
 
-  // Remove image
-  const removeImage = (index) => {
+  // Remove existing image
+  const removeExistingImage = (index) => {
+    setExistingImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Remove new image
+  const removeNewImage = (index) => {
     const newImages = selectedImages.filter((_, i) => i !== index);
     const newPreviews = imagePreview.filter((_, i) => i !== index);
     
@@ -185,82 +291,11 @@ const CreateEventPage = () => {
     }
   };
 
-  // Generate preview data from form values
-  const generatePreviewData = (formData) => {
-    // Get category name from selected category ID
-    const selectedCategory = categories.find(cat => cat.eventCategoryId === formData.eventCategoryId);
-    
-    // Use only selected tags, not all available tags
-    const eventTags = reduxSelectedTags.map(tag => ({
-      tagId: tag.tagId,
-      tagName: tag.tagName || tag.nameTag
-    }));
-    
-    // Format ticket details with refund rule names
-    const ticketDetails = formData.ticketDetails.map(ticket => {
-      const refundRule = selectedRules.find(rule => rule.ruleRefundId === ticket.ruleRefundRequestId);
-      return {
-        ...ticket,
-        ticketPrice: parseFloat(ticket.ticketPrice) || 0,
-        ticketQuantity: parseInt(ticket.ticketQuantity) || 0,
-        soldQuantity: 0, // Default for preview
-        remainingQuantity: parseInt(ticket.ticketQuantity) || 0, // Default for preview
-        ruleRefundRequestName: refundRule ? refundRule.ruleName : ''
-      };
-    });
-    
-    // Calculate total tickets
-    const totalTickets = ticketDetails.reduce((sum, ticket) => sum + (parseInt(ticket.ticketQuantity) || 0), 0);
-    
-    // Format image previews
-    const imgListEvent = imagePreview.length > 0 ? imagePreview : [];
-    
-    // Create preview event data
-    const previewData = {
-      eventId: 'preview-event-id',
-      title: formData.title || 'Tiêu đề sự kiện mẫu',
-      description: formData.description || 'Mô tả sự kiện mẫu',
-      detailedDescription: formData.detailedDescription || '',
-      startTime: formData.startTime || new Date(Date.now() + 86400000).toISOString(), // Tomorrow
-      endTime: formData.endTime || new Date(Date.now() + 172800000).toISOString(), // Day after tomorrow
-      isOnlineEvent: formData.isOnlineEvent || false,
-      locationName: formData.locationName || '',
-      address: formData.address || '',
-      city: null,
-      latitude: null,
-      longitude: null,
-      totalTickets: totalTickets,
-      soldQuantity: 0,
-      remainingTickets: totalTickets,
-      ticketType: parseInt(formData.ticketType) || 1,
-      imgListEvent: imgListEvent,
-      requireApproval: formData.requireApproval === ConfirmStatus.Approve ? 1 : 
-                     formData.requireApproval === ConfirmStatus.Reject ? -1 : 0, // For preview compatibility
-      eventCategoryName: selectedCategory ? selectedCategory.eventCategoryName : '',
-      eventTags: eventTags, // Only use selected tags
-      ticketDetails: ticketDetails,
-      organizerEvent: {
-        organizerId: user?.id || 'preview-organizer-id',
-        companyName: user?.fullName || 'Nhà tổ chức mẫu',
-        companyDescription: 'Mô tả nhà tổ chức mẫu',
-        imgCompany: null
-      }
-    };
-    
-    return previewData;
-  };
-
   // Handle form submission
   const onSubmit = async (data) => {
-    // Check if user has organizer role
-    if (!user || !['Organizer', 'Admin', 'Manager'].includes(user.role)) {
-      toast.error('Bạn không có quyền tạo sự kiện');
-      return;
-    }
-
-    // Validate refund rules selection
-    if (selectedRules.length === 0) {
-      toast.error('Vui lòng chọn ít nhất một quy tắc hoàn tiền');
+    // Check if user has manager role
+    if (!user || !['Manager'].includes(user.role)) {
+      toast.error('Bạn không có quyền chỉnh sửa sự kiện');
       return;
     }
 
@@ -277,13 +312,11 @@ const CreateEventPage = () => {
       return;
     }
 
-    // Filter out empty images (từ logic cũ)
-    const validImages = selectedImages.filter(img => img instanceof File);
-    
     // Calculate total tickets from ticketDetails array
     const totalTickets = data.ticketDetails.reduce((sum, ticket) => sum + parseInt(ticket.ticketQuantity), 0);
 
     const eventData = {
+      eventId: eventId,
       title: data.title,
       description: data.description,
       detailedDescription: data.detailedDescription || '',
@@ -292,17 +325,17 @@ const CreateEventPage = () => {
       isOnlineEvent: data.isOnlineEvent || false,
       locationName: data.locationName || '',
       address: data.address || '',
-      city: null, // Add city field (từ logic cũ)
-      latitude: null, // Add latitude (từ logic cũ)
-      longitude: null, // Add longitude (từ logic cũ)
+      city: null,
+      latitude: null,
+      longitude: null,
       totalTickets: totalTickets,
       ticketType: parseInt(data.ticketType),
       requireApproval: data.requireApproval,
       publish: data.publish || false,
-      images: validImages, // Use validated images
+      images: selectedImages, // New images
+      existingImages: existingImages, // Keep existing images
       eventCategoryId: data.eventCategoryId,
       tags: reduxSelectedTags.map(tag => ({ tagId: tag.tagId })),
-      refundRules: selectedRules.map(rule => ({ ruleRefundId: rule.ruleRefundId })),
       ticketDetails: data.ticketDetails.map(ticket => ({
         ticketName: ticket.ticketName,
         ticketPrice: parseFloat(ticket.ticketPrice),
@@ -312,7 +345,7 @@ const CreateEventPage = () => {
       })),
     };
 
-    // Validate required fields (từ logic cũ)
+    // Validate required fields
     const requiredFields = ['title', 'description', 'startTime', 'endTime', 'totalTickets', 'eventCategoryId'];
     if (!eventData.isOnlineEvent) {
       requiredFields.push('locationName', 'address');
@@ -329,15 +362,10 @@ const CreateEventPage = () => {
       return;
     }
 
-    // Validate dates (từ logic cũ)
+    // Validate dates
     const startDate = new Date(eventData.startTime);
     const endDate = new Date(eventData.endTime);
     const now = new Date();
-
-    if (startDate <= now) {
-      toast.error('Thời gian bắt đầu phải sau thời điểm hiện tại');
-      return;
-    }
 
     if (endDate <= startDate) {
       toast.error('Thời gian kết thúc phải sau thời gian bắt đầu');
@@ -346,25 +374,21 @@ const CreateEventPage = () => {
 
     try {
       showLoading();
-      setIsSubmitting(true);
+      setIsSaving(true);
       
-      const response = await createEventAPI(eventData);
+      const response = await updateEventAPI(eventData);
       
       if (response) {
-        toast.success('✅ Tạo sự kiện thành công!');
-        clearAllSelectedTags();
-        clearSelectedRefundRules();
-        navigate(PATH.ORGANIZER_MY_EVENTS);
+        toast.success('✅ Cập nhật sự kiện thành công!');
+        navigate(`/manager/event/${eventId}`);
       }
     } catch (error) {
-      console.error('Error creating event:', error);
+      console.error('Error updating event:', error);
       const errorData = error.response?.data;
-      let errorMessage = 'Có lỗi xảy ra khi tạo sự kiện';
+      let errorMessage = 'Có lỗi xảy ra khi cập nhật sự kiện';
       
-      // Handle specific error cases (từ logic cũ)
       if (errorData?.errors === 'Invalid Organizer ID in token' || error.response?.status === 401) {
-        errorMessage = 'Tài khoản organizer không hợp lệ hoặc phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.';
-        // Clear tokens and redirect to login
+        errorMessage = 'Tài khoản manager không hợp lệ hoặc phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.';
         setTimeout(() => {
           localStorage.removeItem('currentUser');
           navigate('/auth/login');
@@ -378,24 +402,69 @@ const CreateEventPage = () => {
       toast.error(errorMessage);
     } finally {
       hideLoading();
-      setIsSubmitting(false);
+      setIsSaving(false);
     }
   };
+
+  const handleCancel = () => {
+    if (window.confirm('Bạn có chắc chắn muốn hủy? Mọi thay đổi sẽ không được lưu.')) {
+      navigate(`/manager/event/${eventId}`);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mb-4" />
+          <p className="text-gray-500">Đang tải thông tin sự kiện...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8 text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-6 shadow-lg">
-            <Plus className="h-10 w-10 text-white" />
+        <div className="mb-8 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" onClick={handleCancel}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Quay lại
+            </Button>
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Chỉnh sửa sự kiện
+              </h1>
+              <p className="text-gray-600 text-lg">
+                Cập nhật thông tin sự kiện của bạn
+              </p>
+            </div>
           </div>
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-            Tạo sự kiện mới
-          </h1>
-          <p className="text-gray-600 text-xl max-w-2xl mx-auto">
-            Tạo một sự kiện tuyệt vời và chia sẻ với cộng đồng
-          </p>
+          
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={handleCancel}>
+              Hủy
+            </Button>
+            <Button 
+              onClick={handleSubmit(onSubmit)}
+              disabled={isSaving}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Đang lưu...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Lưu thay đổi
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -411,9 +480,6 @@ const CreateEventPage = () => {
                   </div>
                   Thông tin cơ bản
                 </CardTitle>
-                <CardDescription className="text-base">
-                  Thông tin cơ bản về sự kiện của bạn
-                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6 p-8">
                 <div>
@@ -453,7 +519,7 @@ const CreateEventPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <Label htmlFor="eventCategoryId" className="text-base font-semibold">Danh mục sự kiện *</Label>
-                    <Select onValueChange={(value) => setValue('eventCategoryId', value)}>
+                    <Select onValueChange={(value) => setValue('eventCategoryId', value)} value={watch('eventCategoryId')}>
                       <SelectTrigger className="mt-2 h-12 text-base border-2">
                         <SelectValue placeholder="Chọn danh mục" />
                       </SelectTrigger>
@@ -470,7 +536,7 @@ const CreateEventPage = () => {
 
                   <div>
                     <Label htmlFor="ticketType" className="text-base font-semibold">Loại vé *</Label>
-                    <Select onValueChange={(value) => setValue('ticketType', value)} defaultValue="1">
+                    <Select onValueChange={(value) => setValue('ticketType', value)} value={watchTicketType}>
                       <SelectTrigger className="mt-2 h-12 text-base border-2">
                         <SelectValue placeholder="Chọn loại vé" />
                       </SelectTrigger>
@@ -519,45 +585,46 @@ const CreateEventPage = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 p-4 bg-green-50 rounded-lg">
-                  <Switch
-                    id="isOnlineEvent"
-                    checked={watchIsOnline}
-                    onCheckedChange={(checked) => setValue('isOnlineEvent', checked)}
-                  />
-                  <Label htmlFor="isOnlineEvent" className="text-base font-semibold cursor-pointer flex items-center gap-2">
-                    <Globe className="h-4 w-4" />
-                    Sự kiện trực tuyến
-                  </Label>
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="isOnlineEvent" className="text-base font-semibold">Sự kiện trực tuyến?</Label>
+                    <Switch
+                      id="isOnlineEvent"
+                      checked={watchIsOnline}
+                      onCheckedChange={(checked) => setValue('isOnlineEvent', checked)}
+                      className="mt-2"
+                    />
+                  </div>
 
-                {!watchIsOnline && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {!watchIsOnline && (
                     <div>
                       <Label htmlFor="locationName" className="text-base font-semibold">Tên địa điểm *</Label>
                       <Input
                         id="locationName"
                         {...register('locationName')}
-                        placeholder="Ví dụ: Trung tâm Hội nghị ABC"
+                        placeholder="Nhập tên địa điểm"
                         className="mt-2 h-12 text-base border-2 focus:border-green-500"
                       />
                       {errors.locationName && <p className="text-red-500 text-sm mt-1">{errors.locationName.message}</p>}
                     </div>
+                  )}
 
+                  {!watchIsOnline && (
                     <div>
-                      <Label htmlFor="address" className="text-base font-semibold">Địa chỉ chi tiết</Label>
-                      <Input
+                      <Label htmlFor="address" className="text-base font-semibold">Địa chỉ *</Label>
+                      <Textarea
                         id="address"
                         {...register('address')}
-                        placeholder="Số 123 Đường ABC, Quận XYZ"
-                        className="mt-2 h-12 text-base border-2 focus:border-green-500"
+                        placeholder="Nhập địa chỉ"
+                        rows={3}
+                        className="mt-2 text-base border-2 focus:border-green-500"
                       />
+                      {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </CardContent>
             </Card>
-
 
             {/* Images */}
             <Card className="border-l-4 border-l-purple-500 shadow-xl bg-white">
@@ -569,7 +636,7 @@ const CreateEventPage = () => {
                   Hình ảnh sự kiện
                 </CardTitle>
                 <CardDescription className="text-base">
-                  Tải lên tối đa 5 hình ảnh cho sự kiện
+                  Tải lên tối đa 5 hình ảnh cho sự kiện (đã chọn {existingImages.length + selectedImages.length}/5)
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-8">
@@ -592,26 +659,57 @@ const CreateEventPage = () => {
                     </label>
                   </div>
                   
+                  {/* Existing Images Preview */}
+                  {existingImages.length > 0 && (
+                    <div>
+                      <Label className="text-base font-semibold mb-2 block">Hình ảnh hiện tại:</Label>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        {existingImages.map((img, index) => (
+                          <div key={`existing-${index}`} className="relative group">
+                            <img
+                              src={img}
+                              alt={`Existing ${index + 1}`}
+                              className="w-full h-32 object-cover rounded-lg shadow-md"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => removeExistingImage(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* New Images Preview */}
                   {imagePreview.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                      {imagePreview.map((preview, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={preview}
-                            alt={`Preview ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg shadow-md"
-                          />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => removeImage(index)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
+                    <div>
+                      <Label className="text-base font-semibold mb-2 block">Hình ảnh mới:</Label>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        {imagePreview.map((preview, index) => (
+                          <div key={`new-${index}`} className="relative group">
+                            <img
+                              src={preview}
+                              alt={`Preview ${index + 1}`}
+                              className="w-full h-32 object-cover rounded-lg shadow-md"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => removeNewImage(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -622,12 +720,10 @@ const CreateEventPage = () => {
 
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
-            {/* Tags */}
             <TagSelector
               className="shadow-xl"
             />
-
-            {/* Refund Rules */}
+            
             <RefundRuleManager
               className="shadow-xl"
             />
@@ -756,7 +852,7 @@ const CreateEventPage = () => {
                 </div>
               </CardContent>
             </Card>
-
+            
             {/* Settings */}
             <Card className="border-l-4 border-l-gray-500 shadow-xl bg-white">
               <CardHeader className="bg-gradient-to-r from-gray-500/10 to-transparent">
@@ -794,55 +890,10 @@ const CreateEventPage = () => {
               </CardContent>
             </Card>
           </div>
-
-          {/* Submit and Preview Buttons */}
-          <div className="lg:col-span-3 mt-12 flex justify-center space-x-6">
-            <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  type="button"
-                  variant="outline"
-                  className="px-8 py-4 text-lg font-semibold border-2 border-blue-600 text-blue-600 hover:bg-blue-50 shadow-xl"
-                  onClick={() => setIsPreviewOpen(true)}
-                >
-                  <Eye className="h-5 w-5 mr-3" />
-                  Xem trước
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto p-0">
-                <DialogHeader className="p-6 pb-0">
-                  <DialogTitle className="text-2xl">Xem trước sự kiện</DialogTitle>
-                </DialogHeader>
-                <div className="p-6">
-                  {isPreviewOpen && (
-                    <EventDetailGuestPage previewData={generatePreviewData(watch())} />
-                  )}
-                </div>
-              </DialogContent>
-            </Dialog>
-            
-            <Button 
-              type="submit" 
-              disabled={isSubmitting || isLoading}
-              className="px-12 py-4 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
-            >
-              {isSubmitting || isLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                  Đang tạo sự kiện...
-                </>
-              ) : (
-                <>
-                  <Save className="h-5 w-5 mr-3" />
-                  Tạo sự kiện
-                </>
-              )}
-            </Button>
-          </div>
         </form>
       </div>
     </div>
   );
 };
 
-export default CreateEventPage;
+export default ManagerEditEventPage;

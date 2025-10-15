@@ -15,6 +15,13 @@ import ProtectedRoute from "../components/ProtectedRoute/ProtectedRoute";
 import RegisterPage from "../pages/Auth/RegisterPage/RegisterPage";
 import EventDetailGuestPage from "../pages/Event/EventDetailGuestPage";
 
+// Manager Pages
+import ManagerDashboard from "../pages/Manager/ManagerDashboard";
+import ManagerEventsPage from "../pages/Manager/ManagerEventsPage";
+import ManagerEventsNeedApprovalPage from "../pages/Manager/ManagerEventsNeedApprovalPage";
+import ManagerEventDetailPage from "../pages/Manager/ManagerEventDetailPage";
+import ManagerEditEventPage from "../pages/Manager/ManagerEditEventPage";
+
 export default function useRouterElement() {
   const element = useRoutes([
     {
@@ -154,13 +161,20 @@ export default function useRouterElement() {
     {
       path: PATH.ORGANIZER,
       element: (
-        <ProtectedRoute allowedRoles={["Organizer", "Manager"]}>
+        <ProtectedRoute allowedRoles={["Organizer"]}>
           <MainLayout />
         </ProtectedRoute>
       ),
       children: [
         { index: true, element: <OrganizerDashboard /> },
-        { path: "create", element: <CreateEventPage /> },
+        { 
+          path: "create", 
+          element: (
+            <ProtectedRoute allowedRoles={["Organizer"]}>
+              <CreateEventPage />
+            </ProtectedRoute>
+          ) 
+        },
         { path: "events", element: <div>Organizer Events Page</div> },
         { path: "my-events", element: <MyEventsPage /> },
         { path: "event/:eventId", element: <EventDetailPage /> },
@@ -170,6 +184,24 @@ export default function useRouterElement() {
         { path: "support", element: <div>Organizer Support Page</div> },
         { path: "analytics/:id", element: <div>Organizer Analytics Page</div> },
         { path: "checkin/:id", element: <div>Organizer Check-in Page</div> },
+      ],
+    },
+    {
+      path: PATH.MANAGER,
+      element: (
+        <ProtectedRoute allowedRoles={["Manager"]}>
+          <MainLayout />
+        </ProtectedRoute>
+      ),
+      children: [
+        { index: true, element: <ManagerDashboard /> },
+        { path: "events", element: <ManagerEventsPage /> },
+        { path: "events/need-approval", element: <ManagerEventsNeedApprovalPage /> },
+        { path: "event/:eventId", element: <ManagerEventDetailPage /> },
+        { path: "event/:eventId/edit", element: <ManagerEditEventPage /> },
+        { path: "profile", element: <div>Manager Profile Page</div> },
+        { path: "settings", element: <div>Manager Settings Page</div> },
+        { path: "support", element: <div>Manager Support Page</div> },
       ],
     },
     {

@@ -38,6 +38,9 @@ import { useTags } from '../../hooks/useTags';
 import { useRefundRules } from '../../hooks/useRefundRules';
 import { useApp } from '../../hooks/useApp';
 
+// Import ConfirmStatus enum
+import { ConfirmStatus } from '../../constants/eventConstants';
+
 // Validation schema (same as CreateEventPage)
 const editEventSchema = z.object({
   title: z.string().min(1, 'Tiêu đề sự kiện là bắt buộc').max(200, 'Tiêu đề không được vượt quá 200 ký tự'),
@@ -50,7 +53,7 @@ const editEventSchema = z.object({
   address: z.string().optional(),
   eventCategoryId: z.string().optional(),
   ticketType: z.string().min(1, 'Loại vé là bắt buộc'),
-  requireApproval: z.boolean().default(false),
+  requireApproval: z.nativeEnum(ConfirmStatus).default(ConfirmStatus.NeedConfirm),
   publish: z.boolean().default(false),
   ticketDetails: z.array(z.object({
     ticketName: z.string().min(1, 'Tên vé là bắt buộc'),
@@ -107,7 +110,7 @@ const EditEventPage = () => {
       address: '',
       eventCategoryId: '',
       isOnlineEvent: false,
-      requireApproval: false,
+      requireApproval: ConfirmStatus.NeedConfirm,
       publish: false,
       ticketType: '1',
       ticketDetails: [
@@ -153,6 +156,16 @@ const EditEventPage = () => {
       if (event) {
         setEventData(event);
         
+        // Convert backend enum value to frontend enum
+        let requireApprovalValue = ConfirmStatus.NeedConfirm;
+        if (event.requireApproval === 'Approve') {
+          requireApprovalValue = ConfirmStatus.Approve;
+        } else if (event.requireApproval === 'Reject') {
+          requireApprovalValue = ConfirmStatus.Reject;
+        } else if (event.requireApproval === 'NeedConfirm') {
+          requireApprovalValue = ConfirmStatus.NeedConfirm;
+        }
+        
         // Populate form with existing data
         const formData = {
           title: event.title || '',
@@ -164,7 +177,7 @@ const EditEventPage = () => {
           address: event.address || '',
           eventCategoryId: event.eventCategoryId || event.eventCategory?.eventCategoryId || '',
           isOnlineEvent: event.isOnlineEvent || false,
-          requireApproval: event.requireApproval || false,
+          requireApproval: requireApprovalValue,
           publish: event.publish || false,
           ticketType: String(event.ticketType || 1),
           ticketDetails: event.ticketDetails && event.ticketDetails.length > 0 
@@ -317,7 +330,7 @@ const EditEventPage = () => {
       longitude: null,
       totalTickets: totalTickets,
       ticketType: parseInt(data.ticketType),
-      requireApproval: data.requireApproval || false,
+      requireApproval: data.requireApproval,
       publish: data.publish || false,
       images: selectedImages, // New images
       existingImages: existingImages, // Keep existing images
