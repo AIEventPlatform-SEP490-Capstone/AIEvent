@@ -88,7 +88,7 @@ namespace AIEvent.API.Controllers
 
         [HttpPost("verify-otp")]
         [Authorize]
-        public async Task<ActionResult<SuccessResponse<object>>> VerifyOTP([FromBody] VerifyOTPRequest request)
+        public async Task<ActionResult<SuccessResponse<AuthResponse>>> VerifyOTP([FromBody] VerifyOTPRequest request)
         {
             var result = await _authService.VerifyOTPAsync(request);
 
