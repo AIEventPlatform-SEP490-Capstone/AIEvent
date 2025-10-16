@@ -28,6 +28,7 @@ namespace AIEvent.API.Extensions
                     .AddScoped<IRoleService, RoleService>()
                     .AddScoped<IEnumService, EnumService>()
                     .AddScoped<IEmailService, EmailService>()
+                    .AddSingleton<IHasherHelper, HasherHelper>()
                     .AddScoped<IOrganizerService, OrganizerService>()
                     .AddScoped<ITagService, TagService>()
                     .AddScoped<IRuleRefundService, RuleRefundService>()

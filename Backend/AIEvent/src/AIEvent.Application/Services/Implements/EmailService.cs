@@ -1,34 +1,26 @@
-﻿using AIEvent.Application.Services.Interfaces;
+﻿using AIEvent.Application.Constants;
+using AIEvent.Application.DTOs.Common;
+using AIEvent.Application.Helpers;
+using AIEvent.Application.Services.Interfaces;
 using MailKit.Security;
 using MailKit.Net.Smtp;
 using MimeKit;
-using AIEvent.Application.DTOs.Auth;
-using AIEvent.Application.Helpers;
-using AIEvent.Application.Constants;
-using AIEvent.Application.DTOs.Common;
 
 namespace AIEvent.Application.Services.Implements
 {
     public class EmailService : IEmailService
     {
-        public async Task<Result<UserOtpResponse>> SendOtpAsync(string email)
+        public async Task<Result> SendOtpAsync(string email, MimeMessage message)
         {
             if (string.IsNullOrWhiteSpace(email))
-                return ErrorResponse.FailureResult("Email không đc để trống", ErrorCodes.InvalidInput);
+                return ErrorResponse.FailureResult("Email cannot be blank", ErrorCodes.InvalidInput);
+
+            if (message == null)
+                return ErrorResponse.FailureResult("Email content cannot be blank", ErrorCodes.InvalidInput);
 
             if (!MailboxAddress.TryParse(email, out _))
-                return ErrorResponse.FailureResult("Email không hợp lệ", ErrorCodes.InvalidInput);
-            
-            var otp = new Random().Next(100000, 999999).ToString();
+                return ErrorResponse.FailureResult("Email invalid", ErrorCodes.InvalidInput);
 
-            var message = new MimeMessage
-            {
-                Subject = "Mã OTP của bạn",
-                Body = new TextPart("plain")
-                {
-                    Text = $"Mã xác thực của bạn là: {otp}. Mã này sẽ hết hạn sau 5 phút."
-                }
-            };
             message.From.Add(new MailboxAddress("AIEvent", "kietnase170077@fpt.edu.vn"));
             message.To.Add(MailboxAddress.Parse(email));
 
@@ -40,17 +32,12 @@ namespace AIEvent.Application.Services.Implements
                 await client.SendAsync(message);
                 await client.DisconnectAsync(true);
 
-                return Result<UserOtpResponse>.Success(new UserOtpResponse
-                {
-                    Code = otp,
-                    ExpiredAt = DateTime.UtcNow.AddMinutes(5)
-                });
+                return Result.Success();
             }
             catch
             {
-                return ErrorResponse.FailureResult("Không thể gửi email. Vui lòng thử lại sau.");
+                return ErrorResponse.FailureResult("Can not send email. Please try again.");
             }
         }
-
     }
 }

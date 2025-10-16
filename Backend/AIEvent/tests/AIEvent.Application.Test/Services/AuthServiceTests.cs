@@ -10,6 +10,7 @@ using AIEvent.Domain.Enums;
 using AIEvent.Domain.Interfaces;
 using AutoMapper;
 using FluentAssertions;
+using MimeKit;
 using MockQueryable.Moq;
 using Moq;
 
@@ -223,7 +224,7 @@ namespace AIEvent.Application.Test.Services
             };
             var user = new User { Id = Guid.NewGuid(), Email = request.Email, IsActive = false };
             var role = new Role { Id = Guid.NewGuid(), Name = "User" };
-            var otpResult = Result<UserOtpResponse>.Success(new UserOtpResponse { Code = "123456", ExpiredAt = DateTime.UtcNow.AddMinutes(10) });
+            var otpResult = Result.Success();
 
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
                            .Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
@@ -231,7 +232,7 @@ namespace AIEvent.Application.Test.Services
                            .Returns(new List<Role> { role }.AsQueryable().BuildMockDbSet().Object);
             _mockMapper.Setup(x => x.Map<User>(request)).Returns(user);
             _mockUnitOfWork.Setup(x => x.UserRepository.AddAsync(It.IsAny<User>())).ReturnsAsync(user);
-            _mockEmailService.Setup(x => x.SendOtpAsync(request.Email)).ReturnsAsync(otpResult);
+            _mockEmailService.Setup(x => x.SendOtpAsync(request.Email, It.IsAny<MimeMessage>())).ReturnsAsync(otpResult);
             _mockUnitOfWork.Setup(x => x.UserOtpsRepository.AddAsync(It.IsAny<UserOtps>()));
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 
@@ -350,7 +351,7 @@ namespace AIEvent.Application.Test.Services
                            .Returns(new List<Role> { role }.AsQueryable().BuildMockDbSet().Object);
             _mockMapper.Setup(x => x.Map<User>(request)).Returns(user);
             _mockUnitOfWork.Setup(x => x.UserRepository.AddAsync(It.IsAny<User>())).ReturnsAsync(user);
-            _mockEmailService.Setup(x => x.SendOtpAsync(request.Email))
+            _mockEmailService.Setup(x => x.SendOtpAsync(request.Email, It.IsAny<MimeMessage>()))
                             .ReturnsAsync(ErrorResponse.FailureResult("Email send failed", ErrorCodes.InternalServerError));
 
             // Act
@@ -597,7 +598,7 @@ namespace AIEvent.Application.Test.Services
             };
             var user = new User { Id = Guid.NewGuid(), Email = request.Email, IsActive = false };
             var role = new Role { Id = Guid.NewGuid(), Name = "User" };
-            var otpResult = Result<UserOtpResponse>.Success(new UserOtpResponse { Code = "123456", ExpiredAt = DateTime.UtcNow.AddMinutes(10) });
+            var otpResult = Result.Success();
 
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
                            .Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
@@ -605,7 +606,7 @@ namespace AIEvent.Application.Test.Services
                            .Returns(new List<Role> { role }.AsQueryable().BuildMockDbSet().Object);
             _mockMapper.Setup(x => x.Map<User>(request)).Returns(user);
             _mockUnitOfWork.Setup(x => x.UserRepository.AddAsync(It.IsAny<User>())).ReturnsAsync(user);
-            _mockEmailService.Setup(x => x.SendOtpAsync(request.Email)).ReturnsAsync(otpResult);
+            _mockEmailService.Setup(x => x.SendOtpAsync(request.Email, It.IsAny<MimeMessage>())).ReturnsAsync(otpResult);
             _mockUnitOfWork.Setup(x => x.UserOtpsRepository.AddAsync(It.IsAny<UserOtps>()));
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 

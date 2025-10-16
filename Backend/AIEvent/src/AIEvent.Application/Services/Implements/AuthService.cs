@@ -9,6 +9,7 @@ using AIEvent.Domain.Enums;
 using AIEvent.Domain.Interfaces;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using MimeKit;
 using System.ComponentModel.DataAnnotations;
 
 namespace AIEvent.Application.Services.Implements
@@ -230,14 +231,25 @@ namespace AIEvent.Application.Services.Implements
             if (result == null)
                 return ErrorResponse.FailureResult("Failed to create user account", ErrorCodes.InvalidInput);
 
-            var userOtps = await _emailService.SendOtpAsync(request.Email);
+
+            var otpCode = new Random().Next(100000, 999999).ToString();
+            var message = new MimeMessage
+            {
+                Subject = "Mã OTP của bạn",
+                Body = new TextPart("plain")
+                {
+                    Text = $"Mã xác thực của bạn là: {otpCode}. Mã này sẽ hết hạn sau 5 phút."
+                }
+            };
+
+            var userOtps = await _emailService.SendOtpAsync(request.Email, message);
             if (!userOtps.IsSuccess)
                 return ErrorResponse.FailureResult("Failed to send email", ErrorCodes.InternalServerError);
 
             var otp = new UserOtps
             {
-                Code = _hasherHelper.Hash(userOtps.Value!.Code),
-                ExpiredAt = userOtps.Value.ExpiredAt,
+                Code = _hasherHelper.Hash(otpCode),
+                ExpiredAt = DateTime.UtcNow.AddMinutes(5),
                 Purpose = PurposeStatus.Register,
                 UserId = user.Id,
             };
