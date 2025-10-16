@@ -21,6 +21,8 @@ import ManagerEventsPage from "../pages/Manager/ManagerEventsPage";
 import ManagerEventsNeedApprovalPage from "../pages/Manager/ManagerEventsNeedApprovalPage";
 import ManagerEventDetailPage from "../pages/Manager/ManagerEventDetailPage";
 import ManagerEditEventPage from "../pages/Manager/ManagerEditEventPage";
+import AdminProfile from "../pages/Admin/AdminProfile";
+import UserManagement from "../pages/Admin/UserManagement";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -214,10 +216,10 @@ export default function useRouterElement() {
       children: [
         { index: true, element: <AdminDashboard /> },
         { path: "events", element: <div>Admin Events Page</div> },
-        { path: "users", element: <div>Admin Users Page</div> },
+        { path: "users", element: <UserManagement /> },
         { path: "refund-rules", element: <RefundRulesManagement /> },
         { path: "organizers", element: <div>Admin Organizers Page</div> },
-        { path: "profile", element: <div>Admin Profile Page</div> },
+        { path: "profile", element: <AdminProfile /> },
         { path: "settings", element: <div>Admin Settings Page</div> },
         {
           path: "system-settings",
