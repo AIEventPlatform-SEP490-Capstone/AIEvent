@@ -4,7 +4,6 @@ using MailKit.Net.Smtp;
 using MimeKit;
 using AIEvent.Application.DTOs.Auth;
 using AIEvent.Application.Helpers;
-using System.Runtime;
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 

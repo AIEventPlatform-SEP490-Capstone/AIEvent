@@ -76,14 +76,13 @@ namespace AIEvent.Infrastructure.Context
             builder.Entity<RefreshToken>(entity =>
             {
                 entity.Property(e => e.Token).IsRequired().HasMaxLength(500);
-                entity.Property(e => e.ReplacedByToken).HasMaxLength(500);
 
                 entity.HasOne(e => e.User)
                       .WithMany(u => u.RefreshTokens)
                       .HasForeignKey(e => e.UserId);
 
                 entity.HasIndex(e => e.Token).IsUnique().HasDatabaseName("IX_RefreshToken_Token");
-                entity.HasIndex(e => new { e.UserId, e.IsRevoked }).HasDatabaseName("IX_RefreshToken_UserId_IsRevoked");
+                entity.HasIndex(e => new { e.UserId, e.IsDeleted }).HasDatabaseName("IX_RefreshToken_UserId_IsDeleted");
                 entity.HasIndex(e => new { e.Token, e.ExpiresAt }).HasDatabaseName("IX_RefreshToken_Token_ExpiresAt");
                 entity.HasIndex(e => e.ExpiresAt).HasDatabaseName("IX_RefreshToken_ExpiresAt");
             });
