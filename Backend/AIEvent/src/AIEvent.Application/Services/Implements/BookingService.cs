@@ -116,7 +116,6 @@ namespace AIEvent.Application.Services.Implements
                 }
 
                 booking.TotalAmount = totalAmount;
-                await _unitOfWork.BookingRepository.UpdateAsync(booking);
                 await _unitOfWork.EventRepository.UpdateAsync(eventEntity);
 
                 //payment
@@ -162,6 +161,9 @@ namespace AIEvent.Application.Services.Implements
                     };
                     await _unitOfWork.WalletTransactionRepository.AddAsync(walletTransaction);
                 }
+
+                booking.PaymentStatus = PaymentStatus.Paid;
+                await _unitOfWork.BookingRepository.UpdateAsync(booking);
 
                 return Result.Success();
             });            

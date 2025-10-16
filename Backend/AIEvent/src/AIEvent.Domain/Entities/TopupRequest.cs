@@ -18,7 +18,11 @@ namespace AIEvent.Domain.Entities
         [Precision(18, 2)]
         public decimal Amount { get; set; }
         public required string SepayTransId { get; set; }
+        public string? PaymentInfoJson { get; set; } // lưu VA/QR/url JSON
+        public string? Description { get; set; }
         public TransactionStatus Status { get; set; }
         public DateTime CompletedAt { get; set; }
+        public string? FailureReason { get; set; }
+        public string? ClientRequestId { get; set; }
     }
 }
