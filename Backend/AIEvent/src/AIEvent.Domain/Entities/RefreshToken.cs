@@ -1,6 +1,6 @@
 using AIEvent.Domain.Base;
 
-namespace AIEvent.Domain.Identity
+namespace AIEvent.Domain.Entities
 {
     public class RefreshToken : BaseEntity
     {
@@ -11,7 +11,7 @@ namespace AIEvent.Domain.Identity
         public string? ReplacedByToken { get; set; }
         
         public Guid UserId { get; set; }
-        public AppUser User { get; set; } = null!;
+        public User User { get; set; } = null!;
 
         public bool IsExpired => DateTime.UtcNow >= ExpiresAt;
         public bool IsActive => !IsRevoked && !IsExpired;

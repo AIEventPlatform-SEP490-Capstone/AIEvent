@@ -1,5 +1,5 @@
 ﻿using AIEvent.Application.DTOs.Role;
-using AIEvent.Domain.Identity;
+using AIEvent.Domain.Entities;
 using AutoMapper;
 
 namespace AIEvent.Application.Mappings
@@ -8,12 +8,12 @@ namespace AIEvent.Application.Mappings
     {
         public RoleProfile() 
         {
-            CreateMap<AppRole, RoleResponse>();
+            CreateMap<Role, RoleResponse>();
 
-            CreateMap<CreateRoleRequest, AppRole>()
+            CreateMap<CreateRoleRequest, Role>()
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
 
-            CreateMap<UpdateRoleRequest, AppRole>()
+            CreateMap<UpdateRoleRequest, Role>()
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
         }
     }

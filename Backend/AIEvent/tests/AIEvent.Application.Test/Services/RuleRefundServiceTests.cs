@@ -6,11 +6,9 @@ using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
-using AIEvent.Domain.Identity;
 using AIEvent.Domain.Interfaces;
 using AutoMapper;
 using FluentAssertions;
-using Microsoft.AspNetCore.Identity;
 using Moq;
 
 namespace AIEvent.Application.Test.Services
@@ -18,7 +16,6 @@ namespace AIEvent.Application.Test.Services
     public class RuleRefundServiceTests
     {
         private readonly Mock<IUnitOfWork> _mockUnitOfWork;
-        private readonly Mock<UserManager<AppUser>> _mockUserManager;
         private readonly Mock<ITransactionHelper> _mockTransactionHelper;
         private readonly Mock<IMapper> _mockMapper;
         private readonly IRuleRefundService _ruleService;
@@ -27,14 +24,9 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork = new Mock<IUnitOfWork>();
             _mockMapper = new Mock<IMapper>();
             _mockTransactionHelper = new Mock<ITransactionHelper>();
-            var store = new Mock<IUserStore<AppUser>>();
-            _mockUserManager = new Mock<UserManager<AppUser>>(
-                store.Object, null!, null!, null!, null!, null!, null!, null!, null!
-            );
             _ruleService = new RuleRefundService(_mockUnitOfWork.Object,
                                                     _mockTransactionHelper.Object,
-                                                    _mockMapper.Object,
-                                                    _mockUserManager.Object);
+                                                    _mockMapper.Object);
         }
         #region Create RuleRefund
         [Fact]
@@ -64,11 +56,10 @@ namespace AIEvent.Application.Test.Services
         }
             };
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = userId,
                 Email = "test@example.com",
-                UserName = "testuser",
                 IsActive = true
             };
 
@@ -90,8 +81,6 @@ namespace AIEvent.Application.Test.Services
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                .Returns<Func<Task<Result>>>(func => func());
-            _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
-            _mockUserManager.Setup(x => x.IsInRoleAsync(user, "Admin")).ReturnsAsync(true);
             _mockMapper.Setup(x => x.Map<RefundRule>(request)).Returns(mappedRule);
             _mockUnitOfWork.Setup(x => x.RefundRuleRepository.AddAsync(mappedRule));
 
@@ -100,8 +89,6 @@ namespace AIEvent.Application.Test.Services
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeTrue();
 
-            _mockUserManager.Verify(x => x.FindByIdAsync(userId.ToString()), Times.Once);
-            _mockUserManager.Verify(x => x.IsInRoleAsync(user, "Admin"), Times.Once);
             _mockMapper.Verify(x => x.Map<RefundRule>(request), Times.Once);
             _mockUnitOfWork.Verify(x => x.RefundRuleRepository.AddAsync(It.IsAny<RefundRule>()), Times.Once);
         }
@@ -126,11 +113,10 @@ namespace AIEvent.Application.Test.Services
         }
             };
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = userId,
                 Email = "test@example.com",
-                UserName = "testuser",
                 IsActive = true
             };
 
@@ -152,8 +138,6 @@ namespace AIEvent.Application.Test.Services
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                .Returns<Func<Task<Result>>>(func => func());
-            _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
-            _mockUserManager.Setup(x => x.IsInRoleAsync(user, "Admin")).ReturnsAsync(false);
             _mockMapper.Setup(x => x.Map<RefundRule>(request)).Returns(mappedRule);
             _mockUnitOfWork.Setup(x => x.RefundRuleRepository.AddAsync(mappedRule));
 
@@ -161,9 +145,6 @@ namespace AIEvent.Application.Test.Services
 
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeTrue();
-
-            _mockUserManager.Verify(x => x.FindByIdAsync(userId.ToString()), Times.Once);
-            _mockUserManager.Verify(x => x.IsInRoleAsync(user, "Admin"), Times.Once);
             _mockMapper.Verify(x => x.Map<RefundRule>(request), Times.Once);
             _mockUnitOfWork.Verify(x => x.RefundRuleRepository.AddAsync(It.IsAny<RefundRule>()), Times.Once);
         }
@@ -195,11 +176,10 @@ namespace AIEvent.Application.Test.Services
         }
             };
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = userId,
                 Email = "test@example.com",
-                UserName = "testuser",
                 IsActive = false
             };
 
@@ -221,8 +201,6 @@ namespace AIEvent.Application.Test.Services
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                .Returns<Func<Task<Result>>>(func => func());
-            _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
-
             var result = await _ruleService.CreateRuleAsync(userId, request);
 
             result.Should().NotBeNull();
@@ -258,18 +236,15 @@ namespace AIEvent.Application.Test.Services
         }
             };
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = userId,
                 Email = "test@example.com",
-                UserName = "testuser",
                 IsActive = true
             };
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                .Returns<Func<Task<Result>>>(func => func());
-            _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
-            _mockUserManager.Setup(x => x.IsInRoleAsync(user, "Admin")).ReturnsAsync(true);
             _mockMapper.Setup(x => x.Map<RefundRule>(request)).Returns((RefundRule?)null!);
 
             var result = await _ruleService.CreateRuleAsync(userId, request);
@@ -279,8 +254,6 @@ namespace AIEvent.Application.Test.Services
             result.Error!.Message.Should().Be("Failed to map refund rule");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
 
-            _mockUserManager.Verify(x => x.FindByIdAsync(userId.ToString()), Times.Once);
-            _mockUserManager.Verify(x => x.IsInRoleAsync(user, "Admin"), Times.Once);
         }
         #endregion
 
@@ -291,11 +264,10 @@ namespace AIEvent.Application.Test.Services
             var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
             var ruleId = Guid.Parse("11111111-1111-1111-1111-111111111111"); ;
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = userId,
                 Email = "test@example.com",
-                UserName = "testuser",
                 IsActive = true
             };
 
@@ -312,19 +284,15 @@ namespace AIEvent.Application.Test.Services
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                .Returns<Func<Task<Result>>>(func => func());
-            _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
-            _mockUserManager.Setup(x => x.IsInRoleAsync(user, roles[0])).ReturnsAsync(true);
             _mockUnitOfWork.Setup(x => x.RefundRuleRepository.GetByIdAsync(ruleId, true)).ReturnsAsync(systemRule);
             _mockUnitOfWork.Setup(x => x.RefundRuleRepository.DeleteAsync(systemRule));
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 
-            var result = await _ruleService.DeleteRuleAsync(userId, ruleId.ToString());
+            var result = await _ruleService.DeleteRuleAsync(userId, ruleId);
 
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeTrue();
 
-            _mockUserManager.Verify(x => x.FindByIdAsync(userId.ToString()), Times.Once);
-            _mockUserManager.Verify(x => x.IsInRoleAsync(user, "Admin"), Times.Once);
             _mockUnitOfWork.Verify(x => x.RefundRuleRepository.DeleteAsync(It.IsAny<RefundRule>()), Times.Once);
         }
 
@@ -335,11 +303,10 @@ namespace AIEvent.Application.Test.Services
             var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
             var ruleId = Guid.Parse("11111111-1111-1111-1111-111111111111"); ;
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = userId,
                 Email = "test@example.com",
-                UserName = "testuser",
                 IsActive = true
             };
 
@@ -356,19 +323,15 @@ namespace AIEvent.Application.Test.Services
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                .Returns<Func<Task<Result>>>(func => func());
-            _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
-            _mockUserManager.Setup(x => x.IsInRoleAsync(user, roles[1])).ReturnsAsync(true);
             _mockUnitOfWork.Setup(x => x.RefundRuleRepository.GetByIdAsync(ruleId, true)).ReturnsAsync(systemRule);
             _mockUnitOfWork.Setup(x => x.RefundRuleRepository.DeleteAsync(systemRule));
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 
-            var result = await _ruleService.DeleteRuleAsync(userId, ruleId.ToString());
+            var result = await _ruleService.DeleteRuleAsync(userId, ruleId);
 
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeTrue();
 
-            _mockUserManager.Verify(x => x.FindByIdAsync(userId.ToString()), Times.Once);
-            _mockUserManager.Verify(x => x.IsInRoleAsync(user, "Admin"), Times.Once);
             _mockUnitOfWork.Verify(x => x.RefundRuleRepository.DeleteAsync(It.IsAny<RefundRule>()), Times.Once);
         }
 
@@ -380,11 +343,10 @@ namespace AIEvent.Application.Test.Services
             var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
             var ruleId = Guid.Parse("11111111-1111-1111-1111-111111111111"); ;
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = userId,
                 Email = "test@example.com",
-                UserName = "testuser",
                 IsActive = true
             };
 
@@ -401,9 +363,8 @@ namespace AIEvent.Application.Test.Services
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                .Returns<Func<Task<Result>>>(func => func());
-            _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync((AppUser?)null);
 
-            var result = await _ruleService.DeleteRuleAsync(userId, ruleId.ToString());
+            var result = await _ruleService.DeleteRuleAsync(userId, ruleId);
 
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
@@ -417,11 +378,10 @@ namespace AIEvent.Application.Test.Services
             var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
             var ruleId = Guid.Parse("11111111-1111-1111-1111-111111111111"); ;
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = userId,
                 Email = "test@example.com",
-                UserName = "testuser",
                 IsActive = true
             };
 
@@ -439,11 +399,9 @@ namespace AIEvent.Application.Test.Services
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                .Returns<Func<Task<Result>>>(func => func());
-            _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
-            _mockUserManager.Setup(x => x.IsInRoleAsync(user, roles[1])).ReturnsAsync(true);
             _mockUnitOfWork.Setup(x => x.RefundRuleRepository.GetByIdAsync(ruleId, true)).ReturnsAsync(systemRule);
 
-            var result = await _ruleService.DeleteRuleAsync(userId, ruleId.ToString());
+            var result = await _ruleService.DeleteRuleAsync(userId, ruleId);
 
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
@@ -457,11 +415,10 @@ namespace AIEvent.Application.Test.Services
             var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
             var ruleId = Guid.Parse("11111111-1111-1111-1111-111111111111"); ;
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = userId,
                 Email = "test@example.com",
-                UserName = "testuser",
                 IsActive = true
             };
 
@@ -478,11 +435,9 @@ namespace AIEvent.Application.Test.Services
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
               .Returns<Func<Task<Result>>>(func => func());
-            _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
-            _mockUserManager.Setup(x => x.IsInRoleAsync(user, roles[0])).ReturnsAsync(false);
             _mockUnitOfWork.Setup(x => x.RefundRuleRepository.GetByIdAsync(ruleId, true)).ReturnsAsync(systemRule);
 
-            var result = await _ruleService.DeleteRuleAsync(userId, ruleId.ToString());
+            var result = await _ruleService.DeleteRuleAsync(userId, ruleId);
 
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
@@ -497,11 +452,10 @@ namespace AIEvent.Application.Test.Services
             var userId2 = Guid.Parse("22222222-2222-2222-2222-222222222AAA");
             var ruleId = Guid.Parse("11111111-1111-1111-1111-111111111111"); ;
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = userId,
                 Email = "test@example.com",
-                UserName = "testuser",
                 IsActive = true
             };
 
@@ -518,11 +472,9 @@ namespace AIEvent.Application.Test.Services
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
               .Returns<Func<Task<Result>>>(func => func());
-            _mockUserManager.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
-            _mockUserManager.Setup(x => x.IsInRoleAsync(user, roles[0])).ReturnsAsync(false);
             _mockUnitOfWork.Setup(x => x.RefundRuleRepository.GetByIdAsync(ruleId, true)).ReturnsAsync(systemRule);
 
-            var result = await _ruleService.DeleteRuleAsync(userId, ruleId.ToString());
+            var result = await _ruleService.DeleteRuleAsync(userId, ruleId);
 
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();

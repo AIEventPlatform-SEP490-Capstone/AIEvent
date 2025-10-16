@@ -7,9 +7,7 @@ using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
-using AIEvent.Domain.Identity;
 using AIEvent.Domain.Interfaces;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
@@ -19,18 +17,18 @@ namespace AIEvent.Application.Services.Implements
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ITransactionHelper _transactionHelper;
-        private readonly UserManager<AppUser> _userManager;
-        public FavoriteEventService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper, UserManager<AppUser> userManager)
+        public FavoriteEventService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper)
         {
             _unitOfWork = unitOfWork;
             _transactionHelper = transactionHelper;
-            _userManager = userManager;
         }
         public async Task<Result> AddFavoriteEvent(Guid userId, Guid eventId)
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-                var user = await _userManager.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                var user = await _unitOfWork.UserRepository
+                                            .Query()
+                                            .FirstOrDefaultAsync(u => u.Id == userId);
                 if (user == null || user.IsActive == false)
                 {
                     return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);

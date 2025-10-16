@@ -22,7 +22,7 @@ namespace AIEvent.Application.Services.Implements
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<Result> CreateEventCategoryAsync(CreateCategoryRequest request)
+        public async Task<Result> CreateEventCategoryAsync(EventCategoryRequest request)
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
@@ -124,7 +124,7 @@ namespace AIEvent.Application.Services.Implements
 
 
 
-        public async Task<Result<EventCategoryResponse>> UpdateEventCategoryAsync(string id, CreateCategoryRequest request)
+        public async Task<Result<EventCategoryResponse>> UpdateEventCategoryAsync(string id, EventCategoryRequest request)
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {

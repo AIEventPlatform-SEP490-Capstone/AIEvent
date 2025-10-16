@@ -6,7 +6,6 @@ using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
-using AIEvent.Domain.Identity;
 using AIEvent.Domain.Interfaces;
 using AutoMapper;
 using FluentAssertions;
@@ -68,7 +67,7 @@ namespace AIEvent.Application.Test.Services
                 ContactEmail = "test@example.com",
                 ContactPhone = "0123456789",
                 Address = "Test Address",
-                User = new AppUser { Id = Guid.Parse("11111111-1111-1111-1111-111111111111"), FullName = "Test User" }
+                User = new User { Id = Guid.Parse("11111111-1111-1111-1111-111111111111"), FullName = "Test User" }
             };
 
             var eventEntity = new Event
@@ -135,7 +134,7 @@ namespace AIEvent.Application.Test.Services
                 ContactEmail = "test@example.com",
                 ContactPhone = "0123456789",
                 Address = "Test Address",
-                User = new AppUser { Id = Guid.Parse("11111111-1111-1111-1111-111111111111"), FullName = "Test User" }
+                User = new User { Id = Guid.Parse("11111111-1111-1111-1111-111111111111"), FullName = "Test User" }
             };
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
@@ -242,7 +241,7 @@ namespace AIEvent.Application.Test.Services
                 ContactEmail = "test@example.com",
                 ContactPhone = "0123456789",
                 Address = "Test Address",
-                User = new AppUser { Id = Guid.Parse("11111111-1111-1111-1111-111111111111"), FullName = "Test User" }
+                User = new User { Id = Guid.Parse("11111111-1111-1111-1111-111111111111"), FullName = "Test User" }
             };
 
             _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.GetByIdAsync(organizerId, true))
@@ -298,10 +297,10 @@ namespace AIEvent.Application.Test.Services
                 ContactEmail = "test@example.com",
                 ContactPhone = "0123456789",
                 Address = "Test Address",
-                User = new AppUser { Id = userId, FullName = "Test User" }
+                User = new User { Id = userId, FullName = "Test User" }
             };
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = userId,
                 FullName = "Test User",
@@ -377,7 +376,7 @@ namespace AIEvent.Application.Test.Services
                 ContactEmail = "test@example.com",
                 ContactPhone = "0123456789",
                 Address = "Test Address",
-                User = new AppUser { Id = userId, FullName = "Test User" }
+                User = new User { Id = userId, FullName = "Test User" }
             };
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
@@ -482,7 +481,7 @@ namespace AIEvent.Application.Test.Services
                 ContactEmail = "test@example.com",
                 ContactPhone = "0123456789",
                 Address = "Test Address",
-                User = new AppUser { Id = userId, FullName = "Test User" }
+                User = new User { Id = userId, FullName = "Test User" }
             };
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
@@ -491,8 +490,6 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.GetByIdAsync(organizerId, true))
                 .ReturnsAsync(organizer);
 
-            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
-                .ReturnsAsync((AppUser?)null);
 
             var result = await _eventService.UpdateEventAsync(organizerId, userId, eventId, updateEventRequest);
 
@@ -533,10 +530,10 @@ namespace AIEvent.Application.Test.Services
                 ContactEmail = "test@example.com",
                 ContactPhone = "0123456789",
                 Address = "Test Address",
-                User = new AppUser { Id = userId, FullName = "Test User" }
+                User = new User { Id = userId, FullName = "Test User" }
             };
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = userId,
                 FullName = "Test User",
@@ -602,10 +599,10 @@ namespace AIEvent.Application.Test.Services
                 ContactEmail = "test@example.com",
                 ContactPhone = "0123456789",
                 Address = "Test Address",
-                User = new AppUser { Id = userId, FullName = "Test User" }
+                User = new User { Id = userId, FullName = "Test User" }
             };
 
-            var user = new AppUser
+            var user = new User
             {
                 Id = userId,
                 FullName = "Test User",
@@ -668,12 +665,12 @@ namespace AIEvent.Application.Test.Services
         [Fact]
         public async Task GetEventByIdAsync_WithValidId_ShouldReturnEventDetail()
         {
-            var eventId = Guid.Parse("11111111-1111-1111-1111-111111111111").ToString();
+            var eventId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
             var mockEventService = new Mock<IEventService>();
             var eventDetailResponse = new EventDetailResponse
             {
-                EventId = Guid.Parse(eventId),
+                EventId = eventId,
                 Title = "Test Event",
                 Description = "Test Description",
                 StartTime = DateTime.Now.AddDays(1),
@@ -690,14 +687,14 @@ namespace AIEvent.Application.Test.Services
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeTrue();
             result.Value.Should().NotBeNull();
-            result.Value!.EventId.Should().Be(Guid.Parse(eventId));
+            result.Value!.EventId.Should().Be(eventId);
             result.Value.Title.Should().Be("Test Event");
         }
 
         [Fact]
         public async Task GetEventByIdAsync_WithNonExistentId_ShouldReturnFailureResult()
         {
-            var eventId = Guid.Parse("11111111-1111-1111-1111-111111111111").ToString();
+            var eventId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
             var mockEventService = new Mock<IEventService>();
             mockEventService.Setup(x => x.GetEventByIdAsync(eventId))
@@ -719,10 +716,10 @@ namespace AIEvent.Application.Test.Services
         [Fact]
         public async Task DeleteEventAsync_WithValidEventId_ShouldReturnSuccessResult()
         {
-            var eventId = Guid.Parse("11111111-1111-1111-1111-111111111111").ToString();
+            var eventId = Guid.Parse("11111111-1111-1111-1111-111111111111");
             var existingEvent = new Event
             {
-                Id = Guid.Parse(eventId),
+                Id = eventId,
                 Title = "Test Event",
                 Description = "Test Description",
                 StartTime = DateTime.Now.AddDays(1),
@@ -733,7 +730,7 @@ namespace AIEvent.Application.Test.Services
                 EventCategoryId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
             };
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.GetByIdAsync(Guid.Parse(eventId), true))
+            _mockUnitOfWork.Setup(x => x.EventRepository.GetByIdAsync(eventId, true))
                 .ReturnsAsync(existingEvent);
             _mockUnitOfWork.Setup(x => x.EventRepository.DeleteAsync(existingEvent))
                 .Returns(Task.CompletedTask);
@@ -746,16 +743,16 @@ namespace AIEvent.Application.Test.Services
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeTrue();
 
-            _mockUnitOfWork.Verify(x => x.EventRepository.GetByIdAsync(Guid.Parse(eventId), true), Times.Once);
+            _mockUnitOfWork.Verify(x => x.EventRepository.GetByIdAsync(eventId, true), Times.Once);
             _mockUnitOfWork.Verify(x => x.EventRepository.DeleteAsync(existingEvent), Times.Once);
         }
 
         [Fact]
         public async Task DeleteEventAsync_WithNonExistentEventId_ShouldReturnFailureResult()
         {
-            var eventId = Guid.Parse("11111111-1111-1111-1111-111111111111").ToString();
+            var eventId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.GetByIdAsync(Guid.Parse(eventId), true))
+            _mockUnitOfWork.Setup(x => x.EventRepository.GetByIdAsync(eventId, true))
                 .ReturnsAsync((Event?)null);
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
@@ -768,16 +765,16 @@ namespace AIEvent.Application.Test.Services
             result.Error!.Message.Should().Be("Event not found or inactive");
             result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
 
-            _mockUnitOfWork.Verify(x => x.EventRepository.GetByIdAsync(Guid.Parse(eventId), true), Times.Once);
+            _mockUnitOfWork.Verify(x => x.EventRepository.GetByIdAsync(eventId, true), Times.Once);
         }
 
         [Fact]
         public async Task DeleteEventAsync_WithNonActiveEventId_ShouldReturnFailureResult()
         {
-            var eventId = Guid.Parse("11111111-1111-1111-1111-111111111111").ToString();
+            var eventId = Guid.Parse("11111111-1111-1111-1111-111111111111");
             var existingEvent = new Event
             {
-                Id = Guid.Parse(eventId),
+                Id = eventId,
                 Title = "Test Event",
                 Description = "Test Description",
                 StartTime = DateTime.Now.AddDays(1),
@@ -789,7 +786,7 @@ namespace AIEvent.Application.Test.Services
                 DeletedAt = new DateTimeOffset(DateTime.Now.AddDays(1)),
             };
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.GetByIdAsync(Guid.Parse(eventId), true))
+            _mockUnitOfWork.Setup(x => x.EventRepository.GetByIdAsync(eventId, true))
                 .ReturnsAsync(existingEvent);
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
@@ -802,7 +799,7 @@ namespace AIEvent.Application.Test.Services
             result.Error!.Message.Should().Be("Event not found or inactive");
             result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
 
-            _mockUnitOfWork.Verify(x => x.EventRepository.GetByIdAsync(Guid.Parse(eventId), true), Times.Once);
+            _mockUnitOfWork.Verify(x => x.EventRepository.GetByIdAsync(eventId, true), Times.Once);
         }
 
         #endregion

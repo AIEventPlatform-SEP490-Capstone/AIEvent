@@ -4,10 +4,8 @@ using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
-using AIEvent.Domain.Identity;
 using AIEvent.Domain.Interfaces;
 using FluentAssertions;
-using Microsoft.AspNetCore.Identity;
 using MockQueryable.Moq;
 using Moq;
 
@@ -17,21 +15,14 @@ namespace AIEvent.Application.Test.Services
     {
         private readonly Mock<IUnitOfWork> _mockUnitOfWork;
         private readonly Mock<ITransactionHelper> _mockTransactionHelper;
-        private readonly Mock<UserManager<AppUser>> _mockUserManager;
         private readonly IFavoriteEventService _favoriteeventService;
         public FavoriteEventServiceTest()
         {
             _mockUnitOfWork = new Mock<IUnitOfWork>();
             _mockTransactionHelper = new Mock<ITransactionHelper>();
 
-            var store = new Mock<IUserStore<AppUser>>();
-            _mockUserManager = new Mock<UserManager<AppUser>>(
-                store.Object, null!, null!, null!, null!, null!, null!, null!, null!
-            );
-
             _favoriteeventService = new FavoriteEventService(_mockUnitOfWork.Object,
-                                                            _mockTransactionHelper.Object,
-                                                            _mockUserManager.Object
+                                                            _mockTransactionHelper.Object
                                                         );
         }
 
@@ -41,11 +32,10 @@ namespace AIEvent.Application.Test.Services
         {
             var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
             var eventId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-            var user = new AppUser
+            var user = new User
             {
                 Id = userId,
                 Email = "test@gmail.com",
-                UserName = "Test",
                 FullName = "Test User",
                 IsActive = true
             };
@@ -73,8 +63,8 @@ namespace AIEvent.Application.Test.Services
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(func => func());
 
-            var users = new List<AppUser> { user }.AsQueryable().BuildMockDbSet();
-            _mockUserManager.Setup(x => x.Users).Returns(users.Object);
+            var users = new List<User> { user }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(users.Object);
 
             _mockUnitOfWork.Setup(x => x.EventRepository.GetByIdAsync(eventId, true)).ReturnsAsync(eventDB);
             _mockUnitOfWork.Setup(x => x.FavoriteEventRepository.AddAsync(fevent));
@@ -89,11 +79,10 @@ namespace AIEvent.Application.Test.Services
         {
             var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
             var eventId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-            var user = new AppUser
+            var user = new User
             {
                 Id = userId,
                 Email = "test@gmail.com",
-                UserName = "Test",
                 FullName = "Test User",
                 IsActive = false
             };
@@ -101,8 +90,8 @@ namespace AIEvent.Application.Test.Services
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(func => func());
 
-            var users = new List<AppUser> { user }.AsQueryable().BuildMockDbSet();
-            _mockUserManager.Setup(x => x.Users).Returns(users.Object);
+            var users = new List<User> { user }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(users.Object);
             var result = await _favoriteeventService.AddFavoriteEvent(userId, eventId);
 
             result.Should().NotBeNull();
@@ -116,11 +105,10 @@ namespace AIEvent.Application.Test.Services
         {
             var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
             var eventId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-            var user = new AppUser
+            var user = new User
             {
                 Id = Guid.NewGuid(),
                 Email = "test@gmail.com",
-                UserName = "Test",
                 FullName = "Test User",
                 IsActive = false
             };
@@ -128,8 +116,8 @@ namespace AIEvent.Application.Test.Services
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(func => func());
 
-            var users = new List<AppUser> { user }.AsQueryable().BuildMockDbSet();
-            _mockUserManager.Setup(x => x.Users).Returns(users.Object);
+            var users = new List<User> { user }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(users.Object);
             var result = await _favoriteeventService.AddFavoriteEvent(userId, eventId);
 
             result.Should().NotBeNull();
@@ -143,11 +131,10 @@ namespace AIEvent.Application.Test.Services
         {
             var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
             var eventId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-            var user = new AppUser
+            var user = new User
             {
                 Id = userId,
                 Email = "test@gmail.com",
-                UserName = "Test",
                 FullName = "Test User",
                 IsActive = true
             };
@@ -155,8 +142,8 @@ namespace AIEvent.Application.Test.Services
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                .Returns<Func<Task<Result>>>(func => func());
 
-            var users = new List<AppUser> { user }.AsQueryable().BuildMockDbSet();
-            _mockUserManager.Setup(x => x.Users).Returns(users.Object);
+            var users = new List<User> { user }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(users.Object);
 
             _mockUnitOfWork.Setup(x => x.EventRepository.GetByIdAsync(eventId, true)).ReturnsAsync((Event?) null);
 
