@@ -164,6 +164,8 @@ namespace AIEvent.Application.Services.Implements
                     TotalTickets = e.TotalTickets,
                     SoldQuantity = e.SoldQuantity,
                     LocationName = e.LocationName,
+                    Publish = e.Publish,
+                    RequireApproval = e.RequireApproval,
                     Tags = e.EventTags.Select(t => new TagResponse
                     {
                         TagId = t.TagId.ToString(),
@@ -338,6 +340,8 @@ namespace AIEvent.Application.Services.Implements
                     TicketType = e.TicketType,
                     TotalTickets = e.TotalTickets,
                     SoldQuantity = e.SoldQuantity,
+                    Publish = e.Publish,
+                    RequireApproval = e.RequireApproval,
                     TicketPrice = e.TicketDetails.Any()
                         ? e.TicketDetails.Min(t => t.TicketPrice)
                         : 0,

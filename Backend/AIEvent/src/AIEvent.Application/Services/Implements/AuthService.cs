@@ -33,6 +33,8 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result<AuthResponse>> LoginAsync(LoginRequest request)
         {
+            if(request == null || string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
+                return ErrorResponse.FailureResult("Invalid email or password", ErrorCodes.Unauthorized);
             var user = await _unitOfWork.UserRepository.Query()
                                 .Include(u => u.OrganizerProfile)
                                 .Include(u => u.Role)
