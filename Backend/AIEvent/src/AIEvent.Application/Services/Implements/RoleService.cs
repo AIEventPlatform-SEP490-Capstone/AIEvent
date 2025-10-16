@@ -3,95 +3,82 @@ using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Role;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
-using AIEvent.Domain.Identity;
+using AIEvent.Domain.Entities;
+using AIEvent.Domain.Interfaces;
 using AutoMapper;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace AIEvent.Application.Services.Implements
 {
     public class RoleService : IRoleService
     {
-        private readonly RoleManager<AppRole> _roleManager;
-        private readonly UserManager<AppUser> _userManager;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
         public RoleService(
-            RoleManager<AppRole> roleManager,
-            UserManager<AppUser> userManager,
+            IUnitOfWork unitOfWork,
             IMapper mapper)
         {
-            _roleManager = roleManager;
-            _userManager = userManager;
+            _unitOfWork = unitOfWork;
             _mapper = mapper;
         }
 
         public async Task<Result<List<RoleResponse>>> GetAllRolesAsync()
         {
-            var roles = await _roleManager.Roles.ToListAsync();
+            var roles = await _unitOfWork.RoleRepository.GetAllAsync();
             var roleResponses = _mapper.Map<List<RoleResponse>>(roles);
             return Result<List<RoleResponse>>.Success(roleResponses);
         }
-        
-        public async Task<Result<RoleResponse>> CreateRoleAsync(CreateRoleRequest request)
+
+        public async Task<Result> CreateRoleAsync(CreateRoleRequest request)
         {
-            var existingRole = await _roleManager.FindByNameAsync(request.Name);
+            var existingRole = await _unitOfWork.RoleRepository
+                                                .Query()
+                                                .FirstOrDefaultAsync(r => r.Name == request.Name);
             if (existingRole != null)
             {
                 return ErrorResponse.FailureResult("Role with this name already exists", ErrorCodes.InvalidInput);
             }
 
-            var role = _mapper.Map<AppRole>(request);
+            var role = _mapper.Map<Role>(request);
 
-            var result = await _roleManager.CreateAsync(role);
-            if (!result.Succeeded)
-            {
-                return ErrorResponse.FailureResult("Failed to create role", ErrorCodes.InvalidInput);
-            }
+            await _unitOfWork.RoleRepository.AddAsync(role);
+            await _unitOfWork.SaveChangesAsync();
 
-            var roleResponse = _mapper.Map<RoleResponse>(role);
-            return Result<RoleResponse>.Success(roleResponse);
+            return Result.Success();
         }
 
-        public async Task<Result<RoleResponse>> UpdateRoleAsync(string roleId, UpdateRoleRequest request)
+        public async Task<Result> UpdateRoleAsync(string roleId, UpdateRoleRequest request)
         {
-            var role = await _roleManager.FindByIdAsync(roleId);
-            if (role == null)
+            var role = await _unitOfWork.RoleRepository.GetByIdAsync(Guid.Parse(roleId), true);
+            if (role == null || role.DeletedAt.HasValue)
             {
                 return ErrorResponse.FailureResult("Role not found", ErrorCodes.NotFound);
             }
-
             _mapper.Map(request, role);
 
-            var result = await _roleManager.UpdateAsync(role);
-            if (!result.Succeeded)
-            {
-                return ErrorResponse.FailureResult("Failed to update role", ErrorCodes.InvalidInput);
-            }
+            await _unitOfWork.RoleRepository.UpdateAsync(role);
+            await _unitOfWork.SaveChangesAsync();
 
-            var roleResponse = _mapper.Map<RoleResponse>(role);
-            return Result<RoleResponse>.Success(roleResponse);
+            return Result.Success();
         }
 
         public async Task<Result> DeleteRoleAsync(string roleId)
         {
-            var role = await _roleManager.FindByIdAsync(roleId);
+            var role = await _unitOfWork.RoleRepository.GetByIdAsync(Guid.Parse(roleId), true);
             if (role == null)
             {
                 return ErrorResponse.FailureResult("Role not found", ErrorCodes.NotFound);
             }
 
-            var usersInRole = await _userManager.GetUsersInRoleAsync(role.Name!);
-            if (usersInRole.Any())
+            var usersInRole = await _unitOfWork.UserRepository.Query().FirstOrDefaultAsync(u => u.RoleId == Guid.Parse(roleId));
+            if (usersInRole != null)
             {
                 return ErrorResponse.FailureResult("Failed to delete role. Role may be in use or system protected", ErrorCodes.InvalidInput);
             }
 
-            var result = await _roleManager.DeleteAsync(role);
-            if (!result.Succeeded)
-            {
-                return ErrorResponse.FailureResult("Failed to delete role. Role may be in use or system protected", ErrorCodes.InvalidInput);
-            }
+            await _unitOfWork.RoleRepository.DeleteAsync(role);
+            await _unitOfWork.SaveChangesAsync();
 
             return Result.Success();
         }

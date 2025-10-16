@@ -1,6 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using AIEvent.Domain.Identity;
-using Microsoft.AspNetCore.Identity;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
 
@@ -25,7 +23,6 @@ namespace AIEvent.Infrastructure.Data
         {
             SeedRoles(modelBuilder);
             SeedUsers(modelBuilder);
-            SeedUserRoles(modelBuilder);
             SeedEventCategory(modelBuilder);
             SeedTag(modelBuilder);
             SeedOrganizerProfile(modelBuilder);
@@ -35,194 +32,126 @@ namespace AIEvent.Infrastructure.Data
             SeedRefundRuleDetail(modelBuilder);
             SeedTicketDetail(modelBuilder);
             SeedWallet(modelBuilder);
-            SeedInterest(modelBuilder);
-            SeedUserInterest(modelBuilder);
         }
-
-        private static readonly Guid InterestId1 = Guid.NewGuid();
-        private static readonly Guid InterestId2 = Guid.NewGuid();
-        private static readonly Guid InterestId3 = Guid.NewGuid();
-        private static readonly Guid InterestId4 = Guid.NewGuid();
-        private static readonly Guid InterestId5 = Guid.NewGuid();
-        private static readonly Guid InterestId6 = Guid.NewGuid();
-
-        private static void SeedInterest(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<Interest>().HasData(
-                new Interest { Id = InterestId1, Name = "Công nghệ" },
-                new Interest { Id = InterestId2, Name = "Nghệ thuật" },
-                new Interest { Id = Guid.NewGuid(), Name = "Gaming" },
-                new Interest { Id = InterestId4, Name = "Ẩm thực" },
-                new Interest { Id = InterestId3, Name = "Kinh doanh" },
-                new Interest { Id = Guid.NewGuid(), Name = "Sức khỏe" },
-                new Interest { Id = Guid.NewGuid(), Name = "Thời trang" },
-                new Interest { Id = Guid.NewGuid(), Name = "Khởi nghiệp" },
-                new Interest { Id = Guid.NewGuid(), Name = "Giáo dục" },
-                new Interest { Id = Guid.NewGuid(), Name = "Thể thao" },
-                new Interest { Id = Guid.NewGuid(), Name = "Marketing" },
-                new Interest { Id = Guid.NewGuid(), Name = "Âm nhạc" },
-                new Interest { Id = Guid.NewGuid(), Name = "Nhiếp ảnh" },
-                new Interest { Id = InterestId5, Name = "Thiết kế" },
-                new Interest { Id = InterestId6, Name = "Du lịch" }
-            );
-        }
-
 
         private static void SeedRoles(ModelBuilder modelBuilder)
         {
             var roles = new[]
             {
-                new AppRole
+                new Role
                 {
                     Id = adminRoleId,
                     Name = "Admin",
-                    NormalizedName = "ADMIN",
                     Description = "Administrator role with full access",
                     CreatedAt = DateTime.UtcNow,
-                    ConcurrencyStamp = Guid.NewGuid().ToString()
+                    CreatedBy = "System"
                 },
-                new AppRole
+                new Role
                 {
                     Id = userRoleId,
                     Name = "User",
-                    NormalizedName = "USER",
                     Description = "Regular user role",
                     CreatedAt = DateTime.UtcNow,
-                    ConcurrencyStamp = Guid.NewGuid().ToString()
+                    CreatedBy = "System"
                 },
-                new AppRole
+                new Role
                 {
                     Id = managerRoleId,
                     Name = "Manager",
-                    NormalizedName = "MANAGER",
                     Description = "System management",
                     CreatedAt = DateTime.UtcNow,
-                    ConcurrencyStamp = Guid.NewGuid().ToString()
+                    CreatedBy = "System"
                 },
-                new AppRole
+                new Role
                 {
                     Id = staffRoleId,
                     Name = "Staff",
-                    NormalizedName = "STAFF",
                     Description = "Manager's collaborator",
                     CreatedAt = DateTime.UtcNow,
-                    ConcurrencyStamp = Guid.NewGuid().ToString()
+                    CreatedBy = "System"
                 },
-                new AppRole
+                new Role
                 {
                     Id = organizerRoleId,
                     Name = "Organizer",
-                    NormalizedName = "ORGANIZER",
                     Description = "Organizer role for managing events",
                     CreatedAt = DateTime.UtcNow,
-                    ConcurrencyStamp = Guid.NewGuid().ToString()
+                    CreatedBy = "System"
                 }
             };
 
-            modelBuilder.Entity<AppRole>().HasData(roles);
+            modelBuilder.Entity<Role>().HasData(roles);
         }
 
         private static void SeedUsers(ModelBuilder modelBuilder)
         {
-            var passwordHasher = new PasswordHasher<AppUser>();
-
-            var adminUser = new AppUser
+            var adminUser = new User
             {
                 Id = adminUserId,
-                UserName = "admin@aievent.com",
-                NormalizedUserName = "ADMIN@AIEVENT.COM",
+                RoleId = adminRoleId,
                 Email = "admin@gmail.com",
-                NormalizedEmail = "ADMIN@GMAIL.COM", 
-                EmailConfirmed = true,
                 FullName = "System Administrator",
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString()
+                CreatedAt = DateTimeOffset.UtcNow,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("123", 12),
             };
-            adminUser.PasswordHash = passwordHasher.HashPassword(adminUser, "123");
 
-            var regularUser = new AppUser
+            var regularUser = new User
             {
                 Id = regularUserId,
-                UserName = "user@aievent.com",
-                NormalizedUserName = "USER@AIEVENT.COM",
+                RoleId = userRoleId,
                 Email = "user@gmail.com",
-                NormalizedEmail = "USER@GMAIL.COM", 
-                EmailConfirmed = true,
                 FullName = "Regular User",
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString()
+                CreatedAt = DateTimeOffset.UtcNow,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("123", 12),
             };
-            regularUser.PasswordHash = passwordHasher.HashPassword(regularUser, "123");
 
-            var managerUser = new AppUser
+            var managerUser = new User
             {
                 Id = managerUserId,
-                UserName = "manager@aievent.com",
-                NormalizedUserName = "MANAGER@AIEVENT.COM",
+                RoleId = managerRoleId,
                 Email = "manager@gmail.com",
-                NormalizedEmail = "MANAGER@GMAIL.COM", 
-                EmailConfirmed = true,
                 FullName = "Manager",
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString()
+                CreatedAt = DateTimeOffset.UtcNow,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("123", 12),
             };
-            managerUser.PasswordHash = passwordHasher.HashPassword(managerUser, "123");
 
-            var testUser = new AppUser
+            var testUser = new User
             {
                 Id = testUserId,
-                UserName = "test@aievent.com",
-                NormalizedUserName = "TEST@AIEVENT.COM",
                 Email = "user2@gmail.com",
-                NormalizedEmail = "USER2@GMAIL.COM",
-                EmailConfirmed = true,
+                RoleId = userRoleId,
                 FullName = "Test User",
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString()
+                CreatedAt = DateTimeOffset.UtcNow,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("123", 12),
             };
-            testUser.PasswordHash = passwordHasher.HashPassword(testUser, "123");
 
-            var organizerUser = new AppUser
+            var organizerUser = new User
             {
                 Id = organizerUserId,
-                UserName = "organizer@aievent.com",
-                NormalizedUserName = "ORGANIZER@AIEVENT.COM",
+                RoleId = organizerRoleId,
                 Email = "organizer@gmail.com",
-                NormalizedEmail = "ORGANIZER@GMAIL.COM",
-                EmailConfirmed = true,
                 FullName = "Organizer",
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString()
+                CreatedAt = DateTimeOffset.UtcNow,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("123", 12),
             };
-            organizerUser.PasswordHash = passwordHasher.HashPassword(organizerUser, "123");
 
-            var staffUser = new AppUser
+            var staffUser = new User
             {
                 Id = staffUserId,
-                UserName = "staff@aievent.com",
-                NormalizedUserName = "STAFF@AIEVENT.COM",
+                RoleId = staffRoleId,
                 Email = "staff@gmail.com",
-                NormalizedEmail = "STAFF@GMAIL.COM",
-                EmailConfirmed = true,
                 FullName = "Staff",
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString()
+                CreatedAt = DateTimeOffset.UtcNow,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("123", 12),
             };
-            staffUser.PasswordHash = passwordHasher.HashPassword(staffUser, "123");
 
-            modelBuilder.Entity<AppUser>().HasData(adminUser, regularUser, managerUser, testUser, organizerUser, staffUser);
+            modelBuilder.Entity<User>().HasData(adminUser, regularUser, managerUser, testUser, organizerUser, staffUser);
         }
 
 
@@ -242,81 +171,6 @@ namespace AIEvent.Infrastructure.Data
                     UserId = testUserId,
                     Balance = 0,
                     Status = WalletStatus.Active,
-                }
-            );
-        }
-
-        private static void SeedUserRoles(ModelBuilder modelBuilder)
-        {
-            var userRoles = new[]
-            {
-                new IdentityUserRole<Guid>
-                {
-                    UserId = adminUserId,
-                    RoleId = adminRoleId
-                },
-                new IdentityUserRole<Guid>
-                {
-                    UserId = regularUserId,
-                    RoleId = userRoleId
-                },
-                new IdentityUserRole<Guid>
-                {
-                    UserId = managerUserId,
-                    RoleId = managerRoleId
-                },
-                new IdentityUserRole<Guid>
-                {
-                    UserId = organizerUserId,
-                    RoleId = organizerRoleId
-                },
-                new IdentityUserRole<Guid>
-                {
-                    UserId = staffUserId,
-                    RoleId = staffRoleId
-                },
-                new IdentityUserRole<Guid>
-                {
-                    UserId = testUserId,
-                    RoleId = userRoleId
-                }
-            };
-
-            modelBuilder.Entity<IdentityUserRole<Guid>>().HasData(userRoles);
-        }
-
-        private static void SeedUserInterest(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<UserInterest>().HasData(
-                new UserInterest
-                {
-                    UserId = regularUserId,
-                    InterestId = InterestId1,
-                },
-                new UserInterest
-                {
-                    UserId = regularUserId,
-                    InterestId = InterestId2,
-                },
-                new UserInterest
-                {
-                    UserId = regularUserId,
-                    InterestId = InterestId3,
-                },
-                new UserInterest
-                {
-                    UserId = testUserId,
-                    InterestId = InterestId4,
-                },
-                new UserInterest
-                {
-                    UserId = testUserId,
-                    InterestId = InterestId5,
-                },
-                new UserInterest
-                {
-                    UserId = testUserId,
-                    InterestId = InterestId6,
                 }
             );
         }

@@ -15,7 +15,7 @@ namespace AIEvent.Application.DTOs.User
 
         [Phone(ErrorMessage = "Invalid phone number format")]
         public string? PhoneNumber { get; set; }
-        public List<UserInterestRequest>? UserInterests { get; set; }
+        public List<UserInterest>? UserInterests { get; set; }
         public List<InterestedCities>? InterestedCities { get; set; }
         public ParticipationFrequency ParticipationFrequency { get; set; }
         public BudgetOption BudgetOption { get; set; }
