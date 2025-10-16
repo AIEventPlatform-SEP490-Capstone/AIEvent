@@ -1,10 +1,10 @@
-import React from "react"
-import { NavLink, useLocation, useNavigate } from "react-router-dom"
-import { useDispatch, useSelector } from "react-redux"
-import { Button } from "../ui/button"
-import { Input } from "../ui/input"
-import { logout } from "../../store/slices/authSlice"
-import { showSuccess, showError, authMessages } from "../../lib/toastUtils"
+import React from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { logout } from "../../store/slices/authSlice";
+import { showSuccess, showError, authMessages } from "../../lib/toastUtils";
 
 import {
   Search,
@@ -30,7 +30,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowRight,
-} from "lucide-react"
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -44,35 +44,34 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
   useSidebar,
-} from "../ui/sidebar"
-import { cn } from "../../lib/utils"
+} from "../ui/sidebar";
+import { cn } from "../../lib/utils";
 
 export function VerticalNavigation() {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const dispatch = useDispatch()
-  const { state, toggleSidebar } = useSidebar()
+  const location = useLocation();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { state, toggleSidebar } = useSidebar();
 
   // Get user data from Redux store
-  const { user, isAuthenticated } = useSelector((state) => state.auth)
-  const pathname = location.pathname
-  
-  
-  const isOrganizerRoute = pathname.startsWith("/organizer")
-  const isAdminRoute = pathname.startsWith("/admin")
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
+  const pathname = location.pathname;
+
+  const isOrganizerRoute = pathname.startsWith("/organizer");
+  const isAdminRoute = pathname.startsWith("/admin");
 
   const handleLogout = async () => {
     try {
-      await dispatch(logout()).unwrap()
-      showSuccess(authMessages.logoutSuccess)
-      navigate("/")
+      await dispatch(logout()).unwrap();
+      showSuccess(authMessages.logoutSuccess);
+      navigate("/");
     } catch (error) {
-      console.error("Logout failed:", error)
-      showError(authMessages.logoutError)
+      console.error("Logout failed:", error);
+      showError(authMessages.logoutError);
       // Force logout even if API call fails
-      navigate("/")
+      navigate("/");
     }
-  }
+  };
 
   const getNavigationItems = () => {
     if (!isAuthenticated) {
@@ -83,7 +82,7 @@ export function VerticalNavigation() {
           icon: Home,
           isActive: pathname === "/",
         },
-      ]
+      ];
     }
 
     if (user?.role?.toLowerCase() === "admin") {
@@ -106,7 +105,7 @@ export function VerticalNavigation() {
           icon: Users,
           isActive: pathname === "/admin/users",
         },
-      ]
+      ];
     }
 
     if (user?.role?.toLowerCase() === "organizer") {
@@ -135,7 +134,7 @@ export function VerticalNavigation() {
           icon: CheckSquare,
           isActive: pathname === "/organizer/events",
         },
-      ]
+      ];
     }
 
     if (user?.role?.toLowerCase() === "manager") {
@@ -158,7 +157,13 @@ export function VerticalNavigation() {
           icon: CheckSquare,
           isActive: pathname === "/manager/events/need-approval",
         },
-      ]
+        {
+          title: "Quản lý danh mục",
+          url: "/manager/events/category",
+          icon: CheckSquare,
+          isActive: pathname === "/manager/events/category",
+        },
+      ];
     }
 
     // Default user navigation - theo thứ tự trong ảnh
@@ -188,10 +193,10 @@ export function VerticalNavigation() {
         icon: Calendar,
         isActive: pathname === "/my-tickets",
       },
-    ]
-  }
+    ];
+  };
 
-  const navigationItems = getNavigationItems()
+  const navigationItems = getNavigationItems();
 
   return (
     <Sidebar
@@ -201,7 +206,10 @@ export function VerticalNavigation() {
     >
       <SidebarHeader className="border-b border-border/40 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
         <div className="flex items-center justify-between px-4 py-3">
-          <NavLink to="/" className="flex items-center gap-3 hover:scale-105 transition-all duration-300 ease-out group">
+          <NavLink
+            to="/"
+            className="flex items-center gap-3 hover:scale-105 transition-all duration-300 ease-out group"
+          >
             <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-blue-500/30 transition-all duration-300">
               <Zap className="w-4 h-4 text-white" />
             </div>
@@ -210,7 +218,9 @@ export function VerticalNavigation() {
                 <span className="font-bold text-base bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   AIEvent
                 </span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400">Event Platform</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                  Event Platform
+                </span>
               </div>
             )}
           </NavLink>
@@ -220,29 +230,36 @@ export function VerticalNavigation() {
             onClick={toggleSidebar}
             className="h-8 w-8 rounded-md hover:bg-blue-50 dark:hover:bg-slate-800 hover:text-blue-600 transition-all duration-200"
           >
-            {state === "collapsed" ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            {state === "collapsed" ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
           </Button>
         </div>
 
-        {!isOrganizerRoute && !isAdminRoute && isAuthenticated && state !== "collapsed" && (
-          <div className="px-4 pb-4 space-y-3">
-            <div className="relative group">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 group-focus-within:text-primary group-focus-within:scale-110 transition-all duration-300" />
-              <Input
-                placeholder="Tìm kiếm sự kiện..."
-                className="pl-10 h-10 bg-background/50 border-border/60 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all duration-300 rounded-xl hover:border-border"
-              />
+        {!isOrganizerRoute &&
+          !isAdminRoute &&
+          isAuthenticated &&
+          state !== "collapsed" && (
+            <div className="px-4 pb-4 space-y-3">
+              <div className="relative group">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 group-focus-within:text-primary group-focus-within:scale-110 transition-all duration-300" />
+                <Input
+                  placeholder="Tìm kiếm sự kiện..."
+                  className="pl-10 h-10 bg-background/50 border-border/60 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all duration-300 rounded-xl hover:border-border"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full h-10 hover:bg-primary/10 hover:text-primary hover:border-primary hover:scale-[1.02] bg-background/50 border-border/60 transition-all duration-300 rounded-xl font-medium shadow-sm"
+              >
+                <MapPin className="w-4 h-4 mr-2" />
+                Hà Nội
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full h-10 hover:bg-primary/10 hover:text-primary hover:border-primary hover:scale-[1.02] bg-background/50 border-border/60 transition-all duration-300 rounded-xl font-medium shadow-sm"
-            >
-              <MapPin className="w-4 h-4 mr-2" />
-              Hà Nội
-            </Button>
-          </div>
-        )}
+          )}
       </SidebarHeader>
 
       <SidebarContent className="px-2 py-2">
@@ -263,10 +280,19 @@ export function VerticalNavigation() {
                         state === "collapsed" && "p-1 justify-center"
                       )}
                     >
-                      <NavLink to={item.url} className="flex items-center gap-3 px-3 py-2.5">
+                      <NavLink
+                        to={item.url}
+                        className="flex items-center gap-3 px-3 py-2.5"
+                      >
                         <item.icon className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                        {state !== "collapsed" && <span className="font-medium text-sm">{item.title}</span>}
-                        {item.special && <Zap className="w-3 h-3 ml-auto text-amber-500 animate-pulse" />}
+                        {state !== "collapsed" && (
+                          <span className="font-medium text-sm">
+                            {item.title}
+                          </span>
+                        )}
+                        {item.special && (
+                          <Zap className="w-3 h-3 ml-auto text-amber-500 animate-pulse" />
+                        )}
                         {item.isActive && (
                           <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-primary/70 rounded-r-full" />
                         )}
@@ -292,9 +318,14 @@ export function VerticalNavigation() {
                       state === "collapsed" && "p-1 justify-center"
                     )}
                   >
-                    <NavLink to="/auth/login" className="flex items-center gap-3 px-3 py-2.5">
+                    <NavLink
+                      to="/auth/login"
+                      className="flex items-center gap-3 px-3 py-2.5"
+                    >
                       <LogIn className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                      {state !== "collapsed" && <span className="font-medium text-sm">Đăng nhập</span>}
+                      {state !== "collapsed" && (
+                        <span className="font-medium text-sm">Đăng nhập</span>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -306,9 +337,14 @@ export function VerticalNavigation() {
                       state === "collapsed" && "p-1 justify-center"
                     )}
                   >
-                    <NavLink to="/auth/register" className="flex items-center gap-3 px-3 py-2.5">
+                    <NavLink
+                      to="/auth/register"
+                      className="flex items-center gap-3 px-3 py-2.5"
+                    >
                       <UserPlus className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                      {state !== "collapsed" && <span className="font-medium text-sm">Đăng ký</span>}
+                      {state !== "collapsed" && (
+                        <span className="font-medium text-sm">Đăng ký</span>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -335,9 +371,14 @@ export function VerticalNavigation() {
                         state === "collapsed" && "p-1 justify-center"
                       )}
                     >
-                      <NavLink to="/notifications" className="flex items-center gap-3 px-3 py-2.5">
+                      <NavLink
+                        to="/notifications"
+                        className="flex items-center gap-3 px-3 py-2.5"
+                      >
                         <Bell className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                        {state !== "collapsed" && <span className="font-medium text-sm">Thông báo</span>}
+                        {state !== "collapsed" && (
+                          <span className="font-medium text-sm">Thông báo</span>
+                        )}
                         {state !== "collapsed" && (
                           <div className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                             3
@@ -357,9 +398,16 @@ export function VerticalNavigation() {
                           state === "collapsed" && "p-1 justify-center"
                         )}
                       >
-                        <NavLink to="/event-invitations" className="flex items-center gap-3 px-3 py-2.5">
+                        <NavLink
+                          to="/event-invitations"
+                          className="flex items-center gap-3 px-3 py-2.5"
+                        >
                           <Mail className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                          {state !== "collapsed" && <span className="font-medium text-sm">Lời mời sự kiện</span>}
+                          {state !== "collapsed" && (
+                            <span className="font-medium text-sm">
+                              Lời mời sự kiện
+                            </span>
+                          )}
                           {state !== "collapsed" && (
                             <div className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                               2
@@ -388,9 +436,16 @@ export function VerticalNavigation() {
                         state === "collapsed" && "p-1 justify-center"
                       )}
                     >
-                      <NavLink to="/profile" className="flex items-center gap-3 px-3 py-2.5">
+                      <NavLink
+                        to="/profile"
+                        className="flex items-center gap-3 px-3 py-2.5"
+                      >
                         <User className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                        {state !== "collapsed" && <span className="font-medium text-sm">Hồ sơ cá nhân</span>}
+                        {state !== "collapsed" && (
+                          <span className="font-medium text-sm">
+                            Hồ sơ cá nhân
+                          </span>
+                        )}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -403,9 +458,14 @@ export function VerticalNavigation() {
                         state === "collapsed" && "p-1 justify-center"
                       )}
                     >
-                      <NavLink to="/settings" className="flex items-center gap-3 px-3 py-2.5">
+                      <NavLink
+                        to="/settings"
+                        className="flex items-center gap-3 px-3 py-2.5"
+                      >
                         <Settings className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                        {state !== "collapsed" && <span className="font-medium text-sm">Cài đặt</span>}
+                        {state !== "collapsed" && (
+                          <span className="font-medium text-sm">Cài đặt</span>
+                        )}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -418,9 +478,14 @@ export function VerticalNavigation() {
                         state === "collapsed" && "p-1 justify-center"
                       )}
                     >
-                      <NavLink to="/help" className="flex items-center gap-3 px-3 py-2.5">
+                      <NavLink
+                        to="/help"
+                        className="flex items-center gap-3 px-3 py-2.5"
+                      >
                         <HelpCircle className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                        {state !== "collapsed" && <span className="font-medium text-sm">Trợ giúp</span>}
+                        {state !== "collapsed" && (
+                          <span className="font-medium text-sm">Trợ giúp</span>
+                        )}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -433,9 +498,16 @@ export function VerticalNavigation() {
                         state === "collapsed" && "p-1 justify-center"
                       )}
                     >
-                      <NavLink to="/about" className="flex items-center gap-3 px-3 py-2.5">
+                      <NavLink
+                        to="/about"
+                        className="flex items-center gap-3 px-3 py-2.5"
+                      >
                         <Info className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                        {state !== "collapsed" && <span className="font-medium text-sm">Về AIEvent</span>}
+                        {state !== "collapsed" && (
+                          <span className="font-medium text-sm">
+                            Về AIEvent
+                          </span>
+                        )}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -450,9 +522,16 @@ export function VerticalNavigation() {
                           state === "collapsed" && "p-1 justify-center"
                         )}
                       >
-                        <NavLink to="/become-organizer" className="flex items-center gap-3 px-3 py-2.5">
+                        <NavLink
+                          to="/become-organizer"
+                          className="flex items-center gap-3 px-3 py-2.5"
+                        >
                           <Plus className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                          {state !== "collapsed" && <span className="font-medium text-sm">Trở thành Organizer</span>}
+                          {state !== "collapsed" && (
+                            <span className="font-medium text-sm">
+                              Trở thành Organizer
+                            </span>
+                          )}
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -467,7 +546,9 @@ export function VerticalNavigation() {
                     >
                       <div className="flex items-center gap-3 px-3 py-2.5">
                         <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                        {state !== "collapsed" && <span className="font-medium text-sm">Đăng xuất</span>}
+                        {state !== "collapsed" && (
+                          <span className="font-medium text-sm">Đăng xuất</span>
+                        )}
                       </div>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -482,22 +563,29 @@ export function VerticalNavigation() {
         <SidebarFooter className="border-t border-border/40 bg-background/80 backdrop-blur-sm p-2 sticky bottom-0 z-10">
           <SidebarMenu>
             <SidebarMenuItem>
-              <div className={cn(
-                "flex items-center gap-3 w-full p-3 rounded-lg bg-muted/30",
-                state === "collapsed" && "justify-center"
-              )}
+              <div
+                className={cn(
+                  "flex items-center gap-3 w-full p-3 rounded-lg bg-muted/30",
+                  state === "collapsed" && "justify-center"
+                )}
               >
                 <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center relative overflow-hidden border-2 border-blue-300">
                   {user?.avatar ? (
-                    <img 
-                      src={user.avatar} 
-                      alt={user.unique_name || user.name || "User"} 
+                    <img
+                      src={user.avatar}
+                      alt={user.unique_name || user.name || "User"}
                       className="w-full h-full object-cover rounded-full"
                     />
                   ) : (
                     <div className="w-full h-full rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
                       <span className="text-white text-sm font-bold">
-                        {user?.unique_name ? user.unique_name.charAt(0).toUpperCase() : user?.name ? user.name.charAt(0).toUpperCase() : user?.email ? user.email.charAt(0).toUpperCase() : "N"}
+                        {user?.unique_name
+                          ? user.unique_name.charAt(0).toUpperCase()
+                          : user?.name
+                          ? user.name.charAt(0).toUpperCase()
+                          : user?.email
+                          ? user.email.charAt(0).toUpperCase()
+                          : "N"}
                       </span>
                     </div>
                   )}
@@ -505,7 +593,10 @@ export function VerticalNavigation() {
                 {state !== "collapsed" && (
                   <div className="flex flex-col items-start flex-1 min-w-0">
                     <span className="text-sm font-semibold text-foreground truncate w-full">
-                      {user?.unique_name || user?.name || user?.email || "Người dùng"}
+                      {user?.unique_name ||
+                        user?.name ||
+                        user?.email ||
+                        "Người dùng"}
                     </span>
                     <div className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-medium">
                       {user?.role || "User"}
@@ -518,5 +609,5 @@ export function VerticalNavigation() {
         </SidebarFooter>
       )}
     </Sidebar>
-  )
+  );
 }

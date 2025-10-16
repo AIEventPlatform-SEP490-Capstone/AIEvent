@@ -19,12 +19,6 @@ import {
 import { Label } from "../../../components/ui/label";
 import { PATH } from "../../../routes/path";
 import { register } from "../../../store/slices/authSlice";
-import {
-  fetchInterests,
-  selectInterests,
-  selectInterestsLoading,
-  selectInterestsError,
-} from "../../../store/slices/interestsSlice";
 import { showError, showSuccess, authMessages } from "../../../lib/toastUtils";
 import {
   Eye,
@@ -74,6 +68,23 @@ const BUDGET_OPTIONS = [
   { value: "High", label: "Cao (trên 2tr)" },
   { value: "Flexible", label: "Linh hoạt" },
 ];
+const MOCK_INTERESTS = [
+  { interestId: "technology", interestName: "Công nghệ" },
+  { interestId: "business", interestName: "Kinh doanh" },
+  { interestId: "music", interestName: "Âm nhạc" },
+  { interestId: "sports", interestName: "Thể thao" },
+  { interestId: "art", interestName: "Nghệ thuật" },
+  { interestId: "travel", interestName: "Du lịch" },
+  { interestId: "food", interestName: "Ẩm thực" },
+  { interestId: "education", interestName: "Giáo dục" },
+  { interestId: "health", interestName: "Sức khỏe" },
+  { interestId: "fashion", interestName: "Thời trang" },
+  { interestId: "gaming", interestName: "Gaming" },
+  { interestId: "startup", interestName: "Khởi nghiệp" },
+  { interestId: "marketing", interestName: "Marketing" },
+  { interestId: "design", interestName: "Thiết kế" },
+  { interestId: "photography", interestName: "Nhiếp ảnh" },
+];
 
 export default function RegisterPage() {
   const [currentStep, setCurrentStep] = useState(REGISTRATION_STEPS.BASIC_INFO);
@@ -107,21 +118,13 @@ export default function RegisterPage() {
     isAuthenticated,
     user,
   } = useSelector((state) => state.auth);
-  const interests = useSelector(selectInterests);
-  const interestsLoading = useSelector(selectInterestsLoading);
-  const interestsError = useSelector(selectInterestsError);
-
+  const interests = MOCK_INTERESTS;
   // Effect to handle redirection when user is authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
       navigate(PATH.HOME, { replace: true });
     }
   }, [isAuthenticated, user, navigate]);
-
-  // Fetch interests on mount
-  useEffect(() => {
-    dispatch(fetchInterests());
-  }, [dispatch]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -899,211 +902,193 @@ export default function RegisterPage() {
                   {/* Step 2: Preferences */}
                   {currentStep === REGISTRATION_STEPS.PREFERENCES && (
                     <div className="space-y-6">
-                      {interestsLoading ? (
-                        <div className="text-center py-8">
-                          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                          <p className="text-gray-600">Đang tải sở thích...</p>
-                        </div>
-                      ) : interestsError ? (
-                        <div className="text-center py-8 text-red-600">
-                          Lỗi tải sở thích.{" "}
-                          <button
-                            onClick={() => dispatch(fetchInterests())}
-                            className="underline"
-                          >
-                            Thử lại
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="space-y-4">
-                            <div className="text-center mb-4">
-                              <h3 className="text-xl font-bold text-gray-800 mb-2">
-                                Sở thích của bạn
-                              </h3>
-                              <p className="text-gray-600">
-                                Chọn ít nhất 3 lĩnh vực bạn quan tâm để nhận gợi
-                                ý phù hợp
-                              </p>
-                            </div>
+                      <>
+                        <div className="space-y-4">
+                          <div className="text-center mb-4">
+                            <h3 className="text-xl font-bold text-gray-800 mb-2">
+                              Sở thích của bạn
+                            </h3>
+                            <p className="text-gray-600">
+                              Chọn ít nhất 3 lĩnh vực bạn quan tâm để nhận gợi ý
+                              phù hợp
+                            </p>
+                          </div>
 
-                            <div className="flex flex-wrap gap-2 justify-center">
-                              {interests.map((interest) => (
+                          <div className="flex flex-wrap gap-2 justify-center">
+                            {interests.map((interest) => (
+                              <div
+                                key={interest.interestId}
+                                className={`cursor-pointer px-3 py-1.5 text-xs font-medium transition-all duration-200 rounded-full ${
+                                  formData.preferences.userInterests.includes(
+                                    interest.interestId
+                                  )
+                                    ? "bg-blue-500 text-white hover:bg-blue-600 shadow-lg"
+                                    : "border border-gray-300 text-gray-600 hover:border-blue-300 hover:text-blue-600"
+                                }`}
+                                onClick={() =>
+                                  toggleInterest(interest.interestId)
+                                }
+                              >
+                                {interest.interestName}
+                              </div>
+                            ))}
+                          </div>
+                          {errors.userInterests && (
+                            <p className="text-red-500 text-xs mt-2 text-center">
+                              {errors.userInterests}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="space-y-4">
+                          <div className="text-center">
+                            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                              Thành phố quan tâm
+                            </h3>
+                            <p className="text-gray-600">
+                              Chọn các thành phố bạn muốn tham gia sự kiện
+                            </p>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2 justify-center">
+                            {CITIES.map((city) => (
+                              <div
+                                key={city}
+                                className={`cursor-pointer px-3 py-1.5 text-xs font-medium transition-all duration-200 rounded-full ${
+                                  formData.preferences.interestedCities.includes(
+                                    city
+                                  )
+                                    ? "bg-blue-500 text-white hover:bg-blue-600 shadow-lg"
+                                    : "border border-gray-300 text-gray-600 hover:border-blue-300 hover:text-blue-600"
+                                }`}
+                                onClick={() => toggleCity(city)}
+                              >
+                                {city}
+                              </div>
+                            ))}
+                          </div>
+                          {errors.interestedCities && (
+                            <p className="text-red-500 text-xs mt-2 text-center">
+                              {errors.interestedCities}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-6">
+                          <div>
+                            <Label className="block text-sm font-medium text-gray-700 mb-2">
+                              Tần suất tham gia{" "}
+                              <span className="text-red-500">*</span>
+                            </Label>
+                            <Select
+                              value={
+                                formData.preferences.participationFrequency
+                              }
+                              onValueChange={(value) =>
+                                handlePreferenceChange(
+                                  "participationFrequency",
+                                  value
+                                )
+                              }
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Chọn tần suất" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {FREQUENCY_OPTIONS.map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div>
+                            <Label className="block text-sm font-medium text-gray-700 mb-2">
+                              Ngân sách <span className="text-red-500">*</span>
+                            </Label>
+                            <Select
+                              value={formData.preferences.budgetOption}
+                              onValueChange={(value) =>
+                                handlePreferenceChange("budgetOption", value)
+                              }
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Chọn ngân sách" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {BUDGET_OPTIONS.map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+                          <h4 className="font-semibold text-gray-800 text-center">
+                            Cài đặt thông báo
+                          </h4>
+                          <div className="grid grid-cols-1 gap-3">
+                            {[
+                              {
+                                key: "isEmailNotificationEnabled",
+                                label: "Email",
+                                icon: "📧",
+                              },
+                              {
+                                key: "isPushNotificationEnabled",
+                                label: "Push",
+                                icon: "🔔",
+                              },
+                              {
+                                key: "isSmsNotificationEnabled",
+                                label: "SMS",
+                                icon: "📱",
+                              },
+                            ].map((notif) => {
+                              const isChecked =
+                                formData.preferences.notifications[notif.key];
+                              return (
                                 <div
-                                  key={interest.interestId}
-                                  className={`cursor-pointer px-3 py-1.5 text-xs font-medium transition-all duration-200 rounded-full ${
-                                    formData.preferences.userInterests.includes(
-                                      interest.interestId
-                                    )
-                                      ? "bg-blue-500 text-white hover:bg-blue-600 shadow-lg"
-                                      : "border border-gray-300 text-gray-600 hover:border-blue-300 hover:text-blue-600"
-                                  }`}
+                                  key={notif.key}
+                                  className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 cursor-pointer"
                                   onClick={() =>
-                                    toggleInterest(interest.interestId)
+                                    handleNotificationChange(notif.key)
                                   }
                                 >
-                                  {interest.interestName}
-                                </div>
-                              ))}
-                            </div>
-                            {errors.userInterests && (
-                              <p className="text-red-500 text-xs mt-2 text-center">
-                                {errors.userInterests}
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="space-y-4">
-                            <div className="text-center">
-                              <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                                Thành phố quan tâm
-                              </h3>
-                              <p className="text-gray-600">
-                                Chọn các thành phố bạn muốn tham gia sự kiện
-                              </p>
-                            </div>
-
-                            <div className="flex flex-wrap gap-2 justify-center">
-                              {CITIES.map((city) => (
-                                <div
-                                  key={city}
-                                  className={`cursor-pointer px-3 py-1.5 text-xs font-medium transition-all duration-200 rounded-full ${
-                                    formData.preferences.interestedCities.includes(
-                                      city
-                                    )
-                                      ? "bg-blue-500 text-white hover:bg-blue-600 shadow-lg"
-                                      : "border border-gray-300 text-gray-600 hover:border-blue-300 hover:text-blue-600"
-                                  }`}
-                                  onClick={() => toggleCity(city)}
-                                >
-                                  {city}
-                                </div>
-                              ))}
-                            </div>
-                            {errors.interestedCities && (
-                              <p className="text-red-500 text-xs mt-2 text-center">
-                                {errors.interestedCities}
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="grid grid-cols-1 gap-6">
-                            <div>
-                              <Label className="block text-sm font-medium text-gray-700 mb-2">
-                                Tần suất tham gia{" "}
-                                <span className="text-red-500">*</span>
-                              </Label>
-                              <Select
-                                value={
-                                  formData.preferences.participationFrequency
-                                }
-                                onValueChange={(value) =>
-                                  handlePreferenceChange(
-                                    "participationFrequency",
-                                    value
-                                  )
-                                }
-                              >
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Chọn tần suất" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {FREQUENCY_OPTIONS.map((option) => (
-                                    <SelectItem
-                                      key={option.value}
-                                      value={option.value}
-                                    >
-                                      {option.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div>
-                              <Label className="block text-sm font-medium text-gray-700 mb-2">
-                                Ngân sách{" "}
-                                <span className="text-red-500">*</span>
-                              </Label>
-                              <Select
-                                value={formData.preferences.budgetOption}
-                                onValueChange={(value) =>
-                                  handlePreferenceChange("budgetOption", value)
-                                }
-                              >
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Chọn ngân sách" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {BUDGET_OPTIONS.map((option) => (
-                                    <SelectItem
-                                      key={option.value}
-                                      value={option.value}
-                                    >
-                                      {option.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-
-                          <div className="space-y-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
-                            <h4 className="font-semibold text-gray-800 text-center">
-                              Cài đặt thông báo
-                            </h4>
-                            <div className="grid grid-cols-1 gap-3">
-                              {[
-                                {
-                                  key: "isEmailNotificationEnabled",
-                                  label: "Email",
-                                  icon: "📧",
-                                },
-                                {
-                                  key: "isPushNotificationEnabled",
-                                  label: "Push",
-                                  icon: "🔔",
-                                },
-                                {
-                                  key: "isSmsNotificationEnabled",
-                                  label: "SMS",
-                                  icon: "📱",
-                                },
-                              ].map((notif) => {
-                                const isChecked =
-                                  formData.preferences.notifications[notif.key];
-                                return (
-                                  <div
-                                    key={notif.key}
-                                    className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 cursor-pointer"
-                                    onClick={() =>
-                                      handleNotificationChange(notif.key)
-                                    }
-                                  >
-                                    <div className="flex items-center space-x-3">
-                                      <span className="text-lg">
-                                        {notif.icon}
-                                      </span>
-                                      <div className="font-medium text-gray-700">
-                                        {notif.label}
-                                      </div>
-                                    </div>
-                                    <div
-                                      className={`w-5 h-5 border-2 rounded border-blue-300 flex items-center justify-center ${
-                                        isChecked ? "bg-blue-500" : ""
-                                      }`}
-                                    >
-                                      {isChecked && (
-                                        <CheckCircle2 className="w-3 h-3 text-white" />
-                                      )}
+                                  <div className="flex items-center space-x-3">
+                                    <span className="text-lg">
+                                      {notif.icon}
+                                    </span>
+                                    <div className="font-medium text-gray-700">
+                                      {notif.label}
                                     </div>
                                   </div>
-                                );
-                              })}
-                            </div>
+                                  <div
+                                    className={`w-5 h-5 border-2 rounded border-blue-300 flex items-center justify-center ${
+                                      isChecked ? "bg-blue-500" : ""
+                                    }`}
+                                  >
+                                    {isChecked && (
+                                      <CheckCircle2 className="w-3 h-3 text-white" />
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
-                        </>
-                      )}
+                        </div>
+                      </>
                     </div>
                   )}
 
