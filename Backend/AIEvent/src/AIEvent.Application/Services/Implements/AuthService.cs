@@ -9,6 +9,7 @@ using AIEvent.Domain.Enums;
 using AIEvent.Domain.Interfaces;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -17,24 +18,34 @@ namespace AIEvent.Application.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly IJwtService _jwtService;
         private readonly IEmailService _emailService;
+        private readonly IHasherHelper _hasherHelper;
         private readonly IMapper _mapper;
 
         public AuthService(
             IUnitOfWork unitOfWork,
             IJwtService jwtService,
             IMapper mapper,
-            IEmailService emailService)
+            IEmailService emailService,
+            IHasherHelper hasherHelper)
         {
             _unitOfWork = unitOfWork;
             _jwtService = jwtService;
             _mapper = mapper;
             _emailService = emailService;
+            _hasherHelper = hasherHelper;
         }
 
         public async Task<Result<AuthResponse>> LoginAsync(LoginRequest request)
         {
-            if(request == null || string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
+            if(request == null)
                 return ErrorResponse.FailureResult("Invalid email or password", ErrorCodes.Unauthorized);
+
+            var context = new ValidationContext(request);
+            var results = new List<ValidationResult>();
+            bool isValid = Validator.TryValidateObject(request, context, results, true);
+            if (!isValid)
+                return ErrorResponse.FailureResult("Invalid email or password", ErrorCodes.Unauthorized);
+
             var user = await _unitOfWork.UserRepository.Query()
                                 .Include(u => u.OrganizerProfile)
                                 .Include(u => u.Role)
@@ -44,7 +55,7 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
             }
 
-            if (!Verify(request.Password ,user.PasswordHash!))
+            if (!_hasherHelper.Verify(request.Password ,user.PasswordHash!))
             {
                 return ErrorResponse.FailureResult("Invalid email or password", ErrorCodes.Unauthorized);
             }
@@ -74,6 +85,9 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result<AuthResponse>> RefreshTokenAsync(string refreshToken)
         {
+            if (string.IsNullOrEmpty(refreshToken))
+                return ErrorResponse.FailureResult("Invalid refresh token", ErrorCodes.TokenInvalid);
+
             var tokenEntity = await _unitOfWork.RefreshTokenRepository
                 .Query()
                 .Include(rt => rt.User)
@@ -83,19 +97,14 @@ namespace AIEvent.Application.Services.Implements
                 .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
 
             if (tokenEntity == null || !tokenEntity.IsActive)
-            {
                 return ErrorResponse.FailureResult("Invalid or expired refresh token", ErrorCodes.TokenInvalid);
-            }
 
             var user = tokenEntity.User;
 
             var newAccessToken = _jwtService.GenerateAccessToken(user);
             var newRefreshToken = _jwtService.GenerateRefreshToken();
 
-            tokenEntity.IsRevoked = true;
-            tokenEntity.RevokedAt = DateTime.UtcNow;
-            tokenEntity.ReplacedByToken = newRefreshToken;
-            await _unitOfWork.RefreshTokenRepository.UpdateAsync(tokenEntity);
+            await _unitOfWork.RefreshTokenRepository.DeleteAsync(tokenEntity);
 
             var newTokenEntity = new RefreshToken
             {
@@ -119,6 +128,15 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result<AuthResponse>> VerifyOTPAsync(VerifyOTPRequest request)
         {
+            if (request == null)
+                return ErrorResponse.FailureResult("Invalid email or otp code", ErrorCodes.Unauthorized);
+
+            var context = new ValidationContext(request);
+            var results = new List<ValidationResult>();
+            bool isValid = Validator.TryValidateObject(request, context, results, true);
+            if (!isValid)
+                return ErrorResponse.FailureResult("Invalid email", ErrorCodes.Unauthorized);
+
             var user = await _unitOfWork.UserRepository
                     .Query()
                         .Include(u => u.OrganizerProfile)
@@ -145,7 +163,7 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("OTP code has expired", ErrorCodes.TokenInvalid);
             }
 
-            var otpHashInput = Verify(request.OTPCode, otp.Code);
+            var otpHashInput = _hasherHelper.Verify(request.OTPCode, otp.Code);
             if (!otpHashInput)
                 return ErrorResponse.FailureResult("Invalid OTP", ErrorCodes.TokenInvalid);
 
@@ -178,42 +196,47 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result> RegisterAsync(RegisterRequest request)
         {
+            if (request == null || string.IsNullOrEmpty(request.FullName) || string.IsNullOrEmpty(request.Email) ||
+        string.IsNullOrEmpty(request.Password) || string.IsNullOrEmpty(request.ConfirmPassword))
+                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
+
+            var context = new ValidationContext(request);
+            var results = new List<ValidationResult>();
+            bool isValid = Validator.TryValidateObject(request, context, results, true);
+            if (!isValid)
+            {
+                var messages = string.Join("; ", results.Select(r => r.ErrorMessage));
+                return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
+            }
+
             var existingUser = await _unitOfWork.UserRepository
                                                 .Query()
                                                 .FirstOrDefaultAsync(u => u.Email == request.Email);
             if (existingUser != null)
-            {
                 return ErrorResponse.FailureResult("Email address is already registered", ErrorCodes.InvalidInput);
-            }
 
             var role = await _unitOfWork.RoleRepository
                                     .Query()
                                     .FirstOrDefaultAsync(r => r.Name == "User");
             if (role == null)
-            {
                 return ErrorResponse.FailureResult("Not found role", ErrorCodes.NotFound);
-            }
 
             var user = _mapper.Map<User>(request);
-            user.PasswordHash = Hash(request.Password);
+            user.PasswordHash = _hasherHelper.Hash(request.Password);
             user.RoleId = role.Id;
             user.IsActive = false;
             
             var result = await _unitOfWork.UserRepository.AddAsync(user);
             if (result == null)
-            {
                 return ErrorResponse.FailureResult("Failed to create user account", ErrorCodes.InvalidInput);
-            }
 
             var userOtps = await _emailService.SendOtpAsync(request.Email);
             if (!userOtps.IsSuccess)
-            {
                 return ErrorResponse.FailureResult("Failed to send email", ErrorCodes.InternalServerError);
-            }
 
             var otp = new UserOtps
             {
-                Code = Hash(userOtps.Value!.Code),
+                Code = _hasherHelper.Hash(userOtps.Value!.Code),
                 ExpiredAt = userOtps.Value.ExpiredAt,
                 Purpose = PurposeStatus.Register,
                 UserId = user.Id,
@@ -227,52 +250,22 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result> RevokeRefreshTokenAsync(string refreshToken)
         {
+            if (string.IsNullOrEmpty(refreshToken))
+                return ErrorResponse.FailureResult("Invalid refresh token", ErrorCodes.TokenInvalid);
+
             var tokenEntity = await _unitOfWork.RefreshTokenRepository
                 .Query()
                 .FirstOrDefaultAsync(rt => rt.Token == refreshToken);
 
             if (tokenEntity == null || !tokenEntity!.IsActive)
-            {
                 return ErrorResponse.FailureResult("Invalid or expired refresh token", ErrorCodes.TokenInvalid);
-            }
 
-            tokenEntity.IsRevoked = true;
-            tokenEntity.RevokedAt = DateTime.UtcNow;
-
-            await _unitOfWork.RefreshTokenRepository.UpdateAsync(tokenEntity);
+            await _unitOfWork.RefreshTokenRepository.DeleteAsync(tokenEntity);
             await _unitOfWork.SaveChangesAsync();
 
             return Result.Success();
         }
 
-        private bool Verify(string password = "", string hashedPassword = "")
-        {
-            if (string.IsNullOrEmpty(password))
-            {
-                throw new ArgumentException("Mật khẩu không được để trống", nameof(password));
-            }
-
-            if (string.IsNullOrEmpty(hashedPassword))
-            {
-                throw new ArgumentException("Hash không được để trống", nameof(hashedPassword));
-            }
-
-            return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
-        }
-
-        private string Hash(string password, int workFactor = 12)
-        {
-            if (string.IsNullOrEmpty(password))
-            {
-                throw new ArgumentException("Mật khẩu không được để trống", nameof(password));
-            }
-
-            if (workFactor < 4 || workFactor > 31)
-            {
-                throw new ArgumentException("Work factor phải nằm trong khoảng 4-31", nameof(workFactor));
-            }
-
-            return BCrypt.Net.BCrypt.HashPassword(password, workFactor);
-        }
+        
     }
 }
