@@ -5,7 +5,6 @@ using AIEvent.Application.DTOs.User;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
-using AIEvent.Domain.Enums;
 using AIEvent.Domain.Interfaces;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +19,7 @@ namespace AIEvent.Application.Services.Implements
         private readonly IJwtService _jwtService;
         private readonly IEmailService _emailService;
         private readonly IHasherHelper _hasherHelper;
+        private readonly ICacheService _cacheService;
         private readonly IMapper _mapper;
 
         public AuthService(
@@ -27,13 +27,15 @@ namespace AIEvent.Application.Services.Implements
             IJwtService jwtService,
             IMapper mapper,
             IEmailService emailService,
-            IHasherHelper hasherHelper)
+            IHasherHelper hasherHelper,
+            ICacheService cacheService)
         {
             _unitOfWork = unitOfWork;
             _jwtService = jwtService;
             _mapper = mapper;
             _emailService = emailService;
             _hasherHelper = hasherHelper;
+            _cacheService = cacheService;
         }
 
         public async Task<Result<AuthResponse>> LoginAsync(LoginRequest request)
@@ -138,6 +140,12 @@ namespace AIEvent.Application.Services.Implements
             if (!isValid)
                 return ErrorResponse.FailureResult("Invalid email", ErrorCodes.Unauthorized);
 
+
+            var otp = await _cacheService.GetAsync<string>($"Register {request.Email}");
+
+            if (otp == null)
+                return ErrorResponse.FailureResult("OTP not found", ErrorCodes.TokenInvalid);
+
             var user = await _unitOfWork.UserRepository
                     .Query()
                         .Include(u => u.OrganizerProfile)
@@ -147,38 +155,19 @@ namespace AIEvent.Application.Services.Implements
             if (user == null)
                 return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
 
-
-            var otp = await _unitOfWork.UserOtpsRepository
-                    .Query()
-                    .Where(o => o.UserId == user.Id && !o.IsDeleted)
-                    .OrderByDescending(o => o.CreatedAt)
-                    .FirstOrDefaultAsync();
-
-            if (otp == null)
-                return ErrorResponse.FailureResult("OTP not found", ErrorCodes.TokenInvalid);
-
-            if (otp.ExpiredAt < DateTime.UtcNow)
-            {
-                await _unitOfWork.UserOtpsRepository.DeleteAsync(otp);
-                await _unitOfWork.SaveChangesAsync();
-                return ErrorResponse.FailureResult("OTP code has expired", ErrorCodes.TokenInvalid);
-            }
-
-            var otpHashInput = _hasherHelper.Verify(request.OTPCode, otp.Code);
-            if (!otpHashInput)
+            if (otp != request.OTPCode)
                 return ErrorResponse.FailureResult("Invalid OTP", ErrorCodes.TokenInvalid);
 
             user.IsActive = true;
             await _unitOfWork.UserRepository.UpdateAsync(user);
-            await _unitOfWork.UserOtpsRepository.DeleteAsync(otp);
 
-            var accessToken = _jwtService.GenerateAccessToken(otp.User);
+            var accessToken = _jwtService.GenerateAccessToken(user);
             var refreshToken = _jwtService.GenerateRefreshToken();
 
             var refreshTokenEntity = new RefreshToken
             {
                 Token = refreshToken,
-                UserId = otp.UserId,
+                UserId = user.Id,
                 ExpiresAt = DateTime.UtcNow.AddDays(7)
             };
 
@@ -243,18 +232,11 @@ namespace AIEvent.Application.Services.Implements
             };
 
             var userOtps = await _emailService.SendOtpAsync(request.Email, message);
-            if (!userOtps.IsSuccess)
+            if (!userOtps.IsSuccess) {
+                await _unitOfWork.UserRepository.DeleteAsync(user);
                 return ErrorResponse.FailureResult("Failed to send email", ErrorCodes.InternalServerError);
-
-            var otp = new UserOtps
-            {
-                Code = _hasherHelper.Hash(otpCode),
-                ExpiredAt = DateTime.UtcNow.AddMinutes(5),
-                Purpose = PurposeStatus.Register,
-                UserId = user.Id,
-            };
-
-            await _unitOfWork.UserOtpsRepository.AddAsync(otp);
+            }
+            await _cacheService.SetAsync($"Register {request.Email}", otpCode, TimeSpan.FromMinutes(5));
             await _unitOfWork.SaveChangesAsync();
 
             return Result.Success();

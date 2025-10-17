@@ -18,7 +18,6 @@ namespace AIEvent.Infrastructure.Context
         }
         public DbSet<User> Users { get; set; }
         public DbSet<Role> Roles { get; set; }
-        public DbSet<UserOtps> UserOtps { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<OrganizerProfile> OrganizerProfiles { get; set; }
         public DbSet<Event> Events { get; set; }
@@ -59,17 +58,6 @@ namespace AIEvent.Infrastructure.Context
                 entity.Property(e => e.Description).HasMaxLength(500);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
                 entity.HasIndex(e => e.Name).IsUnique().HasDatabaseName("IX_Role_Name");
-            });
-
-            // ----------------- UserOtps -----------------
-            builder.Entity<UserOtps>(entity =>
-            {
-                entity.HasOne(e => e.User)
-                      .WithMany(u => u.UserOtps)
-                      .HasForeignKey(e => e.UserId);
-
-                entity.HasIndex(e => new { e.UserId, e.Code }).IsUnique().HasDatabaseName("IX_UserOtps_UserId_Code");
-                entity.HasIndex(e => e.ExpiredAt).HasDatabaseName("IX_UserOtps_ExpiredAt");
             });
 
             // ----------------- RefreshToken -----------------

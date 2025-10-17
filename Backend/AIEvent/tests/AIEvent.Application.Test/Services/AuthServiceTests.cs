@@ -23,6 +23,7 @@ namespace AIEvent.Application.Test.Services
         private readonly Mock<IMapper> _mockMapper;
         private readonly Mock<IEmailService> _mockEmailService;
         private readonly Mock<IHasherHelper> _mockHasherHelper;
+        private readonly Mock<ICacheService> _mockCacheService;  
         private readonly IAuthService _authService;
 
         public AuthServiceTests()
@@ -33,11 +34,13 @@ namespace AIEvent.Application.Test.Services
             _mockHasherHelper = new Mock<IHasherHelper>();
             _mockMapper = new Mock<IMapper>();
             _mockEmailService = new Mock<IEmailService>();
+            _mockCacheService = new Mock<ICacheService>();
             _authService = new AuthService(_mockUnitOfWork.Object,
                                                _mockJwtService.Object,
                                                _mockMapper.Object,
                                                _mockEmailService.Object,
-                                               _mockHasherHelper.Object);
+                                               _mockHasherHelper.Object,
+                                               _mockCacheService.Object);
         }
         #region Login
         // UTCID01: Valid credentials, successful login
@@ -226,6 +229,8 @@ namespace AIEvent.Application.Test.Services
             var role = new Role { Id = Guid.NewGuid(), Name = "User" };
             var otpResult = Result.Success();
 
+
+            _mockCacheService.Setup(x => x.SetAsync($"Register {request.Email}", It.IsAny<string>(), It.IsAny<TimeSpan>()));
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
                            .Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
             _mockUnitOfWork.Setup(x => x.RoleRepository.Query(false))
@@ -233,7 +238,6 @@ namespace AIEvent.Application.Test.Services
             _mockMapper.Setup(x => x.Map<User>(request)).Returns(user);
             _mockUnitOfWork.Setup(x => x.UserRepository.AddAsync(It.IsAny<User>())).ReturnsAsync(user);
             _mockEmailService.Setup(x => x.SendOtpAsync(request.Email, It.IsAny<MimeMessage>())).ReturnsAsync(otpResult);
-            _mockUnitOfWork.Setup(x => x.UserOtpsRepository.AddAsync(It.IsAny<UserOtps>()));
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 
             // Act
@@ -241,12 +245,13 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeTrue();
-            _mockUnitOfWork.Verify(x => x.UserRepository.AddAsync(It.Is<User>(u => u.Email == request.Email && u.IsActive == false && u.RoleId == role.Id)), Times.Once());
-            _mockUnitOfWork.Verify(x => x.UserOtpsRepository.AddAsync(It.Is<UserOtps>(o => o.Purpose == PurposeStatus.Register && o.UserId == user.Id)), Times.Once());
+            _mockUnitOfWork.Verify(x => x.UserRepository.AddAsync(It.Is<User>(u =>
+                u.Email == request.Email && u.IsActive == false && u.RoleId == role.Id)), Times.Once());
+            _mockCacheService.Verify(x => x.SetAsync($"Register {request.Email}", It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Once()); 
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
 
-        [Fact]
+            [Fact]
         public async Task UTCID02_RegisterAsync_WithExistingEmail_ShouldReturnFailure()
         {
             // Arrange
@@ -353,6 +358,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.AddAsync(It.IsAny<User>())).ReturnsAsync(user);
             _mockEmailService.Setup(x => x.SendOtpAsync(request.Email, It.IsAny<MimeMessage>()))
                             .ReturnsAsync(ErrorResponse.FailureResult("Email send failed", ErrorCodes.InternalServerError));
+            _mockUnitOfWork.Setup(x => x.UserRepository.DeleteAsync(It.IsAny<User>()));
 
             // Act
             var result = await _authService.RegisterAsync(request);
@@ -361,6 +367,9 @@ namespace AIEvent.Application.Test.Services
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("Failed to send email");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
+            _mockUnitOfWork.Verify(x => x.UserRepository.DeleteAsync(It.Is<User>(u => u.Id == user.Id)), Times.Once());
+            _mockCacheService.Verify(x => x.SetAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Never());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
 
         [Fact]
@@ -600,6 +609,7 @@ namespace AIEvent.Application.Test.Services
             var role = new Role { Id = Guid.NewGuid(), Name = "User" };
             var otpResult = Result.Success();
 
+            _mockCacheService.Setup(x => x.SetAsync($"Register {request.Email}", It.IsAny<string>(), It.IsAny<TimeSpan>()));
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
                            .Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
             _mockUnitOfWork.Setup(x => x.RoleRepository.Query(false))
@@ -607,7 +617,6 @@ namespace AIEvent.Application.Test.Services
             _mockMapper.Setup(x => x.Map<User>(request)).Returns(user);
             _mockUnitOfWork.Setup(x => x.UserRepository.AddAsync(It.IsAny<User>())).ReturnsAsync(user);
             _mockEmailService.Setup(x => x.SendOtpAsync(request.Email, It.IsAny<MimeMessage>())).ReturnsAsync(otpResult);
-            _mockUnitOfWork.Setup(x => x.UserOtpsRepository.AddAsync(It.IsAny<UserOtps>()));
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 
             // Act
@@ -616,7 +625,7 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.IsSuccess.Should().BeTrue();
             _mockUnitOfWork.Verify(x => x.UserRepository.AddAsync(It.IsAny<User>()), Times.Once());
-            _mockUnitOfWork.Verify(x => x.UserOtpsRepository.AddAsync(It.IsAny<UserOtps>()), Times.Once());
+            _mockCacheService.Verify(x => x.SetAsync($"Register {request.Email}", It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Once()); 
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
 
@@ -684,6 +693,46 @@ namespace AIEvent.Application.Test.Services
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Contain("The field BudgetOption must be between 0 and 3");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID15_RegisterAsync_WithAddUserFailed_ShouldReturnFailure()
+        {
+            // Arrange
+            var request = new RegisterRequest {
+                FullName = "John Doe",
+                Email = "test@gmail.com",
+                Password = "Pass123",
+                ConfirmPassword = "Pass123",
+                PhoneNumber = "+1234567890",
+                UserInterests = new List<UserInterest>{
+                    new UserInterest { InterestName = "book"}
+                },
+                InterestedCities = new List<InterestedCities>{
+                    new InterestedCities { CityName = "HoChiMinh"}
+                },
+                ParticipationFrequency = ParticipationFrequency.Occasionally,
+                BudgetOption = BudgetOption.Flexible,
+                IsEmailNotificationEnabled = true,
+                IsPushNotificationEnabled = true,
+                IsSmsNotificationEnabled = true
+            };
+            var role = new Role { Id = Guid.NewGuid(), Name = "User" };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.RoleRepository.Query(false)).Returns(new List<Role> { role }.AsQueryable().BuildMockDbSet().Object);
+            _mockMapper.Setup(x => x.Map<User>(request)).Returns(new User { Email = request.Email });
+            _mockUnitOfWork.Setup(x => x.UserRepository.AddAsync(It.IsAny<User>())).ReturnsAsync((User)null!); 
+
+            // Act
+            var result = await _authService.RegisterAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Failed to create user account");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            _mockEmailService.Verify(x => x.SendOtpAsync(It.IsAny<string>(), It.IsAny<MimeMessage>()), Times.Never()); 
+            _mockCacheService.Verify(x => x.SetAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Never()); 
         }
         #endregion
 
@@ -1034,31 +1083,20 @@ namespace AIEvent.Application.Test.Services
                     Status = ConfirmStatus.NeedConfirm
                 }
             };
-            var otp = new UserOtps
-            {
-                Id = Guid.NewGuid(),
-                UserId = user.Id,
-                Code = "hashed_123456",
-                CreatedAt = DateTime.UtcNow,
-                ExpiredAt = DateTime.UtcNow.AddMinutes(5),
-                IsDeleted = false,
-                User = user
-            };
             var accessToken = "accessToken";
             var refreshToken = "refreshToken";
 
+
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
                            .Returns(new List<User> { user }.AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork.Setup(x => x.UserOtpsRepository.Query(false))
-                           .Returns(new List<UserOtps> { otp }.AsQueryable().BuildMockDbSet().Object);
             _mockJwtService.Setup(x => x.GenerateAccessToken(user)).Returns(accessToken);
             _mockJwtService.Setup(x => x.GenerateRefreshToken()).Returns(refreshToken);
             _mockUnitOfWork.Setup(x => x.UserRepository.UpdateAsync(It.IsAny<User>()));
-            _mockUnitOfWork.Setup(x => x.UserOtpsRepository.DeleteAsync(It.IsAny<UserOtps>()));
             _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.AddAsync(It.IsAny<RefreshToken>()));
+            _mockCacheService.Setup(x => x.GetAsync<string>($"Register {request.Email}")).ReturnsAsync("123456");
+            _mockCacheService.Setup(x => x.RemoveAsync($"Register {request.Email}"));
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
-            _mockHasherHelper
-                .Setup(x => x.Verify(request.OTPCode, otp.Code)).Returns(true);
+            
             // Act
             var result = await _authService.VerifyOTPAsync(request);
 
@@ -1069,7 +1107,7 @@ namespace AIEvent.Application.Test.Services
             result.Value!.RefreshToken.Should().Be(refreshToken);
             result.Value!.ExpiresAt.Should().BeCloseTo(DateTime.UtcNow.AddHours(1), TimeSpan.FromSeconds(5));
             _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.Is<User>(u => u.Id == user.Id && u.IsActive)), Times.Once());
-            _mockUnitOfWork.Verify(x => x.UserOtpsRepository.DeleteAsync(It.Is<UserOtps>(o => o.Id == otp.Id && !o.IsDeleted)), Times.Once());
+            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never()); 
             _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.AddAsync(It.Is<RefreshToken>(t => t.Token == refreshToken && t.UserId == user.Id && t.ExpiresAt.Date == DateTime.UtcNow.AddDays(7).Date)), Times.Once());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
@@ -1088,7 +1126,6 @@ namespace AIEvent.Application.Test.Services
             result.Error!.Message.Should().Be("Invalid email or otp code");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
             _mockUnitOfWork.Verify(x => x.UserRepository.Query(false), Times.Never());
-            _mockUnitOfWork.Verify(x => x.UserOtpsRepository.Query(false), Times.Never());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
 
@@ -1106,7 +1143,7 @@ namespace AIEvent.Application.Test.Services
             result.Error!.Message.Should().Be("Invalid email");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
             _mockUnitOfWork.Verify(x => x.UserRepository.Query(false), Times.Never());
-            _mockUnitOfWork.Verify(x => x.UserOtpsRepository.Query(false), Times.Never());
+            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
 
@@ -1117,7 +1154,7 @@ namespace AIEvent.Application.Test.Services
             var request = new VerifyOTPRequest { Email = "nonexistent@example.com", OTPCode = "123456" };
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
                            .Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
-
+            _mockCacheService.Setup(x => x.GetAsync<string>($"Register {request.Email}")).ReturnsAsync("123456");
             // Act
             var result = await _authService.VerifyOTPAsync(request);
 
@@ -1125,7 +1162,7 @@ namespace AIEvent.Application.Test.Services
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("User not found");
             result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
-            _mockUnitOfWork.Verify(x => x.UserOtpsRepository.Query(false), Times.Never());
+            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
 
@@ -1156,10 +1193,9 @@ namespace AIEvent.Application.Test.Services
                     Status = ConfirmStatus.NeedConfirm
                 }
             };
+            _mockCacheService.Setup(x => x.GetAsync<string>($"Register {request.Email}")).ReturnsAsync((string)null!);
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
                            .Returns(new List<User> { user }.AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork.Setup(x => x.UserOtpsRepository.Query(false))
-                           .Returns(new List<UserOtps>().AsQueryable().BuildMockDbSet().Object);
 
             // Act
             var result = await _authService.VerifyOTPAsync(request);
@@ -1169,53 +1205,12 @@ namespace AIEvent.Application.Test.Services
             result.Error!.Message.Should().Be("OTP not found");
             result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
             _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.IsAny<User>()), Times.Never());
-            _mockUnitOfWork.Verify(x => x.UserOtpsRepository.DeleteAsync(It.IsAny<UserOtps>()), Times.Never());
+            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
 
         [Fact]
-        public async Task UTCID06_VerifyOTPAsync_WithExpiredOTP_ShouldReturnFailure()
-        {
-            // Arrange
-            var request = new VerifyOTPRequest { Email = "john@example.com", OTPCode = "123456" };
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = request.Email,
-                IsActive = false,
-                Role = new Role { Id = Guid.NewGuid(), Name = "User" },
-                OrganizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.NonProfit, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Small, OrganizerType = OrganizerType.Individual, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "John Doe", ContactEmail = "john@example.com", ContactPhone = "+1234567890", Address = "123 Main St", Status = ConfirmStatus.NeedConfirm }
-            };
-            var otp = new UserOtps
-            {
-                Id = Guid.NewGuid(),
-                UserId = user.Id,
-                Code = "hashed_123456",
-                CreatedAt = DateTime.UtcNow.AddMinutes(-10),
-                ExpiredAt = DateTime.UtcNow.AddSeconds(-1),
-                IsDeleted = false,
-                User = user
-            };
-            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
-                           .Returns(new List<User> { user }.AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork.Setup(x => x.UserOtpsRepository.Query(false))
-                           .Returns(new List<UserOtps> { otp }.AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork.Setup(x => x.UserOtpsRepository.DeleteAsync(It.IsAny<UserOtps>()));
-            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
-
-            // Act
-            var result = await _authService.VerifyOTPAsync(request);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("OTP code has expired");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
-            _mockUnitOfWork.Verify(x => x.UserOtpsRepository.DeleteAsync(It.Is<UserOtps>(o => o.Id == otp.Id && !o.IsDeleted)), Times.Once());
-            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
-        }
-
-        [Fact]
-        public async Task UTCID07_VerifyOTPAsync_WithInvalidOTPCode_ShouldReturnFailure()
+        public async Task UTCID06_VerifyOTPAsync_WithInvalidOTPCode_ShouldReturnFailure()
         {
             // Arrange
             var request = new VerifyOTPRequest { Email = "john@example.com", OTPCode = "wrongCode" };
@@ -1227,20 +1222,10 @@ namespace AIEvent.Application.Test.Services
                 Role = new Role { Id = Guid.NewGuid(), Name = "User" },
                 OrganizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.NonProfit, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Small, OrganizerType = OrganizerType.Individual, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "John Doe", ContactEmail = "john@example.com", ContactPhone = "+1234567890", Address = "123 Main St", Status = ConfirmStatus.NeedConfirm }
             };
-            var otp = new UserOtps
-            {
-                Id = Guid.NewGuid(),
-                UserId = user.Id,
-                Code = "hashed_123456",
-                CreatedAt = DateTime.UtcNow,
-                ExpiredAt = DateTime.UtcNow.AddMinutes(5),
-                IsDeleted = false,
-                User = user
-            };
+
+            _mockCacheService.Setup(x => x.GetAsync<string>($"Register {request.Email}")).ReturnsAsync("123456");
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
                            .Returns(new List<User> { user }.AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork.Setup(x => x.UserOtpsRepository.Query(false))
-                           .Returns(new List<UserOtps> { otp }.AsQueryable().BuildMockDbSet().Object);
             _mockHasherHelper.Setup(p => p.Verify(It.IsAny<string>(), It.IsAny<string>())).Returns(false);
 
             // Act
@@ -1251,7 +1236,7 @@ namespace AIEvent.Application.Test.Services
             result.Error!.Message.Should().Be("Invalid OTP");
             result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
             _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.IsAny<User>()), Times.Never());
-            _mockUnitOfWork.Verify(x => x.UserOtpsRepository.DeleteAsync(It.IsAny<UserOtps>()), Times.Never());
+            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
     }

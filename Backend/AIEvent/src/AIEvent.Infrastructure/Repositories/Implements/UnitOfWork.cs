@@ -31,8 +31,6 @@ namespace AIEvent.Infrastructure.Implements
         public IGenericRepository<PaymentTransaction> PaymentTransactionRepository => GetRepository<PaymentTransaction>();
         public IGenericRepository<TopupRequest> TopupRequestRepository => GetRepository<TopupRequest>();
 
-        public IGenericRepository<UserOtps> UserOtpsRepository => GetRepository<UserOtps>();
-
         public UnitOfWork(DatabaseContext context)
         {
             _context = context;
