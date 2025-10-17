@@ -6,7 +6,6 @@ namespace AIEvent.Domain.Interfaces
     {
         IGenericRepository<User> UserRepository { get; }
         IGenericRepository<Role> RoleRepository { get; }
-        IGenericRepository<UserOtps> UserOtpsRepository { get; }
         IGenericRepository<RefreshToken> RefreshTokenRepository { get; }
         IGenericRepository<Event> EventRepository { get; }
         IGenericRepository<Tag> TagRepository { get; }
