@@ -30,6 +30,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowRight,
+  BookmarkMinus,
 } from "lucide-react";
 import {
   Sidebar,
@@ -160,7 +161,7 @@ export function VerticalNavigation() {
         {
           title: "Quản lý danh mục",
           url: "/manager/events/category",
-          icon: CheckSquare,
+          icon: BookmarkMinus,
           isActive: pathname === "/manager/events/category",
         },
       ];
