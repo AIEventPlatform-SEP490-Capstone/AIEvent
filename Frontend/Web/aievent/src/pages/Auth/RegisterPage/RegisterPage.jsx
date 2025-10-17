@@ -68,22 +68,22 @@ const BUDGET_OPTIONS = [
   { value: "High", label: "Cao (trên 2tr)" },
   { value: "Flexible", label: "Linh hoạt" },
 ];
-const MOCK_INTERESTS = [
-  { interestId: "technology", interestName: "Công nghệ" },
-  { interestId: "business", interestName: "Kinh doanh" },
-  { interestId: "music", interestName: "Âm nhạc" },
-  { interestId: "sports", interestName: "Thể thao" },
-  { interestId: "art", interestName: "Nghệ thuật" },
-  { interestId: "travel", interestName: "Du lịch" },
-  { interestId: "food", interestName: "Ẩm thực" },
-  { interestId: "education", interestName: "Giáo dục" },
-  { interestId: "health", interestName: "Sức khỏe" },
-  { interestId: "fashion", interestName: "Thời trang" },
-  { interestId: "gaming", interestName: "Gaming" },
-  { interestId: "startup", interestName: "Khởi nghiệp" },
-  { interestId: "marketing", interestName: "Marketing" },
-  { interestId: "design", interestName: "Thiết kế" },
-  { interestId: "photography", interestName: "Nhiếp ảnh" },
+const INTERESTS = [
+  "Công nghệ",
+  "Kinh doanh",
+  "Âm nhạc",
+  "Thể thao",
+  "Nghệ thuật",
+  "Du lịch",
+  "Ẩm thực",
+  "Giáo dục",
+  "Sức khỏe",
+  "Thời trang",
+  "Gaming",
+  "Khởi nghiệp",
+  "Marketing",
+  "Thiết kế",
+  "Nhiếp ảnh",
 ];
 
 export default function RegisterPage() {
@@ -118,7 +118,7 @@ export default function RegisterPage() {
     isAuthenticated,
     user,
   } = useSelector((state) => state.auth);
-  const interests = MOCK_INTERESTS;
+  const interests = INTERESTS;
   // Effect to handle redirection when user is authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -260,15 +260,15 @@ export default function RegisterPage() {
     }));
   };
 
-  const toggleInterest = (interestId) => {
-    const userInterests = formData.preferences.userInterests;
-    if (userInterests.includes(interestId)) {
+  const toggleInterest = (interest) => {
+    const selected = formData.preferences.userInterests;
+    if (selected.includes(interest)) {
       handlePreferenceChange(
         "userInterests",
-        userInterests.filter((id) => id !== interestId)
+        selected.filter((item) => item !== interest)
       );
     } else {
-      handlePreferenceChange("userInterests", [...userInterests, interestId]);
+      handlePreferenceChange("userInterests", [...selected, interest]);
     }
   };
 
@@ -350,8 +350,8 @@ export default function RegisterPage() {
       password: formData.password,
       confirmPassword: formData.confirmPassword,
       phoneNumber: formData.phoneNumber,
-      userInterests: formData.preferences.userInterests.map((id) => ({
-        userInterestId: id,
+      userInterests: formData.preferences.userInterests.map((name) => ({
+        interestName: name,
       })),
       interestedCities: formData.preferences.interestedCities.map((city) => ({
         cityName: city,
@@ -368,10 +368,30 @@ export default function RegisterPage() {
 
     try {
       const result = await dispatch(register(registerPayload)).unwrap();
-      if (result) {
-        showSuccess(authMessages.registerSuccess);
-        // Redirection will be handled by useEffect when isAuthenticated becomes true
+
+      // Nếu backend trả token (hiếm) thì register thunk đã lưu token và user
+      if (result?.tokens?.accessToken) {
+        showSuccess(authMessages.registerSuccess || "Đăng ký thành công.");
+        // Nếu muốn có redirect khác, useEffect sẽ xử lý hoặc navigate home
+        // Đi thẳng Home
+        navigate(PATH.HOME || "/");
+        return;
       }
+
+      // Nếu backend KHÔNG trả token => thường case OTP flow
+      try {
+        localStorage.setItem("pendingEmail", formData.email);
+      } catch (err) {
+        console.warn("Could not write pendingEmail to localStorage", err);
+      }
+
+      showSuccess(
+        authMessages.registerSuccess ||
+          "Đăng ký thành công. Vui lòng kiểm tra email để nhận mã OTP."
+      );
+
+      // Chuyển sang trang nhập OTP
+      navigate(PATH.VERIFY_OTP || "/verify-otp");
     } catch (err) {
       console.error("Register error:", err);
       if (err.response?.status === 409) {
@@ -385,6 +405,8 @@ export default function RegisterPage() {
         err.message?.includes("Network Error")
       ) {
         showError("Lỗi kết nối. Vui lòng kiểm tra mạng và thử lại.");
+      } else if (err?.message || err?.data?.message) {
+        showError(err.message || err.data?.message);
       } else {
         showError(authMessages.registerError);
       }
@@ -915,24 +937,23 @@ export default function RegisterPage() {
                           </div>
 
                           <div className="flex flex-wrap gap-2 justify-center">
-                            {interests.map((interest) => (
+                            {INTERESTS.map((interest) => (
                               <div
-                                key={interest.interestId}
+                                key={interest}
                                 className={`cursor-pointer px-3 py-1.5 text-xs font-medium transition-all duration-200 rounded-full ${
                                   formData.preferences.userInterests.includes(
-                                    interest.interestId
+                                    interest
                                   )
                                     ? "bg-blue-500 text-white hover:bg-blue-600 shadow-lg"
                                     : "border border-gray-300 text-gray-600 hover:border-blue-300 hover:text-blue-600"
                                 }`}
-                                onClick={() =>
-                                  toggleInterest(interest.interestId)
-                                }
+                                onClick={() => toggleInterest(interest)}
                               >
-                                {interest.interestName}
+                                {interest}
                               </div>
                             ))}
                           </div>
+
                           {errors.userInterests && (
                             <p className="text-red-500 text-xs mt-2 text-center">
                               {errors.userInterests}

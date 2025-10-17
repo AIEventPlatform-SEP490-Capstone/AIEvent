@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useCategories } from "../../hooks/useCategories";
 import {
   Card,
   CardContent,
@@ -42,140 +43,17 @@ import {
 } from "lucide-react";
 import { showSuccess, showError } from "../../lib/toastUtils";
 
-const USE_MOCK_DATA = true; // Set to false to use real API
-const LARGE_PAGE_SIZE = 1000;
-
-const API_BASE_URL = "https://your-api-endpoint.com/api";
-
-// Mock data
-const MOCK_CATEGORIES = [
-  {
-    eventCategoryId: "47C37D60-164A-4A45-B02D-88AF5560FD1C",
-    eventCategoryName: "Âm nhạc",
-  },
-  {
-    eventCategoryId: "1D1BC2D2-A4EA-4CD1-8EF9-DB87A5E97899",
-    eventCategoryName: "Education",
-  },
-  {
-    eventCategoryId: "384AF38C-0AE5-4E89-828E-290421517615",
-    eventCategoryName: "Sports",
-  },
-  {
-    eventCategoryId: "D53BFEF2-69DD-45B7-8D41-21C1E3011331",
-    eventCategoryName: "Technology",
-  },
-  {
-    eventCategoryId: "88D6F9FF-2542-48F0-9603-13FC23ACE929",
-    eventCategoryName: "Music",
-  },
-];
-
-const mockCategoriesData = [...MOCK_CATEGORIES];
-
-// Mock API functions
-const mockAPI = {
-  getCategories: (page = 1, pageSize = LARGE_PAGE_SIZE) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const startIndex = (page - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-        const items = mockCategoriesData.slice(startIndex, endIndex);
-        const totalItems = mockCategoriesData.length;
-        const totalPages = Math.ceil(totalItems / pageSize);
-
-        resolve({
-          statusCode: "AIE20000",
-          message: "EventCategory retrieved successfully",
-          data: {
-            items,
-            totalItems,
-            currentPage: page,
-            totalPages,
-            pageSize,
-            hasPreviousPage: page > 1,
-            hasNextPage: page < totalPages,
-          },
-        });
-      }, 500); // Simulate network delay
-    });
-  },
-
-  addCategory: (categoryName) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (!categoryName.trim()) {
-          reject({ message: "Category name is required" });
-          return;
-        }
-
-        const newCategory = {
-          eventCategoryId: `cat-${String(
-            mockCategoriesData.length + 1
-          ).padStart(3, "0")}`,
-          eventCategoryName: categoryName,
-        };
-        mockCategoriesData.push(newCategory);
-
-        resolve({
-          statusCode: "AIE20000",
-          message: "Category added successfully",
-          data: newCategory,
-        });
-      }, 500);
-    });
-  },
-
-  updateCategory: (categoryId, categoryName) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const index = mockCategoriesData.findIndex(
-          (cat) => cat.eventCategoryId === categoryId
-        );
-
-        if (index === -1) {
-          reject({ message: "Category not found" });
-          return;
-        }
-
-        mockCategoriesData[index].eventCategoryName = categoryName;
-
-        resolve({
-          statusCode: "AIE20000",
-          message: "Category updated successfully",
-          data: mockCategoriesData[index],
-        });
-      }, 500);
-    });
-  },
-
-  deleteCategory: (categoryId) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const index = mockCategoriesData.findIndex(
-          (cat) => cat.eventCategoryId === categoryId
-        );
-
-        if (index === -1) {
-          reject({ message: "Category not found" });
-          return;
-        }
-
-        mockCategoriesData.splice(index, 1);
-
-        resolve({
-          statusCode: "AIE20000",
-          message: "Category deleted successfully",
-        });
-      }, 500);
-    });
-  },
-};
-
 const EventCategory = () => {
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const {
+    categories,
+    loading,
+    error,
+    refreshCategories,
+    createNewCategory,
+    updateExistingCategory,
+    deleteExistingCategory,
+    clearCategoriesError,
+  } = useCategories();
 
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -192,43 +70,12 @@ const EventCategory = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
-
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
   // Form data
   const [formData, setFormData] = useState({
     eventCategoryName: "",
   });
-
-  // Fetch categories (always fetch all for client-side pagination)
-  const fetchCategories = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      if (USE_MOCK_DATA) {
-        const result = await mockAPI.getCategories(1, LARGE_PAGE_SIZE);
-        if (result.statusCode === "AIE20000") {
-          setCategories(result.data.items);
-        } else {
-          setError(result.message || "Failed to fetch categories");
-        }
-      } else {
-        const response = await fetch(
-          `${API_BASE_URL}/event-categories?page=1&pageSize=${LARGE_PAGE_SIZE}`
-        );
-        const result = await response.json();
-
-        if (result.statusCode === "AIE20000") {
-          setCategories(result.data.items);
-        } else {
-          setError(result.message || "Failed to fetch categories");
-        }
-      }
-    } catch (err) {
-      setError("Network error occurred");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Filter and sort categories
   const filteredAndSortedCategories = useMemo(() => {
@@ -273,10 +120,12 @@ const EventCategory = () => {
     setCurrentPage(1);
   }, [searchTerm, sortBy, sortOrder, itemsPerPage]);
 
-  // Initial fetch
+  // Adjust page if current page becomes empty after delete
   useEffect(() => {
-    fetchCategories();
-  }, []);
+    if (paginatedCategories.length === 0 && currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  }, [paginatedCategories.length, currentPage]);
 
   // Reset form data
   const resetForm = () => {
@@ -292,32 +141,16 @@ const EventCategory = () => {
       return;
     }
     try {
-      let result;
-      if (USE_MOCK_DATA) {
-        result = await mockAPI.addCategory(formData.eventCategoryName);
-      } else {
-        const response = await fetch(`${API_BASE_URL}/event-categories`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            eventCategoryName: formData.eventCategoryName,
-          }),
-        });
-        result = await response.json();
-      }
-
-      if (result.statusCode === "AIE20000") {
-        showSuccess("Tạo danh mục sự kiện thành công!");
-        setIsCreateDialogOpen(false);
-        resetForm();
-        fetchCategories();
-      } else {
-        showError(
-          "Lỗi khi tạo danh mục: " + (result.message || "Unknown error")
-        );
-      }
-    } catch (error) {
-      showError("Lỗi khi tạo danh mục: " + error.message);
+      await createNewCategory({
+        eventCategoryName: formData.eventCategoryName,
+      });
+      await refreshCategories(); // 🔥 Refresh ngay sau khi tạo
+      showSuccess("Tạo danh mục sự kiện thành công!");
+      setIsCreateDialogOpen(false);
+      resetForm();
+    } catch (err) {
+      showError("Lỗi khi tạo danh mục: " + (err.message || "Unknown error"));
+      clearCategoriesError();
     }
   };
 
@@ -328,75 +161,29 @@ const EventCategory = () => {
       return;
     }
     try {
-      let result;
-      if (USE_MOCK_DATA) {
-        result = await mockAPI.updateCategory(
-          selectedCategory.eventCategoryId,
-          formData.eventCategoryName
-        );
-      } else {
-        const response = await fetch(
-          `${API_BASE_URL}/event-categories/${selectedCategory.eventCategoryId}`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              eventCategoryName: formData.eventCategoryName,
-            }),
-          }
-        );
-        result = await response.json();
-      }
-
-      if (result.statusCode === "AIE20000") {
-        showSuccess("Cập nhật danh mục sự kiện thành công!");
-        setIsEditDialogOpen(false);
-        setSelectedCategory(null);
-        resetForm();
-        fetchCategories();
-      } else {
-        showError(
-          "Lỗi khi cập nhật danh mục: " + (result.message || "Unknown error")
-        );
-      }
-    } catch (error) {
-      showError("Lỗi khi cập nhật danh mục: " + error.message);
+      await updateExistingCategory(selectedCategory.eventCategoryId, {
+        eventCategoryName: formData.eventCategoryName,
+      });
+      showSuccess("Cập nhật danh mục sự kiện thành công!");
+      setIsEditDialogOpen(false);
+      setSelectedCategory(null);
+      resetForm();
+    } catch (err) {
+      showError(
+        "Lỗi khi cập nhật danh mục: " + (err.message || "Unknown error")
+      );
+      clearCategoriesError();
     }
   };
 
   // Handle delete category
   const handleDelete = async (categoryId) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa danh mục sự kiện này?")) {
-      try {
-        let result;
-        if (USE_MOCK_DATA) {
-          result = await mockAPI.deleteCategory(categoryId);
-        } else {
-          const response = await fetch(
-            `${API_BASE_URL}/event-categories/${categoryId}`,
-            {
-              method: "DELETE",
-            }
-          );
-          result = await response.json();
-        }
-
-        if (result.statusCode === "AIE20000") {
-          showSuccess("Xóa danh mục sự kiện thành công!");
-          fetchCategories();
-
-          // Adjust page if current page becomes empty
-          if (paginatedCategories.length === 1 && currentPage > 1) {
-            setCurrentPage(currentPage - 1);
-          }
-        } else {
-          showError(
-            "Lỗi khi xóa danh mục: " + (result.message || "Unknown error")
-          );
-        }
-      } catch (error) {
-        showError("Lỗi khi xóa danh mục: " + error.message);
-      }
+    try {
+      await deleteExistingCategory(categoryId);
+      showSuccess("Xóa danh mục sự kiện thành công!");
+    } catch (err) {
+      showError("Lỗi khi xóa danh mục: " + (err.message || "Unknown error"));
+      clearCategoriesError();
     }
   };
 
@@ -435,15 +222,9 @@ const EventCategory = () => {
             Quản lý các danh mục sự kiện ({filteredAndSortedCategories.length}{" "}
             danh mục)
           </p>
-          {USE_MOCK_DATA && (
-            <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-md text-sm">
-              <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-              Using Mock Data (Test Mode)
-            </div>
-          )}
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={fetchCategories} size="sm">
+          <Button variant="outline" onClick={refreshCategories} size="sm">
             <RefreshCw className="h-4 w-4 mr-2" />
             Làm mới
           </Button>
@@ -660,7 +441,10 @@ const EventCategory = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(category.eventCategoryId)}
+                        onClick={() => {
+                          setDeleteTargetId(category.eventCategoryId);
+                          setIsDeleteDialogOpen(true);
+                        }}
                         className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -818,6 +602,35 @@ const EventCategory = () => {
               onClick={() => setIsViewDialogOpen(false)}
             >
               Đóng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Delete Confirm Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bạn có chắc muốn xóa?</DialogTitle>
+            <DialogDescription>
+              Hành động này không thể hoàn tác. Danh mục sẽ bị xóa vĩnh viễn.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                await handleDelete(deleteTargetId);
+                setIsDeleteDialogOpen(false);
+              }}
+            >
+              Xóa
             </Button>
           </DialogFooter>
         </DialogContent>

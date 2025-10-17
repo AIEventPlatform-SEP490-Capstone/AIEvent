@@ -24,6 +24,7 @@ import ManagerEditEventPage from "../pages/Manager/ManagerEditEventPage";
 import AdminProfile from "../pages/Admin/AdminProfile";
 import UserManagement from "../pages/Admin/UserManagement";
 import EventCategory from "../pages/Event Category/EventCategory";
+import VerifyOtpPage from "../pages/Auth/RegisterPage/VerifyOtpPage";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -159,6 +160,7 @@ export default function useRouterElement() {
       children: [
         { path: "login", element: <LoginPage /> },
         { path: "register", element: <RegisterPage /> },
+        { path: "verify-otp", element: <VerifyOtpPage /> },
       ],
     },
     {

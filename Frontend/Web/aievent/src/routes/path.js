@@ -3,6 +3,7 @@ export const PATH = {
   AUTH: "/auth",
   LOGIN: "/auth/login",
   REGISTER: "/auth/register",
+  VERIFY_OTP: "/auth/verify-otp",
 
   // HOME
   HOME: "/",
