@@ -2,9 +2,7 @@
 using MailKit.Security;
 using MailKit.Net.Smtp;
 using MimeKit;
-using AIEvent.Application.DTOs.Auth;
 using AIEvent.Application.Helpers;
-using System.Runtime;
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 
@@ -41,15 +39,16 @@ namespace AIEvent.Application.Services.Implements
             {
                 return ErrorResponse.FailureResult("Can not send email. Please try again.");
             }
+        }
 
-            public async Task SendTicketsEmailAsync(string toEmail, string subject, string? htmlBody, byte[] pdfBytes, string pdfFileName, string eventName)
-            {
-                var message = new MimeMessage();
-                message.From.Add(new MailboxAddress("AIEvent", "kietnase170077@fpt.edu.vn"));
-                message.To.Add(MailboxAddress.Parse(toEmail));
-                message.Subject = subject;
+        public async Task SendTicketsEmailAsync(string toEmail, string subject, string? htmlBody, byte[] pdfBytes, string pdfFileName, string eventName)
+        {
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress("AIEvent", "kietnase170077@fpt.edu.vn"));
+            message.To.Add(MailboxAddress.Parse(toEmail));
+            message.Subject = subject;
 
-                htmlBody ??= $@"
+            htmlBody ??= $@"
             <!DOCTYPE html>
             <html lang='vi'>
             <head>
@@ -405,22 +404,22 @@ namespace AIEvent.Application.Services.Implements
             </body>
             </html>";
 
-                var builder = new BodyBuilder
-                {
-                    HtmlBody = htmlBody
-                };
+            var builder = new BodyBuilder
+            {
+                HtmlBody = htmlBody
+            };
 
-                // Gắn PDF
-                builder.Attachments.Add(pdfFileName, pdfBytes, new ContentType("application", "pdf"));
-                message.Body = builder.ToMessageBody();
+            // Gắn PDF
+            builder.Attachments.Add(pdfFileName, pdfBytes, new ContentType("application", "pdf"));
+            message.Body = builder.ToMessageBody();
 
-                using var client = new MailKit.Net.Smtp.SmtpClient();
-                await client.ConnectAsync("smtp.gmail.com", 587, MailKit.Security.SecureSocketOptions.StartTls);
-                await client.AuthenticateAsync("thoaidtse170076@fpt.edu.vn", "gnmjhwhbyoovvigw");
-                await client.SendAsync(message);
-                await client.DisconnectAsync(true);
-            }
+            using var client = new MailKit.Net.Smtp.SmtpClient();
+            await client.ConnectAsync("smtp.gmail.com", 587, MailKit.Security.SecureSocketOptions.StartTls);
+            await client.AuthenticateAsync("thoaidtse170076@fpt.edu.vn", "gnmjhwhbyoovvigw");
+            await client.SendAsync(message);
+            await client.DisconnectAsync(true);
         }
-
     }
+
 }
+
