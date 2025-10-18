@@ -21,6 +21,8 @@ export const PATH = {
   ABOUT: "/about",
   PROFILE: "/profile",
   PROFILE_USER: "/profile/:userId",
+  BECOME_ORGANIZER: "/become-organizer",
+  APPLICATION_STATUS: "/application-status",
 
   // EVENT
   EVENT_DETAIL: "/event/:id",
@@ -28,7 +30,6 @@ export const PATH = {
   PAYMENT: "/payment/:ticketId",
   QR_VIEWER: "/qr-viewer/:ticketId",
   EVENT_INVITATIONS: "/event-invitations",
-  APPLICATION_STATUS: "/application-status",
   SOCIAL_SHARING: "/social-sharing",
 
   // ORGANIZER
@@ -43,7 +44,6 @@ export const PATH = {
   ORGANIZER_SUPPORT: "/organizer/support",
   ORGANIZER_ANALYTICS: "/organizer/analytics/:id",
   ORGANIZER_CHECKIN: "/organizer/checkin/:id",
-  BECOME_ORGANIZER: "/become-organizer",
 
   // MANAGER
   MANAGER: "/manager",

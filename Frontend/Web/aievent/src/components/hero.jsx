@@ -62,14 +62,16 @@ export function Hero() {
                   </NavLink>
                 </Button>
               ) : (
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="px-8 py-6 text-base bg-white/80 backdrop-blur-sm hover:bg-white hover:scale-105 transition-all duration-300 rounded-xl shadow-md hover:shadow-lg border-2"
-                >
-                  <Users className="w-5 h-5 mr-2" />
-                  Trở thành Organizer
-                </Button>
+                <NavLink to="/become-organizer">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="px-8 py-6 text-base bg-white/80 backdrop-blur-sm hover:bg-white hover:scale-105 transition-all duration-300 rounded-xl shadow-md hover:shadow-lg border-2"
+                  >
+                    <Users className="w-5 h-5 mr-2" />
+                    Trở thành Organizer
+                  </Button>
+                </NavLink>
               )}
             </div>
 
