@@ -7,6 +7,8 @@ import { PATH } from "../../routes/path";
 import LoadingSpinner from "../../components/LoadingSpinner/LoadingSpinner";
 import { Footer } from "../../components/Footer/Footer";
 import { useHomepageEvents } from "../../hooks/useHomepageEvents";
+import { AIRecommendationWidget } from "./AIRecommendationWidget";
+import { SmartNotifications } from "./SmartNotifications";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -81,24 +83,11 @@ const HomePage = () => {
 
           <div className="space-y-6">
             {/* AI Recommendation Widget */}
-            <div className="bg-gradient-to-br from-card to-card/80 p-6 rounded-2xl border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
-              <h3 className="text-lg font-bold mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                AI Recommendations
-              </h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                AI recommendation widget will be implemented here.
-              </p>
-            </div>
+
+            <AIRecommendationWidget />
 
             {/* Smart Notifications */}
-            <div className="bg-gradient-to-br from-card to-card/80 p-6 rounded-2xl border border-border/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
-              <h3 className="text-lg font-bold mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Smart Notifications
-              </h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Smart notifications component will be implemented here.
-              </p>
-            </div>
+            <SmartNotifications />
           </div>
         </div>
       </div>

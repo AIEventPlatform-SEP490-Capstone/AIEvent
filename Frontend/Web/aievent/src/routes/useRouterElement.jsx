@@ -25,6 +25,8 @@ import AdminProfile from "../pages/Admin/AdminProfile";
 import UserManagement from "../pages/Admin/UserManagement";
 import EventCategory from "../pages/Event Category/EventCategory";
 import VerifyOtpPage from "../pages/Auth/RegisterPage/VerifyOtpPage";
+import BecomeOrganizerPage from "../pages/User/BecomeOrganizerPage";
+import ApplicationStatusPage from "../pages/User/ApplicationStatusPage";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -133,7 +135,7 @@ export default function useRouterElement() {
           path: "application-status",
           element: (
             <ProtectedRoute>
-              <div>Application Status Page</div>
+              <ApplicationStatusPage />
             </ProtectedRoute>
           ),
         },
@@ -149,7 +151,7 @@ export default function useRouterElement() {
           path: "become-organizer",
           element: (
             <ProtectedRoute>
-              <div>Become Organizer Page</div>
+              <BecomeOrganizerPage />
             </ProtectedRoute>
           ),
         },
