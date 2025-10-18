@@ -61,6 +61,7 @@ namespace AIEvent.Application.Services.Implements
                 var uploadParams = new ImageUploadParams()
                 {
                     File = new FileDescription(file.FileName, stream),
+                    Folder = "my_images",
                     Transformation = new Transformation()
                                             .Width(500)
                                             .Height(500)

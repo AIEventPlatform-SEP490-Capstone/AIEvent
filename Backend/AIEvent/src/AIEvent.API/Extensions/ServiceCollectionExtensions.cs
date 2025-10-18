@@ -36,7 +36,8 @@ namespace AIEvent.API.Extensions
                     .AddScoped<IEventCategoryService, EventCategoryService>()
                     .AddScoped<IBookingService, BookingService>()
                     .AddScoped<IQrCodeService, QrCodeService>()
-                    .AddScoped<ITicketTokenService, TicketTokenService>();
+                    .AddScoped<ITicketTokenService, TicketTokenService>()
+                    .AddScoped<IPdfService, PdfService>();
 
             return services;
         }

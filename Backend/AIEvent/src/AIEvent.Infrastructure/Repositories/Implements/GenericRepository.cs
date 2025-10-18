@@ -21,6 +21,11 @@ namespace AIEvent.Infrastructure.Implements
             return entity;
         }
 
+        public async Task AddRangeAsync(IEnumerable<T> entities)
+        {
+            await _dbSet.AddRangeAsync(entities);
+        }
+
         public Task DeleteAsync(T entity)
         {
             _dbSet.Remove(entity);
