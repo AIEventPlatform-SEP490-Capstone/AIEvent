@@ -79,6 +79,7 @@ namespace AIEvent.Application.Services.Implements
             int totalCount = await events.CountAsync();
 
             var result = await events
+                .OrderBy(u => u.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(e => new EventsResponse

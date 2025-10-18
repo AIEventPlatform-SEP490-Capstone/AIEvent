@@ -150,6 +150,7 @@ namespace AIEvent.Application.Services.Implements
             int totalCount = await events.CountAsync();
 
             var result = await events
+                .OrderByDescending(e => e.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(e => new EventsResponse
@@ -327,6 +328,7 @@ namespace AIEvent.Application.Services.Implements
             int totalCount = await events.CountAsync();
 
             var result = await events
+                .OrderByDescending(e => e.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(e => new EventsResponse
@@ -405,6 +407,7 @@ namespace AIEvent.Application.Services.Implements
             int totalCount = await eventsQuery.CountAsync();
 
             var result = await eventsQuery
+                .OrderBy(e => e.StartTime)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(e => new EventsRelatedResponse
