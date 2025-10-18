@@ -18,7 +18,7 @@ namespace AIEvent.API.Extensions
 
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>))
                     .AddScoped<ITransactionHelper, TransactionHelper>()
-                    //.AddScoped<ICacheService, CacheService>()
+                    .AddScoped<ICacheService, CacheService>()
                     .AddScoped<IUnitOfWork, UnitOfWork>()
                     .AddScoped<IJwtService, JwtService>()
                     .AddScoped<ICloudinaryService, CloudinaryService>()
@@ -28,6 +28,7 @@ namespace AIEvent.API.Extensions
                     .AddScoped<IRoleService, RoleService>()
                     .AddScoped<IEnumService, EnumService>()
                     .AddScoped<IEmailService, EmailService>()
+                    .AddSingleton<IHasherHelper, HasherHelper>()
                     .AddScoped<IOrganizerService, OrganizerService>()
                     .AddScoped<ITagService, TagService>()
                     .AddScoped<IRuleRefundService, RuleRefundService>()

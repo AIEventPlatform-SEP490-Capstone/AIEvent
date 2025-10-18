@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "AIEvent",
+    "slug": "aievent",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/images/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./src/assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "fonts": [
+      "./src/assets/fonts/OpenSans-Regular.ttf",
+      "./src/assets/fonts/OpenSans-Bold.ttf",
+      "./src/assets/fonts/OpenSans-SemiBold.ttf",
+      "./src/assets/fonts/OpenSans-Light.ttf",
+      "./src/assets/fonts/OpenSans-ExtraBold.ttf",
+      "./src/assets/fonts/Roboto-Black.ttf"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/images/icon.png",
+        "backgroundColor": "#FFFFFF"
+      }
+    },
+    "web": {
+      "favicon": "./src/assets/images/icon.png"
+    },
+    "sdkVersion": "54.0.0"
+  }
+}

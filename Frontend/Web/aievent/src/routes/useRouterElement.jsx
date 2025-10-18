@@ -21,6 +21,10 @@ import ManagerEventsPage from "../pages/Manager/ManagerEventsPage";
 import ManagerEventsNeedApprovalPage from "../pages/Manager/ManagerEventsNeedApprovalPage";
 import ManagerEventDetailPage from "../pages/Manager/ManagerEventDetailPage";
 import ManagerEditEventPage from "../pages/Manager/ManagerEditEventPage";
+import AdminProfile from "../pages/Admin/AdminProfile";
+import UserManagement from "../pages/Admin/UserManagement";
+import EventCategory from "../pages/Event Category/EventCategory";
+import VerifyOtpPage from "../pages/Auth/RegisterPage/VerifyOtpPage";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -156,6 +160,7 @@ export default function useRouterElement() {
       children: [
         { path: "login", element: <LoginPage /> },
         { path: "register", element: <RegisterPage /> },
+        { path: "verify-otp", element: <VerifyOtpPage /> },
       ],
     },
     {
@@ -167,13 +172,13 @@ export default function useRouterElement() {
       ),
       children: [
         { index: true, element: <OrganizerDashboard /> },
-        { 
-          path: "create", 
+        {
+          path: "create",
           element: (
             <ProtectedRoute allowedRoles={["Organizer"]}>
               <CreateEventPage />
             </ProtectedRoute>
-          ) 
+          ),
         },
         { path: "events", element: <div>Organizer Events Page</div> },
         { path: "my-events", element: <MyEventsPage /> },
@@ -196,9 +201,13 @@ export default function useRouterElement() {
       children: [
         { index: true, element: <ManagerDashboard /> },
         { path: "events", element: <ManagerEventsPage /> },
-        { path: "events/need-approval", element: <ManagerEventsNeedApprovalPage /> },
+        {
+          path: "events/need-approval",
+          element: <ManagerEventsNeedApprovalPage />,
+        },
         { path: "event/:eventId", element: <ManagerEventDetailPage /> },
         { path: "event/:eventId/edit", element: <ManagerEditEventPage /> },
+        { path: "events/category", element: <EventCategory /> },
         { path: "profile", element: <div>Manager Profile Page</div> },
         { path: "settings", element: <div>Manager Settings Page</div> },
         { path: "support", element: <div>Manager Support Page</div> },
@@ -214,10 +223,10 @@ export default function useRouterElement() {
       children: [
         { index: true, element: <AdminDashboard /> },
         { path: "events", element: <div>Admin Events Page</div> },
-        { path: "users", element: <div>Admin Users Page</div> },
+        { path: "users", element: <UserManagement /> },
         { path: "refund-rules", element: <RefundRulesManagement /> },
         { path: "organizers", element: <div>Admin Organizers Page</div> },
-        { path: "profile", element: <div>Admin Profile Page</div> },
+        { path: "profile", element: <AdminProfile /> },
         { path: "settings", element: <div>Admin Settings Page</div> },
         {
           path: "system-settings",

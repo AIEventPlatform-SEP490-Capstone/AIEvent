@@ -150,6 +150,7 @@ namespace AIEvent.Application.Services.Implements
             int totalCount = await events.CountAsync();
 
             var result = await events
+                .OrderByDescending(e => e.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(e => new EventsResponse
@@ -164,6 +165,8 @@ namespace AIEvent.Application.Services.Implements
                     TotalTickets = e.TotalTickets,
                     SoldQuantity = e.SoldQuantity,
                     LocationName = e.LocationName,
+                    Publish = e.Publish,
+                    RequireApproval = e.RequireApproval,
                     Tags = e.EventTags.Select(t => new TagResponse
                     {
                         TagId = t.TagId.ToString(),
@@ -325,6 +328,7 @@ namespace AIEvent.Application.Services.Implements
             int totalCount = await events.CountAsync();
 
             var result = await events
+                .OrderByDescending(e => e.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(e => new EventsResponse
@@ -338,6 +342,8 @@ namespace AIEvent.Application.Services.Implements
                     TicketType = e.TicketType,
                     TotalTickets = e.TotalTickets,
                     SoldQuantity = e.SoldQuantity,
+                    Publish = e.Publish,
+                    RequireApproval = e.RequireApproval,
                     TicketPrice = e.TicketDetails.Any()
                         ? e.TicketDetails.Min(t => t.TicketPrice)
                         : 0,
@@ -401,6 +407,7 @@ namespace AIEvent.Application.Services.Implements
             int totalCount = await eventsQuery.CountAsync();
 
             var result = await eventsQuery
+                .OrderBy(e => e.StartTime)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(e => new EventsRelatedResponse

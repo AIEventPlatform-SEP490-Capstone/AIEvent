@@ -4,31 +4,26 @@ using MailKit.Net.Smtp;
 using MimeKit;
 using AIEvent.Application.DTOs.Auth;
 using AIEvent.Application.Helpers;
+using System.Runtime;
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
+
 
 namespace AIEvent.Application.Services.Implements
 {
     public class EmailService : IEmailService
     {
-        public async Task<Result<UserOtpResponse>> SendOtpAsync(string email)
+        public async Task<Result> SendOtpAsync(string email, MimeMessage message)
         {
             if (string.IsNullOrWhiteSpace(email))
-                return ErrorResponse.FailureResult("Email không đc để trống", ErrorCodes.InvalidInput);
+                return ErrorResponse.FailureResult("Email cannot be blank", ErrorCodes.InvalidInput);
+
+            if (message == null)
+                return ErrorResponse.FailureResult("Email content cannot be blank", ErrorCodes.InvalidInput);
 
             if (!MailboxAddress.TryParse(email, out _))
-                return ErrorResponse.FailureResult("Email không hợp lệ", ErrorCodes.InvalidInput);
-            
-            var otp = new Random().Next(100000, 999999).ToString();
+                return ErrorResponse.FailureResult("Email invalid", ErrorCodes.InvalidInput);
 
-            var message = new MimeMessage
-            {
-                Subject = "Mã OTP của bạn",
-                Body = new TextPart("plain")
-                {
-                    Text = $"Mã xác thực của bạn là: {otp}. Mã này sẽ hết hạn sau 5 phút."
-                }
-            };
             message.From.Add(new MailboxAddress("AIEvent", "kietnase170077@fpt.edu.vn"));
             message.To.Add(MailboxAddress.Parse(email));
 
@@ -40,26 +35,21 @@ namespace AIEvent.Application.Services.Implements
                 await client.SendAsync(message);
                 await client.DisconnectAsync(true);
 
-                return Result<UserOtpResponse>.Success(new UserOtpResponse
-                {
-                    Code = otp,
-                    ExpiredAt = DateTime.UtcNow.AddMinutes(5)
-                });
+                return Result.Success();
             }
             catch
             {
-                return ErrorResponse.FailureResult("Không thể gửi email. Vui lòng thử lại sau.");
+                return ErrorResponse.FailureResult("Can not send email. Please try again.");
             }
-        }
 
-        public async Task SendTicketsEmailAsync(string toEmail, string subject, string? htmlBody, byte[] pdfBytes, string pdfFileName, string eventName)
-        {
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("AIEvent", "kietnase170077@fpt.edu.vn"));
-            message.To.Add(MailboxAddress.Parse(toEmail));
-            message.Subject = subject;
+            public async Task SendTicketsEmailAsync(string toEmail, string subject, string? htmlBody, byte[] pdfBytes, string pdfFileName, string eventName)
+            {
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress("AIEvent", "kietnase170077@fpt.edu.vn"));
+                message.To.Add(MailboxAddress.Parse(toEmail));
+                message.Subject = subject;
 
-            htmlBody ??= $@"
+                htmlBody ??= $@"
             <!DOCTYPE html>
             <html lang='vi'>
             <head>
@@ -336,7 +326,7 @@ namespace AIEvent.Application.Services.Implements
                         <div class='booking-info'>
                             <div class='info-row'>
                                 <span class='info-label'>Sự kiện: </span>
-                                <span class='info-value'>{ eventName}</span>
+                                <span class='info-value'>{eventName}</span>
                             </div>
                             <div class='info-row'>
                                 <span class='info-label'>Trạng thái: </span>
@@ -344,11 +334,11 @@ namespace AIEvent.Application.Services.Implements
                             </div>
                             <div class='info-row'>
                                 <span class='info-label'>Ngày đặt: </span>
-                                <span class='info-value'>{ DateTime.Now:dd/MM/yyyy}</span>
+                                <span class='info-value'>{DateTime.Now:dd/MM/yyyy}</span>
                             </div>
                             <div class='info-row'>
                                 <span class='info-label'>Thời gian: </span>
-                                <span class='info-value'>{ DateTime.Now:HH:mm}</span>
+                                <span class='info-value'>{DateTime.Now:HH:mm}</span>
                             </div>
                         </div>
 
@@ -415,23 +405,22 @@ namespace AIEvent.Application.Services.Implements
             </body>
             </html>";
 
-            var builder = new BodyBuilder
-            {
-                HtmlBody = htmlBody
-            };
+                var builder = new BodyBuilder
+                {
+                    HtmlBody = htmlBody
+                };
 
-            // Gắn PDF
-            builder.Attachments.Add(pdfFileName, pdfBytes, new ContentType("application", "pdf"));
-            message.Body = builder.ToMessageBody();
+                // Gắn PDF
+                builder.Attachments.Add(pdfFileName, pdfBytes, new ContentType("application", "pdf"));
+                message.Body = builder.ToMessageBody();
 
-            using var client = new MailKit.Net.Smtp.SmtpClient();
-            await client.ConnectAsync("smtp.gmail.com", 587, MailKit.Security.SecureSocketOptions.StartTls);
-            await client.AuthenticateAsync("thoaidtse170076@fpt.edu.vn", "gnmjhwhbyoovvigw");
-            await client.SendAsync(message);
-            await client.DisconnectAsync(true);
+                using var client = new MailKit.Net.Smtp.SmtpClient();
+                await client.ConnectAsync("smtp.gmail.com", 587, MailKit.Security.SecureSocketOptions.StartTls);
+                await client.AuthenticateAsync("thoaidtse170076@fpt.edu.vn", "gnmjhwhbyoovvigw");
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
+            }
         }
-
-
 
     }
 }

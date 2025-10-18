@@ -18,7 +18,6 @@ namespace AIEvent.Infrastructure.Context
         }
         public DbSet<User> Users { get; set; }
         public DbSet<Role> Roles { get; set; }
-        public DbSet<UserOtps> UserOtps { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<OrganizerProfile> OrganizerProfiles { get; set; }
         public DbSet<Event> Events { get; set; }
@@ -61,29 +60,17 @@ namespace AIEvent.Infrastructure.Context
                 entity.HasIndex(e => e.Name).IsUnique().HasDatabaseName("IX_Role_Name");
             });
 
-            // ----------------- UserOtps -----------------
-            builder.Entity<UserOtps>(entity =>
-            {
-                entity.HasOne(e => e.User)
-                      .WithMany(u => u.UserOtps)
-                      .HasForeignKey(e => e.UserId);
-
-                entity.HasIndex(e => new { e.UserId, e.Code }).IsUnique().HasDatabaseName("IX_UserOtps_UserId_Code");
-                entity.HasIndex(e => e.ExpiredAt).HasDatabaseName("IX_UserOtps_ExpiredAt");
-            });
-
             // ----------------- RefreshToken -----------------
             builder.Entity<RefreshToken>(entity =>
             {
                 entity.Property(e => e.Token).IsRequired().HasMaxLength(500);
-                entity.Property(e => e.ReplacedByToken).HasMaxLength(500);
 
                 entity.HasOne(e => e.User)
                       .WithMany(u => u.RefreshTokens)
                       .HasForeignKey(e => e.UserId);
 
                 entity.HasIndex(e => e.Token).IsUnique().HasDatabaseName("IX_RefreshToken_Token");
-                entity.HasIndex(e => new { e.UserId, e.IsRevoked }).HasDatabaseName("IX_RefreshToken_UserId_IsRevoked");
+                entity.HasIndex(e => new { e.UserId, e.IsDeleted }).HasDatabaseName("IX_RefreshToken_UserId_IsDeleted");
                 entity.HasIndex(e => new { e.Token, e.ExpiresAt }).HasDatabaseName("IX_RefreshToken_Token_ExpiresAt");
                 entity.HasIndex(e => e.ExpiresAt).HasDatabaseName("IX_RefreshToken_ExpiresAt");
             });

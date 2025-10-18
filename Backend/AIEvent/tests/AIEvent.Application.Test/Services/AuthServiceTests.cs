@@ -1,6 +1,8 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Auth;
 using AIEvent.Application.DTOs.Common;
+using AIEvent.Application.DTOs.User;
+using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
@@ -8,6 +10,7 @@ using AIEvent.Domain.Enums;
 using AIEvent.Domain.Interfaces;
 using AutoMapper;
 using FluentAssertions;
+using MimeKit;
 using MockQueryable.Moq;
 using Moq;
 
@@ -19,6 +22,8 @@ namespace AIEvent.Application.Test.Services
         private readonly Mock<IJwtService> _mockJwtService;
         private readonly Mock<IMapper> _mockMapper;
         private readonly Mock<IEmailService> _mockEmailService;
+        private readonly Mock<IHasherHelper> _mockHasherHelper;
+        private readonly Mock<ICacheService> _mockCacheService;  
         private readonly IAuthService _authService;
 
         public AuthServiceTests()
@@ -26,611 +31,1214 @@ namespace AIEvent.Application.Test.Services
             // Khởi tạo mock cho các dependency
             _mockUnitOfWork = new Mock<IUnitOfWork>();
             _mockJwtService = new Mock<IJwtService>();
+            _mockHasherHelper = new Mock<IHasherHelper>();
             _mockMapper = new Mock<IMapper>();
             _mockEmailService = new Mock<IEmailService>();
+            _mockCacheService = new Mock<ICacheService>();
             _authService = new AuthService(_mockUnitOfWork.Object,
                                                _mockJwtService.Object,
                                                _mockMapper.Object,
-                                               _mockEmailService.Object);
+                                               _mockEmailService.Object,
+                                               _mockHasherHelper.Object,
+                                               _mockCacheService.Object);
         }
         #region Login
+        // UTCID01: Valid credentials, successful login
         [Fact]
-        public async Task LoginAsync_WithValidCredentials_ShouldReturnSuccessResult()
+        public async Task UTCID01_LoginAsync_WithValidCredentials_ShouldReturnSuccess()
         {
-            var request = new LoginRequest
-            {
-                Email = "test@gmail.com",
-                Password = "123"
-            };
-
+            // Arrange
+            var now = DateTime.UtcNow;
+            var request = new LoginRequest { Email = "test@gmail.com", Password = "123" };
             var user = new User
             {
                 Id = Guid.NewGuid(),
                 Email = "test@gmail.com",
-                FullName = "Test User",
                 IsActive = true,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("123") 
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("123", 12)
             };
-
             var users = new List<User> { user }.AsQueryable().BuildMockDbSet();
-
-            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
-                           .Returns(users.Object);
-
-            var accessToken = "access-token";
-            var refreshToken = "refresh-token";
-
-            _mockJwtService.Setup(x => x.GenerateAccessToken(user))
-                           .Returns(accessToken);
-            _mockJwtService.Setup(x => x.GenerateRefreshToken())
-                           .Returns(refreshToken);
-
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(users.Object);
+            _mockJwtService.Setup(x => x.GenerateAccessToken(user)).Returns("access-token");
+            _mockJwtService.Setup(x => x.GenerateRefreshToken()).Returns("refresh-token");
+            _mockHasherHelper.Setup(p => p.Verify(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
             _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.AddAsync(It.IsAny<RefreshToken>()));
-            _mockUnitOfWork.Setup(x => x.SaveChangesAsync())
-                           .ReturnsAsync(1);
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 
+            // Act
             var result = await _authService.LoginAsync(request);
 
-            result.Should().NotBeNull();
+            // Assert
             result.IsSuccess.Should().BeTrue();
-            result.Value!.AccessToken.Should().Be(accessToken);
-            result.Value!.RefreshToken.Should().Be(refreshToken);
+            result.Value!.AccessToken.Should().Be("access-token");
+            result.Value!.RefreshToken.Should().Be("refresh-token");
+            (result.Value!.ExpiresAt - now).Should().BeCloseTo(TimeSpan.FromHours(1), TimeSpan.FromSeconds(10));
+            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.AddAsync(It.IsAny<RefreshToken>()), Times.Once());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
 
-
+        // UTCID02: Inactive user
         [Fact]
-        public async Task LoginAsync_WithInactiveUser_ShouldReturnFailureResult()
+        public async Task UTCID02_LoginAsync_WithInactiveUser_ShouldReturnFailure()
         {
-            var request = new LoginRequest
-            {
-                Email = "test@gmail.com",
-                Password = "123"
-            };
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = "test@gmail.com",
-                FullName = "Test User",
-                IsActive = false
-            };
-
+            // Arrange
+            var request = new LoginRequest { Email = "test@gmail.com", Password = "123" };
+            var user = new User { Id = Guid.NewGuid(), Email = "test@gmail.com", IsActive = false };
             var users = new List<User> { user }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
-                            .Returns(users.Object);
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(users.Object);
 
+            // Act
             var result = await _authService.LoginAsync(request);
 
-            result.Should().NotBeNull();
+            // Assert
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("User not found or inactive");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
         }
 
+        // UTCID03: Invalid password
         [Fact]
-        public async Task LoginAsync_WithInvalidPassword_ShouldReturnFailureResult()
+        public async Task UTCID03_LoginAsync_WithInvalidPassword_ShouldReturnFailure()
         {
-            var request = new LoginRequest
-            {
-                Email = "test@gmail.com",
-                Password = "321"
-            };
+            // Arrange
+            var request = new LoginRequest { Email = "test@gmail.com", Password = "wrong" };
             var user = new User
             {
                 Id = Guid.NewGuid(),
                 Email = "test@gmail.com",
-                FullName = "Test User",
-                IsActive = true
+                IsActive = true,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("123")
             };
-
             var users = new List<User> { user }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
-                           .Returns(users.Object);
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(users.Object);
 
+            // Act
             var result = await _authService.LoginAsync(request);
 
-            result.Should().NotBeNull();
+            // Assert
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("Invalid email or password");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
         }
 
+        // UTCID04: Non-existent user
         [Fact]
-        public async Task LoginAsync_WithValidRole_ShouldReturnFailureResult()
+        public async Task UTCID04_LoginAsync_WithNonExistentUser_ShouldReturnFailure()
         {
-            var request = new LoginRequest
-            {
-                Email = "test@gmail.com",
-                Password = "123"
-            };
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = "test@gmail.com",
-                FullName = "Test User",
-                IsActive = true
-            };
-            var roles = new List<string> { "User" };
-
-            var users = new List<User> { user }.AsQueryable().BuildMockDbSet();
+            // Arrange
+            var request = new LoginRequest { Email = "notfound@gmail.com", Password = "123" };
+            var users = new List<User>().AsQueryable().BuildMockDbSet();
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(users.Object);
 
+            // Act
             var result = await _authService.LoginAsync(request);
 
-            result.Should().NotBeNull();
+            // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Role not found");
+            result.Error!.Message.Should().Be("User not found or inactive");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
         }
 
+        // UTCID05: Null request
+        [Fact]
+        public async Task UTCID05_LoginAsync_WithNullRequest_ShouldReturnFailure()
+        {
+            // Act
+            var result = await _authService.LoginAsync(null!);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid email or password");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
+        }
+
+        // UTCID06: Empty email
+        [Fact]
+        public async Task UTCID06_LoginAsync_WithEmptyEmail_ShouldReturnFailure()
+        {
+            // Arrange
+            var request = new LoginRequest { Email = "", Password = "123" };
+
+            // Act
+            var result = await _authService.LoginAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid email or password");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
+        }
+
+        // UTCID07: Empty password
+        [Fact]
+        public async Task UTCID07_LoginAsync_WithEmptyPassword_ShouldReturnFailure()
+        {
+            // Arrange
+            var request = new LoginRequest { Email = "test@gmail.com", Password = "" };
+
+            // Act
+            var result = await _authService.LoginAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid email or password");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
+        }
+
+        // UTCID08: Invalid email format
+        [Fact]
+        public async Task UTCID08_LoginAsync_WithInvalidEmailFormat_ShouldReturnFailure()
+        {
+            // Arrange
+            var request = new LoginRequest { Email = "invalid-email", Password = "123" };
+
+            // Act
+            var result = await _authService.LoginAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid email or password");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
+        }
         #endregion
 
         #region Register
         [Fact]
-        public async Task RegisterAsync_WithValidCredentials_ShouldReturnSuccessResult()
+        public async Task UTCID01_RegisterAsync_WithValidRequest_ShouldReturnSuccess()
         {
+            // Arrange
             var request = new RegisterRequest
             {
                 FullName = "John Doe",
-                Email = "johndoe@example.com",
-                Password = "StrongPassword123!",
-                ConfirmPassword = "StrongPassword123!",
+                Email = "test@gmail.com",
+                Password = "Pass123",
+                ConfirmPassword = "Pass123",
                 PhoneNumber = "+1234567890",
-                UserInterests = new List<UserInterest>
-                {
-                    
+                UserInterests = new List<UserInterest>{
+                    new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedCities>
-                {
-                    new InterestedCities{ CityName = "HoChiMinh" }
+                InterestedCities = new List<InterestedCities>{
+                    new InterestedCities { CityName = "HoChiMinh"}
                 },
-                ParticipationFrequency = ParticipationFrequency.Monthly,
-                BudgetOption = BudgetOption.From500kTo2M,
+                ParticipationFrequency = ParticipationFrequency.Occasionally,
+                BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
                 IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = false
+                IsSmsNotificationEnabled = true
             };
+            var user = new User { Id = Guid.NewGuid(), Email = request.Email, IsActive = false };
+            var role = new Role { Id = Guid.NewGuid(), Name = "User" };
+            var otpResult = Result.Success();
 
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = request.Email,
-                FullName = request.FullName,
-                IsActive = true
-            };
 
-            var accessToken = "access-token";
-            var refreshToken = "refresh-token";
-
+            _mockCacheService.Setup(x => x.SetAsync($"Register {request.Email}", It.IsAny<string>(), It.IsAny<TimeSpan>()));
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
+                           .Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.RoleRepository.Query(false))
+                           .Returns(new List<Role> { role }.AsQueryable().BuildMockDbSet().Object);
             _mockMapper.Setup(x => x.Map<User>(request)).Returns(user);
-            _mockJwtService.Setup(x => x.GenerateAccessToken(user)).Returns(accessToken);
-            _mockJwtService.Setup(x => x.GenerateRefreshToken()).Returns(refreshToken);
-            _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.AddAsync(It.IsAny<RefreshToken>()));
+            _mockUnitOfWork.Setup(x => x.UserRepository.AddAsync(It.IsAny<User>())).ReturnsAsync(user);
+            _mockEmailService.Setup(x => x.SendOtpAsync(request.Email, It.IsAny<MimeMessage>())).ReturnsAsync(otpResult);
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 
+            // Act
             var result = await _authService.RegisterAsync(request);
 
-
-            result.Should().NotBeNull();
+            // Assert
             result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.UserRepository.AddAsync(It.Is<User>(u =>
+                u.Email == request.Email && u.IsActive == false && u.RoleId == role.Id)), Times.Once());
+            _mockCacheService.Verify(x => x.SetAsync($"Register {request.Email}", It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Once()); 
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
 
-        [Fact]
-        public async Task RegisterAsync_WithExistingEmail_ShouldReturnFailure()
+            [Fact]
+        public async Task UTCID02_RegisterAsync_WithExistingEmail_ShouldReturnFailure()
         {
+            // Arrange
             var request = new RegisterRequest
             {
                 FullName = "John Doe",
-                Email = "johndoe@example.com",
-                Password = "StrongPassword123!",
-                ConfirmPassword = "StrongPassword123!",
+                Email = "test@gmail.com",
+                Password = "Pass123",
+                ConfirmPassword = "Pass123",
                 PhoneNumber = "+1234567890",
-                UserInterests = new List<UserInterest>
-                {
+                UserInterests = new List<UserInterest>{
+                    new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedCities>
-                {
-                    new InterestedCities{ CityName = "Hanoi" },
-                    new InterestedCities{ CityName = "HoChiMinh" }
+                InterestedCities = new List<InterestedCities>{
+                    new InterestedCities { CityName = "HoChiMinh"}
                 },
-                ParticipationFrequency = ParticipationFrequency.Monthly,
-                BudgetOption = BudgetOption.From500kTo2M,
+                ParticipationFrequency = ParticipationFrequency.Occasionally,
+                BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
                 IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = false
+                IsSmsNotificationEnabled = true
             };
+            var existingUser = new User { Id = Guid.NewGuid(), Email = request.Email };
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
+                           .Returns(new List<User> { existingUser }.AsQueryable().BuildMockDbSet().Object);
 
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = request.Email,
-                FullName = request.FullName,
-                IsActive = true
-            };
-
+            // Act
             var result = await _authService.RegisterAsync(request);
 
-
-            result.Should().NotBeNull();
+            // Assert
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("Email address is already registered");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
         [Fact]
-        public async Task RegisterAsync_WhenCreateUserFails_ShouldReturnFailure()
+        public async Task UTCID03_RegisterAsync_WithNoRole_ShouldReturnFailure()
         {
+            // Arrange
             var request = new RegisterRequest
             {
                 FullName = "John Doe",
-                Email = "johndoe@example.com",
-                Password = "StrongPassword123!",
-                ConfirmPassword = "StrongPassword123!",
+                Email = "test@gmail.com",
+                Password = "Pass123",
+                ConfirmPassword = "Pass123",
                 PhoneNumber = "+1234567890",
-                UserInterests = new List<UserInterest>
-                {
+                UserInterests = new List<UserInterest>{
+                    new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedCities>
-                {
-                    new InterestedCities{ CityName = "Hanoi" },
-                    new InterestedCities{ CityName = "HoChiMinh" }
+                InterestedCities = new List<InterestedCities>{
+                    new InterestedCities { CityName = "HoChiMinh"}
                 },
-                ParticipationFrequency = ParticipationFrequency.Monthly,
-                BudgetOption = BudgetOption.From500kTo2M,
+                ParticipationFrequency = ParticipationFrequency.Occasionally,
+                BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
                 IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = false
+                IsSmsNotificationEnabled = true
             };
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
+                           .Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.RoleRepository.Query(false))
+                           .Returns(new List<Role>().AsQueryable().BuildMockDbSet().Object);
 
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = request.Email,
-                FullName = request.FullName,
-                IsActive = true
-            };
-
-            _mockMapper.Setup(x => x.Map<User>(request)).Returns(user);
-
+            // Act
             var result = await _authService.RegisterAsync(request);
 
-
-            result.Should().NotBeNull();
+            // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Failed to create user account");
+            result.Error!.Message.Should().Be("Not found role");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        [Fact]
+        public async Task UTCID04_RegisterAsync_WithFailedOtpSend_ShouldReturnFailure()
+        {
+            // Arrange
+            var request = new RegisterRequest
+            {
+                FullName = "John Doe",
+                Email = "test@gmail.com",
+                Password = "Pass123",
+                ConfirmPassword = "Pass123",
+                PhoneNumber = "+1234567890",
+                UserInterests = new List<UserInterest>{
+                    new UserInterest { InterestName = "book"}
+                },
+                InterestedCities = new List<InterestedCities>{
+                    new InterestedCities { CityName = "HoChiMinh"}
+                },
+                ParticipationFrequency = ParticipationFrequency.Occasionally,
+                BudgetOption = BudgetOption.Flexible,
+                IsEmailNotificationEnabled = true,
+                IsPushNotificationEnabled = true,
+                IsSmsNotificationEnabled = true
+            };
+            var user = new User { Id = Guid.NewGuid(), Email = request.Email, IsActive = false };
+            var role = new Role { Id = Guid.NewGuid(), Name = "User" };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
+                           .Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.RoleRepository.Query(false))
+                           .Returns(new List<Role> { role }.AsQueryable().BuildMockDbSet().Object);
+            _mockMapper.Setup(x => x.Map<User>(request)).Returns(user);
+            _mockUnitOfWork.Setup(x => x.UserRepository.AddAsync(It.IsAny<User>())).ReturnsAsync(user);
+            _mockEmailService.Setup(x => x.SendOtpAsync(request.Email, It.IsAny<MimeMessage>()))
+                            .ReturnsAsync(ErrorResponse.FailureResult("Email send failed", ErrorCodes.InternalServerError));
+            _mockUnitOfWork.Setup(x => x.UserRepository.DeleteAsync(It.IsAny<User>()));
+
+            // Act
+            var result = await _authService.RegisterAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Failed to send email");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
+            _mockUnitOfWork.Verify(x => x.UserRepository.DeleteAsync(It.Is<User>(u => u.Id == user.Id)), Times.Once());
+            _mockCacheService.Verify(x => x.SetAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Never());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID05_RegisterAsync_WithNullRequest_ShouldReturnFailure()
+        {
+            // Act
+            var result = await _authService.RegisterAsync(null!);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid input");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
         [Fact]
-        public async Task RegisterAsync_WhenAddToRoleFails_ShouldReturnFailure()
+        public async Task UTCID06_RegisterAsync_WithEmptyFullName_ShouldReturnFailure()
         {
+            // Arrange
+            var request = new RegisterRequest
+            {
+                FullName = "",
+                Email = "test@gmail.com",
+                Password = "Pass123",
+                ConfirmPassword = "Pass123",
+                PhoneNumber = "+1234567890",
+                UserInterests = new List<UserInterest>{
+                    new UserInterest { InterestName = "book"}
+                },
+                InterestedCities = new List<InterestedCities>{
+                    new InterestedCities { CityName = "HoChiMinh"}
+                },
+                ParticipationFrequency = ParticipationFrequency.Occasionally,
+                BudgetOption = BudgetOption.Flexible,
+                IsEmailNotificationEnabled = true,
+                IsPushNotificationEnabled = true,
+                IsSmsNotificationEnabled = true
+            };
+
+            // Act
+            var result = await _authService.RegisterAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID07_RegisterAsync_WithEmptyEmail_ShouldReturnFailure()
+        {
+            // Arrange
             var request = new RegisterRequest
             {
                 FullName = "John Doe",
-                Email = "johndoe@example.com",
-                Password = "StrongPassword123!",
-                ConfirmPassword = "StrongPassword321!",
+                Email = "",
+                Password = "Pass123",
+                ConfirmPassword = "Pass123",
                 PhoneNumber = "+1234567890",
-                UserInterests = new List<UserInterest>
-                {
+                UserInterests = new List<UserInterest>{
+                    new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedCities>
-                {
-                    new InterestedCities{ CityName = "Hanoi" },
-                    new InterestedCities{ CityName = "HoChiMinh" }
+                InterestedCities = new List<InterestedCities>{
+                    new InterestedCities { CityName = "HoChiMinh"}
                 },
-                ParticipationFrequency = ParticipationFrequency.Monthly,
-                BudgetOption = BudgetOption.From500kTo2M,
+                ParticipationFrequency = ParticipationFrequency.Occasionally,
+                BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
                 IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = false
+                IsSmsNotificationEnabled = true
             };
 
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = request.Email,
-                FullName = request.FullName,
-                IsActive = true
-            };
-
-            var roles = new List<string> { "User" };
-
-            _mockMapper.Setup(x => x.Map<User>(request)).Returns(user);
+            // Act
             var result = await _authService.RegisterAsync(request);
 
-
-            result.Should().NotBeNull();
+            // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Failed to assign role to user");
+            result.Error!.Message.Should().Be("Invalid input");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID08_RegisterAsync_WithInvalidEmailFormat_ShouldReturnFailure()
+        {
+            // Arrange
+            var request = new RegisterRequest
+            {
+                FullName = "John Doe",
+                Email = "invalid-email",
+                Password = "Pass123",
+                ConfirmPassword = "Pass123",
+                PhoneNumber = "+1234567890",
+                UserInterests = new List<UserInterest>{
+                    new UserInterest { InterestName = "book"}
+                },
+                InterestedCities = new List<InterestedCities>{
+                    new InterestedCities { CityName = "HoChiMinh"}
+                },
+                ParticipationFrequency = ParticipationFrequency.Occasionally,
+                BudgetOption = BudgetOption.Flexible,
+                IsEmailNotificationEnabled = true,
+                IsPushNotificationEnabled = true,
+                IsSmsNotificationEnabled = true
+            };
+
+            // Act
+            var result = await _authService.RegisterAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Invalid email format");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID09_RegisterAsync_WithEmptyPassword_ShouldReturnFailure()
+        {
+            // Arrange
+            var request = new RegisterRequest
+            {
+                FullName = "John Doe",
+                Email = "test@gmail.com",
+                Password = "",
+                ConfirmPassword = "",
+                PhoneNumber = "+1234567890",
+                UserInterests = new List<UserInterest>{
+                    new UserInterest { InterestName = "book"}
+                },
+                InterestedCities = new List<InterestedCities>{
+                    new InterestedCities { CityName = "HoChiMinh"}
+                },
+                ParticipationFrequency = ParticipationFrequency.Occasionally,
+                BudgetOption = BudgetOption.Flexible,
+                IsEmailNotificationEnabled = true,
+                IsPushNotificationEnabled = true,
+                IsSmsNotificationEnabled = true
+            };
+
+            // Act
+            var result = await _authService.RegisterAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID10_RegisterAsync_WithMismatchedConfirmPassword_ShouldReturnFailure()
+        {
+            // Arrange
+            var request = new RegisterRequest
+            {
+                FullName = "John Doe",
+                Email = "test@gmail.com",
+                Password = "Pass123",
+                ConfirmPassword = "Pass124",
+                PhoneNumber = "+1234567890",
+                UserInterests = new List<UserInterest>{
+                    new UserInterest { InterestName = "book"}
+                },
+                InterestedCities = new List<InterestedCities>{
+                    new InterestedCities { CityName = "HoChiMinh"}
+                },
+                ParticipationFrequency = ParticipationFrequency.Occasionally,
+                BudgetOption = BudgetOption.Flexible,
+                IsEmailNotificationEnabled = true,
+                IsPushNotificationEnabled = true,
+                IsSmsNotificationEnabled = true
+            };
+
+            // Act
+            var result = await _authService.RegisterAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Password and confirm password do not match");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID11_RegisterAsync_WithInvalidPhoneNumber_ShouldReturnFailure()
+        {
+            // Arrange
+            var request = new RegisterRequest
+            {
+                FullName = "John Doe",
+                Email = "test@gmail.com",
+                Password = "Pass123",
+                ConfirmPassword = "Pass123",
+                PhoneNumber = "invalid",
+                UserInterests = new List<UserInterest>{
+                    new UserInterest { InterestName = "book"}
+                },
+                InterestedCities = new List<InterestedCities>{
+                    new InterestedCities { CityName = "HoChiMinh"}
+                },
+                ParticipationFrequency = ParticipationFrequency.Occasionally,
+                BudgetOption = BudgetOption.Flexible,
+                IsEmailNotificationEnabled = true,
+                IsPushNotificationEnabled = true,
+                IsSmsNotificationEnabled = true
+            };
+
+            // Act
+            var result = await _authService.RegisterAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid phone number format");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID12_RegisterAsync_WithNullPhoneNumber_ShouldReturnSuccess()
+        {
+            // Arrange
+            var request = new RegisterRequest
+            {
+                FullName = "John Doe",
+                Email = "test@gmail.com",
+                Password = "Pass123",
+                ConfirmPassword = "Pass123",
+                PhoneNumber = null,
+                UserInterests = new List<UserInterest>{
+                    new UserInterest { InterestName = "book"}
+                },
+                InterestedCities = new List<InterestedCities>{
+                    new InterestedCities { CityName = "HoChiMinh"}
+                },
+                ParticipationFrequency = ParticipationFrequency.Occasionally,
+                BudgetOption = BudgetOption.Flexible,
+                IsEmailNotificationEnabled = true,
+                IsPushNotificationEnabled = true,
+                IsSmsNotificationEnabled = true
+            };
+            var user = new User { Id = Guid.NewGuid(), Email = request.Email, IsActive = false };
+            var role = new Role { Id = Guid.NewGuid(), Name = "User" };
+            var otpResult = Result.Success();
+
+            _mockCacheService.Setup(x => x.SetAsync($"Register {request.Email}", It.IsAny<string>(), It.IsAny<TimeSpan>()));
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
+                           .Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.RoleRepository.Query(false))
+                           .Returns(new List<Role> { role }.AsQueryable().BuildMockDbSet().Object);
+            _mockMapper.Setup(x => x.Map<User>(request)).Returns(user);
+            _mockUnitOfWork.Setup(x => x.UserRepository.AddAsync(It.IsAny<User>())).ReturnsAsync(user);
+            _mockEmailService.Setup(x => x.SendOtpAsync(request.Email, It.IsAny<MimeMessage>())).ReturnsAsync(otpResult);
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+
+            // Act
+            var result = await _authService.RegisterAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.UserRepository.AddAsync(It.IsAny<User>()), Times.Once());
+            _mockCacheService.Verify(x => x.SetAsync($"Register {request.Email}", It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Once()); 
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
+        }
+
+        [Fact]
+        public async Task UTCID13_RegisterAsync_WithInvalidParticipationFrequency_ShouldReturnFailure()
+        {
+            // Arrange
+            var request = new RegisterRequest
+            {
+                FullName = "John Doe",
+                Email = "test@gmail.com",
+                Password = "Pass123",
+                ConfirmPassword = "Pass123",
+                PhoneNumber = "+1234567890",
+                UserInterests = new List<UserInterest>{
+                    new UserInterest { InterestName = "book"}
+                },
+                InterestedCities = new List<InterestedCities>{
+                    new InterestedCities { CityName = "HoChiMinh"}
+                },
+                IsEmailNotificationEnabled = true,
+                IsPushNotificationEnabled = true,
+                IsSmsNotificationEnabled = true,
+                ParticipationFrequency = (ParticipationFrequency)0, 
+                BudgetOption = BudgetOption.From500kTo2M
+            };
+
+            // Act
+            var result = await _authService.RegisterAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("The field ParticipationFrequency must be between 1 and 4");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID14_RegisterAsync_WithInvalidBudgetOption_ShouldReturnFailure()
+        {
+            // Arrange
+            var request = new RegisterRequest
+            {
+                FullName = "John Doe",
+                Email = "test@gmail.com",
+                Password = "Pass123",
+                ConfirmPassword = "Pass123",
+                PhoneNumber = "+1234567890",
+                UserInterests = new List<UserInterest>{
+                    new UserInterest { InterestName = "book"}
+                },
+                InterestedCities = new List<InterestedCities>{
+                    new InterestedCities { CityName = "HoChiMinh"}
+                },
+                IsEmailNotificationEnabled = true,
+                IsPushNotificationEnabled = true,
+                IsSmsNotificationEnabled = true,
+                ParticipationFrequency = ParticipationFrequency.Occasionally,
+                BudgetOption = (BudgetOption)4 
+            };
+
+            // Act
+            var result = await _authService.RegisterAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("The field BudgetOption must be between 0 and 3");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID15_RegisterAsync_WithAddUserFailed_ShouldReturnFailure()
+        {
+            // Arrange
+            var request = new RegisterRequest {
+                FullName = "John Doe",
+                Email = "test@gmail.com",
+                Password = "Pass123",
+                ConfirmPassword = "Pass123",
+                PhoneNumber = "+1234567890",
+                UserInterests = new List<UserInterest>{
+                    new UserInterest { InterestName = "book"}
+                },
+                InterestedCities = new List<InterestedCities>{
+                    new InterestedCities { CityName = "HoChiMinh"}
+                },
+                ParticipationFrequency = ParticipationFrequency.Occasionally,
+                BudgetOption = BudgetOption.Flexible,
+                IsEmailNotificationEnabled = true,
+                IsPushNotificationEnabled = true,
+                IsSmsNotificationEnabled = true
+            };
+            var role = new Role { Id = Guid.NewGuid(), Name = "User" };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.RoleRepository.Query(false)).Returns(new List<Role> { role }.AsQueryable().BuildMockDbSet().Object);
+            _mockMapper.Setup(x => x.Map<User>(request)).Returns(new User { Email = request.Email });
+            _mockUnitOfWork.Setup(x => x.UserRepository.AddAsync(It.IsAny<User>())).ReturnsAsync((User)null!); 
+
+            // Act
+            var result = await _authService.RegisterAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Failed to create user account");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            _mockEmailService.Verify(x => x.SendOtpAsync(It.IsAny<string>(), It.IsAny<MimeMessage>()), Times.Never()); 
+            _mockCacheService.Verify(x => x.SetAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Never()); 
         }
         #endregion
 
         #region RefreshToken
         [Fact]
-        public async Task RefreshTokenAsync_WithValidCredentials_ShouldReturnSuccessResult()
+        public async Task UTCID01_RefreshTokenAsync_WithValidActiveToken_ShouldReturnSuccess()
         {
-            var request = "refresh-token";
-
+            // Arrange
+            var refreshToken = "validToken";
             var user = new User
             {
                 Id = Guid.NewGuid(),
-                Email = "test@gmail.com",
-                FullName = "Test User",
-                IsActive = true
+                Role = new Role { Id = Guid.NewGuid(), Name = "User" },
+                OrganizerProfile = new OrganizerProfile
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = Guid.NewGuid(),
+                    OrganizationType = OrganizationType.NonProfit,
+                    EventFrequency = EventFrequency.Monthly,
+                    EventSize = EventSize.Small,
+                    OrganizerType = OrganizerType.Individual,
+                    EventExperienceLevel = EventExperienceLevel.Beginner,
+                    ContactName = "John Doe",
+                    ContactEmail = "john@example.com",
+                    ContactPhone = "+1234567890",
+                    Address = "123 Main St",
+                    Status = ConfirmStatus.NeedConfirm
+                }
             };
-            var roles = new List<string> { "User" };
-
-            var accessToken = "new-access-token";
-            var refreshToken = "new-refresh-token";
-
-            var exitingToken = new RefreshToken
-            {
-                Token = request,
-                User = user,
-                IsRevoked = false,
-                ExpiresAt = DateTime.UtcNow.AddDays(1)
-            };
-
-            var newTokenEntity = new RefreshToken
+            var tokenEntity = new RefreshToken
             {
                 Token = refreshToken,
+                IsDeleted = false,
+                ExpiresAt = DateTime.UtcNow.AddDays(1),
                 UserId = user.Id,
-                ExpiresAt = DateTime.UtcNow.AddDays(7)
+                User = user
             };
 
-            var refreshTokens = new List<RefreshToken> { exitingToken }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(r => r.RefreshTokenRepository.Query(false)).Returns(refreshTokens.Object);
+            var newAccessToken = "newAccessToken";
+            var newRefreshToken = "newRefreshToken";
 
-            _mockJwtService.Setup(x => x.GenerateAccessToken(exitingToken.User)).Returns(accessToken);
-            _mockJwtService.Setup(x => x.GenerateRefreshToken()).Returns(refreshToken);
-            _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.UpdateAsync(exitingToken));
-            _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.AddAsync(newTokenEntity));
-            _mockUnitOfWork.Setup(x => x.SaveChangesAsync());
+            _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.Query(false))
+                           .Returns(new List<RefreshToken> { tokenEntity }.AsQueryable().BuildMockDbSet().Object);
+            _mockJwtService.Setup(x => x.GenerateAccessToken(user)).Returns(newAccessToken);
+            _mockJwtService.Setup(x => x.GenerateRefreshToken()).Returns(newRefreshToken);
+            _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.UpdateAsync(It.IsAny<RefreshToken>()));
+            _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.DeleteAsync(It.IsAny<RefreshToken>()));
+            _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.AddAsync(It.IsAny<RefreshToken>()));
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 
+            // Act
+            var result = await _authService.RefreshTokenAsync(refreshToken);
 
-            var result = await _authService.RefreshTokenAsync(request);
-
-
-            result.Should().NotBeNull();
+            // Assert
             result.IsSuccess.Should().BeTrue();
-            result.Value!.AccessToken.Should().Be(accessToken);
-            result.Value!.RefreshToken.Should().Be(refreshToken);
+            result.Value.Should().NotBeNull();
+            result.Value!.AccessToken.Should().Be(newAccessToken);
+            result.Value!.RefreshToken.Should().Be(newRefreshToken);
+            result.Value!.ExpiresAt.Should().BeCloseTo(DateTime.UtcNow.AddHours(1), TimeSpan.FromSeconds(5));
+            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.DeleteAsync(It.Is<RefreshToken>(t => t.Token == refreshToken)), Times.Once());
+            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.AddAsync(It.Is<RefreshToken>(t => t.Token == newRefreshToken && t.UserId == user.Id && t.ExpiresAt.Date == DateTime.UtcNow.AddDays(7).Date)), Times.Once());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
 
         [Fact]
-        public async Task RefreshTokenAsync_WithTokenIsRevoked_ShouldReturnFailureResult()
+        public async Task UTCID02_RefreshTokenAsync_WithNonExistentToken_ShouldReturnFailure()
         {
-            var request = "refresh-token";
+            // Arrange
+            var refreshToken = "invalidToken";
+            _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.Query(false))
+                           .Returns(new List<RefreshToken>().AsQueryable().BuildMockDbSet().Object);
 
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = "test@gmail.com",
-                FullName = "Test User",
-                IsActive = true
-            };
-            var roles = new List<string> { "User" };
+            // Act
+            var result = await _authService.RefreshTokenAsync(refreshToken);
 
-            var exitingToken = new RefreshToken
-            {
-                Token = request,
-                User = user,
-                IsRevoked = true,
-                ExpiresAt = DateTime.UtcNow.AddDays(1)
-            };
-
-            var refreshTokens = new List<RefreshToken> { exitingToken }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(r => r.RefreshTokenRepository.Query(false)).Returns(refreshTokens.Object);
-            
-            var result = await _authService.RefreshTokenAsync(request);
-
-
-            result.Should().NotBeNull();
+            // Assert
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("Invalid or expired refresh token");
             result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
+            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.UpdateAsync(It.IsAny<RefreshToken>()), Times.Never());
+            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.AddAsync(It.IsAny<RefreshToken>()), Times.Never());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
 
         [Fact]
-        public async Task RefreshTokenAsync_WithExpiredToken_ShouldReturnFailureResult()
+        public async Task UTCID03_RefreshTokenAsync_WithRevokedToken_ShouldReturnFailure()
         {
-            var request = "refresh-token";
-
+            // Arrange
+            var refreshToken = "revokedToken";
             var user = new User
             {
                 Id = Guid.NewGuid(),
-                Email = "test@gmail.com",
-                FullName = "Test User",
-                IsActive = true
+                Role = new Role { Id = Guid.NewGuid(), Name = "User" },
+                OrganizerProfile = new OrganizerProfile
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = Guid.NewGuid(),
+                    OrganizationType = OrganizationType.NonProfit,
+                    EventFrequency = EventFrequency.Monthly,
+                    EventSize = EventSize.Small,
+                    OrganizerType = OrganizerType.Individual,
+                    EventExperienceLevel = EventExperienceLevel.Beginner,
+                    ContactName = "John Doe",
+                    ContactEmail = "john@example.com",
+                    ContactPhone = "+1234567890",
+                    Address = "123 Main St",
+                    Status = ConfirmStatus.NeedConfirm
+                }
             };
-            var roles = new List<string> { "User" };
-
-            var exitingToken = new RefreshToken
+            var tokenEntity = new RefreshToken
             {
-                Token = request,
-                User = user,
-                IsRevoked = false,
-                ExpiresAt = DateTime.UtcNow.AddDays(-1)
+                Token = refreshToken,
+                IsDeleted = true,
+                ExpiresAt = DateTime.UtcNow.AddDays(1),
+                UserId = user.Id,
+                User = user
             };
 
-            var refreshTokens = new List<RefreshToken> { exitingToken }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(r => r.RefreshTokenRepository.Query(false)).Returns(refreshTokens.Object);
+            _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.Query(false))
+                           .Returns(new List<RefreshToken> { tokenEntity }.AsQueryable().BuildMockDbSet().Object);
 
-            var result = await _authService.RefreshTokenAsync(request);
+            // Act
+            var result = await _authService.RefreshTokenAsync(refreshToken);
 
-
-            result.Should().NotBeNull();
+            // Assert
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("Invalid or expired refresh token");
             result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
+            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.UpdateAsync(It.IsAny<RefreshToken>()), Times.Never());
+            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.AddAsync(It.IsAny<RefreshToken>()), Times.Never());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
 
         [Fact]
-        public async Task RefreshTokenAsync_WithNoRole_ShouldReturnFailureResult()
+        public async Task UTCID04_RefreshTokenAsync_WithNullToken_ShouldReturnFailure()
         {
-            var request = "refresh-token";
+            // Arrange
+            string? refreshToken = null;
 
+            // Act
+            var result = await _authService.RefreshTokenAsync(refreshToken!);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid refresh token");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
+            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.Query(false), Times.Never());
+            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.UpdateAsync(It.IsAny<RefreshToken>()), Times.Never());
+            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.AddAsync(It.IsAny<RefreshToken>()), Times.Never());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID05_RefreshTokenAsync_WithExpiredToken_ShouldReturnFailure()
+        {
+            // Arrange
+            var refreshToken = "expiredToken";
             var user = new User
             {
                 Id = Guid.NewGuid(),
-                Email = "test@gmail.com",
-                FullName = "Test User",
-                IsActive = true
+                Role = new Role { Id = Guid.NewGuid(), Name = "User" },
+                OrganizerProfile = new OrganizerProfile
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = Guid.NewGuid(),
+                    OrganizationType = OrganizationType.NonProfit,
+                    EventFrequency = EventFrequency.Monthly,
+                    EventSize = EventSize.Small,
+                    OrganizerType = OrganizerType.Individual,
+                    EventExperienceLevel = EventExperienceLevel.Beginner,
+                    ContactName = "John Doe",
+                    ContactEmail = "john@example.com",
+                    ContactPhone = "+1234567890",
+                    Address = "123 Main St",
+                    Status = ConfirmStatus.NeedConfirm
+                }
             };
-            var roles = new List<string> { "User" };
-
-            var exitingToken = new RefreshToken
+            var tokenEntity = new RefreshToken
             {
-                Token = request,
-                User = user,
-                IsRevoked = false,
-                ExpiresAt = DateTime.UtcNow.AddDays(1)
+                Token = refreshToken,
+                IsDeleted = false,
+                ExpiresAt = DateTime.UtcNow.AddSeconds(-1), 
+                UserId = user.Id,
+                User = user
             };
 
-            var refreshTokens = new List<RefreshToken> { exitingToken }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(r => r.RefreshTokenRepository.Query(false)).Returns(refreshTokens.Object);
+            _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.Query(false))
+                           .Returns(new List<RefreshToken> { tokenEntity }.AsQueryable().BuildMockDbSet().Object);
 
+            // Act
+            var result = await _authService.RefreshTokenAsync(refreshToken);
 
-            var result = await _authService.RefreshTokenAsync(request);
-
-
-            result.Should().NotBeNull();
+            // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Role not found");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
+            result.Error!.Message.Should().Be("Invalid or expired refresh token");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
+            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.UpdateAsync(It.IsAny<RefreshToken>()), Times.Never());
+            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.AddAsync(It.IsAny<RefreshToken>()), Times.Never());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
         #endregion
 
         #region RevokeRefreshToken
         [Fact]
-        public async Task RevokeRefreshTokenAsync_WithValidCredentials_ShouldReturnSuccessResult()
+        public async Task UTCID01_RevokeRefreshTokenAsync_WithValidActiveToken_ShouldReturnSuccess()
         {
-            var request = "refresh-token";
-
-            var user = new User
+            // Arrange
+            var refreshToken = "validToken";
+            var tokenEntity = new RefreshToken
             {
-                Id = Guid.NewGuid(),
-                Email = "test@gmail.com",
-                FullName = "Test User",
-                IsActive = true
+                Token = refreshToken,
+                IsDeleted = false,
+                ExpiresAt = DateTime.UtcNow.AddDays(1),
+                UserId = Guid.NewGuid()
             };
 
-            var exitingToken = new RefreshToken
-            {
-                Token = request,
-                User = user,
-                IsRevoked = false,
-                ExpiresAt = DateTime.UtcNow.AddDays(1)
-            };
+            _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.Query(false))
+                           .Returns(new List<RefreshToken> { tokenEntity }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.DeleteAsync(It.IsAny<RefreshToken>()));
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 
-            var refreshTokens = new List<RefreshToken> { exitingToken }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(r => r.RefreshTokenRepository.Query(false)).Returns(refreshTokens.Object);
+            // Act
+            var result = await _authService.RevokeRefreshTokenAsync(refreshToken);
 
-            _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.UpdateAsync(exitingToken));
-            _mockUnitOfWork.Setup(x => x.SaveChangesAsync());
-
-            var result = await _authService.RevokeRefreshTokenAsync(request);
-
-            result.Should().NotBeNull();
+            // Assert
             result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.DeleteAsync(It.Is<RefreshToken>(t => t.Token == refreshToken)), Times.Once()); 
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
 
         [Fact]
-        public async Task RevokeRefreshTokenAsync_WithInValidCredentials_ShouldReturnFailureResult()
+        public async Task UTCID02_RevokeRefreshTokenAsync_WithNonExistentToken_ShouldReturnFailure()
         {
-            var request = "refresh-token";
+            // Arrange
+            var refreshToken = "invalidToken";
+            _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.Query(false))
+                           .Returns(new List<RefreshToken>().AsQueryable().BuildMockDbSet().Object);
 
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = "test@gmail.com",
-                FullName = "Test User",
-                IsActive = true
-            };
+            // Act
+            var result = await _authService.RevokeRefreshTokenAsync(refreshToken);
 
-            var exitingToken = new RefreshToken
-            {
-                Token = "old-refresh-token",
-                User = user,
-                IsRevoked = false,
-                ExpiresAt = DateTime.UtcNow.AddDays(1)
-            };
-
-            var refreshTokens = new List<RefreshToken> { exitingToken }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(r => r.RefreshTokenRepository.Query(false)).Returns(refreshTokens.Object);
-
-            var result = await _authService.RevokeRefreshTokenAsync(request);
-
-            result.Should().NotBeNull();
+            // Assert
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("Invalid or expired refresh token");
             result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
+            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.DeleteAsync(It.IsAny<RefreshToken>()), Times.Never());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
 
         [Fact]
-        public async Task RevokeRefreshTokenAsync_WithTokenIsRevoked_ShouldReturnFailureResult()
+        public async Task UTCID03_RevokeRefreshTokenAsync_WithRevokedToken_ShouldReturnFailure()
         {
-            var request = "refresh-token";
-
-            var user = new User
+            // Arrange
+            var refreshToken = "revokedToken";
+            var tokenEntity = new RefreshToken
             {
-                Id = Guid.NewGuid(),
-                Email = "test@gmail.com",
-                FullName = "Test User",
-                IsActive = true
+                Token = refreshToken,
+                IsDeleted = true,
+                ExpiresAt = DateTime.UtcNow.AddDays(1),
+                UserId = Guid.NewGuid()
             };
 
-            var exitingToken = new RefreshToken
-            {
-                Token = request,
-                User = user,
-                IsRevoked = true,
-                ExpiresAt = DateTime.UtcNow.AddDays(1)
-            };
+            _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.Query(false))
+                           .Returns(new List<RefreshToken> { tokenEntity }.AsQueryable().BuildMockDbSet().Object);
 
-            var refreshTokens = new List<RefreshToken> { exitingToken }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(r => r.RefreshTokenRepository.Query(false)).Returns(refreshTokens.Object);
+            // Act
+            var result = await _authService.RevokeRefreshTokenAsync(refreshToken);
 
-            var result = await _authService.RevokeRefreshTokenAsync(request);
-
-            result.Should().NotBeNull();
+            // Assert
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("Invalid or expired refresh token");
             result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
+            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.DeleteAsync(It.IsAny<RefreshToken>()), Times.Never());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
 
         [Fact]
-        public async Task RevokeRefreshTokenAsync_WithTokenExpired_ShouldReturnFailureResult()
+        public async Task UTCID04_RevokeRefreshTokenAsync_WithNullToken_ShouldReturnFailure()
         {
-            var request = "refresh-token";
+            // Arrange
+            string? refreshToken = null;
 
-            var user = new User
+            // Act
+            var result = await _authService.RevokeRefreshTokenAsync(refreshToken!);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid refresh token");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
+            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.Query(false), Times.Never());
+            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.DeleteAsync(It.IsAny<RefreshToken>()), Times.Never());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID05_RevokeRefreshTokenAsync_WithExpiredToken_ShouldReturnFailure()
+        {
+            // Arrange
+            var refreshToken = "expiredToken";
+            var tokenEntity = new RefreshToken
             {
-                Id = Guid.NewGuid(),
-                Email = "test@gmail.com",
-                FullName = "Test User",
-                IsActive = true
+                Token = refreshToken,
+                IsDeleted = false,
+                ExpiresAt = DateTime.UtcNow.AddSeconds(-1), // Expired
+                UserId = Guid.NewGuid()
             };
 
-            var exitingToken = new RefreshToken
-            {
-                Token = request,
-                User = user,
-                IsRevoked = false,
-                ExpiresAt = DateTime.UtcNow.AddDays(-1)
-            };
+            _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.Query(false))
+                           .Returns(new List<RefreshToken> { tokenEntity }.AsQueryable().BuildMockDbSet().Object);
 
-            var refreshTokens = new List<RefreshToken> { exitingToken }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(r => r.RefreshTokenRepository.Query(false)).Returns(refreshTokens.Object);
+            // Act
+            var result = await _authService.RevokeRefreshTokenAsync(refreshToken);
 
-            var result = await _authService.RevokeRefreshTokenAsync(request);
-
-            result.Should().NotBeNull();
+            // Assert
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("Invalid or expired refresh token");
             result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
+            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.DeleteAsync(It.IsAny<RefreshToken>()), Times.Never());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
         #endregion
+
+        #region VerifyOTP
+        [Fact]
+        public async Task UTCID01_VerifyOTPAsync_WithValidRequestAndOTP_ShouldReturnSuccess()
+        {
+            // Arrange
+            var request = new VerifyOTPRequest { Email = "john@example.com", OTPCode = "123456" };
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = request.Email,
+                IsActive = false,
+                Role = new Role { Id = Guid.NewGuid(), Name = "User" },
+                OrganizerProfile = new OrganizerProfile
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = Guid.NewGuid(),
+                    OrganizationType = OrganizationType.NonProfit,
+                    EventFrequency = EventFrequency.Monthly,
+                    EventSize = EventSize.Small,
+                    OrganizerType = OrganizerType.Individual,
+                    EventExperienceLevel = EventExperienceLevel.Beginner,
+                    ContactName = "John Doe",
+                    ContactEmail = "john@example.com",
+                    ContactPhone = "+1234567890",
+                    Address = "123 Main St",
+                    Status = ConfirmStatus.NeedConfirm
+                }
+            };
+            var accessToken = "accessToken";
+            var refreshToken = "refreshToken";
+
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
+                           .Returns(new List<User> { user }.AsQueryable().BuildMockDbSet().Object);
+            _mockJwtService.Setup(x => x.GenerateAccessToken(user)).Returns(accessToken);
+            _mockJwtService.Setup(x => x.GenerateRefreshToken()).Returns(refreshToken);
+            _mockUnitOfWork.Setup(x => x.UserRepository.UpdateAsync(It.IsAny<User>()));
+            _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.AddAsync(It.IsAny<RefreshToken>()));
+            _mockCacheService.Setup(x => x.GetAsync<string>($"Register {request.Email}")).ReturnsAsync("123456");
+            _mockCacheService.Setup(x => x.RemoveAsync($"Register {request.Email}"));
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+            
+            // Act
+            var result = await _authService.VerifyOTPAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().NotBeNull();
+            result.Value!.AccessToken.Should().Be(accessToken);
+            result.Value!.RefreshToken.Should().Be(refreshToken);
+            result.Value!.ExpiresAt.Should().BeCloseTo(DateTime.UtcNow.AddHours(1), TimeSpan.FromSeconds(5));
+            _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.Is<User>(u => u.Id == user.Id && u.IsActive)), Times.Once());
+            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never()); 
+            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.AddAsync(It.Is<RefreshToken>(t => t.Token == refreshToken && t.UserId == user.Id && t.ExpiresAt.Date == DateTime.UtcNow.AddDays(7).Date)), Times.Once());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
+        }
+
+        [Fact]
+        public async Task UTCID02_VerifyOTPAsync_WithNullRequest_ShouldReturnFailure()
+        {
+            // Arrange
+            VerifyOTPRequest? request = null;
+
+            // Act
+            var result = await _authService.VerifyOTPAsync(request!);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid email or otp code");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
+            _mockUnitOfWork.Verify(x => x.UserRepository.Query(false), Times.Never());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID03_VerifyOTPAsync_WithInvalidEmail_ShouldReturnFailure()
+        {
+            // Arrange
+            var request = new VerifyOTPRequest { Email = "", OTPCode = "123456" };
+
+            // Act
+            var result = await _authService.VerifyOTPAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid email");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
+            _mockUnitOfWork.Verify(x => x.UserRepository.Query(false), Times.Never());
+            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID04_VerifyOTPAsync_WithNonExistentUser_ShouldReturnFailure()
+        {
+            // Arrange
+            var request = new VerifyOTPRequest { Email = "nonexistent@example.com", OTPCode = "123456" };
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
+                           .Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
+            _mockCacheService.Setup(x => x.GetAsync<string>($"Register {request.Email}")).ReturnsAsync("123456");
+            // Act
+            var result = await _authService.VerifyOTPAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("User not found");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID05_VerifyOTPAsync_WithNoOTP_ShouldReturnFailure()
+        {
+            // Arrange
+            var request = new VerifyOTPRequest { Email = "john@example.com", OTPCode = "123456" };
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = request.Email,
+                IsActive = false,
+                Role = new Role { Id = Guid.NewGuid(), Name = "User" },
+                OrganizerProfile = new OrganizerProfile
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = Guid.NewGuid(),
+                    OrganizationType = OrganizationType.NonProfit,
+                    EventFrequency = EventFrequency.Monthly,
+                    EventSize = EventSize.Small,
+                    OrganizerType = OrganizerType.Individual,
+                    EventExperienceLevel = EventExperienceLevel.Beginner,
+                    ContactName = "John Doe",
+                    ContactEmail = "john@example.com",
+                    ContactPhone = "+1234567890",
+                    Address = "123 Main St",
+                    Status = ConfirmStatus.NeedConfirm
+                }
+            };
+            _mockCacheService.Setup(x => x.GetAsync<string>($"Register {request.Email}")).ReturnsAsync((string)null!);
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
+                           .Returns(new List<User> { user }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _authService.VerifyOTPAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("OTP not found");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
+            _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.IsAny<User>()), Times.Never());
+            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID06_VerifyOTPAsync_WithInvalidOTPCode_ShouldReturnFailure()
+        {
+            // Arrange
+            var request = new VerifyOTPRequest { Email = "john@example.com", OTPCode = "wrongCode" };
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = request.Email,
+                IsActive = false,
+                Role = new Role { Id = Guid.NewGuid(), Name = "User" },
+                OrganizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.NonProfit, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Small, OrganizerType = OrganizerType.Individual, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "John Doe", ContactEmail = "john@example.com", ContactPhone = "+1234567890", Address = "123 Main St", Status = ConfirmStatus.NeedConfirm }
+            };
+
+            _mockCacheService.Setup(x => x.GetAsync<string>($"Register {request.Email}")).ReturnsAsync("123456");
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
+                           .Returns(new List<User> { user }.AsQueryable().BuildMockDbSet().Object);
+            _mockHasherHelper.Setup(p => p.Verify(It.IsAny<string>(), It.IsAny<string>())).Returns(false);
+
+            // Act
+            var result = await _authService.VerifyOTPAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid OTP");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
+            _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.IsAny<User>()), Times.Never());
+            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
+        }
     }
+    #endregion
 }
