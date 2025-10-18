@@ -402,7 +402,7 @@ namespace AIEvent.Application.Test.Services
             // Assert
             Assert.False(result.IsSuccess);
             Assert.NotNull(result.Error);
-            Assert.Equal(ErrorCodes.InvalidInput, result.Error.StatusCode);
+            Assert.Equal(ErrorCodes.NotFound, result.Error.StatusCode);
             Assert.Contains("Can not found", result.Error.Message, StringComparison.OrdinalIgnoreCase);
 
             _categoryRepoMock.Verify(r => r.UpdateAsync(It.IsAny<EventCategory>()), Times.Never);
@@ -436,7 +436,7 @@ namespace AIEvent.Application.Test.Services
             // Assert
             Assert.False(result.IsSuccess);
             Assert.NotNull(result.Error);
-            Assert.Equal(ErrorCodes.InvalidInput, result.Error.StatusCode);
+            Assert.Equal(ErrorCodes.NotFound, result.Error.StatusCode);
             Assert.Contains("deleted", result.Error.Message, StringComparison.OrdinalIgnoreCase);
             _categoryRepoMock.Verify(r => r.UpdateAsync(It.IsAny<EventCategory>()), Times.Never);
         }
