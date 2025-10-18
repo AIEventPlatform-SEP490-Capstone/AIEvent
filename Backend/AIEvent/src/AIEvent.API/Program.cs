@@ -63,7 +63,7 @@ namespace AIEvent.API
 
             builder.Services.AddApplicationServices(builder.Configuration)
                             .AddInfrastructureServices(builder.Configuration)
-                            .AddExternalServices(builder.Configuration);;
+                            .AddExternalServices(builder.Configuration);
 
             builder.Services.AddJwtAuthentication(builder.Configuration);
 

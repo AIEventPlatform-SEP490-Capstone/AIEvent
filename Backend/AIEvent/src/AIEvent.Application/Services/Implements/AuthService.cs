@@ -49,7 +49,9 @@ namespace AIEvent.Application.Services.Implements
             if (!isValid)
                 return ErrorResponse.FailureResult("Invalid email or password", ErrorCodes.Unauthorized);
 
-            var user = await _unitOfWork.UserRepository.Query()
+            var user = await _unitOfWork.UserRepository
+                                .Query()
+                                .AsNoTracking()
                                 .Include(u => u.OrganizerProfile)
                                 .Include(u => u.Role)
                                 .FirstOrDefaultAsync(u => u.Email == request.Email);
@@ -58,7 +60,7 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
             }
 
-            if (!_hasherHelper.Verify(request.Password ,user.PasswordHash!))
+            if (!await Task.Run(() => _hasherHelper.Verify(request.Password ,user.PasswordHash!)))
             {
                 return ErrorResponse.FailureResult("Invalid email or password", ErrorCodes.Unauthorized);
             }
