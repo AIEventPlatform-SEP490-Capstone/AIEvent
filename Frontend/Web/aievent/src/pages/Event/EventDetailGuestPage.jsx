@@ -29,6 +29,7 @@ import { Separator } from '../../components/ui/separator';
 import { useEvents } from '../../hooks/useEvents';
 import { PATH } from '../../routes/path';
 import MapDirection from '../../components/Event/MapDirection';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
 
 const EventDetailGuestPage = ({ previewData }) => {
   const { id } = useParams();
@@ -38,6 +39,7 @@ const EventDetailGuestPage = ({ previewData }) => {
   const [relatedEvents, setRelatedEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const { getEventById, getRelatedEvents, loading: eventLoading } = useEvents();
 
   useEffect(() => {
@@ -329,10 +331,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                   {[
                     { id: 'overview', label: 'Tổng quan' },
                     { id: 'description', label: 'Mô tả chi tiết' },
-                    { id: 'reviews', label: 'Đánh giá' },
-                    // Add map tab only for physical events
-                    ...((!event.isOnlineEvent || event.isOnlineEvent === false) && (event.locationName || event.address) ? 
-                      [{ id: 'map', label: 'Bản đồ & Chỉ đường' }] : [])
+                    { id: 'reviews', label: 'Đánh giá' }
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -667,34 +666,68 @@ const EventDetailGuestPage = ({ previewData }) => {
                       </div>
                     </div>
                     
-                    {/* Map Preview - Show embedded map if we have coordinates, otherwise show static link */}
+                    {/* Mini Map Preview - Show embedded map if we have coordinates, otherwise show static Leaflet map */}
                     {(event.latitude && event.longitude) ? (
-                      <div className="relative h-48 rounded-lg overflow-hidden border border-gray-200">
+                      <div className="relative h-32 rounded-lg overflow-hidden border border-gray-200">
                         <iframe
-                          src={`https://www.google.com/maps?q=${event.latitude},${event.longitude}&hl=vi&z=15&output=embed`}
+                          src={`https://www.google.com/maps?q=${event.latitude},${event.longitude}&hl=vi&z=14&output=embed`}
                           className="w-full h-full"
                           frameBorder="0"
                           allowFullScreen
-                          title="Event Location Map"
+                          title="Event Location Map Preview"
                         ></iframe>
                       </div>
                     ) : (event.address || event.locationName) ? (
-                      <div className="bg-gray-50 rounded-lg p-4 text-center">
-                        {/* <p className="text-sm text-gray-600 mb-2">
-                          {event.address || event.locationName}
-                        </p> */}
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => {
-                            const query = encodeURIComponent(event.address || event.locationName);
-                            window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
-                          }}
-                        >
-                          Xem trên Google Maps
-                        </Button>
+                      // Show static Leaflet map preview when coordinates are missing but address exists
+                      <div className="relative h-32 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="text-center">
+                            <div className="inline-block p-3 rounded-full bg-white shadow-lg mb-2">
+                              <MapPin className="h-6 w-6 text-red-500" />
+                            </div>
+                            <p className="text-xs font-medium text-gray-700 bg-white px-2 py-1 rounded shadow">
+                              {event.locationName || event.address}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-green-50 opacity-70"></div>
+                        <div className="absolute top-2 left-2 bg-white px-2 py-1 rounded text-xs font-medium text-gray-600">
+                          Leaflet
+                        </div>
+                        <div className="absolute bottom-2 right-2 bg-white px-2 py-1 rounded text-xs text-gray-500">
+                          © OpenStreetMap
+                        </div>
                       </div>
-                    ) : null}
+                    ) : (
+                      // Fallback when no location info at all
+                      <div className="relative h-32 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 flex items-center justify-center">
+                        <MapPin className="h-8 w-8 text-gray-400" />
+                        <span className="absolute bottom-2 text-xs text-gray-500">Bản đồ không khả dụng</span>
+                      </div>
+                    )}
+                    
+                    {/* View Details Button for Map */}
+                    <div className="pt-2">
+                      <Dialog open={isMapModalOpen} onOpenChange={setIsMapModalOpen}>
+                        <DialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            className="w-full"
+                            onClick={() => setIsMapModalOpen(true)}
+                          >
+                            Xem bản đồ & chỉ đường chi tiết
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle>Bản đồ & Chỉ đường</DialogTitle>
+                          </DialogHeader>
+                          <div className="py-4">
+                            <MapDirection destinationAddress={event.address || event.locationName} />
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

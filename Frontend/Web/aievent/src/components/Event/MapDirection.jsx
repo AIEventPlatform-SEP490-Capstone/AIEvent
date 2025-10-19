@@ -15,6 +15,7 @@ const MapDirection = ({ destinationAddress }) => {
   const [useCurrentLocation, setUseCurrentLocation] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [routeInfo, setRouteInfo] = useState(null); // Add state for route information
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
@@ -72,8 +73,10 @@ const MapDirection = ({ destinationAddress }) => {
   // Reverse geocode coordinates to get address
   const reverseGeocode = async (lat, lon) => {
     try {
-      // TODO: Replace with your OpenRouteService API key
-      const API_KEY = 'YOUR_OPENROUTESERVICE_API_KEY'; // Get from https://openrouteservice.org/dev/#/signup
+      // Using the provided API key
+      const API_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjQ1ZWU0MWIyMWZhYzRlZjNiMjUzOTA5NjJmMTZkYTdmIiwiaCI6Im11cm11cjY0In0='; 
+      
+      // Direct API call without proxy for reverse geocoding (this usually works better)
       const response = await fetch(
         `https://api.openrouteservice.org/geocode/reverse?api_key=${API_KEY}&point.lon=${lon}&point.lat=${lat}`,
         {
@@ -109,31 +112,61 @@ const MapDirection = ({ destinationAddress }) => {
       const coordinateRegex = /^[-+]?(?:[1-8]?\d(?:\.\d+)?|90(?:\.0+)?),\s*[-+]?(?:180(?:\.0+)?|(?:(?:1[0-7]\d)|(?:[1-9]?\d))(?:\.\d+)?)$/;
       if (coordinateRegex.test(address)) {
         const [lat, lon] = address.split(',').map(coord => parseFloat(coord.trim()));
-        // For coordinates, we reverse geocode to get a readable address
-        const readableAddress = await reverseGeocode(lat, lon);
-        return { latitude: lat, longitude: lon, address: readableAddress };
+        // For coordinates, we try to reverse geocode to get a readable address
+        // If CORS prevents this, we'll use the coordinates as the address
+        try {
+          const readableAddress = await reverseGeocode(lat, lon);
+          return { latitude: lat, longitude: lon, address: readableAddress };
+        } catch (err) {
+          // If reverse geocoding fails due to CORS, use coordinates as address
+          return { latitude: lat, longitude: lon, address: `${lat}, ${lon}` };
+        }
       }
       
-      // TODO: Replace with your OpenRouteService API key
-      const API_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjQ1ZWU0MWIyMWZhYzRlZjNiMjUzOTA5NjJmMTZkYTdmIiwiaCI6Im11cm11cjY0In0='; // Get from https://openrouteservice.org/dev/#/signup
-      const response = await fetch(
-        `https://api.openrouteservice.org/geocode/search?api_key=${API_KEY}&text=${encodeURIComponent(address)}&size=1`,
-        {
+      // Using the provided API key
+      const API_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjQ1ZWU0MWIyMWZhYzRlZjNiMjUzOTA5NjJmMTZkYTdmIiwiaCI6Im11cm11cjY0In0=';
+      
+      // Use a different approach for geocoding to avoid CORS issues
+      // Try direct call first, fallback to proxy if needed
+      try {
+        const directResponse = await fetch(
+          `https://api.openrouteservice.org/geocode/search?api_key=${API_KEY}&text=${encodeURIComponent(address)}&size=1`,
+          {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
+            }
+          }
+        );
+        
+        if (directResponse.ok) {
+          const data = await directResponse.json();
+          if (data.features && data.features.length > 0) {
+            const [longitude, latitude] = data.features[0].geometry.coordinates;
+            return { latitude, longitude, address: data.features[0].properties.label };
+          }
+        }
+      } catch (directError) {
+        console.warn('Direct geocoding failed, trying with proxy:', directError);
+        // Fallback to proxy if direct call fails
+        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+        const apiUrl = `https://api.openrouteservice.org/geocode/search?api_key=${API_KEY}&text=${encodeURIComponent(address)}&size=1`;
+        
+        const proxyResponse = await fetch(proxyUrl + apiUrl, {
           method: 'GET',
           headers: {
             'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
+            'Origin': 'http://localhost:5173' // Add origin header
+          }
+        });
+        
+        if (proxyResponse.ok) {
+          const data = await proxyResponse.json();
+          if (data.features && data.features.length > 0) {
+            const [longitude, latitude] = data.features[0].geometry.coordinates;
+            return { latitude, longitude, address: data.features[0].properties.label };
           }
         }
-      );
-      
-      if (!response.ok) {
-        throw new Error('Failed to geocode address');
-      }
-      
-      const data = await response.json();
-      if (data.features && data.features.length > 0) {
-        const [longitude, latitude] = data.features[0].geometry.coordinates;
-        return { latitude, longitude, address: data.features[0].properties.label };
       }
       
       throw new Error('Address not found');
@@ -146,33 +179,68 @@ const MapDirection = ({ destinationAddress }) => {
   // Get directions between two points using OpenRouteService Directions API
   const getDirections = async (startCoords, endCoords) => {
     try {
-      // TODO: Replace with your OpenRouteService API key
-      const API_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjQ1ZWU0MWIyMWZhYzRlZjNiMjUzOTA5NjJmMTZkYTdmIiwiaCI6Im11cm11cjY0In0='; // Get from https://openrouteservice.org/dev/#/signup
-      const response = await fetch(
-        'https://api.openrouteservice.org/v2/directions/driving-car/geojson',
-        {
+      // Using the provided API key
+      const API_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjQ1ZWU0MWIyMWZhYzRlZjNiMjUzOTA5NjJmMTZkYTdmIiwiaCI6Im11cm11cjY0In0=';
+      
+      // Try direct call first for directions
+      try {
+        const directResponse = await fetch(
+          'https://api.openrouteservice.org/v2/directions/driving-car/geojson',
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': API_KEY,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
+            },
+            body: JSON.stringify({
+              coordinates: [
+                [startCoords.longitude, startCoords.latitude],
+                [endCoords.longitude, endCoords.latitude]
+              ],
+              format: 'geojson',
+              units: 'km',
+              language: 'vi'
+            })
+          }
+        );
+        
+        if (directResponse.ok) {
+          const data = await directResponse.json();
+          return data;
+        }
+      } catch (directError) {
+        console.warn('Direct directions failed, trying with proxy:', directError);
+        // Fallback to proxy if direct call fails
+        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+        const apiUrl = 'https://api.openrouteservice.org/v2/directions/driving-car/geojson';
+        
+        const proxyResponse = await fetch(proxyUrl + apiUrl, {
           method: 'POST',
           headers: {
             'Authorization': API_KEY,
             'Content-Type': 'application/json',
             'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
+            'Origin': 'http://localhost:5173' // Add origin header
           },
           body: JSON.stringify({
             coordinates: [
               [startCoords.longitude, startCoords.latitude],
               [endCoords.longitude, endCoords.latitude]
             ],
-            format: 'geojson'
+            format: 'geojson',
+            units: 'km',
+            language: 'vi'
           })
+        });
+        
+        if (proxyResponse.ok) {
+          const data = await proxyResponse.json();
+          return data;
         }
-      );
-      
-      if (!response.ok) {
-        throw new Error('Failed to get directions');
       }
       
-      const data = await response.json();
-      return data;
+      throw new Error('Failed to get directions');
     } catch (err) {
       console.error('Directions error:', err);
       throw new Error('Không thể tìm đường đi');
@@ -195,13 +263,16 @@ const MapDirection = ({ destinationAddress }) => {
         mapInstanceRef.current.removeLayer(polylineRef.current);
         polylineRef.current = null;
       }
+      
+      // Clear route info
+      setRouteInfo(null);
     } catch (err) {
       console.error('Error clearing map:', err);
     }
   };
 
   // Draw markers and route on map
-  const drawOnMap = (startCoords, endCoords, routeGeometry) => {
+  const drawOnMap = (startCoords, endCoords, routeData) => {
     if (!mapInstanceRef.current) {
       setError('Bản đồ chưa được khởi tạo');
       return;
@@ -224,12 +295,74 @@ const MapDirection = ({ destinationAddress }) => {
       markersRef.current.push(endMarker);
 
       // Draw route
-      if (routeGeometry) {
+      if (routeData && routeData.features && routeData.features[0]) {
+        const routeGeometry = routeData.features[0].geometry;
+        const routeProperties = routeData.features[0].properties;
+        
         polylineRef.current = L.polyline(routeGeometry.coordinates.map(coord => [coord[1], coord[0]]), {
           color: 'blue',
           weight: 5,
           opacity: 0.7
         }).addTo(mapInstanceRef.current);
+        
+        // Set route information (distance and duration)
+        if (routeProperties && routeProperties.summary) {
+          const summary = routeProperties.summary;
+
+          let distanceInMeters = 0;
+          let durationInSeconds = 0;
+
+          if (summary.distance !== undefined && summary.distance !== null) {
+            distanceInMeters = parseFloat(summary.distance) || 0;
+          }
+          
+          if (summary.duration !== undefined && summary.duration !== null) {
+            durationInSeconds = parseFloat(summary.duration) || 0;
+          }
+
+          // Convert to user-friendly units
+          let distanceDisplay = 'N/A';
+          let durationDisplay = 'N/A';
+          
+          // Ensure we're working with valid numbers
+          if (!isNaN(distanceInMeters) && distanceInMeters > 0) {
+            // Convert meters to kilometers and round to 1 decimal place
+            distanceDisplay = (distanceInMeters).toFixed(2);
+          } else {
+            // Handle case where distance is exactly 0 or invalid
+            distanceDisplay = '0.0';
+          }
+          
+          // Ensure we're working with valid numbers
+          if (!isNaN(durationInSeconds) && durationInSeconds > 0) {
+            // Convert seconds to minutes and round
+            durationDisplay = Math.round(durationInSeconds / 60);
+          } else {
+            // Handle case where duration is exactly 0 or invalid
+            durationDisplay = '0';
+          }
+          
+          
+          setRouteInfo({
+            distance: distanceDisplay,
+            duration: durationDisplay,
+            units: {
+              distance: 'km',
+              duration: 'phút'
+            }
+          });
+        } else {
+          // Fallback if summary is not available
+          console.warn('Route summary not available in response');
+          setRouteInfo({
+            distance: 'N/A',
+            duration: 'N/A',
+            units: {
+              distance: 'km',
+              duration: 'phút'
+            }
+          });
+        }
       }
 
       // Fit map to bounds
@@ -290,7 +423,7 @@ const MapDirection = ({ destinationAddress }) => {
       drawOnMap(
         startCoords, 
         endCoords, 
-        directions.features[0].geometry
+        directions
       );
     } catch (err) {
       setError(err.message || 'Có lỗi xảy ra khi tìm đường đi');
@@ -344,6 +477,30 @@ const MapDirection = ({ destinationAddress }) => {
         >
           {loading ? 'Đang tìm đường...' : 'Tìm đường'}
         </button>
+
+        {/* Display route information */}
+        {routeInfo && (
+          <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center">
+                <svg className="h-5 w-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+                <span className="font-medium text-blue-800">Thông tin tuyến đường</span>
+              </div>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <div className="bg-white rounded p-2 text-center">
+                <p className="text-xs text-gray-500">Khoảng cách</p>
+                <p className="font-bold text-blue-600">{routeInfo.distance} {routeInfo.units.distance}</p>
+              </div>
+              <div className="bg-white rounded p-2 text-center">
+                <p className="text-xs text-gray-500">Thời gian</p>
+                <p className="font-bold text-blue-600">{routeInfo.duration} {routeInfo.units.duration}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="text-red-500 text-sm py-2">
