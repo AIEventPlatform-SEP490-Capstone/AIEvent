@@ -28,6 +28,7 @@ import { Badge } from '../../components/ui/badge';
 import { Separator } from '../../components/ui/separator';
 import { useEvents } from '../../hooks/useEvents';
 import { PATH } from '../../routes/path';
+import MapDirection from '../../components/Event/MapDirection';
 
 const EventDetailGuestPage = ({ previewData }) => {
   const { id } = useParams();
@@ -328,7 +329,10 @@ const EventDetailGuestPage = ({ previewData }) => {
                   {[
                     { id: 'overview', label: 'Tổng quan' },
                     { id: 'description', label: 'Mô tả chi tiết' },
-                    { id: 'reviews', label: 'Đánh giá' }
+                    { id: 'reviews', label: 'Đánh giá' },
+                    // Add map tab only for physical events
+                    ...((!event.isOnlineEvent || event.isOnlineEvent === false) && (event.locationName || event.address) ? 
+                      [{ id: 'map', label: 'Bản đồ & Chỉ đường' }] : [])
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -414,6 +418,14 @@ const EventDetailGuestPage = ({ previewData }) => {
                       <p className="text-gray-500">Chưa có đánh giá nào cho sự kiện này.</p>
                       <p className="text-sm text-gray-400 mt-2">Hãy đăng nhập để đánh giá sự kiện sau khi tham gia.</p>
                     </div>
+                  </div>
+                )}
+
+                {/* Add Map Direction Tab Content */}
+                {activeTab === 'map' && (!event.isOnlineEvent || event.isOnlineEvent === false) && (event.locationName || event.address) && (
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-gray-900">Bản đồ & Chỉ đường</h3>
+                    <MapDirection destinationAddress={event.address || event.locationName} />
                   </div>
                 )}
               </CardContent>

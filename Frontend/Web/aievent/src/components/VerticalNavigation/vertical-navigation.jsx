@@ -31,6 +31,7 @@ import {
   ChevronRight,
   ArrowRight,
   Receipt,
+  BookmarkMinus,
 } from "lucide-react";
 import {
   Sidebar,
