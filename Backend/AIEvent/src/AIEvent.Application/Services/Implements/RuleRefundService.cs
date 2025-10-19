@@ -48,7 +48,7 @@ namespace AIEvent.Application.Services.Implements
                 if (rule == null)
                     return ErrorResponse.FailureResult("Failed to map refund rule", ErrorCodes.InternalServerError);
 
-                if (role.Name.Equals("Admin"))
+                if (role.Name.Equals("Admin") || role.Name.Equals("Manager"))
                     rule.IsSystem = true;
                 await _unitOfWork.RefundRuleRepository.AddAsync(rule);
                 return Result.Success();
