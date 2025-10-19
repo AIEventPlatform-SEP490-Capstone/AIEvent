@@ -37,7 +37,7 @@ import {
 } from 'lucide-react';
 import { showSuccess, showError } from '../../lib/toastUtils';
 
-const RefundRulesManagement = () => {
+const RefundRulesPage = ({ userRole }) => {
   const {
     refundRules,
     loading,
@@ -46,6 +46,9 @@ const RefundRulesManagement = () => {
     createNewRefundRule,
     updateExistingRefundRule,
     removeRefundRule,
+    createNewRefundRuleDetail,
+    updateRefundRuleDetail,
+    removeRefundRuleDetail,
     clearRefundRulesError
   } = useRefundRules();
 
@@ -151,18 +154,106 @@ const RefundRulesManagement = () => {
   // Handle update rule
   const handleUpdate = async () => {
     try {
-      const result = await updateExistingRefundRule(selectedRule.ruleRefundId, formData);
-      if (result.type?.endsWith('/fulfilled')) {
-        showSuccess('Cập nhật quy tắc hoàn tiền thành công!');
-        setIsEditDialogOpen(false);
-        setSelectedRule(null);
-        resetForm();
-
-        await refreshRefundRules();
-        setCurrentPage(1);
-      } else {
-        showError('Lỗi khi cập nhật quy tắc hoàn tiền: ' + (result.payload || 'Unknown error'));
+      // First, update the rule (name and description only)
+      const ruleUpdateResult = await updateExistingRefundRule(selectedRule.ruleRefundId, {
+        ruleName: formData.ruleName,
+        ruleDescription: formData.ruleDescription
+      });
+      
+      if (!ruleUpdateResult.type?.endsWith('/fulfilled')) {
+        showError('Lỗi khi cập nhật quy tắc hoàn tiền: ' + (ruleUpdateResult.payload || 'Unknown error'));
+        return;
       }
+      
+      // Then, handle rule details
+      // Get the existing details from the selected rule
+      const existingDetails = selectedRule.ruleRefundDetails || [];
+      const newDetails = formData.ruleRefundDetails || [];
+      
+      // Create arrays to track what needs to be done
+      const detailsToCreate = [];
+      const detailsToUpdate = [];
+      const detailsToDelete = [];
+      
+      // Check for new and updated details
+      for (const newDetail of newDetails) {
+        if (newDetail.ruleRefundDetailId) {
+          // This is an existing detail, check if it needs to be updated
+          const existingDetail = existingDetails.find(d => d.ruleRefundDetailId === newDetail.ruleRefundDetailId);
+          // Compare details with proper null/undefined handling
+          if (existingDetail && (
+            (existingDetail.minDaysBeforeEvent || 0) !== (newDetail.minDaysBeforeEvent || 0) ||
+            (existingDetail.maxDaysBeforeEvent || 0) !== (newDetail.maxDaysBeforeEvent || 0) ||
+            (existingDetail.refundPercent || 0) !== (newDetail.refundPercent || 0) ||
+            (existingDetail.note || '') !== (newDetail.note || '')
+          )) {
+            detailsToUpdate.push(newDetail);
+          }
+        } else {
+          // This is a new detail
+          detailsToCreate.push(newDetail);
+        }
+      }
+      
+      // Check for deleted details
+      for (const existingDetail of existingDetails) {
+        const stillExists = newDetails.some(d => d.ruleRefundDetailId === existingDetail.ruleRefundDetailId);
+        if (!stillExists) {
+          detailsToDelete.push(existingDetail);
+        }
+      }
+      
+      // Process all the detail operations
+      const detailPromises = [];
+      
+      // Create new details
+      for (const detail of detailsToCreate) {
+        // Ensure we send valid integers
+        const cleanDetail = {
+          minDaysBeforeEvent: parseInt(detail.minDaysBeforeEvent) || 0,
+          maxDaysBeforeEvent: parseInt(detail.maxDaysBeforeEvent) || 0,
+          refundPercent: parseInt(detail.refundPercent) || 0,
+          note: detail.note || ''
+        };
+        detailPromises.push(createNewRefundRuleDetail(selectedRule.ruleRefundId, cleanDetail));
+      }
+      
+      // Update existing details
+      for (const detail of detailsToUpdate) {
+        // Ensure we send valid integers
+        const cleanDetail = {
+          minDaysBeforeEvent: parseInt(detail.minDaysBeforeEvent) || 0,
+          maxDaysBeforeEvent: parseInt(detail.maxDaysBeforeEvent) || 0,
+          refundPercent: parseInt(detail.refundPercent) || 0,
+          note: detail.note || ''
+        };
+        detailPromises.push(updateRefundRuleDetail(detail.ruleRefundDetailId, cleanDetail));
+      }
+      
+      // Delete removed details
+      for (const detail of detailsToDelete) {
+        detailPromises.push(removeRefundRuleDetail(detail.ruleRefundDetailId));
+      }
+      
+      // Wait for all detail operations to complete
+      if (detailPromises.length > 0) {
+        const detailResults = await Promise.all(detailPromises);
+        
+        // Check if any detail operation failed
+        const failedDetail = detailResults.find(result => !result.type?.endsWith('/fulfilled'));
+        if (failedDetail) {
+          showError('Lỗi khi cập nhật chi tiết quy tắc hoàn tiền: ' + (failedDetail.payload || 'Unknown error'));
+          return;
+        }
+      }
+      
+      showSuccess('Cập nhật quy tắc hoàn tiền thành công!');
+      setIsEditDialogOpen(false);
+      setSelectedRule(null);
+      resetForm();
+
+      await refreshRefundRules();
+      setCurrentPage(1);
     } catch (error) {
       showError('Lỗi khi cập nhật quy tắc hoàn tiền: ' + error.message);
     }
@@ -190,10 +281,19 @@ const RefundRulesManagement = () => {
   // Handle edit rule
   const handleEdit = (rule) => {
     setSelectedRule(rule);
+    // Ensure rule details have proper default values
+    const cleanRuleDetails = (rule.ruleRefundDetails || []).map(detail => ({
+      ruleRefundDetailId: detail.ruleRefundDetailId,
+      minDaysBeforeEvent: detail.minDaysBeforeEvent != null ? parseInt(detail.minDaysBeforeEvent) : 0,
+      maxDaysBeforeEvent: detail.maxDaysBeforeEvent != null ? parseInt(detail.maxDaysBeforeEvent) : 7,
+      refundPercent: detail.refundPercent != null ? parseInt(detail.refundPercent) : 100,
+      note: detail.note || ''
+    }));
+    
     setFormData({
       ruleName: rule.ruleName || '',
       ruleDescription: rule.ruleDescription || '',
-      ruleRefundDetails: rule.ruleRefundDetails || [
+      ruleRefundDetails: cleanRuleDetails.length > 0 ? cleanRuleDetails : [
         { minDaysBeforeEvent: 0, maxDaysBeforeEvent: 7, refundPercent: 100, note: '' }
       ]
     });
@@ -240,7 +340,9 @@ const RefundRulesManagement = () => {
   // Clear error when component unmounts
   useEffect(() => {
     return () => {
-      clearRefundRulesError();
+      if (clearRefundRulesError) {
+        clearRefundRulesError();
+      }
     };
   }, [clearRefundRulesError]);
 
@@ -817,4 +919,4 @@ const RefundRulesManagement = () => {
   );
 };
 
-export default RefundRulesManagement;
+export default RefundRulesPage;

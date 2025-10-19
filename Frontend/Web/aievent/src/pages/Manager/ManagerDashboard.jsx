@@ -13,7 +13,8 @@ import {
   AlertCircle,
   BarChart3,
   Activity,
-  CalendarDays
+  CalendarDays,
+  Receipt
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -63,6 +64,13 @@ const ManagerDashboard = () => {
       icon: Users,
       path: "/manager/users",
       color: "bg-purple-500"
+    },
+    {
+      title: "Quy tắc hoàn tiền",
+      description: "Quản lý quy tắc hoàn tiền sự kiện",
+      icon: Receipt,
+      path: PATH.MANAGER_REFUND_RULES,
+      color: "bg-red-500"
     }
   ];
 

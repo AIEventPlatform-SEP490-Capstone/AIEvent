@@ -136,6 +136,10 @@ export const authAPI = {
     const response = await fetcher.post("/auth/revoke-token");
     return response.data;
   },
+  verifyOtp: async (payload) => {
+    const response = await fetcher.post("/auth/verify-otp", payload);
+    return response.data;
+  },
 };
 
 export default fetcher;

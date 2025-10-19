@@ -28,11 +28,35 @@ export const createRefundRule = createAsyncThunk(
   }
 );
 
+export const createRefundRuleDetail = createAsyncThunk(
+  'refundRules/createDetail',
+  async ({ ruleRefundId, detailData }, { rejectWithValue }) => {
+    try {
+      const response = await refundRuleAPI.createRefundRuleDetail(ruleRefundId, detailData);
+      return response.data || response;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const updateRefundRule = createAsyncThunk(
   'refundRules/update',
   async ({ ruleId, ruleData }, { rejectWithValue }) => {
     try {
       const response = await refundRuleAPI.updateRefundRule(ruleId, ruleData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const updateRefundRuleDetail = createAsyncThunk(
+  'refundRules/updateDetail',
+  async ({ detailId, detailData }, { rejectWithValue }) => {
+    try {
+      const response = await refundRuleAPI.updateRefundRuleDetail(detailId, detailData);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -52,6 +76,18 @@ export const deleteRefundRule = createAsyncThunk(
   }
 );
 
+export const deleteRefundRuleDetail = createAsyncThunk(
+  'refundRules/deleteDetail',
+  async (detailId, { rejectWithValue }) => {
+    try {
+      await refundRuleAPI.deleteRefundRuleDetail(detailId);
+      return detailId;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const refundRulesSlice = createSlice({
   name: 'refundRules',
   initialState: {
@@ -62,6 +98,9 @@ const refundRulesSlice = createSlice({
     creating: false,
     updating: false,
     deleting: false,
+    creatingDetail: false,
+    updatingDetail: false,
+    deletingDetail: false,
     // Multiple selected rules for forms
     selectedRules: [],
     // Rule preview for forms
@@ -187,6 +226,54 @@ const refundRulesSlice = createSlice({
       .addCase(deleteRefundRule.rejected, (state, action) => {
         state.deleting = false;
         state.error = action.payload;
+      })
+      
+      // Create refund rule detail
+      .addCase(createRefundRuleDetail.pending, (state) => {
+        state.creatingDetail = true;
+        state.error = null;
+      })
+      .addCase(createRefundRuleDetail.fulfilled, (state, action) => {
+        state.creatingDetail = false;
+        // For now, we'll just refresh the rules since the backend doesn't return the new detail
+        state.lastFetched = null;
+        state.error = null;
+      })
+      .addCase(createRefundRuleDetail.rejected, (state, action) => {
+        state.creatingDetail = false;
+        state.error = action.payload;
+      })
+      
+      // Update refund rule detail
+      .addCase(updateRefundRuleDetail.pending, (state) => {
+        state.updatingDetail = true;
+        state.error = null;
+      })
+      .addCase(updateRefundRuleDetail.fulfilled, (state, action) => {
+        state.updatingDetail = false;
+        // For now, we'll just refresh the rules since the backend doesn't return the updated detail
+        state.lastFetched = null;
+        state.error = null;
+      })
+      .addCase(updateRefundRuleDetail.rejected, (state, action) => {
+        state.updatingDetail = false;
+        state.error = action.payload;
+      })
+      
+      // Delete refund rule detail
+      .addCase(deleteRefundRuleDetail.pending, (state) => {
+        state.deletingDetail = true;
+        state.error = null;
+      })
+      .addCase(deleteRefundRuleDetail.fulfilled, (state, action) => {
+        state.deletingDetail = false;
+        // For now, we'll just refresh the rules since the backend doesn't return the deleted detail
+        state.lastFetched = null;
+        state.error = null;
+      })
+      .addCase(deleteRefundRuleDetail.rejected, (state, action) => {
+        state.deletingDetail = false;
+        state.error = action.payload;
       });
   }
 });
@@ -208,7 +295,12 @@ export const selectRefundRulesError = (state) => state.refundRules.error;
 export const selectSelectedRefundRules = (state) => state.refundRules.selectedRules;
 export const selectPreviewRefundRule = (state) => state.refundRules.previewRule;
 export const selectRefundRuleById = (state, ruleId) => 
-  state.refundRules.items.find(rule => rule.refundRuleId === ruleId);
+  state.refundRules.items.find(rule => rule.ruleRefundId === ruleId);
+  
+// Additional selectors for detail operations
+export const selectCreatingDetail = (state) => state.refundRules.creatingDetail;
+export const selectUpdatingDetail = (state) => state.refundRules.updatingDetail;
+export const selectDeletingDetail = (state) => state.refundRules.deletingDetail;
 
 // Check if refund rules need to be fetched (cache for 15 minutes)
 export const selectShouldFetchRefundRules = (state) => {
