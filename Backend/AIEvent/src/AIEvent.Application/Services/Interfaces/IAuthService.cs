@@ -11,5 +11,6 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result<AuthResponse>> RefreshTokenAsync(string refreshToken);
         Task<Result> RevokeRefreshTokenAsync(string refreshToken);
         Task<Result<AuthResponse>> VerifyOTPAsync(VerifyOTPRequest request);
+        Task<Result> ChangePasswordAsync(Guid userId, ChangePasswordRequest request);
     }
 }

@@ -22,18 +22,16 @@ namespace AIEvent.Application.Test.Services
         private readonly Mock<IUnitOfWork> _mockUnitOfWork;
         private readonly Mock<ICloudinaryService> _mockCloudinaryService;
         private readonly IUserService _userService;
-        private readonly Mock<IHasherHelper> _mockHasherHelper;
 
         public UserServiceTests()
         {
             _mockMapper = new Mock<IMapper>();
             _mockUnitOfWork = new Mock<IUnitOfWork>();
             _mockCloudinaryService = new Mock<ICloudinaryService>();
-            _mockHasherHelper = new Mock<IHasherHelper>();
             var config = new MapperConfiguration(cfg => cfg.AddProfile<UserProfile>());
             _mockMapper.Setup(m => m.ConfigurationProvider).Returns(config);
             _mockMapper.Setup(m => m.ConfigurationProvider).Returns(config);
-            _userService = new UserService(_mockUnitOfWork.Object, _mockMapper.Object, _mockCloudinaryService.Object, _mockHasherHelper.Object);
+            _userService = new UserService(_mockUnitOfWork.Object, _mockMapper.Object, _mockCloudinaryService.Object);
         }
 
         #region GetUserByIdAsync Tests

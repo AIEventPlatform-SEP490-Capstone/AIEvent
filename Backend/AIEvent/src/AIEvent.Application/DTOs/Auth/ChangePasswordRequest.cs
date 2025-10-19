@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace AIEvent.Application.DTOs.User
+namespace AIEvent.Application.DTOs.Auth
 {
     public class ChangePasswordRequest
     {

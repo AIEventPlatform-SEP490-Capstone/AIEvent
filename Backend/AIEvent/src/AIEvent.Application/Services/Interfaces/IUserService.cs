@@ -9,6 +9,5 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result<UserDetailResponse>> GetUserByIdAsync(Guid userId);
         Task<Result> UpdateUserAsync(Guid userId, UpdateUserRequest request);
         Task<Result<BasePaginated<UserResponse>>> GetAllUsersAsync(int pageNumber = 1, int pageSize = 10);
-        Task<Result> ChangePasswordAsync(Guid userId, ChangePasswordRequest request);
     }
 }
