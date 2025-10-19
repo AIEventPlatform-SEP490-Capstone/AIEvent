@@ -60,7 +60,7 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
             }
 
-            if (!await Task.Run(() => _hasherHelper.Verify(request.Password ,user.PasswordHash!)))
+            if (!_hasherHelper.Verify(request.Password ,user.PasswordHash!))
             {
                 return ErrorResponse.FailureResult("Invalid email or password", ErrorCodes.Unauthorized);
             }
@@ -243,7 +243,6 @@ namespace AIEvent.Application.Services.Implements
 
             return Result.Success();
         }
-
         public async Task<Result> RevokeRefreshTokenAsync(string refreshToken)
         {
             if (string.IsNullOrEmpty(refreshToken))
