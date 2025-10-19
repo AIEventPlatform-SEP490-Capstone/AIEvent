@@ -261,6 +261,37 @@ namespace AIEvent.Application.Services.Implements
             return Result.Success();
         }
 
-        
+
+
+        public async Task<Result> ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
+        {
+            if (userId == Guid.Empty || request == null)
+                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
+            var context = new ValidationContext(request);
+            var results = new List<ValidationResult>();
+            bool isValid = Validator.TryValidateObject(request, context, results, true);
+            if (!isValid)
+            {
+                var messages = string.Join("; ", results.Select(r => r.ErrorMessage));
+                return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
+            }
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
+            if (user == null)
+                return ErrorResponse.FailureResult("User not found", ErrorCodes.Unauthorized);
+
+            if (!user.IsActive || user.DeletedAt.HasValue)
+                return ErrorResponse.FailureResult("User account is inactive", ErrorCodes.Unauthorized);
+
+            if (!_hasherHelper.Verify(request.CurrentPassword, user.PasswordHash!))
+                return ErrorResponse.FailureResult("Old password not true", ErrorCodes.InvalidInput);
+            if (_hasherHelper.Verify(request.NewPassword, user.PasswordHash!))
+                return ErrorResponse.FailureResult("New password cannot be the same as current password", ErrorCodes.InvalidInput);
+
+            user.PasswordHash = _hasherHelper.Hash(request.NewPassword);
+            await _unitOfWork.UserRepository.UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
+            return Result.Success();
+        }
+
     }
 }

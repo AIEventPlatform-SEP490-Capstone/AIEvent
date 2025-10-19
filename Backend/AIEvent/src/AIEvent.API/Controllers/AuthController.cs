@@ -1,3 +1,4 @@
+using AIEvent.API.Extensions;
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Auth;
 using AIEvent.Application.DTOs.Common;
@@ -128,6 +129,27 @@ namespace AIEvent.API.Controllers
             return Ok(SuccessResponse<object>.SuccessResult(
                 null!,
                 message: "Token revoked successfully"));
+        }
+
+
+
+        [HttpPost("change-password")]
+        [Authorize]
+        public async Task<ActionResult<SuccessResponse<object>>> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            var userId = User.GetRequiredUserId();
+
+            var result = await _authService.ChangePasswordAsync(userId, request);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Updated,
+                "Change password successfully"));
         }
     }
 }
