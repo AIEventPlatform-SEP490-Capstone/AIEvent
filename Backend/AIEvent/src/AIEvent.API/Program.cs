@@ -74,7 +74,7 @@ namespace AIEvent.API
 
             builder.Services.AddSwaggerCustoms();
             builder.Services.AddHttpContextAccessor();
-
+            builder.Services.AddHttpClient();
 
             var app = builder.Build();
 

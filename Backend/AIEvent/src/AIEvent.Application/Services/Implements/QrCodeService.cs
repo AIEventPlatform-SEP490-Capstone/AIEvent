@@ -27,7 +27,7 @@ namespace AIEvent.Application.Services.Implements
             stream.Position = 0;
 
             // Convert MemoryStream -> IFormFile để reuse CloudinaryService
-            var file = new FormFile(stream, 0, stream.Length, "qr", "ticket_qr.png")
+            var file = new FormFile(stream, 0, stream.Length, "qr", $"ticket_qr_{Guid.NewGuid():N}.png")
             {
                 Headers = new HeaderDictionary(),
                 ContentType = "image/png"
