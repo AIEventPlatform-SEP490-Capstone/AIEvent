@@ -30,7 +30,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowRight,
-  BookmarkMinus,
+  Receipt,
 } from "lucide-react";
 import {
   Sidebar,
@@ -106,6 +106,42 @@ export function VerticalNavigation() {
           icon: Users,
           isActive: pathname === "/admin/users",
         },
+        {
+          title: "Quy tắc hoàn tiền",
+          url: "/admin/refund-rules",
+          icon: Receipt,
+          isActive: pathname === "/admin/refund-rules",
+        },
+        {
+          title: "Quản lý Organizer",
+          url: "/admin/organizers",
+          icon: User,
+          isActive: pathname === "/admin/organizers",
+        },
+        {
+          title: "Hồ sơ Admin",
+          url: "/admin/profile",
+          icon: User,
+          isActive: pathname === "/admin/profile",
+        },
+        {
+          title: "Cài đặt hệ thống",
+          url: "/admin/system-settings",
+          icon: Settings,
+          isActive: pathname === "/admin/system-settings",
+        },
+        {
+          title: "Tài liệu Admin",
+          url: "/admin/documentation",
+          icon: HelpCircle,
+          isActive: pathname === "/admin/documentation",
+        },
+        {
+          title: "Thao tác nhanh",
+          url: "/admin/quick-actions",
+          icon: Zap,
+          isActive: pathname === "/admin/quick-actions",
+        },
       ];
     }
 
@@ -135,6 +171,12 @@ export function VerticalNavigation() {
           icon: CheckSquare,
           isActive: pathname === "/organizer/events",
         },
+        {
+          title: "Quy tắc hoàn tiền",
+          url: "/organizer/refund-rules",
+          icon: Receipt,
+          isActive: pathname === "/organizer/refund-rules",
+        },
       ];
     }
 
@@ -163,6 +205,12 @@ export function VerticalNavigation() {
           url: "/manager/events/category",
           icon: BookmarkMinus,
           isActive: pathname === "/manager/events/category",
+        },
+        {
+          title: "Quy tắc hoàn tiền",
+          url: "/manager/refund-rules",
+          icon: Receipt,
+          isActive: pathname === "/manager/refund-rules",
         },
       ];
     }

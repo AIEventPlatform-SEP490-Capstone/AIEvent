@@ -70,8 +70,8 @@ namespace AIEvent.Application.Services.Implements
                 if (rule == null)
                     return ErrorResponse.FailureResult("Failed to map refund rule", ErrorCodes.InternalServerError);
 
-                rule.IsSystem = role.Name.Equals("Admin", StringComparison.OrdinalIgnoreCase);
-
+                if (role.Name.Equals("Admin") || role.Name.Equals("Manager"))
+                    rule.IsSystem = true;
                 await _unitOfWork.RefundRuleRepository.AddAsync(rule);
                 return Result.Success();
             });
@@ -93,9 +93,9 @@ namespace AIEvent.Application.Services.Implements
 
             if (rules == null || rules.DeletedAt.HasValue)
                 return ErrorResponse.FailureResult("Rule not found or inactive", ErrorCodes.InvalidInput);
-            if (rules.IsSystem && !role!.Name.Equals("Admin"))
+            if (rules.IsSystem && !role!.Name.Equals("Admin") && !role.Name.Equals("Manager"))
                 return ErrorResponse.FailureResult("System rule cannot be modified by user", ErrorCodes.PermissionDenied);
-            if (!role!.Name.Equals("Admin") && rules.CreatedBy != userId.ToString())
+            if (!role!.Name.Equals("Admin") && !role.Name.Equals("Manager") && rules.CreatedBy != userId.ToString())
                 return ErrorResponse.FailureResult("You can only modify your own rules", ErrorCodes.PermissionDenied);
 
             await _unitOfWork.RefundRuleRepository.DeleteAsync(rules);
@@ -174,9 +174,9 @@ namespace AIEvent.Application.Services.Implements
                                                     .FirstOrDefaultAsync(r => r.Id == ruleRefundId);
                 if (ruleRefund == null)
                     return ErrorResponse.FailureResult("Rule not found", ErrorCodes.InvalidInput);
-                if (ruleRefund.IsSystem && !role.Name.Equals("Admin"))
+                if (ruleRefund.IsSystem && !role.Name.Equals("Admin") && !role.Name.Equals("Manager"))
                     return ErrorResponse.FailureResult("System rule cannot be modified by user", ErrorCodes.PermissionDenied);
-                if (!role.Name.Equals("Admin") && ruleRefund.CreatedBy != userId.ToString())
+                if (!role.Name.Equals("Admin") && !role.Name.Equals("Manager") && ruleRefund.CreatedBy != userId.ToString())
                     return ErrorResponse.FailureResult("You can only modify your own rules", ErrorCodes.PermissionDenied);
 
                 _mapper.Map(request, ruleRefund);
@@ -215,8 +215,8 @@ namespace AIEvent.Application.Services.Implements
                                                     .FirstOrDefaultAsync(r => r.Id == ruleRefundDetailId);
                 if (ruleRefund == null)
                     return ErrorResponse.FailureResult("Rule detail not found", ErrorCodes.InvalidInput);
-                if (!role.Name.Equals("Admin"))
-                    return ErrorResponse.FailureResult("System rule detail cannot be modified by user", ErrorCodes.PermissionDenied);
+                if (!role.Name.Equals("Admin") && !role.Name.Equals("Manager") && ruleRefund.CreatedBy != userId.ToString())
+                    return ErrorResponse.FailureResult("You can only modify your own rules", ErrorCodes.PermissionDenied);
 
                 _mapper.Map(request, ruleRefund);
                 await _unitOfWork.RefundRuleDetailRepository.UpdateAsync(ruleRefund);
@@ -241,8 +241,8 @@ namespace AIEvent.Application.Services.Implements
 
             if (rules == null || rules.DeletedAt.HasValue)
                 return ErrorResponse.FailureResult("Rule detail not found or inactive", ErrorCodes.InvalidInput);
-            if (!role.Name.Equals("Admin"))
-                return ErrorResponse.FailureResult("System rule detail cannot be modified by user", ErrorCodes.PermissionDenied);
+            if (!role.Name.Equals("Admin") && !role.Name.Equals("Manager") && rules.CreatedBy != userId.ToString())
+                return ErrorResponse.FailureResult("You can only modify your own rules detail", ErrorCodes.PermissionDenied);
 
             await _unitOfWork.RefundRuleDetailRepository.DeleteAsync(rules);
             await _unitOfWork.SaveChangesAsync();
