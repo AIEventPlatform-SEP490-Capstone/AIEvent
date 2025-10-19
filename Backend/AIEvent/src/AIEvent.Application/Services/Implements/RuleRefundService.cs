@@ -278,7 +278,7 @@ namespace AIEvent.Application.Services.Implements
                 if (role == null)
                     return ErrorResponse.FailureResult("Role not found", ErrorCodes.NotFound);
                 
-                if (!role.Name.Equals("Admin"))
+                if (!role.Name.Equals("Admin") && !role.Name.Equals("Manager"))
                     return ErrorResponse.FailureResult("System rule detail cannot be add by user", ErrorCodes.PermissionDenied);
 
                 var ruleDetail = new RefundRuleDetail
