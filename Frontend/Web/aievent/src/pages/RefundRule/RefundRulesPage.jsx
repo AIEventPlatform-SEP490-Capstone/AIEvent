@@ -37,7 +37,7 @@ import {
 } from 'lucide-react';
 import { showSuccess, showError } from '../../lib/toastUtils';
 
-const RefundRulesManagement = () => {
+const RefundRulesPage = ({ userRole }) => {
   const {
     refundRules,
     loading,
@@ -340,7 +340,9 @@ const RefundRulesManagement = () => {
   // Clear error when component unmounts
   useEffect(() => {
     return () => {
-      clearRefundRulesError();
+      if (clearRefundRulesError) {
+        clearRefundRulesError();
+      }
     };
   }, [clearRefundRulesError]);
 
@@ -917,4 +919,4 @@ const RefundRulesManagement = () => {
   );
 };
 
-export default RefundRulesManagement;
+export default RefundRulesPage;

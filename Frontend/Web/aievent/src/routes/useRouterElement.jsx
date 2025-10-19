@@ -19,7 +19,7 @@ import ManagerEventsPage from "../pages/Manager/ManagerEventsPage";
 import ManagerEventsNeedApprovalPage from "../pages/Manager/ManagerEventsNeedApprovalPage";
 import ManagerEventDetailPage from "../pages/Manager/ManagerEventDetailPage";
 import ManagerEditEventPage from "../pages/Manager/ManagerEditEventPage";
-import ManagerRefundRulesPage from "../pages/Manager/ManagerRefundRulesPage";
+import RefundRulesPage from "../pages/RefundRule/RefundRulesPage";
 import AdminProfile from "../pages/Admin/AdminProfile";
 import UserManagement from "../pages/Admin/UserManagement";
 import EventCategory from "../pages/Event Category/EventCategory";
@@ -186,6 +186,7 @@ export default function useRouterElement() {
         { path: "support", element: <div>Organizer Support Page</div> },
         { path: "analytics/:id", element: <div>Organizer Analytics Page</div> },
         { path: "checkin/:id", element: <div>Organizer Check-in Page</div> },
+        { path: "refund-rules", element: <RefundRulesPage userRole="organizer" /> },
       ],
     },
     {
@@ -205,7 +206,7 @@ export default function useRouterElement() {
         { path: "event/:eventId", element: <ManagerEventDetailPage /> },
         { path: "event/:eventId/edit", element: <ManagerEditEventPage /> },
         { path: "events/category", element: <EventCategory /> },
-        { path: "refund-rules", element: <ManagerRefundRulesPage /> },
+        { path: "refund-rules", element: <RefundRulesPage userRole="manager" /> },
         { path: "profile", element: <div>Manager Profile Page</div> },
         { path: "settings", element: <div>Manager Settings Page</div> },
         { path: "support", element: <div>Manager Support Page</div> },
@@ -222,7 +223,7 @@ export default function useRouterElement() {
         { index: true, element: <AdminDashboard /> },
         { path: "events", element: <div>Admin Events Page</div> },
         { path: "users", element: <UserManagement /> },
-        { path: "refund-rules", element: <ManagerRefundRulesPage /> },
+        { path: "refund-rules", element: <RefundRulesPage userRole="admin" /> },
         { path: "organizers", element: <div>Admin Organizers Page</div> },
         { path: "profile", element: <AdminProfile /> },
         { path: "settings", element: <div>Admin Settings Page</div> },

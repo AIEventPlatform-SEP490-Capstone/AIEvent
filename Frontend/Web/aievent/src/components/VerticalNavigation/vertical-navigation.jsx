@@ -171,6 +171,12 @@ export function VerticalNavigation() {
           icon: CheckSquare,
           isActive: pathname === "/organizer/events",
         },
+        {
+          title: "Quy tắc hoàn tiền",
+          url: "/organizer/refund-rules",
+          icon: Receipt,
+          isActive: pathname === "/organizer/refund-rules",
+        },
       ];
     }
 
