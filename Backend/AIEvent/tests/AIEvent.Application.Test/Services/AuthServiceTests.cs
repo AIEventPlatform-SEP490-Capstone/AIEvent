@@ -23,7 +23,7 @@ namespace AIEvent.Application.Test.Services
         private readonly Mock<IMapper> _mockMapper;
         private readonly Mock<IEmailService> _mockEmailService;
         private readonly Mock<IHasherHelper> _mockHasherHelper;
-        private readonly Mock<ICacheService> _mockCacheService;  
+        private readonly Mock<ICacheService> _mockCacheService;
         private readonly IAuthService _authService;
 
         public AuthServiceTests()
@@ -247,11 +247,11 @@ namespace AIEvent.Application.Test.Services
             result.IsSuccess.Should().BeTrue();
             _mockUnitOfWork.Verify(x => x.UserRepository.AddAsync(It.Is<User>(u =>
                 u.Email == request.Email && u.IsActive == false && u.RoleId == role.Id)), Times.Once());
-            _mockCacheService.Verify(x => x.SetAsync($"Register {request.Email}", It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Once()); 
+            _mockCacheService.Verify(x => x.SetAsync($"Register {request.Email}", It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Once());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
 
-            [Fact]
+        [Fact]
         public async Task UTCID02_RegisterAsync_WithExistingEmail_ShouldReturnFailure()
         {
             // Arrange
@@ -625,7 +625,7 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.IsSuccess.Should().BeTrue();
             _mockUnitOfWork.Verify(x => x.UserRepository.AddAsync(It.IsAny<User>()), Times.Once());
-            _mockCacheService.Verify(x => x.SetAsync($"Register {request.Email}", It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Once()); 
+            _mockCacheService.Verify(x => x.SetAsync($"Register {request.Email}", It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Once());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
 
@@ -649,7 +649,7 @@ namespace AIEvent.Application.Test.Services
                 IsEmailNotificationEnabled = true,
                 IsPushNotificationEnabled = true,
                 IsSmsNotificationEnabled = true,
-                ParticipationFrequency = (ParticipationFrequency)0, 
+                ParticipationFrequency = (ParticipationFrequency)0,
                 BudgetOption = BudgetOption.From500kTo2M
             };
 
@@ -683,7 +683,7 @@ namespace AIEvent.Application.Test.Services
                 IsPushNotificationEnabled = true,
                 IsSmsNotificationEnabled = true,
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
-                BudgetOption = (BudgetOption)4 
+                BudgetOption = (BudgetOption)4
             };
 
             // Act
@@ -699,7 +699,8 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID15_RegisterAsync_WithAddUserFailed_ShouldReturnFailure()
         {
             // Arrange
-            var request = new RegisterRequest {
+            var request = new RegisterRequest
+            {
                 FullName = "John Doe",
                 Email = "test@gmail.com",
                 Password = "Pass123",
@@ -722,7 +723,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
             _mockUnitOfWork.Setup(x => x.RoleRepository.Query(false)).Returns(new List<Role> { role }.AsQueryable().BuildMockDbSet().Object);
             _mockMapper.Setup(x => x.Map<User>(request)).Returns(new User { Email = request.Email });
-            _mockUnitOfWork.Setup(x => x.UserRepository.AddAsync(It.IsAny<User>())).ReturnsAsync((User)null!); 
+            _mockUnitOfWork.Setup(x => x.UserRepository.AddAsync(It.IsAny<User>())).ReturnsAsync((User)null!);
 
             // Act
             var result = await _authService.RegisterAsync(request);
@@ -731,8 +732,8 @@ namespace AIEvent.Application.Test.Services
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("Failed to create user account");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-            _mockEmailService.Verify(x => x.SendOtpAsync(It.IsAny<string>(), It.IsAny<MimeMessage>()), Times.Never()); 
-            _mockCacheService.Verify(x => x.SetAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Never()); 
+            _mockEmailService.Verify(x => x.SendOtpAsync(It.IsAny<string>(), It.IsAny<MimeMessage>()), Times.Never());
+            _mockCacheService.Verify(x => x.SetAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Never());
         }
         #endregion
 
@@ -914,7 +915,7 @@ namespace AIEvent.Application.Test.Services
             {
                 Token = refreshToken,
                 IsDeleted = false,
-                ExpiresAt = DateTime.UtcNow.AddSeconds(-1), 
+                ExpiresAt = DateTime.UtcNow.AddSeconds(-1),
                 UserId = user.Id,
                 User = user
             };
@@ -959,7 +960,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeTrue();
-            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.DeleteAsync(It.Is<RefreshToken>(t => t.Token == refreshToken)), Times.Once()); 
+            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.DeleteAsync(It.Is<RefreshToken>(t => t.Token == refreshToken)), Times.Once());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
 
@@ -1096,7 +1097,7 @@ namespace AIEvent.Application.Test.Services
             _mockCacheService.Setup(x => x.GetAsync<string>($"Register {request.Email}")).ReturnsAsync("123456");
             _mockCacheService.Setup(x => x.RemoveAsync($"Register {request.Email}"));
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
-            
+
             // Act
             var result = await _authService.VerifyOTPAsync(request);
 
@@ -1107,7 +1108,7 @@ namespace AIEvent.Application.Test.Services
             result.Value!.RefreshToken.Should().Be(refreshToken);
             result.Value!.ExpiresAt.Should().BeCloseTo(DateTime.UtcNow.AddHours(1), TimeSpan.FromSeconds(5));
             _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.Is<User>(u => u.Id == user.Id && u.IsActive)), Times.Once());
-            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never()); 
+            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
             _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.AddAsync(It.Is<RefreshToken>(t => t.Token == refreshToken && t.UserId == user.Id && t.ExpiresAt.Date == DateTime.UtcNow.AddDays(7).Date)), Times.Once());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
