@@ -106,6 +106,42 @@ export function VerticalNavigation() {
           icon: Users,
           isActive: pathname === "/admin/users",
         },
+        {
+          title: "Quy tắc hoàn tiền",
+          url: "/admin/refund-rules",
+          icon: Receipt,
+          isActive: pathname === "/admin/refund-rules",
+        },
+        {
+          title: "Quản lý Organizer",
+          url: "/admin/organizers",
+          icon: User,
+          isActive: pathname === "/admin/organizers",
+        },
+        {
+          title: "Hồ sơ Admin",
+          url: "/admin/profile",
+          icon: User,
+          isActive: pathname === "/admin/profile",
+        },
+        {
+          title: "Cài đặt hệ thống",
+          url: "/admin/system-settings",
+          icon: Settings,
+          isActive: pathname === "/admin/system-settings",
+        },
+        {
+          title: "Tài liệu Admin",
+          url: "/admin/documentation",
+          icon: HelpCircle,
+          isActive: pathname === "/admin/documentation",
+        },
+        {
+          title: "Thao tác nhanh",
+          url: "/admin/quick-actions",
+          icon: Zap,
+          isActive: pathname === "/admin/quick-actions",
+        },
       ];
     }
 
