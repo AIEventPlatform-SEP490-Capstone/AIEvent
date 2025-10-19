@@ -30,6 +30,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowRight,
+  Receipt,
 } from "lucide-react";
 import {
   Sidebar,
@@ -162,6 +163,12 @@ export function VerticalNavigation() {
           url: "/manager/events/category",
           icon: CheckSquare,
           isActive: pathname === "/manager/events/category",
+        },
+        {
+          title: "Quy tắc hoàn tiền",
+          url: "/manager/refund-rules",
+          icon: Receipt,
+          isActive: pathname === "/manager/refund-rules",
         },
       ];
     }

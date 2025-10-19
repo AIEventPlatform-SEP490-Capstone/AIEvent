@@ -21,6 +21,7 @@ import ManagerEventsPage from "../pages/Manager/ManagerEventsPage";
 import ManagerEventsNeedApprovalPage from "../pages/Manager/ManagerEventsNeedApprovalPage";
 import ManagerEventDetailPage from "../pages/Manager/ManagerEventDetailPage";
 import ManagerEditEventPage from "../pages/Manager/ManagerEditEventPage";
+import ManagerRefundRulesPage from "../pages/Manager/ManagerRefundRulesPage";
 import AdminProfile from "../pages/Admin/AdminProfile";
 import UserManagement from "../pages/Admin/UserManagement";
 import EventCategory from "../pages/Event Category/EventCategory";
@@ -206,6 +207,7 @@ export default function useRouterElement() {
         { path: "event/:eventId", element: <ManagerEventDetailPage /> },
         { path: "event/:eventId/edit", element: <ManagerEditEventPage /> },
         { path: "events/category", element: <EventCategory /> },
+        { path: "refund-rules", element: <ManagerRefundRulesPage /> },
         { path: "profile", element: <div>Manager Profile Page</div> },
         { path: "settings", element: <div>Manager Settings Page</div> },
         { path: "support", element: <div>Manager Support Page</div> },

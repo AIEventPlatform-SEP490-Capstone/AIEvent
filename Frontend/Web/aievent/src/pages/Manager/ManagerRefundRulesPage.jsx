@@ -37,7 +37,7 @@ import {
 } from 'lucide-react';
 import { showSuccess, showError } from '../../lib/toastUtils';
 
-const RefundRulesManagement = () => {
+const ManagerRefundRulesPage = () => {
   const {
     refundRules,
     loading,
@@ -917,4 +917,4 @@ const RefundRulesManagement = () => {
   );
 };
 
-export default RefundRulesManagement;
+export default ManagerRefundRulesPage;

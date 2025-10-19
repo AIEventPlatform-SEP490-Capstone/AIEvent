@@ -51,6 +51,7 @@ export const PATH = {
   MANAGER_EVENTS_NEED_APPROVAL: "/manager/events/need-approval",
   MANAGER_EVENT_DETAIL: "/manager/event/:eventId",
   MANAGER_EVENT_EDIT: "/manager/event/:eventId/edit",
+  MANAGER_REFUND_RULES: "/manager/refund-rules",
   MANAGER_PROFILE: "/manager/profile",
   MANAGER_SETTINGS: "/manager/settings",
   MANAGER_SUPPORT: "/manager/support",
