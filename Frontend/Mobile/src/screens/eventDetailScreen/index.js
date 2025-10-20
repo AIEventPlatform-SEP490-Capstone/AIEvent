@@ -42,7 +42,7 @@ const EventDetailScreen = () => {
         navigation.goBack();
       }
     } catch (error) {
-      console.error('Error loading event detail:', error);
+      // Error loading event detail
       Alert.alert('Error', 'Failed to load event details');
     } finally {
       setLoading(false);
@@ -60,7 +60,7 @@ const EventDetailScreen = () => {
         Alert.alert('Error', Strings.JOIN_ERROR);
       }
     } catch (error) {
-      console.error('Error joining event:', error);
+      // Error joining event
       Alert.alert('Error', Strings.JOIN_ERROR);
     } finally {
       setJoining(false);
@@ -78,7 +78,7 @@ const EventDetailScreen = () => {
         Alert.alert('Success', Strings.SHARE_SUCCESS);
       }
     } catch (error) {
-      console.error('Error sharing event:', error);
+      // Error sharing event
     }
   };
 
