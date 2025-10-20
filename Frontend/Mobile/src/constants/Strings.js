@@ -23,9 +23,9 @@ const Strings = {
   EVENT_FREE: 'Miễn Phí',
   
   // User
-  USER_NAME: 'Nguyễn Văn A',
-  USER_EMAIL: 'nguyenvana@example.com',
-  
+  USER_NAME: 'Nguyễn Hàng Nhật Huy',
+  USER_EMAIL: 'nguyenhangnhathuy@gmail.com',
+
   // Common
   LOADING: 'Đang Tải...',
   ERROR: 'Lỗi',
