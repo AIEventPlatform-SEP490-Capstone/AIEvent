@@ -131,8 +131,6 @@ namespace AIEvent.API.Controllers
                 message: "Token revoked successfully"));
         }
 
-
-
         [HttpPost("change-password")]
         [Authorize]
         public async Task<ActionResult<SuccessResponse<object>>> ChangePassword([FromBody] ChangePasswordRequest request)

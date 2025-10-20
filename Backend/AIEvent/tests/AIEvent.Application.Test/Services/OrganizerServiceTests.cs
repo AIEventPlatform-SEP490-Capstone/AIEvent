@@ -1,4 +1,5 @@
 ﻿using AIEvent.Application.Constants;
+using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Organizer;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Implements;
@@ -8,6 +9,7 @@ using AIEvent.Domain.Enums;
 using AIEvent.Domain.Interfaces;
 using AutoMapper;
 using FluentAssertions;
+using MimeKit;
 using MockQueryable.Moq;
 using Moq;
 
@@ -20,8 +22,8 @@ namespace AIEvent.Application.Test.Services
         private readonly Mock<IMapper> _mockMapper;
         private readonly Mock<ICloudinaryService> _mockCloudinaryService;
         private readonly IOrganizerService _organizerService;
-
-        private static readonly Guid testId = Guid.Parse("a3f4a95e-27fb-4d32-b2c1-1f4a5c6e8d9b");
+        private readonly Mock<IEmailService> _mockEmailService;
+        private readonly Mock<IHasherHelper> _mockHasherHelper;
 
         public OrganizerServiceTests()
         {
@@ -29,24 +31,495 @@ namespace AIEvent.Application.Test.Services
             _mockCloudinaryService = new Mock<ICloudinaryService>();
             _mockMapper = new Mock<IMapper>();
             _mockTransactionHelper = new Mock<ITransactionHelper>();
-           
+            _mockEmailService = new Mock<IEmailService>();
+            _mockHasherHelper = new Mock<IHasherHelper>();
+
             _organizerService = new OrganizerService(_mockUnitOfWork.Object,
                                                     _mockMapper.Object,
                                                     _mockTransactionHelper.Object,
-                                                    _mockCloudinaryService.Object);
+                                                    _mockCloudinaryService.Object,
+                                                    _mockEmailService.Object,
+                                                    _mockHasherHelper.Object);
         }
+
         #region RegisterOrganizer
 
+        // UTCID01: Valid request with all required fields, successful registration
         [Fact]
-        public async Task RegisterOrganizerAsync_WithValidRequest_ShouldReturnSuccessResult()
+        public async Task UTCID01_RegisterOrganizerAsync_WithValidRequest_ShouldReturnSuccess()
         {
-            var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
-            var request = new RegisterOrganizerRequest
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = CreateValidRegisterOrganizerRequest();
+            var user = CreateActiveUser(userId);
+            var mappedOrganizer = CreateMappedOrganizer(userId, request);
+
+            SetupSuccessfulMocks(user, mappedOrganizer);
+
+            // Act
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            VerifySuccessfulRegistration(mappedOrganizer);
+        }
+
+        // UTCID02: Empty userId (Guid.Empty)
+        [Fact]
+        public async Task UTCID02_RegisterOrganizerAsync_WithEmptyUserId_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.Empty;
+            var request = CreateValidRegisterOrganizerRequest();
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            // Act
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        // UTCID03: Null request
+        [Fact]
+        public async Task UTCID03_RegisterOrganizerAsync_WithNullRequest_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            RegisterOrganizerRequest? request = null;
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            // Act
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request!);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        // UTCID04: Request with validation errors - empty ContactName
+        [Fact]
+        public async Task UTCID04_RegisterOrganizerAsync_WithEmptyContactName_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = CreateValidRegisterOrganizerRequest();
+            request.ContactName = "";
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            // Act
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Contact name is required");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        // UTCID05: Request with validation errors - empty ContactEmail
+        [Fact]
+        public async Task UTCID05_RegisterOrganizerAsync_WithEmptyContactEmail_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = CreateValidRegisterOrganizerRequest();
+            request.ContactEmail = "";
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            // Act
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Contact email is required");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        // UTCID06: Request with validation errors - empty ContactPhone
+        [Fact]
+        public async Task UTCID06_RegisterOrganizerAsync_WithEmptyContactPhone_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = CreateValidRegisterOrganizerRequest();
+            request.ContactPhone = "";
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            // Act
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Contact phone is required");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        // UTCID07: User not found
+        [Fact]
+        public async Task UTCID07_RegisterOrganizerAsync_WithUserNotFound_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = CreateValidRegisterOrganizerRequest();
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
+                .ReturnsAsync((User)null!);
+
+            // Act
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("User not found or inactive");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
+        }
+
+        // UTCID08: Inactive user
+        [Fact]
+        public async Task UTCID08_RegisterOrganizerAsync_WithInactiveUser_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = CreateValidRegisterOrganizerRequest();
+            var user = CreateInactiveUser(userId);
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
+                .ReturnsAsync(user);
+
+            // Act
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("User not found or inactive");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
+        }
+
+        // UTCID09: Tax code already exists
+        [Fact]
+        public async Task UTCID09_RegisterOrganizerAsync_WithExistingTaxCode_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = CreateValidRegisterOrganizerRequest();
+            var user = CreateActiveUser(userId);
+            var existingOrganizer = CreateOrganizerWithTaxCode(request.TaxCode!);
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
+                .ReturnsAsync(user);
+
+            var organizerList = new List<OrganizerProfile> { existingOrganizer }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(false))
+                .Returns(organizerList.Object);
+
+            // Act
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Tax code already exists.");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        // UTCID10: Tax code is null (should skip validation)
+        [Fact]
+        public async Task UTCID10_RegisterOrganizerAsync_WithNullTaxCode_ShouldReturnSuccess()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = CreateValidRegisterOrganizerRequest();
+            request.TaxCode = null;
+            var user = CreateActiveUser(userId);
+            var mappedOrganizer = CreateMappedOrganizer(userId, request);
+
+            SetupSuccessfulMocks(user, mappedOrganizer);
+
+            // Act
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            VerifySuccessfulRegistration(mappedOrganizer);
+        }
+
+        [Fact]
+        public async Task UTCID11_RegisterOrganizerAsync_WithAllFiles_ShouldReturnSuccess()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = CreateValidRegisterOrganizerRequest();
+            request.ImgCompany = CreateMockFormFile();
+            request.ImgFrontIdentity = CreateMockFormFile();
+            request.ImgBackIdentity = CreateMockFormFile();
+            request.ImgBusinessLicense = CreateMockFormFile();
+
+            var user = CreateActiveUser(userId);
+            var mappedOrganizer = CreateMappedOrganizer(userId, request);
+
+            SetupSuccessfulMocks(user, mappedOrganizer);
+            SetupCloudinaryMocks("url1", "url2", "url3", "url4");
+
+            // Act
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            VerifySuccessfulRegistration(mappedOrganizer);
+            VerifyCloudinaryUploads(4);
+        }
+
+        [Fact]
+        public async Task UTCID12_RegisterOrganizerAsync_WithSomeFiles_ShouldReturnSuccess()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = CreateValidRegisterOrganizerRequest();
+            request.ImgCompany = CreateMockFormFile();
+            request.ImgFrontIdentity = null;
+            request.ImgBackIdentity = CreateMockFormFile();
+            request.ImgBusinessLicense = null;
+
+            var user = CreateActiveUser(userId);
+            var mappedOrganizer = CreateMappedOrganizer(userId, request);
+
+            SetupSuccessfulMocks(user, mappedOrganizer);
+            SetupCloudinaryMocks("url1", null, "url3", null);
+
+            // Act
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            VerifySuccessfulRegistration(mappedOrganizer);
+            VerifyCloudinaryUploads(2);
+        }
+
+        [Fact]
+        public async Task UTCID13_RegisterOrganizerAsync_WithNoFiles_ShouldReturnSuccess()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = CreateValidRegisterOrganizerRequest();
+            request.ImgCompany = null;
+            request.ImgFrontIdentity = null;
+            request.ImgBackIdentity = null;
+            request.ImgBusinessLicense = null;
+
+            var user = CreateActiveUser(userId);
+            var mappedOrganizer = CreateMappedOrganizer(userId, request);
+
+            SetupSuccessfulMocks(user, mappedOrganizer);
+            SetupCloudinaryMocks(null, null, null, null);
+
+            // Act
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            VerifySuccessfulRegistration(mappedOrganizer);
+            VerifyCloudinaryUploads(0);
+        }
+
+        [Theory]
+        [InlineData(OrganizationType.PrivateCompany)]
+        [InlineData(OrganizationType.StateEnterprise)]
+        [InlineData(OrganizationType.NonProfit)]
+        [InlineData(OrganizationType.IndividualBusiness)]
+        [InlineData(OrganizationType.Startup)]
+        [InlineData(OrganizationType.CommunityClub)]
+        [InlineData(OrganizationType.SchoolUniversity)]
+        [InlineData(OrganizationType.Other)]
+        public async Task UTCID14_RegisterOrganizerAsync_WithDifferentOrganizationTypes_ShouldReturnSuccess(OrganizationType organizationType)
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = CreateValidRegisterOrganizerRequest();
+            request.OrganizationType = organizationType;
+
+            var user = CreateActiveUser(userId);
+            var mappedOrganizer = CreateMappedOrganizer(userId, request);
+
+            SetupSuccessfulMocks(user, mappedOrganizer);
+
+            // Act
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            VerifySuccessfulRegistration(mappedOrganizer);
+        }
+
+        [Theory]
+        [InlineData(EventFrequency.Weekly)]
+        [InlineData(EventFrequency.Monthly)]
+        [InlineData(EventFrequency.Quarterly)]
+        [InlineData(EventFrequency.Yearly)]
+        [InlineData(EventFrequency.Occasionally)]
+        public async Task UTCID15_RegisterOrganizerAsync_WithDifferentEventFrequencies_ShouldReturnSuccess(EventFrequency eventFrequency)
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = CreateValidRegisterOrganizerRequest();
+            request.EventFrequency = eventFrequency;
+
+            var user = CreateActiveUser(userId);
+            var mappedOrganizer = CreateMappedOrganizer(userId, request);
+
+            SetupSuccessfulMocks(user, mappedOrganizer);
+
+            // Act
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            VerifySuccessfulRegistration(mappedOrganizer);
+        }
+
+        [Theory]
+        [InlineData(EventSize.Small)]
+        [InlineData(EventSize.Medium)]
+        [InlineData(EventSize.Large)]
+        [InlineData(EventSize.ExtraLarge)]
+        public async Task UTCID16_RegisterOrganizerAsync_WithDifferentEventSizes_ShouldReturnSuccess(EventSize eventSize)
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = CreateValidRegisterOrganizerRequest();
+            request.EventSize = eventSize;
+
+            var user = CreateActiveUser(userId);
+            var mappedOrganizer = CreateMappedOrganizer(userId, request);
+
+            SetupSuccessfulMocks(user, mappedOrganizer);
+
+            // Act
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            VerifySuccessfulRegistration(mappedOrganizer);
+        }
+
+        [Theory]
+        [InlineData(OrganizerType.Individual)]
+        [InlineData(OrganizerType.Business)]
+        public async Task UTCID17_RegisterOrganizerAsync_WithDifferentOrganizerTypes_ShouldReturnSuccess(OrganizerType organizerType)
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = CreateValidRegisterOrganizerRequest();
+            request.OrganizerType = organizerType;
+
+            var user = CreateActiveUser(userId);
+            var mappedOrganizer = CreateMappedOrganizer(userId, request);
+
+            SetupSuccessfulMocks(user, mappedOrganizer);
+
+            // Act
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            VerifySuccessfulRegistration(mappedOrganizer);
+        }
+        
+        [Theory]
+        [InlineData(EventExperienceLevel.Beginner)]
+        [InlineData(EventExperienceLevel.Intermediate)]
+        [InlineData(EventExperienceLevel.Experienced)]
+        [InlineData(EventExperienceLevel.Expert)]
+        public async Task UTCID18_RegisterOrganizerAsync_WithDifferentEventExperienceLevels_ShouldReturnSuccess(EventExperienceLevel eventExperienceLevel)
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = CreateValidRegisterOrganizerRequest();
+            request.EventExperienceLevel = eventExperienceLevel;
+
+            var user = CreateActiveUser(userId);
+            var mappedOrganizer = CreateMappedOrganizer(userId, request);
+
+            SetupSuccessfulMocks(user, mappedOrganizer);
+
+            // Act
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            VerifySuccessfulRegistration(mappedOrganizer);
+        }
+
+        [Fact]
+        public async Task UTCID19_RegisterOrganizerAsync_WithEmptyContactEmail_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = CreateValidRegisterOrganizerRequest();
+            request.ContactEmail = "invalid-email";
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            // Act
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Invalid email format");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        // UTCID06: Request with validation errors - empty ContactPhone
+        [Fact]
+        public async Task UTCID20_RegisterOrganizerAsync_WithEmptyContactPhone_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = CreateValidRegisterOrganizerRequest();
+            request.ContactPhone = "invalid-phone";
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            // Act
+            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Invalid phone number format");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        // Helper methods
+        private RegisterOrganizerRequest CreateValidRegisterOrganizerRequest()
+        {
+            return new RegisterOrganizerRequest
             {
                 OrganizationType = OrganizationType.PrivateCompany,
-                OrganizerType = OrganizerType.Business,
                 EventFrequency = EventFrequency.Monthly,
                 EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Business,
                 EventExperienceLevel = EventExperienceLevel.Intermediate,
                 ContactName = "John Doe",
                 ContactEmail = "john.doe@company.com",
@@ -62,254 +535,40 @@ namespace AIEvent.Application.Test.Services
                 TaxCode = "0123456789",
                 CompanyDescription = "Professional event management company specializing in corporate events"
             };
+        }
 
-            var user = new User
+        private User CreateActiveUser(Guid userId)
+        {
+            return new User
             {
                 Id = userId,
                 Email = "user@example.com",
                 FullName = "Test User",
                 IsActive = true
             };
-
-            var organizer = new OrganizerProfile
-            {
-                Id = Guid.NewGuid(),
-                UserId = userId,
-                OrganizationType = OrganizationType.PrivateCompany,
-                OrganizerType = OrganizerType.Business,
-                EventFrequency = EventFrequency.Weekly,
-                EventSize = EventSize.Small,
-                EventExperienceLevel = EventExperienceLevel.Beginner,
-                ContactName = "Tran Thi B",
-                ContactEmail = "tranthi.b@govedu.vn",
-                ContactPhone = "+84987654321",
-                Address = "12 Nguyen Hue Boulevard, District 1, Ho Chi Minh City",
-                Website = "https://www.govedu.vn",
-                UrlFacebook = "https://facebook.com/govedu",
-                UrlInstagram = "https://instagram.com/govedu",
-                UrlLinkedIn = "https://linkedin.com/company/govedu",
-                ExperienceDescription = "Recently started organizing educational workshops and government seminars.",
-                IdentityNumber = "456789123456",
-                CompanyName = "GovEdu Training Center",
-                TaxCode = "5647382910",
-                CompanyDescription = "Government-affiliated education and training center focusing on youth development programs.",
-                User = new User
-                {
-                    Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
-                    Email = "tranthi.b@govedu.vn",
-                }
-            };
-
-            var mappedOrganizer = new OrganizerProfile
-            {
-                Id = Guid.NewGuid(),
-                UserId = userId,
-                OrganizationType = request.OrganizationType,
-                OrganizerType = request.OrganizerType,
-                EventFrequency = request.EventFrequency,
-                EventSize = request.EventSize,
-                EventExperienceLevel = request.EventExperienceLevel,
-                ContactName = request.ContactName,
-                ContactEmail = request.ContactEmail,
-                ContactPhone = request.ContactPhone,
-                Address = request.Address,
-                Website = request.Website,
-                UrlFacebook = request.UrlFacebook,
-                UrlInstagram = request.UrlInstagram,
-                UrlLinkedIn = request.UrlLinkedIn,
-                ExperienceDescription = request.ExperienceDescription,
-                IdentityNumber = request.IdentityNumber,
-                CompanyName = request.CompanyName,
-                TaxCode = request.TaxCode,
-                CompanyDescription = request.CompanyDescription,
-                User = user
-            };
-
-            var emptyOrganizerList = new List<OrganizerProfile>{ organizer }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(false)).Returns(emptyOrganizerList.Object);
-
-            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-                .Returns<Func<Task<Result>>>(func => func());
-
-            _mockMapper.Setup(x => x.Map<OrganizerProfile>(request)).Returns(mappedOrganizer);
-            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.AddAsync(mappedOrganizer));
-
-            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
-
-            result.Should().NotBeNull();
-            result.IsSuccess.Should().BeTrue();
         }
 
-        [Fact]
-        public async Task RegisterOrganizerAsync_WhenUserInactive_ShouldReturnUnauthorized()
+        private User CreateInactiveUser(Guid userId)
         {
-            var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
-            var request = new RegisterOrganizerRequest
-            {
-                OrganizationType = OrganizationType.PrivateCompany,
-                OrganizerType = OrganizerType.Business,
-                EventFrequency = EventFrequency.Monthly,
-                EventSize = EventSize.Medium,
-                EventExperienceLevel = EventExperienceLevel.Intermediate,
-                ContactName = "John Doe",
-                ContactEmail = "john.doe@company.com",
-                ContactPhone = "+84901234567",
-                Address = "123 Business Street, District 1, Ho Chi Minh City",
-                Website = "https://www.company.com",
-                UrlFacebook = "https://facebook.com/company",
-                UrlInstagram = "https://instagram.com/company",
-                UrlLinkedIn = "https://linkedin.com/company/company",
-                ExperienceDescription = "5 years of experience organizing corporate events and conferences",
-                IdentityNumber = "123456789012",
-                CompanyName = "ABC Event Company Ltd",
-                TaxCode = "0123456789",
-                CompanyDescription = "Professional event management company specializing in corporate events"
-            };
-
-            var user = new User
+            return new User
             {
                 Id = userId,
                 Email = "user@example.com",
                 FullName = "Test User",
                 IsActive = false
             };
-
-            var organizer = new OrganizerProfile
-            {
-                Id = Guid.NewGuid(),
-                UserId = userId,
-                OrganizationType = OrganizationType.PrivateCompany,
-                OrganizerType = OrganizerType.Business,
-                EventFrequency = EventFrequency.Weekly,
-                EventSize = EventSize.Small,
-                EventExperienceLevel = EventExperienceLevel.Beginner,
-                ContactName = "Tran Thi B",
-                ContactEmail = "tranthi.b@govedu.vn",
-                ContactPhone = "+84987654321",
-                Address = "12 Nguyen Hue Boulevard, District 1, Ho Chi Minh City",
-                Website = "https://www.govedu.vn",
-                UrlFacebook = "https://facebook.com/govedu",
-                UrlInstagram = "https://instagram.com/govedu",
-                UrlLinkedIn = "https://linkedin.com/company/govedu",
-                ExperienceDescription = "Recently started organizing educational workshops and government seminars.",
-                IdentityNumber = "456789123456",
-                CompanyName = "GovEdu Training Center",
-                TaxCode = "5647382910",
-                CompanyDescription = "Government-affiliated education and training center focusing on youth development programs.",
-                User = new User
-                {
-                    Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
-                    Email = "tranthi.b@govedu.vn",
-                }
-            };
-
-            var mappedOrganizer = new OrganizerProfile
-            {
-                Id = Guid.NewGuid(),
-                UserId = userId,
-                OrganizationType = request.OrganizationType,
-                OrganizerType = request.OrganizerType,
-                EventFrequency = request.EventFrequency,
-                EventSize = request.EventSize,
-                EventExperienceLevel = request.EventExperienceLevel,
-                ContactName = request.ContactName,
-                ContactEmail = request.ContactEmail,
-                ContactPhone = request.ContactPhone,
-                Address = request.Address,
-                Website = request.Website,
-                UrlFacebook = request.UrlFacebook,
-                UrlInstagram = request.UrlInstagram,
-                UrlLinkedIn = request.UrlLinkedIn,
-                ExperienceDescription = request.ExperienceDescription,
-                IdentityNumber = request.IdentityNumber,
-                CompanyName = request.CompanyName,
-                TaxCode = request.TaxCode,
-                CompanyDescription = request.CompanyDescription,
-                User = user
-            };
-
-            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-                .Returns<Func<Task<Result>>>(func => func());
-
-            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
-
-            result.Should().NotBeNull();
-            result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("User not found or inactive");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
         }
 
-        [Fact]
-        public async Task RegisterOrganizerAsync_WhenTaxCodeAlreadyExists_ShouldReturnInvalidInput()
+        private OrganizerProfile CreateMappedOrganizer(Guid userId, RegisterOrganizerRequest request)
         {
-            var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
-            var request = new RegisterOrganizerRequest
-            {
-                OrganizationType = OrganizationType.PrivateCompany,
-                OrganizerType = OrganizerType.Business,
-                EventFrequency = EventFrequency.Monthly,
-                EventSize = EventSize.Medium,
-                EventExperienceLevel = EventExperienceLevel.Intermediate,
-                ContactName = "John Doe",
-                ContactEmail = "john.doe@company.com",
-                ContactPhone = "+84901234567",
-                Address = "123 Business Street, District 1, Ho Chi Minh City",
-                Website = "https://www.company.com",
-                UrlFacebook = "https://facebook.com/company",
-                UrlInstagram = "https://instagram.com/company",
-                UrlLinkedIn = "https://linkedin.com/company/company",
-                ExperienceDescription = "5 years of experience organizing corporate events and conferences",
-                IdentityNumber = "123456789012",
-                CompanyName = "ABC Event Company Ltd",
-                TaxCode = "0123456789",
-                CompanyDescription = "Professional event management company specializing in corporate events"
-            };
-
-            var user = new User
-            {
-                Id = userId,
-                Email = "user@example.com",
-                FullName = "Test User",
-                IsActive = true
-            };
-
-            var organizer = new OrganizerProfile
-            {
-                Id = Guid.NewGuid(),
-                UserId = userId,
-                OrganizationType = OrganizationType.PrivateCompany,
-                OrganizerType = OrganizerType.Business,
-                EventFrequency = EventFrequency.Weekly,
-                EventSize = EventSize.Small,
-                EventExperienceLevel = EventExperienceLevel.Beginner,
-                ContactName = "Tran Thi B",
-                ContactEmail = "tranthi.b@govedu.vn",
-                ContactPhone = "+84987654321",
-                Address = "12 Nguyen Hue Boulevard, District 1, Ho Chi Minh City",
-                Website = "https://www.govedu.vn",
-                UrlFacebook = "https://facebook.com/govedu",
-                UrlInstagram = "https://instagram.com/govedu",
-                UrlLinkedIn = "https://linkedin.com/company/govedu",
-                ExperienceDescription = "Recently started organizing educational workshops and government seminars.",
-                IdentityNumber = "456789123456",
-                CompanyName = "GovEdu Training Center",
-                TaxCode = "0123456789",
-                CompanyDescription = "Government-affiliated education and training center focusing on youth development programs.",
-                User = new User
-                {
-                    Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
-                    Email = "tranthi.b@govedu.vn",
-                }
-            };
-
-            var mappedOrganizer = new OrganizerProfile
+            return new OrganizerProfile
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
                 OrganizationType = request.OrganizationType,
-                OrganizerType = request.OrganizerType,
                 EventFrequency = request.EventFrequency,
                 EventSize = request.EventSize,
+                OrganizerType = request.OrganizerType,
                 EventExperienceLevel = request.EventExperienceLevel,
                 ContactName = request.ContactName,
                 ContactEmail = request.ContactEmail,
@@ -323,300 +582,427 @@ namespace AIEvent.Application.Test.Services
                 IdentityNumber = request.IdentityNumber,
                 CompanyName = request.CompanyName,
                 TaxCode = request.TaxCode,
-                CompanyDescription = request.CompanyDescription,
-                User = user
+                CompanyDescription = request.CompanyDescription
             };
+        }
 
+        private OrganizerProfile CreateOrganizerWithTaxCode(string taxCode)
+        {
+            return new OrganizerProfile
+            {
+                Id = Guid.NewGuid(),
+                TaxCode = taxCode,
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Business,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                ContactName = "Existing User",
+                ContactEmail = "existing@company.com",
+                ContactPhone = "+84901234567",
+                Address = "123 Business Street"
+            };
+        }
+
+        private Microsoft.AspNetCore.Http.IFormFile CreateMockFormFile()
+        {
+            var mockFile = new Mock<Microsoft.AspNetCore.Http.IFormFile>();
+            mockFile.Setup(f => f.Length).Returns(1024);
+            mockFile.Setup(f => f.FileName).Returns("test.jpg");
+            mockFile.Setup(f => f.ContentType).Returns("image/jpeg");
+            return mockFile.Object;
+        }
+
+        private void SetupSuccessfulMocks(User user, OrganizerProfile mappedOrganizer)
+        {
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(func => func());
 
-            var emptyOrganizerList = new List<OrganizerProfile> { organizer }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(false)).Returns(emptyOrganizerList.Object);
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(user.Id, true))
+                .ReturnsAsync(user);
 
+            var emptyOrganizerList = new List<OrganizerProfile>().AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(false))
+                .Returns(emptyOrganizerList.Object);
 
-            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
+            _mockMapper.Setup(x => x.Map<OrganizerProfile>(It.IsAny<RegisterOrganizerRequest>()))
+                .Returns(mappedOrganizer);
 
-            result.Should().NotBeNull();
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.AddAsync(It.IsAny<OrganizerProfile>()));
+        }
+
+        private void SetupCloudinaryMocks(string? url1, string? url2, string? url3, string? url4)
+        {
+            _mockCloudinaryService.Setup(x => x.UploadImageAsync(It.IsAny<Microsoft.AspNetCore.Http.IFormFile>()))
+                .ReturnsAsync(url1);
+            _mockCloudinaryService.Setup(x => x.UploadImageAsync(It.IsAny<Microsoft.AspNetCore.Http.IFormFile>()))
+                .ReturnsAsync(url2);
+            _mockCloudinaryService.Setup(x => x.UploadImageAsync(It.IsAny<Microsoft.AspNetCore.Http.IFormFile>()))
+                .ReturnsAsync(url3);
+            _mockCloudinaryService.Setup(x => x.UploadImageAsync(It.IsAny<Microsoft.AspNetCore.Http.IFormFile>()))
+                .ReturnsAsync(url4);
+        }
+
+        private void VerifySuccessfulRegistration(OrganizerProfile mappedOrganizer)
+        {
+            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(mappedOrganizer.UserId, true), Times.Once());
+            _mockMapper.Verify(x => x.Map<OrganizerProfile>(It.IsAny<RegisterOrganizerRequest>()), Times.Once());
+            _mockUnitOfWork.Verify(x => x.OrganizerProfileRepository.AddAsync(It.IsAny<OrganizerProfile>()), Times.Once());
+        }
+
+        private void VerifyCloudinaryUploads(int expectedCount)
+        {
+            _mockCloudinaryService.Verify(x => x.UploadImageAsync(It.IsAny<Microsoft.AspNetCore.Http.IFormFile>()),
+                Times.Exactly(expectedCount));
+        }
+        #endregion
+
+        #region ConfirmBecomeOrganizer
+
+        [Fact]
+        public async Task UTCID01_ConfirmBecomeOrganizerAsync_WithEmptyIds_ShouldReturnFailure()
+        {
+            // Arrange
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            // Act
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(Guid.Empty, Guid.Empty, new ConfirmRequest { Status = ConfirmStatus.Approve }, null);
+
+            // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Tax code already exists.");
+            result.Error!.Message.Should().Be("Invalid input");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
         [Fact]
-        public async Task RegisterOrganizerAsync_WhenMapperReturnsNull_ShouldReturnInternalServerError()
+        public async Task UTCID02_ConfirmBecomeOrganizerAsync_ProfileNotFound_ShouldReturnNotFound()
         {
-            var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
-            var request = new RegisterOrganizerRequest
+            // Arrange
+            var userId = Guid.NewGuid();
+            var profileId = Guid.NewGuid();
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<OrganizerProfile>().AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profileId, new ConfirmRequest { Status = ConfirmStatus.Approve }, null);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Organizer profile not found");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        [Fact]
+        public async Task UTCID03_ConfirmBecomeOrganizerAsync_ProfileAlreadyConfirmed_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var profile = CreateOrganizerProfileNeedConfirm();
+            profile.Status = ConfirmStatus.Approve; // already confirmed
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<OrganizerProfile> { profile }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, new ConfirmRequest { Status = ConfirmStatus.Approve }, null);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Profile already confirmed");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID04_ConfirmBecomeOrganizerAsync_Approve_Success_ShouldReturnSuccess()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var profile = CreateOrganizerProfileNeedConfirm();
+            var role = new Role { Id = Guid.NewGuid(), Name = "Organizer" };
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<OrganizerProfile> { profile }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.UpdateAsync(It.IsAny<OrganizerProfile>()));
+
+            _mockUnitOfWork.Setup(x => x.RoleRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Role> { role }.AsQueryable().BuildMockDbSet().Object);
+
+            _mockHasherHelper.Setup(x => x.Hash(It.IsAny<string>(), It.IsAny<int>()))
+                .Returns("hashedPassword");
+            _mockUnitOfWork.Setup(x => x.UserRepository.AddAsync(It.IsAny<User>()));
+
+            _mockEmailService.Setup(x => x.SendEmailAsync(profile.ContactEmail!, It.IsAny<MimeMessage>()))
+                .ReturnsAsync(Result.Success());
+
+            var request = new ConfirmRequest { Status = ConfirmStatus.Approve };
+
+            // Act
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, request, null);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.OrganizerProfileRepository.UpdateAsync(It.Is<OrganizerProfile>(p => p.Id == profile.Id && p.Status == ConfirmStatus.Approve && p.ConfirmBy == userId.ToString())), Times.Once());
+            _mockUnitOfWork.Verify(x => x.RoleRepository.Query(It.IsAny<bool>()), Times.Once());
+            _mockHasherHelper.Verify(x => x.Hash(It.IsAny<string>(), It.IsAny<int>()), Times.Once());
+            _mockUnitOfWork.Verify(x => x.UserRepository.AddAsync(It.Is<User>(u => u.Email == profile.ContactEmail && u.LinkedUserId == profile.UserId && u.RoleId == role.Id)), Times.Once());
+            _mockEmailService.Verify(x => x.SendEmailAsync(profile.ContactEmail!, It.IsAny<MimeMessage>()), Times.Once());
+        }
+
+        [Fact]
+        public async Task UTCID05_ConfirmBecomeOrganizerAsync_Approve_RoleNotFound_ShouldReturnNotFound()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var profile = CreateOrganizerProfileNeedConfirm();
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<OrganizerProfile> { profile }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.UpdateAsync(It.IsAny<OrganizerProfile>()));
+
+            _mockUnitOfWork.Setup(x => x.RoleRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Role>().AsQueryable().BuildMockDbSet().Object);
+
+            var request = new ConfirmRequest { Status = ConfirmStatus.Approve };
+
+            // Act
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, request, null);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Not found role");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        [Fact]
+        public async Task UTCID06_ConfirmBecomeOrganizerAsync_Approve_SendEmailFailed_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var profile = CreateOrganizerProfileNeedConfirm();
+            var role = new Role { Id = Guid.NewGuid(), Name = "Organizer" };
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<OrganizerProfile> { profile }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.UpdateAsync(It.IsAny<OrganizerProfile>()));
+
+            _mockUnitOfWork.Setup(x => x.RoleRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Role> { role }.AsQueryable().BuildMockDbSet().Object);
+
+            _mockHasherHelper.Setup(x => x.Hash(It.IsAny<string>(), It.IsAny<int>()))
+                .Returns("hashedPassword");
+            _mockUnitOfWork.Setup(x => x.UserRepository.AddAsync(It.IsAny<User>()));
+
+            _mockEmailService.Setup(x => x.SendEmailAsync(profile.ContactEmail!, It.IsAny<MimeMessage>()))
+                .ReturnsAsync(ErrorResponse.FailureResult("Email send failed", ErrorCodes.InternalServerError));
+
+            var request = new ConfirmRequest { Status = ConfirmStatus.Approve };
+
+            // Act
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, request, null);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Failed to send email");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
+        }
+
+        [Fact]
+        public async Task UTCID07_ConfirmBecomeOrganizerAsync_Reject_WithoutReason_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var profile = CreateOrganizerProfileNeedConfirm();
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<OrganizerProfile> { profile }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.UpdateAsync(It.IsAny<OrganizerProfile>()));
+
+            var request = new ConfirmRequest { Status = ConfirmStatus.Reject };
+
+            // Act
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, request, null);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Need reason to reject application");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID08_ConfirmBecomeOrganizerAsync_Reject_SendEmailFailed_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var profile = CreateOrganizerProfileNeedConfirm();
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<OrganizerProfile> { profile }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.UpdateAsync(It.IsAny<OrganizerProfile>()));
+
+            _mockEmailService.Setup(x => x.SendEmailAsync(profile.ContactEmail!, It.IsAny<MimeMessage>()))
+                .ReturnsAsync(ErrorResponse.FailureResult("Email send failed", ErrorCodes.InternalServerError));
+
+            var request = new ConfirmRequest { Status = ConfirmStatus.Reject };
+
+            // Act
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, request, "Missing documents");
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Failed to send rejection email");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
+        }
+
+        [Fact]
+        public async Task UTCID09_ConfirmBecomeOrganizerAsync_Reject_Success_ShouldReturnSuccess()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var profile = CreateOrganizerProfileNeedConfirm();
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<OrganizerProfile> { profile }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.UpdateAsync(It.IsAny<OrganizerProfile>()));
+
+            _mockEmailService.Setup(x => x.SendEmailAsync(profile.ContactEmail!, It.IsAny<MimeMessage>()))
+                .ReturnsAsync(Result.Success());
+
+            var request = new ConfirmRequest { Status = ConfirmStatus.Reject };
+
+            // Act
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, request, "Thông tin không hợp lệ");
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.OrganizerProfileRepository.UpdateAsync(It.Is<OrganizerProfile>(p => p.Id == profile.Id && p.Status == ConfirmStatus.Reject && p.ConfirmBy == userId.ToString())), Times.Once());
+            _mockEmailService.Verify(x => x.SendEmailAsync(profile.ContactEmail!, It.IsAny<MimeMessage>()), Times.Once());
+        }
+
+        [Fact]
+        public async Task UTCID10_ConfirmBecomeOrganizerAsync_WithEmptyUserIdOnly_ShouldReturnFailure()
+        {
+            // Arrange
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            // Act
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(Guid.Empty, Guid.NewGuid(), new ConfirmRequest { Status = ConfirmStatus.Approve }, null);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID11_ConfirmBecomeOrganizerAsync_WithEmptyOrganizerProfileIdOnly_ShouldReturnFailure()
+        {
+            // Arrange
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            // Act
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(Guid.NewGuid(), Guid.Empty, new ConfirmRequest { Status = ConfirmStatus.Approve }, null);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID12_ConfirmBecomeOrganizerAsync_WithDeletedProfile_ShouldReturnNotFound()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var profile = CreateOrganizerProfileNeedConfirm();
+            profile.IsDeleted = true; // Profile is deleted
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<OrganizerProfile> { profile }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, new ConfirmRequest { Status = ConfirmStatus.Approve }, null);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Organizer profile not found");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        // Branch Coverage Tests - Different Status Values
+        [Fact]
+        public async Task UTCID13_ConfirmBecomeOrganizerAsync_WithRejectedStatus_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var profile = CreateOrganizerProfileNeedConfirm();
+            profile.Status = ConfirmStatus.Reject; // Already rejected
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<OrganizerProfile> { profile }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, new ConfirmRequest { Status = ConfirmStatus.Approve }, null);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Profile already confirmed");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+        private OrganizerProfile CreateOrganizerProfileNeedConfirm()
+        {
+            return new OrganizerProfile
             {
+                Id = Guid.NewGuid(),
+                UserId = Guid.NewGuid(),
                 OrganizationType = OrganizationType.PrivateCompany,
-                OrganizerType = OrganizerType.Business,
                 EventFrequency = EventFrequency.Monthly,
                 EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Business,
                 EventExperienceLevel = EventExperienceLevel.Intermediate,
                 ContactName = "John Doe",
                 ContactEmail = "john.doe@company.com",
                 ContactPhone = "+84901234567",
-                Address = "123 Business Street, District 1, Ho Chi Minh City",
-                Website = "https://www.company.com",
-                UrlFacebook = "https://facebook.com/company",
-                UrlInstagram = "https://instagram.com/company",
-                UrlLinkedIn = "https://linkedin.com/company/company",
-                ExperienceDescription = "5 years of experience organizing corporate events and conferences",
-                IdentityNumber = "123456789012",
-                CompanyName = "ABC Event Company Ltd",
-                TaxCode = "0123456789",
-                CompanyDescription = "Professional event management company specializing in corporate events"
+                Address = "123 Business Street",
+                CompanyName = "ABC Event Company",
+                Status = ConfirmStatus.NeedConfirm,
+                IsDeleted = false
             };
-
-            var user = new User
-            {
-                Id = userId,
-                Email = "user@example.com",
-                FullName = "Test User",
-                IsActive = true
-            };
-
-            var organizer = new OrganizerProfile
-            {
-                Id = Guid.NewGuid(),
-                UserId = userId,
-                OrganizationType = OrganizationType.PrivateCompany,
-                OrganizerType = OrganizerType.Business,
-                EventFrequency = EventFrequency.Weekly,
-                EventSize = EventSize.Small,
-                EventExperienceLevel = EventExperienceLevel.Beginner,
-                ContactName = "Tran Thi B",
-                ContactEmail = "tranthi.b@govedu.vn",
-                ContactPhone = "+84987654321",
-                Address = "12 Nguyen Hue Boulevard, District 1, Ho Chi Minh City",
-                Website = "https://www.govedu.vn",
-                UrlFacebook = "https://facebook.com/govedu",
-                UrlInstagram = "https://instagram.com/govedu",
-                UrlLinkedIn = "https://linkedin.com/company/govedu",
-                ExperienceDescription = "Recently started organizing educational workshops and government seminars.",
-                IdentityNumber = "456789123456",
-                CompanyName = "GovEdu Training Center",
-                TaxCode = "5647382910",
-                CompanyDescription = "Government-affiliated education and training center focusing on youth development programs.",
-                User = new User
-                {
-                    Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
-                    Email = "tranthi.b@govedu.vn",
-                }
-            };
-
-            var emptyOrganizerList = new List<OrganizerProfile> { organizer }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(false)).Returns(emptyOrganizerList.Object);
-
-            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-                .Returns<Func<Task<Result>>>(func => func());
-
-            _mockMapper.Setup(x => x.Map<OrganizerProfile>(request));
-
-            var result = await _organizerService.RegisterOrganizerAsync(userId, request);
-
-            result.Should().NotBeNull();
-            result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Failed to map organizer profile");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
         }
+
         #endregion
-
-
-        //--------------------------ConfirmBecomeOrganizerAsync------------------------------------
-        [Fact]
-        public async Task ConfirmBecomeOrganizerAsync_InvalidGuid_ReturnsFailure()
-        {
-            _mockTransactionHelper
-                .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-                .Returns<Func<Task<Result>>>(fn => fn());
-
-            var result = await _organizerService.ConfirmBecomeOrganizerAsync(Guid.NewGuid(), "not-a-guid", new ConfirmRequest());
-
-            result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid Guid format");
-            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-        }
-
-
-        [Fact]
-        public async Task ConfirmBecomeOrganizerAsync_UserNotFound_ReturnsFailure()
-        {
-            var organizer = new OrganizerProfile
-            {
-                Id = testId,
-                UserId = Guid.NewGuid(),
-                Status = ConfirmStatus.NeedConfirm,
-                OrganizationType = OrganizationType.PrivateCompany,
-                OrganizerType = OrganizerType.Business,
-                EventFrequency = EventFrequency.Weekly,
-                EventSize = EventSize.Small,
-                EventExperienceLevel = EventExperienceLevel.Beginner,
-                ContactName = "Tran Thi B",
-                ContactEmail = "tranthi.b@govedu.vn",
-                ContactPhone = "+84987654321",
-                Address = "12 Nguyen Hue Boulevard, District 1, Ho Chi Minh City",
-            };
-
-            _mockUnitOfWork.Setup(u => u.OrganizerProfileRepository.Query(false))
-                .Returns(new List<OrganizerProfile> { organizer }.AsQueryable().BuildMockDbSet().Object);
-
-            _mockTransactionHelper
-                .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-                .Returns<Func<Task<Result>>>(fn => fn());
-
-            var result = await _organizerService.ConfirmBecomeOrganizerAsync(Guid.NewGuid(), organizer.Id.ToString(), new ConfirmRequest { Status = ConfirmStatus.Approve });
-
-            result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("User not found");
-            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
-        }
-
-
-        [Fact]
-        public async Task ConfirmBecomeOrganizerAsync_UserDoesNotHaveOrganizerRole_AddRoleSucceeds_ReturnsSuccess()
-        {
-            var organizer = new OrganizerProfile
-            {
-                Id = testId,
-                UserId = Guid.NewGuid(),
-                Status = ConfirmStatus.NeedConfirm,
-                OrganizationType = OrganizationType.PrivateCompany,
-                OrganizerType = OrganizerType.Business,
-                EventFrequency = EventFrequency.Weekly,
-                EventSize = EventSize.Small,
-                EventExperienceLevel = EventExperienceLevel.Beginner,
-                ContactName = "Tran Thi B",
-                ContactEmail = "tranthi.b@govedu.vn",
-                ContactPhone = "+84987654321",
-                Address = "12 Nguyen Hue Boulevard, District 1, Ho Chi Minh City",
-            };
-            var user = new User { Id = organizer.UserId };
-
-            _mockUnitOfWork.Setup(u => u.OrganizerProfileRepository.Query(false))
-                .Returns(new List<OrganizerProfile> { organizer }.AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork
-                .Setup(u => u.OrganizerProfileRepository.UpdateAsync(organizer))
-                .ReturnsAsync(organizer);
-
-
-            _mockTransactionHelper
-                .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-                .Returns<Func<Task<Result>>>(fn => fn());
-
-            var result = await _organizerService.ConfirmBecomeOrganizerAsync(Guid.NewGuid(), organizer.Id.ToString(), new ConfirmRequest { Status = ConfirmStatus.Approve });
-
-            result.IsSuccess.Should().BeTrue();
-            organizer.Status.Should().Be(ConfirmStatus.Approve);
-            organizer.ConfirmAt.Should().NotBeNull();
-            organizer.ConfirmBy.Should().NotBeNull();
-        }
-
-        [Fact]
-        public async Task ConfirmBecomeOrganizerAsync_UserAlreadyHasOrganizerRole_ReturnsFailure()
-        {
-            var organizer = new OrganizerProfile
-            {
-                Id = testId,
-                UserId = Guid.NewGuid(),
-                Status = ConfirmStatus.NeedConfirm,
-                OrganizationType = OrganizationType.PrivateCompany,
-                OrganizerType = OrganizerType.Business,
-                EventFrequency = EventFrequency.Weekly,
-                EventSize = EventSize.Small,
-                EventExperienceLevel = EventExperienceLevel.Beginner,
-                ContactName = "Tran Thi B",
-                ContactEmail = "tranthi.b@govedu.vn",
-                ContactPhone = "+84987654321",
-                Address = "12 Nguyen Hue Boulevard, District 1, Ho Chi Minh City",
-            };
-            var user = new User { Id = organizer.UserId };
-
-            _mockUnitOfWork.Setup(u => u.OrganizerProfileRepository.Query(false))
-                .Returns(new List<OrganizerProfile> { organizer }.AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork
-                .Setup(u => u.OrganizerProfileRepository.UpdateAsync(organizer))
-                .ReturnsAsync(organizer);
-
-            _mockTransactionHelper
-                .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-                .Returns<Func<Task<Result>>>(fn => fn());
-
-            var result = await _organizerService.ConfirmBecomeOrganizerAsync(Guid.NewGuid(), organizer.Id.ToString(), new ConfirmRequest { Status = ConfirmStatus.Approve });
-
-            result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("User is already an Organizer");
-            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-        }
-
-        [Fact]
-        public async Task ConfirmBecomeOrganizerAsync_ProfileAlreadyConfirmed_ReturnsFailure()
-        {
-            var organizer = new OrganizerProfile
-            {
-                Id = testId,
-                UserId = Guid.NewGuid(),
-                Status = ConfirmStatus.Approve,
-                OrganizationType = OrganizationType.PrivateCompany,
-                OrganizerType = OrganizerType.Business,
-                EventFrequency = EventFrequency.Weekly,
-                EventSize = EventSize.Small,
-                EventExperienceLevel = EventExperienceLevel.Beginner,
-                ContactName = "Tran Thi B",
-                ContactEmail = "tranthi.b@govedu.vn",
-                ContactPhone = "+84987654321",
-                Address = "12 Nguyen Hue Boulevard, District 1, Ho Chi Minh City",
-            };
-
-            _mockUnitOfWork.Setup(u => u.OrganizerProfileRepository.Query(false))
-                .Returns(new List<OrganizerProfile> { organizer }.AsQueryable().BuildMockDbSet().Object);
-
-            _mockTransactionHelper
-                .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-                .Returns<Func<Task<Result>>>(fn => fn());
-
-            var result = await _organizerService
-                .ConfirmBecomeOrganizerAsync(Guid.NewGuid(), organizer.Id.ToString(), new ConfirmRequest { Status = ConfirmStatus.Approve });
-
-            result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Can not found Organizer profile");
-            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
-        }
-
-        [Fact]
-        public async Task ConfirmBecomeOrganizerAsync_ProfileDeleted_ReturnsFailure()
-        {
-            var organizer = new OrganizerProfile
-            {
-                Id = testId,
-                UserId = Guid.NewGuid(),
-                Status = ConfirmStatus.NeedConfirm,
-                OrganizationType = OrganizationType.PrivateCompany,
-                OrganizerType = OrganizerType.Business,
-                EventFrequency = EventFrequency.Weekly,
-                EventSize = EventSize.Small,
-                EventExperienceLevel = EventExperienceLevel.Beginner,
-                ContactName = "Tran Thi B",
-                ContactEmail = "tranthi.b@govedu.vn",
-                ContactPhone = "+84987654321",
-                Address = "12 Nguyen Hue Boulevard, District 1, Ho Chi Minh City",
-                IsDeleted = true,
-            };
-
-            _mockUnitOfWork.Setup(u => u.OrganizerProfileRepository.Query(false))
-                .Returns(new List<OrganizerProfile> { organizer }.AsQueryable().BuildMockDbSet().Object);
-
-            _mockTransactionHelper
-                .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-                .Returns<Func<Task<Result>>>(fn => fn());
-
-            var result = await _organizerService
-                .ConfirmBecomeOrganizerAsync(Guid.NewGuid(), organizer.Id.ToString(), new ConfirmRequest { Status = ConfirmStatus.Approve });
-
-            result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Can not found Organizer profile");
-            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
-        }
-
     }
 }

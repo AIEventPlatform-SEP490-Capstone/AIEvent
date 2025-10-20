@@ -1,5 +1,6 @@
 ﻿using AIEvent.Domain.Enums;
 using Microsoft.AspNetCore.Http;
+using System.ComponentModel.DataAnnotations;
 
 namespace AIEvent.Application.DTOs.Organizer
 {
@@ -10,8 +11,13 @@ namespace AIEvent.Application.DTOs.Organizer
         public required EventSize EventSize { get; set; }
         public required OrganizerType OrganizerType { get; set; }
         public required EventExperienceLevel EventExperienceLevel { get; set; }
+        [Required(ErrorMessage = "Contact name is required")]
         public required string ContactName { get; set; }
+        [Required(ErrorMessage = "Contact email is required")]
+        [EmailAddress(ErrorMessage = "Invalid email format")]
         public required string ContactEmail { get; set; }
+        [Required(ErrorMessage = "Contact phone is required")]
+        [Phone(ErrorMessage = "Invalid phone number format")]
         public required string ContactPhone { get; set; }
         public required string Address { get; set; }
         public string? Website { get; set; }

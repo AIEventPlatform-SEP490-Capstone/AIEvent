@@ -1,6 +1,6 @@
 ﻿using AIEvent.Application.Services.Interfaces;
-using MailKit.Security;
 using MailKit.Net.Smtp;
+using MailKit.Security;
 using MimeKit;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Constants;
@@ -11,7 +11,7 @@ namespace AIEvent.Application.Services.Implements
 {
     public class EmailService : IEmailService
     {
-        public async Task<Result> SendOtpAsync(string email, MimeMessage message)
+        public async Task<Result> SendEmailAsync(string email, MimeMessage message)
         {
             if (string.IsNullOrWhiteSpace(email))
                 return ErrorResponse.FailureResult("Email cannot be blank", ErrorCodes.InvalidInput);
@@ -419,7 +419,7 @@ namespace AIEvent.Application.Services.Implements
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
         }
-    }
 
+    }
 }
 

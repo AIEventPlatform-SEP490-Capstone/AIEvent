@@ -233,7 +233,7 @@ namespace AIEvent.Application.Services.Implements
                 }
             };
 
-            var userOtps = await _emailService.SendOtpAsync(request.Email, message);
+            var userOtps = await _emailService.SendEmailAsync(request.Email, message);
             if (!userOtps.IsSuccess) {
                 await _unitOfWork.UserRepository.DeleteAsync(user);
                 return ErrorResponse.FailureResult("Failed to send email", ErrorCodes.InternalServerError);
@@ -260,8 +260,6 @@ namespace AIEvent.Application.Services.Implements
 
             return Result.Success();
         }
-
-
 
         public async Task<Result> ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
         {
@@ -292,6 +290,5 @@ namespace AIEvent.Application.Services.Implements
             await _unitOfWork.SaveChangesAsync();
             return Result.Success();
         }
-
     }
 }
