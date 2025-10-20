@@ -1,3 +1,0 @@
-[csharp]
-testingFramework = "xUnit"
-mockingFramework = "Moq"
