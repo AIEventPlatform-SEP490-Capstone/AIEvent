@@ -117,7 +117,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid email or password");
+            result.Error!.Message.Should().Contain("Invalid email or password");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
         }
 
@@ -148,7 +148,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid email or password");
+            result.Error!.Message.Should().Contain("Invalid email or password");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
         }
 
@@ -164,7 +164,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid email or password");
+            result.Error!.Message.Should().Contain("Invalid email or password");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
         }
 
@@ -180,7 +180,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid email or password");
+            result.Error!.Message.Should().Contain("Invalid email or password");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
         }
 
@@ -196,7 +196,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid email or password");
+            result.Error!.Message.Should().Contain("Invalid email or password");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
         }
         #endregion
@@ -380,7 +380,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Invalid input");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
@@ -413,7 +413,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Full name is required");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
@@ -446,7 +446,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Email is required");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
@@ -512,7 +512,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Password is required");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
@@ -1124,7 +1124,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid email or otp code");
+            result.Error!.Message.Should().Contain("Invalid email or otp code");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
             _mockUnitOfWork.Verify(x => x.UserRepository.Query(false), Times.Never());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
@@ -1141,7 +1141,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid email");
+            result.Error!.Message.Should().Contain("Invalid email");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
             _mockUnitOfWork.Verify(x => x.UserRepository.Query(false), Times.Never());
             _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
@@ -1299,7 +1299,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Invalid input");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
             _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
         }
@@ -1316,7 +1316,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Invalid input");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
             _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
         }

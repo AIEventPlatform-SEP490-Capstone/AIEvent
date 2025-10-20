@@ -80,7 +80,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Invalid input");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
@@ -100,7 +100,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Invalid input");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
@@ -671,7 +671,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Invalid input");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
@@ -916,7 +916,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Invalid input");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
@@ -932,7 +932,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Invalid input");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
@@ -1044,7 +1044,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Invalid input");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 

@@ -40,13 +40,8 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result<AuthResponse>> LoginAsync(LoginRequest request)
         {
-            if(request == null)
-                return ErrorResponse.FailureResult("Invalid email or password", ErrorCodes.Unauthorized);
-
-            var context = new ValidationContext(request);
-            var results = new List<ValidationResult>();
-            bool isValid = Validator.TryValidateObject(request, context, results, true);
-            if (!isValid)
+            var validationResult = ValidationHelper.ValidateModel(request);
+            if (!validationResult.IsSuccess)
                 return ErrorResponse.FailureResult("Invalid email or password", ErrorCodes.Unauthorized);
 
             var user = await _unitOfWork.UserRepository
@@ -129,14 +124,9 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result<AuthResponse>> VerifyOTPAsync(VerifyOTPRequest request)
         {
-            if (request == null)
+            var validationResult = ValidationHelper.ValidateModel(request);
+            if (!validationResult.IsSuccess)
                 return ErrorResponse.FailureResult("Invalid email or otp code", ErrorCodes.Unauthorized);
-
-            var context = new ValidationContext(request);
-            var results = new List<ValidationResult>();
-            bool isValid = Validator.TryValidateObject(request, context, results, true);
-            if (!isValid)
-                return ErrorResponse.FailureResult("Invalid email", ErrorCodes.Unauthorized);
 
 
             var otp = await _cacheService.GetAsync<string>($"Register {request.Email}");
@@ -184,18 +174,9 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result> RegisterAsync(RegisterRequest request)
         {
-            if (request == null || string.IsNullOrEmpty(request.FullName) || string.IsNullOrEmpty(request.Email) ||
-        string.IsNullOrEmpty(request.Password) || string.IsNullOrEmpty(request.ConfirmPassword))
-                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
-
-            var context = new ValidationContext(request);
-            var results = new List<ValidationResult>();
-            bool isValid = Validator.TryValidateObject(request, context, results, true);
-            if (!isValid)
-            {
-                var messages = string.Join("; ", results.Select(r => r.ErrorMessage));
-                return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
-            }
+            var validationResult = ValidationHelper.ValidateModel(request);
+            if (!validationResult.IsSuccess)
+                return validationResult;
 
             var existingUser = await _unitOfWork.UserRepository
                                                 .Query()
@@ -259,16 +240,12 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result> ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
         {
-            if (userId == Guid.Empty || request == null)
+            if (userId == Guid.Empty)
                 return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
-            var context = new ValidationContext(request);
-            var results = new List<ValidationResult>();
-            bool isValid = Validator.TryValidateObject(request, context, results, true);
-            if (!isValid)
-            {
-                var messages = string.Join("; ", results.Select(r => r.ErrorMessage));
-                return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
-            }
+            
+            var validationResult = ValidationHelper.ValidateModel(request);
+            if (!validationResult.IsSuccess)
+                return validationResult;
             var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
             if (user == null)
                 return ErrorResponse.FailureResult("User not found", ErrorCodes.Unauthorized);

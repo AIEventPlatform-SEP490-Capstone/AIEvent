@@ -30,26 +30,13 @@ namespace AIEvent.Application.Services.Implements
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-                var context = new ValidationContext(request);
-                var results = new List<ValidationResult>();
-                bool isValid = Validator.TryValidateObject(request, context, results, true);
-                if (!isValid)
-                {
-                    var messages = string.Join("; ", results.Select(r => r.ErrorMessage));
-                    return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
-                }
-                foreach (var detail in request.RuleRefundDetails)
-                {
-                    var detailContext = new ValidationContext(detail);
-                    var detailResults = new List<ValidationResult>();
-                    bool isDetailValid = Validator.TryValidateObject(detail, detailContext, detailResults, true);
-
-                    if (!isDetailValid)
-                    {
-                        var messages = string.Join("; ", detailResults.Select(r => r.ErrorMessage));
-                        return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
-                    }
-                }
+                var validationResult = ValidationHelper.ValidateModel(request);
+                if (!validationResult.IsSuccess)
+                    return validationResult;
+                
+                var detailValidationResult = ValidationHelper.ValidateModelList(request.RuleRefundDetails);
+                if (!detailValidationResult.IsSuccess)
+                    return detailValidationResult;
 
                 var invalidDetail = request.RuleRefundDetails
                     .FirstOrDefault(d => d.MinDaysBeforeEvent.HasValue && d.MaxDaysBeforeEvent.HasValue && d.MinDaysBeforeEvent > d.MaxDaysBeforeEvent);
@@ -154,14 +141,10 @@ namespace AIEvent.Application.Services.Implements
             {
                 if (userId == Guid.Empty || ruleRefundId == Guid.Empty)
                     return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
-                var context = new ValidationContext(request);
-                var results = new List<ValidationResult>();
-                bool isValid = Validator.TryValidateObject(request, context, results, true);
-                if (!isValid)
-                {
-                    var messages = string.Join("; ", results.Select(r => r.ErrorMessage));
-                    return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
-                }
+                
+                var validationResult = ValidationHelper.ValidateModel(request);
+                if (!validationResult.IsSuccess)
+                    return validationResult;
                 var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
                 if (user == null || !user.IsActive || user.DeletedAt.HasValue)
                     return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
@@ -191,14 +174,10 @@ namespace AIEvent.Application.Services.Implements
             {
                 if (userId == Guid.Empty || ruleRefundDetailId == Guid.Empty)
                     return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
-                var context = new ValidationContext(request);
-                var results = new List<ValidationResult>();
-                bool isValid = Validator.TryValidateObject(request, context, results, true);
-                if (!isValid)
-                {
-                    var messages = string.Join("; ", results.Select(r => r.ErrorMessage));
-                    return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
-                }
+                
+                var validationResult = ValidationHelper.ValidateModel(request);
+                if (!validationResult.IsSuccess)
+                    return validationResult;
                 if (request.MinDaysBeforeEvent > request.MaxDaysBeforeEvent)
                     return ErrorResponse.FailureResult(
                         $"Invalid rule detail: MinDays ({request.MinDaysBeforeEvent}) cannot be greater than MaxDays ({request.MaxDaysBeforeEvent})",
@@ -255,14 +234,10 @@ namespace AIEvent.Application.Services.Implements
             {
                 if (userId == Guid.Empty || ruleRefundId == Guid.Empty)
                     return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
-                var context = new ValidationContext(request);
-                var results = new List<ValidationResult>();
-                bool isValid = Validator.TryValidateObject(request, context, results, true);
-                if (!isValid)
-                {
-                    var messages = string.Join("; ", results.Select(r => r.ErrorMessage));
-                    return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
-                }
+                
+                var validationResult = ValidationHelper.ValidateModel(request);
+                if (!validationResult.IsSuccess)
+                    return validationResult;
                 if (request.MinDaysBeforeEvent > request.MaxDaysBeforeEvent)
                     return ErrorResponse.FailureResult(
                         $"Invalid rule detail: MinDays ({request.MinDaysBeforeEvent}) cannot be greater than MaxDays ({request.MaxDaysBeforeEvent})",

@@ -12,6 +12,7 @@ using AIEvent.Domain.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
 namespace AIEvent.Application.Services.Implements
@@ -31,46 +32,45 @@ namespace AIEvent.Application.Services.Implements
         }
         public async Task<Result> CreateEventAsync(Guid organizerId, CreateEventRequest request)
         {
+            if (request == null)
+                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
+
+            var context = new ValidationContext(request);
+            var resultErrors = new List<ValidationResult>();
+            bool isValid = Validator.TryValidateObject(request, context, resultErrors, true);
+            if (!isValid)
+            {
+                var messages = string.Join("; ", resultErrors.Select(r => r.ErrorMessage));
+                return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
+            }
+
+            if (request.EndTime < request.StartTime)
+                return ErrorResponse.FailureResult("EndTime cannot be before the StartTime", ErrorCodes.InvalidInput);
+
+            var organizer = await _unitOfWork.OrganizerProfileRepository.GetByIdAsync(organizerId, true);
+            if (organizer?.Status != ConfirmStatus.Approve)
+                return ErrorResponse.FailureResult("Organizer not found or inactive", ErrorCodes.Unauthorized);
+
+
+            var events = _mapper.Map<Event>(request);
+
+            if (events == null)
+                return ErrorResponse.FailureResult("Failed to map event", ErrorCodes.InternalServerError);
+
+            if (request.ImgListEvent?.Any() == true)
+            {
+                var uploadTasks = request.ImgListEvent
+                    .Select(img => _cloudinaryService.UploadImageAsync(img))
+                    .ToList();
+
+                var uploadedUrls = await Task.WhenAll(uploadTasks);
+                events.ImgListEvent = JsonSerializer.Serialize(uploadedUrls);
+            }
+            events.OrganizerProfileId = organizerId;
+
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-
-                if (request.EndTime < request.StartTime)
-                {
-                    return ErrorResponse.FailureResult("EndTime cannot be before the StartTime", ErrorCodes.InvalidInput);
-                }
-
-                var organizer = await _unitOfWork.OrganizerProfileRepository.GetByIdAsync(organizerId, true);
-                if (organizer?.Status != ConfirmStatus.Approve)
-                {
-                    return ErrorResponse.FailureResult("Organizer not found or inactive", ErrorCodes.Unauthorized);
-                }
-
-
-                var events = _mapper.Map<Event>(request);
-
-                if (events == null)
-                {
-                    return ErrorResponse.FailureResult("Failed to map event", ErrorCodes.InternalServerError);
-                }
-
-                var uploadTasks = new List<Task<string>>();
-                if (request.ImgListEvent != null)
-                {
-                    foreach (var img in request.ImgListEvent)
-                    {
-                        uploadTasks.Add(_cloudinaryService.UploadImageAsync(img)!);
-                    }
-                    var results = await Task.WhenAll(uploadTasks);
-                    events.ImgListEvent = JsonSerializer.Serialize(results);
-                }
-                events.OrganizerProfileId = organizerId;
                 await _unitOfWork.EventRepository.AddAsync(events);
-
-                if(request.Publish == true)
-                {
-                    //Request đến Manager để duyệt event
-                }
-
                 return Result.Success();
             });
         }
