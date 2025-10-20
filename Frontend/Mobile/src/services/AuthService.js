@@ -36,11 +36,19 @@ class AuthService {
           data: data.data,
           message: data.message,
         };
-      } else {
+      } else if (response.ok) {
+        // Chuẩn hóa lỗi sai thông tin đăng nhập
         return {
           success: false,
           data: null,
-          message: data.message || 'Đăng nhập thất bại',
+          message: 'Email hoặc mật khẩu không đúng!',
+        };
+      } else {
+        // Lỗi kết nối hoặc máy chủ
+        return {
+          success: false,
+          data: null,
+          message: 'Email hoặc mật khẩu không đúng!'
         };
       }
     } catch (error) {
@@ -49,7 +57,7 @@ class AuthService {
       return {
         success: false,
         data: null,
-        message: `Lỗi mạng: ${error.message}`,
+        message: 'Lỗi kết nối, vui lòng thử lại!',
         error: error.message,
       };
     }

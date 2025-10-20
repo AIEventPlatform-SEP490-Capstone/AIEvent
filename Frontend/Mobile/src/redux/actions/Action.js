@@ -55,12 +55,14 @@ export const login = (email, password) => {
         dispatch(loginSuccess(result.data));
         return { success: true, message: result.message };
       } else {
-        dispatch(loginFailure(result.message));
-        return { success: false, message: result.message };
+        const message = result.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
+        dispatch(loginFailure(message));
+        return { success: false, message };
       }
     } catch (error) {
-      dispatch(loginFailure(error.message));
-      return { success: false, message: 'Login failed' };
+      const message = 'Đăng nhập thất bại. Vui lòng kiểm tra kết nối mạng và thử lại.';
+      dispatch(loginFailure(message));
+      return { success: false, message };
     }
   };
 };

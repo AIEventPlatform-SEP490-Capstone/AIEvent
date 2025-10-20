@@ -87,6 +87,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 4,
   },
+  showHideText: {
+    color: '#4A90E2',
+    fontSize: 14,
+    fontFamily: Fonts.bold,
+    paddingHorizontal: 4,
+    paddingVertical: 8,
+  },
+  eyeIcon: {
+    width: 20,
+    height: 20,
+    tintColor: '#7B8BA1',
+  },
   inputIcon: {
     width: 20,
     height: 20,
@@ -127,7 +139,11 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   loginButtonDisabled: {
-    opacity: 0.5,
+    backgroundColor: '#B0DFF6',
+    opacity: 1,
+  },
+  loginButtonEnabled: {
+    backgroundColor: '#2196F3',
   },
   loginButtonText: {
     color: Colors.white,

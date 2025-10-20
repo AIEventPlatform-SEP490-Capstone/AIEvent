@@ -18,21 +18,17 @@ import { styles } from './styles';
 const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const dispatch = useDispatch();
     const { isLoading, error } = useSelector(state => state.auth);
+    const canSubmit = email.trim().length > 0 && password.trim().length > 0;
 
     const handleLogin = async () => {
-        if (!email || !password) {
-            Alert.alert('Lỗi', 'Vui lòng nhập email và mật khẩu!');
+        if (!canSubmit || isLoading) {
             return;
         }
 
-        const result = await dispatch(login(email, password));
-        if (result.success) {
-            Alert.alert('Thành công', 'Đăng nhập thành công!');
-        } else {
-            Alert.alert('Lỗi', result.message);
-        }
+        await dispatch(login(email, password));
     };
 
     return (
@@ -93,9 +89,22 @@ const LoginScreen = ({ navigation }) => {
                                         placeholderTextColor="#A0AEC0"
                                         value={password}
                                         onChangeText={setPassword}
-                                        secureTextEntry
+                                        secureTextEntry={!isPasswordVisible}
                                         autoCapitalize="none"
                                     />
+                                    <TouchableOpacity
+                                        activeOpacity={0.7}
+                                        onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+                                    >
+                                        <Image
+                                            source={
+                                                isPasswordVisible
+                                                    ? require('../../assets/icons/show-eye.png')
+                                                    : require('../../assets/icons/close-eye.png')
+                                            }
+                                            style={styles.eyeIcon}
+                                        />
+                                    </TouchableOpacity>
                                 </View>
                             </View>
                             {error && (
@@ -105,9 +114,12 @@ const LoginScreen = ({ navigation }) => {
                             )}
 
                             <TouchableOpacity
-                                style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+                                style={[
+                                    styles.loginButton,
+                                    canSubmit ? styles.loginButtonEnabled : styles.loginButtonDisabled,
+                                ]}
                                 onPress={handleLogin}
-                                disabled={isLoading}
+                                disabled={!canSubmit || isLoading}
                                 activeOpacity={0.8}
                             >
                                 <Text style={styles.loginButtonText}>
