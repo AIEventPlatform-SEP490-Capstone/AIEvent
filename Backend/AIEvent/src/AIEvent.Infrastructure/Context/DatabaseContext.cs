@@ -45,6 +45,11 @@ namespace AIEvent.Infrastructure.Context
                       .WithMany(u => u.Users)
                       .HasForeignKey(e => e.RoleId);
 
+                entity.HasOne(u => u.LinkedUser)
+                      .WithMany(p => p.CreatedOrganizerAccounts)
+                      .HasForeignKey(u => u.LinkedUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
                 entity.Property(e => e.Email).HasMaxLength(256).IsRequired();
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
                 entity.HasIndex(e => e.Email).IsUnique().HasDatabaseName("IX_User_Email");
@@ -98,12 +103,12 @@ namespace AIEvent.Infrastructure.Context
                 entity.Property(e => e.ConfirmBy).HasMaxLength(100);
 
                 entity.HasOne(o => o.User)
-                    .WithOne(u => u.OrganizerProfile)
-                    .HasForeignKey<OrganizerProfile>(o => o.UserId);
+                      .WithOne(u => u.OrganizerProfile)
+                      .HasForeignKey<OrganizerProfile>(o => o.UserId)
+                      .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasIndex(o => o.UserId).HasDatabaseName("IX_OrganizerProfile_UserId");
-                entity.HasIndex(o => o.TaxCode).IsUnique().HasDatabaseName("IX_OrganizerProfile_TaxCode");
-                entity.HasIndex(o => new { o.UserId, o.IsDeleted }).HasDatabaseName("IX_OrganizerProfile_UserId_IsDeleted");
+                entity.HasIndex(o => new { o.UserId, o.TaxCode }).IsUnique().HasDatabaseName("IX_OrganizerProfile_UserId_TaxCode");
                 entity.HasIndex(o => o.ConfirmAt).HasDatabaseName("IX_OrganizerProfile_ConfirmAt");
                 entity.HasIndex(o => o.ContactEmail).HasDatabaseName("IX_OrganizerProfile_ContactEmail");
                 entity.HasIndex(o => o.IdentityNumber).HasDatabaseName("IX_OrganizerProfile_IdentityNumber");

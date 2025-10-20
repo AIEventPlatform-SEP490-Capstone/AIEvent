@@ -32,11 +32,14 @@ namespace AIEvent.Application.Services.Implements
                 new(ClaimTypes.Email, user.Email ?? string.Empty),
                 new(ClaimTypes.Role, user.Role.Name ?? string.Empty),
                 new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new("organizer", user.OrganizerProfile?.Id.ToString() ?? string.Empty),
-                new(JwtRegisteredClaimNames.Sub, user.OrganizerProfile?.Id.ToString() ?? string.Empty),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
             };
+
+            if (user.OrganizerProfile != null)
+            {
+                claims.Add(new("organizerId", user.OrganizerProfile.Id.ToString()));
+            }
 
             var credentials = new SigningCredentials(
                 new SymmetricSecurityKey(key),

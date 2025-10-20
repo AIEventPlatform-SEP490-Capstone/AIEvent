@@ -10,6 +10,7 @@ using AutoMapper;
 using FluentAssertions;
 using Moq;
 using MockQueryable.Moq;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace AIEvent.Application.Test.Services
 {
@@ -1338,7 +1339,7 @@ namespace AIEvent.Application.Test.Services
             // Arrange
             var user = new User { Id = Guid.NewGuid(), IsActive = true, RoleId = Guid.NewGuid() };
             var role = new Role { Id = user.RoleId, Name = "Organizer" };
-            var detail = new RefundRuleDetail { Id = Guid.NewGuid(), CreatedBy = user.Id.ToString() };
+            var detail = new RefundRuleDetail { Id = Guid.NewGuid(), CreatedBy = Guid.NewGuid().ToString() };
             var request = new UpdateRuleRefundDetailRequest { MinDaysBeforeEvent = 0, MaxDaysBeforeEvent = 1 };
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(f => f());
@@ -1353,7 +1354,7 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.IsSuccess.Should().BeFalse();
             result.Error!.StatusCode.Should().Be(ErrorCodes.PermissionDenied);
-            result.Error!.Message.Should().Be("System rule detail cannot be modified by user");
+            result.Error!.Message.Should().Be("You can only modify your own rules detail");
         }
 
         [Fact]
@@ -1513,7 +1514,7 @@ namespace AIEvent.Application.Test.Services
             // Arrange
             var user = new User { Id = Guid.NewGuid(), IsActive = true, RoleId = Guid.NewGuid() };
             var role = new Role { Id = user.RoleId, Name = "Organizer" };
-            var detail = new RefundRuleDetail { Id = Guid.NewGuid(), CreatedBy = user.Id.ToString() };
+            var detail = new RefundRuleDetail { Id = Guid.NewGuid(), CreatedBy = Guid.NewGuid().ToString() };
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(user.Id, true)).ReturnsAsync(user);
             _mockUnitOfWork.Setup(x => x.RoleRepository.GetByIdAsync(role.Id, true)).ReturnsAsync(role);
             _mockUnitOfWork.Setup(x => x.RefundRuleDetailRepository.Query(false))
@@ -1525,7 +1526,7 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.IsSuccess.Should().BeFalse();
             result.Error!.StatusCode.Should().Be(ErrorCodes.PermissionDenied);
-            result.Error!.Message.Should().Be("System rule detail cannot be modified by user");
+            result.Error!.Message.Should().Be("You can only modify your own rules detail");
         }
 
         [Fact]

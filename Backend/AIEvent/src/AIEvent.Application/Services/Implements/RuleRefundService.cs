@@ -216,7 +216,7 @@ namespace AIEvent.Application.Services.Implements
                 if (ruleRefund == null)
                     return ErrorResponse.FailureResult("Rule detail not found", ErrorCodes.InvalidInput);
                 if (!role.Name.Equals("Admin") && !role.Name.Equals("Manager") && ruleRefund.CreatedBy != userId.ToString())
-                    return ErrorResponse.FailureResult("You can only modify your own rules", ErrorCodes.PermissionDenied);
+                    return ErrorResponse.FailureResult("You can only modify your own rules detail", ErrorCodes.PermissionDenied);
 
                 _mapper.Map(request, ruleRefund);
                 await _unitOfWork.RefundRuleDetailRepository.UpdateAsync(ruleRefund);
