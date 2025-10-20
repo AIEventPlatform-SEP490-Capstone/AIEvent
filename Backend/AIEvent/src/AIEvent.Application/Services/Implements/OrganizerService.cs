@@ -11,7 +11,6 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using MimeKit;
-using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -38,57 +37,55 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result> RegisterOrganizerAsync(Guid userId,RegisterOrganizerRequest request)
         {
-            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+            if (userId == Guid.Empty)
+                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
+
+            var validationResult = ValidationHelper.ValidateModel(request);
+            if (!validationResult.IsSuccess)
+                return validationResult;
+
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
+
+            if (user == null || !user.IsActive)
+                return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
+
+            if (!string.IsNullOrEmpty(request.TaxCode))
             {
-                if (userId == Guid.Empty || request == null)
-                    return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
-                var context = new ValidationContext(request);
-                var resultErrors = new List<ValidationResult>();
-                bool isValid = Validator.TryValidateObject(request, context, resultErrors, true);
-                if (!isValid)
-                {
-                    var messages = string.Join("; ", resultErrors.Select(r => r.ErrorMessage));
-                    return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
-                }
-                var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
+                var exists = await _unitOfWork.OrganizerProfileRepository.Query()
+                    .AnyAsync(t => t.TaxCode == request.TaxCode);
 
-                if (user == null || !user.IsActive)
-                    return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
+                if (exists)
+                    return ErrorResponse.FailureResult("Tax code already exists.", ErrorCodes.InvalidInput);
+            }
 
-                if (!string.IsNullOrEmpty(request.TaxCode))
-                {
-                    var exists = await _unitOfWork.OrganizerProfileRepository.Query()
-                        .AnyAsync(t => t.TaxCode == request.TaxCode);
+            var organizer = _mapper.Map<OrganizerProfile>(request);
+            organizer.UserId = userId;
+            organizer.Status = ConfirmStatus.NeedConfirm;
+            if (organizer == null)
+                return ErrorResponse.FailureResult("Failed to map organizer profile", ErrorCodes.InternalServerError);
 
-                    if (exists)
-                        return ErrorResponse.FailureResult("Tax code already exists.", ErrorCodes.InvalidInput);
-                }
-
-                var organizer = _mapper.Map<OrganizerProfile>(request);
-                organizer.UserId = userId;
-                organizer.Status = ConfirmStatus.NeedConfirm;
-                if (organizer == null)
-                    return ErrorResponse.FailureResult("Failed to map organizer profile", ErrorCodes.InternalServerError);
-
-                var files = new[]
-                {
+            var files = new[]
+            {
                     request.ImgBackIdentity,
                     request.ImgCompany,
                     request.ImgFrontIdentity,
                     request.ImgBusinessLicense
                 };
 
-                var uploadTasks = files.Select(file =>
-                    file != null
-                        ? _cloudinaryService.UploadImageAsync(file)
-                        : Task.FromResult<string?>(null)
-                ).ToList();
+            var uploadTasks = files.Select(file =>
+                file != null
+                    ? _cloudinaryService.UploadImageAsync(file)
+                    : Task.FromResult<string?>(null)
+            ).ToList();
 
-                var results = await Task.WhenAll(uploadTasks);
-                organizer.ImgBackIdentity = results[0];
-                organizer.ImgCompany = results[1];
-                organizer.ImgFrontIdentity = results[2];
-                organizer.ImgBusinessLicense = results[3];
+            var results = await Task.WhenAll(uploadTasks);
+            organizer.ImgBackIdentity = results[0];
+            organizer.ImgCompany = results[1];
+            organizer.ImgFrontIdentity = results[2];
+            organizer.ImgBusinessLicense = results[3];
+
+            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+            {
                 await _unitOfWork.OrganizerProfileRepository.AddAsync(organizer);
                 return Result.Success();
             });
@@ -135,23 +132,22 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result> ConfirmBecomeOrganizerAsync(Guid userId, Guid organizerProfileId, ConfirmRequest request)
         {
+            if (userId == Guid.Empty || organizerProfileId == Guid.Empty)
+                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
+
+            var profile = await _unitOfWork.OrganizerProfileRepository
+                                            .Query()
+                                            .Include(p => p.User)
+                                            .FirstOrDefaultAsync(p => p.Id == organizerProfileId && !p.IsDeleted);
+
+            if (profile == null)
+                return ErrorResponse.FailureResult("Organizer profile not found", ErrorCodes.NotFound);
+
+            if (profile.Status != ConfirmStatus.NeedConfirm)
+                return ErrorResponse.FailureResult("Profile already confirmed", ErrorCodes.InvalidInput);
+
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-                if (userId == Guid.Empty || organizerProfileId == Guid.Empty)
-                    return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
-
-                var profile = await _unitOfWork.OrganizerProfileRepository
-                                                .Query()
-                                                .Include(p => p.User)
-                                                .FirstOrDefaultAsync(p => p.Id == organizerProfileId && !p.IsDeleted);
-
-                if (profile == null)
-                    return ErrorResponse.FailureResult("Organizer profile not found", ErrorCodes.NotFound);
-
-                if (profile.Status != ConfirmStatus.NeedConfirm)
-                    return ErrorResponse.FailureResult("Profile already confirmed", ErrorCodes.InvalidInput);
-
-
                 profile.Status = request.Status;
                 profile.ConfirmAt = DateTime.UtcNow;
                 profile.ConfirmBy = userId.ToString();

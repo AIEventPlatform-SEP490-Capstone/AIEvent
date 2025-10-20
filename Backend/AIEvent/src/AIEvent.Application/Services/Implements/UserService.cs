@@ -48,16 +48,12 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result> UpdateUserAsync(Guid userId, UpdateUserRequest request)
         {
-            if (userId == Guid.Empty || request == null)
+            if (userId == Guid.Empty)
                 return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
-            var context = new ValidationContext(request);
-            var results = new List<ValidationResult>();
-            bool isValid = Validator.TryValidateObject(request, context, results, true);
-            if (!isValid)
-            {
-                var messages = string.Join("; ", results.Select(r => r.ErrorMessage));
-                return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
-            }
+            
+            var validationResult = ValidationHelper.ValidateModel(request);
+            if (!validationResult.IsSuccess)
+                return validationResult;
             var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
             if (user == null)
                 return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
