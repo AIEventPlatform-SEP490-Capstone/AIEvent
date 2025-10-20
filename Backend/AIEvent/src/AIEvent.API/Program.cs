@@ -62,7 +62,8 @@ namespace AIEvent.API
             builder.Configuration.AddEnvironmentVariables();
 
             builder.Services.AddApplicationServices(builder.Configuration)
-                            .AddInfrastructureServices(builder.Configuration);
+                            .AddInfrastructureServices(builder.Configuration)
+                            .AddExternalServices(builder.Configuration);
 
             builder.Services.AddJwtAuthentication(builder.Configuration);
 
@@ -73,7 +74,7 @@ namespace AIEvent.API
 
             builder.Services.AddSwaggerCustoms();
             builder.Services.AddHttpContextAccessor();
-
+            builder.Services.AddHttpClient();
 
             var app = builder.Build();
 

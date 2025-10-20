@@ -102,10 +102,10 @@ namespace AIEvent.API.Controllers
 
         [HttpPatch("confirm/{id}")]
         [Authorize(Roles = "Admin,Manager")]
-        public async Task<ActionResult<SuccessResponse<OrganizerResponse>>> ConfirmBecomeOrganizer(string id, ConfirmRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> ConfirmBecomeOrganizer(Guid id, ConfirmRequest request, string? reason)
         {
             var userId = User.GetRequiredUserId();
-            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, id, request);
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, id, request, reason);
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);

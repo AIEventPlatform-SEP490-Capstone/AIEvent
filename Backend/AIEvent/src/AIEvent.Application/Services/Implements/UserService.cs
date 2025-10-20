@@ -9,6 +9,7 @@ using AIEvent.Domain.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -30,19 +31,15 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result<UserDetailResponse>> GetUserByIdAsync(Guid userId)
         {
-            var user = await _unitOfWork
-                                    .UserRepository
-                                    .Query()
-                                    .FirstOrDefaultAsync(u => u.Id == userId);
+            if(userId == Guid.Empty)
+                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
+            var user = await _unitOfWork.UserRepository
+                                        .GetByIdAsync(userId, true);
             if (user == null)
-            {
                 return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
-            }
 
             if (!user.IsActive || user.DeletedAt.HasValue)
-            {
                 return ErrorResponse.FailureResult("User account is inactive", ErrorCodes.NotFound);
-            }
 
             var userResponse = _mapper.Map<UserDetailResponse>(user);
 
@@ -51,23 +48,27 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result> UpdateUserAsync(Guid userId, UpdateUserRequest request)
         {
+            if (userId == Guid.Empty || request == null)
+                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
+            var context = new ValidationContext(request);
+            var results = new List<ValidationResult>();
+            bool isValid = Validator.TryValidateObject(request, context, results, true);
+            if (!isValid)
+            {
+                var messages = string.Join("; ", results.Select(r => r.ErrorMessage));
+                return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
+            }
             var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
             if (user == null)
-            {
                 return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
-            }
 
             if (!user.IsActive || user.DeletedAt.HasValue)
-            {
                 return ErrorResponse.FailureResult("User account is inactive", ErrorCodes.NotFound);
-            }
 
             _mapper.Map(request, user);
 
             if(request.AvatarImg != null && request.AvatarImg.Length > 0)
-            {
                 user.AvatarImgUrl = await _cloudinaryService.UploadImageAsync(request.AvatarImg);
-            }
 
             await _unitOfWork.UserRepository.UpdateAsync(user);
             await _unitOfWork.SaveChangesAsync();
@@ -85,6 +86,7 @@ namespace AIEvent.Application.Services.Implements
             int totalCount = await userQuery.CountAsync();
 
             var result = await userQuery
+                .OrderBy(u => u.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ProjectTo<UserResponse>(_mapper.ConfigurationProvider)

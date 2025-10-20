@@ -18,7 +18,6 @@ namespace AIEvent.Infrastructure.Context
         }
         public DbSet<User> Users { get; set; }
         public DbSet<Role> Roles { get; set; }
-        public DbSet<UserOtps> UserOtps { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<OrganizerProfile> OrganizerProfiles { get; set; }
         public DbSet<Event> Events { get; set; }
@@ -46,6 +45,11 @@ namespace AIEvent.Infrastructure.Context
                       .WithMany(u => u.Users)
                       .HasForeignKey(e => e.RoleId);
 
+                entity.HasOne(u => u.LinkedUser)
+                      .WithMany(p => p.CreatedOrganizerAccounts)
+                      .HasForeignKey(u => u.LinkedUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
                 entity.Property(e => e.Email).HasMaxLength(256).IsRequired();
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
                 entity.HasIndex(e => e.Email).IsUnique().HasDatabaseName("IX_User_Email");
@@ -61,29 +65,17 @@ namespace AIEvent.Infrastructure.Context
                 entity.HasIndex(e => e.Name).IsUnique().HasDatabaseName("IX_Role_Name");
             });
 
-            // ----------------- UserOtps -----------------
-            builder.Entity<UserOtps>(entity =>
-            {
-                entity.HasOne(e => e.User)
-                      .WithMany(u => u.UserOtps)
-                      .HasForeignKey(e => e.UserId);
-
-                entity.HasIndex(e => new { e.UserId, e.Code }).IsUnique().HasDatabaseName("IX_UserOtps_UserId_Code");
-                entity.HasIndex(e => e.ExpiredAt).HasDatabaseName("IX_UserOtps_ExpiredAt");
-            });
-
             // ----------------- RefreshToken -----------------
             builder.Entity<RefreshToken>(entity =>
             {
                 entity.Property(e => e.Token).IsRequired().HasMaxLength(500);
-                entity.Property(e => e.ReplacedByToken).HasMaxLength(500);
 
                 entity.HasOne(e => e.User)
                       .WithMany(u => u.RefreshTokens)
                       .HasForeignKey(e => e.UserId);
 
                 entity.HasIndex(e => e.Token).IsUnique().HasDatabaseName("IX_RefreshToken_Token");
-                entity.HasIndex(e => new { e.UserId, e.IsRevoked }).HasDatabaseName("IX_RefreshToken_UserId_IsRevoked");
+                entity.HasIndex(e => new { e.UserId, e.IsDeleted }).HasDatabaseName("IX_RefreshToken_UserId_IsDeleted");
                 entity.HasIndex(e => new { e.Token, e.ExpiresAt }).HasDatabaseName("IX_RefreshToken_Token_ExpiresAt");
                 entity.HasIndex(e => e.ExpiresAt).HasDatabaseName("IX_RefreshToken_ExpiresAt");
             });
@@ -111,12 +103,12 @@ namespace AIEvent.Infrastructure.Context
                 entity.Property(e => e.ConfirmBy).HasMaxLength(100);
 
                 entity.HasOne(o => o.User)
-                    .WithOne(u => u.OrganizerProfile)
-                    .HasForeignKey<OrganizerProfile>(o => o.UserId);
+                      .WithOne(u => u.OrganizerProfile)
+                      .HasForeignKey<OrganizerProfile>(o => o.UserId)
+                      .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasIndex(o => o.UserId).HasDatabaseName("IX_OrganizerProfile_UserId");
-                entity.HasIndex(o => o.TaxCode).IsUnique().HasDatabaseName("IX_OrganizerProfile_TaxCode");
-                entity.HasIndex(o => new { o.UserId, o.IsDeleted }).HasDatabaseName("IX_OrganizerProfile_UserId_IsDeleted");
+                entity.HasIndex(o => new { o.UserId, o.TaxCode }).IsUnique().HasDatabaseName("IX_OrganizerProfile_UserId_TaxCode");
                 entity.HasIndex(o => o.ConfirmAt).HasDatabaseName("IX_OrganizerProfile_ConfirmAt");
                 entity.HasIndex(o => o.ContactEmail).HasDatabaseName("IX_OrganizerProfile_ContactEmail");
                 entity.HasIndex(o => o.IdentityNumber).HasDatabaseName("IX_OrganizerProfile_IdentityNumber");

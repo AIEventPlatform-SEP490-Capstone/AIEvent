@@ -1,8 +1,8 @@
-import React from "react"
-import { NavLink } from "react-router-dom"
-import { useSelector } from "react-redux"
-import { Button } from "./ui/button"
-import { Sparkles, Calendar, Users, MapPin, LogIn } from "lucide-react"
+import React from "react";
+import { NavLink } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { Button } from "./ui/button";
+import { Sparkles, Calendar, Users, MapPin, LogIn } from "lucide-react";
 
 export function Hero() {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
@@ -34,45 +34,72 @@ export function Hero() {
               </h1>
 
               <p className="text-xl text-gray-600 leading-relaxed">
-                Sử dụng AI để tìm kiếm và gợi ý các sự kiện phù hợp với sở thích của bạn. Kết nối với cộng đồng và tạo
-                ra những trải nghiệm đáng nhớ.
+                Sử dụng AI để tìm kiếm và gợi ý các sự kiện phù hợp với sở thích
+                của bạn. Kết nối với cộng đồng và tạo ra những trải nghiệm đáng
+                nhớ.
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 text-base shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 rounded-xl">
+              <Button
+                size="lg"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 text-base shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 rounded-xl"
+              >
                 <Calendar className="w-5 h-5 mr-2" />
                 Khám phá sự kiện
               </Button>
 
               {!isAuthenticated ? (
-                <Button asChild variant="outline" size="lg" className="px-8 py-3 bg-transparent">
+                <Button
+                  asChild
+                  variant="outline"
+                  size="lg"
+                  className="px-8 py-3 bg-transparent"
+                >
                   <NavLink to="/auth/login">
                     <LogIn className="w-5 h-5 mr-2" />
                     Đăng nhập
                   </NavLink>
                 </Button>
               ) : (
-                 <Button variant="outline" size="lg" className="px-8 py-6 text-base bg-white/80 backdrop-blur-sm hover:bg-white hover:scale-105 transition-all duration-300 rounded-xl shadow-md hover:shadow-lg border-2">
-                <Users className="w-5 h-5 mr-2" />
-                Trở thành Organizer
-              </Button>
+                <NavLink to="/become-organizer">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="px-8 py-6 text-base bg-white/80 backdrop-blur-sm hover:bg-white hover:scale-105 transition-all duration-300 rounded-xl shadow-md hover:shadow-lg border-2"
+                  >
+                    <Users className="w-5 h-5 mr-2" />
+                    Trở thành Organizer
+                  </Button>
+                </NavLink>
               )}
             </div>
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-8 pt-8 border-t border-gray-200/60">
               <div className="text-center group hover:scale-105 transition-transform duration-300">
-                <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">1000+</div>
-                <div className="text-sm text-gray-600 font-medium mt-1">Sự kiện</div>
+                <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  1000+
+                </div>
+                <div className="text-sm text-gray-600 font-medium mt-1">
+                  Sự kiện
+                </div>
               </div>
               <div className="text-center group hover:scale-105 transition-transform duration-300">
-                <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">50K+</div>
-                <div className="text-sm text-gray-600 font-medium mt-1">Người dùng</div>
+                <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  50K+
+                </div>
+                <div className="text-sm text-gray-600 font-medium mt-1">
+                  Người dùng
+                </div>
               </div>
               <div className="text-center group hover:scale-105 transition-transform duration-300">
-                <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">25+</div>
-                <div className="text-sm text-gray-600 font-medium mt-1">Thành phố</div>
+                <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  25+
+                </div>
+                <div className="text-sm text-gray-600 font-medium mt-1">
+                  Thành phố
+                </div>
               </div>
             </div>
           </div>
@@ -86,8 +113,12 @@ export function Hero() {
                     <Sparkles className="w-7 h-7 text-orange-600 animate-pulse" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-900 text-lg">AI Gợi ý thông minh</h3>
-                    <p className="text-sm text-gray-600">Cá nhân hóa theo sở thích</p>
+                    <h3 className="font-bold text-gray-900 text-lg">
+                      AI Gợi ý thông minh
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Cá nhân hóa theo sở thích
+                    </p>
                   </div>
                 </div>
 
@@ -95,7 +126,9 @@ export function Hero() {
                   <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl hover:shadow-md transition-all duration-300 hover:scale-[1.02] cursor-pointer group">
                     <Calendar className="w-5 h-5 text-orange-600 group-hover:scale-110 transition-transform duration-300" />
                     <div className="flex-1">
-                      <div className="font-semibold text-gray-900">Tech Conference Vietnam 2024</div>
+                      <div className="font-semibold text-gray-900">
+                        Tech Conference Vietnam 2024
+                      </div>
                       <div className="text-sm text-gray-600 flex items-center gap-1 mt-1">
                         <MapPin className="w-3 h-3" />
                         TP.HCM • 15/12/2024
@@ -109,7 +142,9 @@ export function Hero() {
                   <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl hover:shadow-md transition-all duration-300 hover:scale-[1.02] cursor-pointer group">
                     <Calendar className="w-5 h-5 text-orange-600 group-hover:scale-110 transition-transform duration-300" />
                     <div className="flex-1">
-                      <div className="font-semibold text-gray-900">Indie Music Concert</div>
+                      <div className="font-semibold text-gray-900">
+                        Indie Music Concert
+                      </div>
                       <div className="text-sm text-gray-600 flex items-center gap-1 mt-1">
                         <MapPin className="w-3 h-3" />
                         Hà Nội • 20/12/2024
@@ -123,7 +158,9 @@ export function Hero() {
                   <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl hover:shadow-md transition-all duration-300 hover:scale-[1.02] cursor-pointer group">
                     <Calendar className="w-5 h-5 text-orange-600 group-hover:scale-110 transition-transform duration-300" />
                     <div className="flex-1">
-                      <div className="font-semibold text-gray-900">Coffee & Networking</div>
+                      <div className="font-semibold text-gray-900">
+                        Coffee & Networking
+                      </div>
                       <div className="text-sm text-gray-600 flex items-center gap-1 mt-1">
                         <MapPin className="w-3 h-3" />
                         Đà Nẵng • 22/12/2024
@@ -144,5 +181,5 @@ export function Hero() {
         </div>
       </div>
     </section>
-  )
+  );
 }
