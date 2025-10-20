@@ -94,64 +94,32 @@ namespace AIEvent.Application.Services.Implements
             });
         }
 
-        public async Task<Result<List<OrganizerResponse>>> GetOrganizerAsync(int page = 1, int pageSize = 10)
+        public async Task<Result<OrganizerDetailResponse>> GetOrganizerByIdAsync(Guid id)
         {
-            var organizers = await _unitOfWork.OrganizerProfileRepository
-                .Query()
-                .Include(o => o.User)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ProjectTo<OrganizerResponse>(_mapper.ConfigurationProvider)
-                .ToListAsync();
-            if (organizers == null)
-                return ErrorResponse.FailureResult("Organizer code already exists.", ErrorCodes.InvalidInput);
+            if (id == Guid.Empty)
+                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
 
-            return Result<List<OrganizerResponse>>.Success(organizers);
-        }
-
-        public async Task<Result<OrganizerResponse>> GetOrganizerByIdAsync(string id)
-        {
             var organizers = await _unitOfWork.OrganizerProfileRepository
                 .Query()
                 .AsNoTracking()
-                .Include(o => o.User)
-                .ProjectTo<OrganizerResponse>(_mapper.ConfigurationProvider)
-                .FirstOrDefaultAsync(o => o.OrganizerId == Guid.Parse(id));
+                .ProjectTo<OrganizerDetailResponse>(_mapper.ConfigurationProvider)
+                .FirstOrDefaultAsync(o => o.OrganizerId == id);
+
             if (organizers == null)
-                return ErrorResponse.FailureResult("Organizer code already exists.", ErrorCodes.InvalidInput);
+                return ErrorResponse.FailureResult("Organizer not found.", ErrorCodes.NotFound);
 
-            return Result<OrganizerResponse>.Success(organizers);
+            return Result<OrganizerDetailResponse>.Success(organizers);
         }
 
-        public async Task<Result<OrganizerResponse>> GetOrgNeedApproveByIdAsync(string id)
-        {
-            if (!Guid.TryParse(id, out var organizerId))
-            {
-                return ErrorResponse.FailureResult("Invalid Guid format", ErrorCodes.InvalidInput);
-            }
-
-            var organizer = await _unitOfWork.OrganizerProfileRepository
-                .Query()
-                .AsNoTracking()
-                .Include(o => o.User)
-                .FirstOrDefaultAsync(o => o.Id == organizerId && !o.IsDeleted && o.Status == ConfirmStatus.NeedConfirm);
-
-            if (organizer == null)
-            {
-                return ErrorResponse.FailureResult("Organizer can not found or is deleted", ErrorCodes.InvalidInput);
-            }
-                
-            OrganizerResponse organizerResponse = _mapper.Map<OrganizerResponse>(organizer);
-
-            return Result<OrganizerResponse>.Success(organizerResponse);
-        }
-
-        public async Task<Result<BasePaginated<ListOrganizerNeedApprove>>> GetListOrganizerNeedApprove(int pageNumber, int pageSize)
+        public async Task<Result<BasePaginated<OrganizerResponse>>> GetOrganizerAsync(int pageNumber, int pageSize, bool? needApprove)
         {
             IQueryable<OrganizerProfile> query = _unitOfWork.OrganizerProfileRepository
                 .Query()
                 .AsNoTracking()
-                .Where(p => !p.DeletedAt.HasValue && p.Status == ConfirmStatus.NeedConfirm); ;
+                .Where(p => !p.DeletedAt.HasValue);
+
+            if(needApprove == true)
+                query = query.Where(o => o.Status == ConfirmStatus.NeedConfirm);
 
             var totalCount = await query.CountAsync();
 
@@ -159,22 +127,13 @@ namespace AIEvent.Application.Services.Implements
                 .OrderBy(p => p.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(p => new ListOrganizerNeedApprove
-                {
-                    Id = p.Id.ToString(),
-                    OrganizationType = p.OrganizationType,
-                    CompanyName = p.CompanyName,
-                    ContactEmail = p.ContactEmail,
-                    ContactPhone = p.ContactPhone,
-                    Address = p.Address,
-                    ImgCompany = p.ImgCompany,
-                })
+                .ProjectTo<OrganizerResponse>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
-            return new BasePaginated<ListOrganizerNeedApprove>(result, totalCount, pageNumber, pageSize);
+            return new BasePaginated<OrganizerResponse>(result, totalCount, pageNumber, pageSize);
         }
 
-        public async Task<Result> ConfirmBecomeOrganizerAsync(Guid userId, Guid organizerProfileId, ConfirmRequest request, string? reason)
+        public async Task<Result> ConfirmBecomeOrganizerAsync(Guid userId, Guid organizerProfileId, ConfirmRequest request)
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
@@ -248,13 +207,13 @@ namespace AIEvent.Application.Services.Implements
                 }
                 else
                 {
-                    if(string.IsNullOrEmpty(reason))
+                    if(string.IsNullOrEmpty(request.Reason))
                         return ErrorResponse.FailureResult("Need reason to reject application", ErrorCodes.InvalidInput);
 
                     var sb = new StringBuilder()
                         .AppendLine($"<p>Xin chào {profile.ContactName},</p>")
                         .AppendLine($"<p>Rất tiếc, hồ sơ đăng ký tổ chức của bạn <strong>{profile.CompanyName ?? profile.ContactName}</strong> đã <b>không được phê duyệt</b>.</p>")
-                        .AppendLine($"<p><b>Lý do:</b> {reason ?? "Không có lý do cụ thể."}</p>")
+                        .AppendLine($"<p><b>Lý do:</b> {request.Reason ?? "Không có lý do cụ thể."}</p>")
                         .AppendLine("<p>Nếu bạn cần thêm thông tin, vui lòng liên hệ đội ngũ hỗ trợ.</p>");
 
 

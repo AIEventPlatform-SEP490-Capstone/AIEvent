@@ -56,14 +56,10 @@ namespace AIEvent.Application.Services.Implements
                                 .Include(u => u.Role)
                                 .FirstOrDefaultAsync(u => u.Email == request.Email);
             if (user == null || !user.IsActive)
-            {
                 return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
-            }
 
             if (!_hasherHelper.Verify(request.Password ,user.PasswordHash!))
-            {
                 return ErrorResponse.FailureResult("Invalid email or password", ErrorCodes.Unauthorized);
-            }
 
             var accessToken = _jwtService.GenerateAccessToken(user);
             var refreshToken = _jwtService.GenerateRefreshToken();

@@ -667,7 +667,7 @@ namespace AIEvent.Application.Test.Services
                 .Returns<Func<Task<Result>>>(func => func());
 
             // Act
-            var result = await _organizerService.ConfirmBecomeOrganizerAsync(Guid.Empty, Guid.Empty, new ConfirmRequest { Status = ConfirmStatus.Approve }, null);
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(Guid.Empty, Guid.Empty, new ConfirmRequest { Status = ConfirmStatus.Approve, Reason = null });
 
             // Assert
             result.IsSuccess.Should().BeFalse();
@@ -689,7 +689,7 @@ namespace AIEvent.Application.Test.Services
                 .Returns(new List<OrganizerProfile>().AsQueryable().BuildMockDbSet().Object);
 
             // Act
-            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profileId, new ConfirmRequest { Status = ConfirmStatus.Approve }, null);
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profileId, new ConfirmRequest { Status = ConfirmStatus.Approve ,Reason = null});
 
             // Assert
             result.IsSuccess.Should().BeFalse();
@@ -712,7 +712,7 @@ namespace AIEvent.Application.Test.Services
                 .Returns(new List<OrganizerProfile> { profile }.AsQueryable().BuildMockDbSet().Object);
 
             // Act
-            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, new ConfirmRequest { Status = ConfirmStatus.Approve }, null);
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, new ConfirmRequest { Status = ConfirmStatus.Approve, Reason = null });
 
             // Assert
             result.IsSuccess.Should().BeFalse();
@@ -745,10 +745,10 @@ namespace AIEvent.Application.Test.Services
             _mockEmailService.Setup(x => x.SendEmailAsync(profile.ContactEmail!, It.IsAny<MimeMessage>()))
                 .ReturnsAsync(Result.Success());
 
-            var request = new ConfirmRequest { Status = ConfirmStatus.Approve };
+            var request = new ConfirmRequest { Status = ConfirmStatus.Approve , Reason = null };
 
             // Act
-            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, request, null);
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, request);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -776,10 +776,10 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.RoleRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<Role>().AsQueryable().BuildMockDbSet().Object);
 
-            var request = new ConfirmRequest { Status = ConfirmStatus.Approve };
+            var request = new ConfirmRequest { Status = ConfirmStatus.Approve , Reason = null };
 
             // Act
-            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, request, null);
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, request);
 
             // Assert
             result.IsSuccess.Should().BeFalse();
@@ -812,10 +812,10 @@ namespace AIEvent.Application.Test.Services
             _mockEmailService.Setup(x => x.SendEmailAsync(profile.ContactEmail!, It.IsAny<MimeMessage>()))
                 .ReturnsAsync(ErrorResponse.FailureResult("Email send failed", ErrorCodes.InternalServerError));
 
-            var request = new ConfirmRequest { Status = ConfirmStatus.Approve };
+            var request = new ConfirmRequest { Status = ConfirmStatus.Approve, Reason = null };
 
             // Act
-            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, request, null);
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, request);
 
             // Assert
             result.IsSuccess.Should().BeFalse();
@@ -836,11 +836,11 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<OrganizerProfile> { profile }.AsQueryable().BuildMockDbSet().Object);
             _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.UpdateAsync(It.IsAny<OrganizerProfile>()));
-
-            var request = new ConfirmRequest { Status = ConfirmStatus.Reject };
+             
+            var request = new ConfirmRequest { Status = ConfirmStatus.Reject ,Reason = null };
 
             // Act
-            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, request, null);
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, request);
 
             // Assert
             result.IsSuccess.Should().BeFalse();
@@ -865,10 +865,10 @@ namespace AIEvent.Application.Test.Services
             _mockEmailService.Setup(x => x.SendEmailAsync(profile.ContactEmail!, It.IsAny<MimeMessage>()))
                 .ReturnsAsync(ErrorResponse.FailureResult("Email send failed", ErrorCodes.InternalServerError));
 
-            var request = new ConfirmRequest { Status = ConfirmStatus.Reject };
+            var request = new ConfirmRequest { Status = ConfirmStatus.Reject , Reason = "Missing documents" };
 
             // Act
-            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, request, "Missing documents");
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, request);
 
             // Assert
             result.IsSuccess.Should().BeFalse();
@@ -893,10 +893,10 @@ namespace AIEvent.Application.Test.Services
             _mockEmailService.Setup(x => x.SendEmailAsync(profile.ContactEmail!, It.IsAny<MimeMessage>()))
                 .ReturnsAsync(Result.Success());
 
-            var request = new ConfirmRequest { Status = ConfirmStatus.Reject };
+            var request = new ConfirmRequest { Status = ConfirmStatus.Reject, Reason = "Thông tin không hợp lệ" };
 
             // Act
-            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, request, "Thông tin không hợp lệ");
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, request);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -909,10 +909,10 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
-                .Returns<Func<Task<Result>>>(func => func());
+                .Returns<Func<Task<Result>>>(async func => await func());
 
             // Act
-            var result = await _organizerService.ConfirmBecomeOrganizerAsync(Guid.Empty, Guid.NewGuid(), new ConfirmRequest { Status = ConfirmStatus.Approve }, null);
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(Guid.Empty, Guid.NewGuid(), new ConfirmRequest { Status = ConfirmStatus.Approve, Reason = null });
 
             // Assert
             result.IsSuccess.Should().BeFalse();
@@ -925,10 +925,10 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
-                .Returns<Func<Task<Result>>>(func => func());
+                .Returns<Func<Task<Result>>>(async func => await func());
 
             // Act
-            var result = await _organizerService.ConfirmBecomeOrganizerAsync(Guid.NewGuid(), Guid.Empty, new ConfirmRequest { Status = ConfirmStatus.Approve }, null);
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(Guid.Empty, Guid.NewGuid(), new ConfirmRequest { Status = ConfirmStatus.Approve, Reason = null });
 
             // Assert
             result.IsSuccess.Should().BeFalse();
@@ -951,7 +951,7 @@ namespace AIEvent.Application.Test.Services
                 .Returns(new List<OrganizerProfile> { profile }.AsQueryable().BuildMockDbSet().Object);
 
             // Act
-            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, new ConfirmRequest { Status = ConfirmStatus.Approve }, null);
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, new ConfirmRequest { Status = ConfirmStatus.Approve, Reason = null });
 
             // Assert
             result.IsSuccess.Should().BeFalse();
@@ -975,7 +975,7 @@ namespace AIEvent.Application.Test.Services
                 .Returns(new List<OrganizerProfile> { profile }.AsQueryable().BuildMockDbSet().Object);
 
             // Act
-            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, new ConfirmRequest { Status = ConfirmStatus.Approve }, null);
+            var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, profile.Id, new ConfirmRequest { Status = ConfirmStatus.Approve, Reason = null });
 
             // Assert
             result.IsSuccess.Should().BeFalse();
@@ -1004,5 +1004,270 @@ namespace AIEvent.Application.Test.Services
         }
 
         #endregion
+
+
+        #region GetOrganizerById
+
+        [Fact]
+        public async Task UTCID01_GetOrganizerByIdAsync_WithValidId_ShouldReturnSuccess()
+        {
+            // Arrange
+            var profile = CreateOrganizerProfileNeedConfirm();
+            var id = profile.Id;
+            var profiles = new List<OrganizerProfile> { profile }.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
+                .Returns(profiles.Object);
+
+            var mapperConfig = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<OrganizerProfile, OrganizerDetailResponse>()
+                   .ForMember(d => d.OrganizerId, o => o.MapFrom(s => s.Id))
+                   .ForMember(d => d.UserRegisterInfo, o => o.Ignore());
+            });
+
+            _mockMapper.SetupGet(m => m.ConfigurationProvider).Returns(mapperConfig);
+
+            // Act
+            var result = await _organizerService.GetOrganizerByIdAsync(id);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value!.OrganizerId.Should().Be(id);
+        }
+
+        [Fact]
+        public async Task UTCID02_GetOrganizerByIdAsync_WithEmptyId_ShouldReturnInvalidInput()
+        {
+            // Act
+            var result = await _organizerService.GetOrganizerByIdAsync(Guid.Empty);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID03_GetOrganizerByIdAsync_NotFound_ShouldReturnNotFound()
+        {
+            // Arrange
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<OrganizerProfile>().AsQueryable().BuildMockDbSet().Object);
+
+            var mapperConfig = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<OrganizerProfile, OrganizerDetailResponse>()
+                   .ForMember(d => d.OrganizerId, o => o.MapFrom(s => s.Id))
+                   .ForMember(d => d.UserRegisterInfo, o => o.Ignore());
+            });
+            _mockMapper.SetupGet(m => m.ConfigurationProvider).Returns(mapperConfig);
+
+            // Act
+            var result = await _organizerService.GetOrganizerByIdAsync(Guid.NewGuid());
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Organizer not found.");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+        #endregion
+
+        #region GetOrganizer
+        [Fact]
+        public async Task UTCID01_GetOrganizerAsync_WithNeedApproveNull_ShouldReturnAllNonDeletedPaged()
+        {
+            // Arrange
+            var profiles = new List<OrganizerProfile>
+            {
+                CreateProfileWith(status: ConfirmStatus.NeedConfirm, createdAtOffsetDays: 1),
+                CreateProfileWith(status: ConfirmStatus.Approve, createdAtOffsetDays: 2),
+                CreateProfileWith(status: ConfirmStatus.Reject, createdAtOffsetDays: 3)
+            }.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
+                .Returns(profiles.Object);
+
+            var mapperConfig = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<OrganizerProfile, OrganizerResponse>()
+                   .ForMember(d => d.Id, o => o.MapFrom(s => s.Id.ToString()));
+            });
+            _mockMapper.SetupGet(m => m.ConfigurationProvider).Returns(mapperConfig);
+
+            // Act
+            var result = await _organizerService.GetOrganizerAsync(pageNumber: 1, pageSize: 2, needApprove: null);
+
+            // Assert
+            result.Value.Should().NotBeNull();
+            result.Value!.Items.Count.Should().Be(2);
+            result.Value!.TotalItems.Should().Be(3);
+        }
+
+        [Fact]
+        public async Task UTCID02_GetOrganizerAsync_WithNeedApproveTrue_ShouldFilterNeedConfirm()
+        {
+            // Arrange
+            var profiles = new List<OrganizerProfile>
+            {
+                CreateProfileWith(status: ConfirmStatus.NeedConfirm, createdAtOffsetDays: 1),
+                CreateProfileWith(status: ConfirmStatus.Approve, createdAtOffsetDays: 2),
+                CreateProfileWith(status: ConfirmStatus.NeedConfirm, createdAtOffsetDays: 3),
+                CreateProfileWith(status: ConfirmStatus.Reject, createdAtOffsetDays: 4)
+            }.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
+                .Returns(profiles.Object);
+
+            var mapperConfig = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<OrganizerProfile, OrganizerResponse>()
+                   .ForMember(d => d.Id, o => o.MapFrom(s => s.Id.ToString()));
+            });
+            _mockMapper.SetupGet(m => m.ConfigurationProvider).Returns(mapperConfig);
+
+            // Act
+            var result = await _organizerService.GetOrganizerAsync(pageNumber: 1, pageSize: 10, needApprove: true);
+
+            // Assert
+            result.Value!.Items.Count.Should().Be(2);
+            result.Value!.TotalItems.Should().Be(2);
+            result.Value!.Items.All(i => i.Id is string).Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task UTCID03_GetOrganizerAsync_WithNeedApproveFalse_ShouldReturnAllNonDeleted()
+        {
+            // Arrange
+            var profiles = new List<OrganizerProfile>
+            {
+                CreateProfileWith(status: ConfirmStatus.NeedConfirm, createdAtOffsetDays: 1),
+                CreateProfileWith(status: ConfirmStatus.Approve, createdAtOffsetDays: 2)
+            }.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
+                .Returns(profiles.Object);
+
+            var mapperConfig = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<OrganizerProfile, OrganizerResponse>()
+                   .ForMember(d => d.Id, o => o.MapFrom(s => s.Id.ToString()));
+            });
+            _mockMapper.SetupGet(m => m.ConfigurationProvider).Returns(mapperConfig);
+
+            // Act
+            var result = await _organizerService.GetOrganizerAsync(pageNumber: 1, pageSize: 10, needApprove: false);
+
+            // Assert
+            result.Value!.Items.Count.Should().Be(2);
+            result.Value!.TotalItems.Should().Be(2);
+        }
+
+        [Fact]
+        public async Task UTCID04_GetOrganizerAsync_ShouldExcludeDeletedProfiles()
+        {
+            // Arrange
+            var profiles = new List<OrganizerProfile>
+            {
+                CreateProfileWith(status: ConfirmStatus.NeedConfirm, createdAtOffsetDays: 1, deleted: false),
+                CreateProfileWith(status: ConfirmStatus.Approve, createdAtOffsetDays: 2, deleted: true),
+                CreateProfileWith(status: ConfirmStatus.Reject, createdAtOffsetDays: 3, deleted: false)
+            }.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
+                .Returns(profiles.Object);
+
+            var mapperConfig = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<OrganizerProfile, OrganizerResponse>()
+                   .ForMember(d => d.Id, o => o.MapFrom(s => s.Id.ToString()));
+            });
+            _mockMapper.SetupGet(m => m.ConfigurationProvider).Returns(mapperConfig);
+
+            // Act
+            var result = await _organizerService.GetOrganizerAsync(pageNumber: 1, pageSize: 10, needApprove: null);
+
+            // Assert
+            result.Value!.Items.Count.Should().Be(2);
+            result.Value!.TotalItems.Should().Be(2);
+        }
+
+        [Fact]
+        public async Task UTCID05_GetOrganizerAsync_Boundary_Page1Size1_ShouldReturnFirstItem()
+        {
+            // Arrange
+            var p1 = CreateProfileWith(createdAtOffsetDays: 2);
+            var p2 = CreateProfileWith(createdAtOffsetDays: 1);
+            var profiles = new List<OrganizerProfile> { p2, p1 } // unordered input
+                .AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
+                .Returns(profiles.Object);
+
+            var mapperConfig = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<OrganizerProfile, OrganizerResponse>()
+                   .ForMember(d => d.Id, o => o.MapFrom(s => s.Id.ToString()));
+            });
+            _mockMapper.SetupGet(m => m.ConfigurationProvider).Returns(mapperConfig);
+
+            // Act
+            var result = await _organizerService.GetOrganizerAsync(pageNumber: 1, pageSize: 1, needApprove: null);
+
+            // Assert
+            result.Value!.Items.Count.Should().Be(1);
+            result.Value!.Items.First().Id.Should().Be(p2.Id.ToString()); // ordered by CreatedAt ascending
+            result.Value!.TotalItems.Should().Be(2);
+        }
+
+        [Fact]
+        public async Task UTCID06_GetOrganizerAsync_Boundary_Page2Size1_ShouldReturnSecondItem()
+        {
+            // Arrange
+            var p1 = CreateProfileWith(createdAtOffsetDays: 1);
+            var p2 = CreateProfileWith(createdAtOffsetDays: 2);
+            var profiles = new List<OrganizerProfile> { p1, p2 }.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
+                .Returns(profiles.Object);
+
+            var mapperConfig = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<OrganizerProfile, OrganizerResponse>()
+                   .ForMember(d => d.Id, o => o.MapFrom(s => s.Id.ToString()));
+            });
+            _mockMapper.SetupGet(m => m.ConfigurationProvider).Returns(mapperConfig);
+
+            // Act
+            var result = await _organizerService.GetOrganizerAsync(pageNumber: 2, pageSize: 1, needApprove: null);
+
+            // Assert
+            result.Value!.Items.Count.Should().Be(1);
+            result.Value!.Items.First().Id.Should().Be(p2.Id.ToString());
+            result.Value!.TotalItems.Should().Be(2);
+        }
+        #endregion
+
+        private OrganizerProfile CreateProfileWith(ConfirmStatus status = ConfirmStatus.NeedConfirm, int createdAtOffsetDays = 0, bool deleted = false)
+        {
+            return new OrganizerProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = Guid.NewGuid(),
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Business,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                ContactName = "Test",
+                ContactEmail = "contact@example.com",
+                ContactPhone = "+84123456789",
+                Address = "Address",
+                CompanyName = "Company",
+                Status = status,
+                CreatedAt = DateTime.UtcNow.AddDays(createdAtOffsetDays),
+                DeletedAt = deleted ? DateTime.UtcNow : null
+            };
+        }
     }
 }
