@@ -6,23 +6,6 @@ namespace AIEvent.Application.Helpers
 {
     public static class ValidationHelper
     {
-        public static Result? ValidateModel(object request)
-        {
-            if (request == null)
-                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
-
-            var context = new ValidationContext(request);
-            var results = new List<ValidationResult>();
-            bool isValid = Validator.TryValidateObject(request, context, results, true);
-
-            if (!isValid)
-            {
-                var message = string.Join("; ", results.Select(r => r.ErrorMessage));
-                return ErrorResponse.FailureResult(message, ErrorCodes.InvalidInput);
-            }
-            return null;
-        }
-
         public static Result ValidateModelList<T>(IEnumerable<T> items)
         {
             foreach (var item in items)

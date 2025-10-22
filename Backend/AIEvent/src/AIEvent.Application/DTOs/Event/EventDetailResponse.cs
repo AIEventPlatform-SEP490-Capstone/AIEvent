@@ -26,6 +26,8 @@ namespace AIEvent.Application.DTOs.Event
         public string? Address { get; set; }
         public float? Latitude { get; set; }
         public float? Longitude { get; set; }
+        public DateTime? SaleStartTime { get; set; } 
+        public DateTime? SaleEndTime { get; set; }
         public OrganizerEventResponse OrganizerEvent { get; set; } = default!;
         public List<TagResponse> EventTags { get; set; } = new List<TagResponse>();
         public EventCategoryResponse EventCategory { get; set; } = default!;

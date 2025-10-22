@@ -50,8 +50,8 @@ namespace AIEvent.Application.Services.Implements
             if (eventEntity == null)
                 return ErrorResponse.FailureResult("Event not found", ErrorCodes.NotFound);
 
-            if (DateTime.UtcNow >= eventEntity.EndTime)
-                return ErrorResponse.FailureResult("The event has ended", ErrorCodes.InvalidInput);
+            if (DateTime.UtcNow > eventEntity.SaleEndTime || DateTime.UtcNow < eventEntity.SaleStartTime)
+                return ErrorResponse.FailureResult("Ticket sales period has passed or not yet come", ErrorCodes.InvalidInput);
 
             var ticketTypeIds = request.TicketTypeRequests.Select(x => x.TicketTypeId).Distinct().ToList();
             var ticketTypes = await _unitOfWork.TicketDetailRepository.Query()

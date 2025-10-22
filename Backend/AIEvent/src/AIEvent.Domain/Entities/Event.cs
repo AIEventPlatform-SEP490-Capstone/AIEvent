@@ -23,10 +23,14 @@ namespace AIEvent.Domain.Entities
         public ConfirmStatus? RequireApproval { get; set; }
         public DateTime? RequireApprovalAt { get; set; }
         public Guid? RequireApprovalBy { get; set; }
+        public string? ReasonReject { get; set; }
+        public string? LinkRef { get; set; }
         public string? City { get; set; }
         public string? Address { get; set; }
         public float? Latitude { get; set; }
         public float? Longitude { get; set; }
+        public DateTime? SaleStartTime { get; set; }  
+        public DateTime? SaleEndTime { get; set; }
         public EventCategory EventCategory { get; set; } = default!;
         public virtual OrganizerProfile? OrganizerProfile { get; set; }
         public virtual ICollection<TicketDetail> TicketDetails { get; set; } = new List<TicketDetail>();

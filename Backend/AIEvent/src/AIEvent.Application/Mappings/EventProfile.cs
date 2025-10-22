@@ -33,6 +33,8 @@ namespace AIEvent.Application.Mappings
                                     TicketQuantity = td.TicketQuantity,
                                     TicketDescription = td.TicketDescription,
                                     RemainingQuantity = td.TicketQuantity,
+                                    MaxPurchaseQuantity = td.MaxPurchaseQuantity,
+                                    MinPurchaseQuantity = td.MinPurchaseQuantity,
                                     RefundRuleId = !string.IsNullOrEmpty(td.RuleRefundRequestId) 
                                                     ? Guid.Parse(td.RuleRefundRequestId) 
                                                     : null

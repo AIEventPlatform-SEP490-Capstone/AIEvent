@@ -12,6 +12,8 @@ namespace AIEvent.Domain.Entities
         public int SoldQuantity { get; set; } = 0;
         public int RemainingQuantity { get; set; }
         public string? TicketDescription { get; set; }
+        public int MinPurchaseQuantity { get; set; } = 1; 
+        public int MaxPurchaseQuantity { get; set; } = 10;
         public virtual Event Event { get; set; } = default!;
         public virtual RefundRule? RefundRule { get; set; } = default!;
         public ICollection<BookingItem> BookingItems { get; set; } = new List<BookingItem>();
