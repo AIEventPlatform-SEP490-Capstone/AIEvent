@@ -32,6 +32,7 @@ namespace AIEvent.Application.DTOs.User
         public string? GitHubUrl { get; set; }
         public string? TwitterUrl { get; set; }
         public string? InstagramUrl { get; set; }
+        public string? FacebookUrl { get; set; }
         public List<UserSkills>? ProfessionalSkills { get; set; }
         public List<Languages>? Languages { get; set; }
         public int TotalJoinedEvents { get; set; }   

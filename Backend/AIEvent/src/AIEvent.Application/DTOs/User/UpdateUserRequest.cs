@@ -20,6 +20,7 @@ namespace AIEvent.Application.DTOs.User
         public string? LinkedInUrl { get; set; }
         public string? GitHubUrl { get; set; }
         public string? TwitterUrl { get; set; }
+        public string? FacebookUrl { get; set; }
         public string? InstagramUrl { get; set; }
         public string? Occupation { get; set; }
         public string? JobTitle { get; set; }
