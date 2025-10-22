@@ -238,7 +238,7 @@ namespace AIEvent.Application.Services.Implements
         }
 
 
-        public async Task<Result<OrganizerResponse>> GetOrganizerProfileAsync(Guid userId)
+        public async Task<Result<OrganizerDetailResponse>> GetOrganizerProfileAsync(Guid userId)
         {
             var userExists = await _unitOfWork.UserRepository.Query()
                 .AsNoTracking()
@@ -255,9 +255,48 @@ namespace AIEvent.Application.Services.Implements
             if (organizer == null)
                 return ErrorResponse.FailureResult("Organizer not found or not approved yet", ErrorCodes.NotFound);
 
-            OrganizerResponse response = _mapper.Map<OrganizerResponse>(organizer);
+            OrganizerDetailResponse response = _mapper.Map<OrganizerDetailResponse>(organizer);
 
-            return Result<OrganizerResponse>.Success(response);
+            return Result<OrganizerDetailResponse>.Success(response);
         }
+
+
+        public async Task<Result<object>> UpdateOrganizerProfileAsync(Guid userId, UpdateOrganizerProfileRequest request)
+        {
+            var validationResult = ValidationHelper.ValidateModel(request);
+            if (!validationResult.IsSuccess)
+                return validationResult;
+
+            var profile = await _unitOfWork.OrganizerProfileRepository
+                .Query()
+                .Include(o => o.User)
+                .FirstOrDefaultAsync(x => x.UserId == userId && !x.IsDeleted && x.Status == ConfirmStatus.Approve);
+
+            if (profile == null)
+                return ErrorResponse.FailureResult("Organizer not found or not approved yet", ErrorCodes.NotFound);
+
+            profile.ContactName = request.ContactName ?? profile.ContactName;
+            profile.Address = request.Address ?? profile.Address;
+            profile.Website = request.Website ?? profile.Website;
+            profile.UrlFacebook = request.UrlFacebook ?? profile.UrlFacebook;
+            profile.UrlInstagram = request.UrlInstagram ?? profile.UrlInstagram;
+            profile.UrlLinkedIn = request.UrlLinkedIn ?? profile.UrlLinkedIn;
+            profile.ExperienceDescription = request.ExperienceDescription ?? profile.ExperienceDescription;
+            profile.CompanyDescription = request.CompanyDescription ?? profile.CompanyDescription;
+            profile.OrganizationType = request.OrganizationType ?? profile.OrganizationType;
+            profile.EventFrequency = request.EventFrequency ?? profile.EventFrequency;
+            profile.EventSize = request.EventSize ?? profile.EventSize;
+            profile.OrganizerType = request.OrganizerType ?? profile.OrganizerType;
+            profile.EventExperienceLevel = request.EventExperienceLevel ?? profile.EventExperienceLevel;
+            profile.ImgCompany = await _cloudinaryService.UploadImageAsync(request.ImgCompany!) ?? profile.ImgCompany;
+
+            await _unitOfWork.OrganizerProfileRepository.UpdateAsync(profile);
+            await _unitOfWork.SaveChangesAsync();
+
+            OrganizerDetailResponse response = _mapper.Map<OrganizerDetailResponse>(profile);
+
+            return Result<object>.Success(response);
+        }
+
     }
 }

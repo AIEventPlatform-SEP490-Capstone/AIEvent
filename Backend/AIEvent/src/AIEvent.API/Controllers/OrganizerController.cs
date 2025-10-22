@@ -89,7 +89,7 @@ namespace AIEvent.API.Controllers
 
         [HttpGet("profile")]
         [Authorize(Roles = "Organizer")]
-        public async Task<ActionResult<SuccessResponse<OrganizerResponse>>> GetOrganizerProfile()
+        public async Task<ActionResult<SuccessResponse<OrganizerDetailResponse>>> GetOrganizerProfile()
         {
             var userId = User.GetRequiredUserId();
             var result = await _organizerService.GetOrganizerProfileAsync(userId);
@@ -98,10 +98,27 @@ namespace AIEvent.API.Controllers
                 return BadRequest(result.Error!);
             }
 
-            return Ok(SuccessResponse<OrganizerResponse>.SuccessResult(
+            return Ok(SuccessResponse<OrganizerDetailResponse>.SuccessResult(
                 result.Value!,
                 SuccessCodes.Success,
                 "Organizer retrieved successfully"));
+        }
+
+        [HttpPatch]
+        [Authorize(Roles = "Organizer")]
+        public async Task<ActionResult<SuccessResponse<object>>> UpdateOrganizerProfile([FromForm] UpdateOrganizerProfileRequest request)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _organizerService.UpdateOrganizerProfileAsync(userId, request);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Update OrganizerProfile successfully"));
         }
     }
 }
