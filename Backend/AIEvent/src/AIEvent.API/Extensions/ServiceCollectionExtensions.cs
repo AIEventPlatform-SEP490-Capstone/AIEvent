@@ -59,11 +59,11 @@ namespace AIEvent.API.Extensions
 
             services.AddSingleton(x =>
             {
-                var config = x.GetRequiredService<IConfiguration>().GetSection("CloudinarySettings");
+                var config = x.GetRequiredService<IConfiguration>().GetSection("Cloudinary");
                 var account = new Account(
                     config["CloudName"],
-                    config["ApiKey"],
-                    config["ApiSecret"]
+                    config["Key"],
+                    config["Secret"]
                 );
 
                 var cloudinary = new Cloudinary(account)
