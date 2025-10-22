@@ -163,6 +163,13 @@ namespace AIEvent.Application.Services.Implements
             user.IsActive = true;
             await _unitOfWork.UserRepository.UpdateAsync(user);
 
+            Wallet wallet = new()
+            {
+                UserId = user.Id,
+                Balance = 0
+            };
+            await _unitOfWork.WalletRepository.AddAsync(wallet);
+
             var accessToken = _jwtService.GenerateAccessToken(user);
             var refreshToken = _jwtService.GenerateRefreshToken();
 

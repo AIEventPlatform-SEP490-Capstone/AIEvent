@@ -214,5 +214,27 @@ namespace AIEvent.Application.Services.Implements
             });
         }
 
+        public async Task<Result<OrganizerResponse>> GetOrganizerProfileAsync(Guid userId)
+        {
+            var userExists = await _unitOfWork.UserRepository.Query()
+                .AsNoTracking()
+                .AnyAsync(u => u.Id == userId && !u.IsDeleted);
+            if (!userExists)
+                return ErrorResponse.FailureResult("User not found.", ErrorCodes.NotFound);
+
+            var organizer = await _unitOfWork.OrganizerProfileRepository
+                .Query()
+                .AsNoTracking()
+                .Include(o => o.User)
+                .FirstOrDefaultAsync(o => o.UserId == userId && !o.IsDeleted && o.Status == ConfirmStatus.Approve);
+
+            if (organizer == null)
+                return ErrorResponse.FailureResult("Organizer not found or not approved yet", ErrorCodes.NotFound);
+
+            OrganizerResponse response = _mapper.Map<OrganizerResponse>(organizer);
+
+            return Result<OrganizerResponse>.Success(response);
+        }
+
     }
 }

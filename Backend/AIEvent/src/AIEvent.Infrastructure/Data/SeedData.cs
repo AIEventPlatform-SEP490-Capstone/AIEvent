@@ -162,15 +162,31 @@ namespace AIEvent.Infrastructure.Data
                 {
                     Id = Guid.NewGuid(),
                     UserId = regularUserId,
-                    Balance = 1000000,
-                    Status = WalletStatus.Active,
+                    Balance = 10000000,
                 },
                 new Wallet
                 {
                     Id = Guid.NewGuid(),
                     UserId = testUserId,
                     Balance = 0,
-                    Status = WalletStatus.Active,
+                },
+                new Wallet
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = organizerUserId,
+                    Balance = 0,
+                },
+                new Wallet
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = managerUserId,
+                    Balance = 0,
+                },
+                new Wallet
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = adminUserId,
+                    Balance = 0,
                 }
             );
         }

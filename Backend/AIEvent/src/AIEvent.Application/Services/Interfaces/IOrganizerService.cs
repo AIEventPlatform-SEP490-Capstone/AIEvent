@@ -12,5 +12,6 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result<BasePaginated<ListOrganizerNeedApprove>>> GetListOrganizerNeedApprove(int pageNumber, int pageSize);
         Task<Result<OrganizerResponse>> GetOrgNeedApproveByIdAsync(string id);
         Task<Result> ConfirmBecomeOrganizerAsync(Guid userId, string id, ConfirmRequest request);
+        Task<Result<OrganizerResponse>> GetOrganizerProfileAsync(Guid userId);
     }
 }

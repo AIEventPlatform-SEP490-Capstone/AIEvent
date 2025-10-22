@@ -4,6 +4,7 @@
     {
         Approve,
         Reject,
-        NeedConfirm
+        NeedConfirm,
+        Ended
     }
 }

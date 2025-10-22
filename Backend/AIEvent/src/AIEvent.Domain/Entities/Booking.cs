@@ -21,7 +21,6 @@ namespace AIEvent.Domain.Entities
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalAmount { get; set; }
-        public required string Currency {  get; set; }
         public BookingStatus Status { get; set; }
         public PaymentStatus PaymentStatus { get; set; }
         public PaymentMethod PaymentMethod { get; set; }
