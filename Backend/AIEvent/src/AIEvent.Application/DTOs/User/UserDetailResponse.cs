@@ -34,7 +34,7 @@ namespace AIEvent.Application.DTOs.User
         public string? InstagramUrl { get; set; }
         public string? FacebookUrl { get; set; }
         public List<UserSkills>? ProfessionalSkills { get; set; }
-        public List<Languages>? Languages { get; set; }
+        public List<UserLanguages>? Languages { get; set; }
         public int TotalJoinedEvents { get; set; }   
         public int TotalFavoriteEvents { get; set; }  
         public int TotalFriends { get; set; }       

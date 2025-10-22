@@ -35,6 +35,6 @@ namespace AIEvent.Application.DTOs.User
         public List<InterestedCities>? InterestedCities { get; set; }
         public List<FavoriteEventTypes>? FavoriteEventTypes { get; set; }
         public List<UserSkills>? ProfessionalSkills { get; set; }
-        public List<Languages>? Languages { get; set; }
+        public List<UserLanguages>? Languages { get; set; }
     }
 }
