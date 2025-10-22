@@ -19,9 +19,9 @@ namespace AIEvent.Domain.Entities
         public virtual Booking Booking { get; set; } = default!;
         [Column(TypeName = "decimal(18,2)")]
         public decimal Amount { get; set; }
-        public required string Currency { get; set; }
         public PaymentMethod PaymentMethod { get; set; }
         public string? Description {  get; set; }
+        public TransactionStatus Status { get; set; } 
         public DateTime CompletedAt { get; set; }
     }
 }

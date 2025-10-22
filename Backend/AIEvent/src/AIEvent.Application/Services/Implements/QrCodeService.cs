@@ -1,8 +1,8 @@
 ﻿using AIEvent.Application.Services.Interfaces;
 using QRCoder;
 using System.Drawing.Imaging;
-using System.Drawing;
 using Microsoft.AspNetCore.Http;
+using System.Collections.Concurrent;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -12,29 +12,50 @@ namespace AIEvent.Application.Services.Implements
 
         public QrCodeService(ICloudinaryService cloudinaryService)
         {
-            _cloudinaryService = cloudinaryService; 
+            _cloudinaryService = cloudinaryService;
         }
 
-        public async Task<string> GenerateQrCodeAsync(string content)
+        public async Task<(Dictionary<string, byte[]> Bytes, Dictionary<string, string> Urls)> GenerateQrBytesAndUrlsAsync(List<string> contents)
         {
-            using var qrGenerator = new QRCodeGenerator();
-            using var qrCodeData = qrGenerator.CreateQrCode(content, QRCodeGenerator.ECCLevel.Q);
-            using var qrCode = new QRCode(qrCodeData);
-            using Bitmap qrBitmap = qrCode.GetGraphic(20);
+            var qrBytesDict = new Dictionary<string, byte[]>();
+            var qrFiles = new List<(string Content, IFormFile File)>();
 
-            using var stream = new MemoryStream();
-            qrBitmap.Save(stream, ImageFormat.Png);
-            stream.Position = 0;
-
-            // Convert MemoryStream -> IFormFile để reuse CloudinaryService
-            var file = new FormFile(stream, 0, stream.Length, "qr", $"ticket_qr_{Guid.NewGuid():N}.png")
+            // Generate QR codes and store bytes
+            foreach (var content in contents)
             {
-                Headers = new HeaderDictionary(),
-                ContentType = "image/png"
-            };
+                using var qrGenerator = new QRCodeGenerator();
+                using var qrCodeData = qrGenerator.CreateQrCode(content, QRCodeGenerator.ECCLevel.Q);
+                using var qrCode = new QRCode(qrCodeData);
+                using var bitmap = qrCode.GetGraphic(20);
 
-            var url = await _cloudinaryService.UploadImageAsync(file);
-            return url!;
+                using var stream = new MemoryStream();
+                bitmap.Save(stream, ImageFormat.Png);
+                var bytes = stream.ToArray();
+                qrBytesDict[content] = bytes;
+
+                // Create IFormFile for Cloudinary upload
+                var fileStream = new MemoryStream(bytes);
+                var file = new FormFile(fileStream, 0, bytes.Length, "qr", $"qr_{Guid.NewGuid():N}.png")
+                {
+                    Headers = new HeaderDictionary(),
+                    ContentType = "image/png"
+                };
+                qrFiles.Add((content, file));
+            }
+
+            // Upload to Cloudinary concurrently
+            var urls = new ConcurrentDictionary<string, string>();
+            var uploadTasks = qrFiles.Select(async (item, index) =>
+            {
+                var url = await _cloudinaryService.UploadImageAsync(item.File);
+                if (!string.IsNullOrEmpty(url))
+                {
+                    urls[item.Content] = url;
+                }
+            });
+            await Task.WhenAll(uploadTasks);
+
+            return (qrBytesDict, urls.ToDictionary());
         }
     }
 }

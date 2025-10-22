@@ -1,4 +1,5 @@
-﻿using AIEvent.Application.Constants;
+﻿using AIEvent.API.Extensions;
+using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.Services.Interfaces;
@@ -40,6 +41,23 @@ namespace AIEvent.API.Controllers
         public async Task<ActionResult<SuccessResponse<BasePaginated<TagResponse>>>> GetTag(int pageNumber = 1, int pageSize = 5)
         {
             var result = await _tagService.GetListTagAsync(pageNumber, pageSize);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<TagResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Tag retrieved successfully"));
+        }
+
+        [HttpGet("user")]
+        [Authorize(Roles = "Admin,Organizer,Manager")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<TagResponse>>>> GetListTagByUserId(int pageNumber = 1, int pageSize = 5)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _tagService.GetListTagByUserIdAsync(pageNumber, pageSize, userId);
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);

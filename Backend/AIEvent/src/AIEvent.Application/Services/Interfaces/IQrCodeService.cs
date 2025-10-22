@@ -2,6 +2,6 @@
 {
     public interface IQrCodeService
     {
-        Task<string> GenerateQrCodeAsync(string content);
+        Task<(Dictionary<string, byte[]> Bytes, Dictionary<string, string> Urls)> GenerateQrBytesAndUrlsAsync(List<string> contents);
     }
 }

@@ -45,6 +45,7 @@ export const PATH = {
   ORGANIZER_ANALYTICS: "/organizer/analytics/:id",
   ORGANIZER_CHECKIN: "/organizer/checkin/:id",
   ORGANIZER_REFUND_RULES: "/organizer/refund-rules",
+  ORGANIZER_TAGS: "/organizer/tags",
   BECOME_ORGANIZER: "/become-organizer",
 
   // MANAGER
@@ -55,6 +56,7 @@ export const PATH = {
   MANAGER_EVENT_DETAIL: "/manager/event/:eventId",
   MANAGER_EVENT_EDIT: "/manager/event/:eventId/edit",
   MANAGER_REFUND_RULES: "/manager/refund-rules",
+  MANAGER_TAGS: "/manager/tags",
   MANAGER_PROFILE: "/manager/profile",
   MANAGER_SETTINGS: "/manager/settings",
   MANAGER_SUPPORT: "/manager/support",

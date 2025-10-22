@@ -204,6 +204,8 @@ namespace AIEvent.Infrastructure.Context
                     .WithOne(o => o.Wallet)
                     .HasForeignKey<Wallet>(o => o.UserId)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.UserId).HasDatabaseName("IX_Wallet_UserId").IsUnique();
             });
 
             //--------------WalletTransaction--------------
@@ -213,6 +215,11 @@ namespace AIEvent.Infrastructure.Context
                     .WithMany(o => o.WalletTransactions)
                     .HasForeignKey(e => e.WalletId)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.WalletId).HasDatabaseName("IX_WalletTransaction_WalletId");
+                entity.HasIndex(e => new { e.ReferenceId, e.ReferenceType }).HasDatabaseName("IX_WalletTransaction_Reference");
+                entity.HasIndex(e => e.Type).HasDatabaseName("IX_WalletTransaction_Type");
+                entity.HasIndex(e => e.CreatedAt).HasDatabaseName("IX_WalletTransaction_CreatedAt");
             });
 
             //--------------TopupRequest--------------
@@ -231,6 +238,11 @@ namespace AIEvent.Infrastructure.Context
                     .WithMany(o => o.PaymentTransactions)
                     .HasForeignKey(e => e.BookingId)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.BookingId).HasDatabaseName("IX_PaymentTransaction_BookingId");
+                entity.HasIndex(e => e.UserId).HasDatabaseName("IX_PaymentTransaction_UserId");
+                entity.HasIndex(e => e.Status).HasDatabaseName("IX_PaymentTransaction_Status");
+                entity.HasIndex(e => e.CreatedAt).HasDatabaseName("IX_PaymentTransaction_CreatedAt");
             });
 
             // ----------------- EventTag -----------------
