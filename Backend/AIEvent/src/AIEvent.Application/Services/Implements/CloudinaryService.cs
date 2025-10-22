@@ -46,21 +46,36 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<string?> UploadImageAsync(IFormFile file)
         {
-            if (file == null || file.Length == 0) return null;
-            using (var stream = file.OpenReadStream())
+            try
             {
-                var uploadParams = new ImageUploadParams()
+                if (file == null || file.Length == 0)
+                    return null;
+
+                using var stream = file.OpenReadStream();
+                var uploadParams = new ImageUploadParams
                 {
                     File = new FileDescription(file.FileName, stream),
                     Folder = "my_images",
                     Transformation = new Transformation()
-                                            .Width(500)
-                                            .Height(500)
-                                            .Crop("fill")
-                                            .Gravity("auto")
+                        .Width(500)
+                        .Height(500)
+                        .Crop("fill")
+                        .Gravity("auto")
                 };
+
                 var uploadResult = await _cloudinary.UploadAsync(uploadParams);
-                return uploadResult.SecureUrl.ToString();
+                if (uploadResult?.Error != null)
+                {
+                    Console.WriteLine($"Cloudinary error: {uploadResult.Error.Message}");
+                    return null;
+                }
+
+                return uploadResult?.SecureUrl?.ToString() ?? uploadResult?.Url?.ToString();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Upload failed: {ex.Message}");
+                return null;
             }
         }
 

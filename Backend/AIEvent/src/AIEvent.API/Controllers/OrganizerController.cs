@@ -86,5 +86,22 @@ namespace AIEvent.API.Controllers
                 SuccessCodes.Updated,
                 "Confirm become Organizer successfully"));
         }
+
+        [HttpGet("profile")]
+        [Authorize(Roles = "Organizer")]
+        public async Task<ActionResult<SuccessResponse<OrganizerResponse>>> GetOrganizerProfile()
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _organizerService.GetOrganizerProfileAsync(userId);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<OrganizerResponse>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Organizer retrieved successfully"));
+        }
     }
 }
