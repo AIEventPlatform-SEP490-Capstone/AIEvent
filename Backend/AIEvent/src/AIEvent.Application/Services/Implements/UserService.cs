@@ -5,6 +5,7 @@ using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
+using AIEvent.Domain.Enums;
 using AIEvent.Domain.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
@@ -42,6 +43,20 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("User account is inactive", ErrorCodes.NotFound);
 
             var userResponse = _mapper.Map<UserDetailResponse>(user);
+
+            var joinedEventsTask = _unitOfWork.BookingRepository
+                                            .Query()
+                                            .AsNoTracking()
+                                            .Where(b => b.UserId == userId && b.Status == BookingStatus.Completed)
+                                            .CountAsync();
+
+            var favoriteEventsTask = _unitOfWork.FavoriteEventRepository
+                                            .Query()
+                                            .AsNoTracking()
+                                            .Where(fe => fe.UserId == userId)
+                                            .CountAsync();
+
+            await Task.WhenAll(joinedEventsTask, favoriteEventsTask);
 
             return Result<UserDetailResponse>.Success(userResponse);
         }

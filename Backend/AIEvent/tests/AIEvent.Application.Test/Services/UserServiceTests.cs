@@ -65,7 +65,12 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
+            var bookings = new List<Booking>().AsQueryable().BuildMockDbSet();
+            var favoriteEvents = new List<FavoriteEvent>().AsQueryable().BuildMockDbSet();
+
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
+            _mockUnitOfWork.Setup(x => x.BookingRepository.Query(false)).Returns(bookings.Object);
+            _mockUnitOfWork.Setup(x => x.FavoriteEventRepository.Query(false)).Returns(favoriteEvents.Object);
             _mockMapper.Setup(x => x.Map<UserDetailResponse>(user)).Returns(userDetailResponse);
 
             // Act
@@ -180,7 +185,6 @@ namespace AIEvent.Application.Test.Services
             var user = new User
             {
                 Id = userId,
-                Email = "test@example.com",
                 FullName = "Test User",
                 IsActive = true,
                 DeletedAt = null
@@ -189,7 +193,6 @@ namespace AIEvent.Application.Test.Services
             var updateRequest = new UpdateUserRequest
             {
                 FullName = "Updated User",
-                Email = "updated@example.com",
                 PhoneNumber = "+1234567890",
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
@@ -221,7 +224,6 @@ namespace AIEvent.Application.Test.Services
             var updateRequest = new UpdateUserRequest
             {
                 FullName = "Updated User",
-                Email = "updated@example.com"
             };
 
             // Act
@@ -258,7 +260,6 @@ namespace AIEvent.Application.Test.Services
             var updateRequest = new UpdateUserRequest
             {
                 FullName = "Updated User",
-                Email = "updated@example.com"
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync((User)null!);
@@ -289,8 +290,7 @@ namespace AIEvent.Application.Test.Services
 
             var updateRequest = new UpdateUserRequest
             {
-                FullName = "Updated User",
-                Email = "updated@example.com"
+                FullName = "Updated User"
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
@@ -321,8 +321,7 @@ namespace AIEvent.Application.Test.Services
 
             var updateRequest = new UpdateUserRequest
             {
-                FullName = "Updated User",
-                Email = "updated@example.com"
+                FullName = "Updated User"
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
@@ -338,28 +337,6 @@ namespace AIEvent.Application.Test.Services
         }
 
         [Fact]
-        public async Task UTCID07_UpdateUserAsync_WithInvalidEmailFormat_ShouldReturnFailure()
-        {
-            // Arrange
-            var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
-            var updateRequest = new UpdateUserRequest
-            {
-                FullName = "Updated User",
-                Email = "invalid-email-format",
-                PhoneNumber = "+1234567890"
-            };
-
-            // Act
-            var result = await _userService.UpdateUserAsync(userId, updateRequest);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Contain("Invalid email format");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never);
-        }
-
-        [Fact]
         public async Task UTCID08_UpdateUserAsync_WithInvalidPhoneNumber_ShouldReturnFailure()
         {
             // Arrange
@@ -367,7 +344,6 @@ namespace AIEvent.Application.Test.Services
             var updateRequest = new UpdateUserRequest
             {
                 FullName = "Updated User",
-                Email = "updated@example.com",
                 PhoneNumber = "invalid-phone"
             };
 
@@ -396,7 +372,6 @@ namespace AIEvent.Application.Test.Services
             var updateRequest = new UpdateUserRequest
             {
                 FullName = "Updated User",
-                Email = "updated@example.com",
                 AvatarImg = mockFile.Object
             };
 
@@ -435,7 +410,6 @@ namespace AIEvent.Application.Test.Services
             var updateRequest = new UpdateUserRequest
             {
                 FullName = "Updated User",
-                Email = "updated@example.com",
                 AvatarImg = null
             };
 

@@ -2403,7 +2403,7 @@ namespace AIEvent.Application.Test.Services
                     Id = Guid.NewGuid(),
                     Title = "Today Event",
                     Description = "Description 1",
-                    StartTime = today.AddHours(20), // Today at 8 PM (future)
+                    StartTime = DateTime.Now.AddHours(1),
                     EndTime = today.AddHours(22),
                     RequireApproval = ConfirmStatus.Approve,
                     DeletedAt = null,

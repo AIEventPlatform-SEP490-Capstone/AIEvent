@@ -1093,6 +1093,8 @@ namespace AIEvent.Application.Test.Services
             _mockJwtService.Setup(x => x.GenerateAccessToken(user)).Returns(accessToken);
             _mockJwtService.Setup(x => x.GenerateRefreshToken()).Returns(refreshToken);
             _mockUnitOfWork.Setup(x => x.UserRepository.UpdateAsync(It.IsAny<User>()));
+            _mockUnitOfWork
+                .Setup(r => r.WalletRepository.AddAsync(It.IsAny<Wallet>()));
             _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.AddAsync(It.IsAny<RefreshToken>()));
             _mockCacheService.Setup(x => x.GetAsync<string>($"Register {request.Email}")).ReturnsAsync("123456");
             _mockCacheService.Setup(x => x.RemoveAsync($"Register {request.Email}"));
