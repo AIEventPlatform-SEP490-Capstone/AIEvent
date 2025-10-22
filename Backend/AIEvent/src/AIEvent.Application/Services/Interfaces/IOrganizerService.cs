@@ -10,5 +10,6 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result<OrganizerDetailResponse>> GetOrganizerByIdAsync(Guid id);
         Task<Result<BasePaginated<OrganizerResponse>>> GetOrganizerAsync(int pageNumber = 1, int pageSize = 10, bool? needApprove = false);
         Task<Result> ConfirmBecomeOrganizerAsync(Guid userId, Guid organizerProfileId, ConfirmRequest request);
+        Task<Result<OrganizerResponse>> GetOrganizerProfileAsync(Guid userId);
     }
 }

@@ -68,6 +68,30 @@ namespace AIEvent.Application.Services.Implements
             return new BasePaginated<TagResponse>(result, totalCount, pageNumber, pageSize);
         }
 
+        public async Task<Result<BasePaginated<TagResponse>>> GetListTagByUserIdAsync(int pageNumber, int pageSize, Guid userId)
+        {
+            var Id = userId.ToString();
+            IQueryable<Tag> tagQuery = _unitOfWork.TagRepository
+                .Query()
+                .AsNoTracking()
+                .Where(p => !p.DeletedAt.HasValue && p.CreatedBy == Id)
+                .OrderByDescending(s => s.CreatedAt);
+
+            int totalCount = await tagQuery.CountAsync();
+
+            var result = await tagQuery
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(p => new TagResponse
+                {
+                    TagId = p.Id.ToString(),
+                    TagName = p.NameTag,
+                })
+                .ToListAsync();
+
+            return new BasePaginated<TagResponse>(result, totalCount, pageNumber, pageSize);
+        }
+
         public async Task<Result> DeleteTagAsync(string id)
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>

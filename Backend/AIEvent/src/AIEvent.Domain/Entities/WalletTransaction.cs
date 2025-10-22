@@ -18,8 +18,10 @@ namespace AIEvent.Domain.Entities
         public decimal BalanceBefore { get; set; }
         [Column(TypeName = "decimal(18,2)")]
         public decimal BalanceAfter { get; set; }
+        public TransactionDirection Direction { get; set; }
         public TransactionStatus Status { get; set; }
         public string? Description { get; set; }
         public Guid? ReferenceId { get; set; }
+        public ReferenceType? ReferenceType { get; set; }
     }
 }

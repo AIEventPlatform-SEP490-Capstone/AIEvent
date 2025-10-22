@@ -9,5 +9,6 @@
         Task<T> UpdateAsync(T entity);
         Task DeleteAsync(T entity);
         IQueryable<T> Query(bool asNoTracking = false);
+        Task UpdateRangeAsync(IEnumerable<T> entities);
     }
 }

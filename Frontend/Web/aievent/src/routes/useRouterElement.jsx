@@ -26,6 +26,7 @@ import EventCategory from "../pages/Event Category/EventCategory";
 import VerifyOtpPage from "../pages/Auth/RegisterPage/VerifyOtpPage";
 import BecomeOrganizerPage from "../pages/User/BecomeOrganizerPage";
 import ApplicationStatusPage from "../pages/User/ApplicationStatusPage";
+import TagManagementPage from "../pages/Shared/TagManagementPage";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -190,6 +191,7 @@ export default function useRouterElement() {
         { path: "support", element: <div>Organizer Support Page</div> },
         { path: "analytics/:id", element: <div>Organizer Analytics Page</div> },
         { path: "checkin/:id", element: <div>Organizer Check-in Page</div> },
+        { path: "tags", element: <TagManagementPage userRole="organizer" /> },
         { path: "refund-rules", element: <RefundRulesPage userRole="organizer" /> },
       ],
     },
@@ -210,6 +212,7 @@ export default function useRouterElement() {
         { path: "event/:eventId", element: <ManagerEventDetailPage /> },
         { path: "event/:eventId/edit", element: <ManagerEditEventPage /> },
         { path: "events/category", element: <EventCategory /> },
+        { path: "tags", element: <TagManagementPage userRole="manager" /> },
         { path: "refund-rules", element: <RefundRulesPage userRole="manager" /> },
         { path: "profile", element: <div>Manager Profile Page</div> },
         { path: "settings", element: <div>Manager Settings Page</div> },
