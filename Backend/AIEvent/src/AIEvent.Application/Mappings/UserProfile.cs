@@ -22,7 +22,22 @@ namespace AIEvent.Application.Mappings
                     opt => opt.MapFrom(src =>
                         !string.IsNullOrEmpty(src.UserInterestsJson)
                             ? JsonConvert.DeserializeObject<List<UserInterest>>(src.UserInterestsJson)
-                            : new List<UserInterest>()));
+                            : new List<UserInterest>()))
+                .ForMember(dest => dest.FavoriteEventTypes,
+                    opt => opt.MapFrom(src =>
+                        !string.IsNullOrEmpty(src.FavoriteEventTypesJson)
+                            ? JsonConvert.DeserializeObject<List<FavoriteEventTypes>>(src.FavoriteEventTypesJson)
+                            : new List<FavoriteEventTypes>()))
+                .ForMember(dest => dest.ProfessionalSkills,
+                    opt => opt.MapFrom(src =>
+                        !string.IsNullOrEmpty(src.ProfessionalSkillsJson)
+                            ? JsonConvert.DeserializeObject<List<UserSkills>>(src.ProfessionalSkillsJson)
+                            : new List<UserSkills>()))
+                .ForMember(dest => dest.Languages,
+                    opt => opt.MapFrom(src =>
+                        !string.IsNullOrEmpty(src.LanguagesJson)
+                            ? JsonConvert.DeserializeObject<List<UserSkills>>(src.LanguagesJson)
+                            : new List<UserSkills>()));
 
             CreateMap<UpdateUserRequest, User>()
                 .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true))
@@ -36,6 +51,21 @@ namespace AIEvent.Application.Mappings
                     opt => opt.MapFrom(src =>
                         src.UserInterests != null
                             ? JsonConvert.SerializeObject(src.UserInterests)
+                            : null))
+                .ForMember(dest => dest.ProfessionalSkillsJson,
+                    opt => opt.MapFrom(src =>
+                        src.ProfessionalSkills != null
+                            ? JsonConvert.SerializeObject(src.ProfessionalSkills)
+                            : null))
+                .ForMember(dest => dest.FavoriteEventTypesJson,
+                    opt => opt.MapFrom(src =>
+                        src.FavoriteEventTypes != null
+                            ? JsonConvert.SerializeObject(src.FavoriteEventTypes)
+                            : null))
+                .ForMember(dest => dest.LanguagesJson,
+                    opt => opt.MapFrom(src =>
+                        src.Languages != null
+                            ? JsonConvert.SerializeObject(src.Languages)
                             : null));
         }
     }
