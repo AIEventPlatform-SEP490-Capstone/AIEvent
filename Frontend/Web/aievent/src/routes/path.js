@@ -21,6 +21,8 @@ export const PATH = {
   ABOUT: "/about",
   PROFILE: "/profile",
   PROFILE_USER: "/profile/:userId",
+  BECOME_ORGANIZER: "/become-organizer",
+  APPLICATION_STATUS: "/application-status",
 
   // EVENT
   EVENT_DETAIL: "/event/:id",
@@ -28,7 +30,6 @@ export const PATH = {
   PAYMENT: "/payment/:ticketId",
   QR_VIEWER: "/qr-viewer/:ticketId",
   EVENT_INVITATIONS: "/event-invitations",
-  APPLICATION_STATUS: "/application-status",
   SOCIAL_SHARING: "/social-sharing",
 
   // ORGANIZER
@@ -43,6 +44,8 @@ export const PATH = {
   ORGANIZER_SUPPORT: "/organizer/support",
   ORGANIZER_ANALYTICS: "/organizer/analytics/:id",
   ORGANIZER_CHECKIN: "/organizer/checkin/:id",
+  ORGANIZER_REFUND_RULES: "/organizer/refund-rules",
+  ORGANIZER_TAGS: "/organizer/tags",
   BECOME_ORGANIZER: "/become-organizer",
 
   // MANAGER
@@ -52,6 +55,8 @@ export const PATH = {
   MANAGER_EVENTS_NEED_APPROVAL: "/manager/events/need-approval",
   MANAGER_EVENT_DETAIL: "/manager/event/:eventId",
   MANAGER_EVENT_EDIT: "/manager/event/:eventId/edit",
+  MANAGER_REFUND_RULES: "/manager/refund-rules",
+  MANAGER_TAGS: "/manager/tags",
   MANAGER_PROFILE: "/manager/profile",
   MANAGER_SETTINGS: "/manager/settings",
   MANAGER_SUPPORT: "/manager/support",
@@ -69,6 +74,9 @@ export const PATH = {
   ADMIN_DOCUMENTATION: "/admin/documentation",
   ADMIN_HELP: "/admin/help",
   ADMIN_QUICK_ACTIONS: "/admin/quick-actions",
+
+  // SHARED
+  REFUND_RULES: "/refund-rules",
 
   // ERROR
   ERROR: "*",

@@ -23,9 +23,8 @@ export const tagAPI = {
 
   // Update tag (Admin/Organizer only)
   updateTag: async (tagId, tagData) => {
-    const response = await fetcher.put(`/tag/${tagId}`, {
-      nameTag: tagData.nameTag,
-    });
+    // Send the complete tag object with all fields
+    const response = await fetcher.put(`/tag/${tagId}`, tagData);
     return response.data;
   },
 

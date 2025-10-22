@@ -30,26 +30,13 @@ namespace AIEvent.Application.Services.Implements
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-                var context = new ValidationContext(request);
-                var results = new List<ValidationResult>();
-                bool isValid = Validator.TryValidateObject(request, context, results, true);
-                if (!isValid)
-                {
-                    var messages = string.Join("; ", results.Select(r => r.ErrorMessage));
-                    return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
-                }
-                foreach (var detail in request.RuleRefundDetails)
-                {
-                    var detailContext = new ValidationContext(detail);
-                    var detailResults = new List<ValidationResult>();
-                    bool isDetailValid = Validator.TryValidateObject(detail, detailContext, detailResults, true);
-
-                    if (!isDetailValid)
-                    {
-                        var messages = string.Join("; ", detailResults.Select(r => r.ErrorMessage));
-                        return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
-                    }
-                }
+                var validationResult = ValidationHelper.ValidateModel(request);
+                if (!validationResult.IsSuccess)
+                    return validationResult;
+                
+                var detailValidationResult = ValidationHelper.ValidateModelList(request.RuleRefundDetails);
+                if (!detailValidationResult.IsSuccess)
+                    return detailValidationResult;
 
                 var invalidDetail = request.RuleRefundDetails
                     .FirstOrDefault(d => d.MinDaysBeforeEvent.HasValue && d.MaxDaysBeforeEvent.HasValue && d.MinDaysBeforeEvent > d.MaxDaysBeforeEvent);
@@ -70,8 +57,8 @@ namespace AIEvent.Application.Services.Implements
                 if (rule == null)
                     return ErrorResponse.FailureResult("Failed to map refund rule", ErrorCodes.InternalServerError);
 
-                rule.IsSystem = role.Name.Equals("Admin", StringComparison.OrdinalIgnoreCase);
-
+                if (role.Name.Equals("Admin") || role.Name.Equals("Manager"))
+                    rule.IsSystem = true;
                 await _unitOfWork.RefundRuleRepository.AddAsync(rule);
                 return Result.Success();
             });
@@ -93,9 +80,9 @@ namespace AIEvent.Application.Services.Implements
 
             if (rules == null || rules.DeletedAt.HasValue)
                 return ErrorResponse.FailureResult("Rule not found or inactive", ErrorCodes.InvalidInput);
-            if (rules.IsSystem && !role!.Name.Equals("Admin"))
+            if (rules.IsSystem && !role!.Name.Equals("Admin") && !role.Name.Equals("Manager"))
                 return ErrorResponse.FailureResult("System rule cannot be modified by user", ErrorCodes.PermissionDenied);
-            if (!role!.Name.Equals("Admin") && rules.CreatedBy != userId.ToString())
+            if (!role!.Name.Equals("Admin") && !role.Name.Equals("Manager") && rules.CreatedBy != userId.ToString())
                 return ErrorResponse.FailureResult("You can only modify your own rules", ErrorCodes.PermissionDenied);
 
             await _unitOfWork.RefundRuleRepository.DeleteAsync(rules);
@@ -154,14 +141,10 @@ namespace AIEvent.Application.Services.Implements
             {
                 if (userId == Guid.Empty || ruleRefundId == Guid.Empty)
                     return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
-                var context = new ValidationContext(request);
-                var results = new List<ValidationResult>();
-                bool isValid = Validator.TryValidateObject(request, context, results, true);
-                if (!isValid)
-                {
-                    var messages = string.Join("; ", results.Select(r => r.ErrorMessage));
-                    return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
-                }
+                
+                var validationResult = ValidationHelper.ValidateModel(request);
+                if (!validationResult.IsSuccess)
+                    return validationResult;
                 var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
                 if (user == null || !user.IsActive || user.DeletedAt.HasValue)
                     return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
@@ -174,9 +157,9 @@ namespace AIEvent.Application.Services.Implements
                                                     .FirstOrDefaultAsync(r => r.Id == ruleRefundId);
                 if (ruleRefund == null)
                     return ErrorResponse.FailureResult("Rule not found", ErrorCodes.InvalidInput);
-                if (ruleRefund.IsSystem && !role.Name.Equals("Admin"))
+                if (ruleRefund.IsSystem && !role.Name.Equals("Admin") && !role.Name.Equals("Manager"))
                     return ErrorResponse.FailureResult("System rule cannot be modified by user", ErrorCodes.PermissionDenied);
-                if (!role.Name.Equals("Admin") && ruleRefund.CreatedBy != userId.ToString())
+                if (!role.Name.Equals("Admin") && !role.Name.Equals("Manager") && ruleRefund.CreatedBy != userId.ToString())
                     return ErrorResponse.FailureResult("You can only modify your own rules", ErrorCodes.PermissionDenied);
 
                 _mapper.Map(request, ruleRefund);
@@ -191,14 +174,10 @@ namespace AIEvent.Application.Services.Implements
             {
                 if (userId == Guid.Empty || ruleRefundDetailId == Guid.Empty)
                     return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
-                var context = new ValidationContext(request);
-                var results = new List<ValidationResult>();
-                bool isValid = Validator.TryValidateObject(request, context, results, true);
-                if (!isValid)
-                {
-                    var messages = string.Join("; ", results.Select(r => r.ErrorMessage));
-                    return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
-                }
+                
+                var validationResult = ValidationHelper.ValidateModel(request);
+                if (!validationResult.IsSuccess)
+                    return validationResult;
                 if (request.MinDaysBeforeEvent > request.MaxDaysBeforeEvent)
                     return ErrorResponse.FailureResult(
                         $"Invalid rule detail: MinDays ({request.MinDaysBeforeEvent}) cannot be greater than MaxDays ({request.MaxDaysBeforeEvent})",
@@ -215,8 +194,8 @@ namespace AIEvent.Application.Services.Implements
                                                     .FirstOrDefaultAsync(r => r.Id == ruleRefundDetailId);
                 if (ruleRefund == null)
                     return ErrorResponse.FailureResult("Rule detail not found", ErrorCodes.InvalidInput);
-                if (!role.Name.Equals("Admin"))
-                    return ErrorResponse.FailureResult("System rule detail cannot be modified by user", ErrorCodes.PermissionDenied);
+                if (!role.Name.Equals("Admin") && !role.Name.Equals("Manager") && ruleRefund.CreatedBy != userId.ToString())
+                    return ErrorResponse.FailureResult("You can only modify your own rules detail", ErrorCodes.PermissionDenied);
 
                 _mapper.Map(request, ruleRefund);
                 await _unitOfWork.RefundRuleDetailRepository.UpdateAsync(ruleRefund);
@@ -241,8 +220,8 @@ namespace AIEvent.Application.Services.Implements
 
             if (rules == null || rules.DeletedAt.HasValue)
                 return ErrorResponse.FailureResult("Rule detail not found or inactive", ErrorCodes.InvalidInput);
-            if (!role.Name.Equals("Admin"))
-                return ErrorResponse.FailureResult("System rule detail cannot be modified by user", ErrorCodes.PermissionDenied);
+            if (!role.Name.Equals("Admin") && !role.Name.Equals("Manager") && rules.CreatedBy != userId.ToString())
+                return ErrorResponse.FailureResult("You can only modify your own rules detail", ErrorCodes.PermissionDenied);
 
             await _unitOfWork.RefundRuleDetailRepository.DeleteAsync(rules);
             await _unitOfWork.SaveChangesAsync();
@@ -255,14 +234,10 @@ namespace AIEvent.Application.Services.Implements
             {
                 if (userId == Guid.Empty || ruleRefundId == Guid.Empty)
                     return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
-                var context = new ValidationContext(request);
-                var results = new List<ValidationResult>();
-                bool isValid = Validator.TryValidateObject(request, context, results, true);
-                if (!isValid)
-                {
-                    var messages = string.Join("; ", results.Select(r => r.ErrorMessage));
-                    return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
-                }
+                
+                var validationResult = ValidationHelper.ValidateModel(request);
+                if (!validationResult.IsSuccess)
+                    return validationResult;
                 if (request.MinDaysBeforeEvent > request.MaxDaysBeforeEvent)
                     return ErrorResponse.FailureResult(
                         $"Invalid rule detail: MinDays ({request.MinDaysBeforeEvent}) cannot be greater than MaxDays ({request.MaxDaysBeforeEvent})",
@@ -278,7 +253,7 @@ namespace AIEvent.Application.Services.Implements
                 if (role == null)
                     return ErrorResponse.FailureResult("Role not found", ErrorCodes.NotFound);
                 
-                if (!role.Name.Equals("Admin"))
+                if (!role.Name.Equals("Admin") && !role.Name.Equals("Manager"))
                     return ErrorResponse.FailureResult("System rule detail cannot be add by user", ErrorCodes.PermissionDenied);
 
                 var ruleDetail = new RefundRuleDetail

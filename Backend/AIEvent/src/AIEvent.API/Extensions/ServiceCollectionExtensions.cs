@@ -5,6 +5,7 @@ using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Interfaces;
 using AIEvent.Infrastructure.Context;
 using AIEvent.Infrastructure.Implements;
+using CloudinaryDotNet;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 
@@ -55,6 +56,23 @@ namespace AIEvent.API.Extensions
         {
             services.AddSingleton<IConnectionMultiplexer>(
                 ConnectionMultiplexer.Connect(configuration["Redis:ConnectionString"]!));
+
+            services.AddSingleton(x =>
+            {
+                var config = x.GetRequiredService<IConfiguration>().GetSection("CloudinarySettings");
+                var account = new Account(
+                    config["CloudName"],
+                    config["ApiKey"],
+                    config["ApiSecret"]
+                );
+
+                var cloudinary = new Cloudinary(account)
+                {
+                    Api = { Secure = true } 
+                };
+
+                return cloudinary;
+            });
 
             return services;
         }

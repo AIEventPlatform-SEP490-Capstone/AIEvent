@@ -10,8 +10,7 @@ namespace AIEvent.Application.Mappings
     {
         public UserProfile() 
         {
-            CreateMap<User, UserResponse>()
-                ;
+            CreateMap<User, UserResponse>();
 
             CreateMap<User, UserDetailResponse>()
                 .ForMember(dest => dest.InterestedCities,

@@ -14,7 +14,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: 20,
     paddingTop: 50,
     paddingBottom: 15,
@@ -23,21 +23,15 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.borderLight,
     zIndex: 2,
   },
-  menuButton: {
-    padding: 8,
-  },
   headerTitle: {
     fontSize: Fonts.xxl,
     fontFamily: Fonts.bold,
     color: Colors.textPrimary,
   },
   notificationButton: {
+    position: 'absolute',
+    right: 20,
     padding: 8,
-  },
-  menuIcon: {
-    width: 24,
-    height: 24,
-    tintColor: Colors.textPrimary,
   },
   notificationIcon: {
     width: 24,
@@ -77,71 +71,6 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
 
-  // Side menu styles
-  menuOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    zIndex: 9998,
-  },
-  sideMenu: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: width * 0.8,
-    height: height,
-    backgroundColor: Colors.white,
-    paddingTop: 60,
-    shadowColor: Colors.shadowDark,
-    shadowOffset: { width: 2, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 10,
-    zIndex: 9999,
-  },
-  menuHeader: {
-    alignItems: 'center',
-    paddingBottom: 30,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
-    marginBottom: 20,
-  },
-  menuAvatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginBottom: 10,
-  },
-  menuUserName: {
-    fontSize: Fonts.lg,
-    fontFamily: Fonts.bold,
-    color: Colors.textPrimary,
-    marginBottom: 5,
-  },
-  menuUserEmail: {
-    fontSize: Fonts.sm,
-    fontFamily: Fonts.regular,
-    color: Colors.textSecondary,
-  },
-  menuItems: {
-    paddingHorizontal: 20,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
-  },
-  menuItemText: {
-    fontSize: Fonts.md,
-    fontFamily: Fonts.regular,
-    color: Colors.textPrimary,
-    marginLeft: 15,
-  },
 
   // Content styles
   content: {

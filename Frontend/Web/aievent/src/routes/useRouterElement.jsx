@@ -9,8 +9,6 @@ import EventDetailPage from "../pages/Organizer/EventDetailPage";
 import EditEventPage from "../pages/Organizer/EditEventPage";
 import OrganizerDashboard from "../pages/Organizer/OrganizerDashboard";
 import AdminDashboard from "../pages/Admin/AdminDashboard";
-import RefundRulesManagement from "../pages/Admin/RefundRulesManagement";
-import AdminLayout from "../layouts/AdminLayout/AdminLayout";
 import ProtectedRoute from "../components/ProtectedRoute/ProtectedRoute";
 import RegisterPage from "../pages/Auth/RegisterPage/RegisterPage";
 import EventDetailGuestPage from "../pages/Event/EventDetailGuestPage";
@@ -21,10 +19,14 @@ import ManagerEventsPage from "../pages/Manager/ManagerEventsPage";
 import ManagerEventsNeedApprovalPage from "../pages/Manager/ManagerEventsNeedApprovalPage";
 import ManagerEventDetailPage from "../pages/Manager/ManagerEventDetailPage";
 import ManagerEditEventPage from "../pages/Manager/ManagerEditEventPage";
+import RefundRulesPage from "../pages/RefundRule/RefundRulesPage";
 import AdminProfile from "../pages/Admin/AdminProfile";
 import UserManagement from "../pages/Admin/UserManagement";
 import EventCategory from "../pages/Event Category/EventCategory";
 import VerifyOtpPage from "../pages/Auth/RegisterPage/VerifyOtpPage";
+import BecomeOrganizerPage from "../pages/User/BecomeOrganizerPage";
+import ApplicationStatusPage from "../pages/User/ApplicationStatusPage";
+import TagManagementPage from "../pages/Shared/TagManagementPage";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -133,7 +135,7 @@ export default function useRouterElement() {
           path: "application-status",
           element: (
             <ProtectedRoute>
-              <div>Application Status Page</div>
+              <ApplicationStatusPage />
             </ProtectedRoute>
           ),
         },
@@ -149,7 +151,7 @@ export default function useRouterElement() {
           path: "become-organizer",
           element: (
             <ProtectedRoute>
-              <div>Become Organizer Page</div>
+              <BecomeOrganizerPage />
             </ProtectedRoute>
           ),
         },
@@ -189,6 +191,8 @@ export default function useRouterElement() {
         { path: "support", element: <div>Organizer Support Page</div> },
         { path: "analytics/:id", element: <div>Organizer Analytics Page</div> },
         { path: "checkin/:id", element: <div>Organizer Check-in Page</div> },
+        { path: "tags", element: <TagManagementPage userRole="organizer" /> },
+        { path: "refund-rules", element: <RefundRulesPage userRole="organizer" /> },
       ],
     },
     {
@@ -208,6 +212,8 @@ export default function useRouterElement() {
         { path: "event/:eventId", element: <ManagerEventDetailPage /> },
         { path: "event/:eventId/edit", element: <ManagerEditEventPage /> },
         { path: "events/category", element: <EventCategory /> },
+        { path: "tags", element: <TagManagementPage userRole="manager" /> },
+        { path: "refund-rules", element: <RefundRulesPage userRole="manager" /> },
         { path: "profile", element: <div>Manager Profile Page</div> },
         { path: "settings", element: <div>Manager Settings Page</div> },
         { path: "support", element: <div>Manager Support Page</div> },
@@ -217,14 +223,14 @@ export default function useRouterElement() {
       path: PATH.ADMIN,
       element: (
         <ProtectedRoute allowedRoles={["Admin"]}>
-          <AdminLayout />
+          <MainLayout />
         </ProtectedRoute>
       ),
       children: [
         { index: true, element: <AdminDashboard /> },
         { path: "events", element: <div>Admin Events Page</div> },
         { path: "users", element: <UserManagement /> },
-        { path: "refund-rules", element: <RefundRulesManagement /> },
+        { path: "refund-rules", element: <RefundRulesPage userRole="admin" /> },
         { path: "organizers", element: <div>Admin Organizers Page</div> },
         { path: "profile", element: <AdminProfile /> },
         { path: "settings", element: <div>Admin Settings Page</div> },

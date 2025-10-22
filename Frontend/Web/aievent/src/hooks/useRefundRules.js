@@ -5,6 +5,9 @@ import {
   createRefundRule,
   updateRefundRule,
   deleteRefundRule,
+  createRefundRuleDetail,
+  updateRefundRuleDetail,
+  deleteRefundRuleDetail,
   selectRefundRule,
   unselectRefundRule,
   clearSelectedRules,
@@ -17,6 +20,9 @@ import {
   selectPreviewRefundRule,
   selectShouldFetchRefundRules,
   selectRefundRuleById,
+  selectCreatingDetail,
+  selectUpdatingDetail,
+  selectDeletingDetail,
   clearError
 } from '../store/slices/refundRulesSlice';
 
@@ -27,6 +33,9 @@ export const useRefundRules = () => {
   const previewRule = useSelector(selectPreviewRefundRule);
   const loading = useSelector(selectRefundRulesLoading);
   const creating = useSelector(state => state.refundRules.creating);
+  const creatingDetail = useSelector(selectCreatingDetail);
+  const updatingDetail = useSelector(selectUpdatingDetail);
+  const deletingDetail = useSelector(selectDeletingDetail);
   const error = useSelector(selectRefundRulesError);
   const shouldFetch = useSelector(selectShouldFetchRefundRules);
 
@@ -51,6 +60,18 @@ export const useRefundRules = () => {
 
   const removeRefundRule = async (ruleId) => {
     return dispatch(deleteRefundRule(ruleId));
+  };
+  
+  const createNewRefundRuleDetail = async (ruleRefundId, detailData) => {
+    return dispatch(createRefundRuleDetail({ ruleRefundId, detailData }));
+  };
+  
+  const updateRefundRuleDetail = async (detailId, detailData) => {
+    return dispatch(updateRefundRuleDetail({ detailId, detailData }));
+  };
+  
+  const removeRefundRuleDetail = async (detailId) => {
+    return dispatch(deleteRefundRuleDetail(detailId));
   };
 
   const selectRuleForForm = (rule) => {
@@ -98,12 +119,15 @@ export const useRefundRules = () => {
     refundRules,
     selectedRules,
     previewRule,
-    loading: loading || creating, // Include creating state
+    loading: loading || creating || creatingDetail || updatingDetail || deletingDetail, // Include all loading states
     error,
     refreshRefundRules,
     createNewRefundRule,
     updateExistingRefundRule,
     removeRefundRule,
+    createNewRefundRuleDetail,
+    updateRefundRuleDetail,
+    removeRefundRuleDetail,
     selectRuleForForm,
     unselectRuleFromForm,
     clearSelectedRefundRules,
