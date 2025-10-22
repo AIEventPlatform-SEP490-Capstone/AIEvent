@@ -36,8 +36,8 @@ namespace AIEvent.Application.Mappings
                 .ForMember(dest => dest.Languages,
                     opt => opt.MapFrom(src =>
                         !string.IsNullOrEmpty(src.LanguagesJson)
-                            ? JsonConvert.DeserializeObject<List<UserSkills>>(src.LanguagesJson)
-                            : new List<UserSkills>()));
+                            ? JsonConvert.DeserializeObject<List<Languages>>(src.LanguagesJson)
+                            : new List<Languages>()));
 
             CreateMap<UpdateUserRequest, User>()
                 .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true))
