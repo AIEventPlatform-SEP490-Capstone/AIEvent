@@ -20,16 +20,18 @@ namespace AIEvent.API.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "Organizer")]
-        public async Task<ActionResult<SuccessResponse<List<OrganizerResponse>>>> GetOrganizer([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        [Authorize(Roles = "Admin, Manager")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<OrganizerResponse>>>> GetOrganizer([FromQuery] int pageNumber = 1, 
+                                                                                                        [FromQuery] int pageSize = 10, 
+                                                                                                        [FromQuery] bool? needApprove = false)
         {
-            var result = await _organizerService.GetOrganizerAsync(page, pageSize);
+            var result = await _organizerService.GetOrganizerAsync(pageNumber, pageSize, false);
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
 
-            return Ok(SuccessResponse<List<OrganizerResponse>>.SuccessResult(
+            return Ok(SuccessResponse<BasePaginated<OrganizerResponse>>.SuccessResult(
                 result.Value!,
                 SuccessCodes.Success,
                 "Organizer retrieved successfully"));
@@ -37,7 +39,7 @@ namespace AIEvent.API.Controllers
 
         [HttpGet("{id}")]
         [Authorize(Roles = "Admin, Organizer, Manager")]
-        public async Task<ActionResult<SuccessResponse<OrganizerResponse>>> GetOrganizerById(string id)
+        public async Task<ActionResult<SuccessResponse<OrganizerDetailResponse>>> GetOrganizerById(Guid id)
         {
             var result = await _organizerService.GetOrganizerByIdAsync(id);
             if (!result.IsSuccess)
@@ -45,7 +47,7 @@ namespace AIEvent.API.Controllers
                 return BadRequest(result.Error!);
             }
 
-            return Ok(SuccessResponse<OrganizerResponse>.SuccessResult(
+            return Ok(SuccessResponse<OrganizerDetailResponse>.SuccessResult(
                 result.Value!,
                 SuccessCodes.Success,
                 "Organizer retrieved successfully"));
@@ -68,41 +70,9 @@ namespace AIEvent.API.Controllers
                 "Register Organizer successfully"));
         }
 
-        [HttpGet("need-confirm")]
-        [Authorize(Roles = "Admin,Manager")]
-        public async Task<ActionResult<SuccessResponse<BasePaginated<ListOrganizerNeedApprove>>>> GetListOrganizerNeedApprove(int pageNumber = 1, int pageSize = 10)
-        {
-            var result = await _organizerService.GetListOrganizerNeedApprove(pageNumber, pageSize);
-            if (!result.IsSuccess)
-            {
-                return BadRequest(result.Error!);
-            }
-
-            return Ok(SuccessResponse<BasePaginated<ListOrganizerNeedApprove>>.SuccessResult(
-                result.Value!,
-                SuccessCodes.Success,
-                "List organizer retrieved successfully"));
-        }
-
-        [HttpGet("need-confirm/{id}")]
-        [Authorize(Roles = "Admin,Manager")]
-        public async Task<ActionResult<SuccessResponse<OrganizerResponse>>> GetOrgNeedApproveById(string id)
-        {
-            var result = await _organizerService.GetOrgNeedApproveByIdAsync(id);
-            if (!result.IsSuccess)
-            {
-                return BadRequest(result.Error!);
-            }
-
-            return Ok(SuccessResponse<OrganizerResponse>.SuccessResult(
-                result.Value!,
-                SuccessCodes.Success,
-                "Organizer retrieved successfully"));
-        }
-
         [HttpPatch("confirm/{id}")]
         [Authorize(Roles = "Admin,Manager")]
-        public async Task<ActionResult<SuccessResponse<OrganizerResponse>>> ConfirmBecomeOrganizer(string id, ConfirmRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> ConfirmBecomeOrganizer(Guid id, [FromBody] ConfirmRequest request)
         {
             var userId = User.GetRequiredUserId();
             var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, id, request);
@@ -115,6 +85,23 @@ namespace AIEvent.API.Controllers
                 new { },
                 SuccessCodes.Updated,
                 "Confirm become Organizer successfully"));
+        }
+
+        [HttpGet("profile")]
+        [Authorize(Roles = "Organizer")]
+        public async Task<ActionResult<SuccessResponse<OrganizerResponse>>> GetOrganizerProfile()
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _organizerService.GetOrganizerProfileAsync(userId);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<OrganizerResponse>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Organizer retrieved successfully"));
         }
     }
 }

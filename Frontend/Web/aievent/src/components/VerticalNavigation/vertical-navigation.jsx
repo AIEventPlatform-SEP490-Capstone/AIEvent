@@ -31,6 +31,8 @@ import {
   ChevronRight,
   ArrowRight,
   Receipt,
+  BookmarkMinus,
+  Tag,
 } from "lucide-react";
 import {
   Sidebar,
@@ -177,6 +179,12 @@ export function VerticalNavigation() {
           icon: Receipt,
           isActive: pathname === "/organizer/refund-rules",
         },
+        {
+          title: "Quản lý Tags",
+          url: "/organizer/tags",
+          icon: Tag,
+          isActive: pathname === "/organizer/tags",
+        },
       ];
     }
 
@@ -211,6 +219,12 @@ export function VerticalNavigation() {
           url: "/manager/refund-rules",
           icon: Receipt,
           isActive: pathname === "/manager/refund-rules",
+        },
+        {
+          title: "Quản lý Tags",
+          url: "/manager/tags",
+          icon: Tag,
+          isActive: pathname === "/manager/tags",
         },
       ];
     }

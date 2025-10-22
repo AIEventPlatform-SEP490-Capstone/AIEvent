@@ -23,7 +23,7 @@ namespace AIEvent.Application.Test.Services
         private readonly Mock<IMapper> _mockMapper;
         private readonly Mock<IEmailService> _mockEmailService;
         private readonly Mock<IHasherHelper> _mockHasherHelper;
-        private readonly Mock<ICacheService> _mockCacheService;  
+        private readonly Mock<ICacheService> _mockCacheService;
         private readonly IAuthService _authService;
 
         public AuthServiceTests()
@@ -117,7 +117,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid email or password");
+            result.Error!.Message.Should().Contain("Invalid email or password");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
         }
 
@@ -148,7 +148,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid email or password");
+            result.Error!.Message.Should().Contain("Invalid email or password");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
         }
 
@@ -164,7 +164,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid email or password");
+            result.Error!.Message.Should().Contain("Invalid email or password");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
         }
 
@@ -180,7 +180,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid email or password");
+            result.Error!.Message.Should().Contain("Invalid email or password");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
         }
 
@@ -196,7 +196,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid email or password");
+            result.Error!.Message.Should().Contain("Invalid email or password");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
         }
         #endregion
@@ -237,7 +237,7 @@ namespace AIEvent.Application.Test.Services
                            .Returns(new List<Role> { role }.AsQueryable().BuildMockDbSet().Object);
             _mockMapper.Setup(x => x.Map<User>(request)).Returns(user);
             _mockUnitOfWork.Setup(x => x.UserRepository.AddAsync(It.IsAny<User>())).ReturnsAsync(user);
-            _mockEmailService.Setup(x => x.SendOtpAsync(request.Email, It.IsAny<MimeMessage>())).ReturnsAsync(otpResult);
+            _mockEmailService.Setup(x => x.SendEmailAsync(request.Email, It.IsAny<MimeMessage>())).ReturnsAsync(otpResult);
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 
             // Act
@@ -247,11 +247,11 @@ namespace AIEvent.Application.Test.Services
             result.IsSuccess.Should().BeTrue();
             _mockUnitOfWork.Verify(x => x.UserRepository.AddAsync(It.Is<User>(u =>
                 u.Email == request.Email && u.IsActive == false && u.RoleId == role.Id)), Times.Once());
-            _mockCacheService.Verify(x => x.SetAsync($"Register {request.Email}", It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Once()); 
+            _mockCacheService.Verify(x => x.SetAsync($"Register {request.Email}", It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Once());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
 
-            [Fact]
+        [Fact]
         public async Task UTCID02_RegisterAsync_WithExistingEmail_ShouldReturnFailure()
         {
             // Arrange
@@ -356,7 +356,7 @@ namespace AIEvent.Application.Test.Services
                            .Returns(new List<Role> { role }.AsQueryable().BuildMockDbSet().Object);
             _mockMapper.Setup(x => x.Map<User>(request)).Returns(user);
             _mockUnitOfWork.Setup(x => x.UserRepository.AddAsync(It.IsAny<User>())).ReturnsAsync(user);
-            _mockEmailService.Setup(x => x.SendOtpAsync(request.Email, It.IsAny<MimeMessage>()))
+            _mockEmailService.Setup(x => x.SendEmailAsync(request.Email, It.IsAny<MimeMessage>()))
                             .ReturnsAsync(ErrorResponse.FailureResult("Email send failed", ErrorCodes.InternalServerError));
             _mockUnitOfWork.Setup(x => x.UserRepository.DeleteAsync(It.IsAny<User>()));
 
@@ -380,7 +380,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Invalid input");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
@@ -413,7 +413,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Full name is required");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
@@ -446,7 +446,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Email is required");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
@@ -512,7 +512,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Password is required");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
@@ -616,7 +616,7 @@ namespace AIEvent.Application.Test.Services
                            .Returns(new List<Role> { role }.AsQueryable().BuildMockDbSet().Object);
             _mockMapper.Setup(x => x.Map<User>(request)).Returns(user);
             _mockUnitOfWork.Setup(x => x.UserRepository.AddAsync(It.IsAny<User>())).ReturnsAsync(user);
-            _mockEmailService.Setup(x => x.SendOtpAsync(request.Email, It.IsAny<MimeMessage>())).ReturnsAsync(otpResult);
+            _mockEmailService.Setup(x => x.SendEmailAsync(request.Email, It.IsAny<MimeMessage>())).ReturnsAsync(otpResult);
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 
             // Act
@@ -625,7 +625,7 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.IsSuccess.Should().BeTrue();
             _mockUnitOfWork.Verify(x => x.UserRepository.AddAsync(It.IsAny<User>()), Times.Once());
-            _mockCacheService.Verify(x => x.SetAsync($"Register {request.Email}", It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Once()); 
+            _mockCacheService.Verify(x => x.SetAsync($"Register {request.Email}", It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Once());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
 
@@ -649,7 +649,7 @@ namespace AIEvent.Application.Test.Services
                 IsEmailNotificationEnabled = true,
                 IsPushNotificationEnabled = true,
                 IsSmsNotificationEnabled = true,
-                ParticipationFrequency = (ParticipationFrequency)0, 
+                ParticipationFrequency = (ParticipationFrequency)0,
                 BudgetOption = BudgetOption.From500kTo2M
             };
 
@@ -683,7 +683,7 @@ namespace AIEvent.Application.Test.Services
                 IsPushNotificationEnabled = true,
                 IsSmsNotificationEnabled = true,
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
-                BudgetOption = (BudgetOption)4 
+                BudgetOption = (BudgetOption)4
             };
 
             // Act
@@ -699,7 +699,8 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID15_RegisterAsync_WithAddUserFailed_ShouldReturnFailure()
         {
             // Arrange
-            var request = new RegisterRequest {
+            var request = new RegisterRequest
+            {
                 FullName = "John Doe",
                 Email = "test@gmail.com",
                 Password = "Pass123",
@@ -722,7 +723,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
             _mockUnitOfWork.Setup(x => x.RoleRepository.Query(false)).Returns(new List<Role> { role }.AsQueryable().BuildMockDbSet().Object);
             _mockMapper.Setup(x => x.Map<User>(request)).Returns(new User { Email = request.Email });
-            _mockUnitOfWork.Setup(x => x.UserRepository.AddAsync(It.IsAny<User>())).ReturnsAsync((User)null!); 
+            _mockUnitOfWork.Setup(x => x.UserRepository.AddAsync(It.IsAny<User>())).ReturnsAsync((User)null!);
 
             // Act
             var result = await _authService.RegisterAsync(request);
@@ -731,8 +732,8 @@ namespace AIEvent.Application.Test.Services
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("Failed to create user account");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-            _mockEmailService.Verify(x => x.SendOtpAsync(It.IsAny<string>(), It.IsAny<MimeMessage>()), Times.Never()); 
-            _mockCacheService.Verify(x => x.SetAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Never()); 
+            _mockEmailService.Verify(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<MimeMessage>()), Times.Never());
+            _mockCacheService.Verify(x => x.SetAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Never());
         }
         #endregion
 
@@ -914,7 +915,7 @@ namespace AIEvent.Application.Test.Services
             {
                 Token = refreshToken,
                 IsDeleted = false,
-                ExpiresAt = DateTime.UtcNow.AddSeconds(-1), 
+                ExpiresAt = DateTime.UtcNow.AddSeconds(-1),
                 UserId = user.Id,
                 User = user
             };
@@ -959,7 +960,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeTrue();
-            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.DeleteAsync(It.Is<RefreshToken>(t => t.Token == refreshToken)), Times.Once()); 
+            _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.DeleteAsync(It.Is<RefreshToken>(t => t.Token == refreshToken)), Times.Once());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
 
@@ -1096,7 +1097,7 @@ namespace AIEvent.Application.Test.Services
             _mockCacheService.Setup(x => x.GetAsync<string>($"Register {request.Email}")).ReturnsAsync("123456");
             _mockCacheService.Setup(x => x.RemoveAsync($"Register {request.Email}"));
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
-            
+
             // Act
             var result = await _authService.VerifyOTPAsync(request);
 
@@ -1107,7 +1108,7 @@ namespace AIEvent.Application.Test.Services
             result.Value!.RefreshToken.Should().Be(refreshToken);
             result.Value!.ExpiresAt.Should().BeCloseTo(DateTime.UtcNow.AddHours(1), TimeSpan.FromSeconds(5));
             _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.Is<User>(u => u.Id == user.Id && u.IsActive)), Times.Once());
-            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never()); 
+            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
             _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.AddAsync(It.Is<RefreshToken>(t => t.Token == refreshToken && t.UserId == user.Id && t.ExpiresAt.Date == DateTime.UtcNow.AddDays(7).Date)), Times.Once());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
@@ -1123,7 +1124,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid email or otp code");
+            result.Error!.Message.Should().Contain("Invalid email or otp code");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
             _mockUnitOfWork.Verify(x => x.UserRepository.Query(false), Times.Never());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
@@ -1140,7 +1141,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid email");
+            result.Error!.Message.Should().Contain("Invalid email");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
             _mockUnitOfWork.Verify(x => x.UserRepository.Query(false), Times.Never());
             _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
@@ -1239,6 +1240,388 @@ namespace AIEvent.Application.Test.Services
             _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
+        #endregion
+
+        #region ChangePassword
+        [Fact]
+        public async Task UTCID01_ChangePasswordAsync_WithValidRequest_ShouldReturnSuccess()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new ChangePasswordRequest
+            {
+                CurrentPassword = "oldPassword123",
+                NewPassword = "newPassword123",
+                ConfirmPassword = "newPassword123"
+            };
+            var user = new User
+            {
+                Id = userId,
+                IsActive = true,
+                DeletedAt = null,
+                PasswordHash = "hashedOldPassword"
+            };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, It.IsAny<bool>())).ReturnsAsync(user);
+            _mockHasherHelper.Setup(x => x.Verify(request.CurrentPassword, user.PasswordHash!)).Returns(true);
+            _mockHasherHelper.Setup(x => x.Verify(request.NewPassword, user.PasswordHash!)).Returns(false);
+            _mockHasherHelper.Setup(x => x.Hash(request.NewPassword, It.IsAny<int>())).Returns("hashedNewPassword");
+            _mockUnitOfWork.Setup(x => x.UserRepository.UpdateAsync(It.IsAny<User>()));
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+
+            // Act
+            var result = await _authService.ChangePasswordAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(userId, It.IsAny<bool>()), Times.Once());
+            _mockHasherHelper.Verify(x => x.Verify(request.CurrentPassword, "hashedOldPassword"), Times.Once());
+            _mockHasherHelper.Verify(x => x.Verify(request.NewPassword, "hashedOldPassword"), Times.Once());
+            _mockHasherHelper.Verify(x => x.Hash(request.NewPassword, It.IsAny<int>()), Times.Once());
+            _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.Is<User>(u => u.Id == userId)), Times.Once());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
+        }
+
+        [Fact]
+        public async Task UTCID02_ChangePasswordAsync_WithEmptyUserId_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.Empty;
+            var request = new ChangePasswordRequest
+            {
+                CurrentPassword = "oldPassword123",
+                NewPassword = "newPassword123",
+                ConfirmPassword = "newPassword123"
+            };
+
+            // Act
+            var result = await _authService.ChangePasswordAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Invalid input");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID03_ChangePasswordAsync_WithNullRequest_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            ChangePasswordRequest? request = null;
+
+            // Act
+            var result = await _authService.ChangePasswordAsync(userId, request!);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Invalid input");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID04_ChangePasswordAsync_WithEmptyCurrentPassword_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new ChangePasswordRequest
+            {
+                CurrentPassword = "",
+                NewPassword = "newPassword123",
+                ConfirmPassword = "newPassword123"
+            };
+
+            // Act
+            var result = await _authService.ChangePasswordAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Current password is required");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID05_ChangePasswordAsync_WithEmptyNewPassword_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new ChangePasswordRequest
+            {
+                CurrentPassword = "oldPassword123",
+                NewPassword = "",
+                ConfirmPassword = ""
+            };
+
+            // Act
+            var result = await _authService.ChangePasswordAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("New password is required");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID06_ChangePasswordAsync_WithMismatchedConfirmPassword_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new ChangePasswordRequest
+            {
+                CurrentPassword = "oldPassword123",
+                NewPassword = "newPassword123",
+                ConfirmPassword = "differentPassword123"
+            };
+
+            // Act
+            var result = await _authService.ChangePasswordAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Password and confirm password do not match");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID07_ChangePasswordAsync_WithUserNotFound_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new ChangePasswordRequest
+            {
+                CurrentPassword = "oldPassword123",
+                NewPassword = "newPassword123",
+                ConfirmPassword = "newPassword123"
+            };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, It.IsAny<bool>())).ReturnsAsync((User)null!);
+
+            // Act
+            var result = await _authService.ChangePasswordAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("User not found");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
+            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(userId, It.IsAny<bool>()), Times.Once());
+            _mockHasherHelper.Verify(x => x.Verify(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID08_ChangePasswordAsync_WithInactiveUser_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new ChangePasswordRequest
+            {
+                CurrentPassword = "oldPassword123",
+                NewPassword = "newPassword123",
+                ConfirmPassword = "newPassword123"
+            };
+            var user = new User
+            {
+                Id = userId,
+                IsActive = false,
+                DeletedAt = null,
+                PasswordHash = "hashedOldPassword"
+            };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, It.IsAny<bool>())).ReturnsAsync(user);
+
+            // Act
+            var result = await _authService.ChangePasswordAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("User account is inactive");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
+            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(userId, It.IsAny<bool>()), Times.Once());
+            _mockHasherHelper.Verify(x => x.Verify(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID09_ChangePasswordAsync_WithDeletedUser_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new ChangePasswordRequest
+            {
+                CurrentPassword = "oldPassword123",
+                NewPassword = "newPassword123",
+                ConfirmPassword = "newPassword123"
+            };
+            var user = new User
+            {
+                Id = userId,
+                IsActive = true,
+                DeletedAt = DateTime.UtcNow,
+                PasswordHash = "hashedOldPassword"
+            };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, It.IsAny<bool>())).ReturnsAsync(user);
+
+            // Act
+            var result = await _authService.ChangePasswordAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("User account is inactive");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
+            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(userId, It.IsAny<bool>()), Times.Once());
+            _mockHasherHelper.Verify(x => x.Verify(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID10_ChangePasswordAsync_WithWrongCurrentPassword_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new ChangePasswordRequest
+            {
+                CurrentPassword = "wrongPassword123",
+                NewPassword = "newPassword123",
+                ConfirmPassword = "newPassword123"
+            };
+            var user = new User
+            {
+                Id = userId,
+                IsActive = true,
+                DeletedAt = null,
+                PasswordHash = "hashedOldPassword"
+            };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, It.IsAny<bool>())).ReturnsAsync(user);
+            _mockHasherHelper.Setup(x => x.Verify(request.CurrentPassword, user.PasswordHash!)).Returns(false);
+
+            // Act
+            var result = await _authService.ChangePasswordAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Old password not true");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(userId, It.IsAny<bool>()), Times.Once());
+            _mockHasherHelper.Verify(x => x.Verify(request.CurrentPassword, user.PasswordHash!), Times.Once());
+            _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.IsAny<User>()), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID11_ChangePasswordAsync_WithSameNewPassword_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new ChangePasswordRequest
+            {
+                CurrentPassword = "oldPassword123",
+                NewPassword = "oldPassword123",
+                ConfirmPassword = "oldPassword123"
+            };
+            var user = new User
+            {
+                Id = userId,
+                IsActive = true,
+                DeletedAt = null,
+                PasswordHash = "hashedOldPassword"
+            };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, It.IsAny<bool>())).ReturnsAsync(user);
+            _mockHasherHelper.Setup(x => x.Verify(request.CurrentPassword, user.PasswordHash!)).Returns(true);
+            _mockHasherHelper.Setup(x => x.Verify(request.NewPassword, user.PasswordHash!)).Returns(true);
+
+            // Act
+            var result = await _authService.ChangePasswordAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("New password cannot be the same as current password");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(userId, It.IsAny<bool>()), Times.Once());
+            _mockHasherHelper.Verify(x => x.Verify(It.IsAny<string>(), user.PasswordHash!), Times.Exactly(2));
+            _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.IsAny<User>()), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID12_ChangePasswordAsync_WithSpecialCharacters_ShouldReturnSuccess()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new ChangePasswordRequest
+            {
+                CurrentPassword = "oldPassword123",
+                NewPassword = "NewPass@123!@#$%^&*()",
+                ConfirmPassword = "NewPass@123!@#$%^&*()"
+            };
+            var user = new User
+            {
+                Id = userId,
+                IsActive = true,
+                DeletedAt = null,
+                PasswordHash = "hashedOldPassword"
+            };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, It.IsAny<bool>())).ReturnsAsync(user);
+            _mockHasherHelper.Setup(x => x.Verify(request.CurrentPassword, user.PasswordHash!)).Returns(true);
+            _mockHasherHelper.Setup(x => x.Verify(request.NewPassword, user.PasswordHash!)).Returns(false);
+            _mockHasherHelper.Setup(x => x.Hash(request.NewPassword, It.IsAny<int>())).Returns("hashedNewPassword");
+            _mockUnitOfWork.Setup(x => x.UserRepository.UpdateAsync(It.IsAny<User>()));
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+
+            // Act
+            var result = await _authService.ChangePasswordAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(userId, It.IsAny<bool>()), Times.Once());
+            _mockHasherHelper.Verify(x => x.Verify(request.CurrentPassword, "hashedOldPassword"), Times.Once());
+            _mockHasherHelper.Verify(x => x.Verify(request.NewPassword, "hashedOldPassword"), Times.Once());
+            _mockHasherHelper.Verify(x => x.Hash(request.NewPassword, It.IsAny<int>()), Times.Once());
+            _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.IsAny<User>()), Times.Once());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
+        }
+
+        [Fact]
+        public async Task UTCID13_ChangePasswordAsync_WithUnicodeCharacters_ShouldReturnSuccess()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new ChangePasswordRequest
+            {
+                CurrentPassword = "oldPassword123",
+                NewPassword = "新密码123中文",
+                ConfirmPassword = "新密码123中文"
+            };
+            var user = new User
+            {
+                Id = userId,
+                IsActive = true,
+                DeletedAt = null,
+                PasswordHash = "hashedOldPassword"
+            };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, It.IsAny<bool>())).ReturnsAsync(user);
+            _mockHasherHelper.Setup(x => x.Verify(request.CurrentPassword, user.PasswordHash!)).Returns(true);
+            _mockHasherHelper.Setup(x => x.Verify(request.NewPassword, user.PasswordHash!)).Returns(false);
+            _mockHasherHelper.Setup(x => x.Hash(request.NewPassword, It.IsAny<int>())).Returns("hashedNewPassword");
+            _mockUnitOfWork.Setup(x => x.UserRepository.UpdateAsync(It.IsAny<User>()));
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+
+            // Act
+            var result = await _authService.ChangePasswordAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(userId, It.IsAny<bool>()), Times.Once());
+            _mockHasherHelper.Verify(x => x.Verify(request.CurrentPassword, "hashedOldPassword"), Times.Once());
+            _mockHasherHelper.Verify(x => x.Verify(request.NewPassword, "hashedOldPassword"), Times.Once());
+            _mockHasherHelper.Verify(x => x.Hash(request.NewPassword, It.IsAny<int>()), Times.Once());
+            _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.IsAny<User>()), Times.Once());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
+        }
+        #endregion
     }
-    #endregion
 }

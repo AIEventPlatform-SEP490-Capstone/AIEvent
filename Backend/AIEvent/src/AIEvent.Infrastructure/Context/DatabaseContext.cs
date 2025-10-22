@@ -45,6 +45,11 @@ namespace AIEvent.Infrastructure.Context
                       .WithMany(u => u.Users)
                       .HasForeignKey(e => e.RoleId);
 
+                entity.HasOne(u => u.LinkedUser)
+                      .WithMany(p => p.CreatedOrganizerAccounts)
+                      .HasForeignKey(u => u.LinkedUserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
                 entity.Property(e => e.Email).HasMaxLength(256).IsRequired();
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
                 entity.HasIndex(e => e.Email).IsUnique().HasDatabaseName("IX_User_Email");
@@ -98,12 +103,12 @@ namespace AIEvent.Infrastructure.Context
                 entity.Property(e => e.ConfirmBy).HasMaxLength(100);
 
                 entity.HasOne(o => o.User)
-                    .WithOne(u => u.OrganizerProfile)
-                    .HasForeignKey<OrganizerProfile>(o => o.UserId);
+                      .WithOne(u => u.OrganizerProfile)
+                      .HasForeignKey<OrganizerProfile>(o => o.UserId)
+                      .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasIndex(o => o.UserId).HasDatabaseName("IX_OrganizerProfile_UserId");
-                entity.HasIndex(o => o.TaxCode).IsUnique().HasDatabaseName("IX_OrganizerProfile_TaxCode");
-                entity.HasIndex(o => new { o.UserId, o.IsDeleted }).HasDatabaseName("IX_OrganizerProfile_UserId_IsDeleted");
+                entity.HasIndex(o => new { o.UserId, o.TaxCode }).IsUnique().HasDatabaseName("IX_OrganizerProfile_UserId_TaxCode");
                 entity.HasIndex(o => o.ConfirmAt).HasDatabaseName("IX_OrganizerProfile_ConfirmAt");
                 entity.HasIndex(o => o.ContactEmail).HasDatabaseName("IX_OrganizerProfile_ContactEmail");
                 entity.HasIndex(o => o.IdentityNumber).HasDatabaseName("IX_OrganizerProfile_IdentityNumber");
@@ -199,6 +204,8 @@ namespace AIEvent.Infrastructure.Context
                     .WithOne(o => o.Wallet)
                     .HasForeignKey<Wallet>(o => o.UserId)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.UserId).HasDatabaseName("IX_Wallet_UserId").IsUnique();
             });
 
             //--------------WalletTransaction--------------
@@ -208,6 +215,11 @@ namespace AIEvent.Infrastructure.Context
                     .WithMany(o => o.WalletTransactions)
                     .HasForeignKey(e => e.WalletId)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.WalletId).HasDatabaseName("IX_WalletTransaction_WalletId");
+                entity.HasIndex(e => new { e.ReferenceId, e.ReferenceType }).HasDatabaseName("IX_WalletTransaction_Reference");
+                entity.HasIndex(e => e.Type).HasDatabaseName("IX_WalletTransaction_Type");
+                entity.HasIndex(e => e.CreatedAt).HasDatabaseName("IX_WalletTransaction_CreatedAt");
             });
 
             //--------------TopupRequest--------------
@@ -226,6 +238,11 @@ namespace AIEvent.Infrastructure.Context
                     .WithMany(o => o.PaymentTransactions)
                     .HasForeignKey(e => e.BookingId)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.BookingId).HasDatabaseName("IX_PaymentTransaction_BookingId");
+                entity.HasIndex(e => e.UserId).HasDatabaseName("IX_PaymentTransaction_UserId");
+                entity.HasIndex(e => e.Status).HasDatabaseName("IX_PaymentTransaction_Status");
+                entity.HasIndex(e => e.CreatedAt).HasDatabaseName("IX_PaymentTransaction_CreatedAt");
             });
 
             // ----------------- EventTag -----------------

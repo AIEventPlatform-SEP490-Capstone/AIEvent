@@ -12,11 +12,13 @@ namespace AIEvent.Application.Mappings
             CreateMap<RegisterOrganizerRequest, OrganizerProfile>();
 
 
-            CreateMap<OrganizerProfile, OrganizerResponse>()
+            CreateMap<OrganizerProfile, OrganizerDetailResponse>()
                 .ForMember(dest => dest.OrganizerId, opt => opt.MapFrom(src => src.Id))
-                .ForMember(dest => dest.UserInfo, opt => opt.MapFrom(src => src.User));
+                .ForMember(dest => dest.UserRegisterInfo, opt => opt.MapFrom(src => src.User));
 
             CreateMap<User, UserOrganizerResponse>();
+
+            CreateMap<OrganizerProfile, OrganizerResponse>();
         }
     }
 }

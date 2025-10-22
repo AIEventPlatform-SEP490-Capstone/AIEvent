@@ -8,6 +8,7 @@ namespace AIEvent.Domain.Entities
         public Guid RoleId { get; set; }
         public string? Email { get; set; }
         public string? FullName { get; set; }
+        public string? PhoneNumber { get; set; }
         public string? PasswordHash { get; set; }
         public string? Address { get; set; }
         public string? City { get; set; }
@@ -23,6 +24,11 @@ namespace AIEvent.Domain.Entities
         public string? AvatarImgUrl { get; set; }
         public string? UserInterestsJson { get; set; }
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+
+        public Guid? LinkedUserId { get; set; }
+        public User? LinkedUser { get; set; }
+        public ICollection<User> CreatedOrganizerAccounts { get; set; } = new List<User>();
+
         public OrganizerProfile? OrganizerProfile { get; set; }
         public Wallet Wallet { get; set; } = default!;
         public Role Role { get; set; } = default!;

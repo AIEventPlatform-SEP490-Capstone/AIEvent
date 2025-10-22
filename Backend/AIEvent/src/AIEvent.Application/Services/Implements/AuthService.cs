@@ -40,13 +40,8 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result<AuthResponse>> LoginAsync(LoginRequest request)
         {
-            if(request == null)
-                return ErrorResponse.FailureResult("Invalid email or password", ErrorCodes.Unauthorized);
-
-            var context = new ValidationContext(request);
-            var results = new List<ValidationResult>();
-            bool isValid = Validator.TryValidateObject(request, context, results, true);
-            if (!isValid)
+            var validationResult = ValidationHelper.ValidateModel(request);
+            if (!validationResult.IsSuccess)
                 return ErrorResponse.FailureResult("Invalid email or password", ErrorCodes.Unauthorized);
 
             var user = await _unitOfWork.UserRepository
@@ -56,14 +51,10 @@ namespace AIEvent.Application.Services.Implements
                                 .Include(u => u.Role)
                                 .FirstOrDefaultAsync(u => u.Email == request.Email);
             if (user == null || !user.IsActive)
-            {
                 return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
-            }
 
-            if (!await Task.Run(() => _hasherHelper.Verify(request.Password ,user.PasswordHash!)))
-            {
+            if (!_hasherHelper.Verify(request.Password ,user.PasswordHash!))
                 return ErrorResponse.FailureResult("Invalid email or password", ErrorCodes.Unauthorized);
-            }
 
             var accessToken = _jwtService.GenerateAccessToken(user);
             var refreshToken = _jwtService.GenerateRefreshToken();
@@ -133,14 +124,9 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result<AuthResponse>> VerifyOTPAsync(VerifyOTPRequest request)
         {
-            if (request == null)
+            var validationResult = ValidationHelper.ValidateModel(request);
+            if (!validationResult.IsSuccess)
                 return ErrorResponse.FailureResult("Invalid email or otp code", ErrorCodes.Unauthorized);
-
-            var context = new ValidationContext(request);
-            var results = new List<ValidationResult>();
-            bool isValid = Validator.TryValidateObject(request, context, results, true);
-            if (!isValid)
-                return ErrorResponse.FailureResult("Invalid email", ErrorCodes.Unauthorized);
 
 
             var otp = await _cacheService.GetAsync<string>($"Register {request.Email}");
@@ -162,6 +148,13 @@ namespace AIEvent.Application.Services.Implements
 
             user.IsActive = true;
             await _unitOfWork.UserRepository.UpdateAsync(user);
+
+            Wallet wallet = new()
+            {
+                UserId = user.Id,
+                Balance = 0
+            };
+            await _unitOfWork.WalletRepository.AddAsync(wallet);
 
             var accessToken = _jwtService.GenerateAccessToken(user);
             var refreshToken = _jwtService.GenerateRefreshToken();
@@ -188,18 +181,9 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result> RegisterAsync(RegisterRequest request)
         {
-            if (request == null || string.IsNullOrEmpty(request.FullName) || string.IsNullOrEmpty(request.Email) ||
-        string.IsNullOrEmpty(request.Password) || string.IsNullOrEmpty(request.ConfirmPassword))
-                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
-
-            var context = new ValidationContext(request);
-            var results = new List<ValidationResult>();
-            bool isValid = Validator.TryValidateObject(request, context, results, true);
-            if (!isValid)
-            {
-                var messages = string.Join("; ", results.Select(r => r.ErrorMessage));
-                return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
-            }
+            var validationResult = ValidationHelper.ValidateModel(request);
+            if (!validationResult.IsSuccess)
+                return validationResult;
 
             var existingUser = await _unitOfWork.UserRepository
                                                 .Query()
@@ -233,7 +217,7 @@ namespace AIEvent.Application.Services.Implements
                 }
             };
 
-            var userOtps = await _emailService.SendOtpAsync(request.Email, message);
+            var userOtps = await _emailService.SendEmailAsync(request.Email, message);
             if (!userOtps.IsSuccess) {
                 await _unitOfWork.UserRepository.DeleteAsync(user);
                 return ErrorResponse.FailureResult("Failed to send email", ErrorCodes.InternalServerError);
@@ -243,7 +227,6 @@ namespace AIEvent.Application.Services.Implements
 
             return Result.Success();
         }
-
         public async Task<Result> RevokeRefreshTokenAsync(string refreshToken)
         {
             if (string.IsNullOrEmpty(refreshToken))
@@ -262,6 +245,30 @@ namespace AIEvent.Application.Services.Implements
             return Result.Success();
         }
 
-        
+        public async Task<Result> ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
+        {
+            if (userId == Guid.Empty)
+                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
+            
+            var validationResult = ValidationHelper.ValidateModel(request);
+            if (!validationResult.IsSuccess)
+                return validationResult;
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
+            if (user == null)
+                return ErrorResponse.FailureResult("User not found", ErrorCodes.Unauthorized);
+
+            if (!user.IsActive || user.DeletedAt.HasValue)
+                return ErrorResponse.FailureResult("User account is inactive", ErrorCodes.Unauthorized);
+
+            if (!_hasherHelper.Verify(request.CurrentPassword, user.PasswordHash!))
+                return ErrorResponse.FailureResult("Old password not true", ErrorCodes.InvalidInput);
+            if (_hasherHelper.Verify(request.NewPassword, user.PasswordHash!))
+                return ErrorResponse.FailureResult("New password cannot be the same as current password", ErrorCodes.InvalidInput);
+
+            user.PasswordHash = _hasherHelper.Hash(request.NewPassword);
+            await _unitOfWork.UserRepository.UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
+            return Result.Success();
+        }
     }
 }

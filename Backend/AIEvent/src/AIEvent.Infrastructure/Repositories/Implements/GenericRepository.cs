@@ -57,5 +57,11 @@ namespace AIEvent.Infrastructure.Implements
             _dbSet.Update(entity);
             return Task.FromResult(entity);
         }
+
+        public async Task UpdateRangeAsync(IEnumerable<T> entities)
+        {
+            _dbSet.UpdateRange(entities);
+            await Task.CompletedTask; // EF Core batch update
+        }
     }
 }
