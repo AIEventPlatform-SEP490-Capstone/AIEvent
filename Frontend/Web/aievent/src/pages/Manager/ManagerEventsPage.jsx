@@ -833,7 +833,7 @@ const ManagerEventsPage = () => {
                 const StatusIcon = statusConfig.icon;
 
                 return (
-                  <div key={event.eventId} className="border-b border-gray-100 p-6 last:border-b-0">
+                  <div key={event.eventId} className="border-b border-gray-100 p-6 last:border-b-0 mb-6 rounded-lg shadow-sm">
                     <div className="flex items-start gap-4">
                       {event.imgListEvent && event.imgListEvent.length > 0 ? (
                         <img
