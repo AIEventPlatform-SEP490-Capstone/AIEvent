@@ -392,7 +392,7 @@ namespace AIEvent.Application.Services.Implements
             return new BasePaginated<EventsRawResponse>(result, totalCount, pageNumber, pageSize);
         }
 
-        public async Task<Result<BasePaginated<EventsRawResponse>>> GetAllEventStatusAsync(Guid? organizerId, string? search, ConfirmStatus status = ConfirmStatus.NeedConfirm, int pageNumber = 1, int pageSize = 10)
+        public async Task<Result<BasePaginated<EventsRawResponse>>> GetAllEventStatusAsync(Guid? organizerId, string? search, ConfirmStatus? status = null, int pageNumber = 1, int pageSize = 10)
         {
 
             IQueryable<Event> events = _unitOfWork.EventRepository
@@ -411,7 +411,7 @@ namespace AIEvent.Application.Services.Implements
                 events = events.Where(e => e.RequireApproval == ConfirmStatus.Approve);
             else if (status == ConfirmStatus.Reject)
                 events = events.Where(e => e.RequireApproval == ConfirmStatus.Reject);
-            else
+            else if (status == ConfirmStatus.NeedConfirm)
                 events = events.Where(e => e.RequireApproval == ConfirmStatus.NeedConfirm);
 
             int totalCount = await events.CountAsync();

@@ -9,14 +9,12 @@ namespace AIEvent.Application.Services.Implements
 {
     public class TicketTokenService : ITicketTokenService
     {
-        private readonly IConfiguration _config;
         private readonly SymmetricSecurityKey _key;
         private readonly string _issuer;
         private readonly string _audience;
 
         public TicketTokenService(IConfiguration config)
         {
-            _config = config;
             _issuer = config["Jwt:Issuer"]!;
             _audience = config["Jwt:Audience"]!;
             _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!));
