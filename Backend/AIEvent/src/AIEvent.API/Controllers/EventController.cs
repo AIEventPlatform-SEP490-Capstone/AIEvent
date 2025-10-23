@@ -163,7 +163,7 @@ namespace AIEvent.API.Controllers
         [HttpGet("status")]
         [Authorize(Roles = "Admin, Manager, Organizer")]
         public async Task<ActionResult<SuccessResponse<BasePaginated<EventsRawResponse>>>> GetEventStatus([FromQuery] string? search,
-                                                                                                          [FromQuery] ConfirmStatus status = ConfirmStatus.NeedConfirm,
+                                                                                                          [FromQuery] ConfirmStatus? status = null,
                                                                                                           [FromQuery] int pageNumber = 1,
                                                                                                           [FromQuery] int pageSize = 10)
         {

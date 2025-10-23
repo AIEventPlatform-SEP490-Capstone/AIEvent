@@ -15,7 +15,7 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result> UpdateEventAsync(Guid organizerId, Guid eventId, UpdateEventRequest request);
         Task<Result<BasePaginated<EventsRelatedResponse>>> GetRelatedEventAsync(Guid eventId, int pageNumber = 1, int pageSize = 5);
         Task<Result<BasePaginated<EventsResponse>>> GetEventAsync(Guid? userId, string? search, string? eventCategoryId, List<EventTagRequest> tags, TicketType? ticketType, string? city, TimeLine? timeLine, int pageNumber = 1, int pageSize = 5);
-        Task<Result<BasePaginated<EventsRawResponse>>> GetAllEventStatusAsync(Guid? organizerId, string? search, ConfirmStatus status = ConfirmStatus.NeedConfirm, int pageNumber = 1, int pageSize = 10);
+        Task<Result<BasePaginated<EventsRawResponse>>> GetAllEventStatusAsync(Guid? organizerId, string? search, ConfirmStatus? status = null, int pageNumber = 1, int pageSize = 10);
         Task<Result> ConfirmEventAsync(Guid userId, Guid eventId, ConfirmRequest request);
         Task<Result<BasePaginated<EventsRawResponse>>> GetAllEventDraftAsync(Guid organizerId, int pageNumber = 1, int pageSize = 10);
     }
