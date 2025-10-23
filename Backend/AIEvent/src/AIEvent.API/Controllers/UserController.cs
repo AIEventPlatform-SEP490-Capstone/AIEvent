@@ -55,7 +55,7 @@ namespace AIEvent.API.Controllers
                 message: "Profile retrieved successfully"));
         }
 
-        [HttpPut("profile")]
+        [HttpPatch("profile")]
         [Authorize]
         public async Task<ActionResult<SuccessResponse<object>>> UpdateProfile([FromForm] UpdateUserRequest request)
         {
