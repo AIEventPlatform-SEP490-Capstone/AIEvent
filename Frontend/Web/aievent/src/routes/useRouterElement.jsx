@@ -16,7 +16,6 @@ import EventDetailGuestPage from "../pages/Event/EventDetailGuestPage";
 // Manager Pages
 import ManagerDashboard from "../pages/Manager/ManagerDashboard";
 import ManagerEventsPage from "../pages/Manager/ManagerEventsPage";
-import ManagerEventsNeedApprovalPage from "../pages/Manager/ManagerEventsNeedApprovalPage";
 import ManagerEventDetailPage from "../pages/Manager/ManagerEventDetailPage";
 import ManagerEditEventPage from "../pages/Manager/ManagerEditEventPage";
 import RefundRulesPage from "../pages/RefundRule/RefundRulesPage";
@@ -206,10 +205,6 @@ export default function useRouterElement() {
       children: [
         { index: true, element: <ManagerDashboard /> },
         { path: "events", element: <ManagerEventsPage /> },
-        {
-          path: "events/need-approval",
-          element: <ManagerEventsNeedApprovalPage />,
-        },
         { path: "event/:eventId", element: <ManagerEventDetailPage /> },
         { path: "event/:eventId/edit", element: <ManagerEditEventPage /> },
         { path: "events/category", element: <EventCategory /> },

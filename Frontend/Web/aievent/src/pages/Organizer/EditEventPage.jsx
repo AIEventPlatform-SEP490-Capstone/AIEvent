@@ -41,7 +41,7 @@ import { useApp } from '../../hooks/useApp';
 // Import ConfirmStatus enum
 import { ConfirmStatus } from '../../constants/eventConstants';
 
-// Validation schema (same as CreateEventPage)
+// Validation schema (updated to match CreateEventPage)
 const editEventSchema = z.object({
   title: z.string().min(1, 'Tiêu đề sự kiện là bắt buộc').max(200, 'Tiêu đề không được vượt quá 200 ký tự'),
   description: z.string().min(1, 'Mô tả sự kiện là bắt buộc').max(1000, 'Mô tả không được vượt quá 1000 ký tự'),
@@ -51,10 +51,13 @@ const editEventSchema = z.object({
   isOnlineEvent: z.boolean().default(false),
   locationName: z.string().optional(),
   address: z.string().optional(),
+  linkRef: z.string().optional(),
   eventCategoryId: z.string().optional(),
   ticketType: z.string().min(1, 'Loại vé là bắt buộc'),
   requireApproval: z.nativeEnum(ConfirmStatus).default(ConfirmStatus.NeedConfirm),
   publish: z.boolean().default(false),
+  saleStartTime: z.string().min(1, 'Thời gian bắt đầu bán vé là bắt buộc'),
+  saleEndTime: z.string().min(1, 'Thời gian kết thúc bán vé là bắt buộc'),
   ticketDetails: z.array(z.object({
     ticketName: z.string().min(1, 'Tên vé là bắt buộc'),
     ticketPrice: z.number().min(0, 'Giá vé không được âm'),
@@ -70,6 +73,23 @@ const editEventSchema = z.object({
 }, {
   message: 'Địa điểm là bắt buộc cho sự kiện offline',
   path: ['locationName'],
+}).refine((data) => {
+  const saleStart = new Date(data.saleStartTime);
+  const saleEnd = new Date(data.saleEndTime);
+  const eventStart = new Date(data.startTime);
+  
+  if (saleStart >= saleEnd) {
+    return false;
+  }
+  
+  if (saleStart >= eventStart) {
+    return false;
+  }
+  
+  return true;
+}, {
+  message: 'Thời gian bán vé phải kết thúc trước thời gian bắt đầu sự kiện và thời gian bắt đầu bán vé phải trước thời gian kết thúc bán vé',
+  path: ['saleEndTime'],
 });
 
 const EditEventPage = () => {
@@ -108,10 +128,13 @@ const EditEventPage = () => {
       endTime: '',
       locationName: '',
       address: '',
+      linkRef: '',
       eventCategoryId: '',
       isOnlineEvent: false,
       requireApproval: ConfirmStatus.NeedConfirm,
       publish: false,
+      saleStartTime: '',
+      saleEndTime: '',
       ticketType: '1',
       ticketDetails: [
         {
@@ -171,8 +194,11 @@ const EditEventPage = () => {
           title: event.title || '',
           description: event.description || '',
           detailedDescription: event.detailedDescription || '',
+          linkRef: event.linkRef || '',
           startTime: event.startTime ? new Date(event.startTime).toISOString().slice(0, 16) : '',
           endTime: event.endTime ? new Date(event.endTime).toISOString().slice(0, 16) : '',
+          saleStartTime: event.saleStartTime ? new Date(event.saleStartTime).toISOString().slice(0, 16) : '',
+          saleEndTime: event.saleEndTime ? new Date(event.saleEndTime).toISOString().slice(0, 16) : '',
           locationName: event.locationName || '',
           address: event.address || '',
           eventCategoryId: event.eventCategoryId || event.eventCategory?.eventCategoryId || '',
@@ -320,8 +346,11 @@ const EditEventPage = () => {
       title: data.title,
       description: data.description,
       detailedDescription: data.detailedDescription || '',
+      linkRef: data.linkRef || '',
       startTime: new Date(data.startTime).toISOString(),
       endTime: new Date(data.endTime).toISOString(),
+      saleStartTime: new Date(data.saleStartTime).toISOString(),
+      saleEndTime: new Date(data.saleEndTime).toISOString(),
       isOnlineEvent: data.isOnlineEvent || false,
       locationName: data.locationName || '',
       address: data.address || '',
@@ -346,7 +375,7 @@ const EditEventPage = () => {
     };
 
     // Validate required fields
-    const requiredFields = ['title', 'description', 'startTime', 'endTime', 'totalTickets', 'eventCategoryId'];
+    const requiredFields = ['title', 'description', 'startTime', 'endTime', 'saleStartTime', 'saleEndTime', 'totalTickets', 'eventCategoryId'];
     if (!eventData.isOnlineEvent) {
       requiredFields.push('locationName', 'address');
     }
@@ -365,10 +394,32 @@ const EditEventPage = () => {
     // Validate dates
     const startDate = new Date(eventData.startTime);
     const endDate = new Date(eventData.endTime);
+    const saleStartDate = new Date(eventData.saleStartTime);
+    const saleEndDate = new Date(eventData.saleEndTime);
     const now = new Date();
+
+    if (startDate <= now) {
+      toast.error('Thời gian bắt đầu phải sau thời điểm hiện tại');
+      return;
+    }
 
     if (endDate <= startDate) {
       toast.error('Thời gian kết thúc phải sau thời gian bắt đầu');
+      return;
+    }
+
+    if (saleStartDate >= startDate) {
+      toast.error('Thời gian bắt đầu bán vé phải trước thời gian bắt đầu sự kiện');
+      return;
+    }
+
+    if (saleEndDate <= saleStartDate) {
+      toast.error('Thời gian kết thúc bán vé phải sau thời gian bắt đầu bán vé');
+      return;
+    }
+
+    if (saleEndDate >= startDate) {
+      toast.error('Thời gian kết thúc bán vé phải trước thời gian bắt đầu sự kiện');
       return;
     }
 
@@ -516,6 +567,17 @@ const EditEventPage = () => {
                   />
                 </div>
 
+                <div>
+                  <Label htmlFor="linkRef" className="text-base font-semibold">Liên kết tham khảo</Label>
+                  <Input
+                    id="linkRef"
+                    {...register('linkRef')}
+                    placeholder="https://example.com"
+                    className="mt-2 h-12 text-base border-2 focus:border-blue-500"
+                  />
+                  {errors.linkRef && <p className="text-red-500 text-sm mt-1">{errors.linkRef.message}</p>}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <Label htmlFor="eventCategoryId" className="text-base font-semibold">Danh mục sự kiện *</Label>
@@ -543,6 +605,7 @@ const EditEventPage = () => {
                       <SelectContent>
                         <SelectItem value="1">Miễn phí</SelectItem>
                         <SelectItem value="2">Có phí</SelectItem>
+                        <SelectItem value="3">Quyên góp</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -582,6 +645,30 @@ const EditEventPage = () => {
                       className="mt-2 h-12 text-base border-2 focus:border-green-500"
                     />
                     {errors.endTime && <p className="text-red-500 text-sm mt-1">{errors.endTime.message}</p>}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="saleStartTime" className="text-base font-semibold">Thời gian bắt đầu bán vé *</Label>
+                    <Input
+                      type="datetime-local"
+                      id="saleStartTime"
+                      {...register('saleStartTime')}
+                      className="mt-2 h-12 text-base border-2 focus:border-green-500"
+                    />
+                    {errors.saleStartTime && <p className="text-red-500 text-sm mt-1">{errors.saleStartTime.message}</p>}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="saleEndTime" className="text-base font-semibold">Thời gian kết thúc bán vé *</Label>
+                    <Input
+                      type="datetime-local"
+                      id="saleEndTime"
+                      {...register('saleEndTime')}
+                      className="mt-2 h-12 text-base border-2 focus:border-green-500"
+                    />
+                    {errors.saleEndTime && <p className="text-red-500 text-sm mt-1">{errors.saleEndTime.message}</p>}
                   </div>
                 </div>
 
@@ -865,18 +952,7 @@ const EditEventPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6 p-6">
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                  <div className="flex-1">
-                    <Label htmlFor="requireApproval" className="font-semibold text-gray-800 text-base">Yêu cầu phê duyệt</Label>
-                    <p className="text-sm text-gray-600 mt-1">Người tham gia cần được phê duyệt trước</p>
-                  </div>
-                  <Switch
-                    id="requireApproval"
-                    checked={watch('requireApproval')}
-                    onCheckedChange={(checked) => setValue('requireApproval', checked)}
-                  />
-                </div>
-
+                {/* Only keep "Xuất bản ngay" setting, remove "Yêu cầu phê duyệt" */}
                 <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
                   <div className="flex-1">
                     <Label htmlFor="publish" className="font-semibold text-gray-800 text-base">Xuất bản ngay</Label>
