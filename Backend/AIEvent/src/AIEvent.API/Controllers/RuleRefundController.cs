@@ -55,7 +55,7 @@ namespace AIEvent.API.Controllers
                 "Rule retrieved successfully"));
         }
 
-        [HttpPut("{id}")]
+        [HttpPatch("{id}")]
         [Authorize(Roles = "Admin, Organizer, Manager")]
         public async Task<ActionResult<SuccessResponse<object>>> UpdateRule(Guid id,UpdateRuleRefundRequest request)
         {
@@ -108,7 +108,7 @@ namespace AIEvent.API.Controllers
         }
 
 
-        [HttpPut("detail/{id}")]
+        [HttpPatch("detail/{id}")]
         [Authorize(Roles = "Admin, Organizer, Manager")]
         public async Task<ActionResult<SuccessResponse<object>>> UpdateRuleDetail(Guid id, UpdateRuleRefundDetailRequest request)
         {

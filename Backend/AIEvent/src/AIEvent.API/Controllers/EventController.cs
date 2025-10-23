@@ -88,7 +88,7 @@ namespace AIEvent.API.Controllers
                 "Event related retrieved successfully"));
         }
 
-        [HttpPut("{id}")]
+        [HttpPatch("{id}")]
         [Authorize(Roles = "Organizer, Manager")]
         public async Task<ActionResult<SuccessResponse<object>>> UpdateEvent(Guid id, [FromForm] UpdateEventRequest request)
         {
