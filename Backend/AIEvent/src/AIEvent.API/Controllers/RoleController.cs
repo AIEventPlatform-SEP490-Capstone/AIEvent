@@ -53,7 +53,7 @@ namespace AIEvent.API.Controllers
                 "Role created successfully"));
         }
 
-        [HttpPut("{id}")]
+        [HttpPatch("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<SuccessResponse<object>>> UpdateRole(string id, [FromBody] UpdateRoleRequest request)
         {

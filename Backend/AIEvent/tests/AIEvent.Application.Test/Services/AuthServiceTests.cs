@@ -1097,7 +1097,6 @@ namespace AIEvent.Application.Test.Services
                 .Setup(r => r.WalletRepository.AddAsync(It.IsAny<Wallet>()));
             _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.AddAsync(It.IsAny<RefreshToken>()));
             _mockCacheService.Setup(x => x.GetAsync<string>($"Register {request.Email}")).ReturnsAsync("123456");
-            _mockCacheService.Setup(x => x.RemoveAsync($"Register {request.Email}"));
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 
             // Act
@@ -1110,8 +1109,9 @@ namespace AIEvent.Application.Test.Services
             result.Value!.RefreshToken.Should().Be(refreshToken);
             result.Value!.ExpiresAt.Should().BeCloseTo(DateTime.UtcNow.AddHours(1), TimeSpan.FromSeconds(5));
             _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.Is<User>(u => u.Id == user.Id && u.IsActive)), Times.Once());
-            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
+            _mockUnitOfWork.Verify(x => x.WalletRepository.AddAsync(It.Is<Wallet>(w => w.UserId == user.Id && w.Balance == 0)), Times.Once());
             _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.AddAsync(It.Is<RefreshToken>(t => t.Token == refreshToken && t.UserId == user.Id && t.ExpiresAt.Date == DateTime.UtcNow.AddDays(7).Date)), Times.Once());
+            _mockCacheService.Verify(x => x.GetAsync<string>($"Register {request.Email}"), Times.Once());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
 
@@ -1146,7 +1146,6 @@ namespace AIEvent.Application.Test.Services
             result.Error!.Message.Should().Contain("Invalid email");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
             _mockUnitOfWork.Verify(x => x.UserRepository.Query(false), Times.Never());
-            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
 
@@ -1165,7 +1164,6 @@ namespace AIEvent.Application.Test.Services
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("User not found");
             result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
-            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
 
@@ -1208,7 +1206,7 @@ namespace AIEvent.Application.Test.Services
             result.Error!.Message.Should().Be("OTP not found");
             result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
             _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.IsAny<User>()), Times.Never());
-            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
+            _mockUnitOfWork.Verify(x => x.WalletRepository.AddAsync(It.IsAny<Wallet>()), Times.Never());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
 
@@ -1239,7 +1237,7 @@ namespace AIEvent.Application.Test.Services
             result.Error!.Message.Should().Be("Invalid OTP");
             result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
             _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.IsAny<User>()), Times.Never());
-            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
+            _mockUnitOfWork.Verify(x => x.WalletRepository.AddAsync(It.IsAny<Wallet>()), Times.Never());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
         #endregion
