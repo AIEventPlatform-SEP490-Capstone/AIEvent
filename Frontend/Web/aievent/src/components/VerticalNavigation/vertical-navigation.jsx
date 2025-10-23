@@ -494,7 +494,15 @@ export function VerticalNavigation() {
                       )}
                     >
                       <NavLink
-                        to="/profile"
+                        to={
+                          user?.role?.toLowerCase() === "admin"
+                            ? "/admin/profile"
+                            : user?.role?.toLowerCase() === "organizer"
+                            ? "/organizer/profile"
+                            : user?.role?.toLowerCase() === "manager"
+                            ? "/manager/profile"
+                            : "/profile"
+                        }
                         className="flex items-center gap-3 px-3 py-2.5"
                       >
                         <User className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
