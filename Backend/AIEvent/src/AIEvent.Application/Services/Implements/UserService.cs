@@ -10,7 +10,6 @@ using AIEvent.Domain.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -44,20 +43,17 @@ namespace AIEvent.Application.Services.Implements
 
             var userResponse = _mapper.Map<UserDetailResponse>(user);
 
-            var joinedEventsTask = _unitOfWork.BookingRepository
+            var joinedEventsTask = await _unitOfWork.BookingRepository
                                             .Query()
                                             .AsNoTracking()
                                             .Where(b => b.UserId == userId && b.Status == BookingStatus.Completed)
                                             .CountAsync();
 
-            var favoriteEventsTask = _unitOfWork.FavoriteEventRepository
+            var favoriteEventsTask = await _unitOfWork.FavoriteEventRepository
                                             .Query()
                                             .AsNoTracking()
                                             .Where(fe => fe.UserId == userId)
                                             .CountAsync();
-
-            await Task.WhenAll(joinedEventsTask, favoriteEventsTask);
-
             return Result<UserDetailResponse>.Success(userResponse);
         }
 
