@@ -2,7 +2,7 @@
 //Thunk actions để xử lý async operations
 //Centralized state management cho auth status
 
-import AuthService from '../../services/AuthService';
+import AuthService from '../../api/services/AuthService';
 
 // Action Types
 export const AUTH_ACTIONS = {
