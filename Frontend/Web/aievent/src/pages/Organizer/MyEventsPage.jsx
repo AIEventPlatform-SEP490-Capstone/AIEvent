@@ -863,11 +863,6 @@ const MyEventsPage = () => {
                                 </Badge>
                               )}
                               {/* Display draft status - only for draft events (EventsRawResponse) or unpublished events */}
-                              {(!('publish' in event) || !event.publish) && (
-                                <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">
-                                  Bản nháp
-                                </Badge>
-                              )}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">

@@ -54,7 +54,6 @@ const editEventSchema = z.object({
   linkRef: z.string().optional(),
   eventCategoryId: z.string().optional(),
   ticketType: z.string().min(1, 'Loại vé là bắt buộc'),
-  requireApproval: z.nativeEnum(ConfirmStatus).default(ConfirmStatus.NeedConfirm),
   publish: z.boolean().default(false),
   saleStartTime: z.string().min(1, 'Thời gian bắt đầu bán vé là bắt buộc'),
   saleEndTime: z.string().min(1, 'Thời gian kết thúc bán vé là bắt buộc'),
@@ -131,7 +130,6 @@ const EditEventPage = () => {
       linkRef: '',
       eventCategoryId: '',
       isOnlineEvent: false,
-      requireApproval: ConfirmStatus.NeedConfirm,
       publish: false,
       saleStartTime: '',
       saleEndTime: '',
@@ -179,16 +177,6 @@ const EditEventPage = () => {
       if (event) {
         setEventData(event);
         
-        // Convert backend enum value to frontend enum
-        let requireApprovalValue = ConfirmStatus.NeedConfirm;
-        if (event.requireApproval === 'Approve') {
-          requireApprovalValue = ConfirmStatus.Approve;
-        } else if (event.requireApproval === 'Reject') {
-          requireApprovalValue = ConfirmStatus.Reject;
-        } else if (event.requireApproval === 'NeedConfirm') {
-          requireApprovalValue = ConfirmStatus.NeedConfirm;
-        }
-        
         // Populate form with existing data
         const formData = {
           title: event.title || '',
@@ -203,7 +191,6 @@ const EditEventPage = () => {
           address: event.address || '',
           eventCategoryId: event.eventCategoryId || event.eventCategory?.eventCategoryId || '',
           isOnlineEvent: event.isOnlineEvent || false,
-          requireApproval: requireApprovalValue,
           publish: event.publish || false,
           ticketType: String(event.ticketType || 1),
           ticketDetails: event.ticketDetails && event.ticketDetails.length > 0 
@@ -359,7 +346,6 @@ const EditEventPage = () => {
       longitude: null,
       totalTickets: totalTickets,
       ticketType: parseInt(data.ticketType),
-      requireApproval: data.requireApproval,
       publish: data.publish || false,
       images: selectedImages, // New images
       existingImages: existingImages, // Keep existing images

@@ -7,11 +7,13 @@ export const fetchTags = createAsyncThunk(
   async (userRole = null, { rejectWithValue }) => {
     try {
       let response;
-      // If user is organizer or manager, use the user-specific endpoint
-      if (userRole && (userRole.toLowerCase() === 'organizer')) {
-        response = await tagAPI.getUserTags(1, 100);
-      } else {
+      // If user is manager or admin, use the all tags endpoint
+      // Organizers should see only their own tags
+      if (userRole && (userRole.toLowerCase() === 'manager' || userRole.toLowerCase() === 'admin')) {
         response = await tagAPI.getTags(1, 100);
+      } else {
+        // For organizers and other roles, show only user's tags
+        response = await tagAPI.getUserTags(1, 100);
       }
       return response.data.items || response.data || [];
     } catch (error) {
@@ -91,6 +93,11 @@ const tagsSlice = createSlice({
     },
     // Force refresh
     invalidateTags: (state) => {
+      state.lastFetched = null;
+    },
+    // Clear all tags data
+    clearTags: (state) => {
+      state.items = [];
       state.lastFetched = null;
     }
   },
@@ -181,7 +188,8 @@ export const {
   selectTag, 
   unselectTag, 
   clearSelectedTags,
-  invalidateTags 
+  invalidateTags,
+  clearTags
 } = tagsSlice.actions;
 
 // Selectors
@@ -193,6 +201,7 @@ export const selectTagById = (state, tagId) =>
   state.tags.items.find(tag => tag.tagId === tagId);
 
 // Check if tags need to be fetched (cache for 10 minutes)
+// Note: This selector doesn't have access to user role, so caching is handled in the component
 export const selectShouldFetchTags = (state) => {
   const { lastFetched, items } = state.tags;
   if (!lastFetched || items.length === 0) return true;

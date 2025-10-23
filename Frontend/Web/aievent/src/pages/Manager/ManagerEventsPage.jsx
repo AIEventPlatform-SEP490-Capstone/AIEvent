@@ -91,12 +91,40 @@ const ManagerEventsPage = () => {
       
       let response;
       if (activeTab === 'all') {
-        // Load all events
-        response = await getEvents({
-          search: '', // Load all events, we'll filter on client side
-          pageNumber: 1,
-          pageSize: 1000, // Get all events
+        // For the 'all' tab, we want to show all events including all approval statuses
+        // We'll fetch events using the general getEvents API which should return all events
+        // and also fetch events from all status categories to ensure completeness
+        const allResponses = await Promise.all([
+          getEvents({ search: '', pageNumber: 1, pageSize: 1000 }), // All events from general endpoint
+          getEventsByStatus({ search: '', status: ConfirmStatus.NeedConfirm, pageNumber: 1, pageSize: 1000 }),
+          getEventsByStatus({ search: '', status: ConfirmStatus.Approve, pageNumber: 1, pageSize: 1000 }),
+          getEventsByStatus({ search: '', status: ConfirmStatus.Reject, pageNumber: 1, pageSize: 1000 })
+        ]);
+        
+        // Combine all events and remove duplicates
+        const combinedEvents = [];
+        const eventIds = new Set();
+        
+        allResponses.forEach(resp => {
+          if (resp && resp.items) {
+            resp.items.forEach(event => {
+              if (!eventIds.has(event.eventId)) {
+                eventIds.add(event.eventId);
+                combinedEvents.push(event);
+              }
+            });
+          } else if (resp && Array.isArray(resp)) {
+            // Handle case where response is directly an array
+            resp.forEach(event => {
+              if (!eventIds.has(event.eventId)) {
+                eventIds.add(event.eventId);
+                combinedEvents.push(event);
+              }
+            });
+          }
         });
+        
+        response = { items: combinedEvents, totalCount: combinedEvents.length };
       } else {
         // Load events by specific status
         response = await getEventsByStatus({

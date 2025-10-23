@@ -14,7 +14,9 @@ import {
   selectSelectedTags,
   selectShouldFetchTags,
   selectTagById,
-  clearError
+  clearError,
+  invalidateTags,
+  clearTags
 } from '../store/slices/tagsSlice';
 
 export const useTags = (userRole = null) => {
@@ -65,6 +67,16 @@ export const useTags = (userRole = null) => {
     dispatch(clearError());
   };
 
+  const clearAllTags = () => {
+    dispatch(clearTags());
+  };
+
+  // Refresh tags with cache invalidation
+  const forceRefreshTags = () => {
+    dispatch(invalidateTags());
+    dispatch(fetchTags(userRole));
+  };
+
   const getTagById = (tagId) => {
     return tags.find(tag => tag.tagId === tagId) || null;
   };
@@ -75,6 +87,8 @@ export const useTags = (userRole = null) => {
     loading: loading || creating, // Include creating state
     error,
     refreshTags,
+    forceRefreshTags,
+    clearAllTags,
     createNewTag,
     updateExistingTag,
     removeTag,

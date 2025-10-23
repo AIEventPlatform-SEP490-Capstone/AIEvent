@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
@@ -14,8 +14,13 @@ const TagManager = ({ searchTerm = "", sortConfig = { key: "tagName", direction:
     createNewTag,
     updateExistingTag,
     removeTag,
-    refreshTags
+    forceRefreshTags
   } = useTags(userRole);
+
+  // Clear and reload tags when component mounts
+  useEffect(() => {
+    forceRefreshTags();
+  }, []); // Empty dependency array means this runs once on mount
 
   const [newTagInput, setNewTagInput] = useState('');
   const [editingTag, setEditingTag] = useState(null);
@@ -62,7 +67,7 @@ const TagManager = ({ searchTerm = "", sortConfig = { key: "tagName", direction:
       try {
         await createNewTag({ nameTag: newTagInput.trim() });
         setNewTagInput('');
-        refreshTags();
+        forceRefreshTags();
       } catch (err) {
         console.error('Error creating tag:', err);
       }
@@ -73,7 +78,7 @@ const TagManager = ({ searchTerm = "", sortConfig = { key: "tagName", direction:
   const handleDeleteTag = async (tagId) => {
     try {
       await removeTag(tagId);
-      refreshTags();
+      forceRefreshTags();
     } catch (err) {
       console.error('Error deleting tag:', err);
     }
@@ -102,7 +107,7 @@ const TagManager = ({ searchTerm = "", sortConfig = { key: "tagName", direction:
         setIsEditDialogOpen(false);
         setEditingTag(null);
         setEditTagInput('');
-        refreshTags();
+        forceRefreshTags();
       } catch (err) {
         console.error('Error updating tag:', err);
         // Show error to user
