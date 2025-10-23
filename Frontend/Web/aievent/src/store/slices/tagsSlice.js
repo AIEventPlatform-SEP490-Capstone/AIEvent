@@ -4,9 +4,15 @@ import { tagAPI } from '../../api/tagAPI';
 // Async thunks
 export const fetchTags = createAsyncThunk(
   'tags/fetchAll',
-  async (_, { rejectWithValue }) => {
+  async (userRole = null, { rejectWithValue }) => {
     try {
-      const response = await tagAPI.getTags(1, 100);
+      let response;
+      // If user is organizer or manager, use the user-specific endpoint
+      if (userRole && (userRole.toLowerCase() === 'organizer')) {
+        response = await tagAPI.getUserTags(1, 100);
+      } else {
+        response = await tagAPI.getTags(1, 100);
+      }
       return response.data.items || response.data || [];
     } catch (error) {
       return rejectWithValue(error.message);

@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Plus, X } from 'lucide-react';
 import { useTags } from '../../hooks/useTags';
 
-const TagManager = ({ searchTerm = "", sortConfig = { key: "tagName", direction: "asc" } }) => {
+const TagManager = ({ searchTerm = "", sortConfig = { key: "tagName", direction: "asc" }, userRole = null }) => {
   const {
     tags,
     loading,
@@ -15,7 +15,7 @@ const TagManager = ({ searchTerm = "", sortConfig = { key: "tagName", direction:
     updateExistingTag,
     removeTag,
     refreshTags
-  } = useTags();
+  } = useTags(userRole);
 
   const [newTagInput, setNewTagInput] = useState('');
   const [editingTag, setEditingTag] = useState(null);

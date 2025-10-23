@@ -17,7 +17,7 @@ import {
   clearError
 } from '../store/slices/tagsSlice';
 
-export const useTags = () => {
+export const useTags = (userRole = null) => {
   const dispatch = useDispatch();
   const tags = useSelector(selectTags);
   const selectedTags = useSelector(selectSelectedTags);
@@ -29,12 +29,12 @@ export const useTags = () => {
   // Auto-fetch tags if needed
   useEffect(() => {
     if (shouldFetch) {
-      dispatch(fetchTags());
+      dispatch(fetchTags(userRole));
     }
-  }, [dispatch, shouldFetch]);
+  }, [dispatch, shouldFetch, userRole]);
 
   const refreshTags = () => {
-    dispatch(fetchTags());
+    dispatch(fetchTags(userRole));
   };
 
   const createNewTag = async (tagData) => {
