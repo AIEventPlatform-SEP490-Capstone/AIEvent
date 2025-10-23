@@ -26,6 +26,7 @@ import EventCategory from "../pages/Event Category/EventCategory";
 import VerifyOtpPage from "../pages/Auth/RegisterPage/VerifyOtpPage";
 import BecomeOrganizerPage from "../pages/User/BecomeOrganizerPage";
 import ApplicationStatusPage from "../pages/User/ApplicationStatusPage";
+import UserProfilePage from "../pages/User/UserProfilePage";
 import TagManagementPage from "../pages/Shared/TagManagementPage";
 
 export default function useRouterElement() {
@@ -86,7 +87,7 @@ export default function useRouterElement() {
           path: "profile",
           element: (
             <ProtectedRoute>
-              <div>Profile Page</div>
+              <UserProfilePage />
             </ProtectedRoute>
           ),
         },
