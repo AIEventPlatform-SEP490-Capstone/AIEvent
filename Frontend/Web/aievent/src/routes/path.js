@@ -46,7 +46,7 @@ export const PATH = {
   ORGANIZER_CHECKIN: "/organizer/checkin/:id",
   ORGANIZER_REFUND_RULES: "/organizer/refund-rules",
   ORGANIZER_TAGS: "/organizer/tags",
-  BECOME_ORGANIZER: "/become-organizer",
+
 
   // MANAGER
   MANAGER: "/manager",
