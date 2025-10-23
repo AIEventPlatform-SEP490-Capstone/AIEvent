@@ -203,12 +203,6 @@ export function VerticalNavigation() {
           isActive: pathname === "/manager/events",
         },
         {
-          title: "Sự kiện cần duyệt",
-          url: "/manager/events/need-approval",
-          icon: CheckSquare,
-          isActive: pathname === "/manager/events/need-approval",
-        },
-        {
           title: "Quản lý danh mục",
           url: "/manager/events/category",
           icon: BookmarkMinus,
