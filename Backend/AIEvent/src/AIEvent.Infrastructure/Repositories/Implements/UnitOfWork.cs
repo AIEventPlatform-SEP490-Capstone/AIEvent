@@ -29,7 +29,6 @@ namespace AIEvent.Infrastructure.Implements
         public IGenericRepository<Wallet> WalletRepository => GetRepository<Wallet>();
         public IGenericRepository<WalletTransaction> WalletTransactionRepository => GetRepository<WalletTransaction>();
         public IGenericRepository<PaymentTransaction> PaymentTransactionRepository => GetRepository<PaymentTransaction>();
-        public IGenericRepository<TopupRequest> TopupRequestRepository => GetRepository<TopupRequest>();
 
         public UnitOfWork(DatabaseContext context)
         {

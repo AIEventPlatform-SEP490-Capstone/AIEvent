@@ -380,9 +380,18 @@ namespace AIEvent.Application.Services.Implements
                     Title = e.Title,
                     StartTime = e.StartTime,
                     EndTime = e.EndTime,
+                    Status = e.RequireApproval,
                     Description = e.Description,
                     TicketType = e.TicketType,
                     LocationName = e.LocationName,
+                    Price = e.TicketDetails != null && e.TicketDetails.Any()
+                        ? e.TicketDetails.Min(t => t.TicketPrice)
+                        : 0,
+                    OrganizedBy = e.OrganizerProfile != null 
+                        ? (e.OrganizerProfile.CompanyName ?? e.OrganizerProfile.ContactName) 
+                        : string.Empty,
+                    TotalPerson = e.TotalTickets,
+                    TotalPersonJoin = e.SoldQuantity,
                     ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
                         ? new List<string>()
                         : JsonSerializer.Deserialize<List<string>>(e.ImgListEvent, new JsonSerializerOptions())
@@ -400,7 +409,7 @@ namespace AIEvent.Application.Services.Implements
                                                 .AsNoTracking()
                                                 .Where(e => e.Publish == true && !e.IsDeleted);
 
-            if(organizerId != Guid.Empty)
+            if(organizerId.HasValue && organizerId != Guid.Empty)
                 events = events.Where(e => e.OrganizerProfileId == organizerId);
 
             if (!string.IsNullOrEmpty(search))
@@ -427,9 +436,18 @@ namespace AIEvent.Application.Services.Implements
                     Title = e.Title,
                     StartTime = e.StartTime,
                     EndTime = e.EndTime,
+                    Status = e.RequireApproval,
                     Description = e.Description,
                     TicketType = e.TicketType,
                     LocationName = e.LocationName,
+                    Price = e.TicketDetails != null && e.TicketDetails.Any()
+                        ? e.TicketDetails.Min(t => t.TicketPrice)
+                        : 0,
+                    OrganizedBy = e.OrganizerProfile != null 
+                        ? (e.OrganizerProfile.CompanyName ?? e.OrganizerProfile.ContactName) 
+                        : string.Empty,
+                    TotalPerson = e.TotalTickets,
+                    TotalPersonJoin = e.SoldQuantity,
                     ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
                         ? new List<string>()
                         : JsonSerializer.Deserialize<List<string>>(e.ImgListEvent, new JsonSerializerOptions())

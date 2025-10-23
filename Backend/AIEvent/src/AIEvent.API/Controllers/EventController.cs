@@ -124,11 +124,11 @@ namespace AIEvent.API.Controllers
                 "Register Event successfully"));
         }
 
-        [HttpDelete]
+        [HttpDelete("{id}")]
         [Authorize(Roles = "Admin, Organizer, Manager")]
-        public async Task<ActionResult<SuccessResponse<object>>> DeleteEvent(Guid eventId)
+        public async Task<ActionResult<SuccessResponse<object>>> DeleteEvent(Guid id)
         {
-            var result = await _eventService.DeleteEventAsync(eventId);
+            var result = await _eventService.DeleteEventAsync(id);
             if (    !result.IsSuccess)
             {
                 return BadRequest(result.Error!);
