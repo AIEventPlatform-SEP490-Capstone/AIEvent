@@ -1,4 +1,4 @@
-using AIEvent.Application.Constants;
+﻿using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Event;
 using AIEvent.Application.DTOs.EventField;
 using AIEvent.Application.DTOs.Organizer;
@@ -2403,7 +2403,7 @@ namespace AIEvent.Application.Test.Services
                     Id = Guid.NewGuid(),
                     Title = "Today Event",
                     Description = "Description 1",
-                    StartTime = DateTime.Now.AddHours(1),
+                    StartTime = today,
                     EndTime = today.AddHours(22),
                     RequireApproval = ConfirmStatus.Approve,
                     DeletedAt = null,
@@ -3816,6 +3816,23 @@ namespace AIEvent.Application.Test.Services
             var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
             var futureDate = DateTime.Now.AddDays(10);
 
+            var organizerProfile = new OrganizerProfile
+            {
+                Id = organizerId,
+                UserId = Guid.NewGuid(),
+                CompanyName = "Test Company",
+                ContactName = "Test Contact",
+                ContactEmail = "test@example.com",
+                ContactPhone = "0123456789",
+                Address = "Test Address",
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                Status = ConfirmStatus.Approve
+            };
+
             var draftEvent1 = new Event
             {
                 Id = Guid.NewGuid(),
@@ -3826,6 +3843,7 @@ namespace AIEvent.Application.Test.Services
                 EventCategoryId = eventCategory.Id,
                 EventCategory = eventCategory,
                 OrganizerProfileId = organizerId,
+                OrganizerProfile = organizerProfile,
                 Publish = false, // Draft
                 IsDeleted = false,
                 TicketType = TicketType.Free,
@@ -3833,7 +3851,8 @@ namespace AIEvent.Application.Test.Services
                 SoldQuantity = 0,
                 LocationName = "Location 1",
                 CreatedAt = DateTime.Now.AddDays(-2),
-                ImgListEvent = JsonSerializer.Serialize(new List<string> { "image1.jpg" })
+                ImgListEvent = JsonSerializer.Serialize(new List<string> { "image1.jpg" }),
+                TicketDetails = null
             };
 
             var draftEvent2 = new Event
@@ -3846,13 +3865,23 @@ namespace AIEvent.Application.Test.Services
                 EventCategoryId = eventCategory.Id,
                 EventCategory = eventCategory,
                 OrganizerProfileId = organizerId,
+                OrganizerProfile = organizerProfile,
                 Publish = false, // Draft
                 IsDeleted = false,
                 TicketType = TicketType.Paid,
                 TotalTickets = 50,
                 SoldQuantity = 0,
                 LocationName = "Location 2",
-                CreatedAt = DateTime.Now.AddDays(-1)
+                CreatedAt = DateTime.Now.AddDays(-1),
+                TicketDetails = new List<TicketDetail>
+                {
+                    new TicketDetail 
+                    { 
+                        TicketName = "Standard",
+                        TicketPrice = 100,
+                        TicketQuantity = 50
+                    }
+                }
             };
 
             var events = new List<Event> { draftEvent1, draftEvent2 }.AsQueryable().BuildMockDbSet();
@@ -3916,6 +3945,23 @@ namespace AIEvent.Application.Test.Services
             var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
             var futureDate = DateTime.Now.AddDays(10);
 
+            var organizerProfile = new OrganizerProfile
+            {
+                Id = organizerId,
+                UserId = Guid.NewGuid(),
+                CompanyName = "Test Company",
+                ContactName = "Test Contact",
+                ContactEmail = "test@example.com",
+                ContactPhone = "0123456789",
+                Address = "Test Address",
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                Status = ConfirmStatus.Approve
+            };
+
             var draftEvent = new Event
             {
                 Id = Guid.NewGuid(),
@@ -3926,13 +3972,15 @@ namespace AIEvent.Application.Test.Services
                 EventCategoryId = eventCategory.Id,
                 EventCategory = eventCategory,
                 OrganizerProfileId = organizerId,
+                OrganizerProfile = organizerProfile,
                 Publish = false, // Draft
                 IsDeleted = false,
                 TicketType = TicketType.Free,
                 TotalTickets = 100,
                 SoldQuantity = 0,
                 LocationName = "Location",
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                TicketDetails = null
             };
 
             var publishedEvent = new Event
@@ -3945,13 +3993,15 @@ namespace AIEvent.Application.Test.Services
                 EventCategoryId = eventCategory.Id,
                 EventCategory = eventCategory,
                 OrganizerProfileId = organizerId,
+                OrganizerProfile = organizerProfile,
                 Publish = true, // Published - should be excluded
                 IsDeleted = false,
                 TicketType = TicketType.Free,
                 TotalTickets = 50,
                 SoldQuantity = 0,
                 LocationName = "Location 2",
-                CreatedAt = DateTime.Now.AddDays(-1)
+                CreatedAt = DateTime.Now.AddDays(-1),
+                TicketDetails = null
             };
 
             var events = new List<Event> { draftEvent, publishedEvent }.AsQueryable().BuildMockDbSet();
@@ -3975,6 +4025,23 @@ namespace AIEvent.Application.Test.Services
             var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
             var futureDate = DateTime.Now.AddDays(10);
 
+            var organizerProfile = new OrganizerProfile
+            {
+                Id = organizerId,
+                UserId = Guid.NewGuid(),
+                CompanyName = "Test Company",
+                ContactName = "Test Contact",
+                ContactEmail = "test@example.com",
+                ContactPhone = "0123456789",
+                Address = "Test Address",
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                Status = ConfirmStatus.Approve
+            };
+
             var draftEvent = new Event
             {
                 Id = Guid.NewGuid(),
@@ -3985,13 +4052,15 @@ namespace AIEvent.Application.Test.Services
                 EventCategoryId = eventCategory.Id,
                 EventCategory = eventCategory,
                 OrganizerProfileId = organizerId,
+                OrganizerProfile = organizerProfile,
                 Publish = false, // Draft
                 IsDeleted = false,
                 TicketType = TicketType.Free,
                 TotalTickets = 100,
                 SoldQuantity = 0,
                 LocationName = "Location",
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                TicketDetails = null
             };
 
             var deletedDraftEvent = new Event
@@ -4004,13 +4073,15 @@ namespace AIEvent.Application.Test.Services
                 EventCategoryId = eventCategory.Id,
                 EventCategory = eventCategory,
                 OrganizerProfileId = organizerId,
+                OrganizerProfile = organizerProfile,
                 Publish = false, // Draft
                 IsDeleted = true, // Deleted - should be excluded
                 TicketType = TicketType.Free,
                 TotalTickets = 50,
                 SoldQuantity = 0,
                 LocationName = "Location 2",
-                CreatedAt = DateTime.Now.AddDays(-1)
+                CreatedAt = DateTime.Now.AddDays(-1),
+                TicketDetails = null
             };
 
             var events = new List<Event> { draftEvent, deletedDraftEvent }.AsQueryable().BuildMockDbSet();
@@ -4035,6 +4106,40 @@ namespace AIEvent.Application.Test.Services
             var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
             var futureDate = DateTime.Now.AddDays(10);
 
+            var organizerProfile1 = new OrganizerProfile
+            {
+                Id = organizerId1,
+                UserId = Guid.NewGuid(),
+                CompanyName = "Test Company 1",
+                ContactName = "Test Contact 1",
+                ContactEmail = "test1@example.com",
+                ContactPhone = "0123456789",
+                Address = "Test Address",
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                Status = ConfirmStatus.Approve
+            };
+
+            var organizerProfile2 = new OrganizerProfile
+            {
+                Id = organizerId2,
+                UserId = Guid.NewGuid(),
+                CompanyName = "Test Company 2",
+                ContactName = "Test Contact 2",
+                ContactEmail = "test2@example.com",
+                ContactPhone = "0987654321",
+                Address = "Test Address 2",
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                Status = ConfirmStatus.Approve
+            };
+
             var draftEventOrganizer1 = new Event
             {
                 Id = Guid.NewGuid(),
@@ -4045,13 +4150,15 @@ namespace AIEvent.Application.Test.Services
                 EventCategoryId = eventCategory.Id,
                 EventCategory = eventCategory,
                 OrganizerProfileId = organizerId1, // Organizer 1
+                OrganizerProfile = organizerProfile1,
                 Publish = false,
                 IsDeleted = false,
                 TicketType = TicketType.Free,
                 TotalTickets = 100,
                 SoldQuantity = 0,
                 LocationName = "Location",
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                TicketDetails = null
             };
 
             var draftEventOrganizer2 = new Event
@@ -4064,13 +4171,15 @@ namespace AIEvent.Application.Test.Services
                 EventCategoryId = eventCategory.Id,
                 EventCategory = eventCategory,
                 OrganizerProfileId = organizerId2, // Organizer 2 - should be excluded
+                OrganizerProfile = organizerProfile2,
                 Publish = false,
                 IsDeleted = false,
                 TicketType = TicketType.Free,
                 TotalTickets = 50,
                 SoldQuantity = 0,
                 LocationName = "Location 2",
-                CreatedAt = DateTime.Now.AddDays(-1)
+                CreatedAt = DateTime.Now.AddDays(-1),
+                TicketDetails = null
             };
 
             var events = new List<Event> { draftEventOrganizer1, draftEventOrganizer2 }.AsQueryable().BuildMockDbSet();
@@ -4098,6 +4207,40 @@ namespace AIEvent.Application.Test.Services
             var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
             var futureDate = DateTime.Now.AddDays(10);
 
+            var organizerProfile1 = new OrganizerProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = Guid.NewGuid(),
+                CompanyName = "Test Company 1",
+                ContactName = "Test Contact 1",
+                ContactEmail = "test1@example.com",
+                ContactPhone = "0123456789",
+                Address = "Test Address",
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                Status = ConfirmStatus.Approve
+            };
+
+            var organizerProfile2 = new OrganizerProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = Guid.NewGuid(),
+                CompanyName = "Test Company 2",
+                ContactName = "Test Contact 2",
+                ContactEmail = "test2@example.com",
+                ContactPhone = "0987654321",
+                Address = "Test Address 2",
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                Status = ConfirmStatus.Approve
+            };
+
             var needConfirmEvent = new Event
             {
                 Id = Guid.NewGuid(),
@@ -4107,7 +4250,8 @@ namespace AIEvent.Application.Test.Services
                 EndTime = futureDate.AddHours(2),
                 EventCategoryId = eventCategory.Id,
                 EventCategory = eventCategory,
-                OrganizerProfileId = Guid.NewGuid(),
+                OrganizerProfileId = organizerProfile1.Id,
+                OrganizerProfile = organizerProfile1,
                 Publish = true,
                 IsDeleted = false,
                 RequireApproval = ConfirmStatus.NeedConfirm,
@@ -4115,7 +4259,8 @@ namespace AIEvent.Application.Test.Services
                 TotalTickets = 100,
                 SoldQuantity = 0,
                 LocationName = "Location",
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                TicketDetails = null
             };
 
             var approvedEvent = new Event
@@ -4127,7 +4272,8 @@ namespace AIEvent.Application.Test.Services
                 EndTime = futureDate.AddDays(1).AddHours(2),
                 EventCategoryId = eventCategory.Id,
                 EventCategory = eventCategory,
-                OrganizerProfileId = Guid.NewGuid(),
+                OrganizerProfileId = organizerProfile2.Id,
+                OrganizerProfile = organizerProfile2,
                 Publish = true,
                 IsDeleted = false,
                 RequireApproval = ConfirmStatus.Approve, // Should be excluded
@@ -4135,7 +4281,8 @@ namespace AIEvent.Application.Test.Services
                 TotalTickets = 50,
                 SoldQuantity = 0,
                 LocationName = "Location 2",
-                CreatedAt = DateTime.Now.AddDays(-1)
+                CreatedAt = DateTime.Now.AddDays(-1),
+                TicketDetails = null
             };
 
             var events = new List<Event> { needConfirmEvent, approvedEvent }.AsQueryable().BuildMockDbSet();
@@ -4159,6 +4306,40 @@ namespace AIEvent.Application.Test.Services
             var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
             var futureDate = DateTime.Now.AddDays(10);
 
+            var organizerProfile1 = new OrganizerProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = Guid.NewGuid(),
+                CompanyName = "Test Company 1",
+                ContactName = "Test Contact 1",
+                ContactEmail = "test1@example.com",
+                ContactPhone = "0123456789",
+                Address = "Test Address",
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                Status = ConfirmStatus.Approve
+            };
+
+            var organizerProfile2 = new OrganizerProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = Guid.NewGuid(),
+                CompanyName = "Test Company 2",
+                ContactName = "Test Contact 2",
+                ContactEmail = "test2@example.com",
+                ContactPhone = "0987654321",
+                Address = "Test Address 2",
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                Status = ConfirmStatus.Approve
+            };
+
             var approvedEvent = new Event
             {
                 Id = Guid.NewGuid(),
@@ -4168,7 +4349,8 @@ namespace AIEvent.Application.Test.Services
                 EndTime = futureDate.AddHours(2),
                 EventCategoryId = eventCategory.Id,
                 EventCategory = eventCategory,
-                OrganizerProfileId = Guid.NewGuid(),
+                OrganizerProfileId = organizerProfile1.Id,
+                OrganizerProfile = organizerProfile1,
                 Publish = true,
                 IsDeleted = false,
                 RequireApproval = ConfirmStatus.Approve,
@@ -4176,7 +4358,8 @@ namespace AIEvent.Application.Test.Services
                 TotalTickets = 100,
                 SoldQuantity = 0,
                 LocationName = "Location",
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                TicketDetails = null
             };
 
             var needConfirmEvent = new Event
@@ -4188,7 +4371,8 @@ namespace AIEvent.Application.Test.Services
                 EndTime = futureDate.AddDays(1).AddHours(2),
                 EventCategoryId = eventCategory.Id,
                 EventCategory = eventCategory,
-                OrganizerProfileId = Guid.NewGuid(),
+                OrganizerProfileId = organizerProfile2.Id,
+                OrganizerProfile = organizerProfile2,
                 Publish = true,
                 IsDeleted = false,
                 RequireApproval = ConfirmStatus.NeedConfirm, // Should be excluded
@@ -4196,7 +4380,8 @@ namespace AIEvent.Application.Test.Services
                 TotalTickets = 50,
                 SoldQuantity = 0,
                 LocationName = "Location 2",
-                CreatedAt = DateTime.Now.AddDays(-1)
+                CreatedAt = DateTime.Now.AddDays(-1),
+                TicketDetails = null
             };
 
             var events = new List<Event> { approvedEvent, needConfirmEvent }.AsQueryable().BuildMockDbSet();
@@ -4220,6 +4405,40 @@ namespace AIEvent.Application.Test.Services
             var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
             var futureDate = DateTime.Now.AddDays(10);
 
+            var organizerProfile1 = new OrganizerProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = Guid.NewGuid(),
+                CompanyName = "Test Company 1",
+                ContactName = "Test Contact 1",
+                ContactEmail = "test1@example.com",
+                ContactPhone = "0123456789",
+                Address = "Test Address",
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                Status = ConfirmStatus.Approve
+            };
+
+            var organizerProfile2 = new OrganizerProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = Guid.NewGuid(),
+                CompanyName = "Test Company 2",
+                ContactName = "Test Contact 2",
+                ContactEmail = "test2@example.com",
+                ContactPhone = "0987654321",
+                Address = "Test Address 2",
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                Status = ConfirmStatus.Approve
+            };
+
             var rejectedEvent = new Event
             {
                 Id = Guid.NewGuid(),
@@ -4229,7 +4448,8 @@ namespace AIEvent.Application.Test.Services
                 EndTime = futureDate.AddHours(2),
                 EventCategoryId = eventCategory.Id,
                 EventCategory = eventCategory,
-                OrganizerProfileId = Guid.NewGuid(),
+                OrganizerProfileId = organizerProfile1.Id,
+                OrganizerProfile = organizerProfile1,
                 Publish = true,
                 IsDeleted = false,
                 RequireApproval = ConfirmStatus.Reject,
@@ -4237,7 +4457,8 @@ namespace AIEvent.Application.Test.Services
                 TotalTickets = 100,
                 SoldQuantity = 0,
                 LocationName = "Location",
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                TicketDetails = null
             };
 
             var approvedEvent = new Event
@@ -4249,7 +4470,8 @@ namespace AIEvent.Application.Test.Services
                 EndTime = futureDate.AddDays(1).AddHours(2),
                 EventCategoryId = eventCategory.Id,
                 EventCategory = eventCategory,
-                OrganizerProfileId = Guid.NewGuid(),
+                OrganizerProfileId = organizerProfile2.Id,
+                OrganizerProfile = organizerProfile2,
                 Publish = true,
                 IsDeleted = false,
                 RequireApproval = ConfirmStatus.Approve, // Should be excluded
@@ -4257,7 +4479,8 @@ namespace AIEvent.Application.Test.Services
                 TotalTickets = 50,
                 SoldQuantity = 0,
                 LocationName = "Location 2",
-                CreatedAt = DateTime.Now.AddDays(-1)
+                CreatedAt = DateTime.Now.AddDays(-1),
+                TicketDetails = null
             };
 
             var events = new List<Event> { rejectedEvent, approvedEvent }.AsQueryable().BuildMockDbSet();
@@ -4282,6 +4505,40 @@ namespace AIEvent.Application.Test.Services
             var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
             var futureDate = DateTime.Now.AddDays(10);
 
+            var organizerProfile1 = new OrganizerProfile
+            {
+                Id = organizerId,
+                UserId = Guid.NewGuid(),
+                CompanyName = "Test Company",
+                ContactName = "Test Contact",
+                ContactEmail = "test@example.com",
+                ContactPhone = "0123456789",
+                Address = "Test Address",
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                Status = ConfirmStatus.Approve
+            };
+
+            var organizerProfile2 = new OrganizerProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = Guid.NewGuid(),
+                CompanyName = "Other Company",
+                ContactName = "Other Contact",
+                ContactEmail = "other@example.com",
+                ContactPhone = "0987654321",
+                Address = "Other Address",
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                Status = ConfirmStatus.Approve
+            };
+
             var organizerEvent = new Event
             {
                 Id = Guid.NewGuid(),
@@ -4292,6 +4549,7 @@ namespace AIEvent.Application.Test.Services
                 EventCategoryId = eventCategory.Id,
                 EventCategory = eventCategory,
                 OrganizerProfileId = organizerId,
+                OrganizerProfile = organizerProfile1,
                 Publish = true,
                 IsDeleted = false,
                 RequireApproval = ConfirmStatus.Approve,
@@ -4299,7 +4557,8 @@ namespace AIEvent.Application.Test.Services
                 TotalTickets = 100,
                 SoldQuantity = 0,
                 LocationName = "Location",
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                TicketDetails = null
             };
 
             var otherEvent = new Event
@@ -4311,7 +4570,8 @@ namespace AIEvent.Application.Test.Services
                 EndTime = futureDate.AddDays(1).AddHours(2),
                 EventCategoryId = eventCategory.Id,
                 EventCategory = eventCategory,
-                OrganizerProfileId = Guid.NewGuid(), // Different organizer
+                OrganizerProfileId = organizerProfile2.Id,
+                OrganizerProfile = organizerProfile2,
                 Publish = true,
                 IsDeleted = false,
                 RequireApproval = ConfirmStatus.Approve,
@@ -4319,7 +4579,8 @@ namespace AIEvent.Application.Test.Services
                 TotalTickets = 50,
                 SoldQuantity = 0,
                 LocationName = "Location 2",
-                CreatedAt = DateTime.Now.AddDays(-1)
+                CreatedAt = DateTime.Now.AddDays(-1),
+                TicketDetails = null
             };
 
             var events = new List<Event> { organizerEvent, otherEvent }.AsQueryable().BuildMockDbSet();
@@ -4835,6 +5096,150 @@ namespace AIEvent.Application.Test.Services
             result.Value!.Items.Should().HaveCount(1);
             result.Value.Items.First().Title.Should().Be("Rock Concert");
         }
+
+        [Fact]
+        public async Task UTCID13_GetAllEventStatusAsync_WithNullStatus_ShouldReturnAllStatusEvents()
+        {
+            // Arrange
+            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
+            var futureDate = DateTime.Now.AddDays(10);
+
+            var approvedEvent = new Event
+            {
+                Id = Guid.NewGuid(),
+                Title = "Approved Event",
+                Description = "Description",
+                StartTime = futureDate,
+                EndTime = futureDate.AddHours(2),
+                EventCategoryId = eventCategory.Id,
+                EventCategory = eventCategory,
+                OrganizerProfileId = Guid.NewGuid(),
+                Publish = true,
+                IsDeleted = false,
+                RequireApproval = ConfirmStatus.Approve,
+                TicketType = TicketType.Free,
+                TotalTickets = 100,
+                SoldQuantity = 0,
+                LocationName = "Location",
+                CreatedAt = DateTime.Now
+            };
+
+            var rejectedEvent = new Event
+            {
+                Id = Guid.NewGuid(),
+                Title = "Rejected Event",
+                Description = "Description",
+                StartTime = futureDate.AddDays(1),
+                EndTime = futureDate.AddDays(1).AddHours(2),
+                EventCategoryId = eventCategory.Id,
+                EventCategory = eventCategory,
+                OrganizerProfileId = Guid.NewGuid(),
+                Publish = true,
+                IsDeleted = false,
+                RequireApproval = ConfirmStatus.Reject,
+                TicketType = TicketType.Free,
+                TotalTickets = 50,
+                SoldQuantity = 0,
+                LocationName = "Location 2",
+                CreatedAt = DateTime.Now.AddDays(-1)
+            };
+
+            var needConfirmEvent = new Event
+            {
+                Id = Guid.NewGuid(),
+                Title = "Need Confirm Event",
+                Description = "Description",
+                StartTime = futureDate.AddDays(2),
+                EndTime = futureDate.AddDays(2).AddHours(2),
+                EventCategoryId = eventCategory.Id,
+                EventCategory = eventCategory,
+                OrganizerProfileId = Guid.NewGuid(),
+                Publish = true,
+                IsDeleted = false,
+                RequireApproval = ConfirmStatus.NeedConfirm,
+                TicketType = TicketType.Free,
+                TotalTickets = 75,
+                SoldQuantity = 0,
+                LocationName = "Location 3",
+                CreatedAt = DateTime.Now.AddDays(-2)
+            };
+
+            var events = new List<Event> { approvedEvent, rejectedEvent, needConfirmEvent }.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+
+            // Act
+            var result = await _eventService.GetAllEventStatusAsync(null, null, null, 1, 10);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeTrue();
+            result.Value!.Items.Should().HaveCount(3);
+            result.Value.Items.Should().Contain(e => e.Title == "Approved Event");
+            result.Value.Items.Should().Contain(e => e.Title == "Rejected Event");
+            result.Value.Items.Should().Contain(e => e.Title == "Need Confirm Event");
+        }
+
+       
+        [Fact]
+        public async Task UTCID014_GetAllEventStatusAsync_WithNullOrganizerId_ShouldReturnAllEvents()
+        {
+            // Arrange
+            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
+            var futureDate = DateTime.Now.AddDays(10);
+
+            var event1 = new Event
+            {
+                Id = Guid.NewGuid(),
+                Title = "Event 1",
+                Description = "Description",
+                StartTime = futureDate,
+                EndTime = futureDate.AddHours(2),
+                EventCategoryId = eventCategory.Id,
+                EventCategory = eventCategory,
+                OrganizerProfileId = Guid.NewGuid(),
+                Publish = true,
+                IsDeleted = false,
+                RequireApproval = ConfirmStatus.Approve,
+                TicketType = TicketType.Free,
+                TotalTickets = 100,
+                SoldQuantity = 0,
+                LocationName = "Location",
+                CreatedAt = DateTime.Now
+            };
+
+            var event2 = new Event
+            {
+                Id = Guid.NewGuid(),
+                Title = "Event 2",
+                Description = "Description",
+                StartTime = futureDate.AddDays(1),
+                EndTime = futureDate.AddDays(1).AddHours(2),
+                EventCategoryId = eventCategory.Id,
+                EventCategory = eventCategory,
+                OrganizerProfileId = Guid.NewGuid(),
+                Publish = true,
+                IsDeleted = false,
+                RequireApproval = ConfirmStatus.Approve,
+                TicketType = TicketType.Free,
+                TotalTickets = 50,
+                SoldQuantity = 0,
+                LocationName = "Location 2",
+                CreatedAt = DateTime.Now.AddDays(-1)
+            };
+
+            var events = new List<Event> { event1, event2 }.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+
+            // Act
+            var result = await _eventService.GetAllEventStatusAsync(null, null, ConfirmStatus.Approve, 1, 10);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Value!.Items.Should().HaveCount(2);
+        }
+
 
         #endregion
 

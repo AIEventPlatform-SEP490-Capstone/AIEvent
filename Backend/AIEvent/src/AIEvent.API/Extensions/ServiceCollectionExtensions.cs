@@ -7,6 +7,7 @@ using AIEvent.Infrastructure.Context;
 using AIEvent.Infrastructure.Implements;
 using CloudinaryDotNet;
 using Microsoft.EntityFrameworkCore;
+using Net.payOS;
 using StackExchange.Redis;
 
 namespace AIEvent.API.Extensions
@@ -38,6 +39,8 @@ namespace AIEvent.API.Extensions
                     .AddScoped<IBookingService, BookingService>()
                     .AddScoped<IQrCodeService, QrCodeService>()
                     .AddScoped<ITicketTokenService, TicketTokenService>()
+                    .AddScoped<IPaymentService, PaymentService>()
+                    .AddScoped<IWalletService, WalletService>()
                     .AddScoped<IPdfService, PdfService>();
 
             return services;
@@ -73,6 +76,17 @@ namespace AIEvent.API.Extensions
 
                 return cloudinary;
             });
+
+            services.AddSingleton<PayOS>(x =>
+            {
+                var config = x.GetRequiredService<IConfiguration>().GetSection("PayOS");
+                string clientId = config["ClientId"] ?? throw new Exception("ClientId not found");
+                string apiKey = config["ApiKey"] ?? throw new Exception("ClientId not found");
+                string checksumKey = config["ChecksumKey"] ?? throw new Exception("ClientId not found");
+
+                return new PayOS(clientId, apiKey, checksumKey);
+            });
+
 
             return services;
         }

@@ -222,14 +222,6 @@ namespace AIEvent.Infrastructure.Context
                 entity.HasIndex(e => e.CreatedAt).HasDatabaseName("IX_WalletTransaction_CreatedAt");
             });
 
-            //--------------TopupRequest--------------
-            builder.Entity<TopupRequest>(entity =>
-            {
-                entity.HasOne(e => e.Wallet)
-                    .WithMany(o => o.TopupRequests)
-                    .HasForeignKey(e => e.WalletId)
-                    .OnDelete(DeleteBehavior.Restrict);
-            });
 
             //--------------PaymentTransaction--------------
             builder.Entity<PaymentTransaction>(entity =>
