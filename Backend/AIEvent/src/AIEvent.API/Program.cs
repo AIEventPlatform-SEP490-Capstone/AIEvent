@@ -81,7 +81,11 @@ namespace AIEvent.API
             app.UseSwagger();
             app.UseSwaggerUI();
 
-            app.UseHttpsRedirection();
+            if (app.Environment.IsProduction())
+            {
+                app.UseHttpsRedirection();
+            }
+
 
             app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 

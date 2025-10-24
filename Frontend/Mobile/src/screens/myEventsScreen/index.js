@@ -16,7 +16,7 @@ import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
 import Strings from '../../constants/Strings';
 import ScreenNames from '../../constants/ScreenNames';
-import ApiCalls from '../../api/ApiCalls';
+import { EventService } from '../../api/services';
 
 const MyEventsScreen = () => {
   const navigation = useNavigation();

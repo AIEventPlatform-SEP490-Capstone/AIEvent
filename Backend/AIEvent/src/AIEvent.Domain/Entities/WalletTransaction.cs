@@ -8,6 +8,7 @@ namespace AIEvent.Domain.Entities
     {
         [Required]
         public Guid WalletId { get; set; }
+        public string? OrderCode { get; set; }
 
         [ForeignKey("WalletId")]
         public virtual Wallet Wallet { get; set; } = default!;

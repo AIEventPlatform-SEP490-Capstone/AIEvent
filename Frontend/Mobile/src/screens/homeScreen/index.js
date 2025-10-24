@@ -18,7 +18,7 @@ import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
 import Strings from '../../constants/Strings';
 import ScreenNames from '../../constants/ScreenNames';
-import ApiCalls from '../../api/ApiCalls';
+import { EventService } from '../../api/services';
 
 const { width } = Dimensions.get('window');
 
@@ -44,7 +44,7 @@ const HomeScreen = () => {
   const loadEvents = async () => {
     try {
       setLoading(true);
-      const response = await ApiCalls.getEvents();
+      const response = await EventService.getEvents();
       if (response.success) {
         setEvents(response.data);
         setFilteredEvents(response.data);
@@ -58,7 +58,7 @@ const HomeScreen = () => {
 
   const handleSearch = async (query) => {
     try {
-      const response = await ApiCalls.searchEvents(query);
+      const response = await EventService.searchEvents(query);
       if (response.success) {
         setFilteredEvents(response.data);
       }
