@@ -373,7 +373,7 @@ const ManagerEventsPage = () => {
     if (activeTab === ConfirmStatus.NeedConfirm) {
       // Count events needing approval
       const pendingApprovals = allEvents.filter(event => 
-        'requireApproval' in event && event.requireApproval === ConfirmStatus.NeedConfirm
+        'status' in event && event.status === ConfirmStatus.NeedConfirm
       ).length;
       
       return {
@@ -413,7 +413,7 @@ const ManagerEventsPage = () => {
       
       // Count events needing approval - check if property exists before accessing
       // EventsRawResponse doesn't have requireApproval property
-      const pendingApproval = ('requireApproval' in event && event.requireApproval === ConfirmStatus.NeedConfirm) ? 1 : 0;
+      const pendingApproval = ('status' in event && event.status === ConfirmStatus.NeedConfirm) ? 1 : 0;
       
       return {
         total: acc.total + 1,
@@ -868,22 +868,22 @@ const ManagerEventsPage = () => {
                                 {event.isOnlineEvent ? 'Trực tuyến' : (event.locationName || 'Không có địa điểm')}
                               </span>
                               {/* Display ticket info if available */}
-                              {('totalTickets' in event) && (
+                              {('totalPerson' in event) && (
                                 <span className="flex items-center gap-1">
                                   <Users className="h-4 w-4" />
-                                  {event.soldQuantity || 0}/{event.totalTickets}
+                                  {event.totalPersonJoin || 0}/{event.totalPerson}
                                 </span>
                               )}
                               {/* Display ticket price if available */}
-                              {('ticketPrice' in event) && (
+                              {('price' in event) && (
                                 <span className="flex items-center gap-1">
                                   <DollarSign className="h-4 w-4" />
                                   {/* Handle both string and number ticketType values */}
-                                  {(event.ticketType === 1 || event.ticketType === "Free" || event.ticketType === "free") ? 'Miễn phí' : `${event.ticketPrice?.toLocaleString('vi-VN')} đ`}
+                                  {(event.ticketType === 1 || event.ticketType === "Free" || event.ticketType === "free") ? 'Miễn phí' : `${event.price?.toLocaleString('vi-VN')} đ`}
                                 </span>
                               )}
                               {/* Fallback for events without ticket info (EventsRawResponse) */}
-                              {!('ticketPrice' in event) && !('totalTickets' in event) && (
+                              {!('price' in event) && !('totalPerson' in event) && (
                                 <span className="flex items-center gap-1">
                                   <DollarSign className="h-4 w-4" />
                                   {getTicketTypeLabel(event.ticketType)}
@@ -905,16 +905,16 @@ const ManagerEventsPage = () => {
                                 <Badge variant="outline">{event.eventCategoryName}</Badge>
                               )}
                               {/* Display approval status - only for EventsResponse */}
-                              {('requireApproval' in event) && event.requireApproval && (
+                              {('status' in event) && event.status && (
                                 <Badge 
                                   variant="outline" 
                                   className={
-                                    event.requireApproval === ConfirmStatus.Approve ? 'bg-green-100 text-green-800 border-green-200' :
-                                    event.requireApproval === ConfirmStatus.Reject ? 'bg-red-100 text-red-800 border-red-200' :
+                                    event.status === ConfirmStatus.Approve ? 'bg-green-100 text-green-800 border-green-200' :
+                                    event.status === ConfirmStatus.Reject ? 'bg-red-100 text-red-800 border-red-200' :
                                     'bg-yellow-100 text-yellow-800 border-yellow-200'
                                   }
                                 >
-                                  {ConfirmStatusDisplay[event.requireApproval] || event.requireApproval}
+                                  {ConfirmStatusDisplay[event.status] || event.status}
                                 </Badge>
                               )}
                             </div>
@@ -927,7 +927,7 @@ const ManagerEventsPage = () => {
                               <Edit className="h-4 w-4" />
                             </Button>
                             {/* Show approval buttons only for events that need approval */}
-                            {activeTab === ConfirmStatus.NeedConfirm && ('requireApproval' in event) && event.requireApproval === ConfirmStatus.NeedConfirm && (
+                            {activeTab === ConfirmStatus.NeedConfirm && ('status' in event) && event.status === ConfirmStatus.NeedConfirm && (
                               <>
                                 <Button 
                                   variant="ghost" 
@@ -963,13 +963,15 @@ const ManagerEventsPage = () => {
                           </div>
                           <div className="text-center">
                             <p className="text-sm text-gray-500 mb-1">Đăng ký</p>
-                            <p className="text-lg font-semibold">0</p>
+                            <p className="text-lg font-semibold">
+                              {('totalPersonJoin' in event) ? event.totalPersonJoin : 0}
+                            </p>
                           </div>
                           <div className="text-center">
                             <p className="text-sm text-gray-500 mb-1">Giá vé</p>
                             <p className="text-lg font-semibold">
-                              {'ticketPrice' in event 
-                                ? ((event.ticketType === 1 || event.ticketType === "Free" || event.ticketType === "free") ? 'Miễn phí' : `${event.ticketPrice?.toLocaleString('vi-VN')} đ`)
+                              {'price' in event 
+                                ? ((event.ticketType === 1 || event.ticketType === "Free" || event.ticketType === "free") ? 'Miễn phí' : `${event.price?.toLocaleString('vi-VN')} đ`)
                                 : getTicketTypeLabel(event.ticketType)}
                             </p>
                           </div>

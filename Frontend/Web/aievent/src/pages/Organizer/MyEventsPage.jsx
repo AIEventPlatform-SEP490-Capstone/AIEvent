@@ -816,22 +816,22 @@ const MyEventsPage = () => {
                                 {event.locationName || 'Không có địa điểm'}
                               </span>
                               {/* Display ticket info if available */}
-                              {('totalTickets' in event) && (
+                              {('totalPerson' in event) && (
                                 <span className="flex items-center gap-1">
                                   <Users className="h-4 w-4" />
-                                  {('soldQuantity' in event) ? `${event.soldQuantity || 0}/${event.totalTickets}` : `0/${event.totalTickets}`}
+                                  {event.totalPersonJoin || 0}/{event.totalPerson}
                                 </span>
                               )}
                               {/* Display ticket price if available */}
-                              {('ticketPrice' in event) && (
+                              {('price' in event) && (
                                 <span className="flex items-center gap-1">
                                   <DollarSign className="h-4 w-4" />
                                   {/* Handle both string and number ticketType values */}
-                                  {(event.ticketType === 1 || event.ticketType === "Free" || event.ticketType === "free") ? 'Miễn phí' : `${event.ticketPrice?.toLocaleString('vi-VN')} đ`}
+                                  {(event.ticketType === 1 || event.ticketType === "Free" || event.ticketType === "free") ? 'Miễn phí' : `${event.price?.toLocaleString('vi-VN')} đ`}
                                 </span>
                               )}
                               {/* Fallback for draft events */}
-                              {!('ticketPrice' in event) && !('totalTickets' in event) && (
+                              {!('price' in event) && !('totalPerson' in event) && (
                                 <span className="flex items-center gap-1">
                                   <DollarSign className="h-4 w-4" />
                                   {getTicketTypeLabel(event.ticketType)}
@@ -850,16 +850,16 @@ const MyEventsPage = () => {
                                 <Badge variant="outline">{event.eventCategoryName}</Badge>
                               )}
                               {/* Display approval status for published events */}
-                              {('requireApproval' in event) && event.requireApproval && (
+                              {('status' in event) && event.status && (
                                 <Badge 
                                   variant="outline" 
                                   className={
-                                    event.requireApproval === ConfirmStatus.Approve ? 'bg-green-100 text-green-800 border-green-200' :
-                                    event.requireApproval === ConfirmStatus.Reject ? 'bg-red-100 text-red-800 border-red-200' :
+                                    event.status === ConfirmStatus.Approve ? 'bg-green-100 text-green-800 border-green-200' :
+                                    event.status === ConfirmStatus.Reject ? 'bg-red-100 text-red-800 border-red-200' :
                                     'bg-yellow-100 text-yellow-800 border-yellow-200'
                                   }
                                 >
-                                  {ConfirmStatusDisplay[event.requireApproval] || event.requireApproval}
+                                  {ConfirmStatusDisplay[event.status] || event.status}
                                 </Badge>
                               )}
                               {/* Display draft status - only for draft events (EventsRawResponse) or unpublished events */}
@@ -888,13 +888,15 @@ const MyEventsPage = () => {
                           </div>
                           <div className="text-center">
                             <p className="text-sm text-gray-500 mb-1">Đăng ký</p>
-                            <p className="text-lg font-semibold">0</p>
+                            <p className="text-lg font-semibold">
+                              {('totalPersonJoin' in event) ? event.totalPersonJoin : 0}
+                            </p>
                           </div>
                           <div className="text-center">
                             <p className="text-sm text-gray-500 mb-1">Giá vé</p>
                             <p className="text-lg font-semibold">
-                              {'ticketPrice' in event 
-                                ? ((event.ticketType === 1 || event.ticketType === "Free" || event.ticketType === "free") ? 'Miễn phí' : `${event.ticketPrice?.toLocaleString('vi-VN')} đ`)
+                              {'price' in event 
+                                ? ((event.ticketType === 1 || event.ticketType === "Free" || event.ticketType === "free") ? 'Miễn phí' : `${event.price?.toLocaleString('vi-VN')} đ`)
                                 : getTicketTypeLabel(event.ticketType)}
                             </p>
                           </div>
