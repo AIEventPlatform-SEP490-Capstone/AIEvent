@@ -10,6 +10,7 @@ using AIEvent.Domain.Enums;
 using AIEvent.Domain.Interfaces;
 using AutoMapper;
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using MimeKit;
 using MockQueryable.Moq;
 using Moq;
@@ -24,7 +25,9 @@ namespace AIEvent.Application.Test.Services
         private readonly Mock<IEmailService> _mockEmailService;
         private readonly Mock<IHasherHelper> _mockHasherHelper;
         private readonly Mock<ICacheService> _mockCacheService;
+        private readonly Mock<IConfiguration> _mockConfiguration;
         private readonly IAuthService _authService;
+        
 
         public AuthServiceTests()
         {
@@ -35,12 +38,14 @@ namespace AIEvent.Application.Test.Services
             _mockMapper = new Mock<IMapper>();
             _mockEmailService = new Mock<IEmailService>();
             _mockCacheService = new Mock<ICacheService>();
+            _mockConfiguration = new Mock<IConfiguration>();
             _authService = new AuthService(_mockUnitOfWork.Object,
                                                _mockJwtService.Object,
                                                _mockMapper.Object,
                                                _mockEmailService.Object,
                                                _mockHasherHelper.Object,
-                                               _mockCacheService.Object);
+                                               _mockCacheService.Object,
+                                               _mockConfiguration.Object);
         }
         #region Login
         // UTCID01: Valid credentials, successful login

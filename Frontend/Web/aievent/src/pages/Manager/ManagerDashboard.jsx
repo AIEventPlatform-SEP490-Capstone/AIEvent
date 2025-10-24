@@ -19,6 +19,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { PATH } from '../../routes/path';
+import { ConfirmStatus } from '../../constants/eventConstants';
 
 const ManagerDashboard = () => {
   const navigate = useNavigate();
@@ -48,7 +49,8 @@ const ManagerDashboard = () => {
       title: "Sự kiện cần duyệt",
       description: "Duyệt các sự kiện đang chờ",
       icon: AlertCircle,
-      path: PATH.MANAGER_EVENTS_NEED_APPROVAL,
+      // Navigate to events page with approval tab
+      path: `${PATH.MANAGER_EVENTS}?tab=${ConfirmStatus.NeedConfirm}`,
       color: "bg-orange-500"
     },
     {
@@ -238,7 +240,7 @@ const ManagerDashboard = () => {
                   </p>
                 </div>
               </div>
-              <Button onClick={() => navigate(PATH.MANAGER_EVENTS_NEED_APPROVAL)}>
+              <Button onClick={() => navigate(`${PATH.MANAGER_EVENTS}?tab=${ConfirmStatus.NeedConfirm}`)}>
                 Xem tất cả
               </Button>
             </div>

@@ -3,13 +3,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
 import {
   fetchEvents,
-  fetchEventsByOrganizer,
   fetchEventById,
   fetchRelatedEvents,
-  fetchEventsNeedApproval,
+  fetchDraftEvents,
+  fetchEventsByStatus,
   createEvent,
   updateEvent,
   deleteEvent,
+  confirmEvent,
   selectEvents,
   selectCurrentEvent,
   selectRelatedEvents,
@@ -43,16 +44,6 @@ export const useEvents = () => {
     }
   };
 
-  const getEventsByOrganizer = async (params = {}) => {
-    try {
-      const response = await dispatch(fetchEventsByOrganizer(params)).unwrap();
-      return response;
-    } catch (err) {
-      toast.error('Không thể tải danh sách sự kiện');
-      return null;
-    }
-  };
-
   const getEventById = async (eventId) => {
     try {
       const response = await dispatch(fetchEventById(eventId)).unwrap();
@@ -73,13 +64,24 @@ export const useEvents = () => {
     }
   };
 
-  // Get events needing approval (requires Manager role)
-  const getEventsNeedApproval = async (params = {}) => {
+  // Get draft events (requires Organizer role)
+  const getDraftEvents = async (params = {}) => {
     try {
-      const response = await dispatch(fetchEventsNeedApproval(params)).unwrap();
+      const response = await dispatch(fetchDraftEvents(params)).unwrap();
       return response;
     } catch (err) {
-      toast.error('Không thể tải danh sách sự kiện cần phê duyệt');
+      toast.error('Không thể tải danh sách sự kiện nháp');
+      return null;
+    }
+  };
+
+  // Get events by status (requires Admin, Manager, Organizer roles)
+  const getEventsByStatus = async (params = {}) => {
+    try {
+      const response = await dispatch(fetchEventsByStatus(params)).unwrap();
+      return response;
+    } catch (err) {
+      toast.error('Không thể tải danh sách sự kiện theo trạng thái');
       return null;
     }
   };
@@ -117,6 +119,18 @@ export const useEvents = () => {
     }
   };
 
+  // Confirm event (requires Admin, Manager roles)
+  const confirmEventAPI = async (eventId, confirmData) => {
+    try {
+      const response = await dispatch(confirmEvent({ eventId, confirmData })).unwrap();
+      toast.success('Xác nhận sự kiện thành công!');
+      return response;
+    } catch (err) {
+      toast.error('Không thể xác nhận sự kiện');
+      return null;
+    }
+  };
+
   const clearCurrent = () => dispatch(clearCurrentEvent());
   const clearAllEvents = () => dispatch(clearEvents());
   const clearRelated = () => dispatch(clearRelatedEvents());
@@ -129,13 +143,14 @@ export const useEvents = () => {
     error,
     totalCount,
     getEvents,
-    getEventsByOrganizer,
     getEventById,
     getRelatedEvents,
-    getEventsNeedApproval,
+    getDraftEvents,
+    getEventsByStatus,
     createEvent: createEventAPI,
     updateEvent: updateEventAPI,
     deleteEvent: deleteEventAPI,
+    confirmEvent: confirmEventAPI,
     clearCurrentEvent: clearCurrent,
     clearEvents: clearAllEvents,
     clearRelatedEvents: clearRelated

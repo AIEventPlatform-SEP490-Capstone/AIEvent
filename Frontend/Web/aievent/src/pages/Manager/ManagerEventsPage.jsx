@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
 import { 
@@ -23,7 +23,10 @@ import {
   BarChart3,
   Activity,
   CalendarDays,
-  DollarSign
+  DollarSign,
+  ThumbsUp,
+  ThumbsDown,
+  X
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
@@ -40,11 +43,12 @@ import { ConfirmStatus, ConfirmStatusDisplay } from '../../constants/eventConsta
 
 const ManagerEventsPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useSelector((state) => state.auth);
   const [events, setEvents] = useState([]);
   const [allEvents, setAllEvents] = useState([]); // Store all events for client-side filtering
   const [isLoading, setIsLoading] = useState(true);
-  const { getEvents, deleteEvent: deleteEventAPI, loading: eventLoading } = useEvents();
+  const { getEvents, getEventsByStatus, confirmEvent: confirmEventAPI, deleteEvent: deleteEventAPI, loading: eventLoading } = useEvents();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -52,12 +56,25 @@ const ManagerEventsPage = () => {
   const [sortBy, setSortBy] = useState('newest');
   const [viewMode, setViewMode] = useState('list');
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
+  const [activeTab, setActiveTab] = useState('all'); // For switching between event statuses
+  const [showConfirmModal, setShowConfirmModal] = useState(false); // For showing confirmation modal
+  const [confirmEventData, setConfirmEventData] = useState(null); // Store event data for confirmation
+  const [confirmAction, setConfirmAction] = useState(''); // Store action type (approve/reject)
+  const [rejectReason, setRejectReason] = useState(''); // Store reject reason
   const pageSize = 12;
 
-  // Load events initially
+  // Load events initially and when tab changes
   useEffect(() => {
-    loadEvents();
-  }, []);
+    // Check for tab parameter in URL
+    const urlParams = new URLSearchParams(location.search);
+    const tabParam = urlParams.get('tab');
+    
+    if (tabParam && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    } else {
+      loadEvents();
+    }
+  }, [location.search]);
 
   // Debounced search effect
   useEffect(() => {
@@ -73,11 +90,55 @@ const ManagerEventsPage = () => {
   const loadEvents = async () => {
     try {
       setIsLoading(true);
-      const response = await getEvents({
-        search: '', // Load all events, we'll filter on client side
-        pageNumber: 1,
-        pageSize: 1000, // Get all events
-      });
+      // Clear existing events immediately when switching tabs
+      setEvents([]);
+      setAllEvents([]);
+      
+      let response;
+      if (activeTab === 'all') {
+        // For the 'all' tab, we want to show all events including all approval statuses
+        // We'll fetch events using the general getEvents API which should return all events
+        // and also fetch events from all status categories to ensure completeness
+        const allResponses = await Promise.all([
+          getEvents({ search: '', pageNumber: 1, pageSize: 1000 }), // All events from general endpoint
+          getEventsByStatus({ search: '', status: ConfirmStatus.NeedConfirm, pageNumber: 1, pageSize: 1000 }),
+          getEventsByStatus({ search: '', status: ConfirmStatus.Approve, pageNumber: 1, pageSize: 1000 }),
+          getEventsByStatus({ search: '', status: ConfirmStatus.Reject, pageNumber: 1, pageSize: 1000 })
+        ]);
+        
+        // Combine all events and remove duplicates
+        const combinedEvents = [];
+        const eventIds = new Set();
+        
+        allResponses.forEach(resp => {
+          if (resp && resp.items) {
+            resp.items.forEach(event => {
+              if (!eventIds.has(event.eventId)) {
+                eventIds.add(event.eventId);
+                combinedEvents.push(event);
+              }
+            });
+          } else if (resp && Array.isArray(resp)) {
+            // Handle case where response is directly an array
+            resp.forEach(event => {
+              if (!eventIds.has(event.eventId)) {
+                eventIds.add(event.eventId);
+                combinedEvents.push(event);
+              }
+            });
+          }
+        });
+        
+        response = { items: combinedEvents, totalCount: combinedEvents.length };
+      } else {
+        // Load events by specific status
+        response = await getEventsByStatus({
+          search: '',
+          status: activeTab !== 'all' ? activeTab : null,
+          pageNumber: 1,
+          pageSize: 1000,
+        });
+      }
 
       console.log('Events response:', response);
 
@@ -106,7 +167,7 @@ const ManagerEventsPage = () => {
 
     let filtered = [...dataToFilter];
 
-    console.log('Applying filters:', { searchTerm, filterStatus, sortBy, eventsCount: filtered.length });
+    console.log('Applying filters:', { searchTerm, filterStatus, sortBy, activeTab, eventsCount: filtered.length });
 
     // Apply search filter
     if (searchTerm && searchTerm.trim()) {
@@ -120,8 +181,11 @@ const ManagerEventsPage = () => {
       console.log('After search filter:', filtered.length);
     }
 
-    // Apply status filter
-    if (filterStatus && filterStatus !== 'all') {
+    // Apply status filter - but only for time-based filters, not approval status tabs
+    // Approval status tabs (NeedConfirm, Approve, Reject) are handled by the API call
+    const isApprovalTab = [ConfirmStatus.NeedConfirm, ConfirmStatus.Approve, ConfirmStatus.Reject].includes(activeTab);
+    
+    if (filterStatus && filterStatus !== 'all' && !isApprovalTab) {
       filtered = filtered.filter(event => {
         const status = getEventStatus(event);
         return status === filterStatus;
@@ -205,6 +269,70 @@ const ManagerEventsPage = () => {
     }
   };
 
+  // Handle event approval
+  const handleApproveEvent = async (eventId) => {
+    const event = allEvents.find(e => e.eventId === eventId);
+    setConfirmEventData(event);
+    setConfirmAction('approve');
+    setShowConfirmModal(true);
+  };
+
+  // Handle event rejection
+  const handleRejectEvent = async (eventId) => {
+    const event = allEvents.find(e => e.eventId === eventId);
+    setConfirmEventData(event);
+    setConfirmAction('reject');
+    setRejectReason('');
+    setShowConfirmModal(true);
+  };
+
+  // Confirm action handler
+  const handleConfirmAction = async () => {
+    if (!confirmEventData) return;
+
+    try {
+      if (confirmAction === 'approve') {
+        const response = await confirmEventAPI(confirmEventData.eventId, {
+          status: ConfirmStatus.Approve
+        });
+        
+        if (response) {
+          toast.success('Sự kiện đã được phê duyệt thành công!');
+        }
+      } else if (confirmAction === 'reject') {
+        if (!rejectReason.trim()) {
+          toast.error('Vui lòng nhập lý do từ chối');
+          return;
+        }
+        
+        const response = await confirmEventAPI(confirmEventData.eventId, {
+          status: ConfirmStatus.Reject,
+          reason: rejectReason
+        });
+        
+        if (response) {
+          toast.success('Sự kiện đã bị từ chối!');
+        }
+      }
+      
+      // Close modal and reload events
+      setShowConfirmModal(false);
+      setConfirmEventData(null);
+      setRejectReason('');
+      loadEvents();
+    } catch (error) {
+      console.error('Error processing event:', error);
+      toast.error('Có lỗi xảy ra. Vui lòng thử lại sau.');
+    }
+  };
+
+  // Cancel action handler
+  const handleCancelAction = () => {
+    setShowConfirmModal(false);
+    setConfirmEventData(null);
+    setRejectReason('');
+  };
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('vi-VN', {
@@ -217,11 +345,30 @@ const ManagerEventsPage = () => {
   };
 
   const getTicketTypeLabel = (ticketType) => {
-    return ticketType === 1 ? 'Miễn phí' : 'Có phí';
+    // Handle both string enum names and number values
+    if (ticketType === 1 || ticketType === "Free" || ticketType === "free") return 'Miễn phí';
+    if (ticketType === 2 || ticketType === "Paid" || ticketType === "paid") return 'Có phí';
+    if (ticketType === 3 || ticketType === "Donate" || ticketType === "donate") return 'Quyên góp';
+    
+    // Default fallback
+    return 'Quyên góp';
   };
 
   const getTicketTypeBadgeColor = (ticketType) => {
-    return ticketType === 1 ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800';
+    // Handle both string enum names and number values
+    if (ticketType === 1 || ticketType === "Free" || ticketType === "free") return 'bg-green-100 text-green-800';
+    if (ticketType === 2 || ticketType === "Paid" || ticketType === "paid") return 'bg-blue-100 text-blue-800';
+    return 'bg-purple-100 text-purple-800';
+  };
+
+  const getTabDisplayName = (tab) => {
+    switch (tab) {
+      case 'all': return 'Tất cả sự kiện';
+      case ConfirmStatus.NeedConfirm: return 'Chờ phê duyệt';
+      case ConfirmStatus.Approve: return 'Đã phê duyệt';
+      case ConfirmStatus.Reject: return 'Bị từ chối';
+      default: return tab;
+    }
   };
 
   const getEventStatus = (event) => {
@@ -246,11 +393,51 @@ const ManagerEventsPage = () => {
   const getEventStats = () => {
     if (!allEvents.length) return { total: 0, upcoming: 0, ongoing: 0, completed: 0, pendingApprovals: 0 };
     
+    // When on a specific approval tab, we should count based on that tab
+    if (activeTab === ConfirmStatus.NeedConfirm) {
+      // Count events needing approval
+      const pendingApprovals = allEvents.filter(event => 
+        'status' in event && event.status === ConfirmStatus.NeedConfirm
+      ).length;
+      
+      return {
+        total: allEvents.length,
+        upcoming: 0,
+        ongoing: 0,
+        completed: 0,
+        pendingApprovals: pendingApprovals
+      };
+    }
+    
+    if (activeTab === ConfirmStatus.Approve) {
+      // Count approved events
+      return {
+        total: allEvents.length,
+        upcoming: 0,
+        ongoing: 0,
+        completed: 0,
+        pendingApprovals: 0
+      };
+    }
+    
+    if (activeTab === ConfirmStatus.Reject) {
+      // Count rejected events
+      return {
+        total: allEvents.length,
+        upcoming: 0,
+        ongoing: 0,
+        completed: 0,
+        pendingApprovals: 0
+      };
+    }
+    
+    // For 'all' tab, calculate based on time-based status
     return allEvents.reduce((acc, event) => {
       const status = getEventStatus(event);
       
-      // Count events needing approval
-      const pendingApproval = event.requireApproval === ConfirmStatus.NeedConfirm ? 1 : 0;
+      // Count events needing approval - check if property exists before accessing
+      // EventsRawResponse doesn't have requireApproval property
+      const pendingApproval = ('status' in event && event.status === ConfirmStatus.NeedConfirm) ? 1 : 0;
       
       return {
         total: acc.total + 1,
@@ -309,9 +496,69 @@ const ManagerEventsPage = () => {
               Quản lý tất cả các sự kiện trong hệ thống
             </p>
           </div>
-          <Button onClick={() => navigate(PATH.MANAGER_EVENTS_NEED_APPROVAL)}>
-            Sự kiện cần duyệt ({stats.pendingApprovals || 4})
-          </Button>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="mb-6">
+          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
+            <button
+              onClick={() => {
+                setActiveTab('all');
+                navigate(PATH.MANAGER_EVENTS);
+              }}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                activeTab === 'all'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Tất cả sự kiện
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab(ConfirmStatus.NeedConfirm);
+                navigate(`${PATH.MANAGER_EVENTS}?tab=${ConfirmStatus.NeedConfirm}`);
+              }}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${
+                activeTab === ConfirmStatus.NeedConfirm
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Cần phê duyệt
+              {stats.pendingApprovals > 0 && (
+                <span className="ml-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {stats.pendingApprovals}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab(ConfirmStatus.Approve);
+                navigate(`${PATH.MANAGER_EVENTS}?tab=${ConfirmStatus.Approve}`);
+              }}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                activeTab === ConfirmStatus.Approve
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Đã phê duyệt
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab(ConfirmStatus.Reject);
+                navigate(`${PATH.MANAGER_EVENTS}?tab=${ConfirmStatus.Reject}`);
+              }}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                activeTab === ConfirmStatus.Reject
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Bị từ chối
+            </button>
+          </div>
         </div>
 
         {/* Statistics Cards */}
@@ -397,7 +644,7 @@ const ManagerEventsPage = () => {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 font-medium">Chờ duyệt</p>
-                    <p className="text-xl font-semibold text-gray-900">4</p>
+                    <p className="text-xl font-semibold text-gray-900">{stats.pendingApprovals}</p>
                   </div>
                 </div>
               </CardContent>
@@ -525,6 +772,10 @@ const ManagerEventsPage = () => {
                     <input type="checkbox" className="mr-2" />
                     <span className="text-sm">Có phí</span>
                   </label>
+                  <label className="flex items-center">
+                    <input type="checkbox" className="mr-2" />
+                    <span className="text-sm">Quyên góp</span>
+                  </label>
                 </div>
               </div>
 
@@ -585,15 +836,13 @@ const ManagerEventsPage = () => {
               <h3 className="text-lg font-semibold text-gray-700 mb-2">
                 {allEvents.length === 0 
                   ? 'Chưa có sự kiện nào' 
-                  : searchTerm || filterStatus !== 'all'
-                    ? 'Không tìm thấy sự kiện phù hợp'
-                    : 'Không có sự kiện'
+                  : 'Không có sự kiện'
                 }
               </h3>
               <p className="text-gray-500 mb-6">
                 {allEvents.length === 0 
                   ? 'Bắt đầu quản lý sự kiện trong hệ thống!'
-                  : 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm để tìm sự kiện bạn cần.'
+                  : `Không có sự kiện nào trong danh mục "${getTabDisplayName(activeTab)}".`
                 }
               </p>
             </CardContent>
@@ -608,28 +857,32 @@ const ManagerEventsPage = () => {
                 const StatusIcon = statusConfig.icon;
 
                 return (
-                  <div key={event.eventId} className="border-b border-gray-100 p-6 last:border-b-0">
-                    <div className="flex items-start gap-4">
-                      {event.imgListEvent && event.imgListEvent.length > 0 ? (
-                        <img
-                          src={event.imgListEvent[0]}
-                          alt={event.title}
-                          className="w-20 h-16 object-cover rounded-lg"
-                        />
-                      ) : (
-                        <div className="w-20 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
-                          <Calendar className="h-6 w-6 text-blue-400" />
-                        </div>
-                      )}
+                  <div key={event.eventId} className="border-b border-gray-100 p-6 last:border-b-0 mb-6 rounded-lg shadow-sm">
+                    <div className="flex flex-col md:flex-row items-start gap-4">
+                      {/* Event Image - Larger and more prominent */}
+                      <div className="w-full md:w-48 h-32 flex-shrink-0">
+                        {event.imgListEvent && event.imgListEvent.length > 0 ? (
+                          <img
+                            src={event.imgListEvent[0]}
+                            alt={event.title}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
+                            <Calendar className="h-8 w-8 text-blue-400" />
+                          </div>
+                        )}
+                      </div>
                       
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-semibold text-gray-900 mb-1 hover:text-blue-600 cursor-pointer"
+                      {/* Event Details */}
+                      <div className="flex-1 w-full">
+                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900 mb-1 hover:text-blue-600 cursor-pointer text-lg"
                                 onClick={() => handleViewEvent(event.eventId)}>
                               {event.title}
                             </h3>
-                            <div className="flex items-center gap-3 text-sm text-gray-600 mb-2">
+                            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-2">
                               <span className="flex items-center gap-1">
                                 <Calendar className="h-4 w-4" />
                                 {formatDate(event.startTime).split(' ')[0]}
@@ -640,18 +893,32 @@ const ManagerEventsPage = () => {
                               </span>
                               <span className="flex items-center gap-1">
                                 <MapPin className="h-4 w-4" />
-                                {event.isOnlineEvent ? 'Trực tuyến' : event.locationName}
+                                {event.isOnlineEvent ? 'Trực tuyến' : (event.locationName || 'Không có địa điểm')}
                               </span>
-                              <span className="flex items-center gap-1">
-                                <Users className="h-4 w-4" />
-                                0/{event.totalTickets}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <DollarSign className="h-4 w-4" />
-                                {event.ticketType === 1 ? 'Miễn phí' : `${event.ticketPrice?.toLocaleString('vi-VN')} đ`}
-                              </span>
+                              {/* Display ticket info if available */}
+                              {('totalPerson' in event) && (
+                                <span className="flex items-center gap-1">
+                                  <Users className="h-4 w-4" />
+                                  {event.totalPersonJoin || 0}/{event.totalPerson}
+                                </span>
+                              )}
+                              {/* Display ticket price if available */}
+                              {('price' in event) && (
+                                <span className="flex items-center gap-1">
+                                  <DollarSign className="h-4 w-4" />
+                                  {/* Handle both string and number ticketType values */}
+                                  {(event.ticketType === 1 || event.ticketType === "Free" || event.ticketType === "free") ? 'Miễn phí' : `${event.price?.toLocaleString('vi-VN')} đ`}
+                                </span>
+                              )}
+                              {/* Fallback for events without ticket info (EventsRawResponse) */}
+                              {!('price' in event) && !('totalPerson' in event) && (
+                                <span className="flex items-center gap-1">
+                                  <DollarSign className="h-4 w-4" />
+                                  {getTicketTypeLabel(event.ticketType)}
+                                </span>
+                              )}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2 mt-2">
                               <Badge className={statusConfig.color}>
                                 <StatusIcon className="h-3 w-3 mr-1" />
                                 {statusConfig.label}
@@ -665,59 +932,76 @@ const ManagerEventsPage = () => {
                               {event.eventCategoryName && (
                                 <Badge variant="outline">{event.eventCategoryName}</Badge>
                               )}
-                              {/* Display approval status */}
-                              {event.requireApproval && (
+                              {/* Display approval status - only for EventsResponse */}
+                              {('status' in event) && event.status && (
                                 <Badge 
                                   variant="outline" 
                                   className={
-                                    event.requireApproval === ConfirmStatus.Approve ? 'bg-green-100 text-green-800 border-green-200' :
-                                    event.requireApproval === ConfirmStatus.Reject ? 'bg-red-100 text-red-800 border-red-200' :
+                                    event.status === ConfirmStatus.Approve ? 'bg-green-100 text-green-800 border-green-200' :
+                                    event.status === ConfirmStatus.Reject ? 'bg-red-100 text-red-800 border-red-200' :
                                     'bg-yellow-100 text-yellow-800 border-yellow-200'
                                   }
                                 >
-                                  {ConfirmStatusDisplay[event.requireApproval] || event.requireApproval}
+                                  {ConfirmStatusDisplay[event.status] || event.status}
                                 </Badge>
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-1">
                             <Button variant="ghost" size="sm" onClick={() => handleViewEvent(event.eventId)}>
                               <Eye className="h-4 w-4" />
                             </Button>
                             <Button variant="ghost" size="sm" onClick={() => handleEditEvent(event.eventId)}>
                               <Edit className="h-4 w-4" />
                             </Button>
+                            {/* Show approval buttons for events that need approval, regardless of current tab */}
+                            {('status' in event) && event.status === ConfirmStatus.NeedConfirm && (
+                              <>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => handleApproveEvent(event.eventId)}
+                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                >
+                                  Duyệt
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => handleRejectEvent(event.eventId)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  Từ chối
+                                </Button>
+                              </>
+                            )}
                             <Button variant="ghost" size="sm" onClick={() => handleDeleteEvent(event.eventId)}>
                               <Trash2 className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
                         
-                        <div className="grid grid-cols-5 gap-8 mt-4 pt-4 border-t border-gray-100">
+                        {/* Statistics in a more compact format */}
+                        <div className="grid grid-cols-3 gap-4 mt-4 pt-3 border-t border-gray-100">
                           <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-1">Lượt xem</p>
-                            <p className="text-lg font-semibold">0</p>
+                            <p className="text-xs text-gray-500 mb-1">Lượt xem</p>
+                            <p className="text-base font-semibold">0</p>
                           </div>
                           <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-1">Đăng ký</p>
-                            <p className="text-lg font-semibold">0</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-1">Giá vé</p>
-                            <p className="text-lg font-semibold">
-                              {event.ticketType === 1 ? 'Miễn phí' : `${event.ticketPrice?.toLocaleString('vi-VN')} đ`}
+                            <p className="text-xs text-gray-500 mb-1">Đăng ký</p>
+                            <p className="text-base font-semibold">
+                              {('totalPersonJoin' in event) ? event.totalPersonJoin : 0}
                             </p>
                           </div>
                           <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-1">Hoạt tích</p>
-                            <p className="text-lg font-semibold">0</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-1">Danh giá</p>
-                            <p className="text-lg font-semibold">Chưa có</p>
+                            <p className="text-xs text-gray-500 mb-1">Giá vé</p>
+                            <p className="text-base font-semibold">
+                              {'price' in event 
+                                ? ((event.ticketType === 1 || event.ticketType === "Free" || event.ticketType === "free") ? 'Miễn phí' : `${event.price?.toLocaleString('vi-VN')} đ`)
+                                : getTicketTypeLabel(event.ticketType)}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -758,6 +1042,68 @@ const ManagerEventsPage = () => {
             >
               Sau
             </Button>
+          </div>
+        )}
+
+        {/* Confirmation Modal */}
+        {showConfirmModal && confirmEventData && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full border border-gray-200">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {confirmAction === 'approve' ? 'Xác nhận duyệt sự kiện' : 'Từ chối sự kiện'}
+                  </h3>
+                  <button
+                    onClick={handleCancelAction}
+                    className="text-gray-400 hover:text-gray-500"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+                
+                <div className="mb-6">
+                  <p className="text-gray-700 mb-2">
+                    <span className="font-medium">Sự kiện:</span> {confirmEventData.title}
+                  </p>
+                  
+                  {confirmAction === 'approve' ? (
+                    <p className="text-gray-600">
+                      Bạn có chắc chắn muốn <span className="font-semibold text-green-600">duyệt</span> sự kiện này không?
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-gray-600 mb-4">
+                        Vui lòng nhập lý do từ chối sự kiện:
+                      </p>
+                      <textarea
+                        value={rejectReason}
+                        onChange={(e) => setRejectReason(e.target.value)}
+                        placeholder="Nhập lý do từ chối..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        rows="4"
+                      />
+                    </>
+                  )}
+                </div>
+                
+                <div className="flex justify-end gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={handleCancelAction}
+                  >
+                    Hủy
+                  </Button>
+                  <Button
+                    onClick={handleConfirmAction}
+                    className={confirmAction === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+                    disabled={confirmAction === 'reject' && !rejectReason.trim()}
+                  >
+                    {confirmAction === 'approve' ? 'Duyệt' : 'Từ chối'}
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

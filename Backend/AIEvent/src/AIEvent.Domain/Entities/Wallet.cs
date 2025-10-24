@@ -14,6 +14,5 @@ namespace AIEvent.Domain.Entities
         [Column(TypeName = "decimal(18,2)")]
         public decimal Balance { get; set; }
         public ICollection<WalletTransaction> WalletTransactions { get; set; } = new List<WalletTransaction>();
-        public ICollection<TopupRequest> TopupRequests { get; set; } = new List<TopupRequest>();
     }
 }
