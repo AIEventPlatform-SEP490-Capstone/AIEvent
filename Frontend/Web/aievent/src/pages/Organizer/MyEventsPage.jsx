@@ -782,27 +782,31 @@ const MyEventsPage = () => {
 
                 return (
                   <div key={event.eventId} className="border-b border-gray-100 p-6 last:border-b-0 mb-6 rounded-lg shadow-sm">
-                    <div className="flex items-start gap-4">
-                      {event.imgListEvent && event.imgListEvent.length > 0 ? (
-                        <img
-                          src={event.imgListEvent[0]}
-                          alt={event.title}
-                          className="w-20 h-16 object-cover rounded-lg"
-                        />
-                      ) : (
-                        <div className="w-20 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
-                          <Calendar className="h-6 w-6 text-blue-400" />
-                        </div>
-                      )}
-                        
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-semibold text-gray-900 mb-1 hover:text-blue-600 cursor-pointer"
+                    <div className="flex flex-col md:flex-row items-start gap-4">
+                      {/* Event Image - Larger and more prominent */}
+                      <div className="w-full md:w-48 h-32 flex-shrink-0">
+                        {event.imgListEvent && event.imgListEvent.length > 0 ? (
+                          <img
+                            src={event.imgListEvent[0]}
+                            alt={event.title}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
+                            <Calendar className="h-8 w-8 text-blue-400" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Event Details */}
+                      <div className="flex-1 w-full">
+                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900 mb-1 hover:text-blue-600 cursor-pointer text-lg"
                                 onClick={() => handleViewEvent(event.eventId)}>
                               {event.title}
                             </h3>
-                            <div className="flex items-center gap-3 text-sm text-gray-600 mb-2">
+                            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-2">
                               <span className="flex items-center gap-1">
                                 <Calendar className="h-4 w-4" />
                                 {formatDate(event.startTime).split(' ')[0]}
@@ -838,7 +842,7 @@ const MyEventsPage = () => {
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2 mt-2">
                               <Badge className={statusConfig.color}>
                                 <StatusIcon className="h-3 w-3 mr-1" />
                                 {statusConfig.label}
@@ -862,10 +866,11 @@ const MyEventsPage = () => {
                                   {ConfirmStatusDisplay[event.status] || event.status}
                                 </Badge>
                               )}
-                              {/* Display draft status - only for draft events (EventsRawResponse) or unpublished events */}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-1">
                             <Button variant="ghost" size="sm" onClick={() => handleViewEvent(event.eventId)}>
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -875,38 +880,28 @@ const MyEventsPage = () => {
                             <Button variant="ghost" size="sm" onClick={() => handleDeleteEvent(event.eventId)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
                           </div>
                         </div>
                         
-                        <div className="grid grid-cols-5 gap-8 mt-4 pt-4 border-t border-gray-100">
+                        {/* Statistics in a more compact format */}
+                        <div className="grid grid-cols-3 gap-4 mt-4 pt-3 border-t border-gray-100">
                           <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-1">Lượt xem</p>
-                            <p className="text-lg font-semibold">0</p>
+                            <p className="text-xs text-gray-500 mb-1">Lượt xem</p>
+                            <p className="text-base font-semibold">0</p>
                           </div>
                           <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-1">Đăng ký</p>
-                            <p className="text-lg font-semibold">
+                            <p className="text-xs text-gray-500 mb-1">Đăng ký</p>
+                            <p className="text-base font-semibold">
                               {('totalPersonJoin' in event) ? event.totalPersonJoin : 0}
                             </p>
                           </div>
                           <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-1">Giá vé</p>
-                            <p className="text-lg font-semibold">
+                            <p className="text-xs text-gray-500 mb-1">Giá vé</p>
+                            <p className="text-base font-semibold">
                               {'price' in event 
                                 ? ((event.ticketType === 1 || event.ticketType === "Free" || event.ticketType === "free") ? 'Miễn phí' : `${event.price?.toLocaleString('vi-VN')} đ`)
                                 : getTicketTypeLabel(event.ticketType)}
                             </p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-1">Hoạt tích</p>
-                            <p className="text-lg font-semibold">0</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-1">Danh giá</p>
-                            <p className="text-lg font-semibold">Chưa có</p>
                           </div>
                         </div>
                       </div>

@@ -25,7 +25,8 @@ import {
   CalendarDays,
   DollarSign,
   ThumbsUp,
-  ThumbsDown
+  ThumbsDown,
+  X
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
@@ -56,6 +57,10 @@ const ManagerEventsPage = () => {
   const [viewMode, setViewMode] = useState('list');
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
   const [activeTab, setActiveTab] = useState('all'); // For switching between event statuses
+  const [showConfirmModal, setShowConfirmModal] = useState(false); // For showing confirmation modal
+  const [confirmEventData, setConfirmEventData] = useState(null); // Store event data for confirmation
+  const [confirmAction, setConfirmAction] = useState(''); // Store action type (approve/reject)
+  const [rejectReason, setRejectReason] = useState(''); // Store reject reason
   const pageSize = 12;
 
   // Load events initially and when tab changes
@@ -266,47 +271,66 @@ const ManagerEventsPage = () => {
 
   // Handle event approval
   const handleApproveEvent = async (eventId) => {
-    try {
-      const response = await confirmEventAPI(eventId, {
-        status: ConfirmStatus.Approve
-      });
-      
-      if (response) {
-        toast.success('Sự kiện đã được phê duyệt thành công!');
-        // Reload events to reflect the change
-        loadEvents();
-      }
-    } catch (error) {
-      console.error('Error approving event:', error);
-      toast.error('Không thể phê duyệt sự kiện. Vui lòng thử lại sau.');
-    }
+    const event = allEvents.find(e => e.eventId === eventId);
+    setConfirmEventData(event);
+    setConfirmAction('approve');
+    setShowConfirmModal(true);
   };
 
   // Handle event rejection
   const handleRejectEvent = async (eventId) => {
-    // In a real implementation, you might want to show a modal to get the reason
-    const reason = prompt('Vui lòng nhập lý do từ chối sự kiện này:');
-    
-    if (reason === null) {
-      // User cancelled
-      return;
-    }
-    
+    const event = allEvents.find(e => e.eventId === eventId);
+    setConfirmEventData(event);
+    setConfirmAction('reject');
+    setRejectReason('');
+    setShowConfirmModal(true);
+  };
+
+  // Confirm action handler
+  const handleConfirmAction = async () => {
+    if (!confirmEventData) return;
+
     try {
-      const response = await confirmEventAPI(eventId, {
-        status: ConfirmStatus.Reject,
-        reason: reason
-      });
-      
-      if (response) {
-        toast.success('Sự kiện đã bị từ chối!');
-        // Reload events to reflect the change
-        loadEvents();
+      if (confirmAction === 'approve') {
+        const response = await confirmEventAPI(confirmEventData.eventId, {
+          status: ConfirmStatus.Approve
+        });
+        
+        if (response) {
+          toast.success('Sự kiện đã được phê duyệt thành công!');
+        }
+      } else if (confirmAction === 'reject') {
+        if (!rejectReason.trim()) {
+          toast.error('Vui lòng nhập lý do từ chối');
+          return;
+        }
+        
+        const response = await confirmEventAPI(confirmEventData.eventId, {
+          status: ConfirmStatus.Reject,
+          reason: rejectReason
+        });
+        
+        if (response) {
+          toast.success('Sự kiện đã bị từ chối!');
+        }
       }
+      
+      // Close modal and reload events
+      setShowConfirmModal(false);
+      setConfirmEventData(null);
+      setRejectReason('');
+      loadEvents();
     } catch (error) {
-      console.error('Error rejecting event:', error);
-      toast.error('Không thể từ chối sự kiện. Vui lòng thử lại sau.');
+      console.error('Error processing event:', error);
+      toast.error('Có lỗi xảy ra. Vui lòng thử lại sau.');
     }
+  };
+
+  // Cancel action handler
+  const handleCancelAction = () => {
+    setShowConfirmModal(false);
+    setConfirmEventData(null);
+    setRejectReason('');
   };
 
   const formatDate = (dateString) => {
@@ -834,27 +858,31 @@ const ManagerEventsPage = () => {
 
                 return (
                   <div key={event.eventId} className="border-b border-gray-100 p-6 last:border-b-0 mb-6 rounded-lg shadow-sm">
-                    <div className="flex items-start gap-4">
-                      {event.imgListEvent && event.imgListEvent.length > 0 ? (
-                        <img
-                          src={event.imgListEvent[0]}
-                          alt={event.title}
-                          className="w-20 h-16 object-cover rounded-lg"
-                        />
-                      ) : (
-                        <div className="w-20 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
-                          <Calendar className="h-6 w-6 text-blue-400" />
-                        </div>
-                      )}
+                    <div className="flex flex-col md:flex-row items-start gap-4">
+                      {/* Event Image - Larger and more prominent */}
+                      <div className="w-full md:w-48 h-32 flex-shrink-0">
+                        {event.imgListEvent && event.imgListEvent.length > 0 ? (
+                          <img
+                            src={event.imgListEvent[0]}
+                            alt={event.title}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
+                            <Calendar className="h-8 w-8 text-blue-400" />
+                          </div>
+                        )}
+                      </div>
                       
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-semibold text-gray-900 mb-1 hover:text-blue-600 cursor-pointer"
+                      {/* Event Details */}
+                      <div className="flex-1 w-full">
+                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900 mb-1 hover:text-blue-600 cursor-pointer text-lg"
                                 onClick={() => handleViewEvent(event.eventId)}>
                               {event.title}
                             </h3>
-                            <div className="flex items-center gap-3 text-sm text-gray-600 mb-2">
+                            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-2">
                               <span className="flex items-center gap-1">
                                 <Calendar className="h-4 w-4" />
                                 {formatDate(event.startTime).split(' ')[0]}
@@ -890,7 +918,7 @@ const ManagerEventsPage = () => {
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2 mt-2">
                               <Badge className={statusConfig.color}>
                                 <StatusIcon className="h-3 w-3 mr-1" />
                                 {statusConfig.label}
@@ -919,15 +947,17 @@ const ManagerEventsPage = () => {
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-1">
                             <Button variant="ghost" size="sm" onClick={() => handleViewEvent(event.eventId)}>
                               <Eye className="h-4 w-4" />
                             </Button>
                             <Button variant="ghost" size="sm" onClick={() => handleEditEvent(event.eventId)}>
                               <Edit className="h-4 w-4" />
                             </Button>
-                            {/* Show approval buttons only for events that need approval */}
-                            {activeTab === ConfirmStatus.NeedConfirm && ('status' in event) && event.status === ConfirmStatus.NeedConfirm && (
+                            {/* Show approval buttons for events that need approval, regardless of current tab */}
+                            {('status' in event) && event.status === ConfirmStatus.NeedConfirm && (
                               <>
                                 <Button 
                                   variant="ghost" 
@@ -935,7 +965,7 @@ const ManagerEventsPage = () => {
                                   onClick={() => handleApproveEvent(event.eventId)}
                                   className="text-green-600 hover:text-green-700 hover:bg-green-50"
                                 >
-                                  <ThumbsUp className="h-4 w-4" />
+                                  Duyệt
                                 </Button>
                                 <Button 
                                   variant="ghost" 
@@ -943,45 +973,35 @@ const ManagerEventsPage = () => {
                                   onClick={() => handleRejectEvent(event.eventId)}
                                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                 >
-                                  <ThumbsDown className="h-4 w-4" />
+                                  Từ chối
                                 </Button>
                               </>
                             )}
                             <Button variant="ghost" size="sm" onClick={() => handleDeleteEvent(event.eventId)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
                           </div>
                         </div>
                         
-                        <div className="grid grid-cols-5 gap-8 mt-4 pt-4 border-t border-gray-100">
+                        {/* Statistics in a more compact format */}
+                        <div className="grid grid-cols-3 gap-4 mt-4 pt-3 border-t border-gray-100">
                           <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-1">Lượt xem</p>
-                            <p className="text-lg font-semibold">0</p>
+                            <p className="text-xs text-gray-500 mb-1">Lượt xem</p>
+                            <p className="text-base font-semibold">0</p>
                           </div>
                           <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-1">Đăng ký</p>
-                            <p className="text-lg font-semibold">
+                            <p className="text-xs text-gray-500 mb-1">Đăng ký</p>
+                            <p className="text-base font-semibold">
                               {('totalPersonJoin' in event) ? event.totalPersonJoin : 0}
                             </p>
                           </div>
                           <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-1">Giá vé</p>
-                            <p className="text-lg font-semibold">
+                            <p className="text-xs text-gray-500 mb-1">Giá vé</p>
+                            <p className="text-base font-semibold">
                               {'price' in event 
                                 ? ((event.ticketType === 1 || event.ticketType === "Free" || event.ticketType === "free") ? 'Miễn phí' : `${event.price?.toLocaleString('vi-VN')} đ`)
                                 : getTicketTypeLabel(event.ticketType)}
                             </p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-1">Hoạt tích</p>
-                            <p className="text-lg font-semibold">0</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-1">Danh giá</p>
-                            <p className="text-lg font-semibold">Chưa có</p>
                           </div>
                         </div>
                       </div>
@@ -1022,6 +1042,68 @@ const ManagerEventsPage = () => {
             >
               Sau
             </Button>
+          </div>
+        )}
+
+        {/* Confirmation Modal */}
+        {showConfirmModal && confirmEventData && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full border border-gray-200">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {confirmAction === 'approve' ? 'Xác nhận duyệt sự kiện' : 'Từ chối sự kiện'}
+                  </h3>
+                  <button
+                    onClick={handleCancelAction}
+                    className="text-gray-400 hover:text-gray-500"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+                
+                <div className="mb-6">
+                  <p className="text-gray-700 mb-2">
+                    <span className="font-medium">Sự kiện:</span> {confirmEventData.title}
+                  </p>
+                  
+                  {confirmAction === 'approve' ? (
+                    <p className="text-gray-600">
+                      Bạn có chắc chắn muốn <span className="font-semibold text-green-600">duyệt</span> sự kiện này không?
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-gray-600 mb-4">
+                        Vui lòng nhập lý do từ chối sự kiện:
+                      </p>
+                      <textarea
+                        value={rejectReason}
+                        onChange={(e) => setRejectReason(e.target.value)}
+                        placeholder="Nhập lý do từ chối..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        rows="4"
+                      />
+                    </>
+                  )}
+                </div>
+                
+                <div className="flex justify-end gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={handleCancelAction}
+                  >
+                    Hủy
+                  </Button>
+                  <Button
+                    onClick={handleConfirmAction}
+                    className={confirmAction === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+                    disabled={confirmAction === 'reject' && !rejectReason.trim()}
+                  >
+                    {confirmAction === 'approve' ? 'Duyệt' : 'Từ chối'}
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
