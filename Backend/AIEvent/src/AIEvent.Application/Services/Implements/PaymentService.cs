@@ -26,9 +26,9 @@ namespace AIEvent.Application.Services.Implements
             _transactionHelper = transactionHelper;
         }
 
-        public async Task<Result<CreatePaymentResult>> CreatePaymentAsync(Guid userId, long amount)
+        public async Task<Result<CreatePaymentResult>> CreatePaymentTopUpAsync(Guid userId, long amount)
         {
-            if (userId == Guid.Empty || amount < 10000)
+            if (userId == Guid.Empty)
                 return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
 
             var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
@@ -42,50 +42,67 @@ namespace AIEvent.Application.Services.Implements
             if (wallet == null || wallet.IsDeleted == true)
                 return ErrorResponse.FailureResult("Wallet not found or deleted", ErrorCodes.NotFound);
 
-            long orderCode = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            var expiredAt = DateTimeOffset.UtcNow.AddMinutes(15).ToUnixTimeSeconds();
+            var result = await CreatePaymentAsync("Nạp tiền vào ví", amount, wallet, userId, TransactionType.Topup, TransactionDirection.In, ReferenceType.TopUpRequest);
 
-            var items = new List<ItemData>
-            {
-                new ItemData("Nạp tiền vào ví", 1,(int) amount)
-            };
+            if(!result.IsSuccess)
+                ErrorResponse.FailureResult(result.Error!.Message, result.Error!.StatusCode);
 
-            var paymentData = new PaymentData(
-                orderCode: orderCode,
-                amount: (int)amount,
-                description: $"Nạp tiền vào ví",
-                items: items,
-                cancelUrl: _configuration["PayOS:CancelUrl"] ?? "https://yourdomain.com/payment/cancel",
-                returnUrl: _configuration["PayOS:ReturnUrl"] ?? "https://yourdomain.com/payment/success",
-                expiredAt: expiredAt
-            );
+            return Result<CreatePaymentResult>.Success(result.Value!);
+        }
+
+        private async Task<Result<CreatePaymentResult>> CreatePaymentAsync(string description, 
+                                                                    long amount,
+                                                                    Wallet wallet, 
+                                                                    Guid userId, 
+                                                                    TransactionType type,
+                                                                    TransactionDirection direction,
+                                                                    ReferenceType referenceType)
+        {
 
             try
             {
+                long orderCode = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                var expiredAt = DateTimeOffset.UtcNow.AddMinutes(15).ToUnixTimeSeconds();
+
+                var items = new List<ItemData>
+                {
+                    new ItemData(description, 1,(int) amount)
+                };
+                var paymentData = new PaymentData(
+                    orderCode: orderCode,
+                    amount: (int)amount,
+                    description: description,
+                    items: items,
+                    cancelUrl: _configuration["PayOS:CancelUrl"] ?? "https://yourdomain.com/payment/cancel",
+                    returnUrl: _configuration["PayOS:ReturnUrl"] ?? "https://yourdomain.com/payment/success",
+                    expiredAt: expiredAt
+                );
                 var result = await _payOS.createPaymentLink(paymentData);
                 await _unitOfWork.WalletTransactionRepository.AddAsync(new WalletTransaction
                 {
-                    OrderCode = orderCode.ToString(),
+                    OrderCode = orderCode.ToString() + userId,
                     WalletId = wallet.Id,
                     CreatedBy = userId.ToString(),
                     Amount = amount,
                     BalanceBefore = wallet.Balance,
-                    BalanceAfter = wallet.Balance,
-                    Type = TransactionType.Topup,
-                    Direction = TransactionDirection.In,
+                    BalanceAfter = wallet.Balance + amount,
+                    Type = type,
+                    Direction = direction,
                     Status = TransactionStatus.Pending,
-                    Description = "Nạp tiền vào ví",
+                    Description = description,
                     ReferenceId = userId,
-                    ReferenceType = ReferenceType.TopUpRequest
+                    ReferenceType = referenceType
                 });
                 await _unitOfWork.SaveChangesAsync();
                 return Result<CreatePaymentResult>.Success(result);
+
             }
             catch (Exception ex)
             {
                 return ErrorResponse.FailureResult(
                     $"Failed to create payment link: {ex.Message}", ErrorCodes.InternalServerError);
             }
+
         }
 
         public async Task<Result> PaymentWebhookAsync(WebhookType webhookBody)
