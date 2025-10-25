@@ -28,6 +28,7 @@ import ApplicationStatusPage from "../pages/User/ApplicationStatusPage";
 import UserProfilePage from "../pages/User/UserProfilePage";
 import TagManagementPage from "../pages/Shared/TagManagementPage";
 import OrganizerProfilePage from "../pages/Organizer/OrganizerProfilePage";
+import WalletDashboard from "../pages/Wallet/WalletDashboard";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -53,7 +54,7 @@ export default function useRouterElement() {
           path: "wallet",
           element: (
             <ProtectedRoute>
-              <div>Wallet Page</div>
+              <WalletDashboard />
             </ProtectedRoute>
           ),
         },

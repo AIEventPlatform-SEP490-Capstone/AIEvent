@@ -7,6 +7,7 @@ import appReducer from "./slices/appSlice";
 import interestsReducer from "./slices/interestsSlice";
 import eventsReducer from "./slices/eventsSlice";
 import userProfileReducer from "./slices/userProfileSlice";
+import walletReducer from "./slices/walletSlice";
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ export const store = configureStore({
     interests: interestsReducer,
     events: eventsReducer,
     userProfile: userProfileReducer,
+    wallet: walletReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
