@@ -119,6 +119,7 @@ namespace AIEvent.Application.Services.Implements
 
                     ticketType.RemainingQuantity -= item.Quantity;
                     ticketType.SoldQuantity += item.Quantity;
+                    ticketType.SetUpdated(userId.ToString());
                     ticketTypesToUpdate.Add(ticketType);
                 }
 
@@ -377,7 +378,6 @@ namespace AIEvent.Application.Services.Implements
                         t.Id == ticketId &&
                         t.UserId == userId &&
                         !t.IsDeleted &&
-                        !t.TicketType.IsDeleted &&
                         !t.TicketType.Event.IsDeleted);
 
                 if (ticketData == null)
@@ -396,6 +396,7 @@ namespace AIEvent.Application.Services.Implements
 
                 ticketType.RemainingQuantity++;
                 ticketType.SoldQuantity--;
+                ticketType.SetUpdated(userId.ToString());
                 eventEntity.RemainingTickets++;
                 eventEntity.SoldQuantity--;
 

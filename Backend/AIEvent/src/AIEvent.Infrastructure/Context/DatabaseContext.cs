@@ -275,7 +275,6 @@ namespace AIEvent.Infrastructure.Context
 
                 entity.HasIndex(td => new { td.EventId, td.TicketName }).IsUnique();
                 entity.HasIndex(e => e.RefundRuleId).HasDatabaseName("IX_TicketDetail_RefundRuleId");
-                entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_TicketDetail_IsDeleted");
             });
 
             // ----------------- UserAction -----------------
