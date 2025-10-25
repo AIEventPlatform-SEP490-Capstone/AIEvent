@@ -69,9 +69,8 @@ export const eventAPI = {
     if (eventData.linkRef) {
       formData.append('LinkRef', eventData.linkRef);
     }
-    if (eventData.city) {
-      formData.append('City', eventData.city);
-    }
+    // Always include City field, even if empty
+    formData.append('City', eventData.city || '');
     if (eventData.address) {
       formData.append('Address', eventData.address);
     }
@@ -148,7 +147,9 @@ export const eventAPI = {
     formData.append('EndTime', eventData.endTime);
     formData.append('TotalTickets', eventData.totalTickets);
     formData.append('TicketType', eventData.ticketType);
-    formData.append('RequireApproval', eventData.requireApproval || ConfirmStatus.NeedConfirm);
+    if (eventData.requireApproval !== undefined) {
+      formData.append('RequireApproval', eventData.requireApproval);
+    }
     formData.append('Publish', eventData.publish || false);
     
     // Optional fields
@@ -200,6 +201,13 @@ export const eventAPI = {
       });
     }
 
+    // Add image URLs to remove
+    if (eventData.removeImageUrls && eventData.removeImageUrls.length > 0) {
+      eventData.removeImageUrls.forEach((imageUrl) => {
+        formData.append('RemoveImageUrls', imageUrl);
+      });
+    }
+
     // Add ticket details
     if (eventData.ticketDetails && eventData.ticketDetails.length > 0) {
       eventData.ticketDetails.forEach((ticket, index) => {
@@ -213,10 +221,31 @@ export const eventAPI = {
       });
     }
 
+    // Add ticket detail IDs to remove
+    if (eventData.removeTicketDetailIds && eventData.removeTicketDetailIds.length > 0) {
+      eventData.removeTicketDetailIds.forEach((id) => {
+        formData.append('RemoveTicketDetailIds', id);
+      });
+    }
+
     // Add tags
     if (eventData.tags && eventData.tags.length > 0) {
       eventData.tags.forEach((tag, index) => {
         formData.append(`Tags[${index}].TagId`, tag.tagId);
+      });
+    }
+
+    // Add tag IDs to add
+    if (eventData.addTagIds && eventData.addTagIds.length > 0) {
+      eventData.addTagIds.forEach((id) => {
+        formData.append('AddTagIds', id);
+      });
+    }
+
+    // Add tag IDs to remove
+    if (eventData.removeTagIds && eventData.removeTagIds.length > 0) {
+      eventData.removeTagIds.forEach((id) => {
+        formData.append('RemoveTagIds', id);
       });
     }
 

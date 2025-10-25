@@ -54,6 +54,7 @@ const createEventSchema = z.object({
   isOnlineEvent: z.boolean().default(false),
   locationName: z.string().optional(),
   address: z.string().optional(),
+  city: z.string().optional(),
   linkRef: z.string().optional(),
   eventCategoryId: z.string().optional(),
   ticketType: z.string().min(1, 'Loại vé là bắt buộc'),
@@ -76,6 +77,14 @@ const createEventSchema = z.object({
 }, {
   message: 'Địa điểm là bắt buộc cho sự kiện offline',
   path: ['locationName'],
+}).refine((data) => {
+  if (!data.isOnlineEvent && !data.city) {
+    return false;
+  }
+  return true;
+}, {
+  message: 'Thành phố là bắt buộc cho sự kiện offline',
+  path: ['city'],
 }).refine((data) => {
   const saleStart = new Date(data.saleStartTime);
   const saleEnd = new Date(data.saleEndTime);
@@ -128,6 +137,7 @@ const CreateEventPage = () => {
       endTime: '',
       locationName: '',
       address: '',
+      city: '', // Add city field
       linkRef: '',
       eventCategoryId: '',
       isOnlineEvent: false,
@@ -252,7 +262,7 @@ const CreateEventPage = () => {
       isOnlineEvent: formData.isOnlineEvent || false,
       locationName: formData.locationName || '',
       address: formData.address || '',
-      city: null,
+      city: formData.city || '', // Add city field
       latitude: null,
       longitude: null,
       totalTickets: totalTickets,
@@ -261,7 +271,7 @@ const CreateEventPage = () => {
       ticketType: parseInt(formData.ticketType) || 1,
       imgListEvent: imgListEvent,
       requireApproval: formData.requireApproval === ConfirmStatus.Approve ? 1 : 
-                     formData.requireApproval === ConfirmStatus.Reject ? -1 : 0, // For preview compatibility
+                     formData.requireApproval === ConfirmStatus.Reject ? -1 : 0,
       eventCategoryName: selectedCategory ? selectedCategory.eventCategoryName : '',
       eventTags: eventTags, // Only use selected tags
       ticketDetails: ticketDetails,
@@ -321,14 +331,14 @@ const CreateEventPage = () => {
       isOnlineEvent: data.isOnlineEvent || false,
       locationName: data.locationName || '',
       address: data.address || '',
-      city: null, // Add city field (từ logic cũ)
-      latitude: null, // Add latitude (từ logic cũ)
-      longitude: null, // Add longitude (từ logic cũ)
+      city: data.city || '', // Add city field
+      latitude: null,
+      longitude: null,
       totalTickets: totalTickets,
       ticketType: parseInt(data.ticketType),
       requireApproval: data.requireApproval,
       publish: data.publish || false,
-      images: validImages, // Use validated images
+      images: validImages,
       eventCategoryId: data.eventCategoryId,
       tags: reduxSelectedTags.map(tag => ({ tagId: tag.tagId })),
       refundRules: selectedRules.map(rule => ({ ruleRefundId: rule.ruleRefundId })),
@@ -610,6 +620,16 @@ const CreateEventPage = () => {
                       checked={watchIsOnline}
                       onCheckedChange={(checked) => setValue('isOnlineEvent', checked)}
                       className="mt-2"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="city" className="text-base font-semibold">Thành phố</Label>
+                    <Input
+                      id="city"
+                      {...register('city')}
+                      placeholder="Nhập thành phố"
+                      className="mt-2 h-12 text-base border-2 focus:border-green-500"
                     />
                   </div>
 

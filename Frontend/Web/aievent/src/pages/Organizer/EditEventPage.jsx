@@ -51,6 +51,7 @@ const editEventSchema = z.object({
   isOnlineEvent: z.boolean().default(false),
   locationName: z.string().optional(),
   address: z.string().optional(),
+  city: z.string().optional(),
   linkRef: z.string().optional(),
   eventCategoryId: z.string().optional(),
   ticketType: z.string().min(1, 'Loại vé là bắt buộc'),
@@ -72,6 +73,14 @@ const editEventSchema = z.object({
 }, {
   message: 'Địa điểm là bắt buộc cho sự kiện offline',
   path: ['locationName'],
+}).refine((data) => {
+  if (!data.isOnlineEvent && !data.city) {
+    return false;
+  }
+  return true;
+}, {
+  message: 'Thành phố là bắt buộc cho sự kiện offline',
+  path: ['city'],
 }).refine((data) => {
   const saleStart = new Date(data.saleStartTime);
   const saleEnd = new Date(data.saleEndTime);
@@ -101,6 +110,8 @@ const EditEventPage = () => {
   const [selectedImages, setSelectedImages] = useState([]);
   const [imagePreview, setImagePreview] = useState([]);
   const [existingImages, setExistingImages] = useState([]);
+  const [removedImages, setRemovedImages] = useState([]); // Track removed images
+  const [removedTickets, setRemovedTickets] = useState([]); // Track removed tickets
 
   // Redux hooks
   const { categories, loading: categoriesLoading } = useCategories();
@@ -127,6 +138,7 @@ const EditEventPage = () => {
       endTime: '',
       locationName: '',
       address: '',
+      city: '', // Add city field
       linkRef: '',
       eventCategoryId: '',
       isOnlineEvent: false,
@@ -189,6 +201,7 @@ const EditEventPage = () => {
           saleEndTime: event.saleEndTime ? new Date(event.saleEndTime).toISOString().slice(0, 16) : '',
           locationName: event.locationName || '',
           address: event.address || '',
+          city: event.city || '',
           eventCategoryId: event.eventCategoryId || event.eventCategory?.eventCategoryId || '',
           isOnlineEvent: event.isOnlineEvent || false,
           publish: event.publish || false,
@@ -272,6 +285,8 @@ const EditEventPage = () => {
 
   // Remove existing image
   const removeExistingImage = (index) => {
+    const imageUrl = existingImages[index];
+    setRemovedImages(prev => [...prev, imageUrl]);
     setExistingImages(prev => prev.filter((_, i) => i !== index));
   };
 
@@ -297,6 +312,11 @@ const EditEventPage = () => {
 
   // Remove ticket detail
   const removeTicketDetail = (index) => {
+    // If this is an existing ticket (has an ID), add it to removed tickets
+    if (eventData && eventData.ticketDetails && eventData.ticketDetails[index] && eventData.ticketDetails[index].ticketDetailId) {
+      setRemovedTickets(prev => [...prev, eventData.ticketDetails[index].ticketDetailId]);
+    }
+    
     if (fields.length > 1) {
       remove(index);
     } else {
@@ -341,7 +361,7 @@ const EditEventPage = () => {
       isOnlineEvent: data.isOnlineEvent || false,
       locationName: data.locationName || '',
       address: data.address || '',
-      city: null,
+      city: data.city || '',
       latitude: null,
       longitude: null,
       totalTickets: totalTickets,
@@ -349,6 +369,7 @@ const EditEventPage = () => {
       publish: data.publish || false,
       images: selectedImages, // New images
       existingImages: existingImages, // Keep existing images
+      removeImageUrls: removedImages, // Images to remove
       eventCategoryId: data.eventCategoryId,
       tags: reduxSelectedTags.map(tag => ({ tagId: tag.tagId })),
       ticketDetails: data.ticketDetails.map(ticket => ({
@@ -358,6 +379,7 @@ const EditEventPage = () => {
         ticketDescription: ticket.ticketDescription || '',
         ruleRefundRequestId: ticket.ruleRefundRequestId,
       })),
+      removeTicketDetailIds: removedTickets, // Tickets to remove
     };
 
     // Validate required fields
@@ -666,6 +688,16 @@ const EditEventPage = () => {
                       checked={watchIsOnline}
                       onCheckedChange={(checked) => setValue('isOnlineEvent', checked)}
                       className="mt-2"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="city" className="text-base font-semibold">Thành phố</Label>
+                    <Input
+                      id="city"
+                      {...register('city')}
+                      placeholder="Nhập thành phố"
+                      className="mt-2 h-12 text-base border-2 focus:border-green-500"
                     />
                   </div>
 

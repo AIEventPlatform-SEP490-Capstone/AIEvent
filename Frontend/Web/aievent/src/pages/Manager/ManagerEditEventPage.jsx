@@ -51,10 +51,14 @@ const editEventSchema = z.object({
   isOnlineEvent: z.boolean().default(false),
   locationName: z.string().optional(),
   address: z.string().optional(),
+  city: z.string().optional(),
+  linkRef: z.string().optional(),
   eventCategoryId: z.string().optional(),
   ticketType: z.string().min(1, 'Loại vé là bắt buộc'),
   requireApproval: z.nativeEnum(ConfirmStatus).default(ConfirmStatus.NeedConfirm),
   publish: z.boolean().default(false),
+  saleStartTime: z.string().min(1, 'Thời gian bắt đầu bán vé là bắt buộc'),
+  saleEndTime: z.string().min(1, 'Thời gian kết thúc bán vé là bắt buộc'),
   ticketDetails: z.array(z.object({
     ticketName: z.string().min(1, 'Tên vé là bắt buộc'),
     ticketPrice: z.number().min(0, 'Giá vé không được âm'),
@@ -70,6 +74,31 @@ const editEventSchema = z.object({
 }, {
   message: 'Địa điểm là bắt buộc cho sự kiện offline',
   path: ['locationName'],
+}).refine((data) => {
+  if (!data.isOnlineEvent && !data.city) {
+    return false;
+  }
+  return true;
+}, {
+  message: 'Thành phố là bắt buộc cho sự kiện offline',
+  path: ['city'],
+}).refine((data) => {
+  const saleStart = new Date(data.saleStartTime);
+  const saleEnd = new Date(data.saleEndTime);
+  const eventStart = new Date(data.startTime);
+  
+  if (saleStart >= saleEnd) {
+    return false;
+  }
+  
+  if (saleStart >= eventStart) {
+    return false;
+  }
+  
+  return true;
+}, {
+  message: 'Thời gian bán vé phải kết thúc trước thời gian bắt đầu sự kiện và thời gian bắt đầu bán vé phải trước thời gian kết thúc bán vé',
+  path: ['saleEndTime'],
 });
 
 const ManagerEditEventPage = () => {
@@ -108,10 +137,14 @@ const ManagerEditEventPage = () => {
       endTime: '',
       locationName: '',
       address: '',
+      city: '', // Add city field
+      linkRef: '',
       eventCategoryId: '',
       isOnlineEvent: false,
       requireApproval: ConfirmStatus.NeedConfirm,
       publish: false,
+      saleStartTime: '',
+      saleEndTime: '',
       ticketType: '1',
       ticketDetails: [
         {
@@ -171,10 +204,14 @@ const ManagerEditEventPage = () => {
           title: event.title || '',
           description: event.description || '',
           detailedDescription: event.detailedDescription || '',
+          linkRef: event.linkRef || '',
           startTime: event.startTime ? new Date(event.startTime).toISOString().slice(0, 16) : '',
           endTime: event.endTime ? new Date(event.endTime).toISOString().slice(0, 16) : '',
+          saleStartTime: event.saleStartTime ? new Date(event.saleStartTime).toISOString().slice(0, 16) : '',
+          saleEndTime: event.saleEndTime ? new Date(event.saleEndTime).toISOString().slice(0, 16) : '',
           locationName: event.locationName || '',
           address: event.address || '',
+          city: event.city || '',
           eventCategoryId: event.eventCategoryId || event.eventCategory?.eventCategoryId || '',
           isOnlineEvent: event.isOnlineEvent || false,
           requireApproval: requireApprovalValue,
@@ -257,8 +294,13 @@ const ManagerEditEventPage = () => {
     setImagePreview(prev => [...prev, ...previews]);
   };
 
+  const [removedImages, setRemovedImages] = useState([]); // Track removed images
+  const [removedTickets, setRemovedTickets] = useState([]); // Track removed tickets
+
   // Remove existing image
   const removeExistingImage = (index) => {
+    const imageUrl = existingImages[index];
+    setRemovedImages(prev => [...prev, imageUrl]);
     setExistingImages(prev => prev.filter((_, i) => i !== index));
   };
 
@@ -284,6 +326,11 @@ const ManagerEditEventPage = () => {
 
   // Remove ticket detail
   const removeTicketDetail = (index) => {
+    // If this is an existing ticket (has an ID), add it to removed tickets
+    if (eventData && eventData.ticketDetails && eventData.ticketDetails[index] && eventData.ticketDetails[index].ticketDetailId) {
+      setRemovedTickets(prev => [...prev, eventData.ticketDetails[index].ticketDetailId]);
+    }
+    
     if (fields.length > 1) {
       remove(index);
     } else {
@@ -320,12 +367,15 @@ const ManagerEditEventPage = () => {
       title: data.title,
       description: data.description,
       detailedDescription: data.detailedDescription || '',
+      linkRef: data.linkRef || '',
       startTime: new Date(data.startTime).toISOString(),
       endTime: new Date(data.endTime).toISOString(),
+      saleStartTime: new Date(data.saleStartTime).toISOString(),
+      saleEndTime: new Date(data.saleEndTime).toISOString(),
       isOnlineEvent: data.isOnlineEvent || false,
       locationName: data.locationName || '',
       address: data.address || '',
-      city: null,
+      city: data.city || '',
       latitude: null,
       longitude: null,
       totalTickets: totalTickets,
@@ -334,6 +384,7 @@ const ManagerEditEventPage = () => {
       publish: data.publish || false,
       images: selectedImages, // New images
       existingImages: existingImages, // Keep existing images
+      removeImageUrls: removedImages, // Images to remove
       eventCategoryId: data.eventCategoryId,
       tags: reduxSelectedTags.map(tag => ({ tagId: tag.tagId })),
       ticketDetails: data.ticketDetails.map(ticket => ({
@@ -343,6 +394,7 @@ const ManagerEditEventPage = () => {
         ticketDescription: ticket.ticketDescription || '',
         ruleRefundRequestId: ticket.ruleRefundRequestId,
       })),
+      removeTicketDetailIds: removedTickets, // Tickets to remove
     };
 
     // Validate required fields
@@ -516,6 +568,17 @@ const ManagerEditEventPage = () => {
                   />
                 </div>
 
+                <div>
+                  <Label htmlFor="linkRef" className="text-base font-semibold">Liên kết tham khảo</Label>
+                  <Input
+                    id="linkRef"
+                    {...register('linkRef')}
+                    placeholder="https://example.com"
+                    className="mt-2 h-12 text-base border-2 focus:border-blue-500"
+                  />
+                  {errors.linkRef && <p className="text-red-500 text-sm mt-1">{errors.linkRef.message}</p>}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <Label htmlFor="eventCategoryId" className="text-base font-semibold">Danh mục sự kiện *</Label>
@@ -593,6 +656,16 @@ const ManagerEditEventPage = () => {
                       checked={watchIsOnline}
                       onCheckedChange={(checked) => setValue('isOnlineEvent', checked)}
                       className="mt-2"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="city" className="text-base font-semibold">Thành phố</Label>
+                    <Input
+                      id="city"
+                      {...register('city')}
+                      placeholder="Nhập thành phố"
+                      className="mt-2 h-12 text-base border-2 focus:border-green-500"
                     />
                   </div>
 
