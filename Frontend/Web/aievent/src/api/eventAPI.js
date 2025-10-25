@@ -66,6 +66,9 @@ export const eventAPI = {
     if (eventData.detailedDescription) {
       formData.append('DetailedDescription', eventData.detailedDescription);
     }
+    if (eventData.linkRef) {
+      formData.append('LinkRef', eventData.linkRef);
+    }
     if (eventData.city) {
       formData.append('City', eventData.city);
     }
@@ -77,6 +80,12 @@ export const eventAPI = {
     }
     if (eventData.longitude) {
       formData.append('Longitude', eventData.longitude);
+    }
+    if (eventData.saleStartTime) {
+      formData.append('SaleStartTime', eventData.saleStartTime);
+    }
+    if (eventData.saleEndTime) {
+      formData.append('SaleEndTime', eventData.saleEndTime);
     }
     if (eventData.eventCategoryId) {
       formData.append('EventCategoryId', eventData.eventCategoryId);
@@ -124,30 +133,6 @@ export const eventAPI = {
     return response.data?.data || response.data;
   },
 
-  // Get events by organizer (requires Organizer role)
-  getEventsByOrganizer: async (params = {}) => {
-    const queryParams = new URLSearchParams();
-    
-    if (params.search) queryParams.append('search', params.search);
-    if (params.eventCategoryId) queryParams.append('eventCategoryId', params.eventCategoryId);
-    if (params.ticketType) queryParams.append('ticketType', params.ticketType);
-    if (params.city) queryParams.append('city', params.city);
-    if (params.IsSortByNewest !== undefined) queryParams.append('IsSortByNewest', params.IsSortByNewest);
-    if (params.pageNumber) queryParams.append('pageNumber', params.pageNumber);
-    if (params.pageSize) queryParams.append('pageSize', params.pageSize);
-    
-    // Handle tags array
-    if (params.tags && params.tags.length > 0) {
-      params.tags.forEach((tag, index) => {
-        queryParams.append(`tags[${index}].TagId`, tag.tagId || tag.TagId);
-      });
-    }
-
-    const response = await fetcher.get(`/event/organizer?${queryParams.toString()}`);
-    // Return the actual data from the paginated response
-    return response.data?.data || response.data;
-  },
-
   // Update event (requires Organizer role)
   updateEvent: async (eventData) => {
     console.log('Updating event with data:', eventData);
@@ -176,11 +161,26 @@ export const eventAPI = {
     if (eventData.detailedDescription) {
       formData.append('DetailedDescription', eventData.detailedDescription);
     }
+    if (eventData.linkRef) {
+      formData.append('LinkRef', eventData.linkRef);
+    }
     if (eventData.city) {
       formData.append('City', eventData.city);
     }
     if (eventData.address) {
       formData.append('Address', eventData.address);
+    }
+    if (eventData.latitude) {
+      formData.append('Latitude', eventData.latitude);
+    }
+    if (eventData.longitude) {
+      formData.append('Longitude', eventData.longitude);
+    }
+    if (eventData.saleStartTime) {
+      formData.append('SaleStartTime', eventData.saleStartTime);
+    }
+    if (eventData.saleEndTime) {
+      formData.append('SaleEndTime', eventData.saleEndTime);
     }
     if (eventData.eventCategoryId) {
       formData.append('EventCategoryId', eventData.eventCategoryId);
@@ -226,7 +226,7 @@ export const eventAPI = {
       console.log(`${key}:`, value);
     }
 
-    const response = await fetcher.put(`/event/${eventData.eventId}`, formData, {
+    const response = await fetcher.patch(`/event/${eventData.eventId}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -242,26 +242,46 @@ export const eventAPI = {
     return response.data?.data || response.data;
   },
 
-  // Get events needing approval (requires Manager role)
-  getEventsNeedApproval: async (params = {}) => {
+  // Get draft events (requires Organizer role)
+  getDraftEvents: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    
+    if (params.pageNumber) queryParams.append('pageNumber', params.pageNumber);
+    if (params.pageSize) queryParams.append('pageSize', params.pageSize);
+
+    const response = await fetcher.get(`/event/draft?${queryParams.toString()}`);
+    // Return the actual data from the paginated response
+    return response.data?.data || response.data;
+  },
+
+  // Get events by status (requires Admin, Manager, Organizer roles)
+  getEventsByStatus: async (params = {}) => {
     const queryParams = new URLSearchParams();
     
     if (params.search) queryParams.append('search', params.search);
-    if (params.eventCategoryId) queryParams.append('eventCategoryId', params.eventCategoryId);
-    if (params.ticketType) queryParams.append('ticketType', params.ticketType);
-    if (params.city) queryParams.append('city', params.city);
+    if (params.status !== undefined && params.status !== null) queryParams.append('status', params.status);
     if (params.pageNumber) queryParams.append('pageNumber', params.pageNumber);
     if (params.pageSize) queryParams.append('pageSize', params.pageSize);
-    
-    // Handle tags array
-    if (params.tags && params.tags.length > 0) {
-      params.tags.forEach((tag, index) => {
-        queryParams.append(`tags[${index}].TagId`, tag.tagId || tag.TagId);
-      });
+
+    const response = await fetcher.get(`/event/status?${queryParams.toString()}`);
+    // Return the actual data from the paginated response
+    return response.data?.data || response.data;
+  },
+
+  // Confirm event (requires Admin, Manager roles)
+  confirmEvent: async (eventId, confirmData) => {
+    const formData = new FormData();
+    formData.append('Status', confirmData.status);
+    if (confirmData.reason) {
+      formData.append('Reason', confirmData.reason);
     }
 
-    const response = await fetcher.get(`/event/need-approve?${queryParams.toString()}`);
-    // Return the actual data from the paginated response
+    const response = await fetcher.patch(`/event/confirm/${eventId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    // Return the actual response data
     return response.data?.data || response.data;
   },
 };

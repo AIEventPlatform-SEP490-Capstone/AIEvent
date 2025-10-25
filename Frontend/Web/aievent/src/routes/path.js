@@ -46,13 +46,12 @@ export const PATH = {
   ORGANIZER_CHECKIN: "/organizer/checkin/:id",
   ORGANIZER_REFUND_RULES: "/organizer/refund-rules",
   ORGANIZER_TAGS: "/organizer/tags",
-  BECOME_ORGANIZER: "/become-organizer",
+
 
   // MANAGER
   MANAGER: "/manager",
   MANAGER_EVENTS: "/manager/events",
   MANAGER_EVENTS_CATEGORY: "/manager/events/category",
-  MANAGER_EVENTS_NEED_APPROVAL: "/manager/events/need-approval",
   MANAGER_EVENT_DETAIL: "/manager/event/:eventId",
   MANAGER_EVENT_EDIT: "/manager/event/:eventId/edit",
   MANAGER_REFUND_RULES: "/manager/refund-rules",

@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import StorageKeys from '../constants/StorageKeys';
-import EndUrls from '../api/EndUrls';
-import { NETWORK_CONFIG } from '../config/NetworkConfig';
+import StorageKeys from '../../constants/StorageKeys';
+import EndUrls from '../EndUrls';
+import { NETWORK_CONFIG } from '../../config/NetworkConfig';
 
 class AuthService {
   //Login method

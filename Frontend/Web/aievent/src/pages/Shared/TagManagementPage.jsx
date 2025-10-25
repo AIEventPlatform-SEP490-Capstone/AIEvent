@@ -9,10 +9,15 @@ import {
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Search, ArrowUpDown } from "lucide-react";
+import { useSelector } from "react-redux";
 
 const TagManagementPage = ({ userRole }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "tagName", direction: "asc" });
+  
+  // Get user role from auth state if not passed as prop
+  const { user } = useSelector((state) => state.auth);
+  const effectiveUserRole = userRole || user?.role;
 
   // Handle sorting
   const handleSort = (key) => {
@@ -72,7 +77,7 @@ const TagManagementPage = ({ userRole }) => {
           <CardTitle>Quản lý Tags</CardTitle>
         </CardHeader>
         <CardContent>
-          <TagManager searchTerm={searchTerm} sortConfig={sortConfig} />
+          <TagManager searchTerm={searchTerm} sortConfig={sortConfig} userRole={effectiveUserRole} />
         </CardContent>
       </Card>
     </div>

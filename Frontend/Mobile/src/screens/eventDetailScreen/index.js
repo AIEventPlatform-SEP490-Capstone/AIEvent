@@ -15,7 +15,7 @@ import CustomButton from '../../components/common/customButtonRN';
 import Images from '../../constants/Images';
 import Colors from '../../constants/Colors';
 import Strings from '../../constants/Strings';
-import ApiCalls from '../../api/ApiCalls';
+import { EventService } from '../../api/services';
 
 const EventDetailScreen = () => {
   const navigation = useNavigation();
@@ -34,7 +34,7 @@ const EventDetailScreen = () => {
   const loadEventDetail = async () => {
     try {
       setLoading(true);
-      const response = await ApiCalls.getEventDetail(eventId);
+      const response = await EventService.getEventById(eventId);
       if (response.success) {
         setEvent(response.data);
       } else {
@@ -52,7 +52,7 @@ const EventDetailScreen = () => {
   const handleJoinEvent = async () => {
     try {
       setJoining(true);
-      const response = await ApiCalls.joinEvent(eventId);
+      const response = await EventService.joinEvent(eventId);
       if (response.success) {
         setIsJoined(true);
         Alert.alert('Success', Strings.JOIN_SUCCESS);
@@ -69,7 +69,7 @@ const EventDetailScreen = () => {
 
   const handleShareEvent = async () => {
     try {
-      const response = await ApiCalls.shareEvent(eventId);
+      const response = await EventService.shareEvent(eventId);
       if (response.success) {
         await Share.share({
           message: `Check out this event: ${event.title}\n${response.data.shareUrl}`,

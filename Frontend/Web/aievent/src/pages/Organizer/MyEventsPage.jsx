@@ -45,7 +45,7 @@ const MyEventsPage = () => {
   const [events, setEvents] = useState([]);
   const [allEvents, setAllEvents] = useState([]); // Store all events for client-side filtering
   const [isLoading, setIsLoading] = useState(true);
-  const { getEventsByOrganizer, deleteEvent: deleteEventAPI, loading: eventLoading } = useEvents();
+  const { getEventsByStatus, getDraftEvents, deleteEvent: deleteEventAPI, loading: eventLoading } = useEvents();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -53,12 +53,13 @@ const MyEventsPage = () => {
   const [sortBy, setSortBy] = useState('newest');
   const [viewMode, setViewMode] = useState('list');
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
+  const [activeTab, setActiveTab] = useState('all'); // For switching between event statuses
   const pageSize = 12;
 
-  // Load events initially
+  // Load events initially and when tab changes
   useEffect(() => {
     loadEvents();
-  }, []);
+  }, [activeTab]);
 
   // Debounced search effect
   useEffect(() => {
@@ -74,11 +75,27 @@ const MyEventsPage = () => {
   const loadEvents = async () => {
     try {
       setIsLoading(true);
-      const response = await getEventsByOrganizer({
-        search: '', // Load all events, we'll filter on client side
-        pageNumber: 1,
-        pageSize: 1000, // Get all events
-      });
+      // Clear existing events immediately when switching tabs
+      setEvents([]);
+      setAllEvents([]);
+      
+      let response;
+      if (activeTab === 'draft') {
+        // Load draft events using the dedicated API endpoint
+        response = await getDraftEvents({
+          pageNumber: 1,
+          pageSize: 1000, // Get all events
+        });
+      } else {
+        // Load events by status for other tabs
+        const statusParam = activeTab === 'all' ? null : activeTab;
+        response = await getEventsByStatus({
+          search: '', // Load all events, we'll filter on client side
+          status: statusParam,
+          pageNumber: 1,
+          pageSize: 1000, // Get all events
+        });
+      }
 
       console.log('My events response:', response);
 
@@ -107,7 +124,7 @@ const MyEventsPage = () => {
 
     let filtered = [...dataToFilter];
 
-    console.log('Applying filters:', { searchTerm, filterStatus, sortBy, eventsCount: filtered.length });
+    console.log('Applying filters:', { searchTerm, filterStatus, sortBy, activeTab, eventsCount: filtered.length });
 
     // Apply search filter
     if (searchTerm && searchTerm.trim()) {
@@ -121,8 +138,12 @@ const MyEventsPage = () => {
       console.log('After search filter:', filtered.length);
     }
 
-    // Apply status filter
-    if (filterStatus && filterStatus !== 'all') {
+    // Apply status filter - but only for time-based filters, not approval status tabs
+    // Approval status tabs (NeedConfirm, Approve, Reject) are handled by the API call
+    // Draft tab is also handled by the API call
+    const isSpecialTab = ['draft', ConfirmStatus.NeedConfirm, ConfirmStatus.Approve, ConfirmStatus.Reject].includes(activeTab);
+    
+    if (filterStatus && filterStatus !== 'all' && !isSpecialTab) {
       filtered = filtered.filter(event => {
         const status = getEventStatus(event);
         return status === filterStatus;
@@ -218,11 +239,31 @@ const MyEventsPage = () => {
   };
 
   const getTicketTypeLabel = (ticketType) => {
-    return ticketType === 1 ? 'Miễn phí' : 'Có phí';
+    // Handle both string enum names and number values
+    if (ticketType === 1 || ticketType === "Free" || ticketType === "free") return 'Miễn phí';
+    if (ticketType === 2 || ticketType === "Paid" || ticketType === "paid") return 'Có phí';
+    if (ticketType === 3 || ticketType === "Donate" || ticketType === "donate") return 'Quyên góp';
+    
+    // Default fallback
+    return 'Quyên góp';
   };
 
   const getTicketTypeBadgeColor = (ticketType) => {
-    return ticketType === 1 ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800';
+    // Handle both string enum names and number values
+    if (ticketType === 1 || ticketType === "Free" || ticketType === "free") return 'bg-green-100 text-green-800';
+    if (ticketType === 2 || ticketType === "Paid" || ticketType === "paid") return 'bg-blue-100 text-blue-800';
+    return 'bg-purple-100 text-purple-800';
+  };
+
+  const getTabDisplayName = (tab) => {
+    switch (tab) {
+      case 'all': return 'Tất cả sự kiện';
+      case 'draft': return 'Bản nháp';
+      case ConfirmStatus.NeedConfirm: return 'Chờ phê duyệt';
+      case ConfirmStatus.Approve: return 'Đã phê duyệt';
+      case ConfirmStatus.Reject: return 'Bị từ chối';
+      default: return tab;
+    }
   };
 
   const getEventStatus = (event) => {
@@ -245,17 +286,67 @@ const MyEventsPage = () => {
   };
 
   const getEventStats = () => {
-    if (!allEvents.length) return { total: 0, upcoming: 0, ongoing: 0, completed: 0 };
+    if (!allEvents.length) return { total: 0, upcoming: 0, ongoing: 0, completed: 0, drafts: 0 };
+    
+    // When on a specific tab, we should count based on that tab
+    if (activeTab === 'draft') {
+      // When on draft tab, all events are drafts
+      return {
+        total: allEvents.length,
+        upcoming: 0,
+        ongoing: 0,
+        completed: 0,
+        drafts: allEvents.length
+      };
+    }
+    
+    if (activeTab === ConfirmStatus.NeedConfirm) {
+      // Count events needing approval
+      return {
+        total: allEvents.length,
+        upcoming: 0,
+        ongoing: 0,
+        completed: 0,
+        drafts: 0
+      };
+    }
+    
+    if (activeTab === ConfirmStatus.Approve) {
+      // Count approved events
+      return {
+        total: allEvents.length,
+        upcoming: 0,
+        ongoing: 0,
+        completed: 0,
+        drafts: 0
+      };
+    }
+    
+    if (activeTab === ConfirmStatus.Reject) {
+      // Count rejected events
+      return {
+        total: allEvents.length,
+        upcoming: 0,
+        ongoing: 0,
+        completed: 0,
+        drafts: 0
+      };
+    }
+    
+    // For 'all' tab, calculate based on time-based status and draft status
+    let drafts = allEvents.filter(event => !('publish' in event) || !event.publish).length;
     
     return allEvents.reduce((acc, event) => {
       const status = getEventStatus(event);
+      
       return {
         total: acc.total + 1,
         upcoming: acc.upcoming + (status === 'upcoming' ? 1 : 0),
         ongoing: acc.ongoing + (status === 'ongoing' ? 1 : 0),
-        completed: acc.completed + (status === 'completed' ? 1 : 0)
+        completed: acc.completed + (status === 'completed' ? 1 : 0),
+        drafts: drafts
       };
-    }, { total: 0, upcoming: 0, ongoing: 0, completed: 0 });
+    }, { total: 0, upcoming: 0, ongoing: 0, completed: 0, drafts: drafts });
   };
 
   // Handle search input change
@@ -317,6 +408,62 @@ const MyEventsPage = () => {
               <Plus className="h-4 w-4" />
               Tạo sự kiện mới
             </Button>
+          </div>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="mb-6">
+          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                activeTab === 'all'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Tất cả sự kiện
+            </button>
+            <button
+              onClick={() => setActiveTab('draft')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                activeTab === 'draft'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Bản nháp ({stats.drafts})
+            </button>
+            <button
+              onClick={() => setActiveTab(ConfirmStatus.NeedConfirm)}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                activeTab === ConfirmStatus.NeedConfirm
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Chờ phê duyệt
+            </button>
+            <button
+              onClick={() => setActiveTab(ConfirmStatus.Approve)}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                activeTab === ConfirmStatus.Approve
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Đã phê duyệt
+            </button>
+            <button
+              onClick={() => setActiveTab(ConfirmStatus.Reject)}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                activeTab === ConfirmStatus.Reject
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Bị từ chối
+            </button>
           </div>
         </div>
 
@@ -383,6 +530,20 @@ const MyEventsPage = () => {
             <Card className="bg-white border border-gray-200 shadow-sm">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <Clock className="h-5 w-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium">Bản nháp</p>
+                    <p className="text-xl font-semibold text-gray-900">{stats.drafts}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-white border border-gray-200 shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
                   <div className="p-2 bg-red-100 rounded-lg">
                     <XCircle className="h-5 w-5 text-red-600" />
                   </div>
@@ -390,20 +551,6 @@ const MyEventsPage = () => {
                     <p className="text-xs text-gray-500 font-medium">Hoạt tích</p>
                     <p className="text-xl font-semibold text-gray-900">221</p>
                     <p className="text-xs text-gray-400">06,000,000 VND</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white border border-gray-200 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-orange-100 rounded-lg">
-                    <Clock className="h-5 w-5 text-orange-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">Chờ duyệt</p>
-                    <p className="text-xl font-semibold text-gray-900">4</p>
                   </div>
                 </div>
               </CardContent>
@@ -533,6 +680,10 @@ const MyEventsPage = () => {
                     <input type="checkbox" className="mr-2" />
                     <span className="text-sm">Có phí</span>
                   </label>
+                  <label className="flex items-center">
+                    <input type="checkbox" className="mr-2" />
+                    <span className="text-sm">Quyên góp</span>
+                  </label>
                 </div>
               </div>
 
@@ -593,15 +744,13 @@ const MyEventsPage = () => {
               <h3 className="text-lg font-semibold text-gray-700 mb-2">
                 {allEvents.length === 0 
                   ? 'Chưa có sự kiện nào' 
-                  : searchTerm || filterStatus !== 'all'
-                    ? 'Không tìm thấy sự kiện phù hợp'
-                    : 'Không có sự kiện'
+                  : 'Không có sự kiện'
                 }
               </h3>
               <p className="text-gray-500 mb-6">
                 {allEvents.length === 0 
                   ? 'Bắt đầu tạo sự kiện đầu tiên của bạn ngay bây giờ!'
-                  : 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm để tìm sự kiện bạn cần.'
+                  : `Không có sự kiện nào trong danh mục "${getTabDisplayName(activeTab)}".`
                 }
               </p>
               {allEvents.length === 0 ? (
@@ -632,28 +781,32 @@ const MyEventsPage = () => {
                 const StatusIcon = statusConfig.icon;
 
                 return (
-                  <div key={event.eventId} className="border-b border-gray-100 p-6 last:border-b-0">
-                    <div className="flex items-start gap-4">
-                      {event.imgListEvent && event.imgListEvent.length > 0 ? (
-                        <img
-                          src={event.imgListEvent[0]}
-                          alt={event.title}
-                          className="w-20 h-16 object-cover rounded-lg"
-                        />
-                      ) : (
-                        <div className="w-20 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
-                          <Calendar className="h-6 w-6 text-blue-400" />
-                        </div>
-                      )}
-                        
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-semibold text-gray-900 mb-1 hover:text-blue-600 cursor-pointer"
+                  <div key={event.eventId} className="border-b border-gray-100 p-6 last:border-b-0 mb-6 rounded-lg shadow-sm">
+                    <div className="flex flex-col md:flex-row items-start gap-4">
+                      {/* Event Image - Larger and more prominent */}
+                      <div className="w-full md:w-48 h-32 flex-shrink-0">
+                        {event.imgListEvent && event.imgListEvent.length > 0 ? (
+                          <img
+                            src={event.imgListEvent[0]}
+                            alt={event.title}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
+                            <Calendar className="h-8 w-8 text-blue-400" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Event Details */}
+                      <div className="flex-1 w-full">
+                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900 mb-1 hover:text-blue-600 cursor-pointer text-lg"
                                 onClick={() => handleViewEvent(event.eventId)}>
                               {event.title}
                             </h3>
-                            <div className="flex items-center gap-3 text-sm text-gray-600 mb-2">
+                            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-2">
                               <span className="flex items-center gap-1">
                                 <Calendar className="h-4 w-4" />
                                 {formatDate(event.startTime).split(' ')[0]}
@@ -664,18 +817,32 @@ const MyEventsPage = () => {
                               </span>
                               <span className="flex items-center gap-1">
                                 <MapPin className="h-4 w-4" />
-                                {event.isOnlineEvent ? 'Trực tuyến' : event.locationName}
+                                {event.locationName || 'Không có địa điểm'}
                               </span>
-                              <span className="flex items-center gap-1">
-                                <Users className="h-4 w-4" />
-                                0/{event.totalTickets}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <DollarSign className="h-4 w-4" />
-                                {event.ticketType === 1 ? 'Miễn phí' : `${event.ticketPrice?.toLocaleString('vi-VN')} đ`}
-                              </span>
+                              {/* Display ticket info if available */}
+                              {('totalPerson' in event) && (
+                                <span className="flex items-center gap-1">
+                                  <Users className="h-4 w-4" />
+                                  {event.totalPersonJoin || 0}/{event.totalPerson}
+                                </span>
+                              )}
+                              {/* Display ticket price if available */}
+                              {('price' in event) && (
+                                <span className="flex items-center gap-1">
+                                  <DollarSign className="h-4 w-4" />
+                                  {/* Handle both string and number ticketType values */}
+                                  {(event.ticketType === 1 || event.ticketType === "Free" || event.ticketType === "free") ? 'Miễn phí' : `${event.price?.toLocaleString('vi-VN')} đ`}
+                                </span>
+                              )}
+                              {/* Fallback for draft events */}
+                              {!('price' in event) && !('totalPerson' in event) && (
+                                <span className="flex items-center gap-1">
+                                  <DollarSign className="h-4 w-4" />
+                                  {getTicketTypeLabel(event.ticketType)}
+                                </span>
+                              )}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2 mt-2">
                               <Badge className={statusConfig.color}>
                                 <StatusIcon className="h-3 w-3 mr-1" />
                                 {statusConfig.label}
@@ -683,62 +850,58 @@ const MyEventsPage = () => {
                               <Badge className={getTicketTypeBadgeColor(event.ticketType)}>
                                 {getTicketTypeLabel(event.ticketType)}
                               </Badge>
-                              {event.isOnlineEvent && (
-                                <Badge variant="outline">Trực tuyến</Badge>
-                              )}
                               {event.eventCategoryName && (
                                 <Badge variant="outline">{event.eventCategoryName}</Badge>
                               )}
-                              {/* Display approval status */}
-                              {event.requireApproval && (
+                              {/* Display approval status for published events */}
+                              {('status' in event) && event.status && (
                                 <Badge 
                                   variant="outline" 
                                   className={
-                                    event.requireApproval === ConfirmStatus.Approve ? 'bg-green-100 text-green-800 border-green-200' :
-                                    event.requireApproval === ConfirmStatus.Reject ? 'bg-red-100 text-red-800 border-red-200' :
+                                    event.status === ConfirmStatus.Approve ? 'bg-green-100 text-green-800 border-green-200' :
+                                    event.status === ConfirmStatus.Reject ? 'bg-red-100 text-red-800 border-red-200' :
                                     'bg-yellow-100 text-yellow-800 border-yellow-200'
                                   }
                                 >
-                                  {ConfirmStatusDisplay[event.requireApproval] || event.requireApproval}
+                                  {ConfirmStatusDisplay[event.status] || event.status}
                                 </Badge>
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-1">
                             <Button variant="ghost" size="sm" onClick={() => handleViewEvent(event.eventId)}>
                               <Eye className="h-4 w-4" />
                             </Button>
                             <Button variant="ghost" size="sm" onClick={() => handleEditEvent(event.eventId)}>
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="h-4 w-4" />
+                            <Button variant="ghost" size="sm" onClick={() => handleDeleteEvent(event.eventId)}>
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
                         
-                        <div className="grid grid-cols-5 gap-8 mt-4 pt-4 border-t border-gray-100">
+                        {/* Statistics in a more compact format */}
+                        <div className="grid grid-cols-3 gap-4 mt-4 pt-3 border-t border-gray-100">
                           <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-1">Lượt xem</p>
-                            <p className="text-lg font-semibold">0</p>
+                            <p className="text-xs text-gray-500 mb-1">Lượt xem</p>
+                            <p className="text-base font-semibold">0</p>
                           </div>
                           <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-1">Đăng ký</p>
-                            <p className="text-lg font-semibold">0</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-1">Giá vé</p>
-                            <p className="text-lg font-semibold">
-                              {event.ticketType === 1 ? 'Miễn phí' : `${event.ticketPrice?.toLocaleString('vi-VN')} đ`}
+                            <p className="text-xs text-gray-500 mb-1">Đăng ký</p>
+                            <p className="text-base font-semibold">
+                              {('totalPersonJoin' in event) ? event.totalPersonJoin : 0}
                             </p>
                           </div>
                           <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-1">Hoạt tích</p>
-                            <p className="text-lg font-semibold">0</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-1">Danh giá</p>
-                            <p className="text-lg font-semibold">Chưa có</p>
+                            <p className="text-xs text-gray-500 mb-1">Giá vé</p>
+                            <p className="text-base font-semibold">
+                              {'price' in event 
+                                ? ((event.ticketType === 1 || event.ticketType === "Free" || event.ticketType === "free") ? 'Miễn phí' : `${event.price?.toLocaleString('vi-VN')} đ`)
+                                : getTicketTypeLabel(event.ticketType)}
+                            </p>
                           </div>
                         </div>
                       </div>
