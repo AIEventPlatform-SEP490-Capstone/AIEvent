@@ -34,6 +34,7 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<BookingItem> BookingItems { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<WithdrawRequest> WithdrawRequests { get; set; }
+        public DbSet<PaymentInfomation> PaymentInfomations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -347,6 +348,24 @@ namespace AIEvent.Infrastructure.Context
                 entity.Property(w => w.BankAccountNumber).IsRequired().HasMaxLength(100);
                 entity.Property(w => w.BankAccountName).IsRequired().HasMaxLength(500);
                 entity.Property(w => w.Amount).HasColumnType("decimal(18,2)");
+            });
+
+            // ----------------- PaymentInfomation -----------------
+            builder.Entity<PaymentInfomation>(entity =>
+            {
+                entity.ToTable("PaymentInfomations"); 
+
+                entity.HasOne(pi => pi.User)
+                      .WithMany(u => u.PaymentInfomations)
+                      .HasForeignKey(pi => pi.UserId)
+                      .OnDelete(DeleteBehavior.Cascade); 
+
+                entity.HasIndex(pi => new { pi.UserId, pi.AccountNumber })
+                      .IsUnique()
+                      .HasDatabaseName("IX_PaymentInfo_User_Account");
+
+                entity.HasIndex(pi => pi.UserId)
+                      .HasDatabaseName("IX_PaymentInfo_UserId");
             });
 
             builder.Seed();

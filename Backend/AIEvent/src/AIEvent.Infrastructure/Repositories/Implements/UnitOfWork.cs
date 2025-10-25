@@ -1,9 +1,9 @@
 using AIEvent.Domain.Entities;
-using AIEvent.Domain.Interfaces;
 using AIEvent.Infrastructure.Context;
+using AIEvent.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore.Storage;
 
-namespace AIEvent.Infrastructure.Implements
+namespace AIEvent.Infrastructure.Repositories.Implements
 {
     public class UnitOfWork : IUnitOfWork, IDisposable, IAsyncDisposable
     {
@@ -30,6 +30,7 @@ namespace AIEvent.Infrastructure.Implements
         public IGenericRepository<WalletTransaction> WalletTransactionRepository => GetRepository<WalletTransaction>();
         public IGenericRepository<PaymentTransaction> PaymentTransactionRepository => GetRepository<PaymentTransaction>();
         public IGenericRepository<WithdrawRequest> WithdrawRequestRepository => GetRepository<WithdrawRequest>();
+        public IGenericRepository<PaymentInfomation> PaymentInfomationRepository => GetRepository<PaymentInfomation>();
 
         public UnitOfWork(DatabaseContext context)
         {

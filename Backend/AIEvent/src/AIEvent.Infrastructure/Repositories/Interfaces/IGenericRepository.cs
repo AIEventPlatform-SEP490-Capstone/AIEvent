@@ -1,4 +1,4 @@
-﻿namespace AIEvent.Domain.Interfaces
+﻿namespace AIEvent.Infrastructure.Repositories.Interfaces
 {
     public interface IGenericRepository<T> where T : class
     {
