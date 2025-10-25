@@ -51,5 +51,6 @@ namespace AIEvent.Domain.Entities
         public ICollection<FavoriteEvent> FavoriteEvents { get; set; } = new List<FavoriteEvent>();
         public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
         public ICollection<PaymentTransaction> PaymentTransactions { get; set; } = new List<PaymentTransaction>();
+        public ICollection<WithdrawRequest> WithdrawRequests { get; set; } = new List<WithdrawRequest>();
     }
 }

@@ -18,5 +18,8 @@ namespace AIEvent.Application.Services.Implements
 
         public WebhookData VerifyPaymentWebhookData(WebhookType webhookBody)
             => _payOS.verifyPaymentWebhookData(webhookBody);
+
+        public Task<PaymentLinkInformation> GetPaymentWebhookData(long orderId)
+            => _payOS.getPaymentLinkInformation(orderId);
     }
 }

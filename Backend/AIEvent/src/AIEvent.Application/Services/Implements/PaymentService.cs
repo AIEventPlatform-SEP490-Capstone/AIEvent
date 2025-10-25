@@ -126,22 +126,30 @@ namespace AIEvent.Application.Services.Implements
                     if (data == null)
                         return ErrorResponse.FailureResult("Invalid webhook data.", ErrorCodes.InvalidInput);
 
+                    if (webhookBody.code != "00" || !webhookBody.success)
+                        return ErrorResponse.FailureResult($"Payment failed: {webhookBody.desc}", ErrorCodes.InvalidInput);
+
                     var transaction = await _unitOfWork.WalletTransactionRepository
                                                             .Query()
                                                             .FirstOrDefaultAsync(t => t.OrderCode == data.orderCode.ToString());
                     if (transaction == null)
                         return ErrorResponse.FailureResult("WalletTransaction not found or deleted", ErrorCodes.NotFound);
-                    var wallet = await _unitOfWork.WalletRepository
-                                           .Query()
-                                           .AsNoTracking()
-                                           .FirstOrDefaultAsync(w => w.Id == transaction.WalletId);
-                    if (wallet == null || wallet.IsDeleted == true)
-                        return ErrorResponse.FailureResult("Wallet not found or deleted", ErrorCodes.NotFound);
+
                     if (transaction.Status == TransactionStatus.Success)
-                        return ErrorResponse.FailureResult("Transaction already processed", ErrorCodes.InternalServerError);
+                        return Result.Success();
 
                     if (transaction.Status == TransactionStatus.Failed)
                         return ErrorResponse.FailureResult("Transaction fail", ErrorCodes.InternalServerError);
+
+                    if (transaction.Amount != data.amount)
+                        return ErrorResponse.FailureResult("Amount mismatch", ErrorCodes.InvalidInput);
+
+                    var wallet = await _unitOfWork.WalletRepository
+                       .Query()
+                       .FirstOrDefaultAsync(w => w.Id == transaction.WalletId);
+                    if (wallet == null || wallet.IsDeleted == true)
+                        return ErrorResponse.FailureResult("Wallet not found or deleted", ErrorCodes.NotFound);
+
                     return await _transactionHelper.ExecuteInTransactionAsync(async () =>
                     {
                         transaction.Status = TransactionStatus.Success;

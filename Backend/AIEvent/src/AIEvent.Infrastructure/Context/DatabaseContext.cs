@@ -33,6 +33,7 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<Booking> Bookings { get; set; }
         public DbSet<BookingItem> BookingItems { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
+        public DbSet<WithdrawRequest> WithdrawRequests { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -332,6 +333,20 @@ namespace AIEvent.Infrastructure.Context
 
                 entity.HasIndex(fe => new { fe.UserId, fe.EventId }).HasDatabaseName("IX_FavoriteEvent_User_Event");
 
+            });
+
+            // ----------------- WithdrawRequest -----------------
+            builder.Entity<WithdrawRequest>(entity =>
+            {
+                entity.HasOne(w => w.User)
+                    .WithMany(u => u.WithdrawRequests)
+                    .HasForeignKey(w => w.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.Property(w => w.BankName).IsRequired().HasMaxLength(500);
+                entity.Property(w => w.BankAccountNumber).IsRequired().HasMaxLength(100);
+                entity.Property(w => w.BankAccountName).IsRequired().HasMaxLength(500);
+                entity.Property(w => w.Amount).HasColumnType("decimal(18,2)");
             });
 
             builder.Seed();

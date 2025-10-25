@@ -40,6 +40,7 @@ namespace AIEvent.API.Extensions
                     .AddScoped<IQrCodeService, QrCodeService>()
                     .AddScoped<ITicketTokenService, TicketTokenService>()
                     .AddScoped<IPaymentService, PaymentService>()
+                    .AddScoped<IPayOSService, PayOSService>()
                     .AddScoped<IWalletService, WalletService>()
                     .AddScoped<IPdfService, PdfService>();
 

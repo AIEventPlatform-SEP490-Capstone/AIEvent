@@ -6,5 +6,6 @@ namespace AIEvent.Application.Services.Interfaces
     {
         Task<CreatePaymentResult> CreatePaymentLinkAsync(PaymentData data);
         WebhookData VerifyPaymentWebhookData(WebhookType webhookBody);
+        Task<PaymentLinkInformation> GetPaymentWebhookData(long orderId);
     }
 }
