@@ -4,6 +4,8 @@ namespace AIEvent.Application.DTOs.Ticket
 {
     public class TicketDetailRequest
     {
+        public Guid? Id { get; set; }
+
         [Required(ErrorMessage = "TicketName is required")]
         public required string TicketName { get; set; }
 
