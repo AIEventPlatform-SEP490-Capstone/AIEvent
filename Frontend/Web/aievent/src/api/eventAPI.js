@@ -187,17 +187,10 @@ export const eventAPI = {
       formData.append('EventCategoryId', eventData.eventCategoryId);
     }
 
-    // Add new images if any
+    // Add new images only (not existing image URLs)
     if (eventData.images && eventData.images.length > 0) {
       eventData.images.forEach((image) => {
         formData.append('ImgListEvent', image);
-      });
-    }
-
-    // Add existing images to keep (as URLs)
-    if (eventData.existingImages && eventData.existingImages.length > 0) {
-      eventData.existingImages.forEach((imageUrl) => {
-        formData.append('ImgListEvent', imageUrl);
       });
     }
 
@@ -211,6 +204,10 @@ export const eventAPI = {
     // Add ticket details
     if (eventData.ticketDetails && eventData.ticketDetails.length > 0) {
       eventData.ticketDetails.forEach((ticket, index) => {
+        // Add ticket ID if it exists (for existing tickets)
+        if (ticket.id) {
+          formData.append(`TicketDetails[${index}].Id`, ticket.id);
+        }
         formData.append(`TicketDetails[${index}].TicketName`, ticket.ticketName);
         formData.append(`TicketDetails[${index}].TicketPrice`, ticket.ticketPrice);
         formData.append(`TicketDetails[${index}].TicketQuantity`, ticket.ticketQuantity);
@@ -225,13 +222,6 @@ export const eventAPI = {
     if (eventData.removeTicketDetailIds && eventData.removeTicketDetailIds.length > 0) {
       eventData.removeTicketDetailIds.forEach((id) => {
         formData.append('RemoveTicketDetailIds', id);
-      });
-    }
-
-    // Add tags
-    if (eventData.tags && eventData.tags.length > 0) {
-      eventData.tags.forEach((tag, index) => {
-        formData.append(`Tags[${index}].TagId`, tag.tagId);
       });
     }
 
