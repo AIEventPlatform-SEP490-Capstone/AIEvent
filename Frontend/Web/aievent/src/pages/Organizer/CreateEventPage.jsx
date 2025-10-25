@@ -335,7 +335,7 @@ const CreateEventPage = () => {
       latitude: null,
       longitude: null,
       totalTickets: totalTickets,
-      ticketType: parseInt(data.ticketType),
+      ticketType: data.ticketType && !isNaN(parseInt(data.ticketType)) ? parseInt(data.ticketType) : 1,
       requireApproval: data.requireApproval,
       publish: data.publish || false,
       images: validImages,
