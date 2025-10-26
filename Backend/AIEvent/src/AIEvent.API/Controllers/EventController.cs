@@ -125,11 +125,12 @@ namespace AIEvent.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin, Organizer, Manager")]
-        public async Task<ActionResult<SuccessResponse<object>>> DeleteEvent(Guid id)
+        [Authorize(Roles = "Organizer")]
+        public async Task<ActionResult<SuccessResponse<object>>> DeleteEvent(Guid id, [FromQuery] string? reasonCancel)
         {
-            var result = await _eventService.DeleteEventAsync(id);
-            if (    !result.IsSuccess)
+            var organizerId = User.GetRequiredOrganizerId();
+            var result = await _eventService.DeleteEventAsync(id, organizerId, reasonCancel);
+            if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }

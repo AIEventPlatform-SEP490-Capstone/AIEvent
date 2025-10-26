@@ -23,34 +23,29 @@ namespace AIEvent.Application.Mappings
                                     TagId = f.TagId
                                 }).ToList()
                                 : new List<EventTag>()))
-                    .ForMember(dest => dest.TicketDetails,
-                        opt => opt.MapFrom(src =>
-                            src.TicketDetails != null
-                                ? src.TicketDetails.Select(td => new TicketDetail
-                                {
-                                    TicketName = td.TicketName,
-                                    TicketPrice = td.TicketPrice,
-                                    TicketQuantity = td.TicketQuantity,
-                                    TicketDescription = td.TicketDescription,
-                                    RemainingQuantity = td.TicketQuantity,
-                                    MaxPurchaseQuantity = td.MaxPurchaseQuantity,
-                                    MinPurchaseQuantity = td.MinPurchaseQuantity,
-                                    RefundRuleId = !string.IsNullOrEmpty(td.RuleRefundRequestId) 
-                                                    ? Guid.Parse(td.RuleRefundRequestId) 
-                                                    : null
-                                }).ToList()
-                                : new List<TicketDetail>()));
+                    .ForMember(dest => dest.TicketDetails, opt => opt.Ignore());
 
             CreateMap<UpdateEventRequest, Event>()
-                    .ForMember(dest => dest.EventTags, 
-                        opt => opt.MapFrom(src =>
-                            src.EventTags != null
-                                ? src.EventTags.Select(f => new EventTag
-                                {
-                                    TagId = f.TagId
-                                }).ToList()
-                                : new List<EventTag>()))
-                    .ForMember(dest => dest.ImgListEvent, opt => opt.Ignore()); ;
+                    .ForMember(dest => dest.EventTags, opt => opt.Ignore())
+                    .ForMember(dest => dest.TicketDetails, opt => opt.Ignore())
+                    .ForMember(dest => dest.ImgListEvent, opt => opt.Ignore())
+                    .ForMember(dest => dest.SoldQuantity, opt => opt.MapFrom(src => 0))
+                    .ForMember(dest => dest.RemainingTickets, opt => opt.MapFrom(src => src.TotalTickets))
+                    .ForMember(dest => dest.Publish, opt => opt.Ignore())
+                    .ForMember(dest => dest.EventCategoryId, opt => opt.MapFrom((src, dest) => 
+                        !string.IsNullOrWhiteSpace(src.EventCategoryId) 
+                            ? Guid.Parse(src.EventCategoryId) 
+                            : dest.EventCategoryId))
+                    .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+            CreateMap<TicketDetailRequest, TicketDetail>()
+                    .ForMember(dest => dest.Id, opt => opt.Ignore())
+                    .ForMember(dest => dest.EventId, opt => opt.Ignore())
+                    .ForMember(dest => dest.RefundRuleId, opt => opt.MapFrom((src, dest) =>
+                        !string.IsNullOrWhiteSpace(src.RuleRefundRequestId)
+                            ? Guid.Parse(src.RuleRefundRequestId)
+                            : dest.RefundRuleId))
+                    .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
             CreateMap<Event, EventDetailResponse>()
                 .ForMember(dest => dest.EventId, opt => opt.MapFrom(src => src.Id))

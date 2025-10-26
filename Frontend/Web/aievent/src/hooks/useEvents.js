@@ -103,7 +103,25 @@ export const useEvents = () => {
       toast.success('Cập nhật sự kiện thành công!');
       return response;
     } catch (err) {
-      toast.error('Không thể cập nhật sự kiện');
+      console.error('Error updating event:', err);
+      let errorMessage = 'Không thể cập nhật sự kiện';
+      
+      // Check if there's a specific error message from the backend
+      if (err && typeof err === 'object') {
+        if (err.message) {
+          errorMessage = err.message;
+        } else if (err.error) {
+          errorMessage = err.error;
+        } else if (Object.keys(err).length > 0) {
+          // If it's an object with keys, try to find a meaningful error message
+          const firstKey = Object.keys(err)[0];
+          if (typeof err[firstKey] === 'string') {
+            errorMessage = err[firstKey];
+          }
+        }
+      }
+      
+      toast.error(errorMessage);
       return null;
     }
   };

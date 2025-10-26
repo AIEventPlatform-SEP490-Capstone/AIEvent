@@ -1,8 +1,8 @@
-using AIEvent.Domain.Interfaces;
 using AIEvent.Infrastructure.Context;
+using AIEvent.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace AIEvent.Infrastructure.Implements
+namespace AIEvent.Infrastructure.Repositories.Implements
 {
     public class GenericRepository<T> : IGenericRepository<T> where T : class
     {

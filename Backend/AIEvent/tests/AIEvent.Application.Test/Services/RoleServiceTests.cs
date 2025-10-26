@@ -2,7 +2,7 @@ using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Role;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Domain.Entities;
-using AIEvent.Domain.Interfaces;
+using AIEvent.Infrastructure.Repositories.Interfaces;
 using AutoMapper;
 using FluentAssertions;
 using Moq;

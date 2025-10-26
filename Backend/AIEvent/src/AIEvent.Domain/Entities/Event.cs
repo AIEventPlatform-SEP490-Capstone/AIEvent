@@ -24,6 +24,7 @@ namespace AIEvent.Domain.Entities
         public DateTime? RequireApprovalAt { get; set; }
         public Guid? RequireApprovalBy { get; set; }
         public string? ReasonReject { get; set; }
+        public string? ReasonCancel { get; set; }
         public string? LinkRef { get; set; }
         public string? City { get; set; }
         public string? Address { get; set; }

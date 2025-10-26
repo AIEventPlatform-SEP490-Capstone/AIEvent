@@ -1,19 +1,15 @@
 ﻿using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
-using AIEvent.Application.DTOs.Event;
-using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.DTOs.Wallet;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
-using AIEvent.Domain.Interfaces;
+using AIEvent.Infrastructure.Repositories.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using System.Text.Json;
 
 namespace AIEvent.Application.Services.Implements
 {
