@@ -4,6 +4,7 @@ export const PATH = {
   LOGIN: "/auth/login",
   REGISTER: "/auth/register",
   VERIFY_OTP: "/auth/verify-otp",
+  GOOGLE_CALLBACK: "/auth/google-callback",
 
   // HOME
   HOME: "/",

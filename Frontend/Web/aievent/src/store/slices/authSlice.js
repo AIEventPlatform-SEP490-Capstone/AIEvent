@@ -121,6 +121,38 @@ export const verifyOtp = createAsyncThunk(
   }
 );
 
+export const googleLogin = createAsyncThunk(
+  "auth/googleLogin",
+  async (idToken, { rejectWithValue }) => {
+    try {
+      const response = await authAPI.googleLogin(idToken);
+      const { data } = response;
+
+      // Get cookie options (default to 30 days for Google login)
+      const cookieOptions = getCookieOptions(true, data.expiresAt);
+      //lưu accessToken vào cookies
+      Cookies.set("accessToken", data.accessToken, cookieOptions);
+      // Decode JWT token để lấy thông tin user
+      const userData = getUserFromJWT(data.accessToken);
+      // Lưu user data vào localStorage
+      localStorage.setItem("currentUser", JSON.stringify(userData));
+
+      return {
+        user: userData,
+        tokens: {
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+          expiresAt: data.expiresAt,
+        },
+      };
+    } catch (error) {
+      return rejectWithValue(
+        error.response ? error.response.data : error.message
+      );
+    }
+  }
+);
+
 export const logout = createAsyncThunk(
   "auth/logout",
   async (_, { rejectWithValue }) => {
@@ -245,6 +277,23 @@ const authSlice = createSlice({
       .addCase(verifyOtp.rejected, (state, { payload }) => {
         state.verifyingOtp = false;
         state.verifyOtpError = payload || { message: "Verify OTP failed" };
+      })
+
+      // googleLogin
+      .addCase(googleLogin.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(googleLogin.fulfilled, (state, { payload }) => {
+        state.isLoading = false;
+        state.user = payload.user;
+        state.isAuthenticated = true;
+        state.error = null;
+      })
+      .addCase(googleLogin.rejected, (state, { payload }) => {
+        state.isLoading = false;
+        state.error = payload;
+        state.isAuthenticated = false;
       })
 
       // logout
