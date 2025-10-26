@@ -3,7 +3,7 @@ using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Domain.Entities;
-using AIEvent.Domain.Interfaces;
+using AIEvent.Infrastructure.Repositories.Interfaces;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using MockQueryable.Moq;

@@ -1,4 +1,4 @@
-using AIEvent.Domain.Interfaces;
+using AIEvent.Infrastructure.Repositories.Interfaces;
 namespace AIEvent.Application.Helpers
 {
     public interface ITransactionHelper

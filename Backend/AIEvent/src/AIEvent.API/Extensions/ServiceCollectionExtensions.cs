@@ -2,9 +2,9 @@
 using AIEvent.Application.Mappings;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
-using AIEvent.Domain.Interfaces;
+using AIEvent.Infrastructure.Repositories.Interfaces;
 using AIEvent.Infrastructure.Context;
-using AIEvent.Infrastructure.Implements;
+using AIEvent.Infrastructure.Repositories.Implements;
 using CloudinaryDotNet;
 using Microsoft.EntityFrameworkCore;
 using Net.payOS;
@@ -40,6 +40,7 @@ namespace AIEvent.API.Extensions
                     .AddScoped<IQrCodeService, QrCodeService>()
                     .AddScoped<ITicketTokenService, TicketTokenService>()
                     .AddScoped<IPaymentService, PaymentService>()
+                    .AddScoped<IPayOSService, PayOSService>()
                     .AddScoped<IWalletService, WalletService>()
                     .AddScoped<IPdfService, PdfService>();
 

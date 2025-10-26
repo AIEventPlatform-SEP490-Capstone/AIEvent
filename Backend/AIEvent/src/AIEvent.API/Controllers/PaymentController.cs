@@ -19,13 +19,13 @@ namespace AIEvent.API.Controllers
             _paymentService = paymentService;
         }
 
-        [HttpPost("create")]
+        [HttpPost("topup")]
         [Authorize]
-        public async Task<ActionResult<SuccessResponse<CreatePaymentResult>>> CreatePayment([FromBody] long amount)
+        public async Task<ActionResult<SuccessResponse<CreatePaymentResult>>> CreatePaymentTopUp([FromBody] long amount)
         {
             var userId = User.GetRequiredUserId();
 
-            var result = await _paymentService.CreatePaymentAsync(userId, amount);
+            var result = await _paymentService.CreatePaymentTopUpAsync(userId, amount);
 
             if (!result.IsSuccess)
             {
@@ -39,7 +39,6 @@ namespace AIEvent.API.Controllers
         }
 
         [HttpPost("webhook")]
-        [Authorize]
         public async Task<ActionResult<SuccessResponse<object>>> ReceiveWebhook([FromBody] WebhookType webhookBody)
         {
             if (webhookBody == null)
@@ -49,7 +48,7 @@ namespace AIEvent.API.Controllers
 
             if (!result.IsSuccess)
             {
-                return Unauthorized(result.Error!);
+                return BadRequest(result.Error!);
             }
 
             return Ok(SuccessResponse<object>.SuccessResult(

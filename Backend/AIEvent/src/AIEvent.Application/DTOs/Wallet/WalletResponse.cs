@@ -4,6 +4,6 @@
     {
         public Guid WalletId { get; set; }
         public decimal Balance { get; set; }
-        public DateTime UpdatedAt { get; set; }
+        public DateTimeOffset UpdatedAt { get; set; }
     }
 }

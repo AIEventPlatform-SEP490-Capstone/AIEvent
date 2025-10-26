@@ -1,6 +1,6 @@
 ﻿using AIEvent.Domain.Entities;
 
-namespace AIEvent.Domain.Interfaces
+namespace AIEvent.Infrastructure.Repositories.Interfaces
 {
     public interface IUnitOfWork
     {
@@ -22,6 +22,8 @@ namespace AIEvent.Domain.Interfaces
         IGenericRepository<Wallet> WalletRepository { get; }
         IGenericRepository<WalletTransaction> WalletTransactionRepository { get; }
         IGenericRepository<PaymentTransaction> PaymentTransactionRepository { get; }
+        IGenericRepository<WithdrawRequest> WithdrawRequestRepository { get; }
+        IGenericRepository<PaymentInfomation> PaymentInfomationRepository { get; }
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();
         Task CommitTransactionAsync();

@@ -33,6 +33,8 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<Booking> Bookings { get; set; }
         public DbSet<BookingItem> BookingItems { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
+        public DbSet<WithdrawRequest> WithdrawRequests { get; set; }
+        public DbSet<PaymentInfomation> PaymentInfomations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -275,7 +277,6 @@ namespace AIEvent.Infrastructure.Context
 
                 entity.HasIndex(td => new { td.EventId, td.TicketName }).IsUnique();
                 entity.HasIndex(e => e.RefundRuleId).HasDatabaseName("IX_TicketDetail_RefundRuleId");
-                entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_TicketDetail_IsDeleted");
             });
 
             // ----------------- UserAction -----------------
@@ -333,6 +334,38 @@ namespace AIEvent.Infrastructure.Context
 
                 entity.HasIndex(fe => new { fe.UserId, fe.EventId }).HasDatabaseName("IX_FavoriteEvent_User_Event");
 
+            });
+
+            // ----------------- WithdrawRequest -----------------
+            builder.Entity<WithdrawRequest>(entity =>
+            {
+                entity.HasOne(w => w.User)
+                    .WithMany(u => u.WithdrawRequests)
+                    .HasForeignKey(w => w.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.Property(w => w.BankName).IsRequired().HasMaxLength(500);
+                entity.Property(w => w.BankAccountNumber).IsRequired().HasMaxLength(100);
+                entity.Property(w => w.BankAccountName).IsRequired().HasMaxLength(500);
+                entity.Property(w => w.Amount).HasColumnType("decimal(18,2)");
+            });
+
+            // ----------------- PaymentInfomation -----------------
+            builder.Entity<PaymentInfomation>(entity =>
+            {
+                entity.ToTable("PaymentInfomations"); 
+
+                entity.HasOne(pi => pi.User)
+                      .WithMany(u => u.PaymentInfomations)
+                      .HasForeignKey(pi => pi.UserId)
+                      .OnDelete(DeleteBehavior.Cascade); 
+
+                entity.HasIndex(pi => new { pi.UserId, pi.AccountNumber })
+                      .IsUnique()
+                      .HasDatabaseName("IX_PaymentInfo_User_Account");
+
+                entity.HasIndex(pi => pi.UserId)
+                      .HasDatabaseName("IX_PaymentInfo_UserId");
             });
 
             builder.Seed();
