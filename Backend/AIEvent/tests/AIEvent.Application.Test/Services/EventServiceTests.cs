@@ -1768,9 +1768,9 @@ namespace AIEvent.Application.Test.Services
                         new TicketDetail { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 }
                     }
                 }
-            }.AsQueryable().BuildMockDbSet();
+            }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, 1, 5);
@@ -1869,9 +1869,9 @@ namespace AIEvent.Application.Test.Services
                         new TicketDetail { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 }
                     }
                 }
-            }.AsQueryable().BuildMockDbSet();
+            }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetEventAsync(userId, null, null, null!, null, null, null, 1, 5);
@@ -1933,9 +1933,9 @@ namespace AIEvent.Application.Test.Services
                     FavoriteEvents = new List<FavoriteEvent>(),
                     TicketDetails = new List<TicketDetail> { new TicketDetail { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
                 }
-            }.AsQueryable().BuildMockDbSet();
+            }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetEventAsync(null, "music", null, null!, null, null, null, 1, 5);
@@ -2000,9 +2000,9 @@ namespace AIEvent.Application.Test.Services
                     FavoriteEvents = new List<FavoriteEvent>(),
                     TicketDetails = new List<TicketDetail> { new TicketDetail { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
                 }
-            }.AsQueryable().BuildMockDbSet();
+            }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetEventAsync(null, null, categoryId1.ToString(), null!, null, null, null, 1, 5);
@@ -2074,9 +2074,9 @@ namespace AIEvent.Application.Test.Services
                     FavoriteEvents = new List<FavoriteEvent>(),
                     TicketDetails = new List<TicketDetail> { new TicketDetail { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
                 }
-            }.AsQueryable().BuildMockDbSet();
+            }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             var tagRequest = new List<EventTagRequest> { new EventTagRequest { TagId = tagId1 } };
 
@@ -2176,9 +2176,9 @@ namespace AIEvent.Application.Test.Services
                     FavoriteEvents = new List<FavoriteEvent>(),
                     TicketDetails = new List<TicketDetail> { new TicketDetail { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
                 }
-            }.AsQueryable().BuildMockDbSet();
+            }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             var tagRequest = new List<EventTagRequest> 
             { 
@@ -2245,9 +2245,9 @@ namespace AIEvent.Application.Test.Services
                     FavoriteEvents = new List<FavoriteEvent>(),
                     TicketDetails = new List<TicketDetail> { new TicketDetail { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 100 } }
                 }
-            }.AsQueryable().BuildMockDbSet();
+            }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetEventAsync(null, null, null, null!, TicketType.Free, null, null, 1, 5);
@@ -2309,9 +2309,9 @@ namespace AIEvent.Application.Test.Services
                     FavoriteEvents = new List<FavoriteEvent>(),
                     TicketDetails = new List<TicketDetail> { new TicketDetail { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 100 } }
                 }
-            }.AsQueryable().BuildMockDbSet();
+            }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetEventAsync(null, null, null, null!, TicketType.Paid, null, null, 1, 5);
@@ -2375,9 +2375,9 @@ namespace AIEvent.Application.Test.Services
                     FavoriteEvents = new List<FavoriteEvent>(),
                     TicketDetails = new List<TicketDetail> { new TicketDetail { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
                 }
-            }.AsQueryable().BuildMockDbSet();
+            }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetEventAsync(null, null, null, null!, null, "ho chi", null, 1, 5);
@@ -2440,9 +2440,9 @@ namespace AIEvent.Application.Test.Services
                     FavoriteEvents = new List<FavoriteEvent>(),
                     TicketDetails = new List<TicketDetail> { new TicketDetail { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
                 }
-            }.AsQueryable().BuildMockDbSet();
+            }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, TimeLine.Today, 1, 5);
@@ -2505,9 +2505,9 @@ namespace AIEvent.Application.Test.Services
                     FavoriteEvents = new List<FavoriteEvent>(),
                     TicketDetails = new List<TicketDetail> { new TicketDetail { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
                 }
-            }.AsQueryable().BuildMockDbSet();
+            }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, TimeLine.Tomorrow, 1, 5);
@@ -2522,12 +2522,14 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID13_GetEventAsync_WithTimeLineThisWeek_ShouldReturnThisWeekEvents()
         {
             // Arrange
-            var today = DateTime.Today;
+            var now = DateTime.Now;
+            var today = now.Date;
             var diff = (7 + (today.DayOfWeek - DayOfWeek.Monday)) % 7;
             var startOfWeek = today.AddDays(-diff);
-            var endOfWeek = startOfWeek.AddDays(6);
-            var eventInWeek = today.AddDays(1).AddHours(14); 
-            var eventOutsideWeek = endOfWeek.AddDays(2).AddHours(14); 
+            var endOfWeek = startOfWeek.AddDays(7).AddTicks(-1);
+            // Event in the future within this week
+            var eventInWeek = now.AddHours(2); 
+            var eventOutsideWeek = endOfWeek.AddDays(2); 
             var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
             
             var events = new List<Event>
@@ -2574,9 +2576,9 @@ namespace AIEvent.Application.Test.Services
                     FavoriteEvents = new List<FavoriteEvent>(),
                     TicketDetails = new List<TicketDetail> { new TicketDetail { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
                 }
-            }.AsQueryable().BuildMockDbSet();
+            }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, TimeLine.ThisWeek, 1, 5);
@@ -2640,9 +2642,9 @@ namespace AIEvent.Application.Test.Services
                     FavoriteEvents = new List<FavoriteEvent>(),
                     TicketDetails = new List<TicketDetail> { new TicketDetail { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
                 }
-            }.AsQueryable().BuildMockDbSet();
+            }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, TimeLine.ThisMonth, 1, 5);
@@ -2705,9 +2707,9 @@ namespace AIEvent.Application.Test.Services
                     FavoriteEvents = new List<FavoriteEvent>(),
                     TicketDetails = new List<TicketDetail> { new TicketDetail { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
                 }
-            }.AsQueryable().BuildMockDbSet();
+            }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, 1, 5);
@@ -2748,9 +2750,9 @@ namespace AIEvent.Application.Test.Services
                     FavoriteEvents = new List<FavoriteEvent>(),
                     TicketDetails = new List<TicketDetail> { new TicketDetail { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
                 }
-            }.AsQueryable().BuildMockDbSet();
+            }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, 1, 5);
@@ -2832,9 +2834,9 @@ namespace AIEvent.Application.Test.Services
                     FavoriteEvents = new List<FavoriteEvent>(),
                     TicketDetails = new List<TicketDetail> { new TicketDetail { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
                 }
-            }.AsQueryable().BuildMockDbSet();
+            }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, 1, 5);
@@ -2901,9 +2903,9 @@ namespace AIEvent.Application.Test.Services
                     FavoriteEvents = new List<FavoriteEvent>(),
                     TicketDetails = new List<TicketDetail> { new TicketDetail { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 50 } }
                 }
-            }.AsQueryable().BuildMockDbSet();
+            }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             var tagRequest = new List<EventTagRequest> { new EventTagRequest { TagId = tagId } };
 
@@ -2967,9 +2969,9 @@ namespace AIEvent.Application.Test.Services
                     FavoriteEvents = new List<FavoriteEvent>(),
                     TicketDetails = new List<TicketDetail> { new TicketDetail { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
                 }
-            }.AsQueryable().BuildMockDbSet();
+            }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, 1, 1);
@@ -3021,9 +3023,9 @@ namespace AIEvent.Application.Test.Services
                         new TicketDetail { TicketName = "Standard", TicketQuantity = 100, TicketPrice = 0 } 
                     }
                 }
-            }.AsQueryable().BuildMockDbSet();
+            }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             _mockMapper.Setup(x => x.ConfigurationProvider)
                 .Returns(new MapperConfiguration(cfg => 
@@ -3059,9 +3061,9 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var nonExistentEventId = Guid.NewGuid();
-            var events = new List<Event>().AsQueryable().BuildMockDbSet();
+            var events = new List<Event>().AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             _mockMapper.Setup(x => x.ConfigurationProvider)
                 .Returns(new MapperConfiguration(cfg => 
@@ -3097,9 +3099,9 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var emptyGuid = Guid.Empty;
-            var events = new List<Event>().AsQueryable().BuildMockDbSet();
+            var events = new List<Event>().AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             _mockMapper.Setup(x => x.ConfigurationProvider)
                 .Returns(new MapperConfiguration(cfg => 
@@ -3134,10 +3136,13 @@ namespace AIEvent.Application.Test.Services
         #region DeleteEventAsync Tests
 
         [Fact]
-        public async Task UTCID01_DeleteEventAsync_WithValidExistingEventId_ShouldReturnSuccess()
+        public async Task UTCID01_DeleteEventAsync_WithValidEventWithoutBookings_ShouldReturnSuccess()
         {
             // Arrange
             var eventId = Guid.NewGuid();
+            var organizerId = Guid.NewGuid();
+            var organizerUserId = Guid.NewGuid();
+
             var existingEvent = new Event
             {
                 Id = eventId,
@@ -3145,49 +3150,64 @@ namespace AIEvent.Application.Test.Services
                 Description = "Test Description",
                 StartTime = DateTime.Now.AddDays(5),
                 EndTime = DateTime.Now.AddDays(5).AddHours(3),
-                OrganizerProfileId = Guid.NewGuid(),
+                OrganizerProfileId = organizerId,
                 EventCategoryId = Guid.NewGuid(),
                 TicketType = TicketType.Free,
                 TotalTickets = 100,
                 SoldQuantity = 0,
-                DeletedAt = null, // Not deleted
-                CreatedAt = DateTime.Now
+                DeletedAt = null,
+                IsDeleted = false,
+                CreatedAt = DateTime.Now,
+                Bookings = new List<Booking>(),
+                OrganizerProfile = new OrganizerProfile
+                {
+                    Id = organizerId,
+                    UserId = organizerUserId,
+                    ContactName = "Test Organizer",
+                    ContactEmail = "test@test.com",
+                    ContactPhone = "123456789",
+                    Address = "Test Address",
+                    OrganizationType = OrganizationType.PrivateCompany,
+                    EventFrequency = EventFrequency.Occasionally,
+                    EventSize = EventSize.Small,
+                    OrganizerType = OrganizerType.Individual,
+                    EventExperienceLevel = EventExperienceLevel.Beginner
+                }
             };
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.GetByIdAsync(eventId, true))
-                .ReturnsAsync(existingEvent);
+            var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.DeleteAsync(existingEvent))
+            _mockUnitOfWork.Setup(x => x.EventRepository.DeleteAsync(It.IsAny<Event>()))
                 .Returns(Task.CompletedTask);
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(async func => await func());
 
             // Act
-            var result = await _eventService.DeleteEventAsync(eventId);
+            var result = await _eventService.DeleteEventAsync(eventId, organizerId, null);
 
             // Assert
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeTrue();
-            _mockUnitOfWork.Verify(x => x.EventRepository.GetByIdAsync(eventId, true), Times.Once);
-            _mockUnitOfWork.Verify(x => x.EventRepository.DeleteAsync(existingEvent), Times.Once);
+            _mockUnitOfWork.Verify(x => x.EventRepository.DeleteAsync(It.IsAny<Event>()), Times.Once);
         }
 
         [Fact]
-        public async Task UTCID02_DeleteEventAsync_WithEmptyGuid_ShouldReturnFailure()
+        public async Task UTCID02_DeleteEventAsync_WithEmptyEventId_ShouldReturnFailure()
         {
             // Arrange
             var emptyGuid = Guid.Empty;
+            var organizerId = Guid.NewGuid();
 
             // Act
-            var result = await _eventService.DeleteEventAsync(emptyGuid);
+            var result = await _eventService.DeleteEventAsync(emptyGuid, organizerId, null);
 
             // Assert
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Contain("Invalid input");
             result.Error!.StatusCode.Should().Contain(ErrorCodes.InvalidInput);
-            _mockUnitOfWork.Verify(x => x.EventRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never);
         }
 
         [Fact]
@@ -3195,23 +3215,22 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var nonExistentEventId = Guid.NewGuid();
+            var organizerId = Guid.NewGuid();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.GetByIdAsync(nonExistentEventId, true))
-                .ReturnsAsync((Event?)null);
+            var mockEmptyQueryable = new List<Event>().AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEmptyQueryable);
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(async func => await func());
 
             // Act
-            var result = await _eventService.DeleteEventAsync(nonExistentEventId);
+            var result = await _eventService.DeleteEventAsync(nonExistentEventId, organizerId, null);
 
             // Assert
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Contain("Event not found or inactive");
             result.Error!.StatusCode.Should().Contain(ErrorCodes.InvalidInput);
-            _mockUnitOfWork.Verify(x => x.EventRepository.GetByIdAsync(nonExistentEventId, true), Times.Once);
-            _mockUnitOfWork.Verify(x => x.EventRepository.DeleteAsync(It.IsAny<Event>()), Times.Never);
         }
 
         [Fact]
@@ -3219,6 +3238,8 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var eventId = Guid.NewGuid();
+            var organizerId = Guid.NewGuid();
+
             var deletedEvent = new Event
             {
                 Id = eventId,
@@ -3226,33 +3247,834 @@ namespace AIEvent.Application.Test.Services
                 Description = "Test Description",
                 StartTime = DateTime.Now.AddDays(5),
                 EndTime = DateTime.Now.AddDays(5).AddHours(3),
-                OrganizerProfileId = Guid.NewGuid(),
+                OrganizerProfileId = organizerId,
                 EventCategoryId = Guid.NewGuid(),
                 TicketType = TicketType.Free,
                 TotalTickets = 100,
                 SoldQuantity = 0,
-                DeletedAt = DateTime.Now.AddDays(-1), // Already deleted
+                DeletedAt = DateTime.Now.AddDays(-1),
+                IsDeleted = true,
                 CreatedAt = DateTime.Now.AddDays(-10)
             };
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.GetByIdAsync(eventId, true))
-                .ReturnsAsync(deletedEvent);
+            var mockDeletedEventQueryable = new List<Event> { deletedEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockDeletedEventQueryable);
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(async func => await func());
 
             // Act
-            var result = await _eventService.DeleteEventAsync(eventId);
+            var result = await _eventService.DeleteEventAsync(eventId, organizerId, null);
 
             // Assert
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Contain("Event not found or inactive");
             result.Error!.StatusCode.Should().Contain(ErrorCodes.InvalidInput);
-            _mockUnitOfWork.Verify(x => x.EventRepository.GetByIdAsync(eventId, true), Times.Once);
-            _mockUnitOfWork.Verify(x => x.EventRepository.DeleteAsync(It.IsAny<Event>()), Times.Never);
         }
 
+        [Fact]
+        public async Task UTCID05_DeleteEventAsync_WithUnauthorizedOrganizer_ShouldReturnFailure()
+        {
+            // Arrange
+            var eventId = Guid.NewGuid();
+            var actualOrganizerId = Guid.NewGuid();
+            var unauthorizedOrganizerId = Guid.NewGuid();
+
+            var existingEvent = new Event
+            {
+                Id = eventId,
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = DateTime.Now.AddDays(5),
+                EndTime = DateTime.Now.AddDays(5).AddHours(3),
+                OrganizerProfileId = actualOrganizerId,
+                EventCategoryId = Guid.NewGuid(),
+                TicketType = TicketType.Free,
+                TotalTickets = 100,
+                SoldQuantity = 0,
+                DeletedAt = null,
+                IsDeleted = false,
+                CreatedAt = DateTime.Now,
+                Bookings = new List<Booking>()
+            };
+
+            var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+            // Act
+            var result = await _eventService.DeleteEventAsync(eventId, unauthorizedOrganizerId, null);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Cannot delete other people's events");
+            result.Error!.StatusCode.Should().Contain(ErrorCodes.Unauthorized);
+        }
+
+        [Fact]
+        public async Task UTCID06_DeleteEventAsync_WithBookingsButNoReason_ShouldReturnFailure()
+        {
+            // Arrange
+            var eventId = Guid.NewGuid();
+            var organizerId = Guid.NewGuid();
+            var organizerUserId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+
+            var existingEvent = new Event
+            {
+                Id = eventId,
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = DateTime.Now.AddDays(5),
+                EndTime = DateTime.Now.AddDays(5).AddHours(3),
+                OrganizerProfileId = organizerId,
+                EventCategoryId = Guid.NewGuid(),
+                TicketType = TicketType.Paid,
+                TotalTickets = 100,
+                SoldQuantity = 10,
+                DeletedAt = null,
+                IsDeleted = false,
+                Publish = true,
+                CreatedAt = DateTime.Now,
+                OrganizerProfile = new OrganizerProfile
+                {
+                    Id = organizerId,
+                    UserId = organizerUserId,
+                    ContactName = "Test Organizer",
+                    ContactEmail = "test@test.com",
+                    ContactPhone = "123456789",
+                    Address = "Test Address",
+                    OrganizationType = OrganizationType.PrivateCompany,
+                    EventFrequency = EventFrequency.Occasionally,
+                    EventSize = EventSize.Small,
+                    OrganizerType = OrganizerType.Individual,
+                    EventExperienceLevel = EventExperienceLevel.Beginner
+                },
+                Bookings = new List<Booking>
+                {
+                    new Booking
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        EventId = eventId,
+                        Status = BookingStatus.Completed,
+                        TotalAmount = 100,
+                        User = new User
+                        {
+                            Id = userId,
+                            Email = "user@test.com",
+                            FullName = "Test User",
+                            RoleId = Guid.NewGuid()
+                        }
+                    }
+                }
+            };
+
+            var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+            // Act
+            var result = await _eventService.DeleteEventAsync(eventId, organizerId, null);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Cancellation of a published event with existing bookings must have a reason");
+            result.Error!.StatusCode.Should().Contain(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID07_DeleteEventAsync_WithBookingsAndReason_ShouldRefundAndReturnSuccess()
+        {
+            // Arrange
+            var eventId = Guid.NewGuid();
+            var organizerId = Guid.NewGuid();
+            var organizerUserId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var userWalletId = Guid.NewGuid();
+            var organizerWalletId = Guid.NewGuid();
+            var bookingId = Guid.NewGuid();
+            var reasonCancel = "Test reason for cancellation";
+
+            var userWallet = new Wallet
+            {
+                Id = userWalletId,
+                UserId = userId,
+                Balance = 500,
+                IsDeleted = false
+            };
+
+            var organizerWallet = new Wallet
+            {
+                Id = organizerWalletId,
+                UserId = organizerUserId,
+                Balance = 1000,
+                IsDeleted = false
+            };
+
+            var existingEvent = new Event
+            {
+                Id = eventId,
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = DateTime.Now.AddDays(5),
+                EndTime = DateTime.Now.AddDays(5).AddHours(3),
+                OrganizerProfileId = organizerId,
+                EventCategoryId = Guid.NewGuid(),
+                TicketType = TicketType.Paid,
+                TotalTickets = 100,
+                SoldQuantity = 10,
+                DeletedAt = null,
+                IsDeleted = false,
+                Publish = true,
+                CreatedAt = DateTime.Now,
+                OrganizerProfile = new OrganizerProfile
+                {
+                    Id = organizerId,
+                    UserId = organizerUserId,
+                    ContactName = "Test Organizer",
+                    ContactEmail = "test@test.com",
+                    ContactPhone = "123456789",
+                    Address = "Test Address",
+                    OrganizationType = OrganizationType.PrivateCompany,
+                    EventFrequency = EventFrequency.Occasionally,
+                    EventSize = EventSize.Small,
+                    OrganizerType = OrganizerType.Individual,
+                    EventExperienceLevel = EventExperienceLevel.Beginner
+                },
+                Bookings = new List<Booking>
+                {
+                    new Booking
+                    {
+                        Id = bookingId,
+                        UserId = userId,
+                        EventId = eventId,
+                        Status = BookingStatus.Completed,
+                        TotalAmount = 100,
+                        User = new User
+                        {
+                            Id = userId,
+                            Email = "user@test.com",
+                            FullName = "Test User",
+                            RoleId = Guid.NewGuid(),
+                            Wallet = userWallet
+                        }
+                    }
+                }
+            };
+
+            var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+            var mockWalletQueryable = new List<Wallet> { organizerWallet }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(false)).Returns(mockWalletQueryable);
+
+            _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.AddRangeAsync(It.IsAny<IEnumerable<WalletTransaction>>()))
+                .Returns(Task.CompletedTask);
+
+            _mockUnitOfWork.Setup(x => x.WalletRepository.UpdateRangeAsync(It.IsAny<IEnumerable<Wallet>>()))
+                .Returns(Task.CompletedTask);
+
+            _mockUnitOfWork.Setup(x => x.BookingRepository.UpdateRangeAsync(It.IsAny<IEnumerable<Booking>>()))
+                .Returns(Task.CompletedTask);
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.DeleteAsync(It.IsAny<Event>()))
+                .Returns(Task.CompletedTask);
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(async func => await func());
+
+            // Act
+            var result = await _eventService.DeleteEventAsync(eventId, organizerId, reasonCancel);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeTrue();
+
+            // Verify wallet balances updated
+            userWallet.Balance.Should().Be(600); // 500 + 100 refund
+            organizerWallet.Balance.Should().Be(900); // 1000 - 100 refund
+
+            // Verify booking status updated
+            existingEvent.Bookings.First().Status.Should().Be(BookingStatus.Cancelled);
+
+            // Verify reason cancel set
+            existingEvent.ReasonCancel.Should().Be(reasonCancel);
+
+            // Verify repository calls
+            _mockUnitOfWork.Verify(x => x.WalletTransactionRepository.AddRangeAsync(It.Is<IEnumerable<WalletTransaction>>(
+                wt => wt.Count() == 2)), Times.Once);
+            _mockUnitOfWork.Verify(x => x.WalletRepository.UpdateRangeAsync(It.IsAny<IEnumerable<Wallet>>()), Times.Once);
+            _mockUnitOfWork.Verify(x => x.BookingRepository.UpdateRangeAsync(It.IsAny<IEnumerable<Booking>>()), Times.Once);
+            _mockUnitOfWork.Verify(x => x.EventRepository.DeleteAsync(It.IsAny<Event>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task UTCID08_DeleteEventAsync_WithBookingsButInsufficientOrganizerBalance_ShouldReturnFailure()
+        {
+            // Arrange
+            var eventId = Guid.NewGuid();
+            var organizerId = Guid.NewGuid();
+            var organizerUserId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var userWalletId = Guid.NewGuid();
+            var organizerWalletId = Guid.NewGuid();
+            var reasonCancel = "Test reason";
+
+            var userWallet = new Wallet
+            {
+                Id = userWalletId,
+                UserId = userId,
+                Balance = 500,
+                IsDeleted = false
+            };
+
+            var organizerWallet = new Wallet
+            {
+                Id = organizerWalletId,
+                UserId = organizerUserId,
+                Balance = 50, // Not enough to refund 100
+                IsDeleted = false
+            };
+
+            var existingEvent = new Event
+            {
+                Id = eventId,
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = DateTime.Now.AddDays(5),
+                EndTime = DateTime.Now.AddDays(5).AddHours(3),
+                OrganizerProfileId = organizerId,
+                EventCategoryId = Guid.NewGuid(),
+                TicketType = TicketType.Paid,
+                TotalTickets = 100,
+                SoldQuantity = 10,
+                DeletedAt = null,
+                IsDeleted = false,
+                Publish = true,
+                CreatedAt = DateTime.Now,
+                OrganizerProfile = new OrganizerProfile
+                {
+                    Id = organizerId,
+                    UserId = organizerUserId,
+                    ContactName = "Test Organizer",
+                    ContactEmail = "test@test.com",
+                    ContactPhone = "123456789",
+                    Address = "Test Address",
+                    OrganizationType = OrganizationType.PrivateCompany,
+                    EventFrequency = EventFrequency.Occasionally,
+                    EventSize = EventSize.Small,
+                    OrganizerType = OrganizerType.Individual,
+                    EventExperienceLevel = EventExperienceLevel.Beginner
+                },
+                Bookings = new List<Booking>
+                {
+                    new Booking
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        EventId = eventId,
+                        Status = BookingStatus.Completed,
+                        TotalAmount = 100,
+                        User = new User
+                        {
+                            Id = userId,
+                            Email = "user@test.com",
+                            FullName = "Test User",
+                            RoleId = Guid.NewGuid(),
+                            Wallet = userWallet
+                        }
+                    }
+                }
+            };
+
+            var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+            var mockWalletQueryable = new List<Wallet> { organizerWallet }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(false)).Returns(mockWalletQueryable);
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(async func => await func());
+
+            // Act
+            var result = await _eventService.DeleteEventAsync(eventId, organizerId, reasonCancel);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Organizer wallet has insufficient balance to refund");
+            result.Error!.StatusCode.Should().Contain(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID09_DeleteEventAsync_WithFreeBookings_ShouldCancelBookingsWithoutRefund()
+        {
+            // Arrange
+            var eventId = Guid.NewGuid();
+            var organizerId = Guid.NewGuid();
+            var organizerUserId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var reasonCancel = "Test cancellation";
+
+            var existingEvent = new Event
+            {
+                Id = eventId,
+                Title = "Free Event",
+                Description = "Test Description",
+                StartTime = DateTime.Now.AddDays(5),
+                EndTime = DateTime.Now.AddDays(5).AddHours(3),
+                OrganizerProfileId = organizerId,
+                EventCategoryId = Guid.NewGuid(),
+                TicketType = TicketType.Free,
+                TotalTickets = 100,
+                SoldQuantity = 10,
+                DeletedAt = null,
+                IsDeleted = false,
+                Publish = true,
+                CreatedAt = DateTime.Now,
+                OrganizerProfile = new OrganizerProfile
+                {
+                    Id = organizerId,
+                    UserId = organizerUserId,
+                    ContactName = "Test Organizer",
+                    ContactEmail = "test@test.com",
+                    ContactPhone = "123456789",
+                    Address = "Test Address",
+                    OrganizationType = OrganizationType.PrivateCompany,
+                    EventFrequency = EventFrequency.Occasionally,
+                    EventSize = EventSize.Small,
+                    OrganizerType = OrganizerType.Individual,
+                    EventExperienceLevel = EventExperienceLevel.Beginner
+                },
+                Bookings = new List<Booking>
+                {
+                    new Booking
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        EventId = eventId,
+                        Status = BookingStatus.Completed,
+                        TotalAmount = 0, // Free booking
+                        User = new User
+                        {
+                            Id = userId,
+                            Email = "user@test.com",
+                            FullName = "Test User",
+                            RoleId = Guid.NewGuid()
+                        }
+                    }
+                }
+            };
+
+            var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+            var organizerWallet = new Wallet
+            {
+                Id = Guid.NewGuid(),
+                UserId = organizerUserId,
+                Balance = 1000,
+                IsDeleted = false
+            };
+
+            var mockWalletQueryable = new List<Wallet> { organizerWallet }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(false)).Returns(mockWalletQueryable);
+
+            _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.AddRangeAsync(It.IsAny<IEnumerable<WalletTransaction>>()))
+                .Returns(Task.CompletedTask);
+
+            _mockUnitOfWork.Setup(x => x.WalletRepository.UpdateRangeAsync(It.IsAny<IEnumerable<Wallet>>()))
+                .Returns(Task.CompletedTask);
+
+            _mockUnitOfWork.Setup(x => x.BookingRepository.UpdateRangeAsync(It.IsAny<IEnumerable<Booking>>()))
+                .Returns(Task.CompletedTask);
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.DeleteAsync(It.IsAny<Event>()))
+                .Returns(Task.CompletedTask);
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(async func => await func());
+
+            // Act
+            var result = await _eventService.DeleteEventAsync(eventId, organizerId, reasonCancel);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeTrue();
+
+            // Verify booking cancelled
+            existingEvent.Bookings.First().Status.Should().Be(BookingStatus.Cancelled);
+
+            // Verify wallet transactions called with empty list for free bookings
+            _mockUnitOfWork.Verify(x => x.WalletTransactionRepository.AddRangeAsync(It.Is<IEnumerable<WalletTransaction>>(
+                wt => wt.Count() == 0)), Times.Once);
+            
+            // Verify booking updated
+            _mockUnitOfWork.Verify(x => x.BookingRepository.UpdateRangeAsync(It.IsAny<IEnumerable<Booking>>()), Times.Once);
+            _mockUnitOfWork.Verify(x => x.EventRepository.DeleteAsync(It.IsAny<Event>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task UTCID10_DeleteEventAsync_WithOrganizerWalletNotFound_ShouldReturnFailure()
+        {
+            // Arrange
+            var eventId = Guid.NewGuid();
+            var organizerId = Guid.NewGuid();
+            var organizerUserId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var reasonCancel = "Test cancellation";
+
+            var existingEvent = new Event
+            {
+                Id = eventId,
+                Title = "Paid Event",
+                Description = "Test Description",
+                StartTime = DateTime.Now.AddDays(5),
+                EndTime = DateTime.Now.AddDays(5).AddHours(3),
+                OrganizerProfileId = organizerId,
+                EventCategoryId = Guid.NewGuid(),
+                TicketType = TicketType.Paid,
+                TotalTickets = 100,
+                SoldQuantity = 10,
+                DeletedAt = null,
+                IsDeleted = false,
+                Publish = true,
+                CreatedAt = DateTime.Now,
+                OrganizerProfile = new OrganizerProfile
+                {
+                    Id = organizerId,
+                    UserId = organizerUserId,
+                    ContactName = "Test Organizer",
+                    ContactEmail = "test@test.com",
+                    ContactPhone = "123456789",
+                    Address = "Test Address",
+                    OrganizationType = OrganizationType.PrivateCompany,
+                    EventFrequency = EventFrequency.Occasionally,
+                    EventSize = EventSize.Small,
+                    OrganizerType = OrganizerType.Individual,
+                    EventExperienceLevel = EventExperienceLevel.Beginner
+                },
+                Bookings = new List<Booking>
+                {
+                    new Booking
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        EventId = eventId,
+                        Status = BookingStatus.Completed,
+                        TotalAmount = 100,
+                        User = new User
+                        {
+                            Id = userId,
+                            Email = "user@test.com",
+                            FullName = "Test User",
+                            RoleId = Guid.NewGuid(),
+                            Wallet = new Wallet
+                            {
+                                Id = Guid.NewGuid(),
+                                UserId = userId,
+                                Balance = 0,
+                                IsDeleted = false
+                            }
+                        }
+                    }
+                }
+            };
+
+            var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+            // No organizer wallet found
+            var mockWalletQueryable = new List<Wallet>().AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(false)).Returns(mockWalletQueryable);
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(async func => await func());
+
+            // Act
+            var result = await _eventService.DeleteEventAsync(eventId, organizerId, reasonCancel);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Organizer wallet not found");
+            result.Error!.StatusCode.Should().Contain(ErrorCodes.NotFound);
+        }
+
+        [Fact]
+        public async Task UTCID11_DeleteEventAsync_WithUserWalletNotFound_ShouldReturnFailure()
+        {
+            // Arrange
+            var eventId = Guid.NewGuid();
+            var organizerId = Guid.NewGuid();
+            var organizerUserId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var reasonCancel = "Test cancellation";
+
+            var existingEvent = new Event
+            {
+                Id = eventId,
+                Title = "Paid Event",
+                Description = "Test Description",
+                StartTime = DateTime.Now.AddDays(5),
+                EndTime = DateTime.Now.AddDays(5).AddHours(3),
+                OrganizerProfileId = organizerId,
+                EventCategoryId = Guid.NewGuid(),
+                TicketType = TicketType.Paid,
+                TotalTickets = 100,
+                SoldQuantity = 10,
+                DeletedAt = null,
+                IsDeleted = false,
+                Publish = true,
+                CreatedAt = DateTime.Now,
+                OrganizerProfile = new OrganizerProfile
+                {
+                    Id = organizerId,
+                    UserId = organizerUserId,
+                    ContactName = "Test Organizer",
+                    ContactEmail = "test@test.com",
+                    ContactPhone = "123456789",
+                    Address = "Test Address",
+                    OrganizationType = OrganizationType.PrivateCompany,
+                    EventFrequency = EventFrequency.Occasionally,
+                    EventSize = EventSize.Small,
+                    OrganizerType = OrganizerType.Individual,
+                    EventExperienceLevel = EventExperienceLevel.Beginner
+                },
+                Bookings = new List<Booking>
+                {
+                    new Booking
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        EventId = eventId,
+                        Status = BookingStatus.Completed,
+                        TotalAmount = 100,
+                        User = new User
+                        {
+                            Id = userId,
+                            Email = "user@test.com",
+                            FullName = "Test User",
+                            RoleId = Guid.NewGuid(),
+                            Wallet = null! // User wallet not found
+                        }
+                    }
+                }
+            };
+
+            var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+            var organizerWallet = new Wallet
+            {
+                Id = Guid.NewGuid(),
+                UserId = organizerUserId,
+                Balance = 1000,
+                IsDeleted = false
+            };
+
+            var mockWalletQueryable = new List<Wallet> { organizerWallet }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(false)).Returns(mockWalletQueryable);
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(async func => await func());
+
+            // Act
+            var result = await _eventService.DeleteEventAsync(eventId, organizerId, reasonCancel);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Wallet not found for user Test User");
+            result.Error!.StatusCode.Should().Contain(ErrorCodes.NotFound);
+        }
+
+        [Fact]
+        public async Task UTCID12_DeleteEventAsync_WithUnpublishedEventAndBookings_ShouldSucceedWithoutReason()
+        {
+            // Arrange
+            var eventId = Guid.NewGuid();
+            var organizerId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+
+            var existingEvent = new Event
+            {
+                Id = eventId,
+                Title = "Unpublished Event",
+                Description = "Test Description",
+                StartTime = DateTime.Now.AddDays(5),
+                EndTime = DateTime.Now.AddDays(5).AddHours(3),
+                OrganizerProfileId = organizerId,
+                EventCategoryId = Guid.NewGuid(),
+                TicketType = TicketType.Free,
+                TotalTickets = 100,
+                SoldQuantity = 10,
+                DeletedAt = null,
+                IsDeleted = false,
+                Publish = false, // Unpublished event
+                CreatedAt = DateTime.Now,
+                OrganizerProfile = new OrganizerProfile
+                {
+                    Id = organizerId,
+                    UserId = Guid.NewGuid(),
+                    ContactName = "Test Organizer",
+                    ContactEmail = "test@test.com",
+                    ContactPhone = "123456789",
+                    Address = "Test Address",
+                    OrganizationType = OrganizationType.PrivateCompany,
+                    EventFrequency = EventFrequency.Occasionally,
+                    EventSize = EventSize.Small,
+                    OrganizerType = OrganizerType.Individual,
+                    EventExperienceLevel = EventExperienceLevel.Beginner
+                },
+                Bookings = new List<Booking>
+                {
+                    new Booking
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        EventId = eventId,
+                        Status = BookingStatus.Completed,
+                        TotalAmount = 0,
+                        User = new User
+                        {
+                            Id = userId,
+                            Email = "user@test.com",
+                            FullName = "Test User",
+                            RoleId = Guid.NewGuid()
+                        }
+                    }
+                }
+            };
+
+            var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.DeleteAsync(It.IsAny<Event>()))
+                .Returns(Task.CompletedTask);
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(async func => await func());
+
+            // Act - no reason provided, but should succeed because event is not published
+            var result = await _eventService.DeleteEventAsync(eventId, organizerId, null);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.EventRepository.DeleteAsync(It.IsAny<Event>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task UTCID13_DeleteEventAsync_WithOnlyCancelledBookings_ShouldSucceedWithoutRefund()
+        {
+            // Arrange
+            var eventId = Guid.NewGuid();
+            var organizerId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+
+            var existingEvent = new Event
+            {
+                Id = eventId,
+                Title = "Event with Cancelled Bookings",
+                Description = "Test Description",
+                StartTime = DateTime.Now.AddDays(5),
+                EndTime = DateTime.Now.AddDays(5).AddHours(3),
+                OrganizerProfileId = organizerId,
+                EventCategoryId = Guid.NewGuid(),
+                TicketType = TicketType.Paid,
+                TotalTickets = 100,
+                SoldQuantity = 10,
+                DeletedAt = null,
+                IsDeleted = false,
+                Publish = true,
+                CreatedAt = DateTime.Now,
+                OrganizerProfile = new OrganizerProfile
+                {
+                    Id = organizerId,
+                    UserId = Guid.NewGuid(),
+                    ContactName = "Test Organizer",
+                    ContactEmail = "test@test.com",
+                    ContactPhone = "123456789",
+                    Address = "Test Address",
+                    OrganizationType = OrganizationType.PrivateCompany,
+                    EventFrequency = EventFrequency.Occasionally,
+                    EventSize = EventSize.Small,
+                    OrganizerType = OrganizerType.Individual,
+                    EventExperienceLevel = EventExperienceLevel.Beginner
+                },
+                Bookings = new List<Booking>
+                {
+                    new Booking
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        EventId = eventId,
+                        Status = BookingStatus.Cancelled, // Already cancelled
+                        TotalAmount = 100,
+                        User = new User
+                        {
+                            Id = userId,
+                            Email = "user@test.com",
+                            FullName = "Test User",
+                            RoleId = Guid.NewGuid()
+                        }
+                    }
+                }
+            };
+
+            var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.DeleteAsync(It.IsAny<Event>()))
+                .Returns(Task.CompletedTask);
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(async func => await func());
+
+            // Act - no reason needed because no active bookings
+            var result = await _eventService.DeleteEventAsync(eventId, organizerId, null);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.EventRepository.DeleteAsync(It.IsAny<Event>()), Times.Once);
+        }
+        [Fact]
+        public async Task UTCID14_DeleteEventAsync_WithEmptyOrganizerId_ShouldReturnFailure()
+        {
+            // Arrange
+            var eventId = Guid.NewGuid();
+            var organizerId = Guid.Empty;
+
+            // Act
+            var result = await _eventService.DeleteEventAsync(eventId, organizerId, null);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Invalid input");
+            result.Error!.StatusCode.Should().Contain(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID15_DeleteEventAsync_WithEmptyOrganizerIdAndEventId_ShouldReturnFailure()
+        {
+            // Arrange
+            var eventId = Guid.Empty;
+            var organizerId = Guid.Empty;
+
+            // Act
+            var result = await _eventService.DeleteEventAsync(eventId, organizerId, null);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Invalid input");
+            result.Error!.StatusCode.Should().Contain(ErrorCodes.InvalidInput);
+        }
         #endregion
 
         #region GetRelatedEventAsync Tests
@@ -3316,9 +4138,9 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var allEvents = new List<Event> { targetEvent, relatedEvent }.AsQueryable().BuildMockDbSet();
+            var allEvents = new List<Event> { targetEvent, relatedEvent }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(allEvents.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(allEvents);
 
             // Act
             var result = await _eventService.GetRelatedEventAsync(eventId, 1, 5);
@@ -3394,9 +4216,9 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var allEvents = new List<Event> { targetEvent, relatedEvent }.AsQueryable().BuildMockDbSet();
+            var allEvents = new List<Event> { targetEvent, relatedEvent }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(allEvents.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(allEvents);
 
             // Act
             var result = await _eventService.GetRelatedEventAsync(eventId, 1, 5);
@@ -3464,9 +4286,9 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var allEvents = new List<Event> { targetEvent, relatedEvent }.AsQueryable().BuildMockDbSet();
+            var allEvents = new List<Event> { targetEvent, relatedEvent }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(allEvents.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(allEvents);
 
             // Act
             var result = await _eventService.GetRelatedEventAsync(eventId, 1, 5);
@@ -3531,9 +4353,9 @@ namespace AIEvent.Application.Test.Services
                 TicketDetails = new List<TicketDetail>()
             };
 
-            var allEvents = new List<Event> { targetEvent, unrelatedEvent }.AsQueryable().BuildMockDbSet();
+            var allEvents = new List<Event> { targetEvent, unrelatedEvent }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(allEvents.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(allEvents);
 
             // Act
             var result = await _eventService.GetRelatedEventAsync(eventId, 1, 5);
@@ -3594,9 +4416,9 @@ namespace AIEvent.Application.Test.Services
                 TicketDetails = new List<TicketDetail>()
             };
 
-            var allEvents = new List<Event> { event1, event2 }.AsQueryable().BuildMockDbSet();
+            var allEvents = new List<Event> { event1, event2 }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(allEvents.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(allEvents);
 
             // Act
             var result = await _eventService.GetRelatedEventAsync(nonExistentEventId, 1, 5);
@@ -3657,9 +4479,9 @@ namespace AIEvent.Application.Test.Services
                 TicketDetails = new List<TicketDetail>()
             };
 
-            var allEvents = new List<Event> { targetEvent, pastEvent }.AsQueryable().BuildMockDbSet();
+            var allEvents = new List<Event> { targetEvent, pastEvent }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(allEvents.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(allEvents);
 
             // Act
             var result = await _eventService.GetRelatedEventAsync(eventId, 1, 5);
@@ -3718,9 +4540,9 @@ namespace AIEvent.Application.Test.Services
                 TicketDetails = new List<TicketDetail>()
             };
 
-            var allEvents = new List<Event> { targetEvent, deletedEvent }.AsQueryable().BuildMockDbSet();
+            var allEvents = new List<Event> { targetEvent, deletedEvent }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(allEvents.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(allEvents);
 
             // Act
             var result = await _eventService.GetRelatedEventAsync(eventId, 1, 5);
@@ -3779,9 +4601,9 @@ namespace AIEvent.Application.Test.Services
                 TicketDetails = new List<TicketDetail>()
             };
 
-            var allEvents = new List<Event> { targetEvent, unapprovedEvent }.AsQueryable().BuildMockDbSet();
+            var allEvents = new List<Event> { targetEvent, unapprovedEvent }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(allEvents.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(allEvents);
 
             // Act
             var result = await _eventService.GetRelatedEventAsync(eventId, 1, 5);
@@ -3886,9 +4708,9 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var events = new List<Event> { draftEvent1, draftEvent2 }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event> { draftEvent1, draftEvent2 }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetAllEventDraftAsync(organizerId, 1, 10);
@@ -3924,9 +4746,9 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var organizerId = Guid.NewGuid();
-            var events = new List<Event>().AsQueryable().BuildMockDbSet();
+            var events = new List<Event>().AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetAllEventDraftAsync(organizerId, 1, 10);
@@ -4006,9 +4828,9 @@ namespace AIEvent.Application.Test.Services
                 TicketDetails = null!
             };
 
-            var events = new List<Event> { draftEvent, publishedEvent }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event> { draftEvent, publishedEvent }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetAllEventDraftAsync(organizerId, 1, 10);
@@ -4086,9 +4908,9 @@ namespace AIEvent.Application.Test.Services
                 TicketDetails = null!
             };
 
-            var events = new List<Event> { draftEvent, deletedDraftEvent }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event> { draftEvent, deletedDraftEvent }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetAllEventDraftAsync(organizerId, 1, 10);
@@ -4184,9 +5006,9 @@ namespace AIEvent.Application.Test.Services
                 TicketDetails = null!
             };
 
-            var events = new List<Event> { draftEventOrganizer1, draftEventOrganizer2 }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event> { draftEventOrganizer1, draftEventOrganizer2 }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetAllEventDraftAsync(organizerId1, 1, 10);
@@ -4287,9 +5109,9 @@ namespace AIEvent.Application.Test.Services
                 TicketDetails = null!
             };
 
-            var events = new List<Event> { needConfirmEvent, approvedEvent }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event> { needConfirmEvent, approvedEvent }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmStatus.NeedConfirm, 1, 10);
@@ -4386,9 +5208,9 @@ namespace AIEvent.Application.Test.Services
                 TicketDetails = null!
             };
 
-            var events = new List<Event> { approvedEvent, needConfirmEvent }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event> { approvedEvent, needConfirmEvent }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmStatus.Approve, 1, 10);
@@ -4485,9 +5307,9 @@ namespace AIEvent.Application.Test.Services
                 TicketDetails = null!
             };
 
-            var events = new List<Event> { rejectedEvent, approvedEvent }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event> { rejectedEvent, approvedEvent }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmStatus.Reject, 1, 10);
@@ -4585,9 +5407,9 @@ namespace AIEvent.Application.Test.Services
                 TicketDetails = null!
             };
 
-            var events = new List<Event> { organizerEvent, otherEvent }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event> { organizerEvent, otherEvent }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetAllEventStatusAsync(organizerId, null, ConfirmStatus.Approve, 1, 10);
@@ -4645,9 +5467,9 @@ namespace AIEvent.Application.Test.Services
                 CreatedAt = DateTime.Now.AddDays(-1)
             };
 
-            var events = new List<Event> { event1, event2 }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event> { event1, event2 }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmStatus.Approve, 1, 10);
@@ -4704,9 +5526,9 @@ namespace AIEvent.Application.Test.Services
                 CreatedAt = DateTime.Now.AddDays(-1)
             };
 
-            var events = new List<Event> { matchingEvent, nonMatchingEvent }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event> { matchingEvent, nonMatchingEvent }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "rock", ConfirmStatus.Approve, 1, 10);
@@ -4766,9 +5588,9 @@ namespace AIEvent.Application.Test.Services
                 CreatedAt = DateTime.Now.AddDays(-1)
             };
 
-            var events = new List<Event> { matchingEvent, nonMatchingEvent }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event> { matchingEvent, nonMatchingEvent }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "minh", ConfirmStatus.Approve, 1, 10);
@@ -4826,9 +5648,9 @@ namespace AIEvent.Application.Test.Services
                 CreatedAt = DateTime.Now.AddDays(-1)
             };
 
-            var events = new List<Event> { matchingEvent, nonMatchingEvent }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event> { matchingEvent, nonMatchingEvent }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "music", ConfirmStatus.Approve, 1, 10);
@@ -4886,9 +5708,9 @@ namespace AIEvent.Application.Test.Services
                 CreatedAt = DateTime.Now.AddDays(-1)
             };
 
-            var events = new List<Event> { event1, event2 }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event> { event1, event2 }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "", ConfirmStatus.Approve, 1, 10);
@@ -4945,9 +5767,9 @@ namespace AIEvent.Application.Test.Services
                 CreatedAt = DateTime.Now.AddDays(-1)
             };
 
-            var events = new List<Event> { publishedEvent, unpublishedEvent }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event> { publishedEvent, unpublishedEvent }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmStatus.Approve, 1, 10);
@@ -5005,9 +5827,9 @@ namespace AIEvent.Application.Test.Services
                 CreatedAt = DateTime.Now.AddDays(-1)
             };
 
-            var events = new List<Event> { activeEvent, deletedEvent }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event> { activeEvent, deletedEvent }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmStatus.Approve, 1, 10);
@@ -5086,9 +5908,9 @@ namespace AIEvent.Application.Test.Services
                 CreatedAt = DateTime.Now.AddDays(-2)
             };
 
-            var events = new List<Event> { matchingEvent, nonMatchingEvent1, nonMatchingEvent2 }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event> { matchingEvent, nonMatchingEvent1, nonMatchingEvent2 }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetAllEventStatusAsync(organizerId, "rock", ConfirmStatus.Approve, 1, 10);
@@ -5166,9 +5988,9 @@ namespace AIEvent.Application.Test.Services
                 CreatedAt = DateTime.Now.AddDays(-2)
             };
 
-            var events = new List<Event> { approvedEvent, rejectedEvent, needConfirmEvent }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event> { approvedEvent, rejectedEvent, needConfirmEvent }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetAllEventStatusAsync(null, null, null, 1, 10);
@@ -5230,9 +6052,9 @@ namespace AIEvent.Application.Test.Services
                 CreatedAt = DateTime.Now.AddDays(-1)
             };
 
-            var events = new List<Event> { event1, event2 }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event> { event1, event2 }.AsQueryable().BuildMock();
 
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
             // Act
             var result = await _eventService.GetAllEventStatusAsync(null, null, ConfirmStatus.Approve, 1, 10);
@@ -5313,7 +6135,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<Event>().AsQueryable().BuildMockDbSet().Object);
+                .Returns(new List<Event>().AsQueryable().BuildMock());
 
             // Act
             var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), Guid.NewGuid(), new ConfirmRequest { Status = ConfirmStatus.Approve });
@@ -5330,7 +6152,7 @@ namespace AIEvent.Application.Test.Services
             // Arrange: RequireApproval != NeedConfirm (Approve here)
             var evt = CreateEventProcessed(Guid.NewGuid(), ConfirmStatus.Approve);
             _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<Event> { evt }.AsQueryable().BuildMockDbSet().Object);
+                .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
 
             // Act
             var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmRequest { Status = ConfirmStatus.Approve });
@@ -5347,7 +6169,7 @@ namespace AIEvent.Application.Test.Services
             // Arrange: entity in NeedConfirm
             var evt = CreateEventNeedConfirm(Guid.NewGuid());
             _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<Event> { evt }.AsQueryable().BuildMockDbSet().Object);
+                .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
 
             // Act
             var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmRequest { Status = ConfirmStatus.Reject, Reason = "   " });
@@ -5364,7 +6186,7 @@ namespace AIEvent.Application.Test.Services
             // Arrange
             var evt = CreateEventNeedConfirm(Guid.NewGuid());
             _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<Event> { evt }.AsQueryable().BuildMockDbSet().Object);
+                .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
             _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()))
                 .ReturnsAsync((Event e) => e);
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
@@ -5393,7 +6215,7 @@ namespace AIEvent.Application.Test.Services
             // Arrange
             var evt = CreateEventNeedConfirm(Guid.NewGuid());
             _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<Event> { evt }.AsQueryable().BuildMockDbSet().Object);
+                .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
             _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()))
                 .ReturnsAsync((Event e) => e);
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
@@ -5422,7 +6244,7 @@ namespace AIEvent.Application.Test.Services
             var evt = CreateEventNeedConfirm(Guid.NewGuid());
             evt.IsDeleted = true;
             _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<Event> { evt }.AsQueryable().BuildMockDbSet().Object);
+                .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
 
             // Act
             var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmRequest { Status = ConfirmStatus.Approve });
@@ -5441,7 +6263,7 @@ namespace AIEvent.Application.Test.Services
             // Arrange
             var evt = CreateEventProcessed(Guid.NewGuid(), ConfirmStatus.Reject);
             _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<Event> { evt }.AsQueryable().BuildMockDbSet().Object);
+                .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
 
             // Act
             var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmRequest { Status = ConfirmStatus.Approve });
@@ -5490,8 +6312,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
             _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
             
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
@@ -5554,8 +6376,8 @@ namespace AIEvent.Application.Test.Services
             var eventId = Guid.NewGuid();
             var updateRequest = new UpdateEventRequest { Title = "Updated Title" };
 
-            var eventQueryable = new List<Event>().AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event>().AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
 
             // Act
             var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
@@ -5586,8 +6408,8 @@ namespace AIEvent.Application.Test.Services
                 IsDeleted = true
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
 
             // Act
             var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
@@ -5621,8 +6443,8 @@ namespace AIEvent.Application.Test.Services
                 EventTags = new List<EventTag>()
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
 
             // Act
             var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
@@ -5660,8 +6482,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
 
             // Act
             var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
@@ -5699,8 +6521,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
 
             // Act
             var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
@@ -5744,8 +6566,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
             _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
             
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
@@ -5794,8 +6616,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
 
             // Act
             var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
@@ -5843,8 +6665,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
 
             // Act
             var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
@@ -5893,8 +6715,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
 
             // Act
             var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
@@ -5949,8 +6771,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
 
             // Act
             var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
@@ -6003,8 +6825,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
 
             // Act
             var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
@@ -6056,8 +6878,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
 
             // Act
             var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
@@ -6106,8 +6928,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
 
             // Act
             var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
@@ -6170,8 +6992,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
 
             // Act
             var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
@@ -6223,8 +7045,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
             _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
             
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
@@ -6277,8 +7099,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
             _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
             _mockCloudinaryService.Setup(x => x.UploadImageAsync(It.IsAny<IFormFile>()))
                 .ReturnsAsync("new-uploaded-image.jpg");
@@ -6332,8 +7154,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
             _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
             _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
                 .Returns(Task.CompletedTask);
@@ -6403,8 +7225,8 @@ namespace AIEvent.Application.Test.Services
                 TicketQuantity = 100
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
             _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
             _mockMapper.Setup(x => x.Map<TicketDetail>(It.IsAny<TicketDetailRequest>())).Returns(newTicket);
             
@@ -6472,8 +7294,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
             _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
             _mockMapper.Setup(x => x.Map(It.IsAny<TicketDetailRequest>(), existingTicket)).Returns(existingTicket);
             
@@ -6524,8 +7346,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
             
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(func => func());
@@ -6570,8 +7392,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
             _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
             
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
@@ -6621,8 +7443,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
             _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
             
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
@@ -6673,8 +7495,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
             _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
             
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
@@ -6724,8 +7546,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
             
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(func => func());
@@ -6783,8 +7605,8 @@ namespace AIEvent.Application.Test.Services
 
             var newTicket = new TicketDetail { TicketName = "Free Ticket", TicketPrice = 0, TicketQuantity = 100 };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
             _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
             _mockMapper.Setup(x => x.Map<TicketDetail>(It.IsAny<TicketDetailRequest>())).Returns(newTicket);
             
@@ -6860,8 +7682,8 @@ namespace AIEvent.Application.Test.Services
 
             var newTicket = new TicketDetail { TicketName = "New Ticket", TicketQuantity = 100 };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
             _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
             _mockMapper.Setup(x => x.Map<TicketDetail>(It.IsAny<TicketDetailRequest>())).Returns(newTicket);
             _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
@@ -6926,8 +7748,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
 
             // Act
             var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
@@ -6980,8 +7802,8 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable.Object);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
 
             // Act
             var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);

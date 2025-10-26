@@ -11,7 +11,7 @@ namespace AIEvent.Application.Services.Interfaces
     {
         Task<Result> CreateEventAsync(Guid organizerId, CreateEventRequest request);
         Task<Result<EventDetailResponse>> GetEventByIdAsync(Guid eventId);
-        Task<Result> DeleteEventAsync(Guid eventId);
+        Task<Result> DeleteEventAsync(Guid eventId, Guid organizerId, string? reasonCancel);
         Task<Result> UpdateEventAsync(Guid organizerId, Guid eventId, UpdateEventRequest request);
         Task<Result<BasePaginated<EventsRelatedResponse>>> GetRelatedEventAsync(Guid eventId, int pageNumber = 1, int pageSize = 5);
         Task<Result<BasePaginated<EventsResponse>>> GetEventAsync(Guid? userId, string? search, string? eventCategoryId, List<EventTagRequest> tags, TicketType? ticketType, string? city, TimeLine? timeLine, int pageNumber = 1, int pageSize = 5);

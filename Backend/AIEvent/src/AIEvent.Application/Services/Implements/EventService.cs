@@ -585,17 +585,118 @@ namespace AIEvent.Application.Services.Implements
             return Result<EventDetailResponse>.Success(events);
         }
 
-        public async Task<Result> DeleteEventAsync(Guid eventId)
+        public async Task<Result> DeleteEventAsync(Guid eventId, Guid organizerId, string? reasonCancel)
         {
-            if (eventId == Guid.Empty)
+            if (eventId == Guid.Empty || organizerId == Guid.Empty)
                 return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
 
-            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
-            {
-                var existingEvent = await _unitOfWork.EventRepository.GetByIdAsync(eventId, true);
-                if (existingEvent == null  || existingEvent.DeletedAt.HasValue)
-                    return ErrorResponse.FailureResult("Event not found or inactive", ErrorCodes.InvalidInput);
+            var existingEvent = await _unitOfWork.EventRepository
+                .Query()
+                .Include(e => e.OrganizerProfile)
+                .Include(e => e.Bookings)
+                    .ThenInclude(b => b.User)
+                    .ThenInclude(u => u.Wallet)
+                .FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
 
+            if (existingEvent == null || existingEvent.DeletedAt.HasValue)
+                return ErrorResponse.FailureResult("Event not found or inactive", ErrorCodes.InvalidInput);
+
+            if(existingEvent.OrganizerProfileId != organizerId)
+                return ErrorResponse.FailureResult("Cannot delete other people's events", ErrorCodes.Unauthorized);
+
+            var hasBookings = existingEvent.Bookings
+                .Where(b => b.Status == BookingStatus.Completed || b.Status == BookingStatus.Pending)
+                .ToList();
+
+            if (existingEvent.Publish == true && hasBookings.Any())
+                if (string.IsNullOrEmpty(reasonCancel))
+                    return ErrorResponse.FailureResult("Cancellation of a published event with existing bookings must have a reason.", ErrorCodes.InvalidInput);
+
+            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+            { 
+                if (hasBookings.Any() && !string.IsNullOrEmpty(reasonCancel))
+                { 
+                    var organizerWallet = await _unitOfWork.WalletRepository
+                        .Query()
+                        .FirstOrDefaultAsync(w => w.UserId == existingEvent.OrganizerProfile!.UserId && !w.IsDeleted);
+
+                    if (organizerWallet == null)
+                        return ErrorResponse.FailureResult("Organizer wallet not found", ErrorCodes.NotFound);
+
+                    var walletTransactions = new List<WalletTransaction>();
+                    var bookingsToUpdate = new List<Booking>();
+                    var walletsToUpdate = new List<Wallet>();
+
+                    foreach (var booking in hasBookings)
+                    { 
+                        if (booking.TotalAmount <= 0)
+                        {
+                            booking.Status = BookingStatus.Cancelled;
+                            bookingsToUpdate.Add(booking);
+                            continue;
+                        }
+
+                        var userWallet = booking.User.Wallet;
+                        if (userWallet == null)
+                            return ErrorResponse.FailureResult($"Wallet not found for user {booking.User.FullName}", ErrorCodes.NotFound);
+
+                        if (organizerWallet.Balance < booking.TotalAmount)
+                            return ErrorResponse.FailureResult(
+                                    $"Organizer wallet has insufficient balance to refund. Required: {booking.TotalAmount}, Available: {organizerWallet.Balance}",
+                                    ErrorCodes.InvalidInput);
+
+                        var userRefundTransaction = new WalletTransaction
+                        {
+                            WalletId = userWallet.Id,
+                            Amount = booking.TotalAmount,
+                            BalanceBefore = userWallet.Balance,
+                            BalanceAfter = userWallet.Balance + booking.TotalAmount,
+                            Type = TransactionType.Refund,
+                            Direction = TransactionDirection.In,
+                            ReferenceId = booking.Id,
+                            ReferenceType = ReferenceType.Refund,
+                            Status = TransactionStatus.Success,
+                            Description = $"Hoàn tiền do hủy sự kiện '{existingEvent.Title}'. Lý do: {reasonCancel}"
+                        };
+                         
+                        var organizerRefundTransaction = new WalletTransaction
+                        {
+                            WalletId = organizerWallet.Id,
+                            Amount = booking.TotalAmount,
+                            BalanceBefore = organizerWallet.Balance,
+                            BalanceAfter = organizerWallet.Balance - booking.TotalAmount,
+                            Type = TransactionType.Refund,
+                            Direction = TransactionDirection.Out,
+                            ReferenceId = booking.Id,
+                            ReferenceType = ReferenceType.Refund,
+                            Status = TransactionStatus.Success,
+                            Description = $"Hoàn tiền cho {booking.User.FullName} do hủy sự kiện '{existingEvent.Title}'. Lý do: {reasonCancel}"
+                        };
+
+                        walletTransactions.Add(userRefundTransaction);
+                        walletTransactions.Add(organizerRefundTransaction);
+                         
+                        userWallet.Balance += booking.TotalAmount;
+                        organizerWallet.Balance -= booking.TotalAmount;
+                         
+                        if (!walletsToUpdate.Any(w => w.Id == userWallet.Id))
+                            walletsToUpdate.Add(userWallet);
+                         
+                        booking.Status = BookingStatus.Cancelled;
+                        bookingsToUpdate.Add(booking);
+                    }
+                     
+                    if (!walletsToUpdate.Any(w => w.Id == organizerWallet.Id))
+                        walletsToUpdate.Add(organizerWallet);
+                     
+                    await _unitOfWork.WalletTransactionRepository.AddRangeAsync(walletTransactions);
+                     
+                    await _unitOfWork.WalletRepository.UpdateRangeAsync(walletsToUpdate);
+                     
+                    await _unitOfWork.BookingRepository.UpdateRangeAsync(bookingsToUpdate);
+                     
+                    existingEvent.ReasonCancel = reasonCancel;
+                } 
                 await _unitOfWork.EventRepository.DeleteAsync(existingEvent!);
                 return Result.Success();
             });
