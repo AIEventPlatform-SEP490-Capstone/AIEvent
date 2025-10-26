@@ -5,9 +5,12 @@ using AIEvent.Application.DTOs.User;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
+using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using AutoMapper;
+using Google.Apis.Auth;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using MimeKit;
 
 namespace AIEvent.Application.Services.Implements
@@ -314,13 +317,13 @@ namespace AIEvent.Application.Services.Implements
                     await _unitOfWork.WalletRepository.AddAsync(wallet);
                 }
 
-                var accessToken = _jwtService.GenerateAccessToken(user);
+                var accessToken = _jwtService.GenerateAccessToken(user!);
                 var refreshToken = _jwtService.GenerateRefreshToken();
 
                 var refreshTokenEntity = new RefreshToken
                 {
                     Token = refreshToken,
-                    UserId = user.Id,
+                    UserId = user!.Id,
                     ExpiresAt = DateTime.UtcNow.AddDays(7)
                 };
 
