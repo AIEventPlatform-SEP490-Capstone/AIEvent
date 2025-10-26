@@ -293,14 +293,14 @@ namespace AIEvent.Application.Services.Implements
 
                 if(user == null)
                 {
-                    var roleId = await _unitOfWork.RoleRepository.Query()
+                    var role = await _unitOfWork.RoleRepository.Query()
                         .Where(r => r.Name == "User" && !r.IsDeleted)
-                        .Select(r => r.Id)
                         .FirstOrDefaultAsync();
 
                     User newUser = new()
                     {
-                        RoleId = roleId!,
+                        RoleId = role!.Id,
+                        Role = role,
                         Email = payload.Email,
                         IsActive = true,
                         FullName = payload.Name,
@@ -308,6 +308,8 @@ namespace AIEvent.Application.Services.Implements
                         BudgetOption = BudgetOption.Flexible,
                     };
                     await _unitOfWork.UserRepository.AddAsync(newUser);
+
+                    user = newUser;
 
                     Wallet wallet = new()
                     {
