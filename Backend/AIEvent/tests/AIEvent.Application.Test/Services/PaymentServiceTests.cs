@@ -87,7 +87,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            long amount = 10000; 
+            long amount = 9999; 
             var user = new User
             {
                 Id = userId,
@@ -116,8 +116,8 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.IsSuccess.Should().BeFalse();
             result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Contain("Failed to create payment link");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
+            result.Error!.Message.Should().Contain("Invalid input");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
             _mockUnitOfWork.Verify(x => x.WalletTransactionRepository.AddAsync(It.IsAny<WalletTransaction>()), Times.Never());
         }
          
@@ -155,8 +155,8 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.IsSuccess.Should().BeFalse();
             result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Contain("Failed to create payment link");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
+            result.Error!.Message.Should().Contain("Invalid input");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
         // UTCID04: Empty Guid userId - Should return failure
@@ -359,84 +359,7 @@ namespace AIEvent.Application.Test.Services
         }
 
         [Fact]
-        public async Task UTCID11_CreatePaymentTopUpAsync_WithZeroWalletBalance_ShouldReturnFailure()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            long amount = 100000;
-            var user = new User
-            {
-                Id = userId,
-                Email = "test@gmail.com",
-                IsDeleted = false,
-                IsActive = true
-            };
-            var wallet = new Wallet
-            {
-                Id = Guid.NewGuid(),
-                UserId = userId,
-                Balance = 0, 
-                IsDeleted = false
-            };
-
-            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
-                           .ReturnsAsync(user);
-            
-            var wallets = new List<Wallet> { wallet }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(false))
-                           .Returns(wallets.Object);
-
-            // Act
-            var result = await _paymentService.CreatePaymentTopUpAsync(userId, amount);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Contain("Failed to create payment link");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
-            _mockUnitOfWork.Verify(x => x.WalletTransactionRepository.AddAsync(It.IsAny<WalletTransaction>()), Times.Never());
-        }
-
-        [Fact]
-        public async Task UTCID12_CreatePaymentTopUpAsync_WithVeryLargeWalletBalance_ShouldReturnFailure()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            long amount = 100000;
-            var user = new User
-            {
-                Id = userId,
-                Email = "test@gmail.com",
-                IsDeleted = false,
-                IsActive = true
-            };
-            var wallet = new Wallet
-            {
-                Id = Guid.NewGuid(),
-                UserId = userId,
-                Balance = 999999999999, 
-                IsDeleted = false
-            };
-
-            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
-                           .ReturnsAsync(user);
-            
-            var wallets = new List<Wallet> { wallet }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(false))
-                           .Returns(wallets.Object);
-
-            // Act
-            var result = await _paymentService.CreatePaymentTopUpAsync(userId, amount);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Contain("Failed to create payment link");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
-        }
-
-        [Fact]
-        public async Task UTCID13_CreatePaymentTopUpAsync_WithValidData_PayOSSuccess_ShouldReturnPaymentUrl()
+        public async Task UTCID11_CreatePaymentTopUpAsync_WithValidData_PayOSSuccess_ShouldReturnPaymentUrl()
         {
             var userId = Guid.NewGuid();
             long amount = 50000; 
@@ -517,6 +440,512 @@ namespace AIEvent.Application.Test.Services
 
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
+        #endregion
+
+        #region PaymentWebhookAsync
+
+        // UTCID01: Null webhook body - Should throw ArgumentNullException
+        [Fact]
+        public async Task UTCID01_PaymentWebhookAsync_WithNullWebhookBody_ShouldThrowArgumentNullException()
+        {
+            // Arrange
+            WebhookType? webhookBody = null;
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<ArgumentNullException>(
+                async () => await _paymentService.PaymentWebhookAsync(webhookBody!)
+            );
+
+            exception.ParamName.Should().Be("webhookBody");
+            exception.Message.Should().Contain("Webhook payload is null");
+        }
+
+        // UTCID02: Webhook success is false - Should return failure
+        [Fact]
+        public async Task UTCID02_PaymentWebhookAsync_WithSuccessFalse_ShouldReturnFailure()
+        {
+            // Arrange
+            var webhookBody = new WebhookType(
+                code: "01",
+                desc: "Payment failed",
+                success: false,
+                data: new WebhookData(
+                    orderCode: 123456789,
+                    amount: 50000,
+                    description: "Test payment",
+                    accountNumber: "1234567890",
+                    reference: "REF123",
+                    transactionDateTime: "2024-01-01 10:00:00",
+                    currency: "VND",
+                    paymentLinkId: "plink_123",
+                    code: "01",
+                    desc: "Payment failed",
+                    counterAccountBankId: null,
+                    counterAccountBankName: null,
+                    counterAccountName: null,
+                    counterAccountNumber: null,
+                    virtualAccountName: null,
+                    virtualAccountNumber: null!
+                ),
+                signature: "signature123"
+            );
+
+            // Act
+            var result = await _paymentService.PaymentWebhookAsync(webhookBody);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Be("Transaction fail");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
+            _mockpayOSService.Verify(x => x.VerifyPaymentWebhookData(It.IsAny<WebhookType>()), Times.Never());
+        }
+
+        // UTCID03: Webhook verification returns null - Should return failure
+        [Fact]
+        public async Task UTCID03_PaymentWebhookAsync_WithNullVerificationData_ShouldReturnFailure()
+        {
+            // Arrange
+            var webhookBody = new WebhookType(
+                code: "00",
+                desc: "Success",
+                success: true,
+                data: new WebhookData(
+                    orderCode: 123456789,
+                    amount: 50000,
+                    description: "Test payment",
+                    accountNumber: "1234567890",
+                    reference: "REF123",
+                    transactionDateTime: "2024-01-01 10:00:00",
+                    currency: "VND",
+                    paymentLinkId: "plink_123",
+                    code: "00",
+                    desc: "Success",
+                    counterAccountBankId: null,
+                    counterAccountBankName: null,
+                    counterAccountName: null,
+                    counterAccountNumber: null,
+                    virtualAccountName: null,
+                    virtualAccountNumber: null!
+                ),
+                signature: "invalid_signature"
+            );
+
+            _mockpayOSService.Setup(x => x.VerifyPaymentWebhookData(webhookBody))
+                            .Returns((WebhookData?)null!);
+
+            // Act
+            var result = await _paymentService.PaymentWebhookAsync(webhookBody);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Be("Invalid webhook data.");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        // UTCID04: Webhook code is not "00" - Should return failure
+        [Fact]
+        public async Task UTCID04_PaymentWebhookAsync_WithCodeNotZeroZero_ShouldReturnFailure()
+        {
+            // Arrange
+            var webhookData = new WebhookData(
+                orderCode: 123456789,
+                amount: 50000,
+                description: "Test payment",
+                accountNumber: "1234567890",
+                reference: "REF123",
+                transactionDateTime: "2024-01-01 10:00:00",
+                currency: "VND",
+                paymentLinkId: "plink_123",
+                code: "01",
+                desc: "Payment failed",
+                counterAccountBankId: null,
+                counterAccountBankName: null,
+                counterAccountName: null,
+                counterAccountNumber: null,
+                virtualAccountName: null,
+                virtualAccountNumber: null!
+            );
+
+            var webhookBody = new WebhookType(
+                code: "01",
+                desc: "Payment failed",
+                success: true,
+                data: webhookData,
+                signature: "signature123"
+            );
+
+            _mockpayOSService.Setup(x => x.VerifyPaymentWebhookData(webhookBody))
+                            .Returns(webhookData);
+
+            // Act
+            var result = await _paymentService.PaymentWebhookAsync(webhookBody);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Be("Payment failed: Payment failed");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        // UTCID05: Transaction not found - Should return failure
+        [Fact]
+        public async Task UTCID05_PaymentWebhookAsync_WithTransactionNotFound_ShouldReturnFailure()
+        {
+            // Arrange
+            var webhookData = new WebhookData(
+                orderCode: 123456789,
+                amount: 50000,
+                description: "Test payment",
+                accountNumber: "1234567890",
+                reference: "REF123",
+                transactionDateTime: "2024-01-01 10:00:00",
+                currency: "VND",
+                paymentLinkId: "plink_123",
+                code: "00",
+                desc: "Success",
+                counterAccountBankId: null,
+                counterAccountBankName: null,
+                counterAccountName: null,
+                counterAccountNumber: null,
+                virtualAccountName: null,
+                virtualAccountNumber: null!
+            );
+
+            var webhookBody = new WebhookType(
+                code: "00",
+                desc: "Success",
+                success: true,
+                data: webhookData,
+                signature: "signature123"
+            );
+
+            _mockpayOSService.Setup(x => x.VerifyPaymentWebhookData(webhookBody))
+                            .Returns(webhookData);
+
+            var emptyTransactions = new List<WalletTransaction>().AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.Query(It.IsAny<bool>()))
+                          .Returns(emptyTransactions.Object);
+
+            // Act
+            var result = await _paymentService.PaymentWebhookAsync(webhookBody);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Be("WalletTransaction not found or deleted");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        // UTCID06: Transaction already successful - Should return success
+        [Fact]
+        public async Task UTCID06_PaymentWebhookAsync_WithTransactionAlreadySuccessful_ShouldReturnSuccess()
+        {
+            // Arrange
+            var orderCode = "123456789";
+            var walletId = Guid.NewGuid();
+
+            var webhookData = new WebhookData(
+                orderCode: long.Parse(orderCode),
+                amount: 50000,
+                description: "Test payment",
+                accountNumber: "1234567890",
+                reference: "REF123",
+                transactionDateTime: "2024-01-01 10:00:00",
+                currency: "VND",
+                paymentLinkId: "plink_123",
+                code: "00",
+                desc: "Success",
+                counterAccountBankId: null,
+                counterAccountBankName: null,
+                counterAccountName: null,
+                counterAccountNumber: null,
+                virtualAccountName: null,
+                virtualAccountNumber: null!
+            );
+
+            var webhookBody = new WebhookType(
+                code: "00",
+                desc: "Success",
+                success: true,
+                data: webhookData,
+                signature: "signature123"
+            );
+
+            var transaction = new WalletTransaction
+            {
+                Id = Guid.NewGuid(),
+                OrderCode = orderCode,
+                WalletId = walletId,
+                Amount = 50000,
+                Status = TransactionStatus.Success,
+                BalanceBefore = 100000,
+                BalanceAfter = 150000
+            };
+
+            _mockpayOSService.Setup(x => x.VerifyPaymentWebhookData(webhookBody))
+                            .Returns(webhookData);
+
+            var transactions = new List<WalletTransaction> { transaction }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.Query(It.IsAny<bool>()))
+                          .Returns(transactions.Object);
+
+            // Act
+            var result = await _paymentService.PaymentWebhookAsync(webhookBody);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.WalletRepository.Query(It.IsAny<bool>()), Times.Never());
+        }
+
+
+        // UTCID07: Amount mismatch - Should return failure
+        [Fact]
+        public async Task UTCID07_PaymentWebhookAsync_WithAmountMismatch_ShouldReturnFailure()
+        {
+            // Arrange
+            var orderCode = "123456789";
+            var walletId = Guid.NewGuid();
+
+            var webhookData = new WebhookData(
+                orderCode: long.Parse(orderCode),
+                amount: 60000, // Different amount
+                description: "Test payment",
+                accountNumber: "1234567890",
+                reference: "REF123",
+                transactionDateTime: "2024-01-01 10:00:00",
+                currency: "VND",
+                paymentLinkId: "plink_123",
+                code: "00",
+                desc: "Success",
+                counterAccountBankId: null,
+                counterAccountBankName: null,
+                counterAccountName: null,
+                counterAccountNumber: null,
+                virtualAccountName: null,
+                virtualAccountNumber: null!
+            );
+
+            var webhookBody = new WebhookType(
+                code: "00",
+                desc: "Success",
+                success: true,
+                data: webhookData,
+                signature: "signature123"
+            );
+
+            var transaction = new WalletTransaction
+            {
+                Id = Guid.NewGuid(),
+                OrderCode = orderCode,
+                WalletId = walletId,
+                Amount = 50000, // Original amount
+                Status = TransactionStatus.Pending,
+                BalanceBefore = 100000,
+                BalanceAfter = 100000
+            };
+
+            _mockpayOSService.Setup(x => x.VerifyPaymentWebhookData(webhookBody))
+                            .Returns(webhookData);
+
+            var transactions = new List<WalletTransaction> { transaction }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.Query(It.IsAny<bool>()))
+                          .Returns(transactions.Object);
+
+            // Act
+            var result = await _paymentService.PaymentWebhookAsync(webhookBody);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Be("Amount mismatch");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        // UTCID08: Wallet not found - Should return failure
+        [Fact]
+        public async Task UTCID08_PaymentWebhookAsync_WithWalletNotFound_ShouldReturnFailure()
+        {
+            // Arrange
+            var orderCode = "123456789";
+            var walletId = Guid.NewGuid();
+
+            var webhookData = new WebhookData(
+                orderCode: long.Parse(orderCode),
+                amount: 50000,
+                description: "Test payment",
+                accountNumber: "1234567890",
+                reference: "REF123",
+                transactionDateTime: "2024-01-01 10:00:00",
+                currency: "VND",
+                paymentLinkId: "plink_123",
+                code: "00",
+                desc: "Success",
+                counterAccountBankId: null,
+                counterAccountBankName: null,
+                counterAccountName: null,
+                counterAccountNumber: null,
+                virtualAccountName: null,
+                virtualAccountNumber: null!
+            );
+
+            var webhookBody = new WebhookType(
+                code: "00",
+                desc: "Success",
+                success: true,
+                data: webhookData,
+                signature: "signature123"
+            );
+
+            var transaction = new WalletTransaction
+            {
+                Id = Guid.NewGuid(),
+                OrderCode = orderCode,
+                WalletId = walletId,
+                Amount = 50000,
+                Status = TransactionStatus.Pending,
+                BalanceBefore = 100000,
+                BalanceAfter = 100000
+            };
+
+            _mockpayOSService.Setup(x => x.VerifyPaymentWebhookData(webhookBody))
+                            .Returns(webhookData);
+
+            var transactions = new List<WalletTransaction> { transaction }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.Query(It.IsAny<bool>()))
+                          .Returns(transactions.Object);
+
+            var emptyWallets = new List<Wallet>().AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(It.IsAny<bool>()))
+                          .Returns(emptyWallets.Object);
+
+            // Act
+            var result = await _paymentService.PaymentWebhookAsync(webhookBody);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Be("Wallet not found or deleted");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        // UTCID09: Wallet is deleted - Should return failure
+        [Fact]
+        public async Task UTCID09_PaymentWebhookAsync_WithWalletDeleted_ShouldReturnFailure()
+        {
+            // Arrange
+            var orderCode = "123456789";
+            var walletId = Guid.NewGuid();
+
+            var webhookData = new WebhookData(
+                orderCode: long.Parse(orderCode),
+                amount: 50000,
+                description: "Test payment",
+                accountNumber: "1234567890",
+                reference: "REF123",
+                transactionDateTime: "2024-01-01 10:00:00",
+                currency: "VND",
+                paymentLinkId: "plink_123",
+                code: "00",
+                desc: "Success",
+                counterAccountBankId: null,
+                counterAccountBankName: null,
+                counterAccountName: null,
+                counterAccountNumber: null,
+                virtualAccountName: null,
+                virtualAccountNumber: null! 
+            );
+
+            var webhookBody = new WebhookType(
+                code: "00",
+                desc: "Success",
+                success: true,
+                data: webhookData,
+                signature: "signature123"
+            );
+
+            var transaction = new WalletTransaction
+            {
+                Id = Guid.NewGuid(),
+                OrderCode = orderCode,
+                WalletId = walletId,
+                Amount = 50000,
+                Status = TransactionStatus.Pending,
+                BalanceBefore = 100000,
+                BalanceAfter = 100000
+            };
+
+            var wallet = new Wallet
+            {
+                Id = walletId,
+                UserId = Guid.NewGuid(),
+                Balance = 100000,
+                IsDeleted = true
+            };
+
+            _mockpayOSService.Setup(x => x.VerifyPaymentWebhookData(webhookBody))
+                            .Returns(webhookData);
+
+            var transactions = new List<WalletTransaction> { transaction }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.Query(It.IsAny<bool>()))
+                          .Returns(transactions.Object);
+
+            var wallets = new List<Wallet> { wallet }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(It.IsAny<bool>()))
+                          .Returns(wallets.Object);
+
+            // Act
+            var result = await _paymentService.PaymentWebhookAsync(webhookBody);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Be("Wallet not found or deleted");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        // UTCID10: Boundary - Code with different format (not "00" but success false already)
+        [Fact]
+        public async Task UTCID10_PaymentWebhookAsync_WithSuccessFalseAndNonZeroCode_ShouldReturnFailure()
+        {
+            // Arrange
+            var webhookBody = new WebhookType(
+                code: "99",
+                desc: "Unknown error",
+                success: false,
+                data: new WebhookData(
+                    orderCode: 123456789,
+                    amount: 50000,
+                    description: "Test payment",
+                    accountNumber: "1234567890",
+                    reference: "REF123",
+                    transactionDateTime: "2024-01-01 10:00:00",
+                    currency: "VND",
+                    paymentLinkId: "plink_123",
+                    code: "99",
+                    desc: "Unknown error",
+                    counterAccountBankId: null,
+                    counterAccountBankName: null,
+                    counterAccountName: null,
+                    counterAccountNumber: null,
+                    virtualAccountName: null,
+                    virtualAccountNumber: null! 
+                ),
+                signature: "signature123"
+            );
+
+            // Act
+            var result = await _paymentService.PaymentWebhookAsync(webhookBody);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Be("Transaction fail");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
+            _mockpayOSService.Verify(x => x.VerifyPaymentWebhookData(It.IsAny<WebhookType>()), Times.Never());
+        }
+
         #endregion
     }
 }

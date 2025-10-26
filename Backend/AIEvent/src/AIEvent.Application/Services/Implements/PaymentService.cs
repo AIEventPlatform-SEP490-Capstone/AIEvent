@@ -27,7 +27,7 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result<CreatePaymentResult>> CreatePaymentTopUpAsync(Guid userId, long amount)
         {
-            if (userId == Guid.Empty || amount < 10000)
+            if (userId == Guid.Empty || amount < 10000 || amount >= 1000000000)
                 return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
 
             var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);

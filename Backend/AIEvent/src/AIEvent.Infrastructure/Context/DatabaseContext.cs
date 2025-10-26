@@ -11,7 +11,7 @@ namespace AIEvent.Infrastructure.Context
     public class DatabaseContext : DbContext
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
-
+        public bool EnableSoftDelete { get; set; } = true;
         public DatabaseContext(DbContextOptions<DatabaseContext> options, IHttpContextAccessor httpContextAccessor) : base(options)
         {
             _httpContextAccessor = httpContextAccessor;
@@ -389,8 +389,11 @@ namespace AIEvent.Infrastructure.Context
                 switch (entry.State)
                 {
                     case EntityState.Deleted:
-                        entry.State = EntityState.Modified;
-                        entry.Entity.SetDeleted(userId);
+                        if (EnableSoftDelete)
+                        { 
+                            entry.State = EntityState.Modified;
+                            entry.Entity.SetDeleted(userId);
+                        }
                         break;
                     case EntityState.Modified:
                         entry.Entity.SetUpdated(userId);
