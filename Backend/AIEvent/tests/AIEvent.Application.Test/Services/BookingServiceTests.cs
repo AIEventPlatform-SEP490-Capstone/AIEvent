@@ -6,7 +6,7 @@ using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
-using AIEvent.Domain.Interfaces;
+using AIEvent.Infrastructure.Repositories.Interfaces;
 using FluentAssertions;
 using MockQueryable.Moq;
 using Moq;
@@ -1979,7 +1979,6 @@ namespace AIEvent.Application.Test.Services
             {
                 Id = Guid.NewGuid(),
                 Event = eventEntity,
-                IsDeleted = false,
                 RefundRule = refundRule,
                 TicketName = "Test",
                 TicketQuantity = 1,
@@ -2066,7 +2065,6 @@ namespace AIEvent.Application.Test.Services
             {
                 Id = Guid.NewGuid(),
                 Event = eventEntity,
-                IsDeleted = false,
                 RefundRule = refundRule,
                 TicketName = "Test",
                 TicketQuantity = 1,
@@ -2157,7 +2155,6 @@ namespace AIEvent.Application.Test.Services
                 Id = Guid.NewGuid(),
                 Event = eventEntity,
                 TicketName = "Free Ticket",
-                IsDeleted = false,
                 TicketQuantity = 10,
                 RemainingQuantity = 5,
                 SoldQuantity = 5,
@@ -2274,7 +2271,6 @@ namespace AIEvent.Application.Test.Services
                 Id = Guid.NewGuid(),
                 Event = eventEntity,
                 TicketName = "Normal Ticket",
-                IsDeleted = false,
                 TicketQuantity = 10,
                 RemainingQuantity = 5,
                 SoldQuantity = 5,
@@ -2389,7 +2385,6 @@ namespace AIEvent.Application.Test.Services
                 Id = Guid.NewGuid(),
                 Event = eventEntity,
                 TicketName = "Standard Ticket",
-                IsDeleted = false,
                 TicketQuantity = 10,
                 RemainingQuantity = 5,
                 SoldQuantity = 5,
@@ -2518,7 +2513,6 @@ namespace AIEvent.Application.Test.Services
                 Id = Guid.NewGuid(),
                 Event = eventEntity,
                 TicketName = "Standard Ticket",
-                IsDeleted = false,
                 TicketQuantity = 10,
                 RemainingQuantity = 5,
                 SoldQuantity = 5,
@@ -2654,7 +2648,6 @@ namespace AIEvent.Application.Test.Services
                 Id = Guid.NewGuid(),
                 Event = eventEntity,
                 TicketName = "Standard Ticket",
-                IsDeleted = false,
                 TicketQuantity = 10,
                 RemainingQuantity = 5,
                 SoldQuantity = 5,
@@ -2814,7 +2807,6 @@ namespace AIEvent.Application.Test.Services
                 Id = Guid.NewGuid(),
                 Event = eventEntity,
                 TicketName = "Standard Ticket",
-                IsDeleted = false,
                 TicketQuantity = 10,
                 RemainingQuantity = 5,
                 SoldQuantity = 5,
@@ -2967,7 +2959,6 @@ namespace AIEvent.Application.Test.Services
                 Id = Guid.NewGuid(),
                 Event = eventEntity,
                 TicketName = "Standard Ticket",
-                IsDeleted = false,
                 TicketQuantity = 10,
                 RemainingQuantity = 5,
                 SoldQuantity = 5,
@@ -3135,7 +3126,6 @@ namespace AIEvent.Application.Test.Services
                 Id = Guid.NewGuid(),
                 Event = eventEntity,
                 TicketName = "VIP Ticket",
-                IsDeleted = false,
                 TicketQuantity = 10,
                 RemainingQuantity = 5,
                 SoldQuantity = 5,
