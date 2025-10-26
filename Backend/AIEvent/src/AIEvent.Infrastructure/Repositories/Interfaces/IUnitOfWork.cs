@@ -24,6 +24,8 @@ namespace AIEvent.Infrastructure.Repositories.Interfaces
         IGenericRepository<PaymentTransaction> PaymentTransactionRepository { get; }
         IGenericRepository<WithdrawRequest> WithdrawRequestRepository { get; }
         IGenericRepository<PaymentInfomation> PaymentInfomationRepository { get; }
+        void EnableSoftDelete();
+        void DisableSoftDelete();
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();
         Task CommitTransactionAsync();
