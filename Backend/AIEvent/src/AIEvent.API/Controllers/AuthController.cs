@@ -149,5 +149,27 @@ namespace AIEvent.API.Controllers
                 SuccessCodes.Updated,
                 "Change password successfully"));
         }
+
+        [HttpPost("google-login")]
+        [AllowAnonymous]
+        public async Task<ActionResult<SuccessResponse<AuthResponse>>> GoogleLogin(GoogleLoginRequest request)
+        {
+            var result = await _authService.GoogleLoginAsync(request);
+
+            if (!result.IsSuccess)
+            {
+                return Unauthorized(result.Error!);
+            }
+
+            Response.Cookies.Append("refreshToken", result.Value!.RefreshToken!, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTime.UtcNow.AddDays(7)
+            });
+
+            return Ok(SuccessResponse<AuthResponse>.SuccessResult(result.Value!));
+        }
     }
 }

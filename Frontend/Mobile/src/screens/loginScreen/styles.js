@@ -226,6 +226,49 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: Fonts.bold,
   },
+
+  // Enhanced Loading Styles
+  progressContainer: {
+    marginVertical: 20,
+    alignItems: 'center',
+  },
+
+  progressBar: {
+    width: '100%',
+    height: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+
+  progressFill: {
+    height: '100%',
+    backgroundColor: Colors.primary,
+    borderRadius: 2,
+  },
+
+  progressText: {
+    fontSize: 14,
+    fontFamily: Fonts.medium,
+    color: Colors.primary,
+    textAlign: 'center',
+  },
+
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  loadingSpinner: {
+    marginRight: 8,
+  },
+
+  loginButtonLoading: {
+    backgroundColor: 'rgba(0, 123, 255, 0.8)',
+    transform: [{ scale: 0.98 }],
+  },
 });
 
 export { styles };

@@ -16,7 +16,6 @@ import EventDetailGuestPage from "../pages/Event/EventDetailGuestPage";
 // Manager Pages
 import ManagerDashboard from "../pages/Manager/ManagerDashboard";
 import ManagerEventsPage from "../pages/Manager/ManagerEventsPage";
-import ManagerEventsNeedApprovalPage from "../pages/Manager/ManagerEventsNeedApprovalPage";
 import ManagerEventDetailPage from "../pages/Manager/ManagerEventDetailPage";
 import ManagerEditEventPage from "../pages/Manager/ManagerEditEventPage";
 import RefundRulesPage from "../pages/RefundRule/RefundRulesPage";
@@ -26,7 +25,9 @@ import EventCategory from "../pages/Event Category/EventCategory";
 import VerifyOtpPage from "../pages/Auth/RegisterPage/VerifyOtpPage";
 import BecomeOrganizerPage from "../pages/User/BecomeOrganizerPage";
 import ApplicationStatusPage from "../pages/User/ApplicationStatusPage";
+import UserProfilePage from "../pages/User/UserProfilePage";
 import TagManagementPage from "../pages/Shared/TagManagementPage";
+import OrganizerProfilePage from "../pages/Organizer/OrganizerProfilePage";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -86,7 +87,7 @@ export default function useRouterElement() {
           path: "profile",
           element: (
             <ProtectedRoute>
-              <div>Profile Page</div>
+              <UserProfilePage />
             </ProtectedRoute>
           ),
         },
@@ -186,13 +187,23 @@ export default function useRouterElement() {
         { path: "my-events", element: <MyEventsPage /> },
         { path: "event/:eventId", element: <EventDetailPage /> },
         { path: "event/:eventId/edit", element: <EditEventPage /> },
-        { path: "profile", element: <div>Organizer Profile Page</div> },
+        {
+          path: "profile",
+          element: (
+            <ProtectedRoute allowedRoles={["Organizer"]}>
+              <OrganizerProfilePage />
+            </ProtectedRoute>
+          ),
+        },
         { path: "settings", element: <div>Organizer Settings Page</div> },
         { path: "support", element: <div>Organizer Support Page</div> },
         { path: "analytics/:id", element: <div>Organizer Analytics Page</div> },
         { path: "checkin/:id", element: <div>Organizer Check-in Page</div> },
         { path: "tags", element: <TagManagementPage userRole="organizer" /> },
-        { path: "refund-rules", element: <RefundRulesPage userRole="organizer" /> },
+        {
+          path: "refund-rules",
+          element: <RefundRulesPage userRole="organizer" />,
+        },
       ],
     },
     {
@@ -205,15 +216,14 @@ export default function useRouterElement() {
       children: [
         { index: true, element: <ManagerDashboard /> },
         { path: "events", element: <ManagerEventsPage /> },
-        {
-          path: "events/need-approval",
-          element: <ManagerEventsNeedApprovalPage />,
-        },
         { path: "event/:eventId", element: <ManagerEventDetailPage /> },
         { path: "event/:eventId/edit", element: <ManagerEditEventPage /> },
         { path: "events/category", element: <EventCategory /> },
         { path: "tags", element: <TagManagementPage userRole="manager" /> },
-        { path: "refund-rules", element: <RefundRulesPage userRole="manager" /> },
+        {
+          path: "refund-rules",
+          element: <RefundRulesPage userRole="manager" />,
+        },
         { path: "profile", element: <div>Manager Profile Page</div> },
         { path: "settings", element: <div>Manager Settings Page</div> },
         { path: "support", element: <div>Manager Support Page</div> },

@@ -103,7 +103,7 @@ namespace AIEvent.API.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin,Organizer")]
+        [Authorize(Roles = "Admin, Manager, Organizer")]
         public async Task<ActionResult<SuccessResponse<TagResponse>>> UpdateTag(string id, UpdateTagRequest request)
         {
             var result = await _tagService.UpdateTagAsync(id, request);

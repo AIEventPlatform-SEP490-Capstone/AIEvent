@@ -1,4 +1,4 @@
-﻿using AIEvent.Application.Constants;
+using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Auth;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.User;
@@ -20,6 +20,7 @@ namespace AIEvent.Application.Services.Implements
         private readonly IHasherHelper _hasherHelper;
         private readonly ICacheService _cacheService;
         private readonly IMapper _mapper;
+        private readonly IConfiguration _configuration;
 
         public AuthService(
             IUnitOfWork unitOfWork,
@@ -27,7 +28,8 @@ namespace AIEvent.Application.Services.Implements
             IMapper mapper,
             IEmailService emailService,
             IHasherHelper hasherHelper,
-            ICacheService cacheService)
+            ICacheService cacheService,
+            IConfiguration configuration)
         {
             _unitOfWork = unitOfWork;
             _jwtService = jwtService;
@@ -35,6 +37,7 @@ namespace AIEvent.Application.Services.Implements
             _emailService = emailService;
             _hasherHelper = hasherHelper;
             _cacheService = cacheService;
+            _configuration = configuration;
         }
 
         public async Task<Result<AuthResponse>> LoginAsync(LoginRequest request)
@@ -268,6 +271,75 @@ namespace AIEvent.Application.Services.Implements
             await _unitOfWork.UserRepository.UpdateAsync(user);
             await _unitOfWork.SaveChangesAsync();
             return Result.Success();
+        }
+
+        public async Task<Result<AuthResponse>> GoogleLoginAsync(GoogleLoginRequest request)
+        {
+            try
+            {
+                var settings = new GoogleJsonWebSignature.ValidationSettings
+                {
+                    Audience = new List<string> { _configuration["Authentication:Google:ClientId"]! }
+                };
+
+                var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
+
+                var user = await _unitOfWork.UserRepository.Query()
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.Email == payload.Email && payload.EmailVerified && !x.IsDeleted && x.IsActive);
+
+                if(user == null)
+                {
+                    var roleId = await _unitOfWork.RoleRepository.Query()
+                        .Where(r => r.Name == "User" && !r.IsDeleted)
+                        .Select(r => r.Id)
+                        .FirstOrDefaultAsync();
+
+                    User newUser = new()
+                    {
+                        RoleId = roleId!,
+                        Email = payload.Email,
+                        IsActive = true,
+                        FullName = payload.Name,
+                        ParticipationFrequency = ParticipationFrequency.Monthly,
+                        BudgetOption = BudgetOption.Flexible,
+                    };
+                    await _unitOfWork.UserRepository.AddAsync(newUser);
+
+                    Wallet wallet = new()
+                    {
+                        UserId = newUser.Id,
+                        Balance = 0,
+                    };
+                    await _unitOfWork.WalletRepository.AddAsync(wallet);
+                }
+
+                var accessToken = _jwtService.GenerateAccessToken(user);
+                var refreshToken = _jwtService.GenerateRefreshToken();
+
+                var refreshTokenEntity = new RefreshToken
+                {
+                    Token = refreshToken,
+                    UserId = user.Id,
+                    ExpiresAt = DateTime.UtcNow.AddDays(7)
+                };
+
+                await _unitOfWork.RefreshTokenRepository.AddAsync(refreshTokenEntity);
+                await _unitOfWork.SaveChangesAsync();
+
+                var authResponse = new AuthResponse
+                {
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken,
+                    ExpiresAt = DateTime.UtcNow.AddHours(1)
+                };
+
+                return Result<AuthResponse>.Success(authResponse);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error: {ex.Message}");
+            }
         }
     }
 }

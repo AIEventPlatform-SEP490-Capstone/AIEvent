@@ -43,16 +43,28 @@ const REGISTRATION_STEPS = {
 };
 
 const CITIES = [
-  "Hà Nội",
-  "TP. Hồ Chí Minh",
-  "Đà Nẵng",
-  "Cần Thơ",
-  "Hải Phòng",
-  "Nha Trang",
-  "Huế",
-  "Vũng Tàu",
-  "Đà Lạt",
-  "Quy Nhơn",
+  "Quận 1",
+  "Quận 3",
+  "Quận 4",
+  "Quận 5",
+  "Quận 6",
+  "Quận 7",
+  "Quận 8",
+  "Quận 10",
+  "Quận 11",
+  "Quận 12",
+  "Quận Bình Tân",
+  "Quận Bình Thạnh",
+  "Quận Gò Vấp",
+  "Quận Phú Nhuận",
+  "Quận Tân Bình",
+  "Quận Tân Phú",
+  "Thành phố Thủ Đức",
+  "Huyện Bình Chánh",
+  "Huyện Cần Giờ",
+  "Huyện Củ Chi",
+  "Huyện Hóc Môn",
+  "Huyện Nhà Bè",
 ];
 
 const FREQUENCY_OPTIONS = [
@@ -326,7 +338,7 @@ export default function RegisterPage() {
         newErrors.userInterests = "Vui lòng chọn ít nhất 3 sở thích.";
       }
       if (formData.preferences.interestedCities.length === 0) {
-        newErrors.interestedCities = "Vui lòng chọn ít nhất một thành phố.";
+        newErrors.interestedCities = "Vui lòng chọn ít nhất một khu vực.";
       }
     }
 
@@ -428,12 +440,6 @@ export default function RegisterPage() {
     if (currentStep > REGISTRATION_STEPS.BASIC_INFO) {
       setCurrentStep(currentStep - 1);
     }
-  };
-
-  const getInterestName = (interestId) => {
-    return (
-      interests.find((i) => i.interestId === interestId)?.interestName || ""
-    );
   };
 
   // If user is authenticated, show loading while redirecting
@@ -964,10 +970,10 @@ export default function RegisterPage() {
                         <div className="space-y-4">
                           <div className="text-center">
                             <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                              Thành phố quan tâm
+                              Khu vực quan tâm
                             </h3>
                             <p className="text-gray-600">
-                              Chọn các thành phố bạn muốn tham gia sự kiện
+                              Chọn các khu vực bạn muốn tham gia sự kiện
                             </p>
                           </div>
 
@@ -1158,17 +1164,15 @@ export default function RegisterPage() {
                           <div className="flex flex-wrap gap-2">
                             {formData.preferences.userInterests
                               .slice(0, 8)
-                              .map((interestId) => {
-                                const name = getInterestName(interestId);
-                                return (
-                                  <div
-                                    key={interestId}
-                                    className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full"
-                                  >
-                                    {name}
-                                  </div>
-                                );
-                              })}
+                              .map((interest) => (
+                                <div
+                                  key={interest}
+                                  className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full"
+                                >
+                                  {interest}
+                                </div>
+                              ))}
+
                             {formData.preferences.userInterests.length > 8 && (
                               <div className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
                                 +{formData.preferences.userInterests.length - 8}{" "}
@@ -1181,7 +1185,7 @@ export default function RegisterPage() {
                         <div className="grid grid-cols-1 gap-4">
                           <div className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
                             <h4 className="font-bold text-gray-800 mb-2">
-                              Thành phố
+                              Khu vực
                             </h4>
                             <p className="text-gray-600">
                               {formData.preferences.interestedCities.join(", ")}

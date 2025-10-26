@@ -10,6 +10,8 @@ import {
     Image,
     ScrollView,
     ImageBackground,
+    ActivityIndicator,
+    Animated,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { login } from '../../redux/actions/Action';
@@ -19,16 +21,73 @@ const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+    const [loadingProgress, setLoadingProgress] = useState(0);
     const dispatch = useDispatch();
     const { isLoading, error } = useSelector(state => state.auth);
     const canSubmit = email.trim().length > 0 && password.trim().length > 0;
+
+    // Animation values
+    const fadeAnim = useState(new Animated.Value(1))[0];
+    const scaleAnim = useState(new Animated.Value(1))[0];
+    const progressAnim = useState(new Animated.Value(0))[0];
 
     const handleLogin = async () => {
         if (!canSubmit || isLoading) {
             return;
         }
 
-        await dispatch(login(email, password));
+        // Start loading animations
+        startLoadingAnimation();
+        
+        try {
+            await dispatch(login(email, password));
+        } catch (error) {
+            // Reset animations on error
+            resetLoadingAnimation();
+        }
+    };
+
+    const startLoadingAnimation = () => {
+        // Fade out form elements
+        Animated.timing(fadeAnim, {
+            toValue: 0.3,
+            duration: 300,
+            useNativeDriver: true,
+        }).start();
+
+        // Scale down button
+        Animated.timing(scaleAnim, {
+            toValue: 0.95,
+            duration: 200,
+            useNativeDriver: true,
+        }).start();
+
+        // Animate progress bar
+        Animated.timing(progressAnim, {
+            toValue: 1,
+            duration: 2000,
+            useNativeDriver: false,
+        }).start();
+    };
+
+    const resetLoadingAnimation = () => {
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleAnim, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+            Animated.timing(progressAnim, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: false,
+            }),
+        ]).start();
     };
 
     return (
@@ -49,7 +108,7 @@ const LoginScreen = ({ navigation }) => {
                         showsVerticalScrollIndicator={false}
                         keyboardShouldPersistTaps="handled"
                     >
-                        <View style={styles.formContainer}>
+                        <Animated.View style={[styles.formContainer, { opacity: fadeAnim }]}>
                             <View style={styles.logoWrapper}>
                                 <Text style={styles.logoText}>AIEVENT</Text>
                                 <Image
@@ -75,6 +134,7 @@ const LoginScreen = ({ navigation }) => {
                                         keyboardType="email-address"
                                         autoCapitalize="none"
                                         autoCorrect={false}
+                                        editable={!isLoading}
                                     />
                                 </View>
 
@@ -91,10 +151,12 @@ const LoginScreen = ({ navigation }) => {
                                         onChangeText={setPassword}
                                         secureTextEntry={!isPasswordVisible}
                                         autoCapitalize="none"
+                                        editable={!isLoading}
                                     />
                                     <TouchableOpacity
                                         activeOpacity={0.7}
                                         onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+                                        disabled={isLoading}
                                     >
                                         <Image
                                             source={
@@ -102,7 +164,7 @@ const LoginScreen = ({ navigation }) => {
                                                     ? require('../../assets/icons/show-eye.png')
                                                     : require('../../assets/icons/close-eye.png')
                                             }
-                                            style={styles.eyeIcon}
+                                            style={[styles.eyeIcon, { opacity: isLoading ? 0.5 : 1 }]}
                                         />
                                     </TouchableOpacity>
                                 </View>
@@ -113,19 +175,51 @@ const LoginScreen = ({ navigation }) => {
                                 </View>
                             )}
 
-                            <TouchableOpacity
-                                style={[
-                                    styles.loginButton,
-                                    canSubmit ? styles.loginButtonEnabled : styles.loginButtonDisabled,
-                                ]}
-                                onPress={handleLogin}
-                                disabled={!canSubmit || isLoading}
-                                activeOpacity={0.8}
-                            >
-                                <Text style={styles.loginButtonText}>
-                                    {isLoading ? 'Đang đăng nhập...' : 'ĐĂNG NHẬP'}
-                                </Text>
-                            </TouchableOpacity>
+                            {/* Loading Progress Bar */}
+                            {isLoading && (
+                                <View style={styles.progressContainer}>
+                                    <View style={styles.progressBar}>
+                                        <Animated.View 
+                                            style={[
+                                                styles.progressFill,
+                                                {
+                                                    width: progressAnim.interpolate({
+                                                        inputRange: [0, 1],
+                                                        outputRange: ['0%', '100%'],
+                                                    }),
+                                                }
+                                            ]} 
+                                        />
+                                    </View>
+                                    <Text style={styles.progressText}>Đang xác thực...</Text>
+                                </View>
+                            )}
+
+                            <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.loginButton,
+                                        canSubmit ? styles.loginButtonEnabled : styles.loginButtonDisabled,
+                                        isLoading && styles.loginButtonLoading,
+                                    ]}
+                                    onPress={handleLogin}
+                                    disabled={!canSubmit || isLoading}
+                                    activeOpacity={0.8}
+                                >
+                                    {isLoading ? (
+                                        <View style={styles.loadingContainer}>
+                                            <ActivityIndicator 
+                                                size="small" 
+                                                color="#FFFFFF" 
+                                                style={styles.loadingSpinner}
+                                            />
+                                            <Text style={styles.loginButtonText}>Đang đăng nhập...</Text>
+                                        </View>
+                                    ) : (
+                                        <Text style={styles.loginButtonText}>ĐĂNG NHẬP</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </Animated.View>
 
                             <View style={styles.linksRow}>
                                 <TouchableOpacity activeOpacity={0.7}>
@@ -160,7 +254,7 @@ const LoginScreen = ({ navigation }) => {
                                     />
                                 </TouchableOpacity>
                             </View>
-                        </View>
+                        </Animated.View>
                     </ScrollView>
                 </View>
             </KeyboardAvoidingView>
