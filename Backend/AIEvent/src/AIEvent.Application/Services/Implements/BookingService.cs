@@ -132,7 +132,18 @@ namespace AIEvent.Application.Services.Implements
                 await _unitOfWork.TicketDetailRepository.UpdateRangeAsync(ticketTypesToUpdate);
                 await _unitOfWork.EventRepository.UpdateAsync(eventEntity);
                 await _unitOfWork.BookingItemRepository.AddRangeAsync(bookingItems);
+
+                // Generate QR contents and bytes
+                var qrContents = tickets.Select(t => _ticketTokenService.CreateTicketToken(t.Id)).ToList();
+                var qrResult = await _qrCodeService.GenerateQrBytesAndUrlsAsync(qrContents);
+
+                // Update tickets with QrCodeUrl
+                for (int i = 0; i < tickets.Count; i++)
+                {
+                    tickets[i].QrCodeUrl = qrResult.Urls[qrContents[i]];
+                }
                 await _unitOfWork.TicketRepository.AddRangeAsync(tickets);
+
                 await _unitOfWork.SaveChangesAsync();
 
                 // Payment handling 
@@ -212,18 +223,6 @@ namespace AIEvent.Application.Services.Implements
                 booking.TotalAmount = totalAmount;
                 booking.PaymentStatus = PaymentStatus.Paid;
                 await _unitOfWork.BookingRepository.UpdateAsync(booking);
-
-                // Generate QR contents and bytes
-                var qrContents = tickets.Select(t => _ticketTokenService.CreateTicketToken(t.Id)).ToList();
-                var qrResult = await _qrCodeService.GenerateQrBytesAndUrlsAsync(qrContents);
-
-                // Update tickets with QrCodeUrl
-                for (int i = 0; i < tickets.Count; i++)
-                {
-                    tickets[i].QrCodeUrl = qrResult.Urls[qrContents[i]];
-                }
-                await _unitOfWork.TicketRepository.UpdateRangeAsync(tickets);
-                await _unitOfWork.SaveChangesAsync();
 
                 // Prepare ticket data for PDF/email
                 var ticketData = tickets.Select(t => new TicketForPdf
@@ -381,6 +380,8 @@ namespace AIEvent.Application.Services.Implements
 
                 if (ticketData == null)
                     return ErrorResponse.FailureResult("Ticket not found", ErrorCodes.NotFound);
+                if (ticketData.Status == TicketStatus.Refunded)
+                    return ErrorResponse.FailureResult("Ticket has already been refunded", ErrorCodes.InvalidInput);
 
                 var ticket = ticketData;
                 var ticketType = ticket.TicketType;
@@ -391,23 +392,14 @@ namespace AIEvent.Application.Services.Implements
                 if (eventEntity.StartTime <= now)
                     return ErrorResponse.FailureResult("Cannot refund after event has started", ErrorCodes.InternalServerError);
 
-                ticket.Status = TicketStatus.Refunded;
-
-                ticketType.RemainingQuantity++;
-                ticketType.SoldQuantity--;
-                eventEntity.RemainingTickets++;
-                eventEntity.SoldQuantity--;
-
                 decimal refundPrice = 0;
                 decimal refundPercent = 0;
-
-                if (refundRule != null && refundRule.RefundRuleDetails?.Any() == true)
+                if (refundRule != null && refundRule.RefundRuleDetails?.Any() == true && eventEntity.TicketType != TicketType.Free)
                 {
                     var refundDetail = refundRule.RefundRuleDetails
                         .FirstOrDefault(d =>
                             now >= eventEntity.StartTime.AddDays(-d.MaxDaysBeforeEvent!.Value) &&
                             now < eventEntity.StartTime.AddDays(-d.MinDaysBeforeEvent!.Value));
-
 
                     if (refundDetail == null)
                         return ErrorResponse.FailureResult("Refund rule not applicable for this time", ErrorCodes.InvalidInput);
@@ -472,6 +464,12 @@ namespace AIEvent.Application.Services.Implements
                     await _unitOfWork.PaymentTransactionRepository.AddAsync(paymentTransaction);
                     await _unitOfWork.WalletTransactionRepository.AddRangeAsync(new[] { walletTransactionUser, walletTransactionOrg });
                 }
+
+                ticketType.RemainingQuantity++;
+                ticketType.SoldQuantity--;
+                eventEntity.RemainingTickets++;
+                eventEntity.SoldQuantity--;
+                ticket.Status = TicketStatus.Refunded;
 
                 return Result.Success();
             });
