@@ -97,7 +97,7 @@ export const dismissAllToasts = () => {
 export const authMessages = {
   // Login messages
   loginSuccess: (userName) =>
-    `Chào mừng ${userName}! Đăng nhập thành công rồi ó!.`,
+    `Chào mừng ${userName}! Đăng nhập thành công rồi!.`,
   loginError: "Đăng nhập thất bại rồi. Kiểm tra lại thông tin đi.",
   loginInvalidCredentials:
     "Tài khoản hoặc mật khẩu không chính xác, vui lòng nhập cho kỹ!",

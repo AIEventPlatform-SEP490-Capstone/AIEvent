@@ -5,10 +5,13 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   server: {
+    port: 5173,
+    host: true,
     proxy: {
       "/api": {
         // target: "https://aievent.duckdns.org",
         target: "https://localhost:7777",
+        // target: "http://localhost:5059",
         changeOrigin: true,
         secure: false,
         configure: (proxy, _options) => {

@@ -255,8 +255,13 @@ export const eventAPI = {
   },
 
   // Delete event (requires Organizer role)
-  deleteEvent: async (eventId) => {
-    const response = await fetcher.delete(`/event/${eventId}`);
+  deleteEvent: async (eventId, reasonCancel = null) => {
+    let url = `/event/${eventId}`;
+    if (reasonCancel) {
+      url += `?reasonCancel=${encodeURIComponent(reasonCancel)}`;
+    }
+    
+    const response = await fetcher.delete(url);
     // Return the actual response data
     return response.data?.data || response.data;
   },

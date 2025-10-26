@@ -134,7 +134,55 @@ const ManagerEventDetailPage = () => {
   };
 
   const handleDeleteEvent = async () => {
-    const confirmMessage = `Bạn có chắc chắn muốn xóa sự kiện "${event.title}"?
+    // Check if event has bookings that require a reason
+    const hasBookings = event?.soldQuantity > 0;
+    
+    if (hasBookings) {
+      // For events with bookings, show prompt for reason
+      const reason = prompt(`Bạn có chắc chắn muốn xóa sự kiện "${event.title}"?
+
+⚠️ Sự kiện này đã có ${event.soldQuantity} người đăng ký.
+
+Vui lòng nhập lý do hủy bỏ sự kiện:`);
+      
+      if (reason === null) {
+        // User cancelled
+        return;
+      }
+      
+      if (!reason.trim()) {
+        toast.error('Vui lòng nhập lý do hủy bỏ sự kiện');
+        return;
+      }
+
+      try {
+        const loadingToast = toast.loading('Đang xóa sự kiện...');
+        
+        const response = await deleteEventAPI(eventId, reason.trim());
+        
+        toast.dismiss(loadingToast);
+        
+        if (response !== null) {
+          toast.success('✅ Xóa sự kiện thành công!', {
+            duration: 3000,
+          });
+          navigate(PATH.MANAGER_EVENTS || '/manager/events');
+        }
+      } catch (error) {
+        console.error('Error deleting event:', error);
+        if (error.response?.status === 403) {
+          toast.error('❌ Bạn không có quyền xóa sự kiện này');
+        } else if (error.response?.status === 404) {
+          toast.error('❌ Sự kiện không tồn tại hoặc đã bị xóa');
+        } else if (error.response?.status === 400) {
+          toast.error('❌ Không thể xóa sự kiện đã có người đăng ký');
+        } else {
+          toast.error('❌ Có lỗi xảy ra khi xóa sự kiện');
+        }
+      }
+    } else {
+      // For events without bookings, use the existing confirmation
+      const confirmMessage = `Bạn có chắc chắn muốn xóa sự kiện "${event.title}"?
 
 Hành động này không thể hoàn tác và sẽ xóa:
 • Toàn bộ thông tin sự kiện
@@ -142,34 +190,35 @@ Hành động này không thể hoàn tác và sẽ xóa:
 • Lịch sử giao dịch liên quan
 
 Nhấn OK để xác nhận xóa.`;
-    
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
-
-    try {
-      const loadingToast = toast.loading('Đang xóa sự kiện...');
       
-      const response = await deleteEventAPI(eventId);
-      
-      toast.dismiss(loadingToast);
-      
-      if (response) {
-        toast.success('✅ Xóa sự kiện thành công!', {
-          duration: 3000,
-        });
-        navigate(PATH.MANAGER_EVENTS || '/manager/events');
+      if (!window.confirm(confirmMessage)) {
+        return;
       }
-    } catch (error) {
-      console.error('Error deleting event:', error);
-      if (error.response?.status === 403) {
-        toast.error('❌ Bạn không có quyền xóa sự kiện này');
-      } else if (error.response?.status === 404) {
-        toast.error('❌ Sự kiện không tồn tại hoặc đã bị xóa');
-      } else if (error.response?.status === 400) {
-        toast.error('❌ Không thể xóa sự kiện đã có người đăng ký');
-      } else {
-        toast.error('❌ Có lỗi xảy ra khi xóa sự kiện');
+
+      try {
+        const loadingToast = toast.loading('Đang xóa sự kiện...');
+        
+        const response = await deleteEventAPI(eventId);
+        
+        toast.dismiss(loadingToast);
+        
+        if (response !== null) {
+          toast.success('✅ Xóa sự kiện thành công!', {
+            duration: 3000,
+          });
+          navigate(PATH.MANAGER_EVENTS || '/manager/events');
+        }
+      } catch (error) {
+        console.error('Error deleting event:', error);
+        if (error.response?.status === 403) {
+          toast.error('❌ Bạn không có quyền xóa sự kiện này');
+        } else if (error.response?.status === 404) {
+          toast.error('❌ Sự kiện không tồn tại hoặc đã bị xóa');
+        } else if (error.response?.status === 400) {
+          toast.error('❌ Không thể xóa sự kiện đã có người đăng ký');
+        } else {
+          toast.error('❌ Có lỗi xảy ra khi xóa sự kiện');
+        }
       }
     }
   };
