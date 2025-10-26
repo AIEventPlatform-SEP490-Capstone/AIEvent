@@ -23,6 +23,7 @@ import AdminProfile from "../pages/Admin/AdminProfile";
 import UserManagement from "../pages/Admin/UserManagement";
 import EventCategory from "../pages/Event Category/EventCategory";
 import VerifyOtpPage from "../pages/Auth/RegisterPage/VerifyOtpPage";
+import GoogleCallbackPage from "../pages/Auth/GoogleCallbackPage";
 import BecomeOrganizerPage from "../pages/User/BecomeOrganizerPage";
 import ApplicationStatusPage from "../pages/User/ApplicationStatusPage";
 import UserProfilePage from "../pages/User/UserProfilePage";
@@ -165,6 +166,7 @@ export default function useRouterElement() {
         { path: "login", element: <LoginPage /> },
         { path: "register", element: <RegisterPage /> },
         { path: "verify-otp", element: <VerifyOtpPage /> },
+        { path: "google-callback", element: <GoogleCallbackPage /> },
       ],
     },
     {
