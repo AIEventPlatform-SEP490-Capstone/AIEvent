@@ -13,6 +13,11 @@ export const AUTH_ACTIONS = {
   LOGOUT: 'LOGOUT',
   REFRESH_TOKEN_SUCCESS: 'REFRESH_TOKEN_SUCCESS',
   CHECK_AUTH_STATUS: 'CHECK_AUTH_STATUS',
+  CHANGE_PASSWORD_REQUEST: 'CHANGE_PASSWORD_REQUEST',
+  CHANGE_PASSWORD_SUCCESS: 'CHANGE_PASSWORD_SUCCESS',
+  CHANGE_PASSWORD_FAILURE: 'CHANGE_PASSWORD_FAILURE',
+  CLEAR_CHANGE_PASSWORD_ERROR: 'CLEAR_CHANGE_PASSWORD_ERROR',
+  CLEAR_CHANGE_PASSWORD_SUCCESS: 'CLEAR_CHANGE_PASSWORD_SUCCESS',
 };
 
 // Action Creators
@@ -42,6 +47,28 @@ export const refreshTokenSuccess = (tokens) => ({
 export const checkAuthStatus = (isLoggedIn) => ({
   type: AUTH_ACTIONS.CHECK_AUTH_STATUS,
   payload: isLoggedIn,
+});
+
+export const changePasswordRequest = () => ({
+  type: AUTH_ACTIONS.CHANGE_PASSWORD_REQUEST,
+});
+
+export const changePasswordSuccess = (message) => ({
+  type: AUTH_ACTIONS.CHANGE_PASSWORD_SUCCESS,
+  payload: message,
+});
+
+export const changePasswordFailure = (error) => ({
+  type: AUTH_ACTIONS.CHANGE_PASSWORD_FAILURE,
+  payload: error,
+});
+
+export const clearChangePasswordError = () => ({
+  type: AUTH_ACTIONS.CLEAR_CHANGE_PASSWORD_ERROR,
+});
+
+export const clearChangePasswordSuccess = () => ({
+  type: AUTH_ACTIONS.CLEAR_CHANGE_PASSWORD_SUCCESS,
 });
 
 // Thunk Actions (Async Actions)
@@ -89,6 +116,29 @@ export const checkAuth = () => {
     } catch (error) {
       dispatch(checkAuthStatus(false));
       return false;
+    }
+  };
+};
+
+export const changePassword = (currentPassword, newPassword, confirmPassword) => {
+  return async (dispatch) => {
+    dispatch(changePasswordRequest());
+    
+    try {
+      const result = await AuthService.changePassword(currentPassword, newPassword, confirmPassword);
+      
+      if (result.success) {
+        dispatch(changePasswordSuccess(result.message));
+        return { success: true, message: result.message };
+      } else {
+        const message = result.message || 'Đổi mật khẩu thất bại. Vui lòng thử lại.';
+        dispatch(changePasswordFailure(message));
+        return { success: false, message };
+      }
+    } catch (error) {
+      const message = 'Đổi mật khẩu thất bại. Vui lòng kiểm tra kết nối mạng và thử lại.';
+      dispatch(changePasswordFailure(message));
+      return { success: false, message };
     }
   };
 };

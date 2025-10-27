@@ -25,7 +25,7 @@ class AuthService {
       
       const data = await response.json();
 
-      if (response.ok && data.statusCode === 'AIE20000') {
+      if (response.ok && (data.statusCode === 'AIE20000' || data.statusCode === 'AIE20001')) {
         await AsyncStorage.setItem(StorageKeys.ACCESS_TOKEN, data.data.accessToken);
         await AsyncStorage.setItem(StorageKeys.REFRESH_TOKEN, data.data.refreshToken);
         await AsyncStorage.setItem(StorageKeys.TOKEN_EXPIRES_AT, data.data.expiresAt);
@@ -81,7 +81,7 @@ class AuthService {
 
       const data = await response.json();
 
-      if (response.ok && data.statusCode === 'AIE20000') {
+      if (response.ok && (data.statusCode === 'AIE20000' || data.statusCode === 'AIE20001')) {
         await AsyncStorage.setItem(StorageKeys.ACCESS_TOKEN, data.data.accessToken);
         await AsyncStorage.setItem(StorageKeys.TOKEN_EXPIRES_AT, data.data.expiresAt);
         await AsyncStorage.setItem(StorageKeys.REFRESH_TOKEN, data.data.refreshToken);
@@ -184,6 +184,73 @@ class AuthService {
       return accessToken;
     } catch (error) {
       return null;
+    }
+  }
+
+  // Change password method
+  static async changePassword(currentPassword, newPassword, confirmPassword) {
+    try {
+      const accessToken = await this.getAccessToken();
+      
+      if (!accessToken) {
+        return {
+          success: false,
+          data: null,
+          message: 'Vui lòng đăng nhập lại để thực hiện thao tác này',
+        };
+      }
+
+      const response = await fetch(EndUrls.CHANGE_PASSWORD, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+          confirmPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.statusCode === 'AIE20001') {
+        return {
+          success: true,
+          data: data.data,
+          message: data.message || 'Đổi mật khẩu thành công',
+        };
+      } else {
+        // Handle different error cases
+        let errorMessage = 'Có lỗi xảy ra khi đổi mật khẩu';
+        
+        if (data.statusCode === 'AIE40001' || data.message?.includes('current password') || data.message?.includes('mật khẩu hiện tại')) {
+          errorMessage = 'Mật khẩu hiện tại không chính xác';
+        } else if (data.message?.includes('new password') || data.message?.includes('mật khẩu mới')) {
+          errorMessage = 'Mật khẩu mới không hợp lệ';
+        } else if (data.message?.includes('confirm') || data.message?.includes('xác nhận')) {
+          errorMessage = 'Mật khẩu xác nhận không khớp';
+        } else if (response.status === 401) {
+          errorMessage = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại';
+        } else if (data.message) {
+          errorMessage = data.message;
+        }
+
+        return {
+          success: false,
+          data: null,
+          message: errorMessage,
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        data: null,
+        message: 'Lỗi kết nối, vui lòng thử lại!',
+        error: error.message,
+      };
     }
   }
   

@@ -682,7 +682,11 @@ const ProfileScreen = ({ navigation }) => {
               </View>
               
               {/* Change Password */}
-              <TouchableOpacity style={styles.settingCard} activeOpacity={0.7}>
+              <TouchableOpacity 
+                style={styles.settingCard} 
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('ChangePasswordScreen')}
+              >
                 <View style={styles.settingLeft}>
                   <View style={[styles.settingIconContainer, styles.passwordIcon]}>
                     <CustomText variant="h4" color="white">🔑</CustomText>

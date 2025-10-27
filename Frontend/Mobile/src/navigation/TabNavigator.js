@@ -8,6 +8,7 @@ import MyEventsScreen from '../screens/myEventsScreen';
 import ProfileScreen from '../screens/profileScreen';
 import WalletScreen from '../screens/walletScreen';
 import PaymentScreen from '../screens/paymentScreen';
+import ChangePasswordScreen from '../screens/changePasswordScreen';
 import ScreenNames from '../constants/ScreenNames';
 import Images from '../constants/Images';
 import Colors from '../constants/Colors';
@@ -102,6 +103,13 @@ const ProfileStack = () => {
       <Stack.Screen 
         name="PaymentScreen" 
         component={PaymentScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name={ScreenNames.CHANGE_PASSWORD_SCREEN} 
+        component={ChangePasswordScreen}
         options={{
           headerShown: false,
         }}
