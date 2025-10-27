@@ -517,26 +517,6 @@ export function VerticalNavigation() {
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
-                      isActive={pathname === "/settings"}
-                      className={cn(
-                        "group rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/15 data-[active=true]:text-primary",
-                        state === "collapsed" && "p-1 justify-center"
-                      )}
-                    >
-                      <NavLink
-                        to="/settings"
-                        className="flex items-center gap-3 px-3 py-2.5"
-                      >
-                        <Settings className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                        {state !== "collapsed" && (
-                          <span className="font-medium text-sm">Cài đặt</span>
-                        )}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
                       isActive={pathname === "/help"}
                       className={cn(
                         "group rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/15 data-[active=true]:text-primary",
