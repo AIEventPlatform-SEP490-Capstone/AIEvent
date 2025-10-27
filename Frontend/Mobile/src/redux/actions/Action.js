@@ -3,6 +3,7 @@
 //Centralized state management cho auth status
 
 import AuthService from '../../api/services/AuthService';
+import { walletAPI } from '../../api/services';
 
 // Action Types
 export const AUTH_ACTIONS = {
@@ -91,3 +92,99 @@ export const checkAuth = () => {
     }
   };
 };
+
+// Wallet Actions
+export const WALLET_ACTIONS = {
+  FETCH_WALLET_REQUEST: 'FETCH_WALLET_REQUEST',
+  FETCH_WALLET_SUCCESS: 'FETCH_WALLET_SUCCESS',
+  FETCH_WALLET_FAILURE: 'FETCH_WALLET_FAILURE',
+  FETCH_TRANSACTIONS_REQUEST: 'FETCH_TRANSACTIONS_REQUEST',
+  FETCH_TRANSACTIONS_SUCCESS: 'FETCH_TRANSACTIONS_SUCCESS',
+  FETCH_TRANSACTIONS_FAILURE: 'FETCH_TRANSACTIONS_FAILURE',
+  CREATE_TOPUP_REQUEST: 'CREATE_TOPUP_REQUEST',
+  CREATE_TOPUP_SUCCESS: 'CREATE_TOPUP_SUCCESS',
+  CREATE_TOPUP_FAILURE: 'CREATE_TOPUP_FAILURE',
+  CLEAR_WALLET_ERROR: 'CLEAR_WALLET_ERROR',
+  CLEAR_WALLET: 'CLEAR_WALLET',
+  CLEAR_TRANSACTIONS_ERROR: 'CLEAR_TRANSACTIONS_ERROR',
+  CLEAR_TOPUP_ERROR: 'CLEAR_TOPUP_ERROR',
+  CLEAR_TOPUP_PAYMENT: 'CLEAR_TOPUP_PAYMENT',
+};
+
+// Wallet Action Creators
+export const fetchUserWallet = () => {
+  return async (dispatch) => {
+    dispatch({ type: WALLET_ACTIONS.FETCH_WALLET_REQUEST });
+    
+    try {
+      const response = await walletAPI.getUserWallet();
+      dispatch({ 
+        type: WALLET_ACTIONS.FETCH_WALLET_SUCCESS, 
+        payload: response.data 
+      });
+    } catch (error) {
+      dispatch({ 
+        type: WALLET_ACTIONS.FETCH_WALLET_FAILURE, 
+        payload: error.response ? error.response.data : error.message 
+      });
+    }
+  };
+};
+
+export const fetchWalletTransactions = ({ walletId, params }) => {
+  return async (dispatch) => {
+    dispatch({ type: WALLET_ACTIONS.FETCH_TRANSACTIONS_REQUEST });
+    
+    try {
+      const response = await walletAPI.getWalletTransactions(walletId, params);
+      dispatch({ 
+        type: WALLET_ACTIONS.FETCH_TRANSACTIONS_SUCCESS, 
+        payload: response.data 
+      });
+    } catch (error) {
+      dispatch({ 
+        type: WALLET_ACTIONS.FETCH_TRANSACTIONS_FAILURE, 
+        payload: error.response ? error.response.data : error.message 
+      });
+    }
+  };
+};
+
+export const createTopupPayment = (amount) => {
+  return async (dispatch) => {
+    dispatch({ type: WALLET_ACTIONS.CREATE_TOPUP_REQUEST });
+    
+    try {
+      const response = await walletAPI.createTopupPayment(amount);
+      dispatch({ 
+        type: WALLET_ACTIONS.CREATE_TOPUP_SUCCESS, 
+        payload: response.data
+      });
+    } catch (error) {
+      dispatch({ 
+        type: WALLET_ACTIONS.CREATE_TOPUP_FAILURE, 
+        payload: error.response ? error.response.data : error.message 
+      });
+    }
+  };
+};
+
+export const clearWalletError = () => ({
+  type: WALLET_ACTIONS.CLEAR_WALLET_ERROR,
+});
+
+export const clearWallet = () => ({
+  type: WALLET_ACTIONS.CLEAR_WALLET,
+});
+
+export const clearTransactionsError = () => ({
+  type: WALLET_ACTIONS.CLEAR_TRANSACTIONS_ERROR,
+});
+
+export const clearTopupError = () => ({
+  type: WALLET_ACTIONS.CLEAR_TOPUP_ERROR,
+});
+
+export const clearTopupPayment = () => ({
+  type: WALLET_ACTIONS.CLEAR_TOPUP_PAYMENT,
+});
