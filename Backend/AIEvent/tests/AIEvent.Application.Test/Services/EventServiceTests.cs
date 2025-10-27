@@ -2528,7 +2528,7 @@ namespace AIEvent.Application.Test.Services
             var startOfWeek = today.AddDays(-diff);
             var endOfWeek = startOfWeek.AddDays(7).AddTicks(-1);
             // Event in the future within this week
-            var eventInWeek = now.AddHours(2); 
+            var eventInWeek = now.AddSeconds(1); 
             var eventOutsideWeek = endOfWeek.AddDays(2); 
             var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
             
@@ -2594,7 +2594,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var today = DateTime.Today;
-            var thisMonth = today.AddDays(5);
+            var thisMonth = today.AddHours(5);
             var nextMonth = today.AddMonths(1);
             var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
             
