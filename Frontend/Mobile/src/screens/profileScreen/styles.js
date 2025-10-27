@@ -202,33 +202,86 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     marginHorizontal: 12,
     marginBottom: 16,
-    borderRadius: 16,
-    paddingVertical: 4,
-    elevation: 2,
+    borderRadius: 24,
+    paddingVertical: 12,
+    elevation: 6,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 123, 255, 0.1)',
+  },
+
+  tabScrollContainer: {
+    paddingHorizontal: 8,
+    alignItems: 'center',
   },
 
   tabButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginHorizontal: 2,
-    borderRadius: 12,
-    minWidth: 60,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    marginHorizontal: 6,
+    borderRadius: 20,
+    minWidth: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'transparent',
+    transition: 'all 0.2s ease',
   },
 
   activeTabButton: {
     backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 5,
+    transform: [{ scale: 1.05 }],
+  },
+
+  tabButtonContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  tabIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 123, 255, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 123, 255, 0.1)',
+  },
+
+  activeTabIconContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    transform: [{ scale: 1.1 }],
+  },
+
+  tabIcon: {
+    fontSize: 20,
   },
 
   tabButtonText: {
     fontFamily: Fonts.medium,
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 18,
+    letterSpacing: 0.2,
   },
 
   activeTabButtonText: {
     fontFamily: Fonts.bold,
+    fontSize: 14,
+    letterSpacing: 0.3,
   },
 
   // Tab Content - Mobile Optimized
@@ -250,6 +303,70 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+  },
+
+  tabHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+
+  tabIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+
+  likesIconContainer: {
+    backgroundColor: '#E91E63',
+  },
+
+  friendsIconContainer: {
+    backgroundColor: '#4CAF50',
+  },
+
+  historyIconContainer: {
+    backgroundColor: '#FF9800',
+  },
+
+  ticketCountBadge: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+
+  ticketCountText: {
+    fontFamily: Fonts.medium,
+    fontSize: 12,
+  },
+
+  likesCountBadge: {
+    backgroundColor: '#E91E63',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+
+  likesCountText: {
+    fontFamily: Fonts.medium,
+    fontSize: 12,
+  },
+
+  friendsCountBadge: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+
+  friendsCountText: {
+    fontFamily: Fonts.medium,
+    fontSize: 12,
   },
 
   tabTitle: {
@@ -324,6 +441,78 @@ const styles = StyleSheet.create({
 
   ticketDetails: {
     marginTop: 8,
+  },
+
+  ticketDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+
+  ticketDetailText: {
+    marginLeft: 6,
+    flex: 1,
+  },
+
+  ticketActions: {
+    flexDirection: 'row',
+    marginTop: 12,
+    gap: 8,
+  },
+
+  ticketActionButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    backgroundColor: 'transparent',
+  },
+
+  ticketActionButtonPrimary: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+
+  // Empty State Styles
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+
+  emptyStateIcon: {
+    marginBottom: 16,
+    opacity: 0.6,
+  },
+
+  emptyStateTitle: {
+    fontFamily: Fonts.bold,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+
+  emptyStateDescription: {
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+    opacity: 0.8,
+  },
+
+  emptyStateButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+
+  // Lists
+  likesList: {
+    paddingVertical: 16,
+  },
+
+  friendsList: {
+    paddingVertical: 16,
   },
 
   // Settings

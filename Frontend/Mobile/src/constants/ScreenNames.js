@@ -17,6 +17,8 @@ const ScreenNames = {
   // Profile Screens
   PROFILE_SCREEN: 'ProfileScreen',
   SETTINGS_SCREEN: 'SettingsScreen',
+  WALLET_SCREEN: 'WalletScreen',
+  PAYMENT_SCREEN: 'PaymentScreen',
   
   // Navigation
   TAB_NAVIGATOR: 'TabNavigator',
