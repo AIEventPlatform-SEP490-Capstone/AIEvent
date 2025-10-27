@@ -288,8 +288,6 @@ namespace AIEvent.Application.Services.Implements
             resendCount++;
             await _cacheService.SetAsync(resendCountKey, resendCount, TimeSpan.FromMinutes(30));
 
-            await _unitOfWork.SaveChangesAsync();
-
             return Result.Success();
         }
         public async Task<Result> RevokeRefreshTokenAsync(string refreshToken)
