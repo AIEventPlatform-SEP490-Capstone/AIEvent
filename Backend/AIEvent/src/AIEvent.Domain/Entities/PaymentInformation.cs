@@ -2,7 +2,7 @@
 
 namespace AIEvent.Domain.Entities
 {
-    public class PaymentInfomation : BaseEntity
+    public class PaymentInformation : BaseEntity
     {
         public Guid UserId { get; set; }
         public required string AccountHolderName { get; set; } 

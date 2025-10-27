@@ -181,6 +181,9 @@ namespace AIEvent.Application.Services.Implements
                 ExpiresAt = DateTime.UtcNow.AddHours(1)
             };
 
+            await _cacheService.RemoveAsync($"Register {request.Email}");
+            await _cacheService.RemoveAsync($"ResendCount {request.Email}");
+
             return Result<AuthResponse>.Success(authResponse);
         }
 
@@ -193,8 +196,20 @@ namespace AIEvent.Application.Services.Implements
             var existingUser = await _unitOfWork.UserRepository
                                                 .Query()
                                                 .FirstOrDefaultAsync(u => u.Email == request.Email);
-            if (existingUser != null)
+            
+            if (existingUser != null && existingUser.IsActive)
                 return ErrorResponse.FailureResult("Email address is already registered", ErrorCodes.InvalidInput);
+            
+            if (existingUser != null && !existingUser.IsActive)
+            {
+                _unitOfWork.DisableSoftDelete();
+                await _unitOfWork.UserRepository.DeleteAsync(existingUser);
+                await _unitOfWork.SaveChangesAsync();
+                _unitOfWork.EnableSoftDelete();
+
+                await _cacheService.RemoveAsync($"Register {request.Email}");
+                await _cacheService.RemoveAsync($"ResendCount {request.Email}");
+            }
 
             var role = await _unitOfWork.RoleRepository
                                     .Query()
@@ -229,6 +244,49 @@ namespace AIEvent.Application.Services.Implements
             }
             await _cacheService.SetAsync($"Register {request.Email}", otpCode, TimeSpan.FromMinutes(5));
             await _unitOfWork.SaveChangesAsync();
+
+            return Result.Success();
+        }
+
+        public async Task<Result> ReSendOTPAsync(string email)
+        {
+            if (string.IsNullOrEmpty(email))
+                return ErrorResponse.FailureResult("Invalid email or email is empty", ErrorCodes.InvalidInput); ;
+
+            var existingUser = await _unitOfWork.UserRepository
+                                                .Query()
+                                                .FirstOrDefaultAsync(u => u.Email == email);
+            
+            if (existingUser != null && existingUser.IsActive)
+                return ErrorResponse.FailureResult("Email address is already registered", ErrorCodes.InvalidInput);
+            
+            if (existingUser == null)
+                return ErrorResponse.FailureResult("User not found. Please register first.", ErrorCodes.NotFound);
+             
+            var resendCountKey = $"ResendCount {email}";
+            var resendCount = await _cacheService.GetAsync<int?>(resendCountKey) ?? 0;
+            
+            if (resendCount >= 3)
+                return ErrorResponse.FailureResult("Maximum OTP resend attempts exceeded. Please try again later.", ErrorCodes.InvalidInput);
+
+            var otpCode = new Random().Next(100000, 999999).ToString();
+            var message = new MimeMessage
+            {
+                Subject = "Mã OTP của bạn",
+                Body = new TextPart("plain")
+                {
+                    Text = $"Mã xác thực của bạn là: {otpCode}. Mã này sẽ hết hạn sau 5 phút."
+                }
+            };
+            var userOtps = await _emailService.SendEmailAsync(email, message);
+            if (!userOtps.IsSuccess)
+                return ErrorResponse.FailureResult("Failed to send email", ErrorCodes.InternalServerError);
+
+            await _cacheService.RemoveAsync($"Register {email}");
+            await _cacheService.SetAsync($"Register {email}", otpCode, TimeSpan.FromMinutes(5));
+             
+            resendCount++;
+            await _cacheService.SetAsync(resendCountKey, resendCount, TimeSpan.FromMinutes(30));
 
             return Result.Success();
         }
@@ -293,14 +351,14 @@ namespace AIEvent.Application.Services.Implements
 
                 if(user == null)
                 {
-                    var roleId = await _unitOfWork.RoleRepository.Query()
+                    var role = await _unitOfWork.RoleRepository.Query()
                         .Where(r => r.Name == "User" && !r.IsDeleted)
-                        .Select(r => r.Id)
                         .FirstOrDefaultAsync();
 
                     User newUser = new()
                     {
-                        RoleId = roleId!,
+                        RoleId = role!.Id,
+                        Role = role,
                         Email = payload.Email,
                         IsActive = true,
                         FullName = payload.Name,
@@ -308,6 +366,8 @@ namespace AIEvent.Application.Services.Implements
                         BudgetOption = BudgetOption.Flexible,
                     };
                     await _unitOfWork.UserRepository.AddAsync(newUser);
+
+                    user = newUser;
 
                     Wallet wallet = new()
                     {

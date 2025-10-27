@@ -1,10 +1,14 @@
 ﻿using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
+using AIEvent.Application.DTOs.PaymentInformation;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
+using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Net.payOS.Types;
@@ -17,17 +21,19 @@ namespace AIEvent.Application.Services.Implements
         private readonly IPayOSService _payOSService;
         private readonly IConfiguration _configuration;
         private readonly ITransactionHelper _transactionHelper;
-        public PaymentService(IUnitOfWork unitOfWork, IConfiguration configuration, ITransactionHelper transactionHelper, IPayOSService payOSService)
+        private readonly IMapper _mapper;
+        public PaymentService(IUnitOfWork unitOfWork, IConfiguration configuration, ITransactionHelper transactionHelper, IPayOSService payOSService, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _configuration = configuration;
             _transactionHelper = transactionHelper;
             _payOSService = payOSService;
+            _mapper = mapper;
         }
 
         public async Task<Result<CreatePaymentResult>> CreatePaymentTopUpAsync(Guid userId, long amount)
         {
-            if (userId == Guid.Empty || amount < 10000)
+            if (userId == Guid.Empty || amount < 10000 || amount >= 1000000000)
                 return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
 
             var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
@@ -170,5 +176,128 @@ namespace AIEvent.Application.Services.Implements
             }
         }
 
+        public async Task<Result> AddPaymendInformationAsync(Guid userId, CreatePaymentInformationRequest request)
+        {
+            if (userId == Guid.Empty)
+                return ErrorResponse.FailureResult("Invalid userId input", ErrorCodes.Unauthorized);
+
+            var validationResult = ValidationHelper.ValidateModel(request);
+            if (!validationResult.IsSuccess)
+                return validationResult;
+
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
+            if (user == null || user.IsDeleted)
+                return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
+
+            var paymentInfor = _mapper.Map<PaymentInformation>(request);
+            
+            if (paymentInfor == null)
+                return ErrorResponse.FailureResult("Failed to map payment information", ErrorCodes.InternalServerError);
+
+            paymentInfor.UserId = userId;
+
+            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+            {
+                await _unitOfWork.PaymentInformationRepository.AddAsync(paymentInfor);
+                return Result.Success();
+            });
+        }
+
+        public async Task<Result> UpdatePaymendInformationAsync(Guid userId, Guid paymentInformationId, UpdatePaymentInformationRequest request)
+        {
+            if (userId == Guid.Empty || paymentInformationId == Guid.Empty)
+                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
+
+            var validationResult = ValidationHelper.ValidateModel(request);
+            if (!validationResult.IsSuccess)
+                return validationResult;
+
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
+            if (user == null || user.IsDeleted)
+                return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
+
+            var paymentInfor = await _unitOfWork.PaymentInformationRepository.GetByIdAsync(paymentInformationId, true);
+            if (paymentInfor == null || paymentInfor.IsDeleted)
+                return ErrorResponse.FailureResult("Payment Infor not found or inactive", ErrorCodes.NotFound);
+
+            _mapper.Map(request, paymentInfor);
+
+            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+            {
+                await _unitOfWork.PaymentInformationRepository.UpdateAsync(paymentInfor);
+                return Result.Success();
+            });
+        }
+
+        public async Task<Result> DeletePaymendInformationAsync(Guid userId, Guid paymentInformationId)
+        {
+            if (userId == Guid.Empty || paymentInformationId == Guid.Empty)
+                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
+
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
+            if (user == null || user.IsDeleted)
+                return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
+
+            var paymentInfor = await _unitOfWork.PaymentInformationRepository.GetByIdAsync(paymentInformationId, true);
+            if (paymentInfor == null || paymentInfor.IsDeleted)
+                return ErrorResponse.FailureResult("Payment Infor not found or inactive", ErrorCodes.NotFound);
+
+            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+            {
+                await _unitOfWork.PaymentInformationRepository.DeleteAsync(paymentInfor);
+                return Result.Success();
+            });
+        }
+
+        public async Task<Result<BasePaginated<PaymentInformationResponse>>> GetPaymendInformationsAsync(Guid userId, int pageNumber = 1, int pageSize = 5)
+        {
+            if (userId == Guid.Empty)
+                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
+
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
+            if (user == null || user.IsDeleted)
+                return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
+
+            IQueryable<PaymentInformation> paymentInfors = _unitOfWork.PaymentInformationRepository
+                                                            .Query()
+                                                            .AsNoTracking()
+                                                            .Where(pi => !pi.DeletedAt.HasValue && pi.UserId == userId);
+            int totalCount = await paymentInfors.CountAsync();
+
+            var result = await paymentInfors
+                .OrderByDescending(pi => pi.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(pi => new PaymentInformationResponse
+                {
+                    AccountHolderName = pi.AccountHolderName,
+                    AccountNumber = pi.AccountNumber,
+                    BankName = pi.BankName,
+                    BranchName = pi.BranchName,
+                    PaymentInformationId = pi.Id
+                })
+                .ToListAsync();
+
+            return new BasePaginated<PaymentInformationResponse>(result, totalCount, pageNumber, pageSize);
+        }
+
+        public async Task<Result<PaymentInformationResponse>> GetPaymendInformationByIdAsync(Guid userId, Guid paymentInformationId)
+        {
+            if (userId == Guid.Empty || paymentInformationId == Guid.Empty)
+                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
+
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
+            if (user == null || user.IsDeleted)
+                return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
+
+            var paymentInfor = await _unitOfWork.PaymentInformationRepository
+                                            .Query()
+                                            .Where(pi => pi.Id == paymentInformationId && !pi.IsDeleted)
+                                            .ProjectTo<PaymentInformationResponse>(_mapper.ConfigurationProvider)
+                                            .FirstOrDefaultAsync();
+            if (paymentInfor == null)
+                return ErrorResponse.FailureResult("Payment Infor not found or inactive", ErrorCodes.NotFound);
+            return Result<PaymentInformationResponse>.Success(paymentInfor);
+        }
     }
 }
