@@ -7,6 +7,7 @@ const EndUrls = {
   LOGIN: `${BASE_URL}/auth/login`,
   REFRESH_TOKEN: `${BASE_URL}/auth/refresh-token`,
   REVOKE_TOKEN: `${BASE_URL}/auth/revoke-token`,
+  CHANGE_PASSWORD: `${BASE_URL}/auth/change-password`,
   
   // Events
   EVENTS: `${BASE_URL}/events`,

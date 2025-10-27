@@ -14,6 +14,11 @@ const initialState = {
   expiresAt: null,
   error: null,
   
+  // Change Password State
+  isChangingPassword: false,
+  changePasswordError: null,
+  changePasswordSuccess: null,
+  
   // Wallet State
   wallet: null,
   transactions: {
@@ -85,6 +90,43 @@ const authReducer = (state = initialState, action) => {
       return {
         ...state,
         isLoggedIn: action.payload,
+      };
+
+    case AUTH_ACTIONS.CHANGE_PASSWORD_REQUEST:
+      return {
+        ...state,
+        isChangingPassword: true,
+        changePasswordError: null,
+        changePasswordSuccess: null,
+      };
+
+    case AUTH_ACTIONS.CHANGE_PASSWORD_SUCCESS:
+      return {
+        ...state,
+        isChangingPassword: false,
+        changePasswordError: null,
+        changePasswordSuccess: action.payload,
+      };
+
+    case AUTH_ACTIONS.CHANGE_PASSWORD_FAILURE:
+      return {
+        ...state,
+        isChangingPassword: false,
+        changePasswordError: action.payload,
+        changePasswordSuccess: null,
+      };
+
+    case AUTH_ACTIONS.CLEAR_CHANGE_PASSWORD_ERROR:
+      return {
+        ...state,
+        changePasswordError: null,
+        changePasswordSuccess: null,
+      };
+
+    case AUTH_ACTIONS.CLEAR_CHANGE_PASSWORD_SUCCESS:
+      return {
+        ...state,
+        changePasswordSuccess: null,
       };
 
     // Wallet Actions

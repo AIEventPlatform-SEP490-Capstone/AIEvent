@@ -75,14 +75,6 @@ export default function useRouterElement() {
             </ProtectedRoute>
           ),
         },
-        {
-          path: "settings",
-          element: (
-            <ProtectedRoute>
-              <div>Settings Page</div>
-            </ProtectedRoute>
-          ),
-        },
         { path: "help", element: <div>Help Page</div> },
         { path: "about", element: <div>About Page</div> },
         {
