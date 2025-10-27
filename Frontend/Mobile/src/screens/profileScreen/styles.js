@@ -795,6 +795,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
+  saveButtonDisabled: {
+    backgroundColor: Colors.gray,
+    opacity: 0.7,
+  },
+
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   // Avatar Edit Styles
   avatarEditSection: {
     marginBottom: 24,

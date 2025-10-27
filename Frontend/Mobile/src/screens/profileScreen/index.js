@@ -42,6 +42,7 @@ const ProfileScreen = () => {
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState(null);
   const hasFetchedProfile = useRef(false);
 
@@ -718,9 +719,11 @@ const ProfileScreen = () => {
         <EditProfileModal
           profileData={profileData}
           originalProfile={profile}
+          isUpdating={isUpdating}
           onClose={() => setIsEditModalOpen(false)}
           onSave={async (updatedData) => {
             try {
+              setIsUpdating(true);
               const result = await UserService.updateProfile(updatedData);
               if (result.success) {
                 await fetchUserProfile();
@@ -730,7 +733,9 @@ const ProfileScreen = () => {
                 Alert.alert('Lỗi', result.message || 'Có lỗi xảy ra khi cập nhật hồ sơ');
               }
             } catch (error) {
-              Alert.alert('Lỗi', 'Có lỗi xảy ra khi cập nhật hồ sơ');
+              Alert.alert('Lỗi', `Có lỗi xảy ra khi cập nhật hồ sơ: ${error.message}`);
+            } finally {
+              setIsUpdating(false);
             }
           }}
         />
@@ -740,7 +745,7 @@ const ProfileScreen = () => {
 };
 
 // Edit Profile Modal Component
-const EditProfileModal = ({ profileData, originalProfile, onClose, onSave }) => {
+const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, onSave }) => {
   const [activeSection, setActiveSection] = useState('basic');
   const [newSkill, setNewSkill] = useState('');
   const [newLanguage, setNewLanguage] = useState('');
@@ -1628,8 +1633,21 @@ const EditProfileModal = ({ profileData, originalProfile, onClose, onSave }) => 
           <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
             <CustomText variant="body" color="primary">Hủy</CustomText>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <CustomText variant="body" color="white">Lưu thay đổi</CustomText>
+          <TouchableOpacity 
+            style={[styles.saveButton, isUpdating && styles.saveButtonDisabled]} 
+            onPress={handleSave}
+            disabled={isUpdating}
+          >
+            {isUpdating ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color={Colors.success} />
+                <CustomText variant="body" color="white" style={{ marginLeft: 8 }}>
+                  Đang cập nhật...
+                </CustomText>
+              </View>
+            ) : (
+              <CustomText variant="body" color="white">Lưu thay đổi</CustomText>
+            )}
           </TouchableOpacity>
         </View>
       </View>
