@@ -30,6 +30,8 @@ import UserProfilePage from "../pages/User/UserProfilePage";
 import TagManagementPage from "../pages/Shared/TagManagementPage";
 import OrganizerProfilePage from "../pages/Organizer/OrganizerProfilePage";
 import WalletDashboard from "../pages/Wallet/WalletDashboard";
+import BookingFlow from "../pages/User/BookingFlow";
+import MyTickets from "../pages/User/MyTickets";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -63,7 +65,7 @@ export default function useRouterElement() {
           path: "my-tickets",
           element: (
             <ProtectedRoute>
-              <div>My Tickets Page</div>
+              <MyTickets />
             </ProtectedRoute>
           ),
         },
@@ -98,7 +100,7 @@ export default function useRouterElement() {
           path: "booking/:id",
           element: (
             <ProtectedRoute>
-              <div>Booking Page</div>
+              <BookingFlow />
             </ProtectedRoute>
           ),
         },

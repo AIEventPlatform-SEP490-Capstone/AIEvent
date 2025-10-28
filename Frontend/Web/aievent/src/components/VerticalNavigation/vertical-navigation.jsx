@@ -226,11 +226,18 @@ export function VerticalNavigation() {
     // Default user navigation - theo thứ tự trong ảnh
     return [
       {
+        title: "Trang chủ",
+        url: "/",
+        icon: Home,
+        isActive: pathname === "/",
+        special: true,
+      },
+
+      {
         title: "Timeline",
         url: "/timeline",
         icon: Calendar,
         isActive: pathname === "/timeline",
-        special: true,
       },
       {
         title: "Yêu thích",
