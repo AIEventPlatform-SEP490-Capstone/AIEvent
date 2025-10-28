@@ -21,6 +21,7 @@ import Fonts from '../../constants/Fonts';
 import Strings from '../../constants/Strings';
 import { UserService } from '../../api/services';
 import { logoutUser } from '../../redux/actions/Action';
+import WalletScreen from '../walletScreen';
 import { 
   PredefinedSkills, 
   PredefinedLanguages, 
@@ -35,22 +36,24 @@ import {
   ExperienceReverse
 } from '../../constants/UserConstants';
 
-const ProfileScreen = () => {
+const ProfileScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState('tickets');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState(null);
   const hasFetchedProfile = useRef(false);
 
   const tabs = [
-    { id: 'tickets', label: 'Vé của tôi' },
-    { id: 'likes', label: 'Yêu thích' },
-    { id: 'friends', label: 'Bạn bè' },
-    { id: 'history', label: 'Lịch sử' },
-    { id: 'settings', label: 'Cài đặt' }
+    { id: 'tickets', label: 'Vé của tôi', icon: '🎫', shortLabel: 'Vé của tôi' },
+    { id: 'wallet', label: 'Ví điện tử', icon: '💳', shortLabel: 'Ví điện tử' },
+    { id: 'likes', label: 'Yêu thích', icon: '❤️', shortLabel: 'Yêu thích' },
+    { id: 'friends', label: 'Bạn bè', icon: '👥', shortLabel: 'Bạn bè' },
+    { id: 'history', label: 'Lịch sử', icon: '📊', shortLabel: 'Lịch sử' },
+    { id: 'settings', label: 'Cài đặt', icon: '⚙️', shortLabel: 'Cài đặt' }
   ];
 
   const eventTickets = [
@@ -324,7 +327,7 @@ const ProfileScreen = () => {
       <ScrollView 
         horizontal 
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 8 }}
+        contentContainerStyle={styles.tabScrollContainer}
       >
         {tabs.map((tab) => (
           <TouchableOpacity
@@ -334,17 +337,32 @@ const ProfileScreen = () => {
               activeTab === tab.id && styles.activeTabButton
             ]}
             onPress={() => setActiveTab(tab.id)}
+            activeOpacity={0.7}
           >
-            <CustomText 
-              variant="caption" 
-              color={activeTab === tab.id ? "white" : "primary"}
-              style={[
-                styles.tabButtonText,
-                activeTab === tab.id && styles.activeTabButtonText
-              ]}
-            >
-              {tab.label}
-            </CustomText>
+            <View style={styles.tabButtonContent}>
+              <View style={[
+                styles.tabIconContainer,
+                activeTab === tab.id && styles.activeTabIconContainer
+              ]}>
+                <CustomText 
+                  variant="h4" 
+                  color={activeTab === tab.id ? "white" : "primary"}
+                  style={styles.tabIcon}
+                >
+                  {tab.icon}
+                </CustomText>
+              </View>
+              <CustomText 
+                variant="caption" 
+                color={activeTab === tab.id ? "white" : "primary"}
+                style={[
+                  styles.tabButtonText,
+                  activeTab === tab.id && styles.activeTabButtonText
+                ]}
+              >
+                {tab.shortLabel}
+              </CustomText>
+            </View>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -357,84 +375,231 @@ const ProfileScreen = () => {
         return (
           <View style={styles.tabContent}>
             <View style={styles.tabHeader}>
-              <CustomText variant="h3" color="primary">
-                Vé sự kiện của tôi
-              </CustomText>
-              <CustomText variant="body" color="secondary">
-                3 vé
-              </CustomText>
-            </View>
-            {eventTickets.map((ticket) => (
-              <View key={ticket.id} style={styles.ticketCard}>
-                <View style={styles.ticketLeft}>
-                  <View style={styles.ticketLogo}>
-                    <CustomText variant="h4" color="white">
-                      H
-                    </CustomText>
-                  </View>
-                  <View style={styles.ticketInfo}>
-                    <CustomText variant="body" color="white" style={styles.ticketTitle}>
-                      EVENT TICKET
-                    </CustomText>
-                    <CustomText variant="caption" color="white">
-                      Valid Entry Pass
-                    </CustomText>
-                  </View>
+              <View style={styles.tabHeaderLeft}>
+                <View style={styles.tabIconContainer}>
+                  <CustomText variant="h3" color="white">🎫</CustomText>
                 </View>
-                <View style={styles.ticketRight}>
-                  <CustomText variant="h4" color="primary" style={styles.eventTitle}>
-                    {ticket.name}
+                <View>
+                  <CustomText variant="h3" color="primary">
+                    Vé sự kiện của tôi
                   </CustomText>
-                  <View style={styles.ticketStatus}>
-                    <View style={styles.statusDot} />
-                    <CustomText variant="caption" color="success">
-                      {ticket.status}
-                    </CustomText>
-                  </View>
-                  <View style={styles.ticketDetails}>
-                    <CustomText variant="caption" color="secondary">
-                      📅 {ticket.date} 🕘 {ticket.time}
-                    </CustomText>
-                    <CustomText variant="caption" color="secondary">
-                      📍 {ticket.location}
-                    </CustomText>
-                  </View>
+                  <CustomText variant="caption" color="secondary">
+                    Quản lý vé tham gia sự kiện
+                  </CustomText>
                 </View>
               </View>
-            ))}
+              <View style={styles.ticketCountBadge}>
+                <CustomText variant="caption" color="white" style={styles.ticketCountText}>
+                  {eventTickets.length} vé
+                </CustomText>
+              </View>
+            </View>
+            
+            {eventTickets.length > 0 ? (
+              eventTickets.map((ticket) => (
+                <View key={ticket.id} style={styles.ticketCard}>
+                  <View style={styles.ticketLeft}>
+                    <View style={styles.ticketLogo}>
+                      <CustomText variant="h3" color="white">🎫</CustomText>
+                    </View>
+                    <View style={styles.ticketInfo}>
+                      <CustomText variant="body" color="white" style={styles.ticketTitle}>
+                        EVENT TICKET
+                      </CustomText>
+                      <CustomText variant="caption" color="white">
+                        Valid Entry Pass
+                      </CustomText>
+                    </View>
+                  </View>
+                  <View style={styles.ticketRight}>
+                    <CustomText variant="h4" color="primary" style={styles.eventTitle}>
+                      {ticket.name}
+                    </CustomText>
+                    <View style={styles.ticketStatus}>
+                      <View style={styles.statusDot} />
+                      <CustomText variant="caption" color="success">
+                        {ticket.status}
+                      </CustomText>
+                    </View>
+                    <View style={styles.ticketDetails}>
+                      <View style={styles.ticketDetailRow}>
+                        <CustomText variant="caption" color="secondary">📅</CustomText>
+                        <CustomText variant="caption" color="secondary" style={styles.ticketDetailText}>
+                          {ticket.date} • {ticket.time}
+                        </CustomText>
+                      </View>
+                      <View style={styles.ticketDetailRow}>
+                        <CustomText variant="caption" color="secondary">📍</CustomText>
+                        <CustomText variant="caption" color="secondary" style={styles.ticketDetailText}>
+                          {ticket.location}
+                        </CustomText>
+                      </View>
+                    </View>
+                    <View style={styles.ticketActions}>
+                      <TouchableOpacity 
+                        style={styles.ticketActionButton}
+                        onPress={() => handleViewQR(ticket.id)}
+                      >
+                        <CustomText variant="caption" color="primary">QR Code</CustomText>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={[styles.ticketActionButton, styles.ticketActionButtonPrimary]}
+                        onPress={() => handleViewDetails(ticket.id)}
+                      >
+                        <CustomText variant="caption" color="white">Chi tiết</CustomText>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <View style={styles.emptyState}>
+                <View style={styles.emptyStateIcon}>
+                  <CustomText variant="h1" color="secondary">🎫</CustomText>
+                </View>
+                <CustomText variant="h4" color="primary" style={styles.emptyStateTitle}>
+                  Chưa có vé nào
+                </CustomText>
+                <CustomText variant="body" color="secondary" style={styles.emptyStateDescription}>
+                  Bạn chưa tham gia sự kiện nào. Hãy khám phá và đăng ký tham gia các sự kiện thú vị!
+                </CustomText>
+                <TouchableOpacity style={styles.emptyStateButton}>
+                  <CustomText variant="body" color="white">Khám phá sự kiện</CustomText>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         );
+      case 'wallet':
+        return <WalletScreen navigation={navigation} />;
       case 'likes':
         return (
           <View style={styles.tabContent}>
-            <CustomText variant="h3" color="primary" style={styles.tabTitle}>
-              Sự kiện yêu thích
-            </CustomText>
-            <CustomText variant="body" color="secondary">
-              Chưa có sự kiện yêu thích nào.
-            </CustomText>
+            <View style={styles.tabHeader}>
+              <View style={styles.tabHeaderLeft}>
+                <View style={[styles.tabIconContainer, styles.likesIconContainer]}>
+                  <CustomText variant="h3" color="white">❤️</CustomText>
+                </View>
+                <View>
+                  <CustomText variant="h3" color="primary">
+                    Sự kiện yêu thích
+                  </CustomText>
+                  <CustomText variant="caption" color="secondary">
+                    Các sự kiện bạn đã lưu
+                  </CustomText>
+                </View>
+              </View>
+              <View style={styles.likesCountBadge}>
+                <CustomText variant="caption" color="white" style={styles.likesCountText}>
+                  {stats.likes} sự kiện
+                </CustomText>
+              </View>
+            </View>
+            
+            {stats.likes > 0 ? (
+              <View style={styles.likesList}>
+                {/* Placeholder for liked events */}
+                <CustomText variant="body" color="secondary">
+                  Danh sách sự kiện yêu thích sẽ hiển thị ở đây
+                </CustomText>
+              </View>
+            ) : (
+              <View style={styles.emptyState}>
+                <View style={styles.emptyStateIcon}>
+                  <CustomText variant="h1" color="secondary">💔</CustomText>
+                </View>
+                <CustomText variant="h4" color="primary" style={styles.emptyStateTitle}>
+                  Chưa có sự kiện yêu thích
+                </CustomText>
+                <CustomText variant="body" color="secondary" style={styles.emptyStateDescription}>
+                  Bạn chưa lưu sự kiện nào vào danh sách yêu thích. Hãy khám phá và lưu những sự kiện thú vị!
+                </CustomText>
+                <TouchableOpacity style={styles.emptyStateButton}>
+                  <CustomText variant="body" color="white">Khám phá sự kiện</CustomText>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         );
       case 'friends':
         return (
           <View style={styles.tabContent}>
-            <CustomText variant="h3" color="primary" style={styles.tabTitle}>
-              Bạn bè
-            </CustomText>
-            <CustomText variant="body" color="secondary">
-              Chưa có bạn bè nào.
-            </CustomText>
+            <View style={styles.tabHeader}>
+              <View style={styles.tabHeaderLeft}>
+                <View style={[styles.tabIconContainer, styles.friendsIconContainer]}>
+                  <CustomText variant="h3" color="white">👥</CustomText>
+                </View>
+                <View>
+                  <CustomText variant="h3" color="primary">
+                    Bạn bè
+                  </CustomText>
+                  <CustomText variant="caption" color="secondary">
+                    Kết nối với cộng đồng
+                  </CustomText>
+                </View>
+              </View>
+              <View style={styles.friendsCountBadge}>
+                <CustomText variant="caption" color="white" style={styles.friendsCountText}>
+                  {stats.friends} bạn
+                </CustomText>
+              </View>
+            </View>
+            
+            {stats.friends > 0 ? (
+              <View style={styles.friendsList}>
+                {/* Placeholder for friends list */}
+                <CustomText variant="body" color="secondary">
+                  Danh sách bạn bè sẽ hiển thị ở đây
+                </CustomText>
+              </View>
+            ) : (
+              <View style={styles.emptyState}>
+                <View style={styles.emptyStateIcon}>
+                  <CustomText variant="h1" color="secondary">👤</CustomText>
+                </View>
+                <CustomText variant="h4" color="primary" style={styles.emptyStateTitle}>
+                  Chưa có bạn bè
+                </CustomText>
+                <CustomText variant="body" color="secondary" style={styles.emptyStateDescription}>
+                  Bạn chưa kết bạn với ai. Hãy tham gia các sự kiện để gặp gỡ và kết bạn với những người có cùng sở thích!
+                </CustomText>
+                <TouchableOpacity style={styles.emptyStateButton}>
+                  <CustomText variant="body" color="white">Tìm bạn bè</CustomText>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         );
       case 'history':
         return (
           <View style={styles.tabContent}>
-            <CustomText variant="h3" color="primary" style={styles.tabTitle}>
-              Lịch sử hoạt động
-            </CustomText>
-            <CustomText variant="body" color="secondary">
-              Chưa có hoạt động nào.
-            </CustomText>
+            <View style={styles.tabHeader}>
+              <View style={styles.tabHeaderLeft}>
+                <View style={[styles.tabIconContainer, styles.historyIconContainer]}>
+                  <CustomText variant="h3" color="white">📊</CustomText>
+                </View>
+                <View>
+                  <CustomText variant="h3" color="primary">
+                    Lịch sử hoạt động
+                  </CustomText>
+                  <CustomText variant="caption" color="secondary">
+                    Theo dõi hoạt động của bạn
+                  </CustomText>
+                </View>
+              </View>
+            </View>
+            
+            <View style={styles.emptyState}>
+              <View style={styles.emptyStateIcon}>
+                <CustomText variant="h1" color="secondary">📈</CustomText>
+              </View>
+              <CustomText variant="h4" color="primary" style={styles.emptyStateTitle}>
+                Chưa có hoạt động
+              </CustomText>
+              <CustomText variant="body" color="secondary" style={styles.emptyStateDescription}>
+                Lịch sử hoạt động của bạn sẽ được hiển thị ở đây khi bạn tham gia các sự kiện.
+              </CustomText>
+            </View>
           </View>
         );
       case 'settings':
@@ -517,7 +682,11 @@ const ProfileScreen = () => {
               </View>
               
               {/* Change Password */}
-              <TouchableOpacity style={styles.settingCard} activeOpacity={0.7}>
+              <TouchableOpacity 
+                style={styles.settingCard} 
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('ChangePasswordScreen')}
+              >
                 <View style={styles.settingLeft}>
                   <View style={[styles.settingIconContainer, styles.passwordIcon]}>
                     <CustomText variant="h4" color="white">🔑</CustomText>
@@ -718,9 +887,11 @@ const ProfileScreen = () => {
         <EditProfileModal
           profileData={profileData}
           originalProfile={profile}
+          isUpdating={isUpdating}
           onClose={() => setIsEditModalOpen(false)}
           onSave={async (updatedData) => {
             try {
+              setIsUpdating(true);
               const result = await UserService.updateProfile(updatedData);
               if (result.success) {
                 await fetchUserProfile();
@@ -730,7 +901,9 @@ const ProfileScreen = () => {
                 Alert.alert('Lỗi', result.message || 'Có lỗi xảy ra khi cập nhật hồ sơ');
               }
             } catch (error) {
-              Alert.alert('Lỗi', 'Có lỗi xảy ra khi cập nhật hồ sơ');
+              Alert.alert('Lỗi', `Có lỗi xảy ra khi cập nhật hồ sơ: ${error.message}`);
+            } finally {
+              setIsUpdating(false);
             }
           }}
         />
@@ -740,7 +913,7 @@ const ProfileScreen = () => {
 };
 
 // Edit Profile Modal Component
-const EditProfileModal = ({ profileData, originalProfile, onClose, onSave }) => {
+const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, onSave }) => {
   const [activeSection, setActiveSection] = useState('basic');
   const [newSkill, setNewSkill] = useState('');
   const [newLanguage, setNewLanguage] = useState('');
@@ -1628,8 +1801,21 @@ const EditProfileModal = ({ profileData, originalProfile, onClose, onSave }) => 
           <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
             <CustomText variant="body" color="primary">Hủy</CustomText>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <CustomText variant="body" color="white">Lưu thay đổi</CustomText>
+          <TouchableOpacity 
+            style={[styles.saveButton, isUpdating && styles.saveButtonDisabled]} 
+            onPress={handleSave}
+            disabled={isUpdating}
+          >
+            {isUpdating ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color={Colors.success} />
+                <CustomText variant="body" color="white" style={{ marginLeft: 8 }}>
+                  Đang cập nhật...
+                </CustomText>
+              </View>
+            ) : (
+              <CustomText variant="body" color="white">Lưu thay đổi</CustomText>
+            )}
           </TouchableOpacity>
         </View>
       </View>
