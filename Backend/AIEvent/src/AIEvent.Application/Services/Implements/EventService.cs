@@ -111,8 +111,7 @@ namespace AIEvent.Application.Services.Implements
                     return ErrorResponse.FailureResult("Some images failed to upload", ErrorCodes.InternalServerError);
                 events.ImgListEvent = JsonSerializer.Serialize(uploadResults.Where(r => r != null));
             }
-
-            // Upload evidence images
+             
             if (request.ImgListEvidences?.Any() == true)
             {
                 var uploadTasks = request.ImgListEvidences
@@ -811,7 +810,6 @@ namespace AIEvent.Application.Services.Implements
                     (
                         e.EventCategoryId == eventDetail.EventCategoryId
                         || (relatedTagIds.Any() && e.EventTags.Any(t => relatedTagIds.Contains(t.TagId)))
-                        || e.City == eventDetail.City
                     ));
 
                 if (!await eventsQuery.AnyAsync())

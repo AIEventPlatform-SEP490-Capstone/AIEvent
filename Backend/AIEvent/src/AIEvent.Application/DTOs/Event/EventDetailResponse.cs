@@ -20,6 +20,7 @@ namespace AIEvent.Application.DTOs.Event
         public int RemainingTickets { get; set; }
         public TicketType TicketType { get; set; }
         public List<string>? ImgListEvent { get; set; }
+        public List<string>? ImgEventEvidences { get; set; }
         public ConfirmStatus RequireApproval { get; set; }
         public string? City { get; set; }
         public string? Address { get; set; }

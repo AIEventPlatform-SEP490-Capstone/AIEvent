@@ -55,6 +55,12 @@ namespace AIEvent.Application.Mappings
                         src => string.IsNullOrEmpty(src.ImgListEvent)
                             ? new List<string>()
                             : JsonSerializer.Deserialize<List<string>>(src.ImgListEvent, new JsonSerializerOptions())
+                    ))
+                .ForMember(dest => dest.ImgEventEvidences,
+                    opt => opt.MapFrom(
+                        src => string.IsNullOrEmpty(src.Evidences)
+                            ? new List<string>()
+                            : JsonSerializer.Deserialize<List<string>>(src.Evidences, new JsonSerializerOptions())
                     ));
 
             CreateMap<EventTag, TagResponse>()
