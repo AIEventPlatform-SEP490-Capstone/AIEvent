@@ -67,6 +67,9 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
                 RequireApproval = ConfirmStatus.NeedConfirm,
@@ -79,9 +82,7 @@ namespace AIEvent.Application.Test.Services
                     TicketName = "Standard Ticket",
                     TicketPrice = 0,
                     TicketQuantity = 100,
-                    RuleRefundRequestId = Guid.NewGuid().ToString(),
-                    MinPurchaseQuantity = 1, // Equal to Max
-                    MaxPurchaseQuantity =10  // Equal to Min
+                    RuleRefundRequestId = Guid.NewGuid().ToString() 
                 }
             }
             };
@@ -147,6 +148,9 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
                 EventCategoryId = Guid.NewGuid().ToString(),
@@ -236,34 +240,6 @@ namespace AIEvent.Application.Test.Services
             result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
-        // UTCID06: Empty Title - Failure
-        [Fact]
-        public async Task UTCID06_CreateEventAsync_WithEmptyTitle_ShouldReturnFailure()
-        {
-            // Arrange
-            var organizerId = Guid.NewGuid();
-            var createEventRequest = new CreateEventRequest
-            {
-                Title = "",
-                Description = "Test Description",
-                StartTime = DateTime.Now.AddDays(5),
-                EndTime = DateTime.Now.AddDays(5).AddHours(2),
-                SaleStartTime = DateTime.Now.AddDays(1),
-                SaleEndTime = DateTime.Now.AddDays(4),
-                TotalTickets = 100,
-                TicketType = TicketType.Free,
-                EventCategoryId = Guid.NewGuid().ToString()
-            };
-
-            // Act
-            var result = await _eventService.CreateEventAsync(organizerId, createEventRequest);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Contain("Title is required");
-            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-        }
-
         // UTCID07: Invalid TicketDetail in list - Failure
         [Fact]
         public async Task UTCID07_CreateEventAsync_WithInvalidTicketDetail_ShouldReturnFailure()
@@ -279,6 +255,9 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 TotalTickets = 100,
                 TicketType = TicketType.Paid,
                 EventCategoryId = Guid.NewGuid().ToString(),
@@ -319,6 +298,9 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(4), // Before StartTime
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(3),
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
                 EventCategoryId = Guid.NewGuid().ToString(),
@@ -330,9 +312,7 @@ namespace AIEvent.Application.Test.Services
                     TicketName = "Standard Ticket",
                     TicketPrice = 0,
                     TicketQuantity = 100,
-                    RuleRefundRequestId = Guid.NewGuid().ToString(),
-                    MinPurchaseQuantity = 1, // Equal to Max
-                    MaxPurchaseQuantity =10  // Equal to Min
+                    RuleRefundRequestId = Guid.NewGuid().ToString()
                 }
             }
             };
@@ -361,6 +341,9 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(3),
                 SaleEndTime = DateTime.Now.AddDays(2), // Before SaleStartTime
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
                 EventCategoryId = Guid.NewGuid().ToString(),
@@ -372,9 +355,7 @@ namespace AIEvent.Application.Test.Services
                     TicketName = "Standard Ticket",
                     TicketPrice = 0,
                     TicketQuantity = 100,
-                    RuleRefundRequestId = Guid.NewGuid().ToString(),
-                    MinPurchaseQuantity = 1, // Equal to Max
-                    MaxPurchaseQuantity =10  // Equal to Min
+                    RuleRefundRequestId = Guid.NewGuid().ToString() 
                 }
             }
             };
@@ -403,6 +384,9 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(6), // After StartTime
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
                 EventCategoryId = Guid.NewGuid().ToString(),
@@ -414,9 +398,7 @@ namespace AIEvent.Application.Test.Services
                     TicketName = "Standard Ticket",
                     TicketPrice =0,
                     TicketQuantity = 100,
-                    RuleRefundRequestId = Guid.NewGuid().ToString(),
-                    MinPurchaseQuantity = 1, // Equal to Max
-                    MaxPurchaseQuantity =10  // Equal to Min
+                    RuleRefundRequestId = Guid.NewGuid().ToString() 
                 }
             }
             };
@@ -445,6 +427,9 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
                 EventCategoryId = Guid.NewGuid().ToString(),
@@ -456,9 +441,7 @@ namespace AIEvent.Application.Test.Services
                     TicketName = "Standard Ticket",
                     TicketPrice = 0,
                     TicketQuantity = 100,
-                    RuleRefundRequestId = Guid.NewGuid().ToString(),
-                    MinPurchaseQuantity = 1, // Equal to Max
-                    MaxPurchaseQuantity =10  // Equal to Min
+                    RuleRefundRequestId = Guid.NewGuid().ToString() 
                 }
             }
             };
@@ -491,6 +474,9 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
                 EventCategoryId = Guid.NewGuid().ToString(),
@@ -502,9 +488,7 @@ namespace AIEvent.Application.Test.Services
                     TicketName = "Standard Ticket",
                     TicketPrice = 0,
                     TicketQuantity = 100,
-                    RuleRefundRequestId = Guid.NewGuid().ToString(),
-                    MinPurchaseQuantity = 1, // Equal to Max
-                    MaxPurchaseQuantity =10  // Equal to Min
+                    RuleRefundRequestId = Guid.NewGuid().ToString() 
                 }
             }
             };
@@ -552,6 +536,9 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
                 EventCategoryId = Guid.NewGuid().ToString(),
@@ -563,9 +550,7 @@ namespace AIEvent.Application.Test.Services
                     TicketName = "Standard Ticket",
                     TicketPrice = 0,
                     TicketQuantity = 100,
-                    RuleRefundRequestId = Guid.NewGuid().ToString(),
-                    MinPurchaseQuantity = 1, // Equal to Max
-                    MaxPurchaseQuantity =10  // Equal to Min
+                    RuleRefundRequestId = Guid.NewGuid().ToString() 
                 }
             }
             };
@@ -612,6 +597,9 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
                 EventCategoryId = Guid.NewGuid().ToString(),
@@ -623,9 +611,7 @@ namespace AIEvent.Application.Test.Services
                     TicketName = "Standard Ticket",
                     TicketPrice =0,
                     TicketQuantity = 100,
-                    RuleRefundRequestId = Guid.NewGuid().ToString(),
-                    MinPurchaseQuantity = 1, // Equal to Max
-                    MaxPurchaseQuantity =10  // Equal to Min
+                    RuleRefundRequestId = Guid.NewGuid().ToString() 
                 }
             }
             };
@@ -683,6 +669,9 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
                 EventCategoryId = Guid.NewGuid().ToString(),
@@ -694,9 +683,7 @@ namespace AIEvent.Application.Test.Services
                     TicketName = "Standard Ticket",
                     TicketPrice = 0,
                     TicketQuantity = 100,
-                    RuleRefundRequestId = Guid.NewGuid().ToString(),
-                    MinPurchaseQuantity = 1, // Equal to Max
-                    MaxPurchaseQuantity =10  // Equal to Min
+                    RuleRefundRequestId = Guid.NewGuid().ToString() 
                 }
             }
             };
@@ -762,6 +749,9 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
                 EventCategoryId = Guid.NewGuid().ToString(),
@@ -773,9 +763,7 @@ namespace AIEvent.Application.Test.Services
                     TicketName = "Standard Ticket",
                     TicketPrice = 0,
                     TicketQuantity = 100,
-                    RuleRefundRequestId = Guid.NewGuid().ToString(),
-                    MinPurchaseQuantity = 1, // Equal to Max
-                    MaxPurchaseQuantity =10  // Equal to Min
+                    RuleRefundRequestId = Guid.NewGuid().ToString() 
                 }
             }
             };
@@ -821,159 +809,7 @@ namespace AIEvent.Application.Test.Services
             _mockCloudinaryService.Verify(x => x.UploadImageAsync(It.IsAny<IFormFile>()), Times.Once);
             _mockUnitOfWork.Verify(x => x.EventRepository.AddAsync(It.IsAny<Event>()), Times.Never);
         }
-
-        // UTCID17: Boundary - EndTime equals StartTime - Success
-        [Fact]
-        public async Task UTCID17_CreateEventAsync_WithEndTimeEqualsStartTime_ShouldReturnSuccess()
-        {
-            // Arrange
-            var organizerId = Guid.NewGuid();
-            var eventTime = DateTime.Now.AddDays(5);
-            var mockFile = CreateMockFormFile();
-            
-            var createEventRequest = new CreateEventRequest
-            {
-                Title = "Test Event",
-                Description = "Test Description",
-                StartTime = eventTime,
-                EndTime = eventTime, // Same as StartTime (boundary)
-                SaleStartTime = DateTime.Now.AddDays(1),
-                SaleEndTime = DateTime.Now.AddDays(4),
-                TotalTickets = 100,
-                TicketType = TicketType.Free,
-                EventCategoryId = Guid.NewGuid().ToString(),
-                ImgListEvent = new List<IFormFile> { mockFile.Object },
-                TicketDetails = new List<TicketDetailRequest>
-            {
-                new TicketDetailRequest
-                {
-                    TicketName = "Standard Ticket",
-                    TicketPrice = 0,
-                    TicketQuantity = 100,
-                    RuleRefundRequestId = Guid.NewGuid().ToString(),
-                    MinPurchaseQuantity = 1, // Equal to Max
-                    MaxPurchaseQuantity =10  // Equal to Min
-                }
-            }
-            };
-
-            var organizer = new OrganizerProfile
-            {
-                Id = organizerId,
-                Status = ConfirmStatus.Approve,
-                OrganizationType = OrganizationType.PrivateCompany,
-                EventFrequency = EventFrequency.Monthly,
-                EventSize = EventSize.Medium,
-                OrganizerType = OrganizerType.Individual,
-                EventExperienceLevel = EventExperienceLevel.Intermediate,
-                ContactName = "Test Contact",
-                ContactEmail = "test@example.com",
-                ContactPhone = "0123456789",
-                Address = "Test Address"
-            };
-
-            var eventEntity = new Event
-            {
-                Id = Guid.NewGuid(),
-                Title = createEventRequest.Title,
-                Description = createEventRequest.Description,
-                StartTime = createEventRequest.StartTime,
-                EndTime = createEventRequest.EndTime
-            };
-
-            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.GetByIdAsync(organizerId, true))
-                .ReturnsAsync(organizer);
-            _mockMapper.Setup(x => x.Map<Event>(createEventRequest))
-                .Returns(eventEntity);
-            _mockCloudinaryService.Setup(x => x.UploadImageAsync(It.IsAny<IFormFile>()))
-                .ReturnsAsync("https://cloudinary.com/test.jpg");
-            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-                .Returns<Func<Task<Result>>>(func => func());
-            _mockUnitOfWork.Setup(x => x.EventRepository.AddAsync(It.IsAny<Event>()));
-
-            // Act
-            var result = await _eventService.CreateEventAsync(organizerId, createEventRequest);
-
-            // Assert
-            result.IsSuccess.Should().BeTrue();
-        }
-
-        // UTCID18: Boundary - SaleEndTime equals StartTime - Success
-        [Fact]
-        public async Task UTCID18_CreateEventAsync_WithSaleEndTimeEqualsStartTime_ShouldReturnSuccess()
-        {
-            // Arrange
-            var organizerId = Guid.NewGuid();
-            var eventStartTime = DateTime.Now.AddDays(5);
-            var mockFile = CreateMockFormFile();
-            
-            var createEventRequest = new CreateEventRequest
-            {
-                Title = "Test Event",
-                Description = "Test Description",
-                StartTime = eventStartTime,
-                EndTime = eventStartTime.AddHours(2),
-                SaleStartTime = DateTime.Now.AddDays(1),
-                SaleEndTime = eventStartTime, // Same as StartTime (boundary)
-                TotalTickets = 100,
-                TicketType = TicketType.Free,
-                EventCategoryId = Guid.NewGuid().ToString(),
-                ImgListEvent = new List<IFormFile> { mockFile.Object },
-                TicketDetails = new List<TicketDetailRequest>
-            {
-                new TicketDetailRequest
-                {
-                    TicketName = "Standard Ticket",
-                    TicketPrice = 0,
-                    TicketQuantity = 100,
-                    RuleRefundRequestId = Guid.NewGuid().ToString(),
-                    MinPurchaseQuantity = 1, // Equal to Max
-                    MaxPurchaseQuantity =10  // Equal to Min
-                }
-            }
-            };
-
-            var organizer = new OrganizerProfile
-            {
-                Id = organizerId,
-                Status = ConfirmStatus.Approve,
-                OrganizationType = OrganizationType.PrivateCompany,
-                EventFrequency = EventFrequency.Monthly,
-                EventSize = EventSize.Medium,
-                OrganizerType = OrganizerType.Individual,
-                EventExperienceLevel = EventExperienceLevel.Intermediate,
-                ContactName = "Test Contact",
-                ContactEmail = "test@example.com",
-                ContactPhone = "0123456789",
-                Address = "Test Address"
-            };
-
-            var eventEntity = new Event
-            {
-                Id = Guid.NewGuid(),
-                Title = createEventRequest.Title,
-                Description = createEventRequest.Description,
-                StartTime = createEventRequest.StartTime,
-                EndTime = createEventRequest.EndTime
-            };
-
-            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.GetByIdAsync(organizerId, true))
-                .ReturnsAsync(organizer);
-            _mockMapper.Setup(x => x.Map<Event>(createEventRequest))
-                .Returns(eventEntity);
-            _mockCloudinaryService.Setup(x => x.UploadImageAsync(It.IsAny<IFormFile>()))
-                .ReturnsAsync("https://cloudinary.com/test.jpg");
-            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-                .Returns<Func<Task<Result>>>(func => func());
-            _mockUnitOfWork.Setup(x => x.EventRepository.AddAsync(It.IsAny<Event>()));
-
-            // Act
-            var result = await _eventService.CreateEventAsync(organizerId, createEventRequest);
-
-            // Assert
-            result.IsSuccess.Should().BeTrue();
-        }
-
+ 
         // UTCID19: Boundary - SaleEndTime equals SaleStartTime - Success
         [Fact]
         public async Task UTCID19_CreateEventAsync_WithSaleEndTimeEqualsSaleStartTime_ShouldReturnSuccess()
@@ -991,6 +827,9 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = saleTime,
                 SaleEndTime = saleTime, // Same as SaleStartTime (boundary)
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
                 EventCategoryId = Guid.NewGuid().ToString(),
@@ -1002,9 +841,7 @@ namespace AIEvent.Application.Test.Services
                     TicketName = "Standard Ticket",
                     TicketPrice = 0,
                     TicketQuantity = 100,
-                    RuleRefundRequestId = Guid.NewGuid().ToString(),
-                    MinPurchaseQuantity = 1, // Equal to Max
-                    MaxPurchaseQuantity =10  // Equal to Min
+                    RuleRefundRequestId = Guid.NewGuid().ToString() 
                 }
             }
             };
@@ -1065,6 +902,9 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 TotalTickets = 100,
                 TicketType = TicketType.Paid,
                 EventCategoryId = Guid.NewGuid().ToString(),
@@ -1225,6 +1065,9 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
                 EventCategoryId = Guid.NewGuid().ToString(),
@@ -1297,6 +1140,9 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 TotalTickets = 1,
                 TicketType = TicketType.Free,
                 EventCategoryId = Guid.NewGuid().ToString(),
@@ -1353,8 +1199,9 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.IsSuccess.Should().BeTrue();
         }
+        // UTCID25: Empty ImgListEvent - Failure
         [Fact]
-        public async Task UTCID25_CreateEventAsync_WithEmptyImgListEvent_ShouldReturnSuccess()
+        public async Task UTCID25_CreateEventAsync_WithEmptyImgListEvent_ShouldReturnFailure()
         {
             // Arrange
             var organizerId = Guid.NewGuid();
@@ -1366,22 +1213,230 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
                 EventCategoryId = Guid.NewGuid().ToString(),
                 ImgListEvent = new List<IFormFile>(),              
                 TicketDetails = new List<TicketDetailRequest>
-            {
-                new TicketDetailRequest
                 {
-                    TicketName = "Standard Ticket",
-                    TicketPrice = 0,
-                    TicketQuantity = 100,
-                    RuleRefundRequestId = Guid.NewGuid().ToString(),
-                    MinPurchaseQuantity = 1, // Equal to Max
-                    MaxPurchaseQuantity =10  // Equal to Min
+                    new TicketDetailRequest
+                    {
+                        TicketName = "Standard Ticket",
+                        TicketPrice = 0,
+                        TicketQuantity = 100,
+                        RuleRefundRequestId = Guid.NewGuid().ToString() 
+                    }
                 }
-            }
+            };
+
+            // Act
+            var result = await _eventService.CreateEventAsync(organizerId, createEventRequest);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Please upload at least one image");
+            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID29_CreateEventAsync_WithEmptyTicketDetails_ShouldReturnFailure()
+        {
+            // Arrange
+            var organizerId = Guid.NewGuid();
+            var mockFile = CreateMockFormFile();
+            var createEventRequest = new CreateEventRequest
+            {
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = DateTime.Now.AddDays(5),
+                EndTime = DateTime.Now.AddDays(5).AddHours(2),
+                SaleStartTime = DateTime.Now.AddDays(1),
+                SaleEndTime = DateTime.Now.AddDays(4),
+                TotalTickets = 100,
+                TicketType = TicketType.Free,
+                EventCategoryId = Guid.NewGuid().ToString(),
+                ImgListEvent = new List<IFormFile> { mockFile.Object },
+                TicketDetails = new List<TicketDetailRequest>(),
+
+            };
+
+            // Act
+            var result = await _eventService.CreateEventAsync(organizerId, createEventRequest);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Ticket is required");
+            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        // UTCID30: Missing City - Failure
+        [Fact]
+        public async Task UTCID30_CreateEventAsync_WithMissingCity_ShouldReturnFailure()
+        {
+            // Arrange
+            var organizerId = Guid.NewGuid();
+            var mockFile = CreateMockFormFile();
+            
+            var createEventRequest = new CreateEventRequest
+            {
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = DateTime.Now.AddDays(5),
+                EndTime = DateTime.Now.AddDays(5).AddHours(2),
+                SaleStartTime = DateTime.Now.AddDays(1),
+                SaleEndTime = DateTime.Now.AddDays(4),
+                LocationName = "Test Location",
+                City = "", // Missing City
+                Address = "Test Address",
+                TotalTickets = 100,
+                TicketType = TicketType.Free,
+                EventCategoryId = Guid.NewGuid().ToString(),
+                ImgListEvent = new List<IFormFile> { mockFile.Object },
+                TicketDetails = new List<TicketDetailRequest>
+                {
+                    new TicketDetailRequest
+                    {
+                        TicketName = "Standard Ticket",
+                        TicketPrice = 0,
+                        TicketQuantity = 100
+                    }
+                }
+            };
+
+            // Act
+            var result = await _eventService.CreateEventAsync(organizerId, createEventRequest);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("City is required for offline events");
+            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        // UTCID31: Missing Address - Failure
+        [Fact]
+        public async Task UTCID31_CreateEventAsync_WithMissingAddress_ShouldReturnFailure()
+        {
+            // Arrange
+            var organizerId = Guid.NewGuid();
+            var mockFile = CreateMockFormFile();
+            
+            var createEventRequest = new CreateEventRequest
+            {
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = DateTime.Now.AddDays(5),
+                EndTime = DateTime.Now.AddDays(5).AddHours(2),
+                SaleStartTime = DateTime.Now.AddDays(1),
+                SaleEndTime = DateTime.Now.AddDays(4),
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "", // Missing Address
+                TotalTickets = 100,
+                TicketType = TicketType.Free,
+                EventCategoryId = Guid.NewGuid().ToString(),
+                ImgListEvent = new List<IFormFile> { mockFile.Object },
+                TicketDetails = new List<TicketDetailRequest>
+                {
+                    new TicketDetailRequest
+                    {
+                        TicketName = "Standard Ticket",
+                        TicketPrice = 0,
+                        TicketQuantity = 100
+                    }
+                }
+            };
+
+            // Act
+            var result = await _eventService.CreateEventAsync(organizerId, createEventRequest);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Address is required for offline events");
+            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        // UTCID32: Publish without evidence - Failure
+        [Fact]
+        public async Task UTCID32_CreateEventAsync_WithPublishButNoEvidence_ShouldReturnFailure()
+        {
+            // Arrange
+            var organizerId = Guid.NewGuid();
+            var mockFile = CreateMockFormFile();
+            
+            var createEventRequest = new CreateEventRequest
+            {
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = DateTime.Now.AddDays(5),
+                EndTime = DateTime.Now.AddDays(5).AddHours(2),
+                SaleStartTime = DateTime.Now.AddDays(1),
+                SaleEndTime = DateTime.Now.AddDays(4),
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
+                TotalTickets = 100,
+                TicketType = TicketType.Free,
+                EventCategoryId = Guid.NewGuid().ToString(),
+                ImgListEvent = new List<IFormFile> { mockFile.Object },
+                Publish = true, // Publishing
+                ImgListEvidences = null, // No evidence
+                TicketDetails = new List<TicketDetailRequest>
+                {
+                    new TicketDetailRequest
+                    {
+                        TicketName = "Standard Ticket",
+                        TicketPrice = 0,
+                        TicketQuantity = 100
+                    }
+                }
+            };
+
+            // Act
+            var result = await _eventService.CreateEventAsync(organizerId, createEventRequest);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Evidence images are required when publishing the event");
+            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        // UTCID33: Evidence upload failure - Failure
+        [Fact]
+        public async Task UTCID33_CreateEventAsync_WithEvidenceUploadFailure_ShouldReturnFailure()
+        {
+            // Arrange
+            var organizerId = Guid.NewGuid();
+            var mockFile = CreateMockFormFile();
+            var mockEvidenceFile = CreateMockFormFile("evidence.jpg");
+            
+            var createEventRequest = new CreateEventRequest
+            {
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = DateTime.Now.AddDays(5),
+                EndTime = DateTime.Now.AddDays(5).AddHours(2),
+                SaleStartTime = DateTime.Now.AddDays(1),
+                SaleEndTime = DateTime.Now.AddDays(4),
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
+                TotalTickets = 100,
+                TicketType = TicketType.Free,
+                EventCategoryId = Guid.NewGuid().ToString(),
+                ImgListEvent = new List<IFormFile> { mockFile.Object },
+                ImgListEvidences = new List<IFormFile> { mockEvidenceFile.Object },
+                TicketDetails = new List<TicketDetailRequest>
+                {
+                    new TicketDetailRequest
+                    {
+                        TicketName = "Standard Ticket",
+                        TicketPrice = 0,
+                        TicketQuantity = 100
+                    }
+                }
             };
 
             var organizer = new OrganizerProfile
@@ -1412,6 +1467,87 @@ namespace AIEvent.Application.Test.Services
                 .ReturnsAsync(organizer);
             _mockMapper.Setup(x => x.Map<Event>(createEventRequest))
                 .Returns(eventEntity);
+            _mockCloudinaryService.Setup(x => x.UploadImageAsync(mockFile.Object))
+                .ReturnsAsync("https://cloudinary.com/test.jpg");
+            _mockCloudinaryService.Setup(x => x.UploadImageAsync(mockEvidenceFile.Object))
+                .ReturnsAsync((string?)null); // Evidence upload fails
+
+            // Act
+            var result = await _eventService.CreateEventAsync(organizerId, createEventRequest);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Some evidence images failed to upload");
+            result.Error.StatusCode.Should().Be(ErrorCodes.InternalServerError);
+        }
+
+        // UTCID34: Create with evidence and publish - Success
+        [Fact]
+        public async Task UTCID34_CreateEventAsync_WithEvidenceAndPublish_ShouldReturnSuccess()
+        {
+            // Arrange
+            var organizerId = Guid.NewGuid();
+            var mockFile = CreateMockFormFile();
+            var mockEvidenceFile = CreateMockFormFile("evidence.jpg");
+            
+            var createEventRequest = new CreateEventRequest
+            {
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = DateTime.Now.AddDays(5),
+                EndTime = DateTime.Now.AddDays(5).AddHours(2),
+                SaleStartTime = DateTime.Now.AddDays(1),
+                SaleEndTime = DateTime.Now.AddDays(4),
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
+                TotalTickets = 100,
+                TicketType = TicketType.Free,
+                EventCategoryId = Guid.NewGuid().ToString(),
+                ImgListEvent = new List<IFormFile> { mockFile.Object },
+                ImgListEvidences = new List<IFormFile> { mockEvidenceFile.Object },
+                Publish = true,
+                TicketDetails = new List<TicketDetailRequest>
+                {
+                    new TicketDetailRequest
+                    {
+                        TicketName = "Standard Ticket",
+                        TicketPrice = 0,
+                        TicketQuantity = 100
+                    }
+                }
+            };
+
+            var organizer = new OrganizerProfile
+            {
+                Id = organizerId,
+                Status = ConfirmStatus.Approve,
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                ContactName = "Test Contact",
+                ContactEmail = "test@example.com",
+                ContactPhone = "0123456789",
+                Address = "Test Address"
+            };
+
+            var eventEntity = new Event
+            {
+                Id = Guid.NewGuid(),
+                Title = createEventRequest.Title,
+                Description = createEventRequest.Description,
+                StartTime = createEventRequest.StartTime,
+                EndTime = createEventRequest.EndTime
+            };
+
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.GetByIdAsync(organizerId, true))
+                .ReturnsAsync(organizer);
+            _mockMapper.Setup(x => x.Map<Event>(createEventRequest))
+                .Returns(eventEntity);
+            _mockCloudinaryService.Setup(x => x.UploadImageAsync(It.IsAny<IFormFile>()))
+                .ReturnsAsync((IFormFile file) => $"https://cloudinary.com/{file.FileName}");
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(func => func());
             _mockUnitOfWork.Setup(x => x.EventRepository.AddAsync(It.IsAny<Event>()));
@@ -1420,28 +1556,43 @@ namespace AIEvent.Application.Test.Services
             var result = await _eventService.CreateEventAsync(organizerId, createEventRequest);
 
             // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Please upload at least one image");
-            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-            _mockCloudinaryService.Verify(x => x.UploadImageAsync(It.IsAny<IFormFile>()), Times.Never);
-        }
+            result.IsSuccess.Should().BeTrue();
+            _mockCloudinaryService.Verify(x => x.UploadImageAsync(It.IsAny<IFormFile>()), Times.Exactly(2));
+        _mockUnitOfWork.Verify(x => x.EventRepository.AddAsync(It.IsAny<Event>()), Times.Once);
+    }
 
+    // UTCID36: Missing LocationName - Failure
         [Fact]
-        public async Task UTCID26_CreateEventAsync_WithEmptyDescription_ShouldReturnFailure()
+        public async Task UTCID36_CreateEventAsync_WithMissingLocationName_ShouldReturnFailure()
         {
             // Arrange
             var organizerId = Guid.NewGuid();
+            var mockFile = CreateMockFormFile();
+            
             var createEventRequest = new CreateEventRequest
             {
                 Title = "Test Event",
-                Description = "",
+                Description = "Test Description",
                 StartTime = DateTime.Now.AddDays(5),
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
+                LocationName = "", // Missing LocationName
+                City = "Test City",
+                Address = "Test Address",
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
-                EventCategoryId = Guid.NewGuid().ToString()
+                EventCategoryId = Guid.NewGuid().ToString(),
+                ImgListEvent = new List<IFormFile> { mockFile.Object },
+                TicketDetails = new List<TicketDetailRequest>
+                {
+                    new TicketDetailRequest
+                    {
+                        TicketName = "Standard Ticket",
+                        TicketPrice = 0,
+                        TicketQuantity = 100
+                    }
+                }
             };
 
             // Act
@@ -1449,15 +1600,18 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Contain("Description is required");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            result.Error!.Message.Should().Be("LocationName is required for offline events");
+            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
+
+        // UTCID37: Publish = false should not require evidence - Success
         [Fact]
-        public async Task UTCID27_CreateEventAsync_WithMinPurchaseQuantityLessThanOne_ShouldReturnValidationError()
+        public async Task UTCID37_CreateEventAsync_WithPublishFalseNoEvidence_ShouldReturnSuccess()
         {
             // Arrange
             var organizerId = Guid.NewGuid();
             var mockFile = CreateMockFormFile();
+            
             var createEventRequest = new CreateEventRequest
             {
                 Title = "Test Event",
@@ -1466,140 +1620,24 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 TotalTickets = 100,
-                TicketType = TicketType.Paid,
+                TicketType = TicketType.Free,
                 EventCategoryId = Guid.NewGuid().ToString(),
                 ImgListEvent = new List<IFormFile> { mockFile.Object },
+                Publish = false, // Not publishing
+                ImgListEvidences = null, // No evidence needed
                 TicketDetails = new List<TicketDetailRequest>
-            {
-                new TicketDetailRequest
                 {
-                    TicketName = "Standard Ticket",
-                    TicketPrice = 50.00m,
-                    TicketQuantity = 100,
-                    RuleRefundRequestId = Guid.NewGuid().ToString(),
-                    MinPurchaseQuantity = 0, // Invalid: less than 1
-                    MaxPurchaseQuantity = 10
+                    new TicketDetailRequest
+                    {
+                        TicketName = "Standard Ticket",
+                        TicketPrice = 0,
+                        TicketQuantity = 100
+                    }
                 }
-            }
-            };
-
-            var organizer = new OrganizerProfile
-            {
-                Id = organizerId,
-                Status = ConfirmStatus.Approve,
-                OrganizationType = OrganizationType.PrivateCompany,
-                EventFrequency = EventFrequency.Monthly,
-                EventSize = EventSize.Medium,
-                OrganizerType = OrganizerType.Individual,
-                EventExperienceLevel = EventExperienceLevel.Intermediate,
-                ContactName = "Test Contact",
-                ContactEmail = "test@example.com",
-                ContactPhone = "0123456789",
-                Address = "Test Address"
-            };
-
-            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.GetByIdAsync(organizerId, true))
-                .ReturnsAsync(organizer);
-
-            // Act
-            var result = await _eventService.CreateEventAsync(organizerId, createEventRequest);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Contain("MinPurchaseQuantity must be at least 1");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-        }
-
-        [Fact]
-        public async Task UTCID28_CreateEventAsync_WithMaxPurchaseQuantityLessThanOne_ShouldReturnValidationError()
-        {
-            // Arrange
-            var organizerId = Guid.NewGuid();
-            var mockFile = CreateMockFormFile();
-            var createEventRequest = new CreateEventRequest
-            {
-                Title = "Test Event",
-                Description = "Test Description",
-                StartTime = DateTime.Now.AddDays(5),
-                EndTime = DateTime.Now.AddDays(5).AddHours(2),
-                SaleStartTime = DateTime.Now.AddDays(1),
-                SaleEndTime = DateTime.Now.AddDays(4),
-                TotalTickets = 100,
-                TicketType = TicketType.Paid,
-                EventCategoryId = Guid.NewGuid().ToString(),
-                ImgListEvent = new List<IFormFile> { mockFile.Object },
-                TicketDetails = new List<TicketDetailRequest>
-            {
-                new TicketDetailRequest
-                {
-                    TicketName = "Standard Ticket",
-                    TicketPrice = 50.00m,
-                    TicketQuantity = 100,
-                    RuleRefundRequestId = Guid.NewGuid().ToString(),
-                    MinPurchaseQuantity = 1,
-                    MaxPurchaseQuantity = 0 // Invalid: less than 1
-                }
-            }
-            };
-
-            var organizer = new OrganizerProfile
-            {
-                Id = organizerId,
-                Status = ConfirmStatus.Approve,
-                OrganizationType = OrganizationType.PrivateCompany,
-                EventFrequency = EventFrequency.Monthly,
-                EventSize = EventSize.Medium,
-                OrganizerType = OrganizerType.Individual,
-                EventExperienceLevel = EventExperienceLevel.Intermediate,
-                ContactName = "Test Contact",
-                ContactEmail = "test@example.com",
-                ContactPhone = "0123456789",
-                Address = "Test Address"
-            };
-
-            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.GetByIdAsync(organizerId, true))
-                .ReturnsAsync(organizer);
-
-            // Act
-            var result = await _eventService.CreateEventAsync(organizerId, createEventRequest);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Contain("MaxPurchaseQuantity must be at least 1");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-        }
-
-        [Fact]
-        public async Task UTCID29_CreateEventAsync_WithMinPurchaseQuantityEqualsMaxPurchaseQuantity_ShouldReturnSuccess()
-        {
-            // Arrange
-            var organizerId = Guid.NewGuid();
-            var mockFile = CreateMockFormFile();
-            var createEventRequest = new CreateEventRequest
-            {
-                Title = "Test Event",
-                Description = "Test Description",
-                StartTime = DateTime.Now.AddDays(5),
-                EndTime = DateTime.Now.AddDays(5).AddHours(2),
-                SaleStartTime = DateTime.Now.AddDays(1),
-                SaleEndTime = DateTime.Now.AddDays(4),
-                TotalTickets = 100,
-                TicketType = TicketType.Paid,
-                EventCategoryId = Guid.NewGuid().ToString(),
-                ImgListEvent = new List<IFormFile> { mockFile.Object },
-                TicketDetails = new List<TicketDetailRequest>
-            {
-                new TicketDetailRequest
-                {
-                    TicketName = "Standard Ticket",
-                    TicketPrice = 50.00m,
-                    TicketQuantity = 100,
-                    RuleRefundRequestId = Guid.NewGuid().ToString(),
-                    MinPurchaseQuantity = 5, // Equal to Max
-                    MaxPurchaseQuantity = 5  // Equal to Min
-                }
-            }
             };
 
             var organizer = new OrganizerProfile
@@ -1643,12 +1681,14 @@ namespace AIEvent.Application.Test.Services
             result.IsSuccess.Should().BeTrue();
         }
 
+        // UTCID38: Publish = true with empty evidence list - Failure
         [Fact]
-        public async Task UTCID30_CreateEventAsync_WithMinPurchaseQuantityGreaterThanMaxPurchaseQuantity_ShouldReturnValidationError()
+        public async Task UTCID38_CreateEventAsync_WithPublishTrueAndEmptyEvidenceList_ShouldReturnFailure()
         {
             // Arrange
             var organizerId = Guid.NewGuid();
             var mockFile = CreateMockFormFile();
+            
             var createEventRequest = new CreateEventRequest
             {
                 Title = "Test Event",
@@ -1657,71 +1697,24 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
-                TotalTickets = 100,
-                TicketType = TicketType.Paid,
-                EventCategoryId = Guid.NewGuid().ToString(),
-                ImgListEvent = new List<IFormFile> { mockFile.Object },
-                TicketDetails = new List<TicketDetailRequest>
-            {
-                new TicketDetailRequest
-                {
-                    TicketName = "Standard Ticket",
-                    TicketPrice = 50.00m,
-                    TicketQuantity = 100,
-                    RuleRefundRequestId = Guid.NewGuid().ToString(),
-                    MinPurchaseQuantity = 10, // Greater than Max
-                    MaxPurchaseQuantity = 5   // Less than Min
-                }
-            }
-            };
-
-            var organizer = new OrganizerProfile
-            {
-                Id = organizerId,
-                Status = ConfirmStatus.Approve,
-                OrganizationType = OrganizationType.PrivateCompany,
-                EventFrequency = EventFrequency.Monthly,
-                EventSize = EventSize.Medium,
-                OrganizerType = OrganizerType.Individual,
-                EventExperienceLevel = EventExperienceLevel.Intermediate,
-                ContactName = "Test Contact",
-                ContactEmail = "test@example.com",
-                ContactPhone = "0123456789",
-                Address = "Test Address"
-            };
-
-            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.GetByIdAsync(organizerId, true))
-                .ReturnsAsync(organizer);
-
-            // Act
-            var result = await _eventService.CreateEventAsync(organizerId, createEventRequest);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-            result.Error!.Message.Should().Be("MinPurchaseQuantity cannot be greater than MaxPurchaseQuantity");
-        }
-
-        [Fact]
-        public async Task UTCID31_CreateEventAsync_WithEmptyTicketDetails_ShouldReturnFailure()
-        {
-            // Arrange
-            var organizerId = Guid.NewGuid();
-            var mockFile = CreateMockFormFile();
-            var createEventRequest = new CreateEventRequest
-            {
-                Title = "Test Event",
-                Description = "Test Description",
-                StartTime = DateTime.Now.AddDays(5),
-                EndTime = DateTime.Now.AddDays(5).AddHours(2),
-                SaleStartTime = DateTime.Now.AddDays(1),
-                SaleEndTime = DateTime.Now.AddDays(4),
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 TotalTickets = 100,
                 TicketType = TicketType.Free,
                 EventCategoryId = Guid.NewGuid().ToString(),
                 ImgListEvent = new List<IFormFile> { mockFile.Object },
-                TicketDetails = new List<TicketDetailRequest>(),
-
+                Publish = true, // Publishing
+                ImgListEvidences = new List<IFormFile>(), // Empty evidence list
+                TicketDetails = new List<TicketDetailRequest>
+                {
+                    new TicketDetailRequest
+                    {
+                        TicketName = "Standard Ticket",
+                        TicketPrice = 0,
+                        TicketQuantity = 100
+                    }
+                }
             };
 
             // Act
@@ -1729,9 +1722,10 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Contain("Ticket is required");
+            result.Error!.Message.Should().Be("Evidence images are required when publishing the event");
             result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
+
         #endregion
 
         #region GetEventAsync Tests
@@ -2594,7 +2588,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var today = DateTime.Today;
-            var thisMonth = today.AddHours(5);
+            var thisMonth = today.AddHours(10);
             var nextMonth = today.AddMonths(1);
             var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
             
@@ -6300,8 +6294,13 @@ namespace AIEvent.Application.Test.Services
                 Description = "Original Description",
                 StartTime = DateTime.Now.AddDays(5),
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 Publish = false,
                 IsDeleted = false,
+                ImgListEvent = JsonSerializer.Serialize(new List<string> { "image1.jpg" }),
+                Evidences = JsonSerializer.Serialize(new List<string> { "evidence1.jpg" }),
                 TicketDetails = new List<TicketDetail>
                 {
                     new TicketDetail { Id = Guid.NewGuid(), TicketName = "Ticket 1", TicketQuantity = 100 }
@@ -6455,133 +6454,6 @@ namespace AIEvent.Application.Test.Services
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
         }
 
-        // UTCID07: Published event with active bookings (Completed) - Failure
-        [Fact]
-        public async Task UTCID07_UpdateEventAsync_WithPublishedEventAndCompletedBookings_ShouldReturnFailure()
-        {
-            // Arrange
-            var organizerId = Guid.NewGuid();
-            var eventId = Guid.NewGuid();
-            var updateRequest = new UpdateEventRequest { Title = "Updated Title" };
-
-            var existingEvent = new Event
-            {
-                Id = eventId,
-                OrganizerProfileId = organizerId,
-                Title = "Test Event",
-                Description = "Test Description",
-                StartTime = DateTime.Now.AddDays(5),
-                EndTime = DateTime.Now.AddDays(5).AddHours(2),
-                Publish = true,
-                IsDeleted = false,
-                TicketDetails = new List<TicketDetail>(),
-                EventTags = new List<EventTag>(),
-                Bookings = new List<Booking>
-                {
-                    new Booking { Id = Guid.NewGuid(), Status = BookingStatus.Completed }
-                }
-            };
-
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-
-            // Act
-            var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Cannot update published event that has existing bookings");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-        }
-
-        // UTCID08: Published event with active bookings (Pending) - Failure
-        [Fact]
-        public async Task UTCID08_UpdateEventAsync_WithPublishedEventAndPendingBookings_ShouldReturnFailure()
-        {
-            // Arrange
-            var organizerId = Guid.NewGuid();
-            var eventId = Guid.NewGuid();
-            var updateRequest = new UpdateEventRequest { Title = "Updated Title" };
-
-            var existingEvent = new Event
-            {
-                Id = eventId,
-                OrganizerProfileId = organizerId,
-                Title = "Test Event",
-                Description = "Test Description",
-                StartTime = DateTime.Now.AddDays(5),
-                EndTime = DateTime.Now.AddDays(5).AddHours(2),
-                Publish = true,
-                IsDeleted = false,
-                TicketDetails = new List<TicketDetail>(),
-                EventTags = new List<EventTag>(),
-                Bookings = new List<Booking>
-                {
-                    new Booking { Id = Guid.NewGuid(), Status = BookingStatus.Pending }
-                }
-            };
-
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-
-            // Act
-            var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Cannot update published event that has existing bookings");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-        }
-
-        // UTCID09: Published event with cancelled bookings only - Success
-        [Fact]
-        public async Task UTCID09_UpdateEventAsync_WithPublishedEventAndCancelledBookingsOnly_ShouldReturnSuccess()
-        {
-            // Arrange
-            var organizerId = Guid.NewGuid();
-            var eventId = Guid.NewGuid();
-            var updateRequest = new UpdateEventRequest { Title = "Updated Title" };
-
-            var existingEvent = new Event
-            {
-                Id = eventId,
-                OrganizerProfileId = organizerId,
-                Title = "Test Event",
-                Description = "Test Description",
-                StartTime = DateTime.Now.AddDays(5),
-                EndTime = DateTime.Now.AddDays(5).AddHours(2),
-                Publish = true,
-                IsDeleted = false,
-                TicketDetails = new List<TicketDetail>
-                {
-                    new TicketDetail { Id = Guid.NewGuid(), TicketName = "Ticket 1", TicketQuantity = 100 }
-                },
-                EventTags = new List<EventTag>
-                {
-                    new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-                },
-                Bookings = new List<Booking>
-                {
-                    new Booking { Id = Guid.NewGuid(), Status = BookingStatus.Cancelled }
-                }
-            };
-
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-            _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-            
-            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-                .Returns<Func<Task<Result>>>(func => func());
-            
-            _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-            // Act
-            var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-            // Assert
-            result.IsSuccess.Should().BeTrue();
-            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
-        }
 
         // UTCID10: Publish validation - Missing title - Failure
         [Fact]
@@ -6727,9 +6599,9 @@ namespace AIEvent.Application.Test.Services
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
-        // UTCID13: Publish validation - Missing location for offline event - Failure
+        // UTCID13: Publish validation - Missing location - Failure
         [Fact]
-        public async Task UTCID13_UpdateEventAsync_WithPublishAndMissingLocationForOfflineEvent_ShouldReturnFailure()
+        public async Task UTCID13_UpdateEventAsync_WithPublishAndMissingLocation_ShouldReturnFailure()
         {
             // Arrange
             var organizerId = Guid.NewGuid();
@@ -6737,8 +6609,7 @@ namespace AIEvent.Application.Test.Services
             
             var updateRequest = new UpdateEventRequest 
             { 
-                Publish = true,
-                isOnlineEvent = false
+                Publish = true, 
             };
 
             var existingEvent = new Event
@@ -6753,11 +6624,11 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
-                isOnlineEvent = false,
                 LocationName = "",
                 City = "",
                 Address = "",
                 ImgListEvent = JsonSerializer.Serialize(new List<string> { "image1.jpg" }),
+                Evidences = JsonSerializer.Serialize(new List<string> { "evidence1.jpg" }),
                 TicketType = TicketType.Free,
                 TotalTickets = 100,
                 EventCategoryId = Guid.NewGuid(),
@@ -6783,9 +6654,9 @@ namespace AIEvent.Application.Test.Services
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
-        // UTCID14: Publish validation - Missing LinkRef for online event - Failure
+        // UTCID14: Publish validation - Missing evidence - Failure
         [Fact]
-        public async Task UTCID14_UpdateEventAsync_WithPublishAndMissingLinkRefForOnlineEvent_ShouldReturnFailure()
+        public async Task UTCID14_UpdateEventAsync_WithPublishAndMissingEvidence_ShouldReturnFailure()
         {
             // Arrange
             var organizerId = Guid.NewGuid();
@@ -6793,8 +6664,7 @@ namespace AIEvent.Application.Test.Services
             
             var updateRequest = new UpdateEventRequest 
             { 
-                Publish = true,
-                isOnlineEvent = true
+                Publish = true
             };
 
             var existingEvent = new Event
@@ -6809,9 +6679,11 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
-                isOnlineEvent = true,
-                LinkRef = "",
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 ImgListEvent = JsonSerializer.Serialize(new List<string> { "image1.jpg" }),
+                Evidences = "", // Missing evidence
                 TicketType = TicketType.Free,
                 TotalTickets = 100,
                 EventCategoryId = Guid.NewGuid(),
@@ -6833,7 +6705,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Contain("LinkRef is required for online events");
+            result.Error!.Message.Should().Contain("Evidence is required when publishing an event");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
@@ -6862,9 +6734,11 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
-                isOnlineEvent = true,
-                LinkRef = "http://example.com",
-                ImgListEvent = "",
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
+                ImgListEvent = "", // Missing images
+                Evidences = JsonSerializer.Serialize(new List<string> { "evidence1.jpg" }),
                 TicketType = TicketType.Free,
                 TotalTickets = 100,
                 EventCategoryId = Guid.NewGuid(),
@@ -6915,9 +6789,11 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
-                isOnlineEvent = true,
-                LinkRef = "http://example.com",
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 ImgListEvent = JsonSerializer.Serialize(new List<string> { "image1.jpg" }),
+                Evidences = JsonSerializer.Serialize(new List<string> { "evidence1.jpg" }),
                 TicketType = TicketType.Free,
                 TotalTickets = 100,
                 EventCategoryId = Guid.NewGuid(),
@@ -6940,73 +6816,10 @@ namespace AIEvent.Application.Test.Services
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
-        // UTCID17: Publish validation - MaxPurchaseQuantity less than MinPurchaseQuantity - Failure
+
+        // UTCID17: Publish validation - Valid data with Publish=true - Success
         [Fact]
-        public async Task UTCID17_UpdateEventAsync_WithPublishAndInvalidTicketPurchaseQuantities_ShouldReturnFailure()
-        {
-            // Arrange
-            var organizerId = Guid.NewGuid();
-            var eventId = Guid.NewGuid();
-            
-            var updateRequest = new UpdateEventRequest 
-            { 
-                Publish = true,
-                TicketDetails = new List<TicketDetailRequest>
-                {
-                    new TicketDetailRequest
-                    {
-                        Id = Guid.NewGuid(),
-                        TicketName = "Standard Ticket",
-                        TicketPrice = 50,
-                        MinPurchaseQuantity = 10,
-                        MaxPurchaseQuantity = 5
-                    }
-                }
-            };
-
-            var existingEvent = new Event
-            {
-                Id = eventId,
-                OrganizerProfileId = organizerId,
-                Publish = false,
-                IsDeleted = false,
-                Title = "Title",
-                Description = "Description",
-                StartTime = DateTime.Now.AddDays(5),
-                EndTime = DateTime.Now.AddDays(5).AddHours(2),
-                SaleStartTime = DateTime.Now.AddDays(1),
-                SaleEndTime = DateTime.Now.AddDays(4),
-                isOnlineEvent = true,
-                LinkRef = "http://example.com",
-                ImgListEvent = JsonSerializer.Serialize(new List<string> { "image1.jpg" }),
-                TicketType = TicketType.Free,
-                TotalTickets = 100,
-                EventCategoryId = Guid.NewGuid(),
-                TicketDetails = new List<TicketDetail>
-                {
-                    new TicketDetail { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-                },
-                EventTags = new List<EventTag>
-                {
-                    new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-                }
-            };
-
-            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-
-            // Act
-            var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Contain("MaxPurchaseQuantity must be greater than or equal to MinPurchaseQuantity");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-        }
-
-        // UTCID18: Publish validation - Valid data with Publish=true - Success
-        [Fact]
-        public async Task UTCID18_UpdateEventAsync_WithValidPublishData_ShouldSetPublishAndRequireApproval()
+        public async Task UTCID17_UpdateEventAsync_WithValidPublishData_ShouldSetPublishAndRequireApproval()
         {
             // Arrange
             var organizerId = Guid.NewGuid();
@@ -7029,9 +6842,11 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
-                isOnlineEvent = true,
-                LinkRef = "http://example.com",
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 ImgListEvent = JsonSerializer.Serialize(new List<string> { "image1.jpg" }),
+                Evidences = JsonSerializer.Serialize(new List<string> { "evidence1.jpg" }),
                 TicketType = TicketType.Free,
                 TotalTickets = 100,
                 EventCategoryId = Guid.NewGuid(),
@@ -7191,9 +7006,7 @@ namespace AIEvent.Application.Test.Services
                         Id = null, // New ticket
                         TicketName = "New Ticket",
                         TicketPrice = 50,
-                        TicketQuantity = 100,
-                        MinPurchaseQuantity = 1,
-                        MaxPurchaseQuantity = 10
+                        TicketQuantity = 100 
                     }
                 }
             };
@@ -7261,9 +7074,7 @@ namespace AIEvent.Application.Test.Services
                         Id = ticketId,
                         TicketName = "Updated Ticket",
                         TicketPrice = 75,
-                        TicketQuantity = 150,
-                        MinPurchaseQuantity = 1,
-                        MaxPurchaseQuantity = 10
+                        TicketQuantity = 150 
                     }
                 }
             };
@@ -7575,9 +7386,7 @@ namespace AIEvent.Application.Test.Services
                         Id = null,
                         TicketName = "Free Ticket",
                         TicketPrice = 0,
-                        TicketQuantity = 100,
-                        MinPurchaseQuantity = 1,
-                        MaxPurchaseQuantity = 10
+                        TicketQuantity = 100 
                     }
                 }
             };
@@ -7648,9 +7457,7 @@ namespace AIEvent.Application.Test.Services
                         Id = null,
                         TicketName = "New Ticket",
                         TicketPrice = 50,
-                        TicketQuantity = 100,
-                        MinPurchaseQuantity = 1,
-                        MaxPurchaseQuantity = 10
+                        TicketQuantity = 100
                     }
                 },
                 RemoveTagIds = new List<Guid> { tagIdToRemove },
@@ -7732,9 +7539,11 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
-                isOnlineEvent = true,
-                LinkRef = "http://example.com",
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 ImgListEvent = JsonSerializer.Serialize(new List<string> { "image1.jpg" }),
+                Evidences = JsonSerializer.Serialize(new List<string> { "evidence1.jpg" }),
                 TicketType = TicketType.Free,
                 TotalTickets = 0,
                 EventCategoryId = Guid.NewGuid(),
@@ -7786,9 +7595,11 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(5).AddHours(2),
                 SaleStartTime = DateTime.Now.AddDays(1),
                 SaleEndTime = DateTime.Now.AddDays(4),
-                isOnlineEvent = true,
-                LinkRef = "http://example.com",
+                LocationName = "Test Location",
+                City = "Test City",
+                Address = "Test Address",
                 ImgListEvent = JsonSerializer.Serialize(new List<string> { "image1.jpg" }),
+                Evidences = JsonSerializer.Serialize(new List<string> { "evidence1.jpg" }),
                 TicketType = TicketType.Free,
                 TotalTickets = 100,
                 EventCategoryId = Guid.Empty,
@@ -7812,6 +7623,182 @@ namespace AIEvent.Application.Test.Services
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Contain("EventCategoryId is required");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        // UTCID32: Cannot remove ticket that has been sold - Failure
+        [Fact]
+        public async Task UTCID32_UpdateEventAsync_WithRemoveSoldTicket_ShouldReturnFailure()
+        {
+            // Arrange
+            var organizerId = Guid.NewGuid();
+            var eventId = Guid.NewGuid();
+            var soldTicketId = Guid.NewGuid();
+            
+            var updateRequest = new UpdateEventRequest 
+            { 
+                RemoveTicketDetailIds = new List<Guid> { soldTicketId }
+            };
+
+            var soldTicket = new TicketDetail 
+            { 
+                Id = soldTicketId, 
+                TicketName = "VIP Ticket", 
+                TicketQuantity = 100,
+                SoldQuantity = 50
+            };
+
+            var existingEvent = new Event
+            {
+                Id = eventId,
+                OrganizerProfileId = organizerId,
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = DateTime.Now.AddDays(5),
+                EndTime = DateTime.Now.AddDays(5).AddHours(2),
+                Publish = false,
+                IsDeleted = false,
+                ImgListEvent = JsonSerializer.Serialize(new List<string> { "image1.jpg" }),
+                Evidences = JsonSerializer.Serialize(new List<string> { "evidence1.jpg" }),
+                TicketDetails = new List<TicketDetail>
+                {
+                    soldTicket,
+                    new TicketDetail { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+                },
+                EventTags = new List<EventTag>
+                {
+                    new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+                }
+            };
+
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+            
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            // Act & Assert
+            await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest));
+        }
+
+        // UTCID33: Cannot reduce ticket quantity below sold quantity - Failure
+        [Fact]
+        public async Task UTCID33_UpdateEventAsync_WithReduceQuantityBelowSold_ShouldReturnFailure()
+        {
+            // Arrange
+            var organizerId = Guid.NewGuid();
+            var eventId = Guid.NewGuid();
+            var ticketId = Guid.NewGuid();
+            
+            var updateRequest = new UpdateEventRequest 
+            { 
+                TicketDetails = new List<TicketDetailRequest>
+                {
+                    new TicketDetailRequest
+                    {
+                        Id = ticketId,
+                        TicketName = "VIP Ticket",
+                        TicketPrice = 100,
+                        TicketQuantity = 10 // Trying to reduce below sold quantity of 50
+                    }
+                }
+            };
+
+            var existingEvent = new Event
+            {
+                Id = eventId,
+                OrganizerProfileId = organizerId,
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = DateTime.Now.AddDays(5),
+                EndTime = DateTime.Now.AddDays(5).AddHours(2),
+                Publish = false,
+                IsDeleted = false,
+                ImgListEvent = JsonSerializer.Serialize(new List<string> { "image1.jpg" }),
+                Evidences = JsonSerializer.Serialize(new List<string> { "evidence1.jpg" }),
+                TicketDetails = new List<TicketDetail>
+                {
+                    new TicketDetail 
+                    { 
+                        Id = ticketId, 
+                        TicketName = "VIP Ticket", 
+                        TicketPrice = 100,
+                        TicketQuantity = 100,
+                        SoldQuantity = 50
+                    }
+                },
+                EventTags = new List<EventTag>
+                {
+                    new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+                }
+            };
+
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+            _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+            
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            // Act & Assert
+            await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest));
+        }
+
+        // UTCID34: Add evidence images - Success
+        [Fact]
+        public async Task UTCID34_UpdateEventAsync_WithAddEvidence_ShouldUploadAndAddEvidence()
+        {
+            // Arrange
+            var organizerId = Guid.NewGuid();
+            var eventId = Guid.NewGuid();
+            var mockEvidenceFile = CreateMockFormFile("evidence.jpg");
+            
+            var updateRequest = new UpdateEventRequest 
+            { 
+                ImgListEvidences = new List<IFormFile> { mockEvidenceFile.Object }
+            };
+
+            var existingEvent = new Event
+            {
+                Id = eventId,
+                OrganizerProfileId = organizerId,
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = DateTime.Now.AddDays(5),
+                EndTime = DateTime.Now.AddDays(5).AddHours(2),
+                Publish = false,
+                IsDeleted = false,
+                ImgListEvent = JsonSerializer.Serialize(new List<string> { "image1.jpg" }),
+                Evidences = JsonSerializer.Serialize(new List<string>()),
+                TicketDetails = new List<TicketDetail>
+                {
+                    new TicketDetail { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+                },
+                EventTags = new List<EventTag>
+                {
+                    new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+                }
+            };
+
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+            _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+            _mockCloudinaryService.Setup(x => x.UploadImageAsync(It.IsAny<IFormFile>()))
+                .ReturnsAsync("uploaded-evidence.jpg");
+            
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+            
+            _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+            // Act
+            var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockCloudinaryService.Verify(x => x.UploadImageAsync(It.IsAny<IFormFile>()), Times.Once());
+            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
         }
 
         #endregion

@@ -22,9 +22,10 @@ namespace AIEvent.Application.DTOs.Event
         public bool? Publish { get; set; } = false;
         public TicketType? TicketType { get; set; }
         public int? TotalTickets { get; set; }
-        public bool? isOnlineEvent { get; set; }
         public string? LinkRef { get; set; }
         public List<IFormFile>? ImgListEvent { get; set; }
+        public List<IFormFile>? ImgListEvidences { get; set; }
+        public List<string>? RemoveImageEvidenceUrls { get; set; }
         public List<string>? RemoveImageUrls { get; set; }
         public List<TicketDetailRequest>? TicketDetails { get; set; }
         public List<Guid>? RemoveTicketDetailIds { get; set; }

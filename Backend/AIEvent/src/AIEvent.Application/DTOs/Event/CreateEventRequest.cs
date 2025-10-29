@@ -15,8 +15,7 @@ namespace AIEvent.Application.DTOs.Event
         [Required(ErrorMessage = "StartTime is required")]
         public required DateTime StartTime { get; set; }
         [Required(ErrorMessage = "EndTime is required")]
-        public required DateTime EndTime { get; set; }
-        public bool? isOnlineEvent { get; set; }
+        public required DateTime EndTime { get; set; } 
         public string? LocationName { get; set; }
         public string? DetailedDescription { get; set; }
         public string? LinkRef { get; set; }
@@ -26,6 +25,7 @@ namespace AIEvent.Application.DTOs.Event
         [MinLength(1, ErrorMessage = "Please upload at least one image")]
         [Required(ErrorMessage = "Please upload at least one image")]
         public List<IFormFile>? ImgListEvent { get; set; }
+        public List<IFormFile>? ImgListEvidences { get; set; }
         public ConfirmStatus? RequireApproval { get; set; } = ConfirmStatus.NeedConfirm;
         public string? City { get; set; }
         public string? Address { get; set; }
