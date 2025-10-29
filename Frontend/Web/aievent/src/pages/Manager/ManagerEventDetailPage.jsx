@@ -345,6 +345,30 @@ Nhấn OK để xác nhận xóa.`;
               </Card>
             )}
 
+            {/* Evidence Image Gallery */}
+            {event.imgEventEvidences && event.imgEventEvidences.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ImageIcon className="h-5 w-5" />
+                    Hình ảnh bằng chứng tổ chức
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {event.imgEventEvidences.map((img, index) => (
+                      <img
+                        key={index}
+                        src={img}
+                        alt={`${event.title} - Evidence ${index + 1}`}
+                        className="w-full h-64 object-cover rounded-lg shadow-md"
+                      />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Tabs */}
             <Card>
               <CardHeader>

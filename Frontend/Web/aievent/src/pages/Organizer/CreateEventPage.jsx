@@ -51,7 +51,6 @@ const createEventSchema = z.object({
   detailedDescription: z.string().optional(),
   startTime: z.string().min(1, 'Thời gian bắt đầu là bắt buộc'),
   endTime: z.string().min(1, 'Thời gian kết thúc là bắt buộc'),
-  isOnlineEvent: z.boolean().default(false),
   locationName: z.string().optional(),
   address: z.string().optional(),
   city: z.string().optional(),
@@ -70,20 +69,20 @@ const createEventSchema = z.object({
     ruleRefundRequestId: z.string().min(1, 'Quy tắc hoàn tiền là bắt buộc'),
   })).min(1, 'Phải có ít nhất một loại vé')
 }).refine((data) => {
-  if (!data.isOnlineEvent && !data.locationName) {
+  if (!data.locationName) {
     return false;
   }
   return true;
 }, {
-  message: 'Địa điểm là bắt buộc cho sự kiện offline',
+  message: 'Địa điểm là bắt buộc',
   path: ['locationName'],
 }).refine((data) => {
-  if (!data.isOnlineEvent && !data.city) {
+  if (!data.city) {
     return false;
   }
   return true;
 }, {
-  message: 'Thành phố là bắt buộc cho sự kiện offline',
+  message: 'Thành phố là bắt buộc',
   path: ['city'],
 }).refine((data) => {
   const saleStart = new Date(data.saleStartTime);
@@ -110,7 +109,9 @@ const CreateEventPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
+  const [selectedEvidenceImages, setSelectedEvidenceImages] = useState([]);
   const [imagePreview, setImagePreview] = useState([]);
+  const [evidenceImagePreview, setEvidenceImagePreview] = useState([]);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   // Redux hooks
@@ -137,22 +138,21 @@ const CreateEventPage = () => {
       endTime: '',
       locationName: '',
       address: '',
-      city: '', // Add city field
+      city: '',
       linkRef: '',
       eventCategoryId: '',
-      isOnlineEvent: false,
       requireApproval: ConfirmStatus.NeedConfirm,
       publish: false,
       saleStartTime: '',
       saleEndTime: '',
-      ticketType: '1', // Free by default
+      ticketType: '1',
       ticketDetails: [
         {
           ticketName: 'Vé thường',
           ticketPrice: 0,
           ticketQuantity: 1,
           ticketDescription: '',
-          ruleRefundRequestId: '', // Will be set when refund rule is selected
+          ruleRefundRequestId: '',
         }
       ],
     },
@@ -163,7 +163,6 @@ const CreateEventPage = () => {
     name: 'ticketDetails',
   });
 
-  const watchIsOnline = watch('isOnlineEvent');
   const watchTicketType = watch('ticketType');
 
   // Set page title and cleanup on mount
@@ -194,6 +193,19 @@ const CreateEventPage = () => {
     setImagePreview(previews);
   };
 
+  // Handle evidence image upload
+  const handleEvidenceImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 5) {
+      toast.error('Chỉ được tải lên tối đa 5 hình ảnh bằng chứng');
+      return;
+    }
+
+    setSelectedEvidenceImages(files);
+    const previews = files.map(file => URL.createObjectURL(file));
+    setEvidenceImagePreview(previews);
+  };
+
   // Remove image
   const removeImage = (index) => {
     const newImages = selectedImages.filter((_, i) => i !== index);
@@ -201,6 +213,15 @@ const CreateEventPage = () => {
     
     setSelectedImages(newImages);
     setImagePreview(newPreviews);
+  };
+
+  // Remove evidence image
+  const removeEvidenceImage = (index) => {
+    const newImages = selectedEvidenceImages.filter((_, i) => i !== index);
+    const newPreviews = evidenceImagePreview.filter((_, i) => i !== index);
+    
+    setSelectedEvidenceImages(newImages);
+    setEvidenceImagePreview(newPreviews);
   };
 
   // Add ticket detail
@@ -318,8 +339,9 @@ const CreateEventPage = () => {
       return;
     }
 
-    // Filter out empty images (từ logic cũ)
+    // Filter out empty images
     const validImages = selectedImages.filter(img => img instanceof File);
+    const validEvidenceImages = selectedEvidenceImages.filter(img => img instanceof File);
     
     // Calculate total tickets from ticketDetails array
     const totalTickets = data.ticketDetails.reduce((sum, ticket) => sum + parseInt(ticket.ticketQuantity), 0);
@@ -333,17 +355,17 @@ const CreateEventPage = () => {
       endTime: new Date(data.endTime).toISOString(),
       saleStartTime: new Date(data.saleStartTime).toISOString(),
       saleEndTime: new Date(data.saleEndTime).toISOString(),
-      isOnlineEvent: data.isOnlineEvent || false,
       locationName: data.locationName || '',
       address: data.address || '',
-      city: data.city || '', // Add city field
+      city: data.city || '',
       latitude: null,
       longitude: null,
       totalTickets: totalTickets,
       ticketType: data.ticketType && !isNaN(parseInt(data.ticketType)) ? parseInt(data.ticketType) : 1,
       requireApproval: data.requireApproval,
-      publish: data.publish || false,
+      publish: data.publish || false, // This will be false for drafts
       images: validImages,
+      evidenceImages: validEvidenceImages,
       eventCategoryId: data.eventCategoryId,
       tags: reduxSelectedTags.map(tag => ({ tagId: tag.tagId })),
       refundRules: selectedRules.map(rule => ({ ruleRefundId: rule.ruleRefundId })),
@@ -412,7 +434,7 @@ const CreateEventPage = () => {
       const response = await createEventAPI(eventData);
       
       if (response) {
-        toast.success('✅ Tạo sự kiện thành công!');
+        toast.success(data.publish ? '✅ Tạo sự kiện thành công!' : '✅ Lưu nháp sự kiện thành công!');
         clearAllSelectedTags();
         clearSelectedRefundRules();
         navigate(PATH.ORGANIZER_MY_EVENTS);
@@ -420,7 +442,7 @@ const CreateEventPage = () => {
     } catch (error) {
       console.error('Error creating event:', error);
       const errorData = error.response?.data;
-      let errorMessage = 'Có lỗi xảy ra khi tạo sự kiện';
+      let errorMessage = data.publish ? 'Có lỗi xảy ra khi tạo sự kiện' : 'Có lỗi xảy ra khi lưu nháp sự kiện';
       
       // Handle specific error cases (từ logic cũ)
       if (errorData?.errors === 'Invalid Organizer ID in token' || error.response?.status === 401) {
@@ -727,18 +749,7 @@ const CreateEventPage = () => {
                   </div>
                 </div>
 
-                {/* Add the missing "Sự kiện trực tuyến?" switch */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="isOnlineEvent" className="text-base font-semibold">Sự kiện trực tuyến?</Label>
-                    <Switch
-                      id="isOnlineEvent"
-                      checked={watchIsOnline}
-                      onCheckedChange={(checked) => setValue('isOnlineEvent', checked)}
-                      className="mt-2"
-                    />
-                  </div>
-
                   <div>
                     <Label htmlFor="city" className="text-base font-semibold">Thành phố</Label>
                     <Input
@@ -749,32 +760,28 @@ const CreateEventPage = () => {
                     />
                   </div>
 
-                  {!watchIsOnline && (
-                    <div>
-                      <Label htmlFor="locationName" className="text-base font-semibold">Tên địa điểm *</Label>
-                      <Input
-                        id="locationName"
-                        {...register('locationName')}
-                        placeholder="Nhập tên địa điểm"
-                        className="mt-2 h-12 text-base border-2 focus:border-green-500"
-                      />
-                      {errors.locationName && <p className="text-red-500 text-sm mt-1">{errors.locationName.message}</p>}
-                    </div>
-                  )}
+                  <div>
+                    <Label htmlFor="locationName" className="text-base font-semibold">Tên địa điểm *</Label>
+                    <Input
+                      id="locationName"
+                      {...register('locationName')}
+                      placeholder="Nhập tên địa điểm"
+                      className="mt-2 h-12 text-base border-2 focus:border-green-500"
+                    />
+                    {errors.locationName && <p className="text-red-500 text-sm mt-1">{errors.locationName.message}</p>}
+                  </div>
 
-                  {!watchIsOnline && (
-                    <div>
-                      <Label htmlFor="address" className="text-base font-semibold">Địa chỉ *</Label>
-                      <Textarea
-                        id="address"
-                        {...register('address')}
-                        placeholder="Nhập địa chỉ"
-                        rows={3}
-                        className="mt-2 text-base border-2 focus:border-green-500"
-                      />
-                      {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>}
-                    </div>
-                  )}
+                  <div>
+                    <Label htmlFor="address" className="text-base font-semibold">Địa chỉ *</Label>
+                    <Textarea
+                      id="address"
+                      {...register('address')}
+                      placeholder="Nhập địa chỉ"
+                      rows={3}
+                      className="mt-2 text-base border-2 focus:border-green-500"
+                    />
+                    {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>}
+                  </div>
                 </div>
 
                 {/* Display real-time date validation errors */}
@@ -851,6 +858,64 @@ const CreateEventPage = () => {
               </CardContent>
             </Card>
 
+            {/* Evidence Images */}
+            <Card className="border-l-4 border-l-indigo-500 shadow-xl bg-white">
+              <CardHeader className="bg-gradient-to-r from-indigo-500/10 to-transparent">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="p-2 bg-indigo-500 rounded-lg">
+                    <Image className="h-5 w-5 text-white" />
+                  </div>
+                  Hình ảnh bằng chứng tổ chức
+                </CardTitle>
+                <CardDescription className="text-base">
+                  Tải lên tối đa 5 hình ảnh bằng chứng tổ chức sự kiện
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-8">
+                <div className="space-y-6">
+                  <div className="border-2 border-dashed border-indigo-300 rounded-lg p-8 text-center hover:border-indigo-500 transition-colors">
+                    <Input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleEvidenceImageChange}
+                      className="hidden"
+                      id="evidence-image-upload"
+                    />
+                    <label htmlFor="evidence-image-upload" className="cursor-pointer">
+                      <div className="flex flex-col items-center">
+                        <Image className="h-12 w-12 text-indigo-400 mb-4" />
+                        <p className="text-lg font-semibold text-indigo-600">Chọn hình ảnh bằng chứng</p>
+                        <p className="text-gray-500">PNG, JPG, GIF tối đa 5 file</p>
+                      </div>
+                    </label>
+                  </div>
+                  
+                  {evidenceImagePreview.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                      {evidenceImagePreview.map((preview, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={preview}
+                            alt={`Evidence Preview ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-lg shadow-md"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => removeEvidenceImage(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Right Column - Sidebar */}
@@ -990,8 +1055,8 @@ const CreateEventPage = () => {
               </CardContent>
             </Card>
 
-            {/* Settings */}
-            <Card className="border-l-4 border-l-gray-500 shadow-xl bg-white">
+            
+            {/* <Card className="border-l-4 border-l-gray-500 shadow-xl bg-white">
               <CardHeader className="bg-gradient-to-r from-gray-500/10 to-transparent">
                 <CardTitle className="flex items-center gap-3 text-xl">
                   <div className="p-2 bg-gray-500 rounded-lg">
@@ -1013,7 +1078,7 @@ const CreateEventPage = () => {
                   />
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
 
           {/* Submit and Preview Buttons */}
@@ -1041,6 +1106,25 @@ const CreateEventPage = () => {
                 </div>
               </DialogContent>
             </Dialog>
+            
+            <Button 
+              type="button"
+              disabled={isSubmitting || isLoading}
+              className="px-8 py-4 text-lg font-semibold bg-gray-500 hover:bg-gray-600 text-white shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+              onClick={() => handleSubmit((data) => onSubmit({...data, publish: false}))()}
+            >
+              {isSubmitting || isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                  Đang lưu nháp...
+                </>
+              ) : (
+                <>
+                  <Save className="h-5 w-5 mr-3" />
+                  Lưu nháp
+                </>
+              )}
+            </Button>
             
             <Button 
               type="submit" 

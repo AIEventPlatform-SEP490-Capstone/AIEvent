@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useRefundRules } from '../../hooks/useRefundRules';
 import { 
   Card, 
@@ -36,8 +37,19 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { showSuccess, showError } from '../../lib/toastUtils';
+import { AccessDenied } from '../../components/AccessDenied/AccessDenied';
 
 const RefundRulesPage = ({ userRole }) => {
+  const navigate = useNavigate();
+  
+  // Check if user has access to this page
+  const hasAccess = userRole?.toLowerCase() === 'manager' || userRole?.toLowerCase() === 'admin';
+  
+  // If user doesn't have access, show access denied page
+  if (!hasAccess) {
+    return <AccessDenied onBack={() => navigate(-1)} />;
+  }
+
   const {
     refundRules,
     loading,

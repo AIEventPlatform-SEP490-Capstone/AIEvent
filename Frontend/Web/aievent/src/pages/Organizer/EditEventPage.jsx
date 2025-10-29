@@ -48,7 +48,6 @@ const editEventSchema = z.object({
   detailedDescription: z.string().optional(),
   startTime: z.string().min(1, 'Thời gian bắt đầu là bắt buộc'),
   endTime: z.string().min(1, 'Thời gian kết thúc là bắt buộc'),
-  isOnlineEvent: z.boolean().default(false),
   locationName: z.string().optional(),
   address: z.string().optional(),
   city: z.string().optional(),
@@ -66,20 +65,20 @@ const editEventSchema = z.object({
     ruleRefundRequestId: z.string().min(1, 'Quy tắc hoàn tiền là bắt buộc'),
   })).min(1, 'Phải có ít nhất một loại vé')
 }).refine((data) => {
-  if (!data.isOnlineEvent && !data.locationName) {
+  if (!data.locationName) {
     return false;
   }
   return true;
 }, {
-  message: 'Địa điểm là bắt buộc cho sự kiện offline',
+  message: 'Địa điểm là bắt buộc',
   path: ['locationName'],
 }).refine((data) => {
-  if (!data.isOnlineEvent && !data.city) {
+  if (!data.city) {
     return false;
   }
   return true;
 }, {
-  message: 'Thành phố là bắt buộc cho sự kiện offline',
+  message: 'Thành phố là bắt buộc',
   path: ['city'],
 }).refine((data) => {
   const saleStart = new Date(data.saleStartTime);
@@ -108,10 +107,14 @@ const EditEventPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [eventData, setEventData] = useState(null);
   const [selectedImages, setSelectedImages] = useState([]);
+  const [selectedEvidenceImages, setSelectedEvidenceImages] = useState([]);
   const [imagePreview, setImagePreview] = useState([]);
+  const [evidenceImagePreview, setEvidenceImagePreview] = useState([]);
   const [existingImages, setExistingImages] = useState([]);
-  const [removedImages, setRemovedImages] = useState([]); // Track removed images
-  const [removedTickets, setRemovedTickets] = useState([]); // Track removed tickets
+  const [existingEvidenceImages, setExistingEvidenceImages] = useState([]);
+  const [removedImages, setRemovedImages] = useState([]);
+  const [removedEvidenceImages, setRemovedEvidenceImages] = useState([]);
+  const [removedTickets, setRemovedTickets] = useState([]);
 
   // Redux hooks
   const { categories, loading: categoriesLoading } = useCategories();
@@ -138,10 +141,9 @@ const EditEventPage = () => {
       endTime: '',
       locationName: '',
       address: '',
-      city: '', // Add city field
+      city: '',
       linkRef: '',
       eventCategoryId: '',
-      isOnlineEvent: false,
       publish: false,
       saleStartTime: '',
       saleEndTime: '',
@@ -163,7 +165,6 @@ const EditEventPage = () => {
     name: 'ticketDetails',
   });
 
-  const watchIsOnline = watch('isOnlineEvent');
   const watchTicketType = watch('ticketType');
 
   // Set page title and load event data
@@ -208,7 +209,6 @@ const EditEventPage = () => {
           address: event.address || '',
           city: event.city || '',
           eventCategoryId: event.eventCategoryId || event.eventCategory?.eventCategoryId || '',
-          isOnlineEvent: event.isOnlineEvent || false,
           publish: event.publish || false,
           ticketType: String(event.ticketType || 1),
           ticketDetails: event.ticketDetails && event.ticketDetails.length > 0 
@@ -236,6 +236,11 @@ const EditEventPage = () => {
         // Load existing images
         if (event.imgListEvent && event.imgListEvent.length > 0) {
           setExistingImages(event.imgListEvent);
+        }
+
+        // Load existing evidence images
+        if (event.imgEventEvidences && event.imgEventEvidences.length > 0) {
+          setExistingEvidenceImages(event.imgEventEvidences);
         }
 
         // Load existing tags if any
@@ -288,6 +293,19 @@ const EditEventPage = () => {
     setImagePreview(prev => [...prev, ...previews]);
   };
 
+  // Handle evidence image upload
+  const handleEvidenceImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length + existingEvidenceImages.length + selectedEvidenceImages.length > 5) {
+      toast.error('Chỉ được tải lên tối đa 5 hình ảnh bằng chứng');
+      return;
+    }
+
+    setSelectedEvidenceImages(prev => [...prev, ...files]);
+    const previews = files.map(file => URL.createObjectURL(file));
+    setEvidenceImagePreview(prev => [...prev, ...previews]);
+  };
+
   // Remove existing image
   const removeExistingImage = (index) => {
     const imageUrl = existingImages[index];
@@ -302,6 +320,22 @@ const EditEventPage = () => {
     
     setSelectedImages(newImages);
     setImagePreview(newPreviews);
+  };
+
+  // Remove existing evidence image
+  const removeExistingEvidenceImage = (index) => {
+    const imageUrl = existingEvidenceImages[index];
+    setRemovedEvidenceImages(prev => [...prev, imageUrl]);
+    setExistingEvidenceImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Remove new evidence image
+  const removeNewEvidenceImage = (index) => {
+    const newImages = selectedEvidenceImages.filter((_, i) => i !== index);
+    const newPreviews = evidenceImagePreview.filter((_, i) => i !== index);
+    
+    setSelectedEvidenceImages(newImages);
+    setEvidenceImagePreview(newPreviews);
   };
 
   // Add ticket detail
@@ -392,7 +426,6 @@ const EditEventPage = () => {
       endTime: new Date(formData.endTime).toISOString(),
       saleStartTime: new Date(formData.saleStartTime).toISOString(),
       saleEndTime: new Date(formData.saleEndTime).toISOString(),
-      isOnlineEvent: formData.isOnlineEvent || false,
       locationName: formData.locationName || '',
       address: formData.address || '',
       city: formData.city || '',
@@ -401,8 +434,10 @@ const EditEventPage = () => {
       totalTickets: totalTickets,
       ticketType: formData.ticketType && !isNaN(parseInt(formData.ticketType)) ? parseInt(formData.ticketType) : 1,
       publish: formData.publish || false,
-      images: selectedImages, // Only new images
-      removeImageUrls: removedImages, // Images to remove
+      images: selectedImages,
+      evidenceImages: selectedEvidenceImages,
+      removeImageUrls: removedImages,
+      removeEvidenceImageUrls: removedEvidenceImages,
       eventCategoryId: formData.eventCategoryId,
       // Handle tags correctly
       addTagIds: addTagIds,
@@ -418,7 +453,7 @@ const EditEventPage = () => {
         ticketDescription: ticket.ticketDescription || '',
         ruleRefundRequestId: ticket.ruleRefundRequestId,
       })),
-      removeTicketDetailIds: removedTickets, // Tickets to remove
+      removeTicketDetailIds: removedTickets,
     };
 
     // Validate required fields
@@ -832,16 +867,6 @@ const EditEventPage = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label htmlFor="isOnlineEvent" className="text-base font-semibold">Sự kiện trực tuyến?</Label>
-                    <Switch
-                      id="isOnlineEvent"
-                      checked={watchIsOnline}
-                      onCheckedChange={(checked) => setValue('isOnlineEvent', checked)}
-                      className="mt-2"
-                    />
-                  </div>
-
-                  <div>
                     <Label htmlFor="city" className="text-base font-semibold">Thành phố</Label>
                     <Input
                       id="city"
@@ -851,32 +876,28 @@ const EditEventPage = () => {
                     />
                   </div>
 
-                  {!watchIsOnline && (
-                    <div>
-                      <Label htmlFor="locationName" className="text-base font-semibold">Tên địa điểm *</Label>
-                      <Input
-                        id="locationName"
-                        {...register('locationName')}
-                        placeholder="Nhập tên địa điểm"
-                        className="mt-2 h-12 text-base border-2 focus:border-green-500"
-                      />
-                      {errors.locationName && <p className="text-red-500 text-sm mt-1">{errors.locationName.message}</p>}
-                    </div>
-                  )}
+                  <div>
+                    <Label htmlFor="locationName" className="text-base font-semibold">Tên địa điểm *</Label>
+                    <Input
+                      id="locationName"
+                      {...register('locationName')}
+                      placeholder="Nhập tên địa điểm"
+                      className="mt-2 h-12 text-base border-2 focus:border-green-500"
+                    />
+                    {errors.locationName && <p className="text-red-500 text-sm mt-1">{errors.locationName.message}</p>}
+                  </div>
 
-                  {!watchIsOnline && (
-                    <div>
-                      <Label htmlFor="address" className="text-base font-semibold">Địa chỉ *</Label>
-                      <Textarea
-                        id="address"
-                        {...register('address')}
-                        placeholder="Nhập địa chỉ"
-                        rows={3}
-                        className="mt-2 text-base border-2 focus:border-green-500"
-                      />
-                      {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>}
-                    </div>
-                  )}
+                  <div>
+                    <Label htmlFor="address" className="text-base font-semibold">Địa chỉ *</Label>
+                    <Textarea
+                      id="address"
+                      {...register('address')}
+                      placeholder="Nhập địa chỉ"
+                      rows={3}
+                      className="mt-2 text-base border-2 focus:border-green-500"
+                    />
+                    {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>}
+                  </div>
                 </div>
 
                 {/* Display real-time date validation errors */}
@@ -983,8 +1004,95 @@ const EditEventPage = () => {
               </CardContent>
             </Card>
 
-            
-
+            {/* Evidence Images */}
+            <Card className="border-l-4 border-l-indigo-500 shadow-xl bg-white">
+              <CardHeader className="bg-gradient-to-r from-indigo-500/10 to-transparent">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="p-2 bg-indigo-500 rounded-lg">
+                    <Image className="h-5 w-5 text-white" />
+                  </div>
+                  Hình ảnh bằng chứng tổ chức
+                </CardTitle>
+                <CardDescription className="text-base">
+                  Tải lên tối đa 5 hình ảnh bằng chứng tổ chức sự kiện (đã chọn {existingEvidenceImages.length + selectedEvidenceImages.length}/5)
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-8">
+                <div className="space-y-6">
+                  <div className="border-2 border-dashed border-indigo-300 rounded-lg p-8 text-center hover:border-indigo-500 transition-colors">
+                    <Input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleEvidenceImageChange}
+                      className="hidden"
+                      id="evidence-image-upload"
+                    />
+                    <label htmlFor="evidence-image-upload" className="cursor-pointer">
+                      <div className="flex flex-col items-center">
+                        <Image className="h-12 w-12 text-indigo-400 mb-4" />
+                        <p className="text-lg font-semibold text-indigo-600">Chọn hình ảnh bằng chứng</p>
+                        <p className="text-gray-500">PNG, JPG, GIF tối đa 5 file</p>
+                      </div>
+                    </label>
+                  </div>
+                  
+                  {/* Existing Evidence Images Preview */}
+                  {existingEvidenceImages.length > 0 && (
+                    <div>
+                      <Label className="text-base font-semibold mb-2 block">Hình ảnh bằng chứng hiện tại:</Label>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        {existingEvidenceImages.map((img, index) => (
+                          <div key={`existing-evidence-${index}`} className="relative group">
+                            <img
+                              src={img}
+                              alt={`Existing Evidence ${index + 1}`}
+                              className="w-full h-32 object-cover rounded-lg shadow-md"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => removeExistingEvidenceImage(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* New Evidence Images Preview */}
+                  {evidenceImagePreview.length > 0 && (
+                    <div>
+                      <Label className="text-base font-semibold mb-2 block">Hình ảnh bằng chứng mới:</Label>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        {evidenceImagePreview.map((preview, index) => (
+                          <div key={`new-evidence-${index}`} className="relative group">
+                            <img
+                              src={preview}
+                              alt={`Evidence Preview ${index + 1}`}
+                              className="w-full h-32 object-cover rounded-lg shadow-md"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => removeNewEvidenceImage(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Right Column - Sidebar */}

@@ -687,7 +687,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                         <div className="flex items-center text-sm text-muted-foreground">
                           <MapPin className="w-4 h-4 mr-2 text-primary" />
                           <span className="truncate">
-                            {event.isOnlineEvent ? 'Trực tuyến' : (event.locationName || 'Không có địa điểm')}
+                            {event.locationName || 'Không có địa điểm'}
                           </span>
                         </div>
                         <div className="flex items-center text-sm text-muted-foreground">
