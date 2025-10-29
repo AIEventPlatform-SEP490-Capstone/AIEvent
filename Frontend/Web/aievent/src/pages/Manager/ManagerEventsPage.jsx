@@ -8,33 +8,31 @@ import {
   Users, 
   Clock,
   Search,
-  Filter,
   Eye,
-  Edit,
-  Trash2,
-  MoreVertical,
-  Grid3X3,
-  List,
-  TrendingUp,
-  Star,
   CheckCircle,
-  AlertCircle,
   XCircle,
-  BarChart3,
-  Activity,
-  CalendarDays,
-  DollarSign,
-  ThumbsUp,
-  ThumbsDown,
-  X
+  AlertTriangle,
+  MoreHorizontal,
+  Download,
+  TrendingUp,
+  Shield,
+  Plus
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
-import { Select } from '../../components/ui/select';
-import { Separator } from '../../components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Textarea } from '../../components/ui/textarea';
+import { Label } from '../../components/ui/label';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from '../../components/ui/dialog';
 import { useEvents } from '../../hooks/useEvents';
 import { PATH } from '../../routes/path';
 
@@ -54,13 +52,8 @@ const ManagerEventsPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
-  const [viewMode, setViewMode] = useState('list');
-  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
   const [activeTab, setActiveTab] = useState('all'); // For switching between event statuses
-  const [showConfirmModal, setShowConfirmModal] = useState(false); // For showing confirmation modal
-  const [confirmEventData, setConfirmEventData] = useState(null); // Store event data for confirmation
-  const [confirmAction, setConfirmAction] = useState(''); // Store action type (approve/reject)
-  const [rejectReason, setRejectReason] = useState(''); // Store reject reason
+  const [rejectionReason, setRejectionReason] = useState('');
   const pageSize = 12;
 
   // Load events initially and when tab changes
@@ -326,66 +319,43 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
 
   // Handle event approval
   const handleApproveEvent = async (eventId) => {
-    const event = allEvents.find(e => e.eventId === eventId);
-    setConfirmEventData(event);
-    setConfirmAction('approve');
-    setShowConfirmModal(true);
-  };
-
-  // Handle event rejection
-  const handleRejectEvent = async (eventId) => {
-    const event = allEvents.find(e => e.eventId === eventId);
-    setConfirmEventData(event);
-    setConfirmAction('reject');
-    setRejectReason('');
-    setShowConfirmModal(true);
-  };
-
-  // Confirm action handler
-  const handleConfirmAction = async () => {
-    if (!confirmEventData) return;
-
     try {
-      if (confirmAction === 'approve') {
-        const response = await confirmEventAPI(confirmEventData.eventId, {
-          status: ConfirmStatus.Approve
-        });
-        
-        if (response) {
-          toast.success('Sự kiện đã được phê duyệt thành công!');
-        }
-      } else if (confirmAction === 'reject') {
-        if (!rejectReason.trim()) {
-          toast.error('Vui lòng nhập lý do từ chối');
-          return;
-        }
-        
-        const response = await confirmEventAPI(confirmEventData.eventId, {
-          status: ConfirmStatus.Reject,
-          reason: rejectReason
-        });
-        
-        if (response) {
-          toast.success('Sự kiện đã bị từ chối!');
-        }
-      }
+      const response = await confirmEventAPI(eventId, {
+        status: ConfirmStatus.Approve
+      });
       
-      // Close modal and reload events
-      setShowConfirmModal(false);
-      setConfirmEventData(null);
-      setRejectReason('');
-      loadEvents();
+      if (response) {
+        toast.success('Sự kiện đã được phê duyệt thành công!');
+        loadEvents();
+      }
     } catch (error) {
-      console.error('Error processing event:', error);
-      toast.error('Có lỗi xảy ra. Vui lòng thử lại sau.');
+      console.error('Error approving event:', error);
+      toast.error('Có lỗi xảy ra khi phê duyệt sự kiện');
     }
   };
 
-  // Cancel action handler
-  const handleCancelAction = () => {
-    setShowConfirmModal(false);
-    setConfirmEventData(null);
-    setRejectReason('');
+  // Handle event rejection
+  const handleRejectEvent = async (eventId, reason) => {
+    if (!reason.trim()) {
+      toast.error('Vui lòng nhập lý do từ chối');
+      return;
+    }
+    
+    try {
+      const response = await confirmEventAPI(eventId, {
+        status: ConfirmStatus.Reject,
+        reason: reason
+      });
+      
+      if (response) {
+        toast.success('Sự kiện đã bị từ chối!');
+        setRejectionReason('');
+        loadEvents();
+      }
+    } catch (error) {
+      console.error('Error rejecting event:', error);
+      toast.error('Có lỗi xảy ra khi từ chối sự kiện');
+    }
   };
 
   const formatDate = (dateString) => {
@@ -409,13 +379,6 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
     return 'Quyên góp';
   };
 
-  const getTicketTypeBadgeColor = (ticketType) => {
-    // Handle both string enum names and number values
-    if (ticketType === 1 || ticketType === "Free" || ticketType === "free") return 'bg-green-100 text-green-800';
-    if (ticketType === 2 || ticketType === "Paid" || ticketType === "paid") return 'bg-blue-100 text-blue-800';
-    return 'bg-purple-100 text-purple-800';
-  };
-
   const getTabDisplayName = (tab) => {
     switch (tab) {
       case 'all': return 'Tất cả sự kiện';
@@ -434,15 +397,6 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
     if (now < startTime) return 'upcoming';
     if (now >= startTime && now <= endTime) return 'ongoing';
     return 'completed';
-  };
-
-  const getStatusBadge = (status) => {
-    const configs = {
-      upcoming: { label: 'Sắp diễn ra', color: 'bg-blue-100 text-blue-800', icon: Clock },
-      ongoing: { label: 'Đang diễn ra', color: 'bg-green-100 text-green-800', icon: Activity },
-      completed: { label: 'Đã kết thúc', color: 'bg-gray-100 text-gray-800', icon: CheckCircle }
-    };
-    return configs[status] || configs.upcoming;
   };
 
   const getEventStats = () => {
@@ -538,630 +492,464 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
   const endIndex = startIndex + pageSize;
   const paginatedEvents = events.slice(startIndex, endIndex);
 
+  // Get event image
+  const getEventImage = (event) => {
+    if (event.imgListEvent && event.imgListEvent.length > 0) {
+      return event.imgListEvent[0];
+    }
+    return null;
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="px-6 py-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900 mb-1">
-              Quản lý sự kiện
-            </h1>
-            <p className="text-sm text-gray-500">
-              Quản lý tất cả các sự kiện trong hệ thống
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Quản lý sự kiện</h1>
+          <p className="text-muted-foreground">Quản lý và phê duyệt các sự kiện trong hệ thống</p>
+        </div>
+        <Badge variant="secondary" className="px-3 py-1">
+          <Shield className="w-4 h-4 mr-2" />
+          Administrator
+        </Badge>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Chờ duyệt</p>
+                <p className="text-2xl font-bold text-orange-600">{stats.pendingApprovals}</p>
+              </div>
+              <Clock className="w-8 h-8 text-orange-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Đã duyệt</p>
+                <p className="text-2xl font-bold text-green-600">{stats.upcoming + stats.ongoing}</p>
+              </div>
+              <CheckCircle className="w-8 h-8 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Từ chối</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {allEvents.filter(e => e.status === ConfirmStatus.Reject).length}
+                </p>
+              </div>
+              <XCircle className="w-8 h-8 text-red-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Tổng sự kiện</p>
+                <p className="text-2xl font-bold text-foreground">{stats.total}</p>
+              </div>
+              <TrendingUp className="w-8 h-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <Input
+            placeholder="Tìm kiếm sự kiện..."
+            className="pl-10"
+            value={searchTerm}
+            onChange={handleSearchChange}
+          />
+        </div>
+
+        <Select value={filterStatus} onValueChange={handleStatusFilter}>
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue placeholder="Trạng thái" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả trạng thái</SelectItem>
+            <SelectItem value="upcoming">Sắp diễn ra</SelectItem>
+            <SelectItem value="ongoing">Đang diễn ra</SelectItem>
+            <SelectItem value="completed">Đã hoàn thành</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={sortBy} onValueChange={handleSortChange}>
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue placeholder="Sắp xếp theo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest">Mới nhất</SelectItem>
+            <SelectItem value="oldest">Cũ nhất</SelectItem>
+            <SelectItem value="name">Theo tên A-Z</SelectItem>
+            <SelectItem value="startTime">Theo ngày bắt đầu</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Button variant="outline" className="bg-transparent">
+          <Download className="w-4 h-4 mr-2" />
+          Xuất báo cáo
+        </Button>
+      </div>
+
+      {/* Tabs */}
+      <div className="mb-6">
+        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
+          <button
+            onClick={() => {
+              setActiveTab('all');
+              navigate(PATH.MANAGER_EVENTS);
+            }}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              activeTab === 'all'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Tất cả sự kiện
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab(ConfirmStatus.NeedConfirm);
+              navigate(`${PATH.MANAGER_EVENTS}?tab=${ConfirmStatus.NeedConfirm}`);
+            }}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${
+              activeTab === ConfirmStatus.NeedConfirm
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Chờ phê duyệt
+            {stats.pendingApprovals > 0 && (
+              <span className="ml-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {stats.pendingApprovals}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab(ConfirmStatus.Approve);
+              navigate(`${PATH.MANAGER_EVENTS}?tab=${ConfirmStatus.Approve}`);
+            }}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              activeTab === ConfirmStatus.Approve
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Đã phê duyệt
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab(ConfirmStatus.Reject);
+              navigate(`${PATH.MANAGER_EVENTS}?tab=${ConfirmStatus.Reject}`);
+            }}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              activeTab === ConfirmStatus.Reject
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Bị từ chối
+          </button>
+        </div>
+      </div>
+
+      {/* Events List */}
+      {isLoading ? (
+        <div className="flex flex-col justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-gray-500">Đang tải sự kiện...</p>
+        </div>
+      ) : events.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">
+              {allEvents.length === 0 
+                ? 'Chưa có sự kiện nào' 
+                : 'Không có sự kiện'
+              }
+            </h3>
+            <p className="text-gray-500 mb-6">
+              {allEvents.length === 0 
+                ? 'Bắt đầu quản lý sự kiện trong hệ thống!'
+                : `Không có sự kiện nào trong danh mục "${getTabDisplayName(activeTab)}".`
+              }
             </p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {paginatedEvents.map((event) => {
+            const eventImage = getEventImage(event);
+            const eventStatus = 'status' in event ? event.status : null;
 
-        {/* Tab Navigation */}
-        <div className="mb-6">
-          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
-            <button
-              onClick={() => {
-                setActiveTab('all');
-                navigate(PATH.MANAGER_EVENTS);
-              }}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                activeTab === 'all'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Tất cả sự kiện
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab(ConfirmStatus.NeedConfirm);
-                navigate(`${PATH.MANAGER_EVENTS}?tab=${ConfirmStatus.NeedConfirm}`);
-              }}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${
-                activeTab === ConfirmStatus.NeedConfirm
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Cần phê duyệt
-              {stats.pendingApprovals > 0 && (
-                <span className="ml-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {stats.pendingApprovals}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab(ConfirmStatus.Approve);
-                navigate(`${PATH.MANAGER_EVENTS}?tab=${ConfirmStatus.Approve}`);
-              }}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                activeTab === ConfirmStatus.Approve
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Đã phê duyệt
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab(ConfirmStatus.Reject);
-                navigate(`${PATH.MANAGER_EVENTS}?tab=${ConfirmStatus.Reject}`);
-              }}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                activeTab === ConfirmStatus.Reject
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Bị từ chối
-            </button>
-          </div>
-        </div>
+            return (
+              <Card key={event.eventId} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="w-24 h-24 flex-shrink-0">
+                      {eventImage ? (
+                        <img
+                          src={eventImage}
+                          alt={event.title}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
+                          <Calendar className="h-10 w-10 text-blue-400" />
+                        </div>
+                      )}
+                    </div>
 
-        {/* Statistics Cards */}
-        {!isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-            <Card className="bg-white border border-gray-200 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Calendar className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">Tổng sự kiện</p>
-                    <p className="text-xl font-semibold text-gray-900">{stats.total}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-white border border-gray-200 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">Đã xuất bản</p>
-                    <p className="text-xl font-semibold text-gray-900">{stats.upcoming + stats.ongoing}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white border border-gray-200 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <Users className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">Tổng đăng ký</p>
-                    <p className="text-xl font-semibold text-gray-900">39.500</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white border border-gray-200 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <TrendingUp className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">Doanh thu</p>
-                    <p className="text-lg font-semibold text-gray-900">836.5M đ</p>
-                    <p className="text-xs text-gray-400">320,000,000 VND</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white border border-gray-200 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-red-100 rounded-lg">
-                    <XCircle className="h-5 w-5 text-red-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">Hoạt tích</p>
-                    <p className="text-xl font-semibold text-gray-900">221</p>
-                    <p className="text-xs text-gray-400">06,000,000 VND</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white border border-gray-200 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-orange-100 rounded-lg">
-                    <Clock className="h-5 w-5 text-orange-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">Chờ duyệt</p>
-                    <p className="text-xl font-semibold text-gray-900">{stats.pendingApprovals}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Search and Filter Bar */}
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">
-              Tất cả ({allEvents.length}) | Hiển thị ({events.length})
-            </span>
-            {searchTerm && (
-              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                Tìm: "{searchTerm}"
-              </span>
-            )}
-            {filterStatus !== 'all' && (
-              <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded">
-                Lọc: {filterStatus}
-              </span>
-            )}
-            {(searchTerm || filterStatus !== 'all') && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClearFilters}
-                className="text-xs text-blue-600 hover:text-blue-700"
-              >
-                Xóa bộ lọc
-              </Button>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  type="text"
-                  placeholder="Tìm kiếm theo tên, mô tả, địa điểm..."
-                  value={searchTerm}
-                  onChange={handleSearchChange}
-                  className="pl-9 w-80 h-10"
-                />
-              </div>
-              {searchTerm && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSearchTerm('')}
-                  className="h-10 px-2"
-                >
-                  ✕
-                </Button>
-              )}
-            </div>
-            <select
-              value={sortBy}
-              onChange={(e) => handleSortChange(e.target.value)}
-              className="h-10 px-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none bg-white text-sm"
-            >
-              <option value="newest">Mới nhất</option>
-              <option value="oldest">Cũ nhất</option>
-              <option value="name">Theo tên A-Z</option>
-              <option value="startTime">Theo ngày bắt đầu</option>
-            </select>
-            <Button 
-              variant="outline" 
-              className="h-10 px-3"
-              onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
-            >
-              <Filter className="h-4 w-4 mr-1" />
-              Bộ lọc nâng cao
-            </Button>
-            <select
-              value={filterStatus}
-              onChange={(e) => handleStatusFilter(e.target.value)}
-              className="h-10 px-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none bg-white text-sm"
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="upcoming">Sắp diễn ra</option>
-              <option value="ongoing">Đang diễn ra</option>
-              <option value="completed">Đã hoàn thành</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Advanced Filter Panel */}
-        {showAdvancedFilter && (
-          <Card className="mb-6 p-4 border border-gray-200">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Trạng thái</label>
-                <div className="space-y-2">
-                  {[
-                    { value: 'all', label: 'Tất cả' },
-                    { value: 'upcoming', label: 'Sắp diễn ra' },
-                    { value: 'ongoing', label: 'Đang diễn ra' },
-                    { value: 'completed', label: 'Đã hoàn thành' }
-                  ].map((option) => (
-                    <label key={option.value} className="flex items-center">
-                      <input
-                        type="radio"
-                        name="status"
-                        value={option.value}
-                        checked={filterStatus === option.value}
-                        onChange={(e) => handleStatusFilter(e.target.value)}
-                        className="mr-2"
-                      />
-                      <span className="text-sm">{option.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Loại vé</label>
-                <div className="space-y-2">
-                  <label className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
-                    <span className="text-sm">Miễn phí</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
-                    <span className="text-sm">Có phí</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
-                    <span className="text-sm">Quyên góp</span>
-                  </label>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Hình thức</label>
-                <div className="space-y-2">
-                  <label className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
-                    <span className="text-sm">Trực tuyến</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
-                    <span className="text-sm">Tại địa điểm</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="flex items-end">
-                <Button
-                  variant="outline"
-                  onClick={handleClearFilters}
-                  className="w-full"
-                >
-                  Đặt lại bộ lọc
-                </Button>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* Results Summary */}
-        {!isLoading && events.length > 0 && (
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-sm text-gray-600">
-              Hiển thị {startIndex + 1} - {Math.min(endIndex, events.length)} của {events.length} sự kiện
-              {searchTerm && (
-                <span className="ml-2 text-blue-600">
-                  cho "{searchTerm}"
-                </span>
-              )}
-            </div>
-            <div className="text-sm text-gray-500">
-              Trang {currentPage} / {totalPages}
-            </div>
-          </div>
-        )}
-
-        {/* Events Table */}
-        {isLoading ? (
-          <div className="flex flex-col justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-500">Đang tải sự kiện...</p>
-          </div>
-        ) : events.length === 0 ? (
-          <Card className="text-center py-20">
-            <CardContent>
-              <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                {allEvents.length === 0 
-                  ? 'Chưa có sự kiện nào' 
-                  : 'Không có sự kiện'
-                }
-              </h3>
-              <p className="text-gray-500 mb-6">
-                {allEvents.length === 0 
-                  ? 'Bắt đầu quản lý sự kiện trong hệ thống!'
-                  : `Không có sự kiện nào trong danh mục "${getTabDisplayName(activeTab)}".`
-                }
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="bg-white border border-gray-200 shadow-sm">
-            <CardContent className="p-0">
-              {/* Dynamic Events */}
-              {paginatedEvents.map((event) => {
-                const status = getEventStatus(event);
-                const statusConfig = getStatusBadge(status);
-                const StatusIcon = statusConfig.icon;
-
-                return (
-                  <div key={event.eventId} className="border-b border-gray-100 p-6 last:border-b-0 mb-6 rounded-lg shadow-sm">
-                    <div className="flex flex-col md:flex-row items-start gap-4">
-                      {/* Event Image - Larger and more prominent */}
-                      <div className="w-full md:w-48 h-32 flex-shrink-0">
-                        {event.imgListEvent && event.imgListEvent.length > 0 ? (
-                          <img
-                            src={event.imgListEvent[0]}
-                            alt={event.title}
-                            className="w-full h-full object-cover rounded-lg"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
-                            <Calendar className="h-8 w-8 text-blue-400" />
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Event Details */}
-                      <div className="flex-1 w-full">
-                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900 mb-1 hover:text-blue-600 cursor-pointer text-lg"
-                                onClick={() => handleViewEvent(event.eventId)}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 
+                              className="text-lg font-semibold text-balance hover:text-blue-600 cursor-pointer"
+                              onClick={() => handleViewEvent(event.eventId)}
+                            >
                               {event.title}
                             </h3>
-                            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-2">
-                              <span className="flex items-center gap-1">
-                                <Calendar className="h-4 w-4" />
-                                {formatDate(event.startTime).split(' ')[0]}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-4 w-4" />
-                                {formatDate(event.startTime).split(' ')[1]} - {formatDate(event.endTime).split(' ')[1]}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <MapPin className="h-4 w-4" />
-                                {event.isOnlineEvent ? 'Trực tuyến' : (event.locationName || 'Không có địa điểm')}
-                              </span>
-                              {/* Display ticket info if available */}
-                              {('totalPerson' in event) && (
-                                <span className="flex items-center gap-1">
-                                  <Users className="h-4 w-4" />
-                                  {event.totalPersonJoin || 0}/{event.totalPerson}
-                                </span>
-                              )}
-                              {/* Display ticket price if available */}
-                              {('price' in event) && (
-                                <span className="flex items-center gap-1">
-                                  <DollarSign className="h-4 w-4" />
-                                  {/* Handle both string and number ticketType values */}
-                                  {(event.ticketType === 1 || event.ticketType === "Free" || event.ticketType === "free") ? 'Miễn phí' : `${event.price?.toLocaleString('vi-VN')} đ`}
-                                </span>
-                              )}
-                              {/* Fallback for events without ticket info (EventsRawResponse) */}
-                              {!('price' in event) && !('totalPerson' in event) && (
-                                <span className="flex items-center gap-1">
-                                  <DollarSign className="h-4 w-4" />
-                                  {getTicketTypeLabel(event.ticketType)}
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2 mt-2">
-                              <Badge className={statusConfig.color}>
-                                <StatusIcon className="h-3 w-3 mr-1" />
-                                {statusConfig.label}
+                            {eventStatus && (
+                              <Badge 
+                                variant="outline" 
+                                className={
+                                  eventStatus === ConfirmStatus.Approve 
+                                    ? 'text-green-600 border-green-200 bg-green-50' 
+                                    : eventStatus === ConfirmStatus.Reject 
+                                      ? 'text-red-600 border-red-200 bg-red-50' 
+                                      : 'text-orange-600 border-orange-200 bg-orange-50'
+                                }
+                              >
+                                {eventStatus === ConfirmStatus.Approve && <CheckCircle className="w-3 h-3 mr-1" />}
+                                {eventStatus === ConfirmStatus.Reject && <XCircle className="w-3 h-3 mr-1" />}
+                                {eventStatus === ConfirmStatus.NeedConfirm && <Clock className="w-3 h-3 mr-1" />}
+                                {ConfirmStatusDisplay[eventStatus] || eventStatus}
                               </Badge>
-                              <Badge className={getTicketTypeBadgeColor(event.ticketType)}>
-                                {getTicketTypeLabel(event.ticketType)}
-                              </Badge>
-                              {event.isOnlineEvent && (
-                                <Badge variant="outline">Trực tuyến</Badge>
-                              )}
-                              {event.eventCategoryName && (
-                                <Badge variant="outline">{event.eventCategoryName}</Badge>
-                              )}
-                              {/* Display approval status - only for EventsResponse */}
-                              {('status' in event) && event.status && (
-                                <Badge 
-                                  variant="outline" 
-                                  className={
-                                    event.status === ConfirmStatus.Approve ? 'bg-green-100 text-green-800 border-green-200' :
-                                    event.status === ConfirmStatus.Reject ? 'bg-red-100 text-red-800 border-red-200' :
-                                    'bg-yellow-100 text-yellow-800 border-yellow-200'
-                                  }
-                                >
-                                  {ConfirmStatusDisplay[event.status] || event.status}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {/* Action Buttons */}
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="sm" onClick={() => handleViewEvent(event.eventId)}>
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleEditEvent(event.eventId)}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            {/* Show approval buttons for events that need approval, regardless of current tab */}
-                            {('status' in event) && event.status === ConfirmStatus.NeedConfirm && (
-                              <>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  onClick={() => handleApproveEvent(event.eventId)}
-                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                                >
-                                  Duyệt
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  onClick={() => handleRejectEvent(event.eventId)}
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                >
-                                  Từ chối
-                                </Button>
-                              </>
                             )}
-                            <Button variant="ghost" size="sm" onClick={() => handleDeleteEvent(event.eventId)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
                           </div>
                         </div>
-                        
-                        {/* Statistics in a more compact format */}
-                        <div className="grid grid-cols-3 gap-4 mt-4 pt-3 border-t border-gray-100">
-                          <div className="text-center">
-                            <p className="text-xs text-gray-500 mb-1">Lượt xem</p>
-                            <p className="text-base font-semibold">0</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-xs text-gray-500 mb-1">Đăng ký</p>
-                            <p className="text-base font-semibold">
-                              {('totalPersonJoin' in event) ? event.totalPersonJoin : 0}
-                            </p>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-xs text-gray-500 mb-1">Giá vé</p>
-                            <p className="text-base font-semibold">
-                              {'price' in event 
-                                ? ((event.ticketType === 1 || event.ticketType === "Free" || event.ticketType === "free") ? 'Miễn phí' : `${event.price?.toLocaleString('vi-VN')} đ`)
-                                : getTicketTypeLabel(event.ticketType)}
-                            </p>
-                          </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Calendar className="w-4 h-4 mr-2 text-primary" />
+                          <span>
+                            {formatDate(event.startTime).split(' ')[0]} • {formatDate(event.startTime).split(' ')[1]}
+                          </span>
+                        </div>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <MapPin className="w-4 h-4 mr-2 text-primary" />
+                          <span className="truncate">
+                            {event.locationName || 'Không có địa điểm'}
+                          </span>
+                        </div>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Users className="w-4 h-4 mr-2 text-primary" />
+                          <span>
+                            {('totalPersonJoin' in event) ? event.totalPersonJoin : (event.soldQuantity || 0)}/
+                            {('totalPerson' in event) ? event.totalPerson : (event.totalTickets || 0)} người
+                          </span>
+                        </div>
+                      </div>
+
+                      {eventStatus === ConfirmStatus.Reject && event.rejectReason && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                          <p className="text-red-800 text-sm">
+                            <strong>Lý do từ chối:</strong> {event.rejectReason}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Event category and ticket type badges */}
+                      <div className="flex items-center gap-2 mb-4">
+                        {event.eventCategoryName && (
+                          <Badge variant="outline" className="text-xs">
+                            {event.eventCategoryName}
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="text-xs">
+                          {getTicketTypeLabel(event.ticketType)}
+                        </Badge>
+                      </div>
+
+                      {/* Event Metrics */}
+                      <div className="grid grid-cols-2 md:grid-cols-6 gap-2 mb-4">
+                        <div className="flex flex-col items-center p-2 bg-gray-50 rounded">
+                          <span className="text-xs text-muted-foreground">Lượt xem</span>
+                          <span className="font-semibold">
+                            {event.viewCount || 0}
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-center p-2 bg-gray-50 rounded">
+                          <span className="text-xs text-muted-foreground">Đăng ký</span>
+                          <span className="font-semibold">
+                            {('totalPersonJoin' in event) ? event.totalPersonJoin : (event.soldQuantity || 0)}
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-center p-2 bg-gray-50 rounded">
+                          <span className="text-xs text-muted-foreground">Doanh thu</span>
+                          <span className="font-semibold">
+                            {event.revenue ? `${event.revenue.toLocaleString()}đ` : '0đ'}
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-center p-2 bg-gray-50 rounded">
+                          <span className="text-xs text-muted-foreground">Hoàn tiền</span>
+                          <span className="font-semibold">
+                            {event.refundCount || 0}
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-center p-2 bg-gray-50 rounded">
+                          <span className="text-xs text-muted-foreground">Đánh giá</span>
+                          <span className="font-semibold">
+                            {event.rating ? `${event.rating.toFixed(1)}/5` : 'Chưa có'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleViewEvent(event.eventId)}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            Xem chi tiết
+                          </Button>
+
+                          {eventStatus === ConfirmStatus.NeedConfirm && (
+                            <>
+                              <Button
+                                size="sm"
+                                onClick={() => handleApproveEvent(event.eventId)}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                Duyệt
+                              </Button>
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="bg-red-600 hover:bg-red-700 text-white border-red-600"
+                                  >
+                                    <XCircle className="w-4 h-4 mr-2" />
+                                    Từ chối
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                  <DialogHeader>
+                                    <DialogTitle>Từ chối sự kiện: {event.title}</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4">
+                                    <div>
+                                      <Label htmlFor="reason">Lý do từ chối</Label>
+                                      <Textarea
+                                        id="reason"
+                                        placeholder="Nhập lý do từ chối sự kiện..."
+                                        value={rejectionReason}
+                                        onChange={(e) => setRejectionReason(e.target.value)}
+                                        rows={4}
+                                      />
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        variant="outline"
+                                        className="flex-1 bg-transparent"
+                                        onClick={() => setRejectionReason('')}
+                                      >
+                                        Hủy
+                                      </Button>
+                                      <Button
+                                        variant="destructive"
+                                        className="flex-1"
+                                        onClick={() => handleRejectEvent(event.eventId, rejectionReason)}
+                                        disabled={!rejectionReason.trim()}
+                                      >
+                                        Xác nhận từ chối
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                            </>
+                          )}
+
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="bg-transparent"
+                            onClick={() => handleDeleteEvent(event.eventId)}
+                          >
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
                     </div>
                   </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-        )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
-        {/* Pagination */}
-        {!isLoading && events.length > 0 && totalPages > 1 && (
-          <div className="flex justify-center gap-2 mt-8">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-            >
-              Trước
-            </Button>
-            <div className="flex items-center gap-2">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <Button
-                  key={page}
-                  variant={currentPage === page ? 'default' : 'outline'}
-                  onClick={() => setCurrentPage(page)}
-                  className={currentPage === page ? 'bg-blue-600' : ''}
-                >
-                  {page}
-                </Button>
-              ))}
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-            >
-              Sau
-            </Button>
+      {/* Pagination */}
+      {!isLoading && events.length > 0 && totalPages > 1 && (
+        <div className="flex justify-center gap-2 mt-8">
+          <Button
+            variant="outline"
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+          >
+            Trước
+          </Button>
+          <div className="flex items-center gap-2">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <Button
+                key={page}
+                variant={currentPage === page ? 'default' : 'outline'}
+                onClick={() => setCurrentPage(page)}
+                className={currentPage === page ? 'bg-blue-600' : ''}
+              >
+                {page}
+              </Button>
+            ))}
           </div>
-        )}
-
-        {/* Confirmation Modal */}
-        {showConfirmModal && confirmEventData && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full border border-gray-200">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {confirmAction === 'approve' ? 'Xác nhận duyệt sự kiện' : 'Từ chối sự kiện'}
-                  </h3>
-                  <button
-                    onClick={handleCancelAction}
-                    className="text-gray-400 hover:text-gray-500"
-                  >
-                    <X className="h-6 w-6" />
-                  </button>
-                </div>
-                
-                <div className="mb-6">
-                  <p className="text-gray-700 mb-2">
-                    <span className="font-medium">Sự kiện:</span> {confirmEventData.title}
-                  </p>
-                  
-                  {confirmAction === 'approve' ? (
-                    <p className="text-gray-600">
-                      Bạn có chắc chắn muốn <span className="font-semibold text-green-600">duyệt</span> sự kiện này không?
-                    </p>
-                  ) : (
-                    <>
-                      <p className="text-gray-600 mb-4">
-                        Vui lòng nhập lý do từ chối sự kiện:
-                      </p>
-                      <textarea
-                        value={rejectReason}
-                        onChange={(e) => setRejectReason(e.target.value)}
-                        placeholder="Nhập lý do từ chối..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        rows="4"
-                      />
-                    </>
-                  )}
-                </div>
-                
-                <div className="flex justify-end gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={handleCancelAction}
-                  >
-                    Hủy
-                  </Button>
-                  <Button
-                    onClick={handleConfirmAction}
-                    className={confirmAction === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
-                    disabled={confirmAction === 'reject' && !rejectReason.trim()}
-                  >
-                    {confirmAction === 'approve' ? 'Duyệt' : 'Từ chối'}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+          <Button
+            variant="outline"
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Sau
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

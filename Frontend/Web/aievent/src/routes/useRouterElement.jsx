@@ -197,10 +197,6 @@ export default function useRouterElement() {
         { path: "analytics/:id", element: <div>Organizer Analytics Page</div> },
         { path: "checkin/:id", element: <div>Organizer Check-in Page</div> },
         { path: "tags", element: <TagManagementPage userRole="organizer" /> },
-        {
-          path: "refund-rules",
-          element: <RefundRulesPage userRole="organizer" />,
-        },
       ],
     },
     {

@@ -316,20 +316,6 @@ Nhấn OK để xác nhận xóa.`;
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleShareEvent}>
-              <Share2 className="h-4 w-4 mr-1" />
-              Chia sẻ
-            </Button>
-            <Button variant="outline" onClick={handleEditEvent}>
-              <Edit className="h-4 w-4 mr-1" />
-              Chỉnh sửa
-            </Button>
-            <Button variant="outline" onClick={handleDeleteEvent} className="text-red-600 hover:text-red-700">
-              <Trash2 className="h-4 w-4 mr-1" />
-              Xóa
-            </Button>
-          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -351,6 +337,30 @@ Nhấn OK để xác nhận xóa.`;
                         key={index}
                         src={img}
                         alt={`${event.title} - ${index + 1}`}
+                        className="w-full h-64 object-cover rounded-lg shadow-md"
+                      />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Evidence Image Gallery */}
+            {event.imgEventEvidences && event.imgEventEvidences.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ImageIcon className="h-5 w-5" />
+                    Hình ảnh bằng chứng tổ chức
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {event.imgEventEvidences.map((img, index) => (
+                      <img
+                        key={index}
+                        src={img}
+                        alt={`${event.title} - Evidence ${index + 1}`}
                         className="w-full h-64 object-cover rounded-lg shadow-md"
                       />
                     ))}

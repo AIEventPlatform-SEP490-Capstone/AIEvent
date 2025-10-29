@@ -57,9 +57,6 @@ export const eventAPI = {
     formData.append('Publish', eventData.publish || false);
     
     // Optional fields
-    if (eventData.isOnlineEvent !== undefined) {
-      formData.append('IsOnlineEvent', eventData.isOnlineEvent);
-    }
     if (eventData.locationName) {
       formData.append('LocationName', eventData.locationName);
     }
@@ -69,8 +66,9 @@ export const eventAPI = {
     if (eventData.linkRef) {
       formData.append('LinkRef', eventData.linkRef);
     }
-    // Always include City field, even if empty
-    formData.append('City', eventData.city || '');
+    if (eventData.city) {
+      formData.append('City', eventData.city);
+    }
     if (eventData.address) {
       formData.append('Address', eventData.address);
     }
@@ -94,6 +92,13 @@ export const eventAPI = {
     if (eventData.images && eventData.images.length > 0) {
       eventData.images.forEach((image, index) => {
         formData.append(`ImgListEvent`, image);
+      });
+    }
+
+    // Add evidence images
+    if (eventData.evidenceImages && eventData.evidenceImages.length > 0) {
+      eventData.evidenceImages.forEach((image, index) => {
+        formData.append(`ImgListEvidences`, image);
       });
     }
 
@@ -153,9 +158,6 @@ export const eventAPI = {
     formData.append('Publish', eventData.publish || false);
     
     // Optional fields
-    if (eventData.isOnlineEvent !== undefined) {
-      formData.append('IsOnlineEvent', eventData.isOnlineEvent);
-    }
     if (eventData.locationName) {
       formData.append('LocationName', eventData.locationName);
     }
@@ -194,10 +196,24 @@ export const eventAPI = {
       });
     }
 
+    // Add new evidence images only (not existing image URLs)
+    if (eventData.evidenceImages && eventData.evidenceImages.length > 0) {
+      eventData.evidenceImages.forEach((image) => {
+        formData.append('ImgListEvidences', image);
+      });
+    }
+
     // Add image URLs to remove
     if (eventData.removeImageUrls && eventData.removeImageUrls.length > 0) {
       eventData.removeImageUrls.forEach((imageUrl) => {
         formData.append('RemoveImageUrls', imageUrl);
+      });
+    }
+
+    // Add evidence image URLs to remove
+    if (eventData.removeEvidenceImageUrls && eventData.removeEvidenceImageUrls.length > 0) {
+      eventData.removeEvidenceImageUrls.forEach((imageUrl) => {
+        formData.append('RemoveImageEvidenceUrls', imageUrl);
       });
     }
 
