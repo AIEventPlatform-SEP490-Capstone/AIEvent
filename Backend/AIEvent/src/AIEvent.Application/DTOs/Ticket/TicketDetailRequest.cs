@@ -19,12 +19,6 @@ namespace AIEvent.Application.DTOs.Ticket
 
         public string? TicketDescription { get; set; }
 
-        public string RuleRefundRequestId { get; set; } = string.Empty; 
-        
-        [Range(1, int.MaxValue, ErrorMessage = "MinPurchaseQuantity must be at least 1")]
-        public int MinPurchaseQuantity { get; set; } = 1; 
-
-        [Range(1, int.MaxValue, ErrorMessage = "MaxPurchaseQuantity must be at least 1")]
-        public int MaxPurchaseQuantity { get; set; } = 10;
+        public string RuleRefundRequestId { get; set; } = string.Empty;  
     }
 }

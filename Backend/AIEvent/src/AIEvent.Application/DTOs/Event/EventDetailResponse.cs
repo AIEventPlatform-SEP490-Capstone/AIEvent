@@ -12,8 +12,7 @@ namespace AIEvent.Application.DTOs.Event
         public required string Title { get; set; }
         public required string Description { get; set; }
         public required DateTime StartTime { get; set; }
-        public required DateTime EndTime { get; set; }
-        public bool? isOnlineEvent { get; set; }
+        public required DateTime EndTime { get; set; } 
         public string? LocationName { get; set; }
         public string? DetailedDescription { get; set; }
         public int TotalTickets { get; set; }
