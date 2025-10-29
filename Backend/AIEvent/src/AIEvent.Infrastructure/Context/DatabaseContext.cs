@@ -299,13 +299,6 @@ namespace AIEvent.Infrastructure.Context
             });
 
             // ----------------- RefundRuleDetail -----------------
-            builder.Entity<RefundRule>(entity =>
-            {
-                entity.HasIndex(rd => rd.IsSystem).HasDatabaseName("IX_RefundRule_IsSystem");
-
-            });
-
-            // ----------------- RefundRuleDetail -----------------
             builder.Entity<RefundRuleDetail>(entity =>
             {
                 entity.HasOne(d => d.RefundRule)

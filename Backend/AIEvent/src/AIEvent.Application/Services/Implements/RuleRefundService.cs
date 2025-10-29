@@ -25,7 +25,7 @@ namespace AIEvent.Application.Services.Implements
             _mapper = mapper;
         }
 
-        public async Task<Result> CreateRuleAsync(Guid userId, CreateRuleRefundRequest request)
+        public async Task<Result> CreateRuleAsync(CreateRuleRefundRequest request)
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
@@ -43,68 +43,38 @@ namespace AIEvent.Application.Services.Implements
                     return ErrorResponse.FailureResult(
                         $"MinDays ({invalidDetail.MinDaysBeforeEvent}) cannot be greater than MaxDays ({invalidDetail.MaxDaysBeforeEvent})",
                         ErrorCodes.InvalidInput);
-
-                var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
-                if (user == null || !user.IsActive || user.DeletedAt.HasValue)
-                    return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
-
-                var role = await _unitOfWork.RoleRepository.GetByIdAsync(user.RoleId, true);
-                if (role == null || role.IsDeleted)
-                    return ErrorResponse.FailureResult("Role not found", ErrorCodes.NotFound);
-
+                  
                 var rule = _mapper.Map<RefundRule>(request);
                 if (rule == null)
                     return ErrorResponse.FailureResult("Failed to map refund rule", ErrorCodes.InternalServerError);
 
-                if (role.Name.Equals("Admin") || role.Name.Equals("Manager"))
-                    rule.IsSystem = true;
                 await _unitOfWork.RefundRuleRepository.AddAsync(rule);
                 return Result.Success();
             });
         }
 
-        public async Task<Result> DeleteRuleAsync(Guid userId, Guid ruleId)
+        public async Task<Result> DeleteRuleAsync(Guid ruleId)
         {
-            if (userId == Guid.Empty || ruleId == Guid.Empty)
-                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
-
-            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
-            if (user == null || !user.IsActive || user.DeletedAt.HasValue)
-                return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
-
-            var role = await _unitOfWork.RoleRepository.GetByIdAsync(user.RoleId, true);
-            if (role == null)
-                return ErrorResponse.FailureResult("Role not found", ErrorCodes.NotFound);
+            if (ruleId == Guid.Empty)
+                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput); 
             var rules = await _unitOfWork.RefundRuleRepository.GetByIdAsync(ruleId, true);
 
             if (rules == null || rules.DeletedAt.HasValue)
-                return ErrorResponse.FailureResult("Rule not found or inactive", ErrorCodes.InvalidInput);
-            if (rules.IsSystem && !role!.Name.Equals("Admin") && !role.Name.Equals("Manager"))
-                return ErrorResponse.FailureResult("System rule cannot be modified by user", ErrorCodes.PermissionDenied);
-            if (!role!.Name.Equals("Admin") && !role.Name.Equals("Manager") && rules.CreatedBy != userId.ToString())
-                return ErrorResponse.FailureResult("You can only modify your own rules", ErrorCodes.PermissionDenied);
+                return ErrorResponse.FailureResult("Rule not found or inactive", ErrorCodes.InvalidInput); 
 
             await _unitOfWork.RefundRuleRepository.DeleteAsync(rules);
             await _unitOfWork.SaveChangesAsync();
             return Result.Success();
         }
 
-        public async Task<Result<BasePaginated<RuleRefundResponse>>> GetRuleRefundAsync(Guid userId, int pageNumber, int pageSize)
+        public async Task<Result<BasePaginated<RuleRefundResponse>>> GetRuleRefundAsync(int pageNumber, int pageSize)
         {
             IQueryable<RefundRule> ruleQuery = _unitOfWork.RefundRuleRepository
                 .Query()
                 .AsNoTracking()
                 .Where(r => !r.DeletedAt.HasValue)
                 .OrderByDescending(r => r.CreatedAt);
-            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
-            if (user == null || !user.IsActive || user.DeletedAt.HasValue)
-                return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
-            var role = await _unitOfWork.RoleRepository.GetByIdAsync(user.RoleId, true);
-            if (role == null)
-                return ErrorResponse.FailureResult("Role not found", ErrorCodes.NotFound);
-            if (!role.Name.Equals("Admin"))
-                ruleQuery = ruleQuery.Where(r => r.CreatedBy == userId.ToString() || r.IsSystem == true);
-
+             
             int totalCount = await ruleQuery.CountAsync();
 
             var result = await ruleQuery
@@ -115,10 +85,7 @@ namespace AIEvent.Application.Services.Implements
                 {
                     RuleRefundId = p.Id,
                     RuleName = p.RuleName,
-                    RuleDescription = p.RuleDescription,
-                    CustomAt = p.UpdatedAt,
-                    IsCustom = !p.IsSystem,
-                    CustomBy = p.UpdatedBy ?? p.CreatedBy,
+                    RuleDescription = p.RuleDescription, 
                     RuleRefundDetails = p.RefundRuleDetails
                                        .Select(rd => new RuleRefundDetailResponse
                                        {
@@ -134,44 +101,34 @@ namespace AIEvent.Application.Services.Implements
             return new BasePaginated<RuleRefundResponse>(result, totalCount, pageNumber, pageSize);
         }
 
-        public async Task<Result> UpdateRuleAsync(Guid userId, Guid ruleRefundId, UpdateRuleRefundRequest request)
+        public async Task<Result> UpdateRuleAsync(Guid ruleRefundId, UpdateRuleRefundRequest request)
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-                if (userId == Guid.Empty || ruleRefundId == Guid.Empty)
+                if (ruleRefundId == Guid.Empty)
                     return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
                 
                 var validationResult = ValidationHelper.ValidateModel(request);
                 if (!validationResult.IsSuccess)
                     return validationResult;
-                var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
-                if (user == null || !user.IsActive || user.DeletedAt.HasValue)
-                    return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
-                var role = await _unitOfWork.RoleRepository.GetByIdAsync(user.RoleId, true);
-                if(role == null)
-                    return ErrorResponse.FailureResult("Role not found", ErrorCodes.NotFound);
+                
                 var ruleRefund = await _unitOfWork.RefundRuleRepository
                                                     .Query()
                                                     .Include(r => r.RefundRuleDetails)
                                                     .FirstOrDefaultAsync(r => r.Id == ruleRefundId);
                 if (ruleRefund == null)
-                    return ErrorResponse.FailureResult("Rule not found", ErrorCodes.InvalidInput);
-                if (ruleRefund.IsSystem && !role.Name.Equals("Admin") && !role.Name.Equals("Manager"))
-                    return ErrorResponse.FailureResult("System rule cannot be modified by user", ErrorCodes.PermissionDenied);
-                if (!role.Name.Equals("Admin") && !role.Name.Equals("Manager") && ruleRefund.CreatedBy != userId.ToString())
-                    return ErrorResponse.FailureResult("You can only modify your own rules", ErrorCodes.PermissionDenied);
-
+                    return ErrorResponse.FailureResult("Rule not found", ErrorCodes.InvalidInput); 
                 _mapper.Map(request, ruleRefund);
                 await _unitOfWork.RefundRuleRepository.UpdateAsync(ruleRefund);
                 return Result.Success();
             });
         }
 
-        public async Task<Result> UpdateRuleDetailAsync(Guid userId, Guid ruleRefundDetailId, UpdateRuleRefundDetailRequest request)
+        public async Task<Result> UpdateRuleDetailAsync(Guid ruleRefundDetailId, UpdateRuleRefundDetailRequest request)
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-                if (userId == Guid.Empty || ruleRefundDetailId == Guid.Empty)
+                if (ruleRefundDetailId == Guid.Empty)
                     return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
                 
                 var validationResult = ValidationHelper.ValidateModel(request);
@@ -181,20 +138,12 @@ namespace AIEvent.Application.Services.Implements
                     return ErrorResponse.FailureResult(
                         $"Invalid rule detail: MinDays ({request.MinDaysBeforeEvent}) cannot be greater than MaxDays ({request.MaxDaysBeforeEvent})",
                         ErrorCodes.InvalidInput);
-                var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
-                if (user == null || !user.IsActive || user.DeletedAt.HasValue)
-                    return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
-                var role = await _unitOfWork.RoleRepository.GetByIdAsync(user.RoleId, true);
-                if (role == null)
-                    return ErrorResponse.FailureResult("Role not found", ErrorCodes.NotFound);
-
+                
                 var ruleRefund = await _unitOfWork.RefundRuleDetailRepository
                                                     .Query()
                                                     .FirstOrDefaultAsync(r => r.Id == ruleRefundDetailId);
                 if (ruleRefund == null)
-                    return ErrorResponse.FailureResult("Rule detail not found", ErrorCodes.InvalidInput);
-                if (!role.Name.Equals("Admin") && !role.Name.Equals("Manager") && ruleRefund.CreatedBy != userId.ToString())
-                    return ErrorResponse.FailureResult("You can only modify your own rules detail", ErrorCodes.PermissionDenied);
+                    return ErrorResponse.FailureResult("Rule detail not found", ErrorCodes.InvalidInput); 
 
                 _mapper.Map(request, ruleRefund);
                 await _unitOfWork.RefundRuleDetailRepository.UpdateAsync(ruleRefund);
@@ -202,36 +151,26 @@ namespace AIEvent.Application.Services.Implements
             });
         }
 
-        public async Task<Result> DeleteRuleDetailAsync(Guid userId, Guid ruleRefundDetailId)
+        public async Task<Result> DeleteRuleDetailAsync(Guid ruleRefundDetailId)
         {
-            if (userId == Guid.Empty || ruleRefundDetailId == Guid.Empty)
-                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
-            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
-            if (user == null || !user.IsActive || user.DeletedAt.HasValue)
-                return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
-            var role = await _unitOfWork.RoleRepository.GetByIdAsync(user.RoleId, true);
-            if (role == null)
-                return ErrorResponse.FailureResult("Role not found", ErrorCodes.NotFound);
-
+            if (ruleRefundDetailId == Guid.Empty)
+                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput); 
             var rules = await _unitOfWork.RefundRuleDetailRepository
                                         .Query()
                                         .FirstOrDefaultAsync(rd => rd.Id == ruleRefundDetailId);
 
             if (rules == null || rules.DeletedAt.HasValue)
-                return ErrorResponse.FailureResult("Rule detail not found or inactive", ErrorCodes.InvalidInput);
-            if (!role.Name.Equals("Admin") && !role.Name.Equals("Manager") && rules.CreatedBy != userId.ToString())
-                return ErrorResponse.FailureResult("You can only modify your own rules detail", ErrorCodes.PermissionDenied);
-
+                return ErrorResponse.FailureResult("Rule detail not found or inactive", ErrorCodes.InvalidInput); 
             await _unitOfWork.RefundRuleDetailRepository.DeleteAsync(rules);
             await _unitOfWork.SaveChangesAsync();
             return Result.Success();
         }
 
-        public async Task<Result> CreateRuleDetailAsync(Guid userId, Guid ruleRefundId, RuleRefundDetailRequest request)
+        public async Task<Result> CreateRuleDetailAsync(Guid ruleRefundId, RuleRefundDetailRequest request)
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-                if (userId == Guid.Empty || ruleRefundId == Guid.Empty)
+                if (ruleRefundId == Guid.Empty)
                     return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
                 
                 var validationResult = ValidationHelper.ValidateModel(request);
@@ -243,17 +182,7 @@ namespace AIEvent.Application.Services.Implements
                         ErrorCodes.InvalidInput);
                 var rule = await _unitOfWork.RefundRuleRepository.GetByIdAsync(ruleRefundId, true);
                 if (rule == null)
-                    return ErrorResponse.FailureResult("Rule not found", ErrorCodes.InvalidInput);
-
-                var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
-                if (user == null || !user.IsActive || user.DeletedAt.HasValue)
-                    return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
-                var role = await _unitOfWork.RoleRepository.GetByIdAsync(user.RoleId, true);
-                if (role == null)
-                    return ErrorResponse.FailureResult("Role not found", ErrorCodes.NotFound);
-                
-                if (!role.Name.Equals("Admin") && !role.Name.Equals("Manager"))
-                    return ErrorResponse.FailureResult("System rule detail cannot be add by user", ErrorCodes.PermissionDenied);
+                    return ErrorResponse.FailureResult("Rule not found", ErrorCodes.InvalidInput); 
 
                 var ruleDetail = new RefundRuleDetail
                 {

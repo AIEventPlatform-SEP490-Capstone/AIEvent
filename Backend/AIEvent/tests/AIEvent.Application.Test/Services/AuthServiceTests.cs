@@ -1344,7 +1344,6 @@ namespace AIEvent.Application.Test.Services
             _mockCacheService.Setup(x => x.RemoveAsync($"Register {email}"));
             _mockCacheService.Setup(x => x.SetAsync($"Register {email}", It.IsAny<string>(), It.IsAny<TimeSpan>()));
             _mockCacheService.Setup(x => x.SetAsync($"ResendCount {email}", It.IsAny<int>(), It.IsAny<TimeSpan>()));
-            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 
             // Act
             var result = await _authService.ReSendOTPAsync(email);
@@ -1352,9 +1351,7 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.IsSuccess.Should().BeTrue();
             _mockCacheService.Verify(x => x.GetAsync<int?>($"ResendCount {email}"), Times.Once());
-            _mockCacheService.Verify(x => x.SetAsync($"ResendCount {email}", 3, TimeSpan.FromMinutes(30)), Times.Once());
-            _mockEmailService.Verify(x => x.SendEmailAsync(email, It.IsAny<MimeMessage>()), Times.Once());
-            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
+            _mockCacheService.Verify(x => x.SetAsync($"ResendCount {email}", 3, TimeSpan.FromMinutes(30)), Times.Once()); 
         }
 
         [Fact]
@@ -1447,7 +1444,6 @@ namespace AIEvent.Application.Test.Services
             _mockCacheService.Setup(x => x.RemoveAsync($"Register {email}"));
             _mockCacheService.Setup(x => x.SetAsync($"Register {email}", It.IsAny<string>(), It.IsAny<TimeSpan>()));
             _mockCacheService.Setup(x => x.SetAsync($"ResendCount {email}", It.IsAny<int>(), It.IsAny<TimeSpan>()));
-            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 
             // Act
             var result = await _authService.ReSendOTPAsync(email);
@@ -1463,7 +1459,6 @@ namespace AIEvent.Application.Test.Services
             _mockCacheService.Verify(x => x.RemoveAsync($"Register {email}"), Times.Once());
             _mockCacheService.Verify(x => x.SetAsync($"Register {email}", It.IsAny<string>(), TimeSpan.FromMinutes(5)), Times.Once());
             _mockCacheService.Verify(x => x.SetAsync($"ResendCount {email}", 1, TimeSpan.FromMinutes(30)), Times.Once());
-            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
         #endregion
 

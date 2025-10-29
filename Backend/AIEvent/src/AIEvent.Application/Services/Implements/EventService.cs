@@ -52,8 +52,22 @@ namespace AIEvent.Application.Services.Implements
             if (request.SaleEndTime > request.StartTime)
                 return ErrorResponse.FailureResult("SaleEndTime cannot be after the event StartTime", ErrorCodes.InvalidInput);
 
-            if (request.TicketDetails.Any(td => td.MaxPurchaseQuantity <  td.MinPurchaseQuantity))
-                return ErrorResponse.FailureResult("MinPurchaseQuantity cannot be greater than MaxPurchaseQuantity", ErrorCodes.InvalidInput);
+            // Validate offline event required fields
+            if (string.IsNullOrWhiteSpace(request.LocationName))
+                return ErrorResponse.FailureResult("LocationName is required for offline events", ErrorCodes.InvalidInput);
+
+            if (string.IsNullOrWhiteSpace(request.City))
+                return ErrorResponse.FailureResult("City is required for offline events", ErrorCodes.InvalidInput);
+
+            if (string.IsNullOrWhiteSpace(request.Address))
+                return ErrorResponse.FailureResult("Address is required for offline events", ErrorCodes.InvalidInput);
+
+            // Validate evidence is required if publishing
+            if (request.Publish == true)
+            {
+                if (request.ImgListEvidences == null || !request.ImgListEvidences.Any())
+                    return ErrorResponse.FailureResult("Evidence images are required when publishing the event", ErrorCodes.InvalidInput);
+            }
 
             var organizer = await _unitOfWork.OrganizerProfileRepository.GetByIdAsync(organizerId, true);
             if (organizer?.Status != ConfirmStatus.Approve)
@@ -75,9 +89,7 @@ namespace AIEvent.Application.Services.Implements
                         TicketQuantity = td.TicketQuantity,
                         TicketDescription = td.TicketDescription,
                         SoldQuantity = 0,
-                        RemainingQuantity = td.TicketQuantity,
-                        MaxPurchaseQuantity = td.MaxPurchaseQuantity,
-                        MinPurchaseQuantity = td.MinPurchaseQuantity,
+                        RemainingQuantity = td.TicketQuantity, 
                         RefundRuleId = !string.IsNullOrEmpty(td.RuleRefundRequestId)
                             ? Guid.Parse(td.RuleRefundRequestId)
                             : null
@@ -98,6 +110,20 @@ namespace AIEvent.Application.Services.Implements
                 if (failedUploads.Any())
                     return ErrorResponse.FailureResult("Some images failed to upload", ErrorCodes.InternalServerError);
                 events.ImgListEvent = JsonSerializer.Serialize(uploadResults.Where(r => r != null));
+            }
+
+            // Upload evidence images
+            if (request.ImgListEvidences?.Any() == true)
+            {
+                var uploadTasks = request.ImgListEvidences
+                    .Select(img => _cloudinaryService.UploadImageAsync(img))
+                    .ToList();
+
+                var uploadResults = await Task.WhenAll(uploadTasks);
+                var failedUploads = uploadResults.Where(r => r == null || string.IsNullOrEmpty(r)).ToList();
+                if (failedUploads.Any())
+                    return ErrorResponse.FailureResult("Some evidence images failed to upload", ErrorCodes.InternalServerError);
+                events.Evidences = JsonSerializer.Serialize(uploadResults.Where(r => r != null));
             }
 
             events.OrganizerProfileId = organizerId;
@@ -266,6 +292,8 @@ namespace AIEvent.Application.Services.Implements
                 _mapper.Map(request, eventQuery);
 
                 await UpdateEventImagesAsync(eventQuery, request);
+                
+                await UpdateEventEvidenceAsync(eventQuery, request);
 
                 await HandleTicketDetailsOperationsAsync(eventQuery, eventId, organizerId, request);
 
@@ -324,6 +352,50 @@ namespace AIEvent.Application.Services.Implements
                 }
 
                 events.ImgListEvent = JsonSerializer.Serialize(existingImages);
+        }
+
+        private async Task UpdateEventEvidenceAsync(Event events, UpdateEventRequest request)
+        {
+            if ((request.RemoveImageEvidenceUrls == null || !request.RemoveImageEvidenceUrls.Any()) 
+                && (request.ImgListEvidences == null || !request.ImgListEvidences.Any()))
+                return;
+
+            var existingEvidence = string.IsNullOrEmpty(events.Evidences)
+                ? new List<string>()
+                : JsonSerializer.Deserialize<List<string>>(events.Evidences) ?? new List<string>();
+
+            if (request.RemoveImageEvidenceUrls != null && request.RemoveImageEvidenceUrls.Any())
+            {
+                var evidenceToRemove = request.RemoveImageEvidenceUrls.Where(url => existingEvidence.Contains(url)).ToList();
+                var remainingEvidenceCount = existingEvidence.Count - evidenceToRemove.Count;
+                var willAddNewEvidence = request.ImgListEvidences != null && request.ImgListEvidences.Any();
+                
+                if (remainingEvidenceCount <= 0 && !willAddNewEvidence)
+                {
+                    throw new InvalidOperationException(
+                        "Cannot remove all evidence images. At least one evidence is required when publishing."
+                    );
+                }
+
+                var deleteImageTasks = evidenceToRemove
+                    .Select(url => _cloudinaryService.DeleteImageAsync(url))
+                    .ToList();
+
+                await Task.WhenAll(deleteImageTasks);
+                existingEvidence = existingEvidence.Where(ev => !request.RemoveImageEvidenceUrls.Contains(ev)).ToList();
+            }
+
+            if (request.ImgListEvidences != null && request.ImgListEvidences.Any())
+            {
+                var uploadResults = await Task.WhenAll(
+                    request.ImgListEvidences.Select(img => _cloudinaryService.UploadImageAsync(img))
+                );
+
+                var successfulUploads = uploadResults.Where(url => !string.IsNullOrEmpty(url)).ToList();
+                existingEvidence.AddRange(successfulUploads!);
+            }
+
+            events.Evidences = JsonSerializer.Serialize(existingEvidence);
         }
 
         private async Task HandleTicketDetailsOperationsAsync(Event events, Guid eventId, Guid organizerId, UpdateEventRequest request)
@@ -452,8 +524,7 @@ namespace AIEvent.Application.Services.Implements
             var startTime = request.StartTime ?? existingEvent.StartTime;
             var endTime = request.EndTime ?? existingEvent.EndTime;
             var saleStartTime = request.SaleStartTime ?? existingEvent.SaleStartTime;
-            var saleEndTime = request.SaleEndTime ?? existingEvent.SaleEndTime;
-            var isOnlineEvent = request.isOnlineEvent ?? existingEvent.isOnlineEvent ?? false;
+            var saleEndTime = request.SaleEndTime ?? existingEvent.SaleEndTime; 
             var totalTickets = request.TotalTickets ?? existingEvent.TotalTickets;
             var ticketType = request.TicketType ?? existingEvent.TicketType;
 
@@ -479,9 +550,7 @@ namespace AIEvent.Application.Services.Implements
                     errors.Add("SaleEndTime cannot be after event StartTime");
             }
 
-            if (!isOnlineEvent)
-            {
-                var locationName = request.LocationName ?? existingEvent.LocationName;
+            var locationName = request.LocationName ?? existingEvent.LocationName;
                 var city = request.City ?? existingEvent.City;
                 var address = request.Address ?? existingEvent.Address;
 
@@ -491,24 +560,15 @@ namespace AIEvent.Application.Services.Implements
                     errors.Add("City is required for offline events");
                 if (string.IsNullOrWhiteSpace(address))
                     errors.Add("Address is required for offline events");
-            }
-            else
-            {
-                var linkRef = request.LinkRef ?? existingEvent.LinkRef;
-                if (string.IsNullOrWhiteSpace(linkRef))
-                    errors.Add("LinkRef is required for online events");
-            }
 
             var hasImages = HasEventImages(request, existingEvent);
             if (!hasImages)
                 errors.Add("At least one event image is required");
 
-            if (request.TicketDetails != null && request.TicketDetails.Any())
-            {
-                if (request.TicketDetails.Any(td => td.MaxPurchaseQuantity < td.MinPurchaseQuantity))
-                    errors.Add("MaxPurchaseQuantity must be greater than or equal to MinPurchaseQuantity");
-            }
-            
+            var hasEvidence = HasEventEvidence(request, existingEvent);
+            if (!hasEvidence)
+                errors.Add("Evidence is required when publishing an event");
+              
             var hasTicketDetailsAfterOperations = existingEvent.TicketDetails != null && existingEvent.TicketDetails.Any();
             
             if (request.RemoveTicketDetailIds != null && request.RemoveTicketDetailIds.Any())
@@ -564,6 +624,23 @@ namespace AIEvent.Application.Services.Implements
 
             var hasNewImages = request.ImgListEvent != null && request.ImgListEvent.Any();
             return existingImagesList.Any() || hasNewImages;
+        }
+
+        private bool HasEventEvidence(UpdateEventRequest request, Event existingEvent)
+        {
+            var existingEvidenceList = string.IsNullOrEmpty(existingEvent.Evidences)
+                ? new List<string>()
+                : JsonSerializer.Deserialize<List<string>>(existingEvent.Evidences ?? "[]") ?? new List<string>();
+
+            if (request.RemoveImageEvidenceUrls != null && request.RemoveImageEvidenceUrls.Any())
+            {
+                existingEvidenceList = existingEvidenceList
+                    .Where(ev => !request.RemoveImageEvidenceUrls.Contains(ev))
+                    .ToList();
+            }
+
+            var hasNewEvidence = request.ImgListEvidences != null && request.ImgListEvidences.Any();
+            return existingEvidenceList.Any() || hasNewEvidence;
         }
 
 

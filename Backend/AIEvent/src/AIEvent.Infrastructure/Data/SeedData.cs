@@ -323,7 +323,6 @@ namespace AIEvent.Infrastructure.Data
                     Description = "Sự kiện chia sẻ xu hướng AI mới nhất",
                     StartTime = DateTime.UtcNow.AddDays(7),
                     EndTime = DateTime.UtcNow.AddDays(7).AddHours(3),
-                    isOnlineEvent = true,
                     LocationName = "Hà Nội tòa 3",
                     TotalTickets = 200,
                     SoldQuantity = 99,
@@ -343,7 +342,6 @@ namespace AIEvent.Infrastructure.Data
                     Description = "Chương trình nhạc Trịnh với nhiều nghệ sĩ nổi tiếng",
                     StartTime = DateTime.UtcNow.AddDays(14),
                     EndTime = DateTime.UtcNow.AddDays(14).AddHours(2),
-                    isOnlineEvent = false,
                     City = "Hồ Chí Minh",
                     Address = "Nhà hát Hòa Bình",
                     TotalTickets = 500,
@@ -364,7 +362,6 @@ namespace AIEvent.Infrastructure.Data
                     Description = "Chia sẻ kinh nghiệm khởi nghiệp thành công",
                     StartTime = DateTime.UtcNow.AddDays(21),
                     EndTime = DateTime.UtcNow.AddDays(21).AddHours(4),
-                    isOnlineEvent = false,
                     City = "Hà Nội",
                     Address = "Tòa nhà Innovation Hub",
                     TotalTickets = 100,
@@ -385,7 +382,6 @@ namespace AIEvent.Infrastructure.Data
                     Description = "Chia sẻ kinh nghiệm khởi nghiệp thành công 1111111",
                     StartTime = DateTime.UtcNow.AddDays(40),
                     EndTime = DateTime.UtcNow.AddDays(40).AddHours(4),
-                    isOnlineEvent = false,
                     City = "Hà Nội",
                     Address = "Tòa nhà Innovation Hub 1111111",
                     TotalTickets = 100,
@@ -407,8 +403,7 @@ namespace AIEvent.Infrastructure.Data
                 new RefundRule
                 {
                     Id = refundRuleId,
-                    RuleName = "Hoan Ve",
-                    IsSystem = true,
+                    RuleName = "Hoan Ve", 
                 }
             );
         }
