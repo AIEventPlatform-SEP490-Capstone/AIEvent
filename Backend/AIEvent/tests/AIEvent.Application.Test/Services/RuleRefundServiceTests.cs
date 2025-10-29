@@ -106,14 +106,22 @@ namespace AIEvent.Application.Test.Services
         }
 
         [Fact]
-        public async Task CreateRuleAsync_EmptyRuleDetails_ShouldReturnValidationFailure()
+        public async Task CreateRuleAsync_NullMinDaysBeforeEvent_ShouldReturnValidationFailure()
         {
             // Arrange
             var request = new CreateRuleRefundRequest
             {
                 RuleName = "name",
                 RuleDescription = "desc",
-                RuleRefundDetails = new List<RuleRefundDetailRequest>()
+                RuleRefundDetails = new List<RuleRefundDetailRequest>
+                {
+                    new RuleRefundDetailRequest
+                    {
+                        MinDaysBeforeEvent = null,
+                        MaxDaysBeforeEvent = 1,
+                        RefundPercent = 50
+                    }
+                }
             };
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
@@ -125,7 +133,133 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.IsSuccess.Should().BeFalse();
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            result.Error!.Message.Should().Be("Min days before event is required");
         }
+
+        [Fact]
+        public async Task CreateRuleAsync_NullMaxDaysBeforeEvent_ShouldReturnValidationFailure()
+        {
+            // Arrange
+            var request = new CreateRuleRefundRequest
+            {
+                RuleName = "name",
+                RuleDescription = "desc",
+                RuleRefundDetails = new List<RuleRefundDetailRequest>
+                {
+                    new RuleRefundDetailRequest
+                    {
+                        MinDaysBeforeEvent = 1,
+                        MaxDaysBeforeEvent = null,
+                        RefundPercent = 50
+                    }
+                }
+            };
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            // Act
+            var result = await _ruleService.CreateRuleAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            result.Error!.Message.Should().Be("Max days before event is required");
+        }
+
+        [Fact]
+        public async Task CreateRuleAsync_NullRefundPercent_ShouldReturnValidationFailure()
+        {
+            // Arrange
+            var request = new CreateRuleRefundRequest
+            {
+                RuleName = "name",
+                RuleDescription = "desc",
+                RuleRefundDetails = new List<RuleRefundDetailRequest>
+                {
+                    new RuleRefundDetailRequest
+                    {
+                        MinDaysBeforeEvent = 1,
+                        MaxDaysBeforeEvent = 2,
+                        RefundPercent = null
+                    }
+                }
+            };
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            // Act
+            var result = await _ruleService.CreateRuleAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            result.Error!.Message.Should().Be("Refund percent is required");
+        }
+
+        [Fact]
+        public async Task CreateRuleAsync_NullRefundPercentInValid_ShouldReturnValidationFailure()
+        {
+            // Arrange
+            var request = new CreateRuleRefundRequest
+            {
+                RuleName = "name",
+                RuleDescription = "desc",
+                RuleRefundDetails = new List<RuleRefundDetailRequest>
+                {
+                    new RuleRefundDetailRequest
+                    {
+                        MinDaysBeforeEvent = 1,
+                        MaxDaysBeforeEvent = 2,
+                        RefundPercent = -1
+                    }
+                }
+            };
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            // Act
+            var result = await _ruleService.CreateRuleAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            result.Error!.Message.Should().Be("Refund percent value from 0 to 100.");
+        }
+
+        [Fact]
+        public async Task CreateRuleAsync_NullRefundPercentThan100_ShouldReturnValidationFailure()
+        {
+            // Arrange
+            var request = new CreateRuleRefundRequest
+            {
+                RuleName = "name",
+                RuleDescription = "desc",
+                RuleRefundDetails = new List<RuleRefundDetailRequest>
+                {
+                    new RuleRefundDetailRequest
+                    {
+                        MinDaysBeforeEvent = 1,
+                        MaxDaysBeforeEvent = 2,
+                        RefundPercent = 101
+                    }
+                }
+            };
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            // Act
+            var result = await _ruleService.CreateRuleAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            result.Error!.Message.Should().Be("Refund percent value from 0 to 100.");
+        }
+
 
         [Fact]
         public async Task CreateRuleAsync_MinDaysGreaterThanMaxDays_ShouldReturnValidationFailure()
@@ -151,6 +285,35 @@ namespace AIEvent.Application.Test.Services
             result.IsSuccess.Should().BeFalse();
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
             result.Error!.Message.Should().Contain("MinDays (3) cannot be greater than MaxDays (2)");
+        }
+
+        [Fact]
+        public async Task CreateRuleAsync_MappingNull_ShouldReturnInternalError()
+        {
+            // Arrange
+            var request = new CreateRuleRefundRequest
+            {
+                RuleName = "name",
+                RuleDescription = "desc",
+                RuleRefundDetails = new List<RuleRefundDetailRequest>
+            {
+                new() { MinDaysBeforeEvent = 1, MaxDaysBeforeEvent = 2, RefundPercent = 50 }
+            }
+            };
+
+            _mockMapper.Setup(x => x.Map<RefundRule>(It.IsAny<CreateRuleRefundRequest>()))
+                .Returns((RefundRule)null!);
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            // Act
+            var result = await _ruleService.CreateRuleAsync(request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
+            result.Error!.Message.Should().Be("Failed to map refund rule");
         }
 
         [Fact]
@@ -189,34 +352,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Verify(x => x.RefundRuleRepository.AddAsync(It.IsAny<RefundRule>()), Times.Once);
         }
 
-        [Fact]
-        public async Task CreateRuleAsync_MappingNull_ShouldReturnInternalError()
-        {
-            // Arrange
-            var request = new CreateRuleRefundRequest
-            {
-                RuleName = "name",
-                RuleDescription = "desc",
-                RuleRefundDetails = new List<RuleRefundDetailRequest>
-            {
-                new() { MinDaysBeforeEvent = 1, MaxDaysBeforeEvent = 2, RefundPercent = 50 }
-            }
-            };
-
-            _mockMapper.Setup(x => x.Map<RefundRule>(It.IsAny<CreateRuleRefundRequest>()))
-                .Returns((RefundRule)null!);
-            
-            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-                .Returns<Func<Task<Result>>>(func => func());
-
-            // Act
-            var result = await _ruleService.CreateRuleAsync(request);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
-            result.Error!.Message.Should().Be("Failed to map refund rule");
-        }
+        
         #endregion
 
         #region Delete Rule
@@ -487,6 +623,56 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.IsSuccess.Should().BeTrue();
             _mockUnitOfWork.Verify(x => x.RefundRuleDetailRepository.UpdateAsync(detail), Times.Once);
+        }
+
+        [Fact]
+        public async Task UpdateRuleDetailAsync_InValidPercent_ShouldSucceed()
+        {
+            // Arrange
+            var detail = new RefundRuleDetail { Id = Guid.NewGuid() };
+            var request = new UpdateRuleRefundDetailRequest { MinDaysBeforeEvent = 0, MaxDaysBeforeEvent = 1, RefundPercent = 101 };
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(f => f());
+
+            _mockUnitOfWork.Setup(x => x.RefundRuleDetailRepository.Query(false))
+                .Returns(new List<RefundRuleDetail> { detail }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.RefundRuleDetailRepository.UpdateAsync(detail));
+
+            _mockMapper.Setup(x => x.Map(It.IsAny<UpdateRuleRefundDetailRequest>(), It.IsAny<RefundRuleDetail>()))
+                .Returns<UpdateRuleRefundDetailRequest, RefundRuleDetail>((req, d) => d);
+
+            // Act
+            var result = await _ruleService.UpdateRuleDetailAsync(detail.Id, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UpdateRuleDetailAsync_InValidNegativePercent_ShouldSucceed()
+        {
+            // Arrange
+            var detail = new RefundRuleDetail { Id = Guid.NewGuid() };
+            var request = new UpdateRuleRefundDetailRequest { MinDaysBeforeEvent = 0, MaxDaysBeforeEvent = 1, RefundPercent = -1 };
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(f => f());
+
+            _mockUnitOfWork.Setup(x => x.RefundRuleDetailRepository.Query(false))
+                .Returns(new List<RefundRuleDetail> { detail }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.RefundRuleDetailRepository.UpdateAsync(detail));
+
+            _mockMapper.Setup(x => x.Map(It.IsAny<UpdateRuleRefundDetailRequest>(), It.IsAny<RefundRuleDetail>()))
+                .Returns<UpdateRuleRefundDetailRequest, RefundRuleDetail>((req, d) => d);
+
+            // Act
+            var result = await _ruleService.UpdateRuleDetailAsync(detail.Id, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
         #endregion
 
