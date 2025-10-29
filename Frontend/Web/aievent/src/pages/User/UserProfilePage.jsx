@@ -14,7 +14,8 @@ import {
   Github,
   Twitter,
   Instagram,
-  Facebook
+  Facebook,
+  Lock
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
@@ -45,11 +46,13 @@ import {
   BudgetOptionReverse
 } from '../../constants/userConstants';
 import { validateProfileData, transformFormDataToAPI } from '../../utils/profileValidation';
+import ChangePasswordModal from '../../components/Auth/ChangePasswordModal';
 
 const UserProfilePage = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('tickets');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const hasFetchedProfile = useRef(false);
   const {
     profile,
@@ -273,18 +276,74 @@ const UserProfilePage = () => {
               <div>
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Cài đặt tài khoản</h2>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <Bell className="w-4 h-4 text-gray-600" />
-                      <div>
-                        <h3 className="font-medium text-gray-900">Thông báo</h3>
-                        <p className="text-sm text-gray-600">Email thông báo</p>
-                        <p className="text-xs text-gray-500">Nhận thông báo về sự kiện qua email</p>
+                  {/* Security Settings */}
+                  <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-xl p-6 border border-red-100">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <Lock className="w-5 h-5 mr-2 text-red-600" />
+                      Bảo mật tài khoản
+                    </h3>
+                    <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-red-200">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                          <Lock className="w-5 h-5 text-red-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-900">Mật khẩu</h4>
+                          <p className="text-sm text-gray-600">Cập nhật mật khẩu để bảo vệ tài khoản</p>
+                          <p className="text-xs text-gray-500">Khuyến nghị đổi mật khẩu định kỳ</p>
+                        </div>
+                      </div>
+                      <Button 
+                        onClick={() => setIsChangePasswordModalOpen(true)}
+                        className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white px-4 py-2 text-sm shadow-lg hover:shadow-xl transition-all duration-300"
+                      >
+                        Đổi mật khẩu
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Notification Settings */}
+                  <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-100">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <Bell className="w-5 h-5 mr-2 text-blue-600" />
+                      Thông báo
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-200">
+                        <div className="flex items-center space-x-3">
+                          <Bell className="w-4 h-4 text-blue-600" />
+                          <div>
+                            <h4 className="font-medium text-gray-900">Email thông báo</h4>
+                            <p className="text-sm text-gray-600">Nhận thông báo về sự kiện qua email</p>
+                          </div>
+                        </div>
+                        <Button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 text-sm">
+                          Bật
+                        </Button>
                       </div>
                     </div>
-                    <Button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 text-sm">
-                      Bật
-                    </Button>
+                  </div>
+
+                  {/* Privacy Settings */}
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <User className="w-5 h-5 mr-2 text-green-600" />
+                      Quyền riêng tư
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200">
+                        <div className="flex items-center space-x-3">
+                          <Globe className="w-4 h-4 text-green-600" />
+                          <div>
+                            <h4 className="font-medium text-gray-900">Hồ sơ công khai</h4>
+                            <p className="text-sm text-gray-600">Cho phép người khác xem thông tin hồ sơ</p>
+                          </div>
+                        </div>
+                        <Button className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 text-sm">
+                          Bật
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -304,6 +363,12 @@ const UserProfilePage = () => {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={isChangePasswordModalOpen}
+        onClose={() => setIsChangePasswordModalOpen(false)}
+      />
 
     </div>
   );

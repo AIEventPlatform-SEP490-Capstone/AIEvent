@@ -153,6 +153,20 @@ export const googleLogin = createAsyncThunk(
   }
 );
 
+export const changePassword = createAsyncThunk(
+  "auth/changePassword",
+  async (passwordData, { rejectWithValue }) => {
+    try {
+      const response = await authAPI.changePassword(passwordData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response ? error.response.data : error.message
+      );
+    }
+  }
+);
+
 export const logout = createAsyncThunk(
   "auth/logout",
   async (_, { rejectWithValue }) => {
@@ -209,11 +223,14 @@ const authSlice = createSlice({
     isInitialized: true, // Đánh dấu đã khởi tạo xong
     verifyingOtp: false,
     verifyOtpError: null,
+    changingPassword: false,
+    changePasswordError: null,
   },
   reducers: {
     clearAuth: (state) => {
       state.error = null;
       state.verifyOtpError = null;
+      state.changePasswordError = null;
     },
     setUser: (state, action) => {
       state.user = action.payload;
@@ -310,6 +327,20 @@ const authSlice = createSlice({
       .addCase(logout.rejected, (state, { payload }) => {
         state.isLoading = false;
         state.error = payload;
+      })
+
+      // changePassword
+      .addCase(changePassword.pending, (state) => {
+        state.changingPassword = true;
+        state.changePasswordError = null;
+      })
+      .addCase(changePassword.fulfilled, (state) => {
+        state.changingPassword = false;
+        state.changePasswordError = null;
+      })
+      .addCase(changePassword.rejected, (state, { payload }) => {
+        state.changingPassword = false;
+        state.changePasswordError = payload;
       });
   },
 });

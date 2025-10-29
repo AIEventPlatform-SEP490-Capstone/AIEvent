@@ -144,6 +144,10 @@ export const authAPI = {
     const response = await fetcher.post("/auth/google-login", { idToken });
     return response.data;
   },
+  changePassword: async (passwordData) => {
+    const response = await fetcher.post("/auth/change-password", passwordData);
+    return response.data;
+  },
 };
 
 export default fetcher;
