@@ -37,7 +37,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { showSuccess, showError } from '../../lib/toastUtils';
-import { AccessDenied } from '../../components/AccessDenied/AccessDenied';
+import AccessDenied from '../../components/AccessDenied/AccessDenied';
 
 const RefundRulesPage = ({ userRole }) => {
   const navigate = useNavigate();
@@ -47,7 +47,7 @@ const RefundRulesPage = ({ userRole }) => {
   
   // If user doesn't have access, show access denied page
   if (!hasAccess) {
-    return <AccessDenied onBack={() => navigate(-1)} />;
+    return <AccessDenied />;
   }
 
   const {
