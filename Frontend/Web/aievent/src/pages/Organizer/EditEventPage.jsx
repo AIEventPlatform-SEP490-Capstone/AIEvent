@@ -179,6 +179,11 @@ const EditEventPage = () => {
     };
   }, [eventId]);
 
+  // Real-time validation effect
+  useEffect(() => {
+    validateDates();
+  }, [watch('startTime'), watch('endTime'), watch('saleStartTime'), watch('saleEndTime')]);
+
   const loadEventData = async () => {
     try {
       setIsLoading(true);
@@ -499,6 +504,113 @@ const EditEventPage = () => {
     }
   };
 
+  // Real-time date validation
+  const validateDates = () => {
+    const startTime = watch('startTime');
+    const endTime = watch('endTime');
+    const saleStartTime = watch('saleStartTime');
+    const saleEndTime = watch('saleEndTime');
+    
+    const errors = [];
+    const now = new Date();
+    
+    // Check if any datetime is in the past
+    if (startTime) {
+      const start = new Date(startTime);
+      if (start <= now) {
+        errors.push('Thời gian bắt đầu phải sau thời điểm hiện tại');
+        // Clear the field if it's in the past
+        setValue('startTime', '');
+      }
+    }
+    
+    if (endTime) {
+      const end = new Date(endTime);
+      if (end <= now) {
+        errors.push('Thời gian kết thúc phải sau thời điểm hiện tại');
+        // Clear the field if it's in the past
+        setValue('endTime', '');
+      }
+    }
+    
+    if (saleStartTime) {
+      const saleStart = new Date(saleStartTime);
+      if (saleStart <= now) {
+        errors.push('Thời gian bắt đầu bán vé phải sau thời điểm hiện tại');
+        // Clear the field if it's in the past
+        setValue('saleStartTime', '');
+      }
+    }
+    
+    if (saleEndTime) {
+      const saleEnd = new Date(saleEndTime);
+      if (saleEnd <= now) {
+        errors.push('Thời gian kết thúc bán vé phải sau thời điểm hiện tại');
+        // Clear the field if it's in the past
+        setValue('saleEndTime', '');
+      }
+    }
+    
+    // Check relationships between dates (only if all relevant fields have values)
+    if (startTime && endTime) {
+      const start = new Date(startTime);
+      const end = new Date(endTime);
+      
+      if (end <= start) {
+        errors.push('Thời gian kết thúc phải sau thời gian bắt đầu');
+        // Clear the endTime field if it's not after startTime
+        setValue('endTime', '');
+      }
+    }
+    
+    if (saleStartTime && saleEndTime && startTime) {
+      const start = new Date(startTime);
+      const saleStart = new Date(saleStartTime);
+      const saleEnd = new Date(saleEndTime);
+      
+      if (saleStart >= start) {
+        errors.push('Thời gian bắt đầu bán vé phải trước thời gian bắt đầu sự kiện');
+        // Clear the saleStartTime field if it's not before event start
+        setValue('saleStartTime', '');
+      }
+      
+      if (saleEnd <= saleStart) {
+        errors.push('Thời gian kết thúc bán vé phải sau thời gian bắt đầu bán vé');
+        // Clear the saleEndTime field if it's not after sale start
+        setValue('saleEndTime', '');
+      }
+      
+      if (saleEnd >= start) {
+        errors.push('Thời gian kết thúc bán vé phải trước thời gian bắt đầu sự kiện');
+        // Clear the saleEndTime field if it's not before event start
+        setValue('saleEndTime', '');
+      }
+    }
+    
+    return errors;
+  };
+
+  const dateErrors = validateDates();
+  
+  // Get minimum datetime for input fields (current time)
+  const getMinDateTime = () => {
+    const now = new Date();
+    // Format as YYYY-MM-DDTHH:MM for datetime-local input
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+  
+  const minDateTime = getMinDateTime();
+
+  // Real-time validation effect
+  useEffect(() => {
+    validateDates();
+  }, [watch('startTime'), watch('endTime'), watch('saleStartTime'), watch('saleEndTime')]);
+
   const handleCancel = () => {
     if (window.confirm('Bạn có chắc chắn muốn hủy? Mọi thay đổi sẽ không được lưu.')) {
       navigate(`/organizer/event/${eventId}`);
@@ -673,6 +785,7 @@ const EditEventPage = () => {
                       type="datetime-local"
                       id="startTime"
                       {...register('startTime')}
+                      min={minDateTime}
                       className="mt-2 h-12 text-base border-2 focus:border-green-500"
                     />
                     {errors.startTime && <p className="text-red-500 text-sm mt-1">{errors.startTime.message}</p>}
@@ -684,6 +797,7 @@ const EditEventPage = () => {
                       type="datetime-local"
                       id="endTime"
                       {...register('endTime')}
+                      min={minDateTime}
                       className="mt-2 h-12 text-base border-2 focus:border-green-500"
                     />
                     {errors.endTime && <p className="text-red-500 text-sm mt-1">{errors.endTime.message}</p>}
@@ -697,6 +811,7 @@ const EditEventPage = () => {
                       type="datetime-local"
                       id="saleStartTime"
                       {...register('saleStartTime')}
+                      min={minDateTime}
                       className="mt-2 h-12 text-base border-2 focus:border-green-500"
                     />
                     {errors.saleStartTime && <p className="text-red-500 text-sm mt-1">{errors.saleStartTime.message}</p>}
@@ -708,6 +823,7 @@ const EditEventPage = () => {
                       type="datetime-local"
                       id="saleEndTime"
                       {...register('saleEndTime')}
+                      min={minDateTime}
                       className="mt-2 h-12 text-base border-2 focus:border-green-500"
                     />
                     {errors.saleEndTime && <p className="text-red-500 text-sm mt-1">{errors.saleEndTime.message}</p>}
@@ -762,6 +878,18 @@ const EditEventPage = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Display real-time date validation errors */}
+                {dateErrors.length > 0 && (
+                  <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <h4 className="font-semibold text-red-800 mb-2">Lỗi thời gian:</h4>
+                    <ul className="list-disc list-inside text-red-600">
+                      {dateErrors.map((error, index) => (
+                        <li key={index} className="text-sm">{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

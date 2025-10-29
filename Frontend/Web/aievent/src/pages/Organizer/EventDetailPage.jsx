@@ -316,20 +316,6 @@ Nhấn OK để xác nhận xóa.`;
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleShareEvent}>
-              <Share2 className="h-4 w-4 mr-1" />
-              Chia sẻ
-            </Button>
-            <Button variant="outline" onClick={handleEditEvent}>
-              <Edit className="h-4 w-4 mr-1" />
-              Chỉnh sửa
-            </Button>
-            <Button variant="outline" onClick={handleDeleteEvent} className="text-red-600 hover:text-red-700">
-              <Trash2 className="h-4 w-4 mr-1" />
-              Xóa
-            </Button>
-          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
