@@ -11,7 +11,7 @@ namespace AIEvent.Infrastructure.Context
     public class DatabaseContext : DbContext
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
-
+        public bool EnableSoftDelete { get; set; } = true;
         public DatabaseContext(DbContextOptions<DatabaseContext> options, IHttpContextAccessor httpContextAccessor) : base(options)
         {
             _httpContextAccessor = httpContextAccessor;
@@ -34,7 +34,7 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<BookingItem> BookingItems { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<WithdrawRequest> WithdrawRequests { get; set; }
-        public DbSet<PaymentInfomation> PaymentInfomations { get; set; }
+        public DbSet<PaymentInformation> PaymentInformations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -350,13 +350,13 @@ namespace AIEvent.Infrastructure.Context
                 entity.Property(w => w.Amount).HasColumnType("decimal(18,2)");
             });
 
-            // ----------------- PaymentInfomation -----------------
-            builder.Entity<PaymentInfomation>(entity =>
+            // ----------------- PaymentInformation -----------------
+            builder.Entity<PaymentInformation>(entity =>
             {
                 entity.ToTable("PaymentInfomations"); 
 
                 entity.HasOne(pi => pi.User)
-                      .WithMany(u => u.PaymentInfomations)
+                      .WithMany(u => u.PaymentInformations)
                       .HasForeignKey(pi => pi.UserId)
                       .OnDelete(DeleteBehavior.Cascade); 
 
@@ -389,8 +389,11 @@ namespace AIEvent.Infrastructure.Context
                 switch (entry.State)
                 {
                     case EntityState.Deleted:
-                        entry.State = EntityState.Modified;
-                        entry.Entity.SetDeleted(userId);
+                        if (EnableSoftDelete)
+                        { 
+                            entry.State = EntityState.Modified;
+                            entry.Entity.SetDeleted(userId);
+                        }
                         break;
                     case EntityState.Modified:
                         entry.Entity.SetUpdated(userId);

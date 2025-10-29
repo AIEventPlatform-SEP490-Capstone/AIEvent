@@ -1,6 +1,7 @@
 ﻿using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Booking;
 using AIEvent.Application.DTOs.Common;
+using AIEvent.Application.DTOs.Event;
 using AIEvent.Application.DTOs.Ticket;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
@@ -9,6 +10,7 @@ using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Org.BouncyCastle.Asn1.Pkcs;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -133,7 +135,18 @@ namespace AIEvent.Application.Services.Implements
                 await _unitOfWork.TicketDetailRepository.UpdateRangeAsync(ticketTypesToUpdate);
                 await _unitOfWork.EventRepository.UpdateAsync(eventEntity);
                 await _unitOfWork.BookingItemRepository.AddRangeAsync(bookingItems);
+
+                // Generate QR contents and bytes
+                var qrContents = tickets.Select(t => _ticketTokenService.CreateTicketToken(t.Id)).ToList();
+                var qrResult = await _qrCodeService.GenerateQrBytesAndUrlsAsync(qrContents);
+
+                // Update tickets with QrCodeUrl
+                for (int i = 0; i < tickets.Count; i++)
+                {
+                    tickets[i].QrCodeUrl = qrResult.Urls[qrContents[i]];
+                }
                 await _unitOfWork.TicketRepository.AddRangeAsync(tickets);
+
                 await _unitOfWork.SaveChangesAsync();
 
                 // Payment handling 
@@ -214,18 +227,6 @@ namespace AIEvent.Application.Services.Implements
                 booking.PaymentStatus = PaymentStatus.Paid;
                 await _unitOfWork.BookingRepository.UpdateAsync(booking);
 
-                // Generate QR contents and bytes
-                var qrContents = tickets.Select(t => _ticketTokenService.CreateTicketToken(t.Id)).ToList();
-                var qrResult = await _qrCodeService.GenerateQrBytesAndUrlsAsync(qrContents);
-
-                // Update tickets with QrCodeUrl
-                for (int i = 0; i < tickets.Count; i++)
-                {
-                    tickets[i].QrCodeUrl = qrResult.Urls[qrContents[i]];
-                }
-                await _unitOfWork.TicketRepository.UpdateRangeAsync(tickets);
-                await _unitOfWork.SaveChangesAsync();
-
                 // Prepare ticket data for PDF/email
                 var ticketData = tickets.Select(t => new TicketForPdf
                 {
@@ -258,60 +259,138 @@ namespace AIEvent.Application.Services.Implements
             });
         }
 
-
-        public async Task<Result<BasePaginated<TicketResponse>>> GetListTicketAsync(int pageNumber, int pageSize, Guid userId, string? title,
-                                                                                    DateTime? startTime, DateTime? endTime, TicketStatus? status)
+        public async Task<Result<BasePaginated<ListEventOfUser>>> GetListEventOfUser(
+            int pageNumber,
+            int pageSize,
+            Guid userId,
+            string? title,
+            DateTime? startTime,
+            DateTime? endTime)
         {
-            var query = _unitOfWork.TicketRepository
-                .Query()
+            var query = _unitOfWork.BookingItemRepository
+                .Query(false)
                 .AsNoTracking()
-                .Include(t => t.TicketType)
-                    .ThenInclude(tt => tt.Event)
-                .Where(t => !t.DeletedAt.HasValue && t.UserId == userId);
+                .Where(bi => bi.Booking.UserId == userId &&
+                             !bi.DeletedAt.HasValue &&
+                             !bi.Booking.DeletedAt.HasValue &&
+                             bi.Booking.Event != null)
+                .Select(bi => new
+                {
+                    bi.Booking.Event.Id,
+                    bi.Booking.Event.Title,
+                    bi.Booking.Event.StartTime,
+                    bi.Booking.Event.EndTime,
+                    bi.Booking.Event.Address,
+                    bi.Booking.Event.ImgListEvent,
+                    bi.Quantity
+                });
 
             if (!string.IsNullOrWhiteSpace(title))
-                query = query.Where(t => t.EventName.Contains(title));
-
-            if (status.HasValue)
-                query = query.Where(t => t.Status == status);
+                query = query.Where(x => x.Title.Contains(title));
 
             if (startTime.HasValue)
-                query = query.Where(t => t.StartTime >= startTime.Value);
+                query = query.Where(x => x.StartTime >= startTime.Value);
 
             if (endTime.HasValue)
-                query = query.Where(t => t.EndTime <= endTime.Value);
+                query = query.Where(x => x.EndTime <= endTime.Value);
 
-            var totalCount = await query.CountAsync();
+            var groupedQuery = query
+                .GroupBy(x => new
+                {
+                    x.Id,
+                    x.Title,
+                    x.StartTime,
+                    x.EndTime,
+                    x.Address,
+                    x.ImgListEvent
+                })
+                .Select(g => new
+                {
+                    EventId = g.Key.Id,
+                    g.Key.Title,
+                    g.Key.StartTime,
+                    g.Key.EndTime,
+                    g.Key.Address,
+                    g.Key.ImgListEvent,
+                    TotalTickets = g.Sum(x => x.Quantity)
+                });
 
-            var pageData = await query
-                .OrderByDescending(t => t.CreatedAt)
+            var totalCount = await groupedQuery.CountAsync();
+
+            var rawData = await groupedQuery
+                .OrderByDescending(x => x.StartTime)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(t => new
-                {
-                    t.Id,
-                    t.EventName,
-                    t.Address,
-                    t.StartTime,
-                    t.EndTime,
-                    t.Status,
-                    ImgListEvent = t.TicketType.Event.ImgListEvent
-                })
                 .ToListAsync();
 
-            var result = pageData.Select(p => new TicketResponse
+            var pageData = rawData.Select(e => new ListEventOfUser
             {
-                TicketId = p.Id,
-                EventName = p.EventName,
-                Address = p.Address!,
-                StartTime = p.StartTime,
-                EndTime = p.EndTime,
-                Status = p.Status,
-                EventImage = ParseFirstImageFromJson(p.ImgListEvent)
+                EventId = e.EventId,
+                Title = e.Title,
+                StartTime = e.StartTime,
+                EndTime = e.EndTime,
+                Address = e.Address,
+                TotalTickets = e.TotalTickets,
+                Image = ParseFirstImageFromJson(e.ImgListEvent),
             }).ToList();
 
-            return new BasePaginated<TicketResponse>(result, totalCount, pageNumber, pageSize);
+            var result = new BasePaginated<ListEventOfUser>(
+                pageData,
+                totalCount,
+                pageNumber,
+                pageSize
+            );
+
+            return Result<BasePaginated<ListEventOfUser>>.Success(result);
         }
+
+
+        public async Task<Result<BasePaginated<TicketByEventResponse>>> GetTicketsByEventAsync(Guid userId, string id, int pageNumber, int pageSize)
+        {
+            if (!Guid.TryParse(id, out var eventId))
+                return ErrorResponse.FailureResult("Invalid ticket ID format", ErrorCodes.InvalidInput);
+
+            var query = _unitOfWork.TicketRepository
+                .Query(false)
+                .AsNoTracking()
+                .Where(t => !t.DeletedAt.HasValue &&
+                            t.UserId == userId &&
+                            t.TicketType.EventId == eventId);
+
+            var groupedQuery = query
+                .GroupBy(t => new
+                {
+                    t.TicketTypeId,
+                    t.TicketType.TicketName,
+                    t.TicketType.TicketPrice
+                })
+                .Select(g => new TicketByEventResponse
+                {
+                    TicketTypeName = g.Key.TicketName,
+                    Price = g.Key.TicketPrice,
+                    Quantity = g.Count(),
+                    Tickets = g.Select(x => new TicketItemResponse
+                    {
+                        TicketId = x.Id,
+                        TicketCode = x.TicketCode,
+                        Status = x.Status,
+                        CreatedAt = x.CreatedAt
+                    }).ToList()
+                });
+
+            var totalCount = await groupedQuery.CountAsync();
+
+            var pageData = await groupedQuery
+                .OrderByDescending(g => g.TicketTypeName)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var result = new BasePaginated<TicketByEventResponse>(pageData, totalCount, pageNumber, pageSize);
+
+            return Result<BasePaginated<TicketByEventResponse>>.Success(result);
+        }
+
 
         private string? ParseFirstImageFromJson(string? imgListJson)
         {
@@ -381,6 +460,8 @@ namespace AIEvent.Application.Services.Implements
 
                 if (ticketData == null)
                     return ErrorResponse.FailureResult("Ticket not found", ErrorCodes.NotFound);
+                if (ticketData.Status == TicketStatus.Refunded)
+                    return ErrorResponse.FailureResult("Ticket has already been refunded", ErrorCodes.InvalidInput);
 
                 var ticket = ticketData;
                 var ticketType = ticket.TicketType;
@@ -391,24 +472,14 @@ namespace AIEvent.Application.Services.Implements
                 if (eventEntity.StartTime <= now)
                     return ErrorResponse.FailureResult("Cannot refund after event has started", ErrorCodes.InternalServerError);
 
-                ticket.Status = TicketStatus.Refunded;
-
-                ticketType.RemainingQuantity++;
-                ticketType.SoldQuantity--;
-                ticketType.SetUpdated(userId.ToString());
-                eventEntity.RemainingTickets++;
-                eventEntity.SoldQuantity--;
-
                 decimal refundPrice = 0;
                 decimal refundPercent = 0;
-
-                if (refundRule != null && refundRule.RefundRuleDetails?.Any() == true)
+                if (refundRule != null && refundRule.RefundRuleDetails?.Any() == true && eventEntity.TicketType != TicketType.Free)
                 {
                     var refundDetail = refundRule.RefundRuleDetails
                         .FirstOrDefault(d =>
                             now >= eventEntity.StartTime.AddDays(-d.MaxDaysBeforeEvent!.Value) &&
                             now < eventEntity.StartTime.AddDays(-d.MinDaysBeforeEvent!.Value));
-
 
                     if (refundDetail == null)
                         return ErrorResponse.FailureResult("Refund rule not applicable for this time", ErrorCodes.InvalidInput);
@@ -473,6 +544,12 @@ namespace AIEvent.Application.Services.Implements
                     await _unitOfWork.PaymentTransactionRepository.AddAsync(paymentTransaction);
                     await _unitOfWork.WalletTransactionRepository.AddRangeAsync(new[] { walletTransactionUser, walletTransactionOrg });
                 }
+
+                ticketType.RemainingQuantity++;
+                ticketType.SoldQuantity--;
+                eventEntity.RemainingTickets++;
+                eventEntity.SoldQuantity--;
+                ticket.Status = TicketStatus.Refunded;
 
                 return Result.Success();
             });

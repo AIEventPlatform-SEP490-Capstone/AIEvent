@@ -17,7 +17,6 @@ export const PATH = {
   WALLET: "/wallet",
   MY_TICKETS: "/my-tickets",
   NOTIFICATIONS: "/notifications",
-  SETTINGS: "/settings",
   HELP: "/help",
   ABOUT: "/about",
   PROFILE: "/profile",

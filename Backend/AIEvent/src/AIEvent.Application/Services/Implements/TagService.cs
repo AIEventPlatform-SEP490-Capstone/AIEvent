@@ -28,7 +28,7 @@ namespace AIEvent.Application.Services.Implements
                 var existingTag = await _unitOfWork.TagRepository
                                             .Query()
                                             .AsNoTracking()
-                                            .FirstOrDefaultAsync(t => t.NameTag.ToLower() == request.NameTag.ToLower());
+                                            .FirstOrDefaultAsync(t => t.NameTag.ToLower() == request.NameTag.ToLower() && !t.IsDeleted);
                 if(existingTag != null)
                 {
                     return ErrorResponse.FailureResult("Tag is already existing", ErrorCodes.InvalidInput);

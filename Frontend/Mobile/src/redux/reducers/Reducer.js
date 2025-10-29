@@ -2,7 +2,7 @@
 //Centralized state cho auth data
 //Predictable state changes thông qua actions
 
-import { AUTH_ACTIONS } from '../actions/Action';
+import { AUTH_ACTIONS, WALLET_ACTIONS } from '../actions/Action';
 
 const initialState = {
   // Auth State
@@ -13,6 +13,30 @@ const initialState = {
   refreshToken: null,
   expiresAt: null,
   error: null,
+  
+  // Change Password State
+  isChangingPassword: false,
+  changePasswordError: null,
+  changePasswordSuccess: null,
+  
+  // Wallet State
+  wallet: null,
+  transactions: {
+    items: [],
+    totalItems: 0,
+    currentPage: 1,
+    totalPages: 1,
+    pageSize: 5,
+    hasPreviousPage: false,
+    hasNextPage: false,
+  },
+  topupPayment: null,
+  isWalletLoading: false,
+  isTransactionsLoading: false,
+  isTopupLoading: false,
+  walletError: null,
+  transactionsError: null,
+  topupError: null,
 };
 
 const authReducer = (state = initialState, action) => {
@@ -66,6 +90,142 @@ const authReducer = (state = initialState, action) => {
       return {
         ...state,
         isLoggedIn: action.payload,
+      };
+
+    case AUTH_ACTIONS.CHANGE_PASSWORD_REQUEST:
+      return {
+        ...state,
+        isChangingPassword: true,
+        changePasswordError: null,
+        changePasswordSuccess: null,
+      };
+
+    case AUTH_ACTIONS.CHANGE_PASSWORD_SUCCESS:
+      return {
+        ...state,
+        isChangingPassword: false,
+        changePasswordError: null,
+        changePasswordSuccess: action.payload,
+      };
+
+    case AUTH_ACTIONS.CHANGE_PASSWORD_FAILURE:
+      return {
+        ...state,
+        isChangingPassword: false,
+        changePasswordError: action.payload,
+        changePasswordSuccess: null,
+      };
+
+    case AUTH_ACTIONS.CLEAR_CHANGE_PASSWORD_ERROR:
+      return {
+        ...state,
+        changePasswordError: null,
+        changePasswordSuccess: null,
+      };
+
+    case AUTH_ACTIONS.CLEAR_CHANGE_PASSWORD_SUCCESS:
+      return {
+        ...state,
+        changePasswordSuccess: null,
+      };
+
+    // Wallet Actions
+    case WALLET_ACTIONS.FETCH_WALLET_REQUEST:
+      return {
+        ...state,
+        isWalletLoading: true,
+        walletError: null,
+      };
+
+    case WALLET_ACTIONS.FETCH_WALLET_SUCCESS:
+      return {
+        ...state,
+        isWalletLoading: false,
+        wallet: action.payload,
+        walletError: null,
+      };
+
+    case WALLET_ACTIONS.FETCH_WALLET_FAILURE:
+      return {
+        ...state,
+        isWalletLoading: false,
+        walletError: action.payload,
+      };
+
+    case WALLET_ACTIONS.FETCH_TRANSACTIONS_REQUEST:
+      return {
+        ...state,
+        isTransactionsLoading: true,
+        transactionsError: null,
+      };
+
+    case WALLET_ACTIONS.FETCH_TRANSACTIONS_SUCCESS:
+      return {
+        ...state,
+        isTransactionsLoading: false,
+        transactions: action.payload,
+        transactionsError: null,
+      };
+
+    case WALLET_ACTIONS.FETCH_TRANSACTIONS_FAILURE:
+      return {
+        ...state,
+        isTransactionsLoading: false,
+        transactionsError: action.payload,
+      };
+
+    case WALLET_ACTIONS.CREATE_TOPUP_REQUEST:
+      return {
+        ...state,
+        isTopupLoading: true,
+        topupError: null,
+      };
+
+    case WALLET_ACTIONS.CREATE_TOPUP_SUCCESS:
+      return {
+        ...state,
+        isTopupLoading: false,
+        topupPayment: action.payload,
+        topupError: null,
+      };
+
+    case WALLET_ACTIONS.CREATE_TOPUP_FAILURE:
+      return {
+        ...state,
+        isTopupLoading: false,
+        topupError: action.payload,
+      };
+
+    case WALLET_ACTIONS.CLEAR_WALLET_ERROR:
+      return {
+        ...state,
+        walletError: null,
+      };
+
+    case WALLET_ACTIONS.CLEAR_WALLET:
+      return {
+        ...state,
+        wallet: null,
+        walletError: null,
+      };
+
+    case WALLET_ACTIONS.CLEAR_TRANSACTIONS_ERROR:
+      return {
+        ...state,
+        transactionsError: null,
+      };
+
+    case WALLET_ACTIONS.CLEAR_TOPUP_ERROR:
+      return {
+        ...state,
+        topupError: null,
+      };
+
+    case WALLET_ACTIONS.CLEAR_TOPUP_PAYMENT:
+      return {
+        ...state,
+        topupPayment: null,
+        topupError: null,
       };
 
     default:

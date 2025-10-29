@@ -37,6 +37,16 @@ class BaseApiService {
       throw new Error('Authentication failed. Please login again.');
     }
 
+    // Handle 400 Bad Request with detailed error message
+    if (response.status === 400) {
+      try {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Bad Request: Invalid data provided');
+      } catch (parseError) {
+        throw new Error('Bad Request: Invalid data provided');
+      }
+    }
+
     throw new Error(`HTTP error! status: ${response.status}`);
   }
 

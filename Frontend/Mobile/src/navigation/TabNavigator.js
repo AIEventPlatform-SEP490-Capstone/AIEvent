@@ -6,6 +6,9 @@ import HomeScreen from '../screens/homeScreen';
 import EventDetailScreen from '../screens/eventDetailScreen';
 import MyEventsScreen from '../screens/myEventsScreen';
 import ProfileScreen from '../screens/profileScreen';
+import WalletScreen from '../screens/walletScreen';
+import PaymentScreen from '../screens/paymentScreen';
+import ChangePasswordScreen from '../screens/changePasswordScreen';
 import ScreenNames from '../constants/ScreenNames';
 import Images from '../constants/Images';
 import Colors from '../constants/Colors';
@@ -76,6 +79,40 @@ const ProfileStack = () => {
       <Stack.Screen 
         name="ProfileMain" 
         component={ProfileScreen}
+      />
+      <Stack.Screen 
+        name="WalletScreen" 
+        component={WalletScreen}
+        options={{
+          headerShown: true,
+          title: 'Ví điện tử',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
+        }}
+      />
+      <Stack.Screen 
+        name="PaymentScreen" 
+        component={PaymentScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name={ScreenNames.CHANGE_PASSWORD_SCREEN} 
+        component={ChangePasswordScreen}
+        options={{
+          headerShown: false,
+        }}
       />
     </Stack.Navigator>
   );
