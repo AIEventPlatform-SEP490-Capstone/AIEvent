@@ -33,7 +33,7 @@ namespace AIEvent.Application.Services.Implements
 
                 var existingCategory = await _unitOfWork.EventCategoryRepository
                                             .Query()
-                                            .FirstOrDefaultAsync(t => t.CategoryName.ToLower() == request.EventCategoryName.ToLower());
+                                            .FirstOrDefaultAsync(t => t.CategoryName.ToLower() == request.EventCategoryName.ToLower() && !t.IsDeleted);
                 if (existingCategory != null)
                 {
                     return ErrorResponse.FailureResult("EventCateogry is already existing", ErrorCodes.InvalidInput);

@@ -27,6 +27,7 @@ namespace AIEvent.Application.Test.Services
         private static readonly Guid OrgId = Guid.Parse("f2c8e66b-54ad-4b16-8ad2-2e2d7c35e9cb");
         private static readonly Guid EventId = Guid.Parse("b6c3d2a7-3b4a-41f8-94b8-1a3b72e5a7a1");
         private static readonly Guid TicketTypeId = Guid.Parse("c4c6a2a9-bb8d-41ee-94b2-8a9f4c890bde");
+        private static readonly Guid TicketId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
         public BookingServiceTests()
         {
@@ -1909,7 +1910,7 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID02_RefundTicketAsync_ShouldReturnFailure_WhenTicketNotFound()
         {
             // Arrange
-            var validTicketId = Guid.NewGuid().ToString();
+            var validTicketId = TicketId.ToString();
             var userId = Guid.NewGuid();
 
             var emptyTickets = new List<Ticket>(); 
@@ -1939,7 +1940,7 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID03_RefundTicketAsync_ShouldReturnBadRequest_WhenTicketAlreadyRefunded()
         {
             // Arrange
-            var validTicketId = Guid.NewGuid().ToString();
+            var validTicketId = TicketId.ToString();
             var userId = Guid.NewGuid();
 
             var organizerProfile = new OrganizerProfile
@@ -2025,7 +2026,7 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID04_RefundTicketAsync_ShouldReturnInternalServerError_WhenEventAlreadyStarted()
         {
             // Arrange
-            var validTicketId = Guid.NewGuid().ToString();
+            var validTicketId = TicketId.ToString();
             var userId = Guid.NewGuid();
 
             var organizerProfile = new OrganizerProfile
@@ -2110,7 +2111,7 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID05_RefundTicketAsync_ShouldSucceed_WhenFreeEventAndEmptyRefundRuleDetails()
         {
             // Arrange
-            var validTicketId = Guid.NewGuid().ToString();
+            var validTicketId = TicketId.ToString();
             var userId = Guid.NewGuid();
             var organizerId = Guid.NewGuid();
 
@@ -2330,7 +2331,7 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID07_RefundTicketAsync_ShouldReturnNotFound_WhenUserWalletMissing()
         {
             // Arrange
-            var validTicketId = Guid.NewGuid().ToString();
+            var validTicketId = TicketId.ToString();
             var userId = Guid.NewGuid();
 
             var organizerProfile = new OrganizerProfile
@@ -2587,7 +2588,7 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID09_RefundTicketAsync_ShouldSucceed_WhenRefundPercentIs100()
         {
             // Arrange
-            var validTicketId = Guid.NewGuid().ToString();
+            var validTicketId = TicketId.ToString();
             var userId = Guid.NewGuid();
 
             var user = new User
@@ -2895,10 +2896,10 @@ namespace AIEvent.Application.Test.Services
         }
 
         [Fact]
-        public async Task UTCID11_RefundTicketAsync_ShouldSucceed_WhenRefundPercentIs0_QuantitiesUpdatedCorrectly()
+        public async Task UTCID11_RefundTicketAsync_ShouldSucceed_QuantitiesUpdatedCorrectly()
         {
             // Arrange
-            var validTicketId = Guid.NewGuid().ToString();
+            var validTicketId = TicketId.ToString();
             var userId = Guid.NewGuid();
 
             var user = new User
@@ -3057,7 +3058,7 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID12_RefundTicketAsync_ShouldUpdateWalletsCorrectly_WhenRefundPercentIs80()
         {
             // Arrange
-            var validTicketId = Guid.NewGuid().ToString();
+            var validTicketId = TicketId.ToString();
             var userId = Guid.NewGuid();
             var orgId = Guid.NewGuid();
 
@@ -3217,6 +3218,92 @@ namespace AIEvent.Application.Test.Services
             _unitOfWorkMock.Verify(u => u.WalletRepository.Query(false), Times.Once);
             _unitOfWorkMock.Verify(u => u.PaymentTransactionRepository.AddAsync(It.IsAny<PaymentTransaction>()), Times.Once);
             _unitOfWorkMock.Verify(u => u.WalletTransactionRepository.AddRangeAsync(It.IsAny<IEnumerable<WalletTransaction>>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task UTCID13_RefundTicketAsync_ShouldReturnBadRequest_WhenTicketIsDeleted()
+        {
+            // Arrange
+            var validTicketId = TicketId.ToString();
+            var userId = Guid.NewGuid();
+
+            var organizerProfile = new OrganizerProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = OrgId,
+                Address = "123 Organizer St",
+                ContactEmail = "org@test.com",
+                ContactName = "Organizer Test",
+                ContactPhone = "0987654321",
+                EventExperienceLevel = 0,
+                EventFrequency = 0,
+                EventSize = 0,
+                OrganizationType = 0,
+                OrganizerType = 0,
+            };
+
+            var eventEntity = new Event
+            {
+                Id = Guid.NewGuid(),
+                Title = "Test Event",
+                IsDeleted = false,
+                StartTime = DateTime.UtcNow.AddDays(5),
+                OrganizerProfile = organizerProfile,
+                Description = "Test",
+                EndTime = DateTime.UtcNow.AddDays(5)
+            };
+
+            var refundRule = new RefundRule
+            {
+                Id = Guid.NewGuid(),
+                RuleName = "Test",
+                RefundRuleDetails = new List<RefundRuleDetail>(),
+            };
+
+            var ticketType = new TicketDetail
+            {
+                Id = Guid.NewGuid(),
+                Event = eventEntity,
+                RefundRule = refundRule,
+                TicketName = "Test",
+                TicketQuantity = 1,
+            };
+
+            var ticket = new Ticket
+            {
+                Id = Guid.Parse(validTicketId),
+                UserId = userId,
+                Status = TicketStatus.Valid,
+                TicketType = ticketType,
+                IsDeleted = true,
+                EventName = "Test",
+                QrCodeUrl = "Test",
+                TicketCode = "Test",
+            };
+
+            var ticketList = new List<Ticket> { ticket };
+
+            var ticketQueryableMock = ticketList.AsQueryable().BuildMock();
+
+            _unitOfWorkMock
+                .Setup(u => u.TicketRepository.Query(false))
+                .Returns(ticketQueryableMock);
+
+            _transactionHelperMock
+                .Setup(th => th.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(async func => await func());
+
+            // Act
+            var result = await _bookingService.RefundTicketAsync(userId, validTicketId);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal("Ticket not found", result.Error!.Message);
+            Assert.Equal(ErrorCodes.NotFound, result.Error.StatusCode);
+
+            // Verify repository được gọi đúng 1 lần
+            _unitOfWorkMock.Verify(u => u.TicketRepository.Query(false), Times.Once);
         }
         #endregion
     }
