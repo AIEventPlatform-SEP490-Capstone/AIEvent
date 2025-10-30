@@ -15,7 +15,8 @@ namespace AIEvent.Application.DTOs.Event
         [Required(ErrorMessage = "StartTime is required")]
         public required DateTime StartTime { get; set; }
         [Required(ErrorMessage = "EndTime is required")]
-        public required DateTime EndTime { get; set; } 
+        public required DateTime EndTime { get; set; }
+        [Required(ErrorMessage = "LocationName is required for offline events")]
         public string? LocationName { get; set; }
         public string? DetailedDescription { get; set; }
         public string? LinkRef { get; set; }
@@ -27,7 +28,9 @@ namespace AIEvent.Application.DTOs.Event
         public List<IFormFile>? ImgListEvent { get; set; }
         public List<IFormFile>? ImgListEvidences { get; set; }
         public ConfirmStatus? RequireApproval { get; set; } = ConfirmStatus.NeedConfirm;
+        [Required(ErrorMessage = "City is required for offline events")]
         public string? City { get; set; }
+        [Required(ErrorMessage = "Address is required for offline events")]
         public string? Address { get; set; }
         public float? Latitude { get; set; }
         public float? Longitude { get; set; }

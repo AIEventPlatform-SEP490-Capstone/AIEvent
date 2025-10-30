@@ -51,18 +51,7 @@ namespace AIEvent.Application.Services.Implements
 
             if (request.SaleEndTime > request.StartTime)
                 return ErrorResponse.FailureResult("SaleEndTime cannot be after the event StartTime", ErrorCodes.InvalidInput);
-
-            // Validate offline event required fields
-            if (string.IsNullOrWhiteSpace(request.LocationName))
-                return ErrorResponse.FailureResult("LocationName is required for offline events", ErrorCodes.InvalidInput);
-
-            if (string.IsNullOrWhiteSpace(request.City))
-                return ErrorResponse.FailureResult("City is required for offline events", ErrorCodes.InvalidInput);
-
-            if (string.IsNullOrWhiteSpace(request.Address))
-                return ErrorResponse.FailureResult("Address is required for offline events", ErrorCodes.InvalidInput);
-
-            // Validate evidence is required if publishing
+             
             if (request.Publish == true)
             {
                 if (request.ImgListEvidences == null || !request.ImgListEvidences.Any())
