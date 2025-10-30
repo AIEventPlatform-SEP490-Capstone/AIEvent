@@ -5,11 +5,10 @@ namespace AIEvent.Application.DTOs.Ticket
     public class TicketResponse
     {
         public Guid TicketId { get; set; }
-        public required string EventName { get; set; }
-        public required string Address { get; set; }
-        public DateTime StartTime { get; set; }
-        public DateTime EndTime { get; set; }
-        public string? EventImage { get; set; }
-        public TicketStatus Status { get; set; }
+        public string TicketCode { get; set; } = default!;
+        public string TicketTypeName { get; set; } = default!;
+        public decimal Price { get; set; }
+        public string Status { get; set; } = default!;
+        public string? QrCode { get; set; }
     }
 }
