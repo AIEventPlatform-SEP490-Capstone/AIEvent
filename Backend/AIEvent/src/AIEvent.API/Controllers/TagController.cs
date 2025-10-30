@@ -24,7 +24,8 @@ namespace AIEvent.API.Controllers
         [Authorize(Roles = "Admin,Organizer")]
         public async Task<ActionResult<SuccessResponse<object>>> CreateTag([FromBody] CreateTagRequest request)
         {
-            var result = await _tagService.CreateTagAsync(request);
+            var role = User.GetRoleFromClaim();
+            var result = await _tagService.CreateTagAsync(request, role);
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);

@@ -10,7 +10,6 @@ using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Org.BouncyCastle.Asn1.Pkcs;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -178,6 +177,7 @@ namespace AIEvent.Application.Services.Implements
                         PaymentMethod = PaymentMethod.Wallet,
                         Status = TransactionStatus.Success,
                         Description = $"Thanh toán vé sự kiện '{eventEntity.Title}'",
+                        TransactionType = TransactionType.Payment,
                         CompletedAt = DateTime.UtcNow
                     };
                     await _unitOfWork.PaymentTransactionRepository.AddAsync(payment);
@@ -507,6 +507,7 @@ namespace AIEvent.Application.Services.Implements
                         PaymentMethod = PaymentMethod.Wallet,
                         Description = $"Hoàn {refundPercent}% tiền vé sự kiện '{eventEntity.Title}'",
                         CompletedAt = now,
+                        TransactionType = TransactionType.Refund,
                         Status = TransactionStatus.Success,
                     };
 

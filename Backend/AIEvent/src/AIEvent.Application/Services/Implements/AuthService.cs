@@ -58,6 +58,9 @@ namespace AIEvent.Application.Services.Implements
             if (user == null || !user.IsActive)
                 return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
 
+            if (user.IsDeleted)
+                return ErrorResponse.FailureResult("User has been banned", ErrorCodes.PermissionDenied);
+
             if (!_hasherHelper.Verify(request.Password ,user.PasswordHash!))
                 return ErrorResponse.FailureResult("Invalid email or password", ErrorCodes.Unauthorized);
 
