@@ -11,10 +11,9 @@ import {
 import { Input } from "../../components/ui/input";
 import { Separator } from "../../components/ui/separator";
 import { Badge } from "../../components/ui/badge";
-import { Calendar, MapPin, Clock, QrCode, Ticket } from "lucide-react";
+import { Calendar, MapPin, Clock, QrCode, Loader2 } from "lucide-react";
 import {
   createBooking,
-  selectBookingLoading,
   selectBookingError,
 } from "../../store/slices/bookingSlice";
 import { eventAPI } from "../../api/eventAPI";
@@ -24,27 +23,22 @@ function BookingFlow() {
   const { id } = useParams();
   const eventId = id;
   const dispatch = useDispatch();
-  const loading = useSelector(selectBookingLoading);
   const error = useSelector(selectBookingError);
 
   const [event, setEvent] = useState(null);
   const [fetching, setFetching] = useState(true);
   const [fetchError, setFetchError] = useState(null);
-
   const [qrCode, setQrCode] = useState(null);
 
   const [step, setStep] = useState(1);
   const [selectedTicketTypeId, setSelectedTicketTypeId] = useState("");
-  const [ticketQuantity, setTicketQuantity] = useState(1);
+  const [ticketQuantity, setTicketQuantity] = useState("");
   const [bookingComplete, setBookingComplete] = useState(false);
-  const [bookingData, setBookingData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    company: "",
-  });
 
-  // 🔹 Fetch event data by ID
+  const creating = useSelector((state) => state.booking.creating);
+  const [quantityError, setQuantityError] = useState("");
+
+  // 🔹 Lấy thông tin sự kiện chi tiết
   useEffect(() => {
     const fetchEvent = async () => {
       try {
@@ -81,31 +75,12 @@ function BookingFlow() {
   const selectedTicketType = ticketTypes.find(
     (t) => t.ticketDetailId === selectedTicketTypeId
   );
-
   const ticketPrice = selectedTicketType?.ticketPrice || 0;
-  const totalPrice = ticketPrice * ticketQuantity;
-
+  const numericQuantity = Number(ticketQuantity) || 0;
+  const totalPrice = ticketPrice * numericQuantity;
   const canProceedFromStep1 = () => selectedTicketTypeId && ticketQuantity > 0;
 
-  // ✅ Gọi API booking thật
-  //   const handleBooking = async () => {
-  //     try {
-  //       const bookingPayload = {
-  //         eventId: event.eventId,
-  //         ticketTypeRequests: [
-  //           {
-  //             ticketTypeId: selectedTicketTypeId,
-  //             quantity: ticketQuantity,
-  //           },
-  //         ],
-  //       };
-
-  //       await dispatch(createBooking(bookingPayload)).unwrap();
-  //       setBookingComplete(true);
-  //     } catch (err) {
-  //       console.error("Booking failed:", err);
-  //     }
-  //   };
+  // ✅ Đặt vé thật theo API mới
   const handleBooking = async () => {
     try {
       const bookingPayload = {
@@ -118,38 +93,27 @@ function BookingFlow() {
         ],
       };
 
-      // 1️⃣ Gọi API tạo booking
-      const result = await dispatch(createBooking(bookingPayload)).unwrap();
-      console.log("Booking result:", result);
+      await dispatch(createBooking(bookingPayload)).unwrap();
 
-      // 2️⃣ Sau khi tạo booking, gọi API lấy danh sách vé
-      const ticketsResponse = await bookingAPI.getTickets();
-      const items = ticketsResponse?.items || [];
+      const ticketsResponse = await bookingAPI.getEventTickets(event.eventId);
+      const tickets = ticketsResponse?.items?.[0]?.tickets || [];
 
-      // 3️⃣ Lấy vé mới nhất hoặc vé thuộc sự kiện hiện tại
-      const latestTicket =
-        items.find((t) => t.eventName === event.title) || items[0];
-
-      if (!latestTicket) {
-        console.warn("Không tìm thấy vé nào để lấy mã QR.");
+      if (!tickets.length) {
         setBookingComplete(true);
         return;
       }
 
-      const ticketId = latestTicket.ticketId;
-      console.log("🎟 Ticket ID:", ticketId);
+      const latestTicket = tickets[tickets.length - 1];
+      const qrResponse = await bookingAPI.getTicketQR(latestTicket.ticketId);
+      setQrCode(qrResponse?.qrCode);
 
-      // 4️⃣ Lấy QR Code thật từ API
-      const qrResponse = await bookingAPI.getTicketQR(ticketId);
-      setQrCode(qrResponse?.qrCode); // qrCode là URL thật từ Cloudinary
-
-      // 5️⃣ Hiển thị màn hình thành công
       setBookingComplete(true);
     } catch (err) {
       console.error("Booking failed:", err);
       alert(err?.message || "Đặt vé thất bại, vui lòng thử lại.");
     }
   };
+
   // ✅ Giao diện khi đặt vé thành công
   if (bookingComplete) {
     return (
@@ -183,17 +147,8 @@ function BookingFlow() {
                 )}
               </div>
 
-              {/* <div className="bg-card p-6 rounded-xl mb-8 border">
-                <div className="text-5xl font-mono text-center mb-3">
-                  QR123456789
-                </div>
-                <p className="text-sm text-muted-foreground text-center">
-                  Mã QR check-in
-                </p>
-              </div> */}
-
               <Button className="w-full h-12 text-lg" asChild>
-                <a href="/profile">Xem vé trong tài khoản</a>
+                <a href="/my-tickets">Xem vé đã mua</a>
               </Button>
               <Button variant="outline" className="w-full h-12 text-lg" asChild>
                 <a href="/">Về trang chủ</a>
@@ -205,7 +160,7 @@ function BookingFlow() {
     );
   }
 
-  // ✅ Giao diện chính
+  //  Giao diện đặt vé
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="container mx-auto px-4 max-w-6xl">
@@ -222,15 +177,13 @@ function BookingFlow() {
                     1. Chọn vé
                   </Badge>
                   <Badge variant={step >= 2 ? "default" : "secondary"}>
-                    2. Thông tin
-                  </Badge>
-                  <Badge variant={step >= 3 ? "default" : "secondary"}>
-                    3. Xác nhận
+                    2. Xác nhận
                   </Badge>
                 </div>
               </CardHeader>
 
               <CardContent className="space-y-6 pt-2">
+                {/* Step 1: chọn vé */}
                 {step === 1 && (
                   <>
                     <div className="space-y-4">
@@ -271,23 +224,62 @@ function BookingFlow() {
 
                     <div className="space-y-3">
                       <label className="text-sm font-medium">Số lượng vé</label>
-                      <Input
-                        type="number"
-                        min="1"
-                        max={selectedTicketType?.maxPurchaseQuantity || 10}
-                        value={ticketQuantity}
-                        onChange={(e) =>
-                          setTicketQuantity(
-                            Math.max(1, Number(e.target.value) || 1)
-                          )
-                        }
-                        className="w-24 text-center"
-                      />
+                      <div>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={ticketQuantity}
+                          onChange={(e) => {
+                            const input = e.target.value;
+
+                            // Chỉ cho phép ký tự số
+                            if (!/^\d*$/.test(input)) return;
+
+                            setTicketQuantity(input);
+
+                            // Nếu input trống => không báo lỗi
+                            if (!input) {
+                              setQuantityError("");
+                              return;
+                            }
+
+                            const value = Number(input);
+                            // Nếu chưa chọn vé → không kiểm tra
+                            if (!selectedTicketType) {
+                              setQuantityError("");
+                              return;
+                            }
+                            const maxQty =
+                              selectedTicketType?.remainingQuantity || 0;
+
+                            if (value > maxQty) {
+                              setQuantityError(
+                                `Số vé bạn mua đã vượt quá số lượng vé còn lại là: ${maxQty} vé`
+                              );
+                            } else {
+                              setQuantityError("");
+                            }
+                          }}
+                          className="w-32 text-center"
+                          placeholder="Nhập số vé"
+                        />
+                        {quantityError && (
+                          <p className="text-sm text-red-500 mt-1">
+                            {quantityError}
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     <Button
                       onClick={() => setStep(2)}
-                      disabled={!canProceedFromStep1()}
+                      disabled={
+                        !selectedTicketTypeId ||
+                        !ticketQuantity ||
+                        quantityError ||
+                        Number(ticketQuantity) < 1
+                      }
                       className="w-full h-12 font-semibold"
                     >
                       Tiếp tục
@@ -295,73 +287,46 @@ function BookingFlow() {
                   </>
                 )}
 
+                {/* Step 2: xác nhận */}
                 {step === 2 && (
                   <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Input
-                        placeholder="Họ và tên"
-                        value={bookingData.fullName}
-                        onChange={(e) =>
-                          setBookingData({
-                            ...bookingData,
-                            fullName: e.target.value,
-                          })
-                        }
-                      />
-                      <Input
-                        placeholder="Email"
-                        value={bookingData.email}
-                        onChange={(e) =>
-                          setBookingData({
-                            ...bookingData,
-                            email: e.target.value,
-                          })
-                        }
-                      />
-                      <Input
-                        placeholder="Số điện thoại"
-                        value={bookingData.phone}
-                        onChange={(e) =>
-                          setBookingData({
-                            ...bookingData,
-                            phone: e.target.value,
-                          })
-                        }
-                      />
-                      <Input
-                        placeholder="Công ty (tùy chọn)"
-                        value={bookingData.company}
-                        onChange={(e) =>
-                          setBookingData({
-                            ...bookingData,
-                            company: e.target.value,
-                          })
-                        }
-                      />
+                    <div className="space-y-4 border rounded-xl p-4 bg-muted/10">
+                      <h3 className="text-lg font-semibold text-center">
+                        Xác nhận thông tin đặt vé
+                      </h3>
+                      <Separator />
+                      <p>
+                        <strong>Sự kiện:</strong> {event.title}
+                      </p>
+                      <p>
+                        <strong>Loại vé:</strong>{" "}
+                        {selectedTicketType?.ticketName}
+                      </p>
+                      <p>
+                        <strong>Số lượng:</strong> {ticketQuantity}
+                      </p>
+                      <p>
+                        <strong>Tổng tiền:</strong>{" "}
+                        {totalPrice.toLocaleString("vi-VN")}đ
+                      </p>
                     </div>
 
                     <div className="flex gap-3 pt-2">
                       <Button variant="outline" onClick={() => setStep(1)}>
                         Quay lại
                       </Button>
-                      <Button onClick={() => setStep(3)}>Tiếp tục</Button>
+                      <Button
+                        onClick={handleBooking}
+                        disabled={creating}
+                        className="flex-1 h-12 font-semibold flex items-center justify-center"
+                      >
+                        {creating && (
+                          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        )}
+                        {creating ? "Đang đặt vé..." : "Xác nhận đặt vé"}
+                      </Button>
                     </div>
-                  </>
-                )}
 
-                {step === 3 && (
-                  <>
-                    <p className="text-sm mb-2 text-muted-foreground">
-                      Xác nhận đặt vé cho sự kiện{" "}
-                      <span className="font-medium">{event.title}</span>
-                    </p>
-                    <Button
-                      onClick={handleBooking}
-                      disabled={loading}
-                      className="w-full h-12 font-semibold"
-                    >
-                      {loading ? "Đang xử lý..." : "Xác nhận đặt vé"}
-                    </Button>
                     {error && (
                       <p className="text-red-500 text-sm mt-3 text-center">
                         {error}
