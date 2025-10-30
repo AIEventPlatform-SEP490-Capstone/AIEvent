@@ -5,6 +5,7 @@
         Approve,
         Reject,
         NeedConfirm,
-        Ended
+        Ended,
+        Pending
     }
 }

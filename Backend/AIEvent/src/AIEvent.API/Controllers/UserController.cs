@@ -75,10 +75,11 @@ namespace AIEvent.API.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<SuccessResponse<BasePaginated<UserResponse>>>> GetAllUsers([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<UserResponse>>>> GetAllUsers(string? email, string? name, string? role,
+                                                                                    [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
-            var result = await _userService.GetAllUsersAsync(pageNumber, pageSize);
+            var result = await _userService.GetAllUsersAsync(pageNumber, pageSize, email, name, role);
 
             if (!result.IsSuccess)
             {
@@ -88,6 +89,24 @@ namespace AIEvent.API.Controllers
             return Ok(SuccessResponse<BasePaginated<UserResponse>>.SuccessResult(
                 result.Value!,
                 message: "Users retrieved successfully"));
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<ActionResult<SuccessResponse<object>>> BanUser(string id)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _userService.BanUserAsync(userId, id);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Updated,
+                "Ban user successfully"));
         }
     }
 }

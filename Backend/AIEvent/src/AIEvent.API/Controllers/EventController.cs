@@ -203,5 +203,39 @@ namespace AIEvent.API.Controllers
                 SuccessCodes.Updated,
                 "Confirm event successfully"));
         }
+
+        [HttpPost("request-end/{id}")]
+        [Authorize(Roles = "Admin,Manager,Organizer")]
+        public async Task<ActionResult<SuccessResponse<object>>> RequestEndEvent(string id)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _eventService.RequestEndEventAsync(userId, id);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Created,
+                "Reuquest event successfully"));
+        }
+
+        [HttpPatch("end-event/{id}")]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<ActionResult<SuccessResponse<object>>> ConfirmEndEvent(string id)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _eventService.ConfirmEndEventAsync(id);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Created,
+                "End event successfully"));
+        }
     }
 }

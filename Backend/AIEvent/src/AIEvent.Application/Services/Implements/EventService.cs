@@ -984,5 +984,130 @@ namespace AIEvent.Application.Services.Implements
 
             return Result.Success();
         }
+
+        public async Task<Result> RequestEndEventAsync(Guid userId, string id)
+        {
+            if (!Guid.TryParse(id, out var eventId))
+                return ErrorResponse.FailureResult("Invalid ticket ID format", ErrorCodes.InvalidInput);
+
+            var eventEntity = await _unitOfWork.EventRepository.Query()
+                .Include(e => e.OrganizerProfile)
+                .FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted && e.RequireApproval == ConfirmStatus.Approve);
+
+            if (eventEntity == null)
+                return ErrorResponse.FailureResult("Event not found", ErrorCodes.NotFound);
+
+            if (eventEntity.OrganizerProfile?.UserId != userId || eventEntity.OrganizerProfile == null)
+                return ErrorResponse.FailureResult("OrganizerProfile not found", ErrorCodes.InternalServerError);
+
+            if (eventEntity.EndTime > DateTime.UtcNow)
+                return ErrorResponse.FailureResult("Event is not over yet", ErrorCodes.InvalidInput);
+
+            eventEntity.RequireApproval = ConfirmStatus.Pending;
+
+            EndEventRequest request = new()
+            {
+                EventId = eventId,
+                OrganizerProfileId = eventEntity.OrganizerProfileId,
+                PlatformFee = 0,
+                NetRevenue = 0,
+                TotalRevenue = 0,
+                Status = ConfirmStatus.NeedConfirm,
+                ReviewedAt = DateTime.MinValue
+            };
+
+            await _unitOfWork.EventRepository.UpdateAsync(eventEntity);
+            await _unitOfWork.EndRequestRepository.AddAsync(request);
+            await _unitOfWork.SaveChangesAsync();
+
+            return Result.Success();
+        }
+
+        
+        public async Task<Result<object>> ConfirmEndEventAsync(string id)
+        {
+            if (!Guid.TryParse(id, out var eventId))
+                return ErrorResponse.FailureResult("Invalid ticket ID format", ErrorCodes.InvalidInput);
+
+            var eventEntity = await _unitOfWork.EventRepository.Query()
+                .Include(e => e.OrganizerProfile)
+                .FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted && e.RequireApproval == ConfirmStatus.Pending);
+
+            if (eventEntity == null)
+                return ErrorResponse.FailureResult("Event not found", ErrorCodes.NotFound);
+
+            var endRequest = await _unitOfWork.EndRequestRepository.Query()
+                .FirstOrDefaultAsync(e => e.EventId == eventEntity.Id && e.Status == ConfirmStatus.NeedConfirm && !e.IsDeleted);
+            if (endRequest == null)
+                return ErrorResponse.FailureResult("Event is not over yet", ErrorCodes.InvalidInput);
+
+            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+            {
+                var paymentData = await _unitOfWork.PaymentTransactionRepository.Query(false)
+                    .Where(p => p.Booking.EventId == eventId &&
+                                p.Status == TransactionStatus.Success &&
+                                !p.IsDeleted)
+                    .Select(p => new { p.Amount, p.TransactionType })
+                    .ToListAsync();
+
+                var totalPayment = paymentData
+                    .Where(p => p.TransactionType == TransactionType.Payment)
+                    .Sum(p => p.Amount);
+
+                var totalRefund = paymentData
+                    .Where(p => p.TransactionType == TransactionType.Refund)
+                    .Sum(p => p.Amount);
+
+                var totalRevenue = totalPayment - totalRefund;
+
+                //Tính phí nền tảng
+                var platformFee = totalRevenue * 0.066m + 45000m;
+                var netRevenue = totalRevenue - platformFee;
+
+                var organizerWallet = await _unitOfWork.WalletRepository.Query()
+                    .FirstOrDefaultAsync(w => w.UserId == eventEntity.OrganizerProfile!.UserId && !w.IsDeleted);
+
+                if (organizerWallet == null)
+                    return ErrorResponse.FailureResult("Organizer wallet not found", ErrorCodes.NotFound);
+
+                //Tạo các transaction
+                var walletTransaction = new WalletTransaction
+                {
+                    WalletId = organizerWallet.Id,
+                    Type = TransactionType.PlatformFee,
+                    Amount = platformFee,
+                    BalanceBefore = organizerWallet.Balance,
+                    BalanceAfter = organizerWallet.Balance - platformFee,
+                    Direction = TransactionDirection.Out,
+                    Status = TransactionStatus.Success,
+                    Description = $"Trừ {platformFee:N0}đ phí nền tảng từ sự kiện '{eventEntity.Title}'",
+                    ReferenceType = ReferenceType.SystemFee,
+                    ReferenceId = eventEntity.Id
+                };
+
+                organizerWallet.Balance -= platformFee;
+
+                endRequest.TotalRevenue = totalRevenue;
+                endRequest.PlatformFee = platformFee;
+                endRequest.NetRevenue = netRevenue;
+                endRequest.Status = ConfirmStatus.Approve;
+                endRequest.ReviewedAt = DateTime.UtcNow;
+
+                eventEntity.RequireApproval = ConfirmStatus.Ended;
+
+                await _unitOfWork.WalletTransactionRepository.AddAsync(walletTransaction);
+                await _unitOfWork.EndRequestRepository.UpdateAsync(endRequest);
+                await _unitOfWork.EventRepository.UpdateAsync(eventEntity);
+                await _unitOfWork.WalletRepository.UpdateAsync(organizerWallet);
+
+                return Result<object>.Success(new
+                {
+                    Event = eventEntity.Title,
+                    TotalRevenue = totalRevenue,
+                    PlatformFee = platformFee,
+                    NetRevenue = netRevenue
+                });
+            });
+        }
     }
 }

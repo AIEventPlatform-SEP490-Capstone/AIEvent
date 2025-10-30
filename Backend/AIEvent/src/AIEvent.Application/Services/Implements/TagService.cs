@@ -21,7 +21,7 @@ namespace AIEvent.Application.Services.Implements
             _unitOfWork = unitOfWork;  
         }
 
-        public async Task<Result> CreateTagAsync(CreateTagRequest request)
+        public async Task<Result> CreateTagAsync(CreateTagRequest request, string role)
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
@@ -39,6 +39,10 @@ namespace AIEvent.Application.Services.Implements
                     NameTag = request.NameTag,
                 };
 
+                if(role == "Manager" || role == "Admin")
+                {
+                    tag.CreatedBy = "System";
+                }
                 await _unitOfWork.TagRepository.AddAsync(tag);
 
                 return Result.Success();
@@ -74,7 +78,7 @@ namespace AIEvent.Application.Services.Implements
             IQueryable<Tag> tagQuery = _unitOfWork.TagRepository
                 .Query()
                 .AsNoTracking()
-                .Where(p => !p.DeletedAt.HasValue && p.CreatedBy == Id)
+                .Where(p => !p.DeletedAt.HasValue && (p.CreatedBy == Id || p.CreatedBy == "System"))
                 .OrderByDescending(s => s.CreatedAt);
 
             int totalCount = await tagQuery.CountAsync();

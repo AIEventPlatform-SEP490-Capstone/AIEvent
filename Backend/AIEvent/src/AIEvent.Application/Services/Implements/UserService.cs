@@ -83,12 +83,33 @@ namespace AIEvent.Application.Services.Implements
             return Result.Success();
         }
 
-        public async Task<Result<BasePaginated<UserResponse>>> GetAllUsersAsync(int pageNumber = 1, int pageSize = 10)
+        public async Task<Result<BasePaginated<UserResponse>>> GetAllUsersAsync(int pageNumber, int pageSize, string? email, string? name, string? role)
         {
             IQueryable<User> userQuery = _unitOfWork.UserRepository
                 .Query()
                 .AsNoTracking()
                 .OrderByDescending(s => s.CreatedAt);
+
+            if (!string.IsNullOrEmpty(email))
+            {
+                userQuery = userQuery.Where(u => u.Email!.Contains(email));
+            }
+
+            if (!string.IsNullOrEmpty(name))
+            {
+                userQuery = userQuery.Where(u => u.FullName!.Contains(name));
+            }
+
+            if (!string.IsNullOrEmpty(role))
+            {
+                var roleData = await _unitOfWork.RoleRepository.Query()
+                    .AsNoTracking()
+                    .Select(r => new { r.Id, r.Name, r.IsDeleted })
+                    .FirstOrDefaultAsync(r => r.Name == role && !r.IsDeleted);
+                if (roleData == null)
+                    return ErrorResponse.FailureResult("Role not found", ErrorCodes.NotFound);
+                userQuery = userQuery.Where(u => u.RoleId == roleData.Id);
+            }
 
             int totalCount = await userQuery.CountAsync();
 
@@ -102,5 +123,23 @@ namespace AIEvent.Application.Services.Implements
             return new BasePaginated<UserResponse>(result, totalCount, pageNumber, pageSize);
         }
 
+
+        public async Task<Result> BanUserAsync(Guid userId, string id)
+        {
+            if (!Guid.TryParse(id, out var Id))
+                return ErrorResponse.FailureResult("Invalid ticket ID format", ErrorCodes.InvalidInput);
+
+            var user = await _unitOfWork.UserRepository.Query()
+                .FirstOrDefaultAsync(u => u.Id == Id && !u.IsDeleted && u.IsActive);
+
+            if(user == null)
+                return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
+
+            user.SetDeleted(userId.ToString());
+            await _unitOfWork.UserRepository.UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
+
+            return Result.Success();
+        }
     }
 }

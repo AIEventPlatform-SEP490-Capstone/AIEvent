@@ -31,6 +31,7 @@ namespace AIEvent.Infrastructure.Repositories.Implements
         public IGenericRepository<PaymentTransaction> PaymentTransactionRepository => GetRepository<PaymentTransaction>();
         public IGenericRepository<WithdrawRequest> WithdrawRequestRepository => GetRepository<WithdrawRequest>();
         public IGenericRepository<PaymentInformation> PaymentInformationRepository => GetRepository<PaymentInformation>();
+        public IGenericRepository<EndEventRequest> EndRequestRepository => GetRepository<EndEventRequest>();
         public void EnableSoftDelete() => _context.EnableSoftDelete = true;
         public void DisableSoftDelete() => _context.EnableSoftDelete = false;
 
