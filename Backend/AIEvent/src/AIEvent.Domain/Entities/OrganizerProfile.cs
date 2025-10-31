@@ -38,5 +38,6 @@ namespace AIEvent.Domain.Entities
 
         public User User { get; set; } = default!;
         public ICollection<Event>? Events { get; set; }
+        public ICollection<EndEventRequest>? EndRequests { get; set; }
     }
 }

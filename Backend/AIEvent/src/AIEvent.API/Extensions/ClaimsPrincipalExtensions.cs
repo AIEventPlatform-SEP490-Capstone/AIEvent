@@ -23,5 +23,18 @@ namespace AIEvent.API.Extensions
             }
             return guid;
         }
+
+        public static string GetRoleFromClaim(this ClaimsPrincipal principal)
+        {
+            var role = principal.FindFirst(ClaimTypes.Role)?.Value
+                       ?? principal.FindFirst("role")?.Value;
+
+            if (string.IsNullOrEmpty(role))
+            {
+                throw new UnauthorizedAccessException("Role not found in token");
+            }
+
+            return role;
+        }
     }
 }

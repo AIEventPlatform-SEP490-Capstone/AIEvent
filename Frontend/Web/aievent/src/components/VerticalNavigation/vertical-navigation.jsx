@@ -174,12 +174,6 @@ export function VerticalNavigation() {
           isActive: pathname === "/organizer/events",
         },
         {
-          title: "Quy tắc hoàn tiền",
-          url: "/organizer/refund-rules",
-          icon: Receipt,
-          isActive: pathname === "/organizer/refund-rules",
-        },
-        {
           title: "Quản lý Tags",
           url: "/organizer/tags",
           icon: Tag,

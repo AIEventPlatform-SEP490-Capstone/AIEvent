@@ -16,7 +16,8 @@ import {
   Users,
   Settings,
   Globe,
-  Eye
+  Eye,
+  Send
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
@@ -51,7 +52,6 @@ const createEventSchema = z.object({
   detailedDescription: z.string().optional(),
   startTime: z.string().min(1, 'Thời gian bắt đầu là bắt buộc'),
   endTime: z.string().min(1, 'Thời gian kết thúc là bắt buộc'),
-  isOnlineEvent: z.boolean().default(false),
   locationName: z.string().optional(),
   address: z.string().optional(),
   city: z.string().optional(),
@@ -70,20 +70,20 @@ const createEventSchema = z.object({
     ruleRefundRequestId: z.string().min(1, 'Quy tắc hoàn tiền là bắt buộc'),
   })).min(1, 'Phải có ít nhất một loại vé')
 }).refine((data) => {
-  if (!data.isOnlineEvent && !data.locationName) {
+  if (!data.locationName) {
     return false;
   }
   return true;
 }, {
-  message: 'Địa điểm là bắt buộc cho sự kiện offline',
+  message: 'Địa điểm là bắt buộc',
   path: ['locationName'],
 }).refine((data) => {
-  if (!data.isOnlineEvent && !data.city) {
+  if (!data.city) {
     return false;
   }
   return true;
 }, {
-  message: 'Thành phố là bắt buộc cho sự kiện offline',
+  message: 'Thành phố là bắt buộc',
   path: ['city'],
 }).refine((data) => {
   const saleStart = new Date(data.saleStartTime);
@@ -110,7 +110,9 @@ const CreateEventPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
+  const [selectedEvidenceImages, setSelectedEvidenceImages] = useState([]);
   const [imagePreview, setImagePreview] = useState([]);
+  const [evidenceImagePreview, setEvidenceImagePreview] = useState([]);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   // Redux hooks
@@ -137,22 +139,21 @@ const CreateEventPage = () => {
       endTime: '',
       locationName: '',
       address: '',
-      city: '', // Add city field
+      city: '',
       linkRef: '',
       eventCategoryId: '',
-      isOnlineEvent: false,
       requireApproval: ConfirmStatus.NeedConfirm,
       publish: false,
       saleStartTime: '',
       saleEndTime: '',
-      ticketType: '1', // Free by default
+      ticketType: '1',
       ticketDetails: [
         {
           ticketName: 'Vé thường',
           ticketPrice: 0,
           ticketQuantity: 1,
           ticketDescription: '',
-          ruleRefundRequestId: '', // Will be set when refund rule is selected
+          ruleRefundRequestId: '',
         }
       ],
     },
@@ -163,7 +164,6 @@ const CreateEventPage = () => {
     name: 'ticketDetails',
   });
 
-  const watchIsOnline = watch('isOnlineEvent');
   const watchTicketType = watch('ticketType');
 
   // Set page title and cleanup on mount
@@ -175,6 +175,11 @@ const CreateEventPage = () => {
       clearSelectedRefundRules();
     };
   }, []); // Empty dependency array - only run on mount/unmount
+
+  // Real-time validation effect
+  useEffect(() => {
+    validateDates();
+  }, [watch('startTime'), watch('endTime'), watch('saleStartTime'), watch('saleEndTime')]);
 
   // Handle image upload
   const handleImageChange = (e) => {
@@ -189,6 +194,19 @@ const CreateEventPage = () => {
     setImagePreview(previews);
   };
 
+  // Handle evidence image upload
+  const handleEvidenceImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 5) {
+      toast.error('Chỉ được tải lên tối đa 5 hình ảnh bằng chứng');
+      return;
+    }
+
+    setSelectedEvidenceImages(files);
+    const previews = files.map(file => URL.createObjectURL(file));
+    setEvidenceImagePreview(previews);
+  };
+
   // Remove image
   const removeImage = (index) => {
     const newImages = selectedImages.filter((_, i) => i !== index);
@@ -196,6 +214,15 @@ const CreateEventPage = () => {
     
     setSelectedImages(newImages);
     setImagePreview(newPreviews);
+  };
+
+  // Remove evidence image
+  const removeEvidenceImage = (index) => {
+    const newImages = selectedEvidenceImages.filter((_, i) => i !== index);
+    const newPreviews = evidenceImagePreview.filter((_, i) => i !== index);
+    
+    setSelectedEvidenceImages(newImages);
+    setEvidenceImagePreview(newPreviews);
   };
 
   // Add ticket detail
@@ -313,8 +340,9 @@ const CreateEventPage = () => {
       return;
     }
 
-    // Filter out empty images (từ logic cũ)
+    // Filter out empty images
     const validImages = selectedImages.filter(img => img instanceof File);
+    const validEvidenceImages = selectedEvidenceImages.filter(img => img instanceof File);
     
     // Calculate total tickets from ticketDetails array
     const totalTickets = data.ticketDetails.reduce((sum, ticket) => sum + parseInt(ticket.ticketQuantity), 0);
@@ -328,17 +356,17 @@ const CreateEventPage = () => {
       endTime: new Date(data.endTime).toISOString(),
       saleStartTime: new Date(data.saleStartTime).toISOString(),
       saleEndTime: new Date(data.saleEndTime).toISOString(),
-      isOnlineEvent: data.isOnlineEvent || false,
       locationName: data.locationName || '',
       address: data.address || '',
-      city: data.city || '', // Add city field
+      city: data.city || '',
       latitude: null,
       longitude: null,
       totalTickets: totalTickets,
       ticketType: data.ticketType && !isNaN(parseInt(data.ticketType)) ? parseInt(data.ticketType) : 1,
       requireApproval: data.requireApproval,
-      publish: data.publish || false,
+      publish: data.publish || false, // This will be false for drafts
       images: validImages,
+      evidenceImages: validEvidenceImages,
       eventCategoryId: data.eventCategoryId,
       tags: reduxSelectedTags.map(tag => ({ tagId: tag.tagId })),
       refundRules: selectedRules.map(rule => ({ ruleRefundId: rule.ruleRefundId })),
@@ -407,7 +435,7 @@ const CreateEventPage = () => {
       const response = await createEventAPI(eventData);
       
       if (response) {
-        toast.success('✅ Tạo sự kiện thành công!');
+        toast.success(data.publish ? '✅ Tạo sự kiện thành công!' : '✅ Lưu nháp sự kiện thành công!');
         clearAllSelectedTags();
         clearSelectedRefundRules();
         navigate(PATH.ORGANIZER_MY_EVENTS);
@@ -415,7 +443,7 @@ const CreateEventPage = () => {
     } catch (error) {
       console.error('Error creating event:', error);
       const errorData = error.response?.data;
-      let errorMessage = 'Có lỗi xảy ra khi tạo sự kiện';
+      let errorMessage = data.publish ? 'Có lỗi xảy ra khi tạo sự kiện' : 'Có lỗi xảy ra khi lưu nháp sự kiện';
       
       // Handle specific error cases (từ logic cũ)
       if (errorData?.errors === 'Invalid Organizer ID in token' || error.response?.status === 401) {
@@ -438,467 +466,153 @@ const CreateEventPage = () => {
     }
   };
 
+  // Real-time date validation
+  const validateDates = () => {
+    const startTime = watch('startTime');
+    const endTime = watch('endTime');
+    const saleStartTime = watch('saleStartTime');
+    const saleEndTime = watch('saleEndTime');
+    
+    const errors = [];
+    const now = new Date();
+    
+    // Check if any datetime is in the past
+    if (startTime) {
+      const start = new Date(startTime);
+      if (start <= now) {
+        errors.push('Thời gian bắt đầu phải sau thời điểm hiện tại');
+        // Clear the field if it's in the past
+        setValue('startTime', '');
+      }
+    }
+    
+    if (endTime) {
+      const end = new Date(endTime);
+      if (end <= now) {
+        errors.push('Thời gian kết thúc phải sau thời điểm hiện tại');
+        // Clear the field if it's in the past
+        setValue('endTime', '');
+      }
+    }
+    
+    if (saleStartTime) {
+      const saleStart = new Date(saleStartTime);
+      if (saleStart <= now) {
+        errors.push('Thời gian bắt đầu bán vé phải sau thời điểm hiện tại');
+        // Clear the field if it's in the past
+        setValue('saleStartTime', '');
+      }
+    }
+    
+    if (saleEndTime) {
+      const saleEnd = new Date(saleEndTime);
+      if (saleEnd <= now) {
+        errors.push('Thời gian kết thúc bán vé phải sau thời điểm hiện tại');
+        // Clear the field if it's in the past
+        setValue('saleEndTime', '');
+      }
+    }
+    
+    // Check relationships between dates (only if all relevant fields have values)
+    if (startTime && endTime) {
+      const start = new Date(startTime);
+      const end = new Date(endTime);
+      
+      if (end <= start) {
+        errors.push('Thời gian kết thúc phải sau thời gian bắt đầu');
+        // Clear the endTime field if it's not after startTime
+        setValue('endTime', '');
+      }
+    }
+    
+    if (saleStartTime && saleEndTime && startTime) {
+      const start = new Date(startTime);
+      const saleStart = new Date(saleStartTime);
+      const saleEnd = new Date(saleEndTime);
+      
+      if (saleStart >= start) {
+        errors.push('Thời gian bắt đầu bán vé phải trước thời gian bắt đầu sự kiện');
+        // Clear the saleStartTime field if it's not before event start
+        setValue('saleStartTime', '');
+      }
+      
+      if (saleEnd <= saleStart) {
+        errors.push('Thời gian kết thúc bán vé phải sau thời gian bắt đầu bán vé');
+        // Clear the saleEndTime field if it's not after sale start
+        setValue('saleEndTime', '');
+      }
+      
+      if (saleEnd >= start) {
+        errors.push('Thời gian kết thúc bán vé phải trước thời gian bắt đầu sự kiện');
+        // Clear the saleEndTime field if it's not before event start
+        setValue('saleEndTime', '');
+      }
+    }
+    
+    return errors;
+  };
+
+  const dateErrors = validateDates();
+  
+  // Get minimum datetime for input fields (current time)
+  const getMinDateTime = () => {
+    const now = new Date();
+    // Format as YYYY-MM-DDTHH:MM for datetime-local input
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+  
+  const minDateTime = getMinDateTime();
+
+  // Real-time validation effect
+  useEffect(() => {
+    validateDates();
+  }, [watch('startTime'), watch('endTime'), watch('saleStartTime'), watch('saleEndTime')]);
+
+  if (!user || !['Organizer', 'Admin', 'Manager'].includes(user.role)) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="max-w-md p-6 bg-white rounded-lg shadow-lg">
+          <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
+            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-center text-gray-900">Truy cập bị từ chối</h3>
+          <p className="mt-2 text-sm text-center text-gray-500">
+            Bạn cần đăng nhập với tài khoản Organizer hoặc Admin để tạo sự kiện.
+          </p>
+          <div className="mt-6">
+            <Button 
+              className="w-full" 
+              onClick={() => navigate("/auth/login")}
+            >
+              Đăng nhập ngay
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8 text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-6 shadow-lg">
-            <Plus className="h-10 w-10 text-white" />
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-balance">Tạo sự kiện mới</h1>
+            <p className="text-muted-foreground">Tạo và quản lý sự kiện của bạn</p>
           </div>
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-            Tạo sự kiện mới
-          </h1>
-          <p className="text-gray-600 text-xl max-w-2xl mx-auto">
-            Tạo một sự kiện tuyệt vời và chia sẻ với cộng đồng
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Main Form */}
-          <div className="lg:col-span-2 space-y-6">
-            
-            {/* Basic Information */}
-            <Card className="border-l-4 border-l-blue-500 shadow-xl bg-white">
-              <CardHeader className="bg-gradient-to-r from-blue-500/10 to-transparent">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <div className="p-2 bg-blue-500 rounded-lg">
-                    <Calendar className="h-5 w-5 text-white" />
-                  </div>
-                  Thông tin cơ bản
-                </CardTitle>
-                <CardDescription className="text-base">
-                  Thông tin cơ bản về sự kiện của bạn
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6 p-8">
-                <div>
-                  <Label htmlFor="title" className="text-base font-semibold">Tiêu đề sự kiện *</Label>
-                  <Input
-                    id="title"
-                    {...register('title')}
-                    placeholder="Nhập tiêu đề sự kiện"
-                    className="mt-2 h-12 text-base border-2 focus:border-blue-500"
-                  />
-                  {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>}
-                </div>
-
-                <div>
-                  <Label htmlFor="description" className="text-base font-semibold">Mô tả ngắn *</Label>
-                  <Textarea
-                    id="description"
-                    {...register('description')}
-                    placeholder="Mô tả ngắn gọn về sự kiện"
-                    rows={3}
-                    className="mt-2 text-base border-2 focus:border-blue-500"
-                  />
-                  {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>}
-                </div>
-
-                <div>
-                  <Label htmlFor="detailedDescription" className="text-base font-semibold">Mô tả chi tiết</Label>
-                  <Textarea
-                    id="detailedDescription"
-                    {...register('detailedDescription')}
-                    placeholder="Mô tả chi tiết về sự kiện..."
-                    rows={5}
-                    className="mt-2 text-base border-2 focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="linkRef" className="text-base font-semibold">Liên kết tham khảo</Label>
-                  <Input
-                    id="linkRef"
-                    {...register('linkRef')}
-                    placeholder="https://example.com"
-                    className="mt-2 h-12 text-base border-2 focus:border-blue-500"
-                  />
-                  {errors.linkRef && <p className="text-red-500 text-sm mt-1">{errors.linkRef.message}</p>}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="eventCategoryId" className="text-base font-semibold">Danh mục sự kiện *</Label>
-                    <Select onValueChange={(value) => setValue('eventCategoryId', value)}>
-                      <SelectTrigger className="mt-2 h-12 text-base border-2">
-                        <SelectValue placeholder="Chọn danh mục" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category.eventCategoryId} value={category.eventCategoryId}>
-                            {category.eventCategoryName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.eventCategoryId && <p className="text-red-500 text-sm mt-1">{errors.eventCategoryId.message}</p>}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="ticketType" className="text-base font-semibold">Loại vé *</Label>
-                    <Select onValueChange={(value) => setValue('ticketType', value)} defaultValue="1">
-                      <SelectTrigger className="mt-2 h-12 text-base border-2">
-                        <SelectValue placeholder="Chọn loại vé" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">Miễn phí</SelectItem>
-                        <SelectItem value="2">Có phí</SelectItem>
-                        <SelectItem value="3">Quyên góp</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Time & Location */}
-            <Card className="border-l-4 border-l-green-500 shadow-xl bg-white">
-              <CardHeader className="bg-gradient-to-r from-green-500/10 to-transparent">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <div className="p-2 bg-green-500 rounded-lg">
-                    <Clock className="h-5 w-5 text-white" />
-                  </div>
-                  Thời gian & Địa điểm
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6 p-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="startTime" className="text-base font-semibold">Thời gian bắt đầu *</Label>
-                    <Input
-                      type="datetime-local"
-                      id="startTime"
-                      {...register('startTime')}
-                      className="mt-2 h-12 text-base border-2 focus:border-green-500"
-                    />
-                    {errors.startTime && <p className="text-red-500 text-sm mt-1">{errors.startTime.message}</p>}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="endTime" className="text-base font-semibold">Thời gian kết thúc *</Label>
-                    <Input
-                      type="datetime-local"
-                      id="endTime"
-                      {...register('endTime')}
-                      className="mt-2 h-12 text-base border-2 focus:border-green-500"
-                    />
-                    {errors.endTime && <p className="text-red-500 text-sm mt-1">{errors.endTime.message}</p>}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="saleStartTime" className="text-base font-semibold">Thời gian bắt đầu bán vé *</Label>
-                    <Input
-                      type="datetime-local"
-                      id="saleStartTime"
-                      {...register('saleStartTime')}
-                      className="mt-2 h-12 text-base border-2 focus:border-green-500"
-                    />
-                    {errors.saleStartTime && <p className="text-red-500 text-sm mt-1">{errors.saleStartTime.message}</p>}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="saleEndTime" className="text-base font-semibold">Thời gian kết thúc bán vé *</Label>
-                    <Input
-                      type="datetime-local"
-                      id="saleEndTime"
-                      {...register('saleEndTime')}
-                      className="mt-2 h-12 text-base border-2 focus:border-green-500"
-                    />
-                    {errors.saleEndTime && <p className="text-red-500 text-sm mt-1">{errors.saleEndTime.message}</p>}
-                  </div>
-                </div>
-
-                {/* Add the missing "Sự kiện trực tuyến?" switch */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="isOnlineEvent" className="text-base font-semibold">Sự kiện trực tuyến?</Label>
-                    <Switch
-                      id="isOnlineEvent"
-                      checked={watchIsOnline}
-                      onCheckedChange={(checked) => setValue('isOnlineEvent', checked)}
-                      className="mt-2"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="city" className="text-base font-semibold">Thành phố</Label>
-                    <Input
-                      id="city"
-                      {...register('city')}
-                      placeholder="Nhập thành phố"
-                      className="mt-2 h-12 text-base border-2 focus:border-green-500"
-                    />
-                  </div>
-
-                  {!watchIsOnline && (
-                    <div>
-                      <Label htmlFor="locationName" className="text-base font-semibold">Tên địa điểm *</Label>
-                      <Input
-                        id="locationName"
-                        {...register('locationName')}
-                        placeholder="Nhập tên địa điểm"
-                        className="mt-2 h-12 text-base border-2 focus:border-green-500"
-                      />
-                      {errors.locationName && <p className="text-red-500 text-sm mt-1">{errors.locationName.message}</p>}
-                    </div>
-                  )}
-
-                  {!watchIsOnline && (
-                    <div>
-                      <Label htmlFor="address" className="text-base font-semibold">Địa chỉ *</Label>
-                      <Textarea
-                        id="address"
-                        {...register('address')}
-                        placeholder="Nhập địa chỉ"
-                        rows={3}
-                        className="mt-2 text-base border-2 focus:border-green-500"
-                      />
-                      {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-
-            {/* Images */}
-            <Card className="border-l-4 border-l-purple-500 shadow-xl bg-white">
-              <CardHeader className="bg-gradient-to-r from-purple-500/10 to-transparent">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <div className="p-2 bg-purple-500 rounded-lg">
-                    <Image className="h-5 w-5 text-white" />
-                  </div>
-                  Hình ảnh sự kiện
-                </CardTitle>
-                <CardDescription className="text-base">
-                  Tải lên tối đa 5 hình ảnh cho sự kiện
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-8">
-                <div className="space-y-6">
-                  <div className="border-2 border-dashed border-purple-300 rounded-lg p-8 text-center hover:border-purple-500 transition-colors">
-                    <Input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="hidden"
-                      id="image-upload"
-                    />
-                    <label htmlFor="image-upload" className="cursor-pointer">
-                      <div className="flex flex-col items-center">
-                        <Image className="h-12 w-12 text-purple-400 mb-4" />
-                        <p className="text-lg font-semibold text-purple-600">Chọn hình ảnh</p>
-                        <p className="text-gray-500">PNG, JPG, GIF tối đa 5 file</p>
-                      </div>
-                    </label>
-                  </div>
-                  
-                  {imagePreview.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                      {imagePreview.map((preview, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={preview}
-                            alt={`Preview ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg shadow-md"
-                          />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => removeImage(index)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-          </div>
-
-          {/* Right Column - Sidebar */}
-          <div className="space-y-6">
-            {/* Tags */}
-            <TagSelector
-              className="shadow-xl"
-            />
-
-            {/* Refund Rules */}
-            <RefundRuleManager
-              className="shadow-xl"
-            />
-
-            {/* Tickets - Dynamic Management */}
-            <Card className="border-l-4 border-l-orange-500 shadow-xl bg-white">
-              <CardHeader className="bg-gradient-to-r from-orange-500/10 to-transparent">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <div className="p-2 bg-orange-500 rounded-lg">
-                    <Users className="h-5 w-5 text-white" />
-                  </div>
-                  Thông tin vé
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6 p-6">
-                <div className="space-y-6">
-                  {fields.map((field, index) => (
-                    <div key={field.id} className="p-4 border-2 border-orange-200 rounded-lg bg-orange-50/50">
-                      <div className="flex justify-between items-center mb-4">
-                        <h4 className="font-semibold text-orange-800">Vé #{index + 1}</h4>
-                        {fields.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeTicketDetail(index)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-
-                      <div className="space-y-4">
-                        <div>
-                          <Label className="text-sm font-semibold">Tên vé *</Label>
-                          <Input
-                            {...register(`ticketDetails.${index}.ticketName`)}
-                            placeholder="Ví dụ: Vé VIP"
-                            className="mt-1 border-2 focus:border-orange-500"
-                          />
-                          {errors.ticketDetails?.[index]?.ticketName && <p className="text-red-500 text-sm mt-1">{errors.ticketDetails[index].ticketName.message}</p>}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <Label className="text-sm font-semibold">Giá vé</Label>
-                            <Input
-                              type="number"
-                              {...register(`ticketDetails.${index}.ticketPrice`, { valueAsNumber: true })}
-                              placeholder="0"
-                              min="0"
-                              disabled={watchTicketType === '1'}
-                              className="mt-1 border-2 focus:border-orange-500"
-                            />
-                            {errors.ticketDetails?.[index]?.ticketPrice && <p className="text-red-500 text-sm mt-1">{errors.ticketDetails[index].ticketPrice.message}</p>}
-                          </div>
-
-                          <div>
-                            <Label className="text-sm font-semibold">Số lượng *</Label>
-                            <Input
-                              type="number"
-                              {...register(`ticketDetails.${index}.ticketQuantity`, { valueAsNumber: true })}
-                              placeholder="Số lượng"
-                              min="1"
-                              className="mt-1 border-2 focus:border-orange-500"
-                            />
-                            {errors.ticketDetails?.[index]?.ticketQuantity && <p className="text-red-500 text-sm mt-1">{errors.ticketDetails[index].ticketQuantity.message}</p>}
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label className="text-sm font-semibold">Mô tả vé</Label>
-                          <Textarea
-                            {...register(`ticketDetails.${index}.ticketDescription`)}
-                            placeholder="Mô tả chi tiết về loại vé này"
-                            rows={2}
-                            className="mt-1 border-2 focus:border-orange-500"
-                          />
-                        </div>
-
-                        <div>
-                          <Label className="text-sm font-semibold">Quy tắc hoàn tiền *</Label>
-                          <Select 
-                            onValueChange={(value) => setValue(`ticketDetails.${index}.ruleRefundRequestId`, value)}
-                            value={watch(`ticketDetails.${index}.ruleRefundRequestId`) || ''}
-                          >
-                            <SelectTrigger className="mt-1 border-2 focus:border-orange-500 bg-white">
-                              <SelectValue placeholder="Chọn quy tắc hoàn tiền" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white">
-                              {selectedRules.map(rule => (
-                                <SelectItem key={rule.ruleRefundId} value={rule.ruleRefundId}>
-                                  <div className="flex flex-col">
-                                    <span className="font-medium">{rule.ruleName}</span>
-                                    {rule.ruleDescription && (
-                                      <span className="text-xs text-gray-500 truncate max-w-xs">
-                                        {rule.ruleDescription}
-                                      </span>
-                                    )}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {errors.ticketDetails?.[index]?.ruleRefundRequestId && <p className="text-red-500 text-sm mt-1">{errors.ticketDetails[index].ruleRefundRequestId.message}</p>}
-                          {selectedRules.length === 0 && (
-                            <p className="text-sm text-orange-600 mt-1">
-                              Vui lòng tạo và chọn quy tắc hoàn tiền ở phần trên
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={addTicketDetail}
-                    className="w-full border-2 border-orange-300 text-orange-600 hover:bg-orange-50"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Thêm loại vé
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Settings */}
-            <Card className="border-l-4 border-l-gray-500 shadow-xl bg-white">
-              <CardHeader className="bg-gradient-to-r from-gray-500/10 to-transparent">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <div className="p-2 bg-gray-500 rounded-lg">
-                    <Settings className="h-5 w-5 text-white" />
-                  </div>
-                  Cài đặt sự kiện
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6 p-6">
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
-                  <div className="flex-1">
-                    <Label htmlFor="publish" className="font-semibold text-gray-800 text-base">Xuất bản ngay</Label>
-                    <p className="text-sm text-gray-600 mt-1">Sự kiện sẽ hiển thị công khai</p>
-                  </div>
-                  <Switch
-                    id="publish"
-                    checked={watch('publish')}
-                    onCheckedChange={(checked) => setValue('publish', checked)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Submit and Preview Buttons */}
-          <div className="lg:col-span-3 mt-12 flex justify-center space-x-6">
+          <div className="flex space-x-2">
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
               <DialogTrigger asChild>
-                <Button 
-                  type="button"
-                  variant="outline"
-                  className="px-8 py-4 text-lg font-semibold border-2 border-blue-600 text-blue-600 hover:bg-blue-50 shadow-xl"
-                  onClick={() => setIsPreviewOpen(true)}
-                >
-                  <Eye className="h-5 w-5 mr-3" />
+                <Button variant="outline" disabled={isSubmitting || isLoading}>
+                  <Eye className="w-4 h-4 mr-2" />
                   Xem trước
                 </Button>
               </DialogTrigger>
@@ -915,22 +629,495 @@ const CreateEventPage = () => {
             </Dialog>
             
             <Button 
-              type="submit" 
+              variant="outline" 
+              onClick={() => handleSubmit((data) => onSubmit({...data, publish: false}))()}
               disabled={isSubmitting || isLoading}
-              className="px-12 py-4 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
             >
-              {isSubmitting || isLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                  Đang tạo sự kiện...
-                </>
-              ) : (
-                <>
-                  <Save className="h-5 w-5 mr-3" />
-                  Tạo sự kiện
-                </>
-              )}
+              <Save className="w-4 h-4 mr-2" />
+              {isSubmitting || isLoading ? "Đang lưu..." : "Lưu nháp"}
             </Button>
+            
+            <Button 
+              onClick={() => handleSubmit((data) => onSubmit({...data, publish: true}))()}
+              disabled={isSubmitting || isLoading}
+            >
+              <Send className="w-4 h-4 mr-2" />
+              {isSubmitting || isLoading ? "Đang xuất bản..." : "Xuất bản"}
+            </Button>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Main Form */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Basic Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <div className="p-2 bg-blue-500 rounded-lg">
+                    <Calendar className="h-4 w-4 text-white" />
+                  </div>
+                  Thông tin cơ bản
+                </CardTitle>
+                <CardDescription>
+                  Thông tin cơ bản về sự kiện của bạn
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="title">Tên sự kiện *</Label>
+                  <Input
+                    id="title"
+                    placeholder="Nhập tiêu đề sự kiện"
+                    {...register('title')}
+                  />
+                  {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>}
+                </div>
+
+                <div>
+                  <Label htmlFor="description">Mô tả ngắn *</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Mô tả ngắn gọn về sự kiện"
+                    rows={3}
+                    {...register('description')}
+                  />
+                  {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>}
+                </div>
+
+                <div>
+                  <Label htmlFor="detailedDescription">Mô tả chi tiết</Label>
+                  <Textarea
+                    id="detailedDescription"
+                    placeholder="Mô tả chi tiết về sự kiện..."
+                    rows={5}
+                    {...register('detailedDescription')}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="linkRef">Liên kết tham khảo</Label>
+                  <Input
+                    id="linkRef"
+                    placeholder="https://example.com"
+                    {...register('linkRef')}
+                  />
+                  {errors.linkRef && <p className="text-red-500 text-sm mt-1">{errors.linkRef.message}</p>}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="eventCategoryId">Danh mục sự kiện *</Label>
+                    <Select onValueChange={(value) => setValue('eventCategoryId', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn danh mục" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category.eventCategoryId} value={category.eventCategoryId}>
+                            {category.eventCategoryName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.eventCategoryId && <p className="text-red-500 text-sm mt-1">{errors.eventCategoryId.message}</p>}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="ticketType">Loại vé *</Label>
+                    <Select onValueChange={(value) => setValue('ticketType', value)} defaultValue="1">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn loại vé" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Miễn phí</SelectItem>
+                        <SelectItem value="2">Có phí</SelectItem>
+                        <SelectItem value="3">Quyên góp</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Time & Location */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <div className="p-2 bg-green-500 rounded-lg">
+                    <Clock className="h-4 w-4 text-white" />
+                  </div>
+                  Thời gian & Địa điểm
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="startTime">Thời gian bắt đầu *</Label>
+                    <Input
+                      type="datetime-local"
+                      id="startTime"
+                      min={minDateTime}
+                      {...register('startTime')}
+                    />
+                    {errors.startTime && <p className="text-red-500 text-sm mt-1">{errors.startTime.message}</p>}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="endTime">Thời gian kết thúc *</Label>
+                    <Input
+                      type="datetime-local"
+                      id="endTime"
+                      min={minDateTime}
+                      {...register('endTime')}
+                    />
+                    {errors.endTime && <p className="text-red-500 text-sm mt-1">{errors.endTime.message}</p>}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="saleStartTime">Thời gian bắt đầu bán vé *</Label>
+                    <Input
+                      type="datetime-local"
+                      id="saleStartTime"
+                      min={minDateTime}
+                      {...register('saleStartTime')}
+                    />
+                    {errors.saleStartTime && <p className="text-red-500 text-sm mt-1">{errors.saleStartTime.message}</p>}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="saleEndTime">Thời gian kết thúc bán vé *</Label>
+                    <Input
+                      type="datetime-local"
+                      id="saleEndTime"
+                      min={minDateTime}
+                      {...register('saleEndTime')}
+                    />
+                    {errors.saleEndTime && <p className="text-red-500 text-sm mt-1">{errors.saleEndTime.message}</p>}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="city">Thành phố</Label>
+                    <Input
+                      id="city"
+                      placeholder="Nhập thành phố"
+                      {...register('city')}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="locationName">Tên địa điểm *</Label>
+                    <Input
+                      id="locationName"
+                      placeholder="Nhập tên địa điểm"
+                      {...register('locationName')}
+                    />
+                    {errors.locationName && <p className="text-red-500 text-sm mt-1">{errors.locationName.message}</p>}
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <Label htmlFor="address">Địa chỉ *</Label>
+                    <Textarea
+                      id="address"
+                      placeholder="Nhập địa chỉ"
+                      rows={3}
+                      {...register('address')}
+                    />
+                    {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>}
+                  </div>
+                </div>
+
+                {/* Display real-time date validation errors */}
+                {dateErrors.length > 0 && (
+                  <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <h4 className="font-semibold text-red-800 mb-2">Lỗi thời gian:</h4>
+                    <ul className="list-disc list-inside text-red-600">
+                      {dateErrors.map((error, index) => (
+                        <li key={index} className="text-sm">{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Images */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <div className="p-2 bg-purple-500 rounded-lg">
+                    <Image className="h-4 w-4 text-white" />
+                  </div>
+                  Hình ảnh sự kiện
+                </CardTitle>
+                <CardDescription>
+                  Tải lên tối đa 5 hình ảnh cho sự kiện
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="border-2 border-dashed border-purple-300 rounded-lg p-6 text-center hover:border-purple-500 transition-colors">
+                    <Input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="hidden"
+                      id="image-upload"
+                    />
+                    <label htmlFor="image-upload" className="cursor-pointer">
+                      <div className="flex flex-col items-center">
+                        <Image className="h-8 w-8 text-purple-400 mb-2" />
+                        <p className="text-sm font-semibold text-purple-600">Chọn hình ảnh</p>
+                        <p className="text-xs text-gray-500">PNG, JPG, GIF tối đa 5 file</p>
+                      </div>
+                    </label>
+                  </div>
+                  
+                  {imagePreview.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                      {imagePreview.map((preview, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={preview}
+                            alt={`Preview ${index + 1}`}
+                            className="w-full h-24 object-cover rounded-lg shadow-md"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => removeImage(index)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Evidence Images */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <div className="p-2 bg-indigo-500 rounded-lg">
+                    <Image className="h-4 w-4 text-white" />
+                  </div>
+                  Hình ảnh bằng chứng tổ chức
+                </CardTitle>
+                <CardDescription>
+                  Tải lên tối đa 5 hình ảnh bằng chứng tổ chức sự kiện
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="border-2 border-dashed border-indigo-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors">
+                    <Input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleEvidenceImageChange}
+                      className="hidden"
+                      id="evidence-image-upload"
+                    />
+                    <label htmlFor="evidence-image-upload" className="cursor-pointer">
+                      <div className="flex flex-col items-center">
+                        <Image className="h-8 w-8 text-indigo-400 mb-2" />
+                        <p className="text-sm font-semibold text-indigo-600">Chọn hình ảnh bằng chứng</p>
+                        <p className="text-xs text-gray-500">PNG, JPG, GIF tối đa 5 file</p>
+                      </div>
+                    </label>
+                  </div>
+                  
+                  {evidenceImagePreview.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                      {evidenceImagePreview.map((preview, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={preview}
+                            alt={`Evidence Preview ${index + 1}`}
+                            className="w-full h-24 object-cover rounded-lg shadow-md"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => removeEvidenceImage(index)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column - Sidebar */}
+          <div className="space-y-6">
+            {/* Tags */}
+            <TagSelector />
+
+            {/* Refund Rules */}
+            <RefundRuleManager />
+
+            {/* Tickets - Dynamic Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <div className="p-2 bg-orange-500 rounded-lg">
+                    <Users className="h-4 w-4 text-white" />
+                  </div>
+                  Thông tin vé
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  {fields.map((field, index) => (
+                    <div key={field.id} className="p-4 border rounded-lg bg-muted/50">
+                      <div className="flex justify-between items-center mb-3">
+                        <h4 className="font-semibold text-orange-800">Vé #{index + 1}</h4>
+                        {fields.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeTicketDetail(index)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+
+                      <div className="space-y-3">
+                        <div>
+                          <Label className="text-sm">Tên vé *</Label>
+                          <Input
+                            {...register(`ticketDetails.${index}.ticketName`)}
+                            placeholder="Ví dụ: Vé VIP"
+                          />
+                          {errors.ticketDetails?.[index]?.ticketName && <p className="text-red-500 text-xs mt-1">{errors.ticketDetails[index].ticketName.message}</p>}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-sm">Giá vé</Label>
+                            <Input
+                              type="number"
+                              {...register(`ticketDetails.${index}.ticketPrice`, { valueAsNumber: true })}
+                              placeholder="0"
+                              min="0"
+                              disabled={watchTicketType === '1'}
+                            />
+                            {errors.ticketDetails?.[index]?.ticketPrice && <p className="text-red-500 text-xs mt-1">{errors.ticketDetails[index].ticketPrice.message}</p>}
+                          </div>
+
+                          <div>
+                            <Label className="text-sm">Số lượng *</Label>
+                            <Input
+                              type="number"
+                              {...register(`ticketDetails.${index}.ticketQuantity`, { valueAsNumber: true })}
+                              placeholder="Số lượng"
+                              min="1"
+                            />
+                            {errors.ticketDetails?.[index]?.ticketQuantity && <p className="text-red-500 text-xs mt-1">{errors.ticketDetails[index].ticketQuantity.message}</p>}
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-sm">Mô tả vé</Label>
+                          <Textarea
+                            {...register(`ticketDetails.${index}.ticketDescription`)}
+                            placeholder="Mô tả chi tiết về loại vé này"
+                            rows={2}
+                          />
+                        </div>
+
+                        <div>
+                          <Label className="text-sm">Quy tắc hoàn tiền *</Label>
+                          <Select 
+                            onValueChange={(value) => setValue(`ticketDetails.${index}.ruleRefundRequestId`, value)}
+                            value={watch(`ticketDetails.${index}.ruleRefundRequestId`) || ''}
+                          >
+                            <SelectTrigger className="bg-white">
+                              <SelectValue placeholder="Chọn quy tắc hoàn tiền" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {selectedRules.map(rule => (
+                                <SelectItem key={rule.ruleRefundId} value={rule.ruleRefundId}>
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">{rule.ruleName}</span>
+                                    {rule.ruleDescription && (
+                                      <span className="text-xs text-gray-500 truncate max-w-xs">
+                                        {rule.ruleDescription}
+                                      </span>
+                                    )}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {errors.ticketDetails?.[index]?.ruleRefundRequestId && <p className="text-red-500 text-xs mt-1">{errors.ticketDetails[index].ruleRefundRequestId.message}</p>}
+                          {selectedRules.length === 0 && (
+                            <p className="text-xs text-orange-600 mt-1">
+                              Vui lòng tạo và chọn quy tắc hoàn tiền ở phần trên
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addTicketDetail}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Thêm loại vé
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Settings
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <div className="p-2 bg-gray-500 rounded-lg">
+                    <Settings className="h-4 w-4 text-white" />
+                  </div>
+                  Cài đặt sự kiện
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100">
+                  <div className="flex-1">
+                    <Label htmlFor="publish" className="font-medium">Xuất bản ngay</Label>
+                    <p className="text-xs text-gray-600 mt-1">Sự kiện sẽ hiển thị công khai</p>
+                  </div>
+                  <Switch
+                    id="publish"
+                    checked={watch('publish')}
+                    onCheckedChange={(checked) => setValue('publish', checked)}
+                  />
+                </div>
+              </CardContent>
+            </Card> */}
           </div>
         </form>
       </div>
