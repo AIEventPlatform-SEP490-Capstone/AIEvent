@@ -298,6 +298,7 @@ export function VerticalNavigation() {
 
         {!isOrganizerRoute &&
           !isAdminRoute &&
+          isAuthenticated &&
           state !== "collapsed" && (
             <div className="px-4 pb-4 space-y-3">
               <div className="relative group">
