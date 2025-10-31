@@ -33,6 +33,7 @@ import OrganizerProfilePage from "../pages/Organizer/OrganizerProfilePage";
 import WalletDashboard from "../pages/Wallet/WalletDashboard";
 import BookingFlow from "../pages/User/BookingFlow";
 import MyTickets from "../pages/User/MyTickets";
+import SearchPage from "../pages/Search/SearchPage";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -41,7 +42,7 @@ export default function useRouterElement() {
       element: <MainLayout />,
       children: [
         { index: true, element: <HomePage /> },
-        { path: "search", element: <div>Search Page</div> },
+        { path: "search", element: <SearchPage /> },
         { path: "nearby", element: <div>Nearby Events Page</div> },
         { path: "timeline", element: <TimelinePage /> },
         { path: "friends", element: <div>Friends Page</div> },

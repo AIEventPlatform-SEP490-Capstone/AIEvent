@@ -226,6 +226,12 @@ export function VerticalNavigation() {
         isActive: pathname === "/",
         special: true,
       },
+      {
+        title: "Tìm Kiếm",
+        url: "/search",
+        icon: Search,
+        isActive: pathname === "/search",
+      },
 
       {
         title: "Timeline",
@@ -306,6 +312,18 @@ export function VerticalNavigation() {
                 <Input
                   placeholder="Tìm kiếm sự kiện..."
                   className="pl-10 h-10 bg-background/50 border-border/60 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all duration-300 rounded-xl hover:border-border"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const searchValue = e.target.value.trim();
+                      // Clear the input field
+                      e.target.value = '';
+                      if (searchValue) {
+                        navigate(`/search?q=${encodeURIComponent(searchValue)}`);
+                      } else {
+                        navigate('/search');
+                      }
+                    }
+                  }}
                 />
               </div>
               <Button
@@ -314,7 +332,7 @@ export function VerticalNavigation() {
                 className="w-full h-10 hover:bg-primary/10 hover:text-primary hover:border-primary hover:scale-[1.02] bg-background/50 border-border/60 transition-all duration-300 rounded-xl font-medium shadow-sm"
               >
                 <MapPin className="w-4 h-4 mr-2" />
-                Hà Nội
+                Hồ Chí Minh
               </Button>
             </div>
           )}
