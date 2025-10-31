@@ -13,11 +13,13 @@ import {
   Linking,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from './styles';
 import CustomText from '../../components/common/customTextRN';
 import Images from '../../constants/Images';
 import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
+import StorageKeys from '../../constants/StorageKeys';
 import { UserService } from '../../api/services';
 import { 
   fetchUserWallet, 
@@ -47,6 +49,7 @@ const WalletScreen = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState('recent');
   const [showTopupModal, setShowTopupModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyModalInitialFilter, setHistoryModalInitialFilter] = useState('All');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
@@ -239,7 +242,14 @@ const WalletScreen = ({ navigation }) => {
     if (pendingTransactions.length === 0) return null;
 
     return (
-      <View style={styles.processingAlert}>
+      <TouchableOpacity 
+        style={styles.processingAlert}
+        onPress={() => {
+          setHistoryModalInitialFilter('Pending');
+          setShowHistoryModal(true);
+        }}
+        activeOpacity={0.8}
+      >
         <View style={styles.alertIcon}>
           <CustomText variant="h3" color="white">⏳</CustomText>
         </View>
@@ -256,7 +266,7 @@ const WalletScreen = ({ navigation }) => {
             {pendingTransactions.length} đang chờ
           </CustomText>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -400,8 +410,8 @@ const WalletScreen = ({ navigation }) => {
 
     return (
       <View>
-        {displayTransactions.map((item) => (
-          <View key={item.orderCode} style={styles.transactionCard}>
+        {displayTransactions.map((item, index) => (
+          <View key={item.orderCode ? `${item.orderCode}-${item.createdAt}-${index}` : `transaction-${item.createdAt}-${index}`} style={styles.transactionCard}>
             <View style={styles.transactionLeft}>
               <View style={[
                 styles.transactionIcon,
@@ -532,7 +542,11 @@ const WalletScreen = ({ navigation }) => {
       {/* History Modal */}
       <HistoryModal
         isOpen={showHistoryModal}
-        onClose={() => setShowHistoryModal(false)}
+        onClose={() => {
+          setShowHistoryModal(false);
+          setHistoryModalInitialFilter('All');
+        }}
+        initialFilter={historyModalInitialFilter}
         walletId={wallet?.walletId}
         transactions={transactions}
         isTransactionsLoading={isTransactionsLoading}
@@ -544,6 +558,7 @@ const WalletScreen = ({ navigation }) => {
         getAmountColor={getAmountColor}
         getStatusBadge={getStatusBadge}
         getAmountDisplay={getAmountDisplay}
+        navigation={navigation}
       />
     </View>
   );
@@ -600,6 +615,15 @@ const TopupModal = ({
       const paymentData = topupPayment;
       
       if (paymentData && Object.keys(paymentData).length > 0) {
+        // Lưu paymentData vào AsyncStorage với key là orderCode
+        if (paymentData.orderCode) {
+          const storageKey = `${StorageKeys.PAYMENT_DATA_PREFIX}${paymentData.orderCode}`;
+          AsyncStorage.setItem(storageKey, JSON.stringify(paymentData))
+            .catch(error => {
+              console.error('Error saving payment data to storage:', error);
+            });
+        }
+
         Alert.alert(
           'Tạo giao dịch thành công',
           'Bạn có muốn xem thông tin thanh toán?',
@@ -735,6 +759,7 @@ const TopupModal = ({
 const HistoryModal = ({ 
   isOpen, 
   onClose, 
+  initialFilter = 'All',
   walletId, 
   transactions, 
   isTransactionsLoading, 
@@ -745,10 +770,71 @@ const HistoryModal = ({
   getTransactionIcon,
   getAmountColor,
   getStatusBadge,
-  getAmountDisplay
+  getAmountDisplay,
+  navigation
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState(initialFilter);
+
+  // Update filter when initialFilter changes
+  useEffect(() => {
+    if (isOpen) {
+      setStatusFilter(initialFilter);
+    }
+  }, [initialFilter, isOpen]);
+
+  // Helper function to convert transaction to paymentData format
+  const convertTransactionToPaymentData = (transaction) => {
+    return {
+      orderCode: transaction.orderCode,
+      amount: transaction.balance || 0,
+      status: transaction.status === 'Pending' ? 'PENDING' : transaction.status === 'Success' ? 'SUCCESS' : 'FAILED',
+      description: transaction.description || '',
+      currency: 'VND',
+      // These fields might not be available in transaction, but PaymentScreen handles missing data
+      checkoutUrl: transaction.checkoutUrl || null,
+      qrCode: transaction.qrCode || null,
+      accountNumber: transaction.accountNumber || null,
+      bin: transaction.bin || null,
+      expiredAt: transaction.expiredAt || null,
+      paymentLinkId: transaction.paymentLinkId || transaction.orderCode || null,
+    };
+  };
+
+  const handleTransactionPress = async (transaction) => {
+    // Only handle Pending transactions
+    if (transaction.status === 'Pending' && transaction.orderCode) {
+      try {
+        // Lấy paymentData từ AsyncStorage
+        const storageKey = `${StorageKeys.PAYMENT_DATA_PREFIX}${transaction.orderCode}`;
+        const storedPaymentData = await AsyncStorage.getItem(storageKey);
+        
+        let paymentData;
+        
+        if (storedPaymentData) {
+          // Sử dụng paymentData từ storage (có đầy đủ thông tin như QR code, checkoutUrl, etc.)
+          paymentData = JSON.parse(storedPaymentData);
+        } else {
+          // Fallback: nếu không tìm thấy trong storage, convert từ transaction data
+          paymentData = convertTransactionToPaymentData(transaction);
+        }
+        
+        // Luôn navigate đến PaymentScreen để hiển thị thông tin thanh toán với QR code
+        if (navigation) {
+          onClose();
+          navigation.navigate('PaymentScreen', { paymentData });
+        }
+      } catch (error) {
+        console.error('Error loading payment data:', error);
+        // Fallback: mở PaymentScreen với transaction data
+        const paymentData = convertTransactionToPaymentData(transaction);
+        if (navigation) {
+          onClose();
+          navigation.navigate('PaymentScreen', { paymentData });
+        }
+      }
+    }
+  };
 
   const loadTransactions = useCallback(() => {
     if (!walletId) return;
@@ -877,8 +963,14 @@ const HistoryModal = ({
               </CustomText>
             </View>
           ) : (
-            filteredTransactions.map((transaction) => (
-              <View key={transaction.orderCode} style={styles.historyTransactionCard}>
+            filteredTransactions.map((transaction, index) => (
+              <TouchableOpacity 
+                key={transaction.orderCode ? `${transaction.orderCode}-${transaction.createdAt}-${index}` : `transaction-${transaction.createdAt}-${index}`} 
+                style={styles.historyTransactionCard}
+                onPress={() => handleTransactionPress(transaction)}
+                activeOpacity={transaction.status === 'Pending' ? 0.7 : 1}
+                disabled={transaction.status !== 'Pending'}
+              >
                 <View style={styles.transactionLeft}>
                   <View style={[
                     styles.transactionIcon,
@@ -921,7 +1013,7 @@ const HistoryModal = ({
                     </CustomText>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             ))
           )}
         </ScrollView>

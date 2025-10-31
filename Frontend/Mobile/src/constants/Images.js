@@ -18,6 +18,7 @@ const Images = {
   phone: require('../assets/icons/phone.png'),
   closeEye: require('../assets/icons/close-eye.png'),
   showEye: require('../assets/icons/show-eye.png'),
+  pushpin: require('../assets/icons/pushpin.png'),
 
   // Event images (using existing card images)
   event1: require('../assets/images/card1.png'),

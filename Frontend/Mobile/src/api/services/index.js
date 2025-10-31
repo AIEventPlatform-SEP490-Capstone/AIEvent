@@ -3,6 +3,7 @@ import UserService from './UserService';
 import EventService from './EventService';
 import AuthService from './AuthService';
 import WalletService from './WalletService';
+import BookingService from './BookingService';
 
 // Create walletAPI object similar to web version
 export const walletAPI = {
@@ -26,6 +27,7 @@ export {
   EventService,
   AuthService,
   WalletService,
+  BookingService,
 };
 
 // Default export for backward compatibility
@@ -35,4 +37,5 @@ export default {
   EventService,
   AuthService,
   WalletService,
+  BookingService,
 };
