@@ -114,6 +114,7 @@ const CreateEventPage = () => {
   const [imagePreview, setImagePreview] = useState([]);
   const [evidenceImagePreview, setEvidenceImagePreview] = useState([]);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [clonedEventData, setClonedEventData] = useState(null);
 
   // Redux hooks
   const { categories, loading: categoriesLoading } = useCategories();
@@ -170,11 +171,87 @@ const CreateEventPage = () => {
   useEffect(() => {
     updatePageTitle('Tạo sự kiện mới');
     
+    // Check for cloned event data
+    const storedCloneData = localStorage.getItem('cloneEventData');
+    if (storedCloneData) {
+      try {
+        const cloneData = JSON.parse(storedCloneData);
+        setClonedEventData(cloneData);
+        
+        // Populate form with cloned data
+        populateFormWithCloneData(cloneData);
+        
+        // Remove from localStorage after use
+        localStorage.removeItem('cloneEventData');
+      } catch (error) {
+        console.error('Error parsing cloned event data:', error);
+      }
+    }
+    
     return () => {
       clearAllSelectedTags();
       clearSelectedRefundRules();
     };
   }, []); // Empty dependency array - only run on mount/unmount
+
+  // Populate form with cloned event data
+  const populateFormWithCloneData = (cloneData) => {
+    // Set basic fields
+    setValue('title', `${cloneData.title} (Bản sao)`);
+    setValue('description', cloneData.description);
+    setValue('detailedDescription', cloneData.detailedDescription || '');
+    setValue('linkRef', cloneData.linkRef || '');
+    setValue('locationName', cloneData.locationName || '');
+    setValue('address', cloneData.address || '');
+    setValue('city', cloneData.city || '');
+    setValue('eventCategoryId', cloneData.eventCategoryId || '');
+    setValue('ticketType', cloneData.ticketType?.toString() || '1');
+    
+    // Format dates for datetime-local inputs
+    if (cloneData.startTime) {
+      const startDate = new Date(cloneData.startTime);
+      // Add one day to the start date for the clone
+      startDate.setDate(startDate.getDate() + 1);
+      setValue('startTime', startDate.toISOString().slice(0, 16));
+    }
+    
+    if (cloneData.endTime) {
+      const endDate = new Date(cloneData.endTime);
+      // Add one day to the end date for the clone
+      endDate.setDate(endDate.getDate() + 1);
+      setValue('endTime', endDate.toISOString().slice(0, 16));
+    }
+    
+    // Set sale dates (add one day)
+    if (cloneData.saleStartTime) {
+      const saleStartDate = new Date(cloneData.saleStartTime);
+      saleStartDate.setDate(saleStartDate.getDate() + 1);
+      setValue('saleStartTime', saleStartDate.toISOString().slice(0, 16));
+    }
+    
+    if (cloneData.saleEndTime) {
+      const saleEndDate = new Date(cloneData.saleEndTime);
+      saleEndDate.setDate(saleEndDate.getDate() + 1);
+      setValue('saleEndTime', saleEndDate.toISOString().slice(0, 16));
+    }
+    
+    // Handle ticket details
+    if (cloneData.ticketDetails && cloneData.ticketDetails.length > 0) {
+      // Clear existing ticket details
+      remove(0);
+      
+      // Add cloned ticket details
+      cloneData.ticketDetails.forEach((ticket, index) => {
+        append({
+          ticketName: ticket.ticketName,
+          ticketPrice: ticket.ticketPrice || 0,
+          ticketQuantity: ticket.ticketQuantity || 1,
+          ticketDescription: ticket.ticketDescription || '',
+          ruleRefundRequestId: ticket.ruleRefundRequestId || '',
+        });
+      });
+    }
+  };
 
   // Real-time validation effect
   useEffect(() => {

@@ -27,7 +27,8 @@ import {
   Download,
   Mail,
   Phone,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Copy
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
@@ -243,6 +244,31 @@ Nhấn OK để xác nhận xóa.`;
     setIsPreviewOpen(true);
   };
 
+  const handleCloneEvent = () => {
+    // Create clone data
+    const cloneData = {
+      ...event,
+      // Reset fields that shouldn't be copied
+      eventId: undefined,
+      createDate: undefined,
+      updateDate: undefined,
+      status: undefined,
+      publish: false, // Start as draft
+      viewCount: 0,
+      soldQuantity: 0,
+      revenue: 0,
+      refundCount: 0,
+      rating: 0,
+      totalPersonJoin: 0
+    };
+    
+    // Store in localStorage
+    localStorage.setItem('cloneEventData', JSON.stringify(cloneData));
+    
+    // Navigate to create event page
+    navigate(PATH.ORGANIZER_CREATE);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -295,6 +321,10 @@ Nhấn OK để xác nhận xóa.`;
               <Button variant="outline" size="sm" onClick={handleViewPublicPage}>
                 <Eye className="w-4 h-4 mr-2" />
                 Xem công khai
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleCloneEvent}>
+                <Copy className="w-4 h-4 mr-2" />
+                Clone
               </Button>
               <Button variant="outline" size="sm" onClick={handleShareEvent}>
                 <Share2 className="w-4 h-4 mr-2" />
@@ -593,6 +623,10 @@ Nhấn OK để xác nhận xóa.`;
                 <Button variant="outline" className="w-full" onClick={handleViewPublicPage}>
                   <Eye className="h-4 w-4 mr-2" />
                   Xem trang công khai
+                </Button>
+                <Button variant="outline" className="w-full" onClick={handleCloneEvent}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Clone sự kiện
                 </Button>
                 <Button variant="outline" className="w-full">
                   <Download className="h-4 w-4 mr-2" />
