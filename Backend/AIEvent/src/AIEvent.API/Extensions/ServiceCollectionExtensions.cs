@@ -38,11 +38,12 @@ namespace AIEvent.API.Extensions
                     .AddScoped<IEventCategoryService, EventCategoryService>()
                     .AddScoped<IBookingService, BookingService>()
                     .AddScoped<IQrCodeService, QrCodeService>()
-                    .AddScoped<ITicketTokenService, TicketTokenService>()
+                    .AddScoped<ITicketSignatureService, TicketSignatureService>()
                     .AddScoped<IPaymentService, PaymentService>()
                     .AddScoped<IPayOSService, PayOSService>()
                     .AddScoped<IWalletService, WalletService>()
-                    .AddScoped<IPdfService, PdfService>();
+                    .AddScoped<IPdfService, PdfService>()
+                    .AddScoped<IHangfireJobService, HangfireJobService>();
 
             return services;
         }
