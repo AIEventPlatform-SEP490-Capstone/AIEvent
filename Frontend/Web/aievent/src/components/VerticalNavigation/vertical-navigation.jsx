@@ -298,7 +298,6 @@ export function VerticalNavigation() {
 
         {!isOrganizerRoute &&
           !isAdminRoute &&
-          isAuthenticated &&
           state !== "collapsed" && (
             <div className="px-4 pb-4 space-y-3">
               <div className="relative group">
@@ -314,7 +313,7 @@ export function VerticalNavigation() {
                 className="w-full h-10 hover:bg-primary/10 hover:text-primary hover:border-primary hover:scale-[1.02] bg-background/50 border-border/60 transition-all duration-300 rounded-xl font-medium shadow-sm"
               >
                 <MapPin className="w-4 h-4 mr-2" />
-                Hà Nội
+                Hồ Chí Minh
               </Button>
             </div>
           )}
