@@ -638,7 +638,7 @@ const CreateEventPage = () => {
             </Button>
             
             <Button 
-              onClick={handleSubmit(onSubmit)}
+              onClick={() => handleSubmit((data) => onSubmit({...data, publish: true}))()}
               disabled={isSubmitting || isLoading}
             >
               <Send className="w-4 h-4 mr-2" />

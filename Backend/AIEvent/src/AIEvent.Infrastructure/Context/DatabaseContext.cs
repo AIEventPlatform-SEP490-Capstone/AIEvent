@@ -142,6 +142,25 @@ namespace AIEvent.Infrastructure.Context
             builder.Entity<EventTag>()
                 .HasKey(et => new { et.EventId, et.TagId });
 
+            //-----------------EndReuqestEvent-------------
+            builder.Entity<EndEventRequest>(entity =>
+            {
+                entity.HasOne(e => e.OrganizerProfile)
+                    .WithMany(o => o.EndRequests)
+                    .HasForeignKey(e => e.OrganizerProfileId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Event)
+                    .WithOne(o => o.EndRequest)
+                    .HasForeignKey<EndEventRequest>(o => o.EventId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.EventId).HasDatabaseName("IX_EndEventRequests_EventId");
+                entity.HasIndex(e => e.OrganizerProfileId).HasDatabaseName("IX_EndEventRequests_OrganizerProfileId");
+                entity.HasIndex(e => e.Status).HasDatabaseName("IX_EndEventRequests_Status");
+                entity.HasIndex(e => new { e.OrganizerProfileId, e.Status }).HasDatabaseName("IX_EndEventRequests_OrganizerProfile_Status");
+            });
+
             //------------------Booking-------------------
             builder.Entity<Booking>(entity =>
             {

@@ -21,6 +21,7 @@ namespace AIEvent.Domain.Entities
         public decimal Amount { get; set; }
         public PaymentMethod PaymentMethod { get; set; }
         public string? Description {  get; set; }
+        public TransactionType TransactionType { get; set; }
         public TransactionStatus Status { get; set; } 
         public DateTime CompletedAt { get; set; }
     }

@@ -7,23 +7,24 @@ import {
   Clock,
   MapPin,
   Users,
-  ArrowLeft,
+  Heart,
   Share2,
-  Bookmark,
-  LogIn,
+  ArrowLeft,
+  MessageCircle,
+  ExternalLink,
+  CreditCard,
+  Tag,
+  CheckCircle,
+  AlertCircle,
+  UserPlus,
   Ticket,
   Globe,
-  Tag,
-  DollarSign,
-  AlertCircle,
-  CheckCircle,
   Activity,
-  Star,
   User
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent, CardHeader } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Separator } from '../../components/ui/separator';
 import { useEvents } from '../../hooks/useEvents';
@@ -38,8 +39,8 @@ const EventDetailGuestPage = ({ previewData }) => {
   const [event, setEvent] = useState(null);
   const [relatedEvents, setRelatedEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
   const { getEventById, getRelatedEvents, loading: eventLoading } = useEvents();
 
   useEffect(() => {
@@ -119,9 +120,7 @@ const EventDetailGuestPage = ({ previewData }) => {
       weekday: 'long',
       day: '2-digit',
       month: '2-digit', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+      year: 'numeric'
     });
   };
 
@@ -219,7 +218,7 @@ const EventDetailGuestPage = ({ previewData }) => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
           <p className="text-gray-500">Đang tải thông tin sự kiện...</p>
@@ -230,7 +229,7 @@ const EventDetailGuestPage = ({ previewData }) => {
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="text-center p-8">
           <CardContent>
             <AlertCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
@@ -245,430 +244,313 @@ const EventDetailGuestPage = ({ previewData }) => {
     );
   }
 
-  const status = getEventStatus(event);
-  const statusConfig = getStatusBadge(status);
-  const StatusIcon = statusConfig.icon;
+  // Calculate available tickets
+  const totalAvailableTickets = event.totalTickets - (event.soldQuantity || 0);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          {!previewData && (
-            <Button
-              variant="outline"
-              onClick={() => navigate(-1)}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
               Quay lại
             </Button>
-          )}
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">{event.title}</h1>
-            {/* Tags display right below event title */}
-            {event.eventTags && event.eventTags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {event.eventTags.map((tag, index) => (
-                  <Badge key={index} className="bg-indigo-100 text-indigo-800">
-                    <Tag className="h-3 w-3 mr-1" />
-                    {tag.tagName}
-                  </Badge>
-                ))}
-              </div>
-            )}
-            <div className="flex flex-wrap items-center gap-2 mt-3">
-              <Badge className={statusConfig.color}>
-                <StatusIcon className="h-3 w-3 mr-1" />
-                {statusConfig.label}
-              </Badge>
-              <Badge variant="outline">
-                {event.ticketType === 1 ? 'Miễn phí' : 'Có phí'}
-              </Badge>
-              {event.isOnlineEvent && (
-                <Badge className="bg-purple-100 text-purple-800">
-                  <Globe className="h-3 w-3 mr-1" />
-                  Trực tuyến
-                </Badge>
-              )}
-              {/* Remove tags from here since they're now displayed above */}
-            </div>
-          </div>
-          {!previewData && (
-            <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={handleShareEvent}>
-                <Share2 className="h-4 w-4 mr-1" />
+            <div className="flex space-x-2">
+              <Button variant="outline" size="sm" onClick={() => setIsLiked(!isLiked)}>
+                <Heart className={`w-4 h-4 mr-2 ${isLiked ? "fill-red-500 text-red-500" : ""}`} />
+                Yêu thích
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleInviteFriends}>
+                <UserPlus className="w-4 h-4 mr-2" />
+                Mời bạn bè
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleShareEvent}>
+                <Share2 className="w-4 h-4 mr-2" />
                 Chia sẻ
               </Button>
-              <Button variant="outline">
-                <Bookmark className="h-4 w-4 mr-1" />
-                Lưu
-              </Button>
             </div>
-          )}
+          </div>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Event Image */}
-            {event.imgListEvent && event.imgListEvent.length > 0 && (
-              <Card>
-                <CardContent className="p-0">
-                  <img
-                    src={event.imgListEvent[0]}
-                    alt={event.title}
-                    className="w-full h-96 object-cover rounded-lg"
-                  />
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Tabs */}
-            <Card>
-              <CardHeader>
-                <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-                  {[
-                    { id: 'overview', label: 'Tổng quan' },
-                    { id: 'description', label: 'Mô tả chi tiết' },
-                    { id: 'reviews', label: 'Đánh giá' }
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                        activeTab === tab.id
-                          ? 'bg-white text-blue-600 shadow-sm'
-                          : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
+            <div className="relative rounded-lg overflow-hidden">
+              {event.imgListEvent && event.imgListEvent.length > 0 ? (
+                <img
+                  src={event.imgListEvent[0]}
+                  alt={event.title}
+                  className="w-full h-64 md:h-80 object-cover"
+                />
+              ) : (
+                <div className="w-full h-64 md:h-80 bg-gray-200 flex items-center justify-center">
+                  <span className="text-gray-500">Không có hình ảnh</span>
                 </div>
-              </CardHeader>
-              <CardContent>
-                {activeTab === 'overview' && (
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-2">Thông tin cơ bản</h3>
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <Calendar className="h-5 w-5 text-gray-400" />
-                          <div>
-                            <p className="text-sm text-gray-500">Ngày bắt đầu</p>
-                            <p className="font-medium">{formatDate(event.startTime)}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Clock className="h-5 w-5 text-gray-400" />
-                          <div>
-                            <p className="text-sm text-gray-500">Thời gian</p>
-                            <p className="font-medium">
-                              {formatTime(event.startTime)} - {formatTime(event.endTime)}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <MapPin className="h-5 w-5 text-gray-400" />
-                          <div>
-                            <p className="text-sm text-gray-500">Địa điểm</p>
-                            <p className="font-medium">
-                              {event.isOnlineEvent ? 'Sự kiện trực tuyến' : event.locationName}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Users className="h-5 w-5 text-gray-400" />
-                          <div>
-                            <p className="text-sm text-gray-500">Số lượng vé</p>
-                            <p className="font-medium">{event.soldQuantity || 0}/{event.totalTickets} vé</p>
-                          </div>
-                        </div>
-                        {event.eventCategoryName && (
-                          <div className="flex items-center gap-3">
-                            <Tag className="h-5 w-5 text-gray-400" />
-                            <div>
-                              <p className="text-sm text-gray-500">Danh mục</p>
-                              <p className="font-medium">{event.eventCategoryName}</p>
+              )}
+              <div className="absolute bottom-4 left-4 flex gap-2">
+                <Badge variant="secondary" className="bg-background/80 backdrop-blur">
+                  {formatPrice(event)}
+                </Badge>
+                {event.eventCategoryName && (
+                  <Badge variant="outline" className="bg-background/80 backdrop-blur">
+                    <Tag className="w-3 h-3 mr-1" />
+                    {event.eventCategoryName}
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            {/* Event Info */}
+            <div>
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h1 className="text-3xl font-bold text-balance mb-2">{event.title}</h1>
+                  <p className="text-muted-foreground text-pretty">{event.description}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div className="flex items-center space-x-3">
+                  <Calendar className="w-5 h-5 text-primary" />
+                  <div>
+                    <p className="font-medium">
+                      {formatDate(event.startTime)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{formatTime(event.startTime)}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <MapPin className="w-5 h-5 text-primary" />
+                  <div>
+                    <p className="font-medium">
+                      {event.isOnlineEvent ? 'Sự kiện trực tuyến' : (event.locationName || 'Chưa xác định')}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {event.isOnlineEvent ? 'Trực tuyến' : (event.address || 'Chưa xác định')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <Users className="w-5 h-5 text-primary" />
+                  <div>
+                    <p className="font-medium">{event.soldQuantity || 0} người tham gia</p>
+                    <p className="text-sm text-muted-foreground">
+                      Còn {totalAvailableTickets} chỗ
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <Clock className="w-5 h-5 text-primary" />
+                  <div>
+                    <p className="font-medium">
+                      {formatTime(event.startTime)} - {formatTime(event.endTime)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Thời lượng: {Math.floor((new Date(event.endTime) - new Date(event.startTime)) / (1000 * 60 * 60))} giờ</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ticket Information Section */}
+              {event.ticketDetails && event.ticketDetails.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-3 flex items-center">
+                    <Ticket className="w-5 h-5 mr-2 text-primary" />
+                    Loại vé có sẵn
+                  </h3>
+                  <div className="grid gap-3">
+                    {event.ticketDetails.map((ticket, index) => {
+                      const availableTickets = ticket.ticketQuantity - (ticket.soldQuantity || 0);
+                      const isAvailable = availableTickets > 0;
+
+                      return (
+                        <div
+                          key={index}
+                          className={`border rounded-lg p-4 ${
+                            isAvailable ? "border-border" : "border-border bg-muted/30"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-medium">{ticket.ticketName}</h4>
+                                {!isAvailable && (
+                                  <Badge variant="destructive" className="text-xs">
+                                    Hết vé
+                                  </Badge>
+                                )}
+                              </div>
+                              {ticket.ticketDescription && (
+                                <p className="text-sm text-muted-foreground mb-2">{ticket.ticketDescription}</p>
+                              )}
+                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                <span>
+                                  Đã bán: {ticket.soldQuantity || 0}/{ticket.ticketQuantity}
+                                </span>
+                                <span>Còn lại: {availableTickets} vé</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold text-lg">
+                                {ticket.ticketPrice === 0 ? "Miễn phí" : formatTicketPrice(ticket)}
+                              </p>
                             </div>
                           </div>
-                        )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Về sự kiện</h2>
+              <div className="prose prose-gray max-w-none text-pretty space-y-4">
+                <p>
+                  {event.title} là một sự kiện đặc biệt. 
+                  {event.description || 'Hãy tham gia để trải nghiệm những điều thú vị.'}
+                </p>
+
+                <div className="bg-muted/50 rounded-lg p-4 my-4">
+                  <h3 className="text-lg font-semibold mb-3 flex items-center">
+                    <Calendar className="w-5 h-5 mr-2 text-primary" />
+                    Chương trình chi tiết
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex items-start space-x-3">
+                      <div className="bg-primary text-primary-foreground rounded px-2 py-1 text-xs font-medium min-w-fit">
+                        {formatTime(event.startTime)}
+                      </div>
+                      <div>
+                        <p className="font-medium">Bắt đầu sự kiện</p>
+                        <p className="text-sm text-muted-foreground">Khởi đầu chương trình</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-3">
+                      <div className="bg-primary text-primary-foreground rounded px-2 py-1 text-xs font-medium min-w-fit">
+                        {new Date(new Date(event.startTime).getTime() + 60 * 60 * 1000).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                      <div>
+                        <p className="font-medium">Phiên chính</p>
+                        <p className="text-sm text-muted-foreground">Nội dung chính của sự kiện</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-3">
+                      <div className="bg-primary text-primary-foreground rounded px-2 py-1 text-xs font-medium min-w-fit">
+                        {new Date(new Date(event.endTime).getTime() - 30 * 60 * 1000).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                      <div>
+                        <p className="font-medium">Kết thúc</p>
+                        <p className="text-sm text-muted-foreground">Tổng kết và networking</p>
                       </div>
                     </div>
                   </div>
-                )}
+                </div>
 
-                {activeTab === 'description' && (
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-gray-900">Mô tả sự kiện</h3>
-                    <div className="prose max-w-none">
-                      <p className="text-gray-700 whitespace-pre-wrap">
-                        {event.detailedDescription || event.description || 'Chưa có mô tả chi tiết cho sự kiện này.'}
-                      </p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-blue-900 mb-2">Bạn sẽ nhận được:</h4>
+                  <ul className="text-blue-800 space-y-1 text-sm">
+                    <li>• Kiến thức và trải nghiệm quý báu</li>
+                    <li>• Cơ hội kết nối với những người cùng chí hướng</li>
+                    <li>• Tài liệu sự kiện (nếu có)</li>
+                    <li>• Networking và chia sẻ kinh nghiệm</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Organizer */}
+            {event.organizerEvent && (
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Nhà tổ chức</h2>
+                <div className="flex items-center space-x-4">
+                  {event.organizerEvent.imgCompany ? (
+                    <img 
+                      src={event.organizerEvent.imgCompany} 
+                      alt={event.organizerEvent.companyName || "Organizer"} 
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                      <User className="h-6 w-6 text-gray-500" />
                     </div>
+                  )}
+                  <div className="flex-1">
+                    <h3 className="font-semibold">{event.organizerEvent.companyName || "Nhà tổ chức"}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {event.organizerEvent.companyDescription || "Tổ chức sự kiện chuyên nghiệp"}
+                    </p>
                   </div>
-                )}
-
-                {activeTab === 'reviews' && (
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-gray-900">Đánh giá sự kiện</h3>
-                    <div className="bg-gray-50 rounded-lg p-4 text-center">
-                      <p className="text-gray-500">Chưa có đánh giá nào cho sự kiện này.</p>
-                      <p className="text-sm text-gray-400 mt-2">Hãy đăng nhập để đánh giá sự kiện sau khi tham gia.</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Add Map Direction Tab Content */}
-                {activeTab === 'map' && (!event.isOnlineEvent || event.isOnlineEvent === false) && (event.locationName || event.address) && (
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-gray-900">Bản đồ & Chỉ đường</h3>
-                    <MapDirection destinationAddress={event.address || event.locationName} />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Ticket Information Section */}
-            {event.ticketDetails && event.ticketDetails.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Ticket className="h-5 w-5 text-blue-600" />
-                    Thông tin vé sự kiện
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {event.ticketDetails.map((ticket, index) => (
-                      <div key={index} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-semibold text-gray-900">{ticket.ticketName}</h4>
-                            <p className="text-sm text-gray-500 mt-1">{ticket.ticketDescription}</p>
-                          </div>
-                          <Badge variant="outline" className="text-lg font-bold">
-                            {formatTicketPrice(ticket)}
-                          </Badge>
-                        </div>
-                        <div className="flex justify-between items-center mt-3">
-                          <span className="text-sm text-gray-500">Số lượng: {formatTicketQuantity(ticket)} vé</span>
-                          {ticket.ruleRefundRequestName && (
-                            <span className="text-sm bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                              {ticket.ruleRefundRequestName}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                  <Button variant="outline" size="sm">
+                    Theo dõi
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Registration Card - Hide in preview mode */}
-            {!previewData && (
-              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Ticket className="h-5 w-5 text-blue-600" />
-                    Đăng ký tham gia
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="bg-white rounded-lg p-4 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium">Loại vé</span>
-                      <Badge className={event.ticketType === 1 || event.ticketType === 'Free' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}>
-                        {event.ticketType === 1 || event.ticketType === 'Free' ? 'Miễn phí' : 'Có phí'}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-gray-600">Giá vé</span>
-                      <span className="font-bold text-lg text-blue-600">
-                        {event.ticketDetails && event.ticketDetails.length > 0 ? (
-                          event.ticketDetails.length === 1 ? (
-                            formatTicketPrice(event.ticketDetails[0])
-                          ) : (
-                            <>
-                              {formatTicketPrice(
-                                event.ticketDetails.reduce((min, ticket) => 
-                                  ticket.ticketPrice < min.ticketPrice ? ticket : min
-                                )
-                              )} - {formatTicketPrice(
-                                event.ticketDetails.reduce((max, ticket) => 
-                                  ticket.ticketPrice > max.ticketPrice ? ticket : max
-                                )
-                              )}
-                            </>
-                          )
-                        ) : (
-                          event.minTicketPrice !== undefined && event.maxTicketPrice !== undefined ? (
-                            event.minTicketPrice === event.maxTicketPrice ? (
-                              formatPrice(event)
-                            ) : (
-                              <>
-                                {new Intl.NumberFormat('vi-VN', {
-                                  style: 'currency',
-                                  currency: 'VND'
-                                }).format(event.minTicketPrice)} - {formatPrice(event)}
-                              </>
-                            )
-                          ) : (
-                            formatPrice(event)
-                          )
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Tổng số vé</span>
-                      <span className="font-medium">{event.soldQuantity || 0}/{event.totalTickets}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button 
-                      className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3"
-                      onClick={handleRegister}
-                    >
-                      <LogIn className="h-4 w-4 mr-2" />
-                      Đăng ký
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="font-semibold py-3"
-                      onClick={handleInviteFriends}
-                    >
-                      <Share2 className="h-4 w-4 mr-2" />
-                      Mời bạn
-                    </Button>
-                  </div>
-                  
-                  {!isAuthenticated && (
-                    <p className="text-xs text-gray-500 text-center">
-                      Bạn cần đăng nhập để đăng ký tham gia sự kiện này
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Event Stats */}
+            {/* Registration Card */}
             <Card>
               <CardHeader>
-                <CardTitle>Thông tin sự kiện</CardTitle>
+                <h3 className="text-lg font-semibold">Đăng ký tham gia</h3>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Trạng thái</span>
-                  <Badge className={statusConfig.color}>
-                    <StatusIcon className="h-3 w-3 mr-1" />
-                    {statusConfig.label}
-                  </Badge>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-primary mb-1">{formatPrice(event)}</div>
+                  <p className="text-sm text-muted-foreground">
+                    {event.ticketDetails && event.ticketDetails.length > 0 
+                      ? "Giá từ các loại vé khác nhau" 
+                      : "Bao gồm coffee break & lunch"}
+                  </p>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Loại vé</span>
-                  <span className="font-medium">
-                    {event.ticketType === 1 ? 'Miễn phí' : 'Có phí'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Tổng vé</span>
-                  <span className="font-medium">{event.soldQuantity || 0}/{event.totalTickets}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Hình thức</span>
-                  <span className="font-medium">
-                    {event.isOnlineEvent ? 'Online' : 'Offline'}
-                  </span>
+
+                <div className="space-y-3">
+                  <Button className="w-full" size="lg" onClick={handleRegister}>
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Đăng ký ngay
+                  </Button>
+                  <Button variant="outline" className="w-full bg-transparent" onClick={handleInviteFriends}>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Mời bạn bè tham gia
+                  </Button>
+                  <Button variant="outline" className="w-full bg-transparent">
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Hỏi nhà tổ chức
+                  </Button>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Organizer Information - Moved to bottom as per requirements */}
-            {event.organizerEvent && (
-              (event.organizerEvent.companyName || 
-               event.organizerEvent.imgCompany || 
-               event.organizerEvent.companyDescription) && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5 text-blue-600" />
-                    Nhà tổ chức
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-3">
-                    {event.organizerEvent.imgCompany ? (
-                      <img 
-                        src={event.organizerEvent.imgCompany} 
-                        alt={event.organizerEvent.companyName || "Organizer"} 
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                        <User className="h-6 w-6 text-gray-500" />
-                      </div>
-                    )}
-                    <div>
-                      <h4 className="font-semibold">
-                        {event.organizerEvent.companyName || "Nhà tổ chức"}
-                      </h4>
-                      <p className="text-sm text-gray-500">Nhà tổ chức sự kiện</p>
-                    </div>
-                  </div>
-                  {event.organizerEvent.companyDescription && (
-                    <p className="mt-3 text-sm text-gray-600">
-                      {event.organizerEvent.companyDescription}
-                    </p>
-                  )}
-                  {!previewData && (
-                    <div className="mt-3 flex gap-2">
-                      <Button variant="outline" size="sm">
-                        Xem profile
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-            {/* Location Map - Show for physical events with location info */}
+            {/* Location Card */}
             {(!event.isOnlineEvent || event.isOnlineEvent === false) && (event.locationName || event.address) && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-blue-600" />
-                    Vị trí sự kiện
-                  </CardTitle>
+                  <h3 className="text-lg font-semibold">Địa điểm</h3>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="flex items-start gap-2">
-                      <MapPin className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                      <div>
-                        {event.locationName && event.address && event.locationName === event.address ? (
-                          <p className="font-medium text-sm">{event.locationName}</p>
-                        ) : (
-                          // If they are different or one is missing, show what we have
-                          <>
-                            {event.locationName && <p className="font-medium text-sm">{event.locationName}</p>}
-                            {event.address && event.locationName !== event.address && <p className="text-xs text-gray-500 mt-1">{event.address}</p>}
-                          </>
-                        )}
-                        {/* Fallback if both are missing (shouldn't happen due to the condition above) */}
-                        {!event.locationName && !event.address && (
-                          <p className="font-medium text-sm">Không có thông tin địa điểm</p>
-                        )}
-                      </div>
+                    <div>
+                      <p className="font-medium">{event.locationName}</p>
+                      <p className="text-sm text-muted-foreground">{event.address}</p>
                     </div>
                     
-                    {/* Mini Map Preview - Show embedded map if we have coordinates, otherwise show static Leaflet map */}
+                    {/* Mini Map Preview */}
                     {(event.latitude && event.longitude) ? (
-                      <div className="relative h-32 rounded-lg overflow-hidden border border-gray-200">
+                      <div className="relative h-48 rounded-lg overflow-hidden border border-gray-200">
                         <iframe
                           src={`https://www.google.com/maps?q=${event.latitude},${event.longitude}&hl=vi&z=14&output=embed`}
                           className="w-full h-full"
@@ -677,126 +559,87 @@ const EventDetailGuestPage = ({ previewData }) => {
                           title="Event Location Map Preview"
                         ></iframe>
                       </div>
-                    ) : (event.address || event.locationName) ? (
-                      // Show static Leaflet map preview when coordinates are missing but address exists
-                      <div className="relative h-32 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="text-center">
-                            <div className="inline-block p-3 rounded-full bg-white shadow-lg mb-2">
-                              <MapPin className="h-6 w-6 text-red-500" />
-                            </div>
-                            <p className="text-xs font-medium text-gray-700 bg-white px-2 py-1 rounded shadow">
-                              {event.locationName || event.address}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-green-50 opacity-70"></div>
-                        <div className="absolute top-2 left-2 bg-white px-2 py-1 rounded text-xs font-medium text-gray-600">
-                          Leaflet
-                        </div>
-                        <div className="absolute bottom-2 right-2 bg-white px-2 py-1 rounded text-xs text-gray-500">
-                          © OpenStreetMap
-                        </div>
-                      </div>
                     ) : (
-                      // Fallback when no location info at all
-                      <div className="relative h-32 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 flex items-center justify-center">
+                      <div className="relative h-48 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 flex items-center justify-center">
                         <MapPin className="h-8 w-8 text-gray-400" />
                         <span className="absolute bottom-2 text-xs text-gray-500">Bản đồ không khả dụng</span>
                       </div>
                     )}
                     
-                    {/* View Details Button for Map */}
-                    <div className="pt-2">
-                      <Dialog open={isMapModalOpen} onOpenChange={setIsMapModalOpen}>
-                        <DialogTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            className="w-full"
-                            onClick={() => setIsMapModalOpen(true)}
-                          >
-                            Xem bản đồ & chỉ đường chi tiết
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle>Bản đồ & Chỉ đường</DialogTitle>
-                          </DialogHeader>
-                          <div className="py-4">
-                            <MapDirection destinationAddress={event.address || event.locationName} />
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
+                    <Button variant="outline" className="w-full bg-transparent" onClick={() => setIsMapModalOpen(true)}>
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Xem đường đi
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
             )}
 
-            {/* Related Events - Hide in preview mode */}
-            {!previewData && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Sự kiện liên quan</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {relatedEvents.length > 0 ? (
-                    <div className="space-y-4">
-                      {relatedEvents.map((relatedEvent) => (
-                        <Card 
-                          key={relatedEvent.eventId} 
-                          className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
-                          onClick={() => handleViewDetail(relatedEvent.eventId)}
-                        >
-                          <CardContent className="p-0">
-                            <div className="flex">
-                              <div className="flex-shrink-0 w-24 h-24">
-                                <img
-                                  src={relatedEvent.imgListEvent?.[0] || '/placeholder.svg'}
-                                  alt={relatedEvent.title}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              <div className="flex-1 p-3">
-                                <h4 className="font-bold text-sm line-clamp-2 mb-1">{relatedEvent.title}</h4>
-                                <div className="flex items-center text-xs text-gray-500 mb-1">
-                                  <Calendar className="h-3 w-3 mr-1" />
-                                  <span>{new Date(relatedEvent.startTime).toLocaleDateString('vi-VN')}</span>
-                                </div>
-                                <div className="flex items-center text-xs text-gray-500 mb-2">
-                                  <MapPin className="h-3 w-3 mr-1" />
-                                  <span className="truncate">Online</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <Badge 
-                                    variant="outline" 
-                                    className="text-xs"
-                                  >
-                                    {formatPrice(relatedEvent)}
-                                  </Badge>
-                                  <Button variant="outline" size="sm" className="h-6 text-xs">
-                                    Xem chi tiết
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+            {/* Related Events */}
+            <Card>
+              <CardHeader>
+                <h3 className="text-lg font-semibold">Sự kiện có cùng thẻ hoặc danh mục</h3>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {relatedEvents.length > 0 ? (
+                  relatedEvents.map((relatedEvent) => (
+                    <div
+                      key={relatedEvent.eventId}
+                      className="flex space-x-3 cursor-pointer hover:bg-muted/50 rounded-lg p-2 -m-2 transition-colors"
+                      onClick={() => handleViewDetail(relatedEvent.eventId)}
+                    >
+                      {relatedEvent.imgListEvent?.[0] ? (
+                        <img
+                          src={relatedEvent.imgListEvent[0]}
+                          alt={relatedEvent.title}
+                          className="w-15 h-15 rounded object-cover"
+                        />
+                      ) : (
+                        <div className="w-15 h-15 rounded bg-gray-200 flex items-center justify-center">
+                          <span className="text-xs text-gray-500">No image</span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{relatedEvent.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(relatedEvent.startTime).toLocaleDateString("vi-VN")} •
+                          {relatedEvent.minTicketPrice !== undefined && relatedEvent.maxTicketPrice !== undefined ? (
+                            relatedEvent.minTicketPrice === 0 && relatedEvent.maxTicketPrice === 0 ? (
+                              " Miễn phí"
+                            ) : relatedEvent.minTicketPrice === relatedEvent.maxTicketPrice ? (
+                              ` ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(relatedEvent.minTicketPrice)}`
+                            ) : (
+                              ` ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(relatedEvent.minTicketPrice)} - ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(relatedEvent.maxTicketPrice)}`
+                            )
+                          ) : (
+                            relatedEvent.ticketType === 1 ? " Miễn phí" : " Có phí"
+                          )}
+                        </p>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="text-center py-6 text-gray-500">
-                      <p>Không có sự kiện liên quan</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-           
+                  ))
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <p>Không có Sự kiện có cùng thẻ hoặc danh mục</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
+
+      {/* Map Modal */}
+      <Dialog open={isMapModalOpen} onOpenChange={setIsMapModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Bản đồ & Chỉ đường</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <MapDirection destinationAddress={event.address || event.locationName} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

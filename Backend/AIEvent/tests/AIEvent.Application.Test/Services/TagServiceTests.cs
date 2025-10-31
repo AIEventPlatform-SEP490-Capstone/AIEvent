@@ -54,7 +54,7 @@ namespace AIEvent.Application.Test.Services
             _tagRepoMock.Setup(r => r.Query(false)).Returns(tags.AsNoTracking());
 
             // Act
-            var result = await _tagService.CreateTagAsync(request);
+            var result = await _tagService.CreateTagAsync(request, "Organizer");
 
             // Assert
             result.Should().NotBeNull();
@@ -90,7 +90,7 @@ namespace AIEvent.Application.Test.Services
                 .Returns<Func<Task<Result>>>(func => func());
 
             // Act
-            var result = await _tagService.CreateTagAsync(request);
+            var result = await _tagService.CreateTagAsync(request, "Organizer");
 
             // Assert
             result.Should().NotBeNull();

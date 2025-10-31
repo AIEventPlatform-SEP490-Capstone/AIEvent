@@ -34,6 +34,7 @@ namespace AIEvent.Domain.Entities
         public DateTime? SaleEndTime { get; set; }
         public EventCategory EventCategory { get; set; } = default!;
         public virtual OrganizerProfile? OrganizerProfile { get; set; }
+        public virtual EndEventRequest? EndRequest { get; set; }
         public virtual ICollection<TicketDetail> TicketDetails { get; set; } = new List<TicketDetail>();
         public virtual ICollection<EventTag> EventTags { get; set; } = new List<EventTag>();
         public ICollection<FavoriteEvent> FavoriteEvents { get; set; } = new List<FavoriteEvent>();
