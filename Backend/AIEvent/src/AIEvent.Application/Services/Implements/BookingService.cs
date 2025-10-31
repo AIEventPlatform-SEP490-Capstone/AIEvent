@@ -18,19 +18,17 @@ namespace AIEvent.Application.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly ITransactionHelper _transactionHelper;
         private readonly IQrCodeService _qrCodeService;
-        private readonly ITicketTokenService _ticketTokenService;
-        private readonly IPdfService _pdfService;
-        private readonly IEmailService _emailService;
+        private readonly ITicketSignatureService _ticketSignatureService;
+        private readonly IHangfireJobService _hangfireJobService;
 
         public BookingService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper, IQrCodeService qrCodeService,
-            ITicketTokenService ticketTokenService, IPdfService pdfService, IEmailService emailService)
+            ITicketSignatureService ticketSignatureService,  IHangfireJobService hangfireJobService)
         {
             _unitOfWork = unitOfWork;
             _transactionHelper = transactionHelper;
             _qrCodeService = qrCodeService;
-            _ticketTokenService = ticketTokenService;
-            _pdfService = pdfService;
-            _emailService = emailService;
+            _ticketSignatureService = ticketSignatureService;
+            _hangfireJobService = hangfireJobService;
         }
                                 
         public async Task<Result> CreateBookingAsync(Guid userId, CreateBookingRequest request)
@@ -110,7 +108,7 @@ namespace AIEvent.Application.Services.Implements
                         UserId = userId,
                         BookingItemId = bookingItem.Id,
                         TicketTypeId = ticketType.Id,
-                        TicketCode = Guid.NewGuid().ToString("N")[..10].ToUpper(),
+                        TicketCode = $"EVT{DateTime.UtcNow:yy}{Guid.NewGuid().ToString("N")[..8].ToUpper()}",
                         Status = TicketStatus.Valid,
                         EventName = eventEntity.Title,
                         StartTime = eventEntity.StartTime,
@@ -136,7 +134,11 @@ namespace AIEvent.Application.Services.Implements
                 await _unitOfWork.BookingItemRepository.AddRangeAsync(bookingItems);
 
                 // Generate QR contents and bytes
-                var qrContents = tickets.Select(t => _ticketTokenService.CreateTicketToken(t.Id)).ToList();
+                var qrContents = tickets.Select(t =>
+                {
+                    var signature = _ticketSignatureService.CreateSignature(t.TicketCode);
+                    return $"{t.TicketCode}|{signature}";
+                }).ToList();
                 var qrResult = await _qrCodeService.GenerateQrBytesAndUrlsAsync(qrContents);
 
                 // Update tickets with QrCodeUrl
@@ -243,16 +245,11 @@ namespace AIEvent.Application.Services.Implements
                 }).ToList();
 
                 // Generate PDF with bytes
-                var pdfBytes = await _pdfService.GenerateTicketsPdfAsync(ticketData, eventEntity.Title, user.FullName!, user.Email!);
-
-                // Send email
-                await _emailService.SendTicketsEmailAsync(
+                await _hangfireJobService.EnqueueSendTicketEmailJobAsync(
                     user.Email!,
-                    $"Your Tickets from AIEvent - {eventEntity.Title}",
-                    null!,
-                    pdfBytes,
-                    $"{user.FullName}-AIEvent",
-                    eventEntity.Title
+                    user.FullName!,
+                    eventEntity.Title,
+                    ticketData
                 );
 
                 return Result.Success();
@@ -555,5 +552,53 @@ namespace AIEvent.Application.Services.Implements
                 return Result.Success();
             });
         }
+
+        public async Task<Result<CheckInResponse>> CheckInTicketAsync(string qrContent)
+        {
+            if (string.IsNullOrWhiteSpace(qrContent))
+                return ErrorResponse.FailureResult("QR content is empty", ErrorCodes.InvalidInput);
+
+            var parts = qrContent.Split('|');
+            if (parts.Length != 2)
+                return ErrorResponse.FailureResult("Invalid QR format", ErrorCodes.InvalidInput);
+
+            var ticketCode = parts[0];
+            var signature = parts[1];
+
+            //Xác minh chữ ký
+            if (!_ticketSignatureService.ValidateSignature(ticketCode, signature))
+                return ErrorResponse.FailureResult("Invalid or tampered QR code", ErrorCodes.InvalidInput);
+
+            var ticket = await _unitOfWork.TicketRepository
+                .Query()
+                .Include(t => t.User)
+                .Include(t => t.TicketType)
+                .FirstOrDefaultAsync(t => t.TicketCode == ticketCode && !t.DeletedAt.HasValue);
+
+            if (ticket == null)
+                return ErrorResponse.FailureResult("Ticket not found", ErrorCodes.NotFound);
+
+            if (ticket.Status != TicketStatus.Valid)
+                return ErrorResponse.FailureResult("Ticket already checked in or refunded or cancelled", ErrorCodes.InvalidInput);
+
+            if (ticket.EndTime < DateTime.UtcNow)
+                return ErrorResponse.FailureResult("Event already ended", ErrorCodes.InvalidInput);
+
+            ticket.Status = TicketStatus.Used;
+
+            await _unitOfWork.TicketRepository.UpdateAsync(ticket);
+            await _unitOfWork.SaveChangesAsync();
+
+            return Result<CheckInResponse>.Success(new CheckInResponse()
+            {
+                TicketCode = ticketCode,
+                FullName = ticket.User.FullName!,
+                EventName = ticket.EventName,
+                TicketTypeName = ticket.TicketType.TicketName,
+                Status = ticket.Status,
+                CheckInAt = DateTime.UtcNow,
+            });
+        }
+
     }
 }
