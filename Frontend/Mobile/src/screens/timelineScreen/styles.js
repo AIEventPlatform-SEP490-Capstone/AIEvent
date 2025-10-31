@@ -63,8 +63,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    marginBottom: 24,
+    marginTop: 20,
+    marginBottom: 12,
     gap: 10,
+  },
+  
+  statsHint: {
+    fontSize: Fonts.xs,
+    fontFamily: Fonts.regular,
+    color: Colors.textLight,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    fontStyle: 'italic',
   },
   statCard: {
     backgroundColor: Colors.white,
@@ -940,6 +950,40 @@ const enhancedStyles = StyleSheet.create({
     lineHeight: 32,
   },
   
+  eventDetailTabs: {
+    flexDirection: 'row',
+    marginTop: 20,
+    backgroundColor: '#F0F3F7',
+    borderRadius: 16,
+    padding: 4,
+    gap: 4,
+  },
+  
+  eventDetailTab: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  
+  eventDetailTabActive: {
+    backgroundColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  
+  eventDetailTabText: {
+    fontSize: Fonts.md,
+    fontWeight: '700',
+    fontFamily: Fonts.bold,
+    letterSpacing: 0.3,
+  },
+  
   modalCloseButton: {
     width: 44,
     height: 44,
@@ -962,42 +1006,45 @@ const enhancedStyles = StyleSheet.create({
   // ==================== EVENT DETAIL SECTIONS ====================
   eventDetailHero: {
     backgroundColor: Colors.white,
-    borderRadius: 28,
-    padding: 28,
+    borderRadius: 24,
+    padding: 24,
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
     shadowRadius: 16,
     elevation: 8,
+    borderWidth: 1,
+    borderColor: '#F0F4F8',
   },
   
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 18,
   },
   
   sectionIconBadge: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
-    shadowColor: '#4CAF50',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 5,
+    marginRight: 16,
+    backgroundColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
   },
   
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '900',
-    fontFamily: Fonts.extraBold,
+    fontSize: 22,
+    fontWeight: '800',
+    fontFamily: Fonts.bold,
     color: '#1A1A2E',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
     flex: 1,
   },
   
@@ -1011,51 +1058,114 @@ const enhancedStyles = StyleSheet.create({
   
   eventInfoSection: {
     backgroundColor: Colors.white,
-    borderRadius: 28,
-    padding: 28,
+    borderRadius: 24,
+    padding: 24,
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
     shadowRadius: 16,
     elevation: 8,
+    borderWidth: 1,
+    borderColor: '#F0F4F8',
+  },
+  
+  infoSectionTitle: {
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 2,
+    borderBottomColor: '#F0F4F8',
+  },
+  
+  infoSectionTitleText: {
+    fontSize: 20,
+    fontWeight: '800',
+    fontFamily: Fonts.bold,
+    color: '#1A1A2E',
+    letterSpacing: 0.3,
   },
   
   infoDetailRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 16,
-    paddingHorizontal: 16,
-    marginBottom: 12,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 18,
-    borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
+    paddingHorizontal: 0,
+    marginBottom: 16,
+    backgroundColor: '#FAFBFC',
+    borderRadius: 16,
+    paddingLeft: 16,
+    paddingRight: 16,
+    borderWidth: 1,
+    borderColor: '#E8EDF2',
   },
   
   infoDetailLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    marginRight: 16,
   },
   
   infoDetailIconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
-    overflow: 'visible',
+    marginRight: 16,
+    backgroundColor: '#E3F2FD',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   
-  infoDetailLabel: {
-    fontSize: Fonts.md,
+  locationRowCustom: {
+    marginBottom: 16,
+    backgroundColor: '#FAFBFC',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E8EDF2',
+    borderLeftWidth: 0,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+  },
+  
+  locationLabelCustom: {
+    fontSize: Fonts.xs,
     fontFamily: Fonts.semiBold,
     color: '#757575',
     letterSpacing: 0.3,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
+  
+  locationValueCustom: {
+    fontSize: Fonts.md,
+    fontWeight: '700',
+    fontFamily: Fonts.bold,
+    color: '#1A1A2E',
+    letterSpacing: 0.2,
+    lineHeight: 22,
+  },
+  
+  infoDetailContent: {
+    flex: 1,
+  },
+  
+  infoDetailLabel: {
+    fontSize: Fonts.xs,
+    fontFamily: Fonts.semiBold,
+    color: '#757575',
+    letterSpacing: 0.3,
+    marginBottom: 4,
+    textTransform: 'uppercase',
   },
   
   infoDetailValue: {
@@ -1063,10 +1173,33 @@ const enhancedStyles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: Fonts.bold,
     color: '#1A1A2E',
-    textAlign: 'right',
-    flex: 1,
     letterSpacing: 0.2,
+    lineHeight: 22,
   },
+  
+  mapButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E3F2FD',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+    borderWidth: 1,
+    borderColor: '#BBDEFB',
+  },
+  
+  googleCalendarButtonContainer: {
+    marginTop: 8,
+    paddingTop: 20,
+    borderTopWidth: 2,
+    borderTopColor: '#F0F4F8',
+  },
+  
+  googleCalendarButton: {
+    marginTop: 0,
+  },
+  
   // ==================== TICKETS SECTION ====================
   ticketsSection: {
     marginBottom: 28,
@@ -1094,26 +1227,39 @@ const enhancedStyles = StyleSheet.create({
   },
   
   ticketGroup: {
-    marginBottom: 24,
+    marginBottom: 16,
     backgroundColor: Colors.white,
-    borderRadius: 28,
-    padding: 24,
+    borderRadius: 20,
+    padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 8,
-    borderWidth: 0,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#F0F3F7',
   },
   
   ticketGroupHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
-    paddingBottom: 20,
+    marginBottom: 16,
+    paddingBottom: 16,
     borderBottomWidth: 2,
     borderBottomColor: '#F0F3F7',
+  },
+  
+  ticketGroupHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  
+  expandIcon: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    fontWeight: '700',
   },
   
   ticketGroupTitle: {
@@ -1123,6 +1269,7 @@ const enhancedStyles = StyleSheet.create({
     color: '#1A1A2E',
     flex: 1,
     letterSpacing: 0.3,
+    marginRight: 12,
   },
   
   ticketCountBadge: {
@@ -1138,18 +1285,169 @@ const enhancedStyles = StyleSheet.create({
   },
   
   ticketItem: {
-    marginBottom: 20,
+    marginBottom: 12,
     backgroundColor: Colors.white,
-    borderRadius: 20,
+    borderRadius: 16,
     padding: 0,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#F0F3F7',
+  },
+  
+  ticketItemCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  
+  ticketItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
+  },
+  
+  ticketStatusIndicator: {
+    width: 4,
+    height: 40,
+    borderRadius: 2,
+    marginRight: 12,
+  },
+  
+  ticketItemInfo: {
+    flex: 1,
+  },
+  
+  ticketCodeCompact: {
+    fontSize: Fonts.md,
+    fontWeight: '700',
+    fontFamily: Fonts.bold,
+    color: '#1A1A2E',
+    marginBottom: 4,
+    letterSpacing: 0.5,
+  },
+  
+  ticketTypeCompact: {
+    fontSize: Fonts.xs,
+    fontFamily: Fonts.regular,
+    color: '#757575',
+    letterSpacing: 0.2,
+  },
+  
+  ticketItemRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  
+  ticketStatusBadgeCompact: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    minWidth: 70,
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  
+  ticketStatusTextCompact: {
+    fontSize: Fonts.xs,
+    fontWeight: '700',
+    fontFamily: Fonts.bold,
+    letterSpacing: 0.3,
+  },
+  
+  qrButtonCompact: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F0F3F7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E8EDF2',
+  },
+  
+  qrContainerCompact: {
+    paddingTop: 12,
+    paddingBottom: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#F8F9FA',
+    borderTopWidth: 1,
+    borderTopColor: '#F0F3F7',
+    alignItems: 'center',
+  },
+  
+  qrImageWrapperCompact: {
+    backgroundColor: Colors.white,
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  
+  qrImageCompact: {
+    width: 180,
+    height: 180,
+    borderRadius: 8,
+  },
+  
+  qrHelperTextCompact: {
+    fontSize: Fonts.xs,
+    fontFamily: Fonts.regular,
+    color: '#757575',
+    textAlign: 'center',
+    letterSpacing: 0.2,
+  },
+  
+  showMoreButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#E8EDF2',
+    borderStyle: 'dashed',
+  },
+  
+  showMoreText: {
+    fontSize: Fonts.sm,
+    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
+    letterSpacing: 0.3,
+  },
+  
+  loadMoreButton: {
+    backgroundColor: Colors.primary,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  
+  loadMoreText: {
+    fontSize: Fonts.md,
+    fontWeight: '700',
+    fontFamily: Fonts.bold,
+    letterSpacing: 0.5,
   },
   
   ticketItemHeader: {

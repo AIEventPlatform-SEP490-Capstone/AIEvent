@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { styles } from './styles';
 import CustomText from '../../components/common/customTextRN';
+import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
 
@@ -19,14 +20,19 @@ const FriendsScreen = ({ navigation }) => {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <CustomText variant="h2" color="primary" style={styles.title}>
+        <LinearGradient
+          colors={Colors.gradientHeaderTitle}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.header}
+        >
+          <CustomText variant="h2" color="white" style={styles.title}>
             Bạn bè
           </CustomText>
-          <CustomText variant="body" color="secondary" style={styles.subtitle}>
+          <CustomText variant="body" color="white" style={styles.subtitle}>
             Kết nối với cộng đồng
           </CustomText>
-        </View>
+        </LinearGradient>
 
         {friends.length > 0 ? (
           <View style={styles.content}>

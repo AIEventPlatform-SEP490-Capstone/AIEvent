@@ -121,12 +121,6 @@ export function VerticalNavigation() {
           isActive: pathname === "/admin/organizers",
         },
         {
-          title: "Hồ sơ Admin",
-          url: "/admin/profile",
-          icon: User,
-          isActive: pathname === "/admin/profile",
-        },
-        {
           title: "Cài đặt hệ thống",
           url: "/admin/system-settings",
           icon: Settings,
@@ -463,8 +457,8 @@ export function VerticalNavigation() {
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                  {/* Only show "Lời mời sự kiện" for regular users, not for admin */}
-                  {user?.role?.toLowerCase() !== "admin" && (
+                  {/* Only show "Lời mời sự kiện" for regular users, not for admin and manager */}
+                  {!["admin", "manager"].includes(user?.role?.toLowerCase()) && (
                     <SidebarMenuItem>
                       <SidebarMenuButton
                         asChild
@@ -506,7 +500,15 @@ export function VerticalNavigation() {
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
-                      isActive={pathname === "/profile"}
+                      isActive={
+                        user?.role?.toLowerCase() === "admin"
+                          ? pathname === "/admin/profile"
+                          : user?.role?.toLowerCase() === "organizer"
+                          ? pathname === "/organizer/profile"
+                          : user?.role?.toLowerCase() === "manager"
+                          ? pathname === "/manager/profile"
+                          : pathname === "/profile"
+                      }
                       className={cn(
                         "group rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/15 data-[active=true]:text-primary",
                         state === "collapsed" && "p-1 justify-center"

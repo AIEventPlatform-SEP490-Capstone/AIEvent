@@ -19,6 +19,7 @@ import ManagerDashboard from "../pages/Manager/ManagerDashboard";
 import ManagerEventsPage from "../pages/Manager/ManagerEventsPage";
 import ManagerEventDetailPage from "../pages/Manager/ManagerEventDetailPage";
 import ManagerEditEventPage from "../pages/Manager/ManagerEditEventPage";
+import ManagerProfile from "../pages/Manager/ManagerProfile";
 import RefundRulesPage from "../pages/RefundRule/RefundRulesPage";
 import AdminProfile from "../pages/Admin/AdminProfile";
 import UserManagement from "../pages/Admin/UserManagement";
@@ -219,7 +220,7 @@ export default function useRouterElement() {
           path: "refund-rules",
           element: <RefundRulesPage userRole="manager" />,
         },
-        { path: "profile", element: <div>Manager Profile Page</div> },
+        { path: "profile", element: <ManagerProfile /> },
         { path: "settings", element: <div>Manager Settings Page</div> },
         { path: "support", element: <div>Manager Support Page</div> },
       ],
