@@ -1,3 +1,5 @@
+
+
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { bookingAPI } from "../../api/bookingAPI";
 
@@ -6,34 +8,47 @@ export const createBooking = createAsyncThunk(
   "booking/create",
   async (bookingData, { rejectWithValue }) => {
     try {
-      const response = await bookingAPI.createBooking(bookingData);
-      return response.data;
+      const data = await bookingAPI.createBooking(bookingData);
+      return data;
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
 
-// Lấy danh sách vé
-export const fetchTickets = createAsyncThunk(
-  "booking/fetchTickets",
+// Lấy danh sách sự kiện
+export const fetchEvents = createAsyncThunk(
+  "booking/fetchEvents",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await bookingAPI.getTickets();
-      return response.data?.data?.items || [];
+      const data = await bookingAPI.getEvents();
+      return data.items || [];
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
 
-// Lấy QR code của vé
+// Lấy danh sách vé của từng sự kiện
+export const fetchEventTickets = createAsyncThunk(
+  "booking/fetchEventTickets",
+  async (eventId, { rejectWithValue }) => {
+    try {
+      const data = await bookingAPI.getEventTickets(eventId);
+      return { eventId, tickets: data.items || [] };
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+// Lấy QR Code của vé
 export const fetchTicketQR = createAsyncThunk(
   "booking/fetchTicketQR",
   async (ticketId, { rejectWithValue }) => {
     try {
-      const response = await bookingAPI.getTicketQR(ticketId);
-      return { ticketId, qrCode: response.data?.data?.qrCode };
+      const data = await bookingAPI.getTicketQR(ticketId);
+      return { ticketId, qrCode: data.qrCode };
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -45,26 +60,25 @@ export const refundTicket = createAsyncThunk(
   "booking/refundTicket",
   async (ticketId, { rejectWithValue }) => {
     try {
-      const response = await bookingAPI.refundTicket(ticketId);
-      return { ticketId, result: response.data };
+      const data = await bookingAPI.refundTicket(ticketId);
+      return { ticketId, result: data };
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
 
-//  Slice
-
 const bookingSlice = createSlice({
   name: "booking",
   initialState: {
+    events: [],
+    eventTickets: {},
     bookings: [],
-    tickets: [],
     qrCodes: {},
     loading: false,
     error: null,
-    refunding: false,
     creating: false,
+    refunding: false,
   },
   reducers: {
     clearError: (state) => {
@@ -73,7 +87,7 @@ const bookingSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      //  Create booking
+      // Tạo booking
       .addCase(createBooking.pending, (state) => {
         state.creating = true;
         state.error = null;
@@ -87,38 +101,37 @@ const bookingSlice = createSlice({
         state.error = action.payload;
       })
 
-      //  Fetch tickets
-      .addCase(fetchTickets.pending, (state) => {
+      // Lấy danh sách sự kiện
+      .addCase(fetchEvents.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
-      .addCase(fetchTickets.fulfilled, (state, action) => {
+      .addCase(fetchEvents.fulfilled, (state, action) => {
         state.loading = false;
-        state.tickets = action.payload;
+        state.events = action.payload;
       })
-      .addCase(fetchTickets.rejected, (state, action) => {
+      .addCase(fetchEvents.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
 
-      //  Fetch QR
+      // Lấy vé của từng sự kiện
+      .addCase(fetchEventTickets.fulfilled, (state, action) => {
+        const { eventId, tickets } = action.payload;
+        state.eventTickets[eventId] = tickets;
+      })
+
+      // Lấy QR
       .addCase(fetchTicketQR.fulfilled, (state, action) => {
         const { ticketId, qrCode } = action.payload;
         state.qrCodes[ticketId] = qrCode;
       })
 
-      //  Refund Ticket
+      // Hoàn vé
       .addCase(refundTicket.pending, (state) => {
         state.refunding = true;
-        state.error = null;
       })
-      .addCase(refundTicket.fulfilled, (state, action) => {
+      .addCase(refundTicket.fulfilled, (state) => {
         state.refunding = false;
-        const { ticketId } = action.payload;
-        // Optionally mark refunded tickets
-        state.tickets = state.tickets.map((t) =>
-          t.ticketId === ticketId ? { ...t, refunded: true } : t
-        );
       })
       .addCase(refundTicket.rejected, (state, action) => {
         state.refunding = false;
@@ -127,12 +140,11 @@ const bookingSlice = createSlice({
   },
 });
 
-// Exports
-
 export const { clearError } = bookingSlice.actions;
 
 export const selectBookings = (state) => state.booking.bookings;
-export const selectTickets = (state) => state.booking.tickets;
+export const selectEvents = (state) => state.booking.events;
+export const selectEventTickets = (state) => state.booking.eventTickets;
 export const selectQRCodeByTicketId = (state, id) => state.booking.qrCodes[id];
 export const selectBookingLoading = (state) => state.booking.loading;
 export const selectBookingError = (state) => state.booking.error;

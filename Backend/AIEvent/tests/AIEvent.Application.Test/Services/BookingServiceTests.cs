@@ -18,9 +18,8 @@ namespace AIEvent.Application.Test.Services
         private readonly Mock<IUnitOfWork> _unitOfWorkMock;
         private readonly Mock<ITransactionHelper> _transactionHelperMock;
         private readonly Mock<IQrCodeService> _qrCodeServiceMock;
-        private readonly Mock<IPdfService> _pdfServiceMock;
-        private readonly Mock<IEmailService> _emailServiceMock;
-        private readonly Mock<ITicketTokenService> _ticketTokenServiceMock;
+        private readonly Mock<ITicketSignatureService> _ticketSignatureServiceMock;
+        private readonly Mock<IHangfireJobService> _hangfireJobServiceMock;
         private readonly BookingService _bookingService;
 
         private static readonly Guid UserId = Guid.Parse("a3f4a95e-27fb-4d32-b2c1-1f4a5c6e8d9b");
@@ -34,17 +33,15 @@ namespace AIEvent.Application.Test.Services
             _unitOfWorkMock = new Mock<IUnitOfWork>();
             _transactionHelperMock = new Mock<ITransactionHelper>();
             _qrCodeServiceMock = new Mock<IQrCodeService>();
-            _pdfServiceMock = new Mock<IPdfService>();
-            _emailServiceMock = new Mock<IEmailService>();
-            _ticketTokenServiceMock = new Mock<ITicketTokenService>();
+            _ticketSignatureServiceMock = new Mock<ITicketSignatureService>();
+            _hangfireJobServiceMock = new Mock<IHangfireJobService>();
 
             _bookingService = new BookingService(
                 _unitOfWorkMock.Object,
                 _transactionHelperMock.Object,
                 _qrCodeServiceMock.Object,
-                _ticketTokenServiceMock.Object,
-                _pdfServiceMock.Object,
-                _emailServiceMock.Object
+                _ticketSignatureServiceMock.Object,
+                _hangfireJobServiceMock.Object
             );
         }
 
@@ -52,7 +49,6 @@ namespace AIEvent.Application.Test.Services
         [Fact]
         public async Task UTCID01_CreateBookingAsync_ShouldReturnSuccess_WhenAllValid_AndWalletHasEnoughMoney()
         {
-            // Arrange
             var userId = UserId;
             var organizerId = OrgId;
             var eventId = EventId;
@@ -116,12 +112,11 @@ namespace AIEvent.Application.Test.Services
             {
                 EventId = eventId,
                 TicketTypeRequests = new List<TicketTypeRequest>
-                {
-                    new TicketTypeRequest { TicketTypeId = ticketTypeId, Quantity = 2 }
-                }
+        {
+            new TicketTypeRequest { TicketTypeId = ticketTypeId, Quantity = 2 }
+        }
             };
 
-            // ===== Mock Queryable Repositories =====
             _unitOfWorkMock.Setup(u => u.UserRepository.Query(false))
                 .Returns(new List<User> { user }.AsQueryable().BuildMock());
 
@@ -134,7 +129,6 @@ namespace AIEvent.Application.Test.Services
             _unitOfWorkMock.Setup(u => u.WalletRepository.Query(false))
                 .Returns(new List<Wallet> { walletUser, walletOrg }.AsQueryable().BuildMockDbSet().Object);
 
-            // ===== Mock Async Repository Actions =====
             _unitOfWorkMock.Setup(u => u.BookingRepository.AddAsync(It.IsAny<Booking>()))
                 .ReturnsAsync((Booking b) => b);
             _unitOfWorkMock.Setup(u => u.BookingItemRepository.AddRangeAsync(It.IsAny<IEnumerable<BookingItem>>()))
@@ -154,56 +148,50 @@ namespace AIEvent.Application.Test.Services
             _unitOfWorkMock.Setup(u => u.SaveChangesAsync())
                 .ReturnsAsync(1);
 
-            // ===== Mock TransactionHelper =====
-            _transactionHelperMock.Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+            _transactionHelperMock
+                .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(func => func());
 
-            // ===== Mock Services =====
-            _ticketTokenServiceMock.Setup(s => s.CreateTicketToken(It.IsAny<Guid>()))
-                .Returns<Guid>(id => $"QR_TOKEN_{id}");
+            _ticketSignatureServiceMock
+                .Setup(s => s.CreateSignature(It.IsAny<string>()))
+                .Returns((string code) => $"SIG_{code}");
 
-            _qrCodeServiceMock.Setup(s => s.GenerateQrBytesAndUrlsAsync(It.IsAny<List<string>>()))
-                .ReturnsAsync((List<string> contents) =>
-                {
-                    var bytes = contents.ToDictionary(c => c, c => new byte[] { 1, 2, 3 });
-                    var urls = contents.ToDictionary(c => c, c => $"https://example.com/{c}.png");
-                    return (bytes, urls);
+            _qrCodeServiceMock
+                .Setup(s => s.GenerateQrBytesAndUrlsAsync(It.IsAny<List<string>>()))
+                .ReturnsAsync((List<string> contents) => 
+                { 
+                    var bytes = contents.ToDictionary(c => c, c => new byte[] { 1, 2, 3 }); 
+                    var urls = contents.ToDictionary(c => c, c => $"https://example.com/{c}.png"); 
+                    return (bytes, urls); 
                 });
 
-            _pdfServiceMock.Setup(s => s.GenerateTicketsPdfAsync(
-                    It.IsAny<List<TicketForPdf>>(),
+            _hangfireJobServiceMock
+                .Setup(h => h.EnqueueSendTicketEmailJobAsync(
                     It.IsAny<string>(),
                     It.IsAny<string>(),
-                    It.IsAny<string>()))
-                .ReturnsAsync(new byte[10]);
-
-            _emailServiceMock.Setup(s => s.SendTicketsEmailAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<byte[]>(),
-                It.IsAny<string>(),
-                It.IsAny<string>()))
-                .Returns(Task.CompletedTask);
+                    It.IsAny<string>(),
+                    It.IsAny<List<TicketForPdf>>()))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
 
             // ===== Act =====
             var result = await _bookingService.CreateBookingAsync(userId, request);
 
             // ===== Assert =====
             Assert.True(result.IsSuccess, "Booking should succeed when wallet has enough balance.");
+            Assert.Null(result.Error);
 
             _unitOfWorkMock.Verify(u => u.BookingRepository.AddAsync(It.IsAny<Booking>()), Times.Once);
             _unitOfWorkMock.Verify(u => u.TicketRepository.AddRangeAsync(It.IsAny<IEnumerable<Ticket>>()), Times.Once);
             _unitOfWorkMock.Verify(u => u.SaveChangesAsync(), Times.AtLeastOnce);
 
-            _emailServiceMock.Verify(s => s.SendTicketsEmailAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<byte[]>(),
-                It.IsAny<string>(),
-                It.IsAny<string>()), Times.Once);
+            _hangfireJobServiceMock.Verify(h => h.EnqueueSendTicketEmailJobAsync(
+                It.Is<string>(email => email == user.Email),
+                It.Is<string>(name => name == user.FullName),
+                It.Is<string>(title => title == eventEntity.Title),
+                It.IsAny<List<TicketForPdf>>()), Times.Once);
         }
+
 
         [Fact]
         public async Task UTCID02_CreateBookingAsync_ShouldReturnSuccess_WhenFreeTickets()
@@ -309,8 +297,9 @@ namespace AIEvent.Application.Test.Services
                 .Returns<Func<Task<Result>>>(func => func());
 
             // ===== Mock Services =====
-            _ticketTokenServiceMock.Setup(s => s.CreateTicketToken(It.IsAny<Guid>()))
-                .Returns<Guid>(id => $"FREE_TOKEN_{id}");
+            _ticketSignatureServiceMock
+                .Setup(s => s.CreateSignature(It.IsAny<string>()))
+                .Returns((string code) => $"SIG_{code}");
 
             _qrCodeServiceMock.Setup(s => s.GenerateQrBytesAndUrlsAsync(It.IsAny<List<string>>()))
                 .ReturnsAsync((List<string> contents) =>
@@ -319,22 +308,6 @@ namespace AIEvent.Application.Test.Services
                     var urls = contents.ToDictionary(c => c, c => $"https://example.com/{c}.png");
                     return (bytes, urls);
                 });
-
-            _pdfServiceMock.Setup(s => s.GenerateTicketsPdfAsync(
-                It.IsAny<List<TicketForPdf>>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>()))
-                .ReturnsAsync(new byte[10]);
-
-            _emailServiceMock.Setup(s => s.SendTicketsEmailAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<byte[]>(),
-                It.IsAny<string>(),
-                It.IsAny<string>()))
-                .Returns(Task.CompletedTask);
 
             // ===== Act =====
             var result = await _bookingService.CreateBookingAsync(userId, request);
@@ -348,14 +321,6 @@ namespace AIEvent.Application.Test.Services
 
             _unitOfWorkMock.Verify(u => u.WalletTransactionRepository.AddRangeAsync(It.IsAny<IEnumerable<WalletTransaction>>()), Times.Never);
             _unitOfWorkMock.Verify(u => u.PaymentTransactionRepository.AddAsync(It.IsAny<PaymentTransaction>()), Times.Never);
-
-            _emailServiceMock.Verify(s => s.SendTicketsEmailAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<byte[]>(),
-                It.IsAny<string>(),
-                It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
@@ -545,13 +510,6 @@ namespace AIEvent.Application.Test.Services
             // Đảm bảo không có hành động tạo booking nào xảy ra
             _unitOfWorkMock.Verify(u => u.BookingRepository.AddAsync(It.IsAny<Booking>()), Times.Never);
             _unitOfWorkMock.Verify(u => u.SaveChangesAsync(), Times.Never);
-            _emailServiceMock.Verify(s => s.SendTicketsEmailAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<byte[]>(),
-                It.IsAny<string>(),
-                It.IsAny<string>()), Times.Never);
         }
 
         [Fact]
@@ -1428,13 +1386,6 @@ namespace AIEvent.Application.Test.Services
             // Đảm bảo không có hành động tạo booking nào xảy ra
             _unitOfWorkMock.Verify(u => u.BookingRepository.AddAsync(It.IsAny<Booking>()), Times.Never);
             _unitOfWorkMock.Verify(u => u.SaveChangesAsync(), Times.Never);
-            _emailServiceMock.Verify(s => s.SendTicketsEmailAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<byte[]>(),
-                It.IsAny<string>(),
-                It.IsAny<string>()), Times.Never);
         }
 
         [Fact]
@@ -1554,8 +1505,9 @@ namespace AIEvent.Application.Test.Services
                 .Returns<Func<Task<Result>>>(func => func());
 
             // ===== Mock Services =====
-            _ticketTokenServiceMock.Setup(s => s.CreateTicketToken(It.IsAny<Guid>()))
-                .Returns<Guid>(id => $"QR_TOKEN_{id}");
+            _ticketSignatureServiceMock
+                .Setup(s => s.CreateSignature(It.IsAny<string>()))
+                .Returns((string code) => $"SIG_{code}");
 
             _qrCodeServiceMock.Setup(s => s.GenerateQrBytesAndUrlsAsync(It.IsAny<List<string>>()))
                 .ReturnsAsync((List<string> contents) =>
@@ -1564,22 +1516,6 @@ namespace AIEvent.Application.Test.Services
                     var urls = contents.ToDictionary(c => c, c => $"https://example.com/{c}.png");
                     return (bytes, urls);
                 });
-
-            _pdfServiceMock.Setup(s => s.GenerateTicketsPdfAsync(
-                    It.IsAny<List<TicketForPdf>>(),
-                    It.IsAny<string>(),
-                    It.IsAny<string>(),
-                    It.IsAny<string>()))
-                .ReturnsAsync(new byte[10]);
-
-            _emailServiceMock.Setup(s => s.SendTicketsEmailAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<byte[]>(),
-                It.IsAny<string>(),
-                It.IsAny<string>()))
-                .Returns(Task.CompletedTask);
 
             // ===== Act =====
             var result = await _bookingService.CreateBookingAsync(userId, request);
@@ -1592,13 +1528,6 @@ namespace AIEvent.Application.Test.Services
             // Đảm bảo transaction không tạo payment
             _unitOfWorkMock.Verify(u => u.PaymentTransactionRepository.AddAsync(It.IsAny<PaymentTransaction>()), Times.Never);
             _unitOfWorkMock.Verify(u => u.WalletTransactionRepository.AddRangeAsync(It.IsAny<IEnumerable<WalletTransaction>>()), Times.Never);
-            _emailServiceMock.Verify(s => s.SendTicketsEmailAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<byte[]>(),
-                It.IsAny<string>(),
-                It.IsAny<string>()), Times.Never);
         }
 
         [Fact]
@@ -1681,8 +1610,9 @@ namespace AIEvent.Application.Test.Services
             _transactionHelperMock.Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(func => func());
 
-            _ticketTokenServiceMock.Setup(s => s.CreateTicketToken(It.IsAny<Guid>()))
-                .Returns<Guid>(id => $"QR_TOKEN_{id}");
+            _ticketSignatureServiceMock
+                .Setup(s => s.CreateSignature(It.IsAny<string>()))
+                .Returns((string code) => $"SIG_{code}");
 
             _qrCodeServiceMock.Setup(s => s.GenerateQrBytesAndUrlsAsync(It.IsAny<List<string>>()))
                 .ReturnsAsync((List<string> contents) =>
@@ -1703,13 +1633,6 @@ namespace AIEvent.Application.Test.Services
             // Đảm bảo không có thao tác ghi dữ liệu
             _unitOfWorkMock.Verify(u => u.BookingRepository.AddAsync(It.IsAny<Booking>()), Times.Never);
             _unitOfWorkMock.Verify(u => u.PaymentTransactionRepository.AddAsync(It.IsAny<PaymentTransaction>()), Times.Never);
-            _emailServiceMock.Verify(s => s.SendTicketsEmailAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<byte[]>(),
-                It.IsAny<string>(),
-                It.IsAny<string>()), Times.Never);
         }
 
         [Fact]
@@ -1838,8 +1761,9 @@ namespace AIEvent.Application.Test.Services
             _transactionHelperMock.Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(func => func());
 
-            _ticketTokenServiceMock.Setup(s => s.CreateTicketToken(It.IsAny<Guid>()))
-                .Returns<Guid>(id => $"QR_TOKEN_{id}");
+            _ticketSignatureServiceMock
+                .Setup(s => s.CreateSignature(It.IsAny<string>()))
+                .Returns((string code) => $"SIG_{code}");
 
             _qrCodeServiceMock.Setup(s => s.GenerateQrBytesAndUrlsAsync(It.IsAny<List<string>>()))
                 .ReturnsAsync((List<string> contents) =>
@@ -1849,22 +1773,6 @@ namespace AIEvent.Application.Test.Services
                     return (bytes, urls);
                 });
 
-            _pdfServiceMock.Setup(s => s.GenerateTicketsPdfAsync(
-                    It.IsAny<List<TicketForPdf>>(),
-                    It.IsAny<string>(),
-                    It.IsAny<string>(),
-                    It.IsAny<string>()))
-                .ReturnsAsync(new byte[10]);
-
-            _emailServiceMock.Setup(s => s.SendTicketsEmailAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<byte[]>(),
-                It.IsAny<string>(),
-                It.IsAny<string>()))
-                .Returns(Task.CompletedTask);
-
             var result = await _bookingService.CreateBookingAsync(userId, request);
 
             Assert.False(result.IsSuccess, "Booking should fail when organizer wallet not found.");
@@ -1873,13 +1781,6 @@ namespace AIEvent.Application.Test.Services
 
             _unitOfWorkMock.Verify(u => u.PaymentTransactionRepository.AddAsync(It.IsAny<PaymentTransaction>()), Times.Never);
             _unitOfWorkMock.Verify(u => u.WalletTransactionRepository.AddRangeAsync(It.IsAny<IEnumerable<WalletTransaction>>()), Times.Never);
-            _emailServiceMock.Verify(s => s.SendTicketsEmailAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<byte[]>(),
-                It.IsAny<string>(),
-                It.IsAny<string>()), Times.Never);
         }
         #endregion
 

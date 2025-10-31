@@ -109,5 +109,22 @@ namespace AIEvent.API.Controllers
                 result.Value!,
                 message: "Ticket retrieved successfully"));
         }
+
+        [HttpPatch("check-in")]
+        [Authorize(Roles = "Admin,Manager,Organizer,Staff")]
+        public async Task<ActionResult<SuccessResponse<CheckInResponse>>> CheckIn(CheckInRequest request)
+        {
+            var result = await _bookingService.CheckInTicketAsync(request.QrContent);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<CheckInResponse>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Check-in successfully"));
+        }
     }
 }

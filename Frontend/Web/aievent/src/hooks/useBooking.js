@@ -2,12 +2,14 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   createBooking,
-  fetchTickets,
+  fetchEvents,
+  fetchEventTickets,
   fetchTicketQR,
   refundTicket,
   clearError,
   selectBookings,
-  selectTickets,
+  selectEvents,
+  selectEventTickets,
   selectBookingLoading,
   selectBookingError,
 } from "../store/slices/bookingSlice";
@@ -15,42 +17,38 @@ import {
 export const useBooking = () => {
   const dispatch = useDispatch();
   const bookings = useSelector(selectBookings);
-  const tickets = useSelector(selectTickets);
+  const events = useSelector(selectEvents);
+  const eventTickets = useSelector(selectEventTickets);
   const loading = useSelector(selectBookingLoading);
   const error = useSelector(selectBookingError);
-  const qrCodes = useSelector((state) => state.booking.qrCodes); // ✅ lấy 1 lần ở đây
+  const qrCodes = useSelector((state) => state.booking.qrCodes);
 
-  // Auto fetch tickets on mount
+  // Tự động lấy danh sách sự kiện khi vào trang
   useEffect(() => {
-    dispatch(fetchTickets());
+    dispatch(fetchEvents());
   }, [dispatch]);
 
-  const createNewBooking = async (bookingData) => {
-    return dispatch(createBooking(bookingData));
-  };
+  const createNewBooking = (bookingData) =>
+    dispatch(createBooking(bookingData));
 
-  const getTicketQR = async (ticketId) => {
-    return dispatch(fetchTicketQR(ticketId));
-  };
+  const getEventTickets = (eventId) => dispatch(fetchEventTickets(eventId));
 
-  const refundTicketById = async (ticketId) => {
-    return dispatch(refundTicket(ticketId));
-  };
+  const getTicketQR = (ticketId) => dispatch(fetchTicketQR(ticketId));
 
-  const clearBookingError = () => {
-    dispatch(clearError());
-  };
+  const refundTicketById = (ticketId) => dispatch(refundTicket(ticketId));
 
-  const getQRCode = (ticketId) => {
-    return qrCodes[ticketId] || null;
-  };
+  const clearBookingError = () => dispatch(clearError());
+
+  const getQRCode = (ticketId) => qrCodes[ticketId] || null;
 
   return {
     bookings,
-    tickets,
+    events,
+    eventTickets,
     loading,
     error,
     createNewBooking,
+    getEventTickets,
     getTicketQR,
     refundTicketById,
     clearBookingError,

@@ -1,25 +1,33 @@
+
+
 import fetcher from "./fetcher";
 
 export const bookingAPI = {
-  //  Create new booking
+  // POST: Tạo booking mới
   createBooking: async (bookingData) => {
     const response = await fetcher.post("/booking", bookingData);
-    return response.data?.data; //
-  },
-
-  //  Get all tickets
-  getTickets: async () => {
-    const response = await fetcher.get("/booking/ticket");
     return response.data?.data;
   },
 
-  //  Get QR code of a ticket by ID
-  getTicketQR: async (ticketId) => {
-    const response = await fetcher.get(`/booking/ticket/qr/${ticketId}`);
-    return response.data?.data; //  QR code nằm trong data.qrCode
+  // GET: Danh sách sự kiện
+  getEvents: async () => {
+    const response = await fetcher.get("/booking/event");
+    return response.data?.data;
   },
 
-  //  Refund ticket by ID
+  // GET: Lấy danh sách vé theo từng sự kiện
+  getEventTickets: async (eventId) => {
+    const response = await fetcher.get(`/booking/event/${eventId}/ticket`);
+    return response.data?.data;
+  },
+
+  // GET: Lấy QR Code của vé
+  getTicketQR: async (ticketId) => {
+    const response = await fetcher.get(`/booking/ticket/qr/${ticketId}`);
+    return response.data?.data;
+  },
+
+  // PATCH: Hoàn vé
   refundTicket: async (ticketId) => {
     const response = await fetcher.patch(`/booking/ticket/refund/${ticketId}`);
     return response.data?.data;

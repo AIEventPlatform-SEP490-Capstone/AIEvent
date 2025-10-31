@@ -631,7 +631,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(mockDbSet.Object);
 
             // Act
-            var result = await _userService.GetAllUsersAsync(1, 10);
+            var result = await _userService.GetAllUsersAsync(1, 10, null, null, null);
 
             // Assert
             result.Should().NotBeNull();
@@ -665,7 +665,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(mockDbSet.Object);
 
             // Act
-            var result = await _userService.GetAllUsersAsync(1, 10);
+            var result = await _userService.GetAllUsersAsync(1, 10, null, null, null);
 
             // Assert
             result.Should().NotBeNull();
@@ -699,7 +699,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(mockDbSet.Object);
 
             // Act
-            var result = await _userService.GetAllUsersAsync(2, 5);
+            var result = await _userService.GetAllUsersAsync(2, 5, null, null, null);
 
             // Assert
             result.Should().NotBeNull();
@@ -733,7 +733,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(mockDbSet.Object);
 
             // Act
-            var result = await _userService.GetAllUsersAsync(2, 5);
+            var result = await _userService.GetAllUsersAsync(2, 5, null, null, null);
 
             // Assert
             result.Should().NotBeNull();
@@ -755,7 +755,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(mockDbSet.Object);
 
             // Act
-            var result = await _userService.GetAllUsersAsync(1, 10);
+            var result = await _userService.GetAllUsersAsync(1, 10, null, null, null);
 
             // Assert
             result.Should().NotBeNull();
@@ -789,7 +789,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(mockDbSet.Object);
 
             // Act
-            var result = await _userService.GetAllUsersAsync(1, 3);
+            var result = await _userService.GetAllUsersAsync(1, 3, null, null, null);
 
             // Assert
             result.Should().NotBeNull();
@@ -823,7 +823,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(mockDbSet.Object);
 
             // Act
-            var result = await _userService.GetAllUsersAsync(1, 1);
+            var result = await _userService.GetAllUsersAsync(1, 1, null, null, null);
 
             // Assert
             result.Should().NotBeNull();
@@ -857,7 +857,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(mockDbSet.Object);
 
             // Act
-            var result = await _userService.GetAllUsersAsync(1, 100);
+            var result = await _userService.GetAllUsersAsync(1, 100, null, null, null);
 
             // Assert
             result.Should().NotBeNull();
@@ -891,7 +891,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(mockDbSet.Object);
 
             // Act
-            var result = await _userService.GetAllUsersAsync(10, 5);
+            var result = await _userService.GetAllUsersAsync(10, 5, null, null, null);
 
             // Assert
             result.Should().NotBeNull();
@@ -940,7 +940,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(mockDbSet.Object);
 
             // Act
-            var result = await _userService.GetAllUsersAsync(1, 10);
+            var result = await _userService.GetAllUsersAsync(1, 10, null, null, null);
 
             // Assert
             result.Should().NotBeNull();
