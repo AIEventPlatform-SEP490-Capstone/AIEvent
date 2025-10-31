@@ -59,7 +59,7 @@ export const useEvents = () => {
       const response = await dispatch(fetchRelatedEvents(eventId)).unwrap();
       return response;
     } catch (err) {
-      toast.error('Không thể tải sự kiện liên quan');
+      toast.error('Không thể tải sự kiện có cùng thẻ hoặc danh mục');
       return null;
     }
   };

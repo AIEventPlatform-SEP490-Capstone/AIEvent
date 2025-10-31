@@ -1,12 +1,15 @@
 ﻿using AIEvent.API.Extensions;
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
+using AIEvent.Application.DTOs.Payment;
 using AIEvent.Application.DTOs.PaymentInformation;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Net.payOS.Types;
+using PayOS.Models.V1.Payouts;
+using PayOS.Models.V2.PaymentRequests;
+using PayOS.Models.Webhooks;
 
 namespace AIEvent.API.Controllers
 {
@@ -23,7 +26,7 @@ namespace AIEvent.API.Controllers
 
         [HttpPost("topup")]
         [Authorize]
-        public async Task<ActionResult<SuccessResponse<CreatePaymentResult>>> CreatePaymentTopUp([FromBody] long amount)
+        public async Task<ActionResult<SuccessResponse<CreatePaymentLinkResponse>>> CreatePaymentTopUp([FromBody] long amount)
         {
             var userId = User.GetRequiredUserId();
 
@@ -34,14 +37,14 @@ namespace AIEvent.API.Controllers
                 return Unauthorized(result.Error!);
             }
 
-            return Ok(SuccessResponse<CreatePaymentResult>.SuccessResult(
+            return Ok(SuccessResponse<CreatePaymentLinkResponse>.SuccessResult(
                 result.Value!,
                 SuccessCodes.Created,
                 "Create payment successfuly"));
         }
 
         [HttpPost("webhook")]
-        public async Task<ActionResult<SuccessResponse<object>>> ReceiveWebhook([FromBody] WebhookType webhookBody)
+        public async Task<ActionResult<SuccessResponse<object>>> ReceiveWebhook([FromBody] Webhook webhookBody)
         {
             if (webhookBody == null)
                 return BadRequest("Webhook payload is null.");
@@ -139,6 +142,22 @@ namespace AIEvent.API.Controllers
                 new { },
                 SuccessCodes.Deleted,
                 "Payment information deleted successfully"));
+        }
+
+        [HttpPost("withdraw")]
+        [Authorize]
+        public async Task<ActionResult<SuccessResponse<Payout>>> WithdrawUser([FromBody] OnlyPayOutRequest request)
+        {
+            var userId = User.GetRequiredUserId();
+
+            var result = await _paymentService.WithdrawAsync(userId, request);
+            if (!result.IsSuccess)
+                return BadRequest(result.Error!);
+
+            return Ok(SuccessResponse<Payout>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Created,
+                "Withdraw successfully"));
         }
     }
 }

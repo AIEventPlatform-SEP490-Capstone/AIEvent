@@ -2,6 +2,7 @@ import { useRoutes, Navigate } from "react-router-dom";
 import { PATH } from "./path";
 import MainLayout from "../layouts/MainLayout";
 import HomePage from "../pages/Home/HomePage";
+import TimelinePage from "../pages/Timeline/TimelinePage";
 import LoginPage from "../pages/Auth/LoginPage/LoginPage";
 import CreateEventPage from "../pages/Organizer/CreateEventPage";
 import MyEventsPage from "../pages/Organizer/MyEventsPage";
@@ -42,7 +43,7 @@ export default function useRouterElement() {
         { index: true, element: <HomePage /> },
         { path: "search", element: <div>Search Page</div> },
         { path: "nearby", element: <div>Nearby Events Page</div> },
-        { path: "timeline", element: <div>Timeline Page</div> },
+        { path: "timeline", element: <TimelinePage /> },
         { path: "friends", element: <div>Friends Page</div> },
         { path: "friends/search", element: <div>Friend Search Page</div> },
         {
