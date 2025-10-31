@@ -1,6 +1,5 @@
 ﻿using AIEvent.Application.Services.Interfaces;
 using QRCoder;
-using System.Drawing.Imaging;
 using Microsoft.AspNetCore.Http;
 using System.Collections.Concurrent;
 

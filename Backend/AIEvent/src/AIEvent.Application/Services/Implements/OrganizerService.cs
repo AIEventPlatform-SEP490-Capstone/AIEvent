@@ -242,7 +242,7 @@ namespace AIEvent.Application.Services.Implements
         {
             var userExists = await _unitOfWork.UserRepository.Query()
                 .AsNoTracking()
-                .AnyAsync(u => u.Id == userId && !u.IsDeleted);
+                .AnyAsync(u => u.Id == userId && !u.IsDeleted && u.IsActive);
             if (!userExists)
                 return ErrorResponse.FailureResult("User not found.", ErrorCodes.NotFound);
 
@@ -274,6 +274,9 @@ namespace AIEvent.Application.Services.Implements
 
             if (profile == null)
                 return ErrorResponse.FailureResult("Organizer not found or not approved yet", ErrorCodes.NotFound);
+
+            if (!profile.User.IsActive || profile.IsDeleted)
+                return ErrorResponse.FailureResult("User not found.", ErrorCodes.NotFound);
 
             profile.ContactName = request.ContactName ?? profile.ContactName;
             profile.Address = request.Address ?? profile.Address;
