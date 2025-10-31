@@ -80,18 +80,18 @@ const HomeScreen = () => {
     
       return (
         <View style={styles.container}>
-          {/* Header */}
+          {/* Premium Header */}
           <View style={styles.header}>
-            <CustomText variant="h2" color="primary">
+            <CustomText variant="h2" color="primary" style={styles.headerTitle}>
               {Strings.APP_NAME}
             </CustomText>
             
-            <TouchableOpacity style={styles.notificationButton}>
+            <TouchableOpacity style={styles.notificationButton} activeOpacity={0.7}>
               <Image source={Images.bell} style={styles.notificationIcon} />
             </TouchableOpacity>
           </View>
     
-          {/* Search Bar */}
+          {/* Modern Search Bar */}
           <View style={styles.searchContainer}>
             <Image source={Images.search} style={styles.searchIcon} />
             <TextInput
@@ -105,38 +105,45 @@ const HomeScreen = () => {
     
           {/* Main Content */}
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Welcome Section */}
-        <View style={styles.welcomeSection}>
-          <CustomText variant="h1" color="primary" align="center">
-            {Strings.HOME_TITLE}
-          </CustomText>
-          <CustomText variant="body" color="secondary" align="center">
-            {Strings.HOME_SUBTITLE}
-          </CustomText>
-        </View>
-
-        {/* Events List */}
-        <View style={styles.eventsSection}>
-          <CustomText variant="h2" color="primary">
-            {Strings.UPCOMING_EVENTS}
-          </CustomText>
-          
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <CustomText variant="body" color="secondary" align="center">
-                {Strings.LOADING}
+            {/* Welcome Section */}
+            <View style={styles.welcomeSection}>
+              <CustomText variant="h1" color="primary" align="center" style={styles.welcomeTitle}>
+                {Strings.HOME_TITLE}
+              </CustomText>
+              <CustomText variant="body" color="secondary" align="center" style={styles.welcomeSubtitle}>
+                {Strings.HOME_SUBTITLE}
               </CustomText>
             </View>
-          ) : (
-            <FlatList
-              data={filteredEvents}
-              renderItem={renderEventCard}
-              keyExtractor={(item) => item.id.toString()}
-              showsVerticalScrollIndicator={false}
-              scrollEnabled={false}
-            />
-          )}
-        </View>
+
+            {/* Events List */}
+            <View style={styles.eventsSection}>
+              <CustomText variant="h2" color="primary" style={styles.sectionTitle}>
+                {Strings.UPCOMING_EVENTS}
+              </CustomText>
+              
+              {loading ? (
+                <View style={styles.loadingContainer}>
+                  <CustomText variant="body" color="secondary" align="center">
+                    {Strings.LOADING}
+                  </CustomText>
+                </View>
+              ) : filteredEvents.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Image source={Images.calendar} style={styles.emptyIcon} />
+                  <CustomText variant="h3" color="secondary" align="center" style={styles.emptyText}>
+                    Không tìm thấy sự kiện nào
+                  </CustomText>
+                </View>
+              ) : (
+                <FlatList
+                  data={filteredEvents}
+                  renderItem={renderEventCard}
+                  keyExtractor={(item) => item.id.toString()}
+                  showsVerticalScrollIndicator={false}
+                  scrollEnabled={false}
+                />
+              )}
+            </View>
           </ScrollView>
         </View>
       );

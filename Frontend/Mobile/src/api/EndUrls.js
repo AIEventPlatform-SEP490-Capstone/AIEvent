@@ -29,6 +29,11 @@ const EndUrls = {
   
   // Search
   SEARCH_EVENTS: `${BASE_URL}/events/search`,
+  
+  // Booking
+  BOOKED_EVENTS: `${BASE_URL}/booking/event`,
+  EVENT_TICKETS: (eventId) => `${BASE_URL}/booking/event/${eventId}/ticket`,
+  TICKET_QR: (ticketId) => `${BASE_URL}/booking/ticket/qr/${ticketId}`,
 };
 
 export default EndUrls;

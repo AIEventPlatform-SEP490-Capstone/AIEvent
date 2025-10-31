@@ -84,12 +84,12 @@ const MyEventsScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* Premium Header */}
       <View style={styles.header}>
-        <CustomText variant="h2" color="primary">
+        <CustomText variant="h2" color="primary" style={{ fontSize: Fonts.xxl, fontWeight: '800', fontFamily: Fonts.bold }}>
           Sự kiện của tôi
         </CustomText>
-        <TouchableOpacity style={styles.filterButton}>
+        <TouchableOpacity style={styles.filterButton} activeOpacity={0.7}>
           <Image source={Images.settings} style={styles.filterIcon} />
         </TouchableOpacity>
       </View>
