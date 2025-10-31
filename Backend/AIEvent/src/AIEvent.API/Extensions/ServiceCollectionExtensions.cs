@@ -7,8 +7,8 @@ using AIEvent.Infrastructure.Context;
 using AIEvent.Infrastructure.Repositories.Implements;
 using CloudinaryDotNet;
 using Microsoft.EntityFrameworkCore;
-using Net.payOS;
 using StackExchange.Redis;
+using PayOS;
 
 namespace AIEvent.API.Extensions
 {
@@ -78,16 +78,27 @@ namespace AIEvent.API.Extensions
                 return cloudinary;
             });
 
-            services.AddSingleton<PayOS>(x =>
+            services.AddKeyedSingleton("PaymentClient", (sp, key) =>
             {
-                var config = x.GetRequiredService<IConfiguration>().GetSection("PayOS");
-                string clientId = config["ClientId"] ?? throw new Exception("ClientId not found");
-                string apiKey = config["ApiKey"] ?? throw new Exception("ClientId not found");
-                string checksumKey = config["ChecksumKey"] ?? throw new Exception("ClientId not found");
-
-                return new PayOS(clientId, apiKey, checksumKey);
+                var config = sp.GetRequiredService<IConfiguration>().GetSection("PayOS:Payment");
+                return new PayOSClient(new PayOSOptions
+                {
+                    ClientId = config["ClientId"] ?? throw new Exception("Payment ClientId not found"),
+                    ApiKey = config["ApiKey"] ?? throw new Exception("Payment ApiKey not found"),
+                    ChecksumKey = config["ChecksumKey"] ?? throw new Exception("Payment ChecksumKey not found"),
+                });
             });
-
+             
+            services.AddKeyedSingleton("PayoutClient", (sp, key) =>
+            {
+                var config = sp.GetRequiredService<IConfiguration>().GetSection("PayOS:Payout");
+                return new PayOSClient(new PayOSOptions
+                {
+                    ClientId = config["ClientId"] ?? throw new Exception("Payout ClientId not found"),
+                    ApiKey = config["ApiKey"] ?? throw new Exception("Payout ApiKey not found"),
+                    ChecksumKey = config["ChecksumKey"] ?? throw new Exception("Payout ChecksumKey not found"),
+                });
+            });
 
             return services;
         }

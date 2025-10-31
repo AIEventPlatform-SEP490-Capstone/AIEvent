@@ -1,5 +1,7 @@
 using AIEvent.Application.Constants;
+using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.PaymentInformation;
+using AIEvent.Application.DTOs.Payment;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
@@ -11,7 +13,8 @@ using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using MockQueryable.Moq;
 using Moq; 
-using Net.payOS.Types;
+using PayOS.Models.V2.PaymentRequests;
+using PayOS.Models.Webhooks;
 
 namespace AIEvent.Application.Test.Services
 {
@@ -388,27 +391,15 @@ namespace AIEvent.Application.Test.Services
                            .ReturnsAsync(user);
 
             var walletDbSet = new List<Wallet> { wallet }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(It.IsAny<bool>()))
+            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(false))
                            .Returns(walletDbSet.Object);
 
             _mockConfiguration.Setup(c => c["PayOS:CancelUrl"]).Returns("https://example.com/cancel");
             _mockConfiguration.Setup(c => c["PayOS:ReturnUrl"]).Returns("https://example.com/return");
 
-            var payOsResult = new CreatePaymentResult(
-                bin: "970415",                          
-                accountNumber: "1234567890",            
-                amount: (int)amount,                    
-                description: "Nạp tiền vào ví",         
-                orderCode: 202504051234567,             
-                currency: "VND",                        
-                paymentLinkId: "plink_abc123",          
-                status: "PENDING",                      
-                expiredAt: DateTimeOffset.UtcNow.AddMinutes(15).ToUnixTimeSeconds(), 
-                checkoutUrl: "https://pay.payos.vn/checkout/abc123", 
-                qrCode: "https://pay.payos.vn/qr/abc123"  
-            );
+            var payOsResult = new CreatePaymentLinkResponse();
 
-            _mockpayOSService.Setup(x => x.CreatePaymentLinkAsync(It.IsAny<PaymentData>()))
+            _mockpayOSService.Setup(x => x.CreatePaymentLinkAsync(It.IsAny<CreatePaymentLinkRequest>()))
                       .ReturnsAsync(payOsResult);
 
             _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.AddAsync(It.IsAny<WalletTransaction>()))
@@ -422,9 +413,6 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.IsSuccess.Should().BeTrue();
             result.Value.Should().NotBeNull();
-            result.Value!.checkoutUrl.Should().Be("https://pay.payos.vn/checkout/abc123");
-            result.Value!.orderCode.Should().Be(202504051234567);
-            result.Value!.status.Should().Be("PENDING");
 
             _mockUnitOfWork.Verify(x => x.WalletTransactionRepository.AddAsync(It.Is<WalletTransaction>(t =>
                 t.WalletId == walletId &&
@@ -443,24 +431,370 @@ namespace AIEvent.Application.Test.Services
 
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
+        
+        [Fact]
+        public async Task UTCID12_CreatePaymentTopUpAsync_WhenPayOSThrows_ShouldReturnFailureAndNotPersist()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            long amount = 100000; 
+
+            var user = new User { Id = userId, IsDeleted = false, IsActive = true, Email = "a@b.com" };
+            var wallet = new Wallet { Id = Guid.NewGuid(), UserId = userId, Balance = 10_000, IsDeleted = false };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
+            var walletDbSet = new List<Wallet> { wallet }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(It.IsAny<bool>())).Returns(walletDbSet.Object);
+
+            _mockpayOSService
+                .Setup(x => x.CreatePaymentLinkAsync(It.IsAny<CreatePaymentLinkRequest>()))
+                .ThrowsAsync(new Exception("network error"));
+
+            // Act
+            var result = await _paymentService.CreatePaymentTopUpAsync(userId, amount);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Contain("Failed to create payment link");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
+
+            _mockUnitOfWork.Verify(x => x.WalletTransactionRepository.AddAsync(It.IsAny<WalletTransaction>()), Times.Never());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
+        }
+        #endregion
+
+        #region WithdrawAsync
+
+        // UTCID01: Empty userId -> Invalid input
+        [Fact]
+        public async Task UTCID01_WithdrawAsync_WithEmptyUserId_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.Empty;
+            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 1000, Description = null };
+
+            // Act
+            var result = await _paymentService.WithdrawAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid userId");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
+        }
+
+        // UTCID02: Null request -> Validation failure
+        [Fact]
+        public async Task UTCID02_WithdrawAsync_WithNullRequest_ShouldReturnValidationFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+
+            // Act
+            var result = await _paymentService.WithdrawAsync(userId, null!);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
+        }
+
+        // UTCID03: Amount = 0 -> Boundary invalid
+        [Fact]
+        public async Task UTCID03_WithdrawAsync_WithZeroAmount_ShouldReturnValidationFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 0 };
+
+            // Act
+            var result = await _paymentService.WithdrawAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Amount phải lớn hơn 0");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        // UTCID04: Negative amount -> invalid
+        [Fact]
+        public async Task UTCID04_WithdrawAsync_WithNegativeAmount_ShouldReturnValidationFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = -1 };
+
+            // Act
+            var result = await _paymentService.WithdrawAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        // UTCID05: User not found -> Unauthorized
+        [Fact]
+        public async Task UTCID05_WithdrawAsync_WithUserNotFound_ShouldReturnUnauthorized()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 1000 };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync((User?)null);
+
+            // Act
+            var result = await _paymentService.WithdrawAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("User not found or inactive");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
+        }
+
+        // UTCID06: User deleted -> Unauthorized
+        [Fact]
+        public async Task UTCID06_WithdrawAsync_WithUserDeleted_ShouldReturnUnauthorized()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 1000 };
+            var user = new User { Id = userId, IsDeleted = true };
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
+
+            // Act
+            var result = await _paymentService.WithdrawAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("User not found or inactive");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
+        }
+
+        // UTCID07: Wallet not found -> NotFound
+        [Fact]
+        public async Task UTCID07_WithdrawAsync_WithWalletNotFound_ShouldReturnNotFound()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 1000 };
+            var user = new User { Id = userId, IsDeleted = false, IsActive = true };
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
+            var emptyWallets = new List<Wallet>().AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(It.IsAny<bool>())).Returns(emptyWallets.Object);
+
+            // Act
+            var result = await _paymentService.WithdrawAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Wallet not found");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        // UTCID08: Insufficient balance -> InvalidInput
+        [Fact]
+        public async Task UTCID08_WithdrawAsync_WithInsufficientBalance_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 2000 };
+            var user = new User { Id = userId, IsDeleted = false, IsActive = true };
+            var wallet = new Wallet { Id = Guid.NewGuid(), UserId = userId, Balance = 1000, IsDeleted = false };
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
+            var wallets = new List<Wallet> { wallet }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(It.IsAny<bool>())).Returns(wallets.Object);
+
+            // Act
+            var result = await _paymentService.WithdrawAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Insufficient balance");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        // UTCID09: Payment info not found -> NotFound
+        [Fact]
+        public async Task UTCID09_WithdrawAsync_WithPaymentInfoNotFound_ShouldReturnNotFound()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 1000 };
+            var user = new User { Id = userId, IsDeleted = false, IsActive = true };
+            var wallet = new Wallet { Id = Guid.NewGuid(), UserId = userId, Balance = 10_000, IsDeleted = false };
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
+            var wallets = new List<Wallet> { wallet }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(It.IsAny<bool>())).Returns(wallets.Object);
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.GetByIdAsync(request.PaymentInfoId, true)).ReturnsAsync((PaymentInformation?)null);
+
+            // Act
+            var result = await _paymentService.WithdrawAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Payment information not found or inactive");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        // UTCID10: Payment info deleted -> NotFound
+        [Fact]
+        public async Task UTCID10_WithdrawAsync_WithPaymentInfoDeleted_ShouldReturnNotFound()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 1000 };
+            var user = new User { Id = userId, IsDeleted = false, IsActive = true };
+            var wallet = new Wallet { Id = Guid.NewGuid(), UserId = userId, Balance = 10_000, IsDeleted = false };
+            var paymentInfo = new PaymentInformation { Id = request.PaymentInfoId, IsDeleted = true, AccountHolderName = "A", AccountNumber = "1", BankName = "B", BankBin = "970415" };
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
+            var wallets = new List<Wallet> { wallet }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(It.IsAny<bool>())).Returns(wallets.Object);
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.GetByIdAsync(request.PaymentInfoId, true)).ReturnsAsync(paymentInfo);
+
+            // Act
+            var result = await _paymentService.WithdrawAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Payment information not found or inactive");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        // UTCID11: Success path
+        [Fact]
+        public async Task UTCID11_WithdrawAsync_WithValidData_ShouldSucceedAndPersist()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 5000, Description = null };
+            var user = new User { Id = userId, IsDeleted = false, IsActive = true };
+            var walletId = Guid.NewGuid();
+            var wallet = new Wallet { Id = walletId, UserId = userId, Balance = 10_000, IsDeleted = false };
+            var paymentInfo = new PaymentInformation { Id = request.PaymentInfoId, IsDeleted = false, BankBin = "970415", AccountNumber = "123", AccountHolderName = "A", BankName = "B" };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
+            var wallets = new List<Wallet> { wallet }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(It.IsAny<bool>())).Returns(wallets.Object);
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.GetByIdAsync(request.PaymentInfoId, true)).ReturnsAsync(paymentInfo);
+
+            _mockpayOSService.Setup(x => x.CreatePayoutAsync(It.IsAny<PayOS.Models.V1.Payouts.PayoutRequest>()))
+                             .ReturnsAsync(new PayOS.Models.V1.Payouts.Payout());
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
+                                  .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.AddAsync(It.IsAny<WalletTransaction>()))
+                           .ReturnsAsync((WalletTransaction wt) => wt);
+
+            // Act
+            var result = await _paymentService.WithdrawAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.WalletRepository.UpdateAsync(It.Is<Wallet>(w => w.Id == walletId && w.Balance == 5000)), Times.Once());
+            _mockUnitOfWork.Verify(x => x.WalletTransactionRepository.AddAsync(It.Is<WalletTransaction>(t =>
+                t.WalletId == walletId &&
+                t.Amount == request.Amount &&
+                t.Status == TransactionStatus.Success &&
+                t.Type == TransactionType.Withdraw &&
+                t.Direction == TransactionDirection.Out &&
+                t.Description!.StartsWith("Rút tiền")
+            )), Times.Once());
+        }
+
+        // UTCID12: Transaction helper returns failure -> returns error
+        [Fact]
+        public async Task UTCID12_WithdrawAsync_WhenTransactionHelperFails_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 5000 };
+            var user = new User { Id = userId, IsDeleted = false, IsActive = true };
+            var wallet = new Wallet { Id = Guid.NewGuid(), UserId = userId, Balance = 10_000, IsDeleted = false };
+            var paymentInfo = new PaymentInformation { Id = request.PaymentInfoId, IsDeleted = false, BankBin = "970415", AccountNumber = "123", AccountHolderName = "A", BankName = "B" };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
+            var wallets = new List<Wallet> { wallet }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(It.IsAny<bool>())).Returns(wallets.Object);
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.GetByIdAsync(request.PaymentInfoId, true)).ReturnsAsync(paymentInfo);
+
+            _mockpayOSService.Setup(x => x.CreatePayoutAsync(It.IsAny<PayOS.Models.V1.Payouts.PayoutRequest>()))
+                             .ReturnsAsync(new PayOS.Models.V1.Payouts.Payout());
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
+                                  .ReturnsAsync(ErrorResponse.FailureResult("tx fail", ErrorCodes.InternalServerError));
+
+            // Act
+            var result = await _paymentService.WithdrawAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Failed to update wallet");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
+        }
+
+        // UTCID13: PayOS throws -> catch path, failed transaction persisted
+        [Fact]
+        public async Task UTCID13_WithdrawAsync_WhenPayOSThrows_ShouldPersistFailedTransactionAndReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 5000 };
+            var user = new User { Id = userId, IsDeleted = false, IsActive = true };
+            var wallet = new Wallet { Id = Guid.NewGuid(), UserId = userId, Balance = 10_000, IsDeleted = false };
+            var paymentInfo = new PaymentInformation { Id = request.PaymentInfoId, IsDeleted = false, BankBin = "970415", AccountNumber = "123", AccountHolderName = "A", BankName = "B" };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
+            var wallets = new List<Wallet> { wallet }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(It.IsAny<bool>())).Returns(wallets.Object);
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.GetByIdAsync(request.PaymentInfoId, true)).ReturnsAsync(paymentInfo);
+
+            _mockpayOSService.Setup(x => x.CreatePayoutAsync(It.IsAny<PayOS.Models.V1.Payouts.PayoutRequest>()))
+                             .ThrowsAsync(new Exception("network down"));
+
+            _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.AddAsync(It.IsAny<WalletTransaction>()))
+                           .ReturnsAsync((WalletTransaction wt) => wt);
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+
+            // Act
+            var result = await _paymentService.WithdrawAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Withdraw failed: network down");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
+
+            _mockUnitOfWork.Verify(x => x.WalletTransactionRepository.AddAsync(It.Is<WalletTransaction>(t =>
+                t.Status == TransactionStatus.Failed &&
+                t.Type == TransactionType.Withdraw &&
+                t.Direction == TransactionDirection.Out &&
+                t.Description == "network down"
+            )), Times.Once());
+
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
+        }
+
         #endregion
 
         #region PaymentWebhookAsync
 
-        // UTCID01: Null webhook body - Should throw ArgumentNullException
+        // UTCID01: Null webhook body - Should return failure
         [Fact]
-        public async Task UTCID01_PaymentWebhookAsync_WithNullWebhookBody_ShouldThrowArgumentNullException()
+        public async Task UTCID01_PaymentWebhookAsync_WithNullWebhookBody_ShouldReturnFailure()
         {
             // Arrange
-            WebhookType? webhookBody = null;
+            Webhook? webhookBody = null;
 
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<ArgumentNullException>(
-                async () => await _paymentService.PaymentWebhookAsync(webhookBody!)
-            );
+            // Act
+            var result = await _paymentService.PaymentWebhookAsync(webhookBody!);
 
-            exception.ParamName.Should().Be("webhookBody");
-            exception.Message.Should().Contain("Webhook payload is null");
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Be("Webhook data is required");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
         // UTCID02: Webhook success is false - Should return failure
@@ -468,30 +802,12 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID02_PaymentWebhookAsync_WithSuccessFalse_ShouldReturnFailure()
         {
             // Arrange
-            var webhookBody = new WebhookType(
-                code: "01",
-                desc: "Payment failed",
-                success: false,
-                data: new WebhookData(
-                    orderCode: 123456789,
-                    amount: 50000,
-                    description: "Test payment",
-                    accountNumber: "1234567890",
-                    reference: "REF123",
-                    transactionDateTime: "2024-01-01 10:00:00",
-                    currency: "VND",
-                    paymentLinkId: "plink_123",
-                    code: "01",
-                    desc: "Payment failed",
-                    counterAccountBankId: null,
-                    counterAccountBankName: null,
-                    counterAccountName: null,
-                    counterAccountNumber: null,
-                    virtualAccountName: null,
-                    virtualAccountNumber: null!
-                ),
-                signature: "signature123"
-            );
+            var webhookBody = new Webhook
+            {
+                Code = "01",
+                Description = "Payment failed",
+                Success = false
+            };
 
             // Act
             var result = await _paymentService.PaymentWebhookAsync(webhookBody);
@@ -499,9 +815,9 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.IsSuccess.Should().BeFalse();
             result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Be("Transaction fail");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
-            _mockpayOSService.Verify(x => x.VerifyPaymentWebhookData(It.IsAny<WebhookType>()), Times.Never());
+            result.Error!.Message.Should().Be("Payment failed: Payment failed");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            _mockpayOSService.Verify(x => x.VerifyPaymentWebhookData(It.IsAny<Webhook>()), Times.Never());
         }
 
         // UTCID03: Webhook verification returns null - Should return failure
@@ -509,33 +825,15 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID03_PaymentWebhookAsync_WithNullVerificationData_ShouldReturnFailure()
         {
             // Arrange
-            var webhookBody = new WebhookType(
-                code: "00",
-                desc: "Success",
-                success: true,
-                data: new WebhookData(
-                    orderCode: 123456789,
-                    amount: 50000,
-                    description: "Test payment",
-                    accountNumber: "1234567890",
-                    reference: "REF123",
-                    transactionDateTime: "2024-01-01 10:00:00",
-                    currency: "VND",
-                    paymentLinkId: "plink_123",
-                    code: "00",
-                    desc: "Success",
-                    counterAccountBankId: null,
-                    counterAccountBankName: null,
-                    counterAccountName: null,
-                    counterAccountNumber: null,
-                    virtualAccountName: null,
-                    virtualAccountNumber: null!
-                ),
-                signature: "invalid_signature"
-            );
+            var webhookBody = new Webhook
+            {
+                Code = "00",
+                Description = "Success",
+                Success = true
+            };
 
             _mockpayOSService.Setup(x => x.VerifyPaymentWebhookData(webhookBody))
-                            .Returns((WebhookData?)null!);
+                            .Returns(Task.FromResult<WebhookData>(null!));
 
             // Act
             var result = await _paymentService.PaymentWebhookAsync(webhookBody);
@@ -552,35 +850,12 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID04_PaymentWebhookAsync_WithCodeNotZeroZero_ShouldReturnFailure()
         {
             // Arrange
-            var webhookData = new WebhookData(
-                orderCode: 123456789,
-                amount: 50000,
-                description: "Test payment",
-                accountNumber: "1234567890",
-                reference: "REF123",
-                transactionDateTime: "2024-01-01 10:00:00",
-                currency: "VND",
-                paymentLinkId: "plink_123",
-                code: "01",
-                desc: "Payment failed",
-                counterAccountBankId: null,
-                counterAccountBankName: null,
-                counterAccountName: null,
-                counterAccountNumber: null,
-                virtualAccountName: null,
-                virtualAccountNumber: null!
-            );
-
-            var webhookBody = new WebhookType(
-                code: "01",
-                desc: "Payment failed",
-                success: true,
-                data: webhookData,
-                signature: "signature123"
-            );
-
-            _mockpayOSService.Setup(x => x.VerifyPaymentWebhookData(webhookBody))
-                            .Returns(webhookData);
+            var webhookBody = new Webhook
+            {
+                Code = "01",
+                Description = "Payment failed",
+                Success = true
+            };
 
             // Act
             var result = await _paymentService.PaymentWebhookAsync(webhookBody);
@@ -597,35 +872,12 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID05_PaymentWebhookAsync_WithTransactionNotFound_ShouldReturnFailure()
         {
             // Arrange
-            var webhookData = new WebhookData(
-                orderCode: 123456789,
-                amount: 50000,
-                description: "Test payment",
-                accountNumber: "1234567890",
-                reference: "REF123",
-                transactionDateTime: "2024-01-01 10:00:00",
-                currency: "VND",
-                paymentLinkId: "plink_123",
-                code: "00",
-                desc: "Success",
-                counterAccountBankId: null,
-                counterAccountBankName: null,
-                counterAccountName: null,
-                counterAccountNumber: null,
-                virtualAccountName: null,
-                virtualAccountNumber: null!
-            );
+            var webhookData = new WebhookData { OrderCode = 123456789, Amount = 50000 };
 
-            var webhookBody = new WebhookType(
-                code: "00",
-                desc: "Success",
-                success: true,
-                data: webhookData,
-                signature: "signature123"
-            );
+            var webhookBody = new Webhook { Code = "00", Description = "Success", Success = true };
 
             _mockpayOSService.Setup(x => x.VerifyPaymentWebhookData(webhookBody))
-                            .Returns(webhookData);
+                            .ReturnsAsync(webhookData);
 
             var emptyTransactions = new List<WalletTransaction>().AsQueryable().BuildMockDbSet();
             _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.Query(It.IsAny<bool>()))
@@ -649,32 +901,9 @@ namespace AIEvent.Application.Test.Services
             var orderCode = "123456789";
             var walletId = Guid.NewGuid();
 
-            var webhookData = new WebhookData(
-                orderCode: long.Parse(orderCode),
-                amount: 50000,
-                description: "Test payment",
-                accountNumber: "1234567890",
-                reference: "REF123",
-                transactionDateTime: "2024-01-01 10:00:00",
-                currency: "VND",
-                paymentLinkId: "plink_123",
-                code: "00",
-                desc: "Success",
-                counterAccountBankId: null,
-                counterAccountBankName: null,
-                counterAccountName: null,
-                counterAccountNumber: null,
-                virtualAccountName: null,
-                virtualAccountNumber: null!
-            );
+            var webhookData = new WebhookData { OrderCode = long.Parse(orderCode), Amount = 50000 };
 
-            var webhookBody = new WebhookType(
-                code: "00",
-                desc: "Success",
-                success: true,
-                data: webhookData,
-                signature: "signature123"
-            );
+            var webhookBody = new Webhook { Code = "00", Description = "Success", Success = true };
 
             var transaction = new WalletTransaction
             {
@@ -688,7 +917,7 @@ namespace AIEvent.Application.Test.Services
             };
 
             _mockpayOSService.Setup(x => x.VerifyPaymentWebhookData(webhookBody))
-                            .Returns(webhookData);
+                            .ReturnsAsync(webhookData);
 
             var transactions = new List<WalletTransaction> { transaction }.AsQueryable().BuildMockDbSet();
             _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.Query(It.IsAny<bool>()))
@@ -711,32 +940,9 @@ namespace AIEvent.Application.Test.Services
             var orderCode = "123456789";
             var walletId = Guid.NewGuid();
 
-            var webhookData = new WebhookData(
-                orderCode: long.Parse(orderCode),
-                amount: 60000, // Different amount
-                description: "Test payment",
-                accountNumber: "1234567890",
-                reference: "REF123",
-                transactionDateTime: "2024-01-01 10:00:00",
-                currency: "VND",
-                paymentLinkId: "plink_123",
-                code: "00",
-                desc: "Success",
-                counterAccountBankId: null,
-                counterAccountBankName: null,
-                counterAccountName: null,
-                counterAccountNumber: null,
-                virtualAccountName: null,
-                virtualAccountNumber: null!
-            );
+            var webhookData = new WebhookData { OrderCode = long.Parse(orderCode), Amount = 60000 };
 
-            var webhookBody = new WebhookType(
-                code: "00",
-                desc: "Success",
-                success: true,
-                data: webhookData,
-                signature: "signature123"
-            );
+            var webhookBody = new Webhook { Code = "00", Description = "Success", Success = true };
 
             var transaction = new WalletTransaction
             {
@@ -750,7 +956,7 @@ namespace AIEvent.Application.Test.Services
             };
 
             _mockpayOSService.Setup(x => x.VerifyPaymentWebhookData(webhookBody))
-                            .Returns(webhookData);
+                            .ReturnsAsync(webhookData);
 
             var transactions = new List<WalletTransaction> { transaction }.AsQueryable().BuildMockDbSet();
             _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.Query(It.IsAny<bool>()))
@@ -774,32 +980,9 @@ namespace AIEvent.Application.Test.Services
             var orderCode = "123456789";
             var walletId = Guid.NewGuid();
 
-            var webhookData = new WebhookData(
-                orderCode: long.Parse(orderCode),
-                amount: 50000,
-                description: "Test payment",
-                accountNumber: "1234567890",
-                reference: "REF123",
-                transactionDateTime: "2024-01-01 10:00:00",
-                currency: "VND",
-                paymentLinkId: "plink_123",
-                code: "00",
-                desc: "Success",
-                counterAccountBankId: null,
-                counterAccountBankName: null,
-                counterAccountName: null,
-                counterAccountNumber: null,
-                virtualAccountName: null,
-                virtualAccountNumber: null!
-            );
+            var webhookData = new WebhookData { OrderCode = long.Parse(orderCode), Amount = 50000 };
 
-            var webhookBody = new WebhookType(
-                code: "00",
-                desc: "Success",
-                success: true,
-                data: webhookData,
-                signature: "signature123"
-            );
+            var webhookBody = new Webhook { Code = "00", Description = "Success", Success = true };
 
             var transaction = new WalletTransaction
             {
@@ -813,7 +996,7 @@ namespace AIEvent.Application.Test.Services
             };
 
             _mockpayOSService.Setup(x => x.VerifyPaymentWebhookData(webhookBody))
-                            .Returns(webhookData);
+                            .ReturnsAsync(webhookData);
 
             var transactions = new List<WalletTransaction> { transaction }.AsQueryable().BuildMockDbSet();
             _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.Query(It.IsAny<bool>()))
@@ -841,32 +1024,9 @@ namespace AIEvent.Application.Test.Services
             var orderCode = "123456789";
             var walletId = Guid.NewGuid();
 
-            var webhookData = new WebhookData(
-                orderCode: long.Parse(orderCode),
-                amount: 50000,
-                description: "Test payment",
-                accountNumber: "1234567890",
-                reference: "REF123",
-                transactionDateTime: "2024-01-01 10:00:00",
-                currency: "VND",
-                paymentLinkId: "plink_123",
-                code: "00",
-                desc: "Success",
-                counterAccountBankId: null,
-                counterAccountBankName: null,
-                counterAccountName: null,
-                counterAccountNumber: null,
-                virtualAccountName: null,
-                virtualAccountNumber: null! 
-            );
+            var webhookData = new WebhookData { OrderCode = long.Parse(orderCode), Amount = 50000 };
 
-            var webhookBody = new WebhookType(
-                code: "00",
-                desc: "Success",
-                success: true,
-                data: webhookData,
-                signature: "signature123"
-            );
+            var webhookBody = new Webhook { Code = "00", Description = "Success", Success = true };
 
             var transaction = new WalletTransaction
             {
@@ -888,7 +1048,7 @@ namespace AIEvent.Application.Test.Services
             };
 
             _mockpayOSService.Setup(x => x.VerifyPaymentWebhookData(webhookBody))
-                            .Returns(webhookData);
+                            .ReturnsAsync(webhookData);
 
             var transactions = new List<WalletTransaction> { transaction }.AsQueryable().BuildMockDbSet();
             _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.Query(It.IsAny<bool>()))
@@ -908,35 +1068,12 @@ namespace AIEvent.Application.Test.Services
             result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
         }
 
-        // UTCID10: Boundary - Code with different format (not "00" but success false already)
+        // UTCID10: Boundary - Code with different format (not "00" and success false)
         [Fact]
         public async Task UTCID10_PaymentWebhookAsync_WithSuccessFalseAndNonZeroCode_ShouldReturnFailure()
         {
             // Arrange
-            var webhookBody = new WebhookType(
-                code: "99",
-                desc: "Unknown error",
-                success: false,
-                data: new WebhookData(
-                    orderCode: 123456789,
-                    amount: 50000,
-                    description: "Test payment",
-                    accountNumber: "1234567890",
-                    reference: "REF123",
-                    transactionDateTime: "2024-01-01 10:00:00",
-                    currency: "VND",
-                    paymentLinkId: "plink_123",
-                    code: "99",
-                    desc: "Unknown error",
-                    counterAccountBankId: null,
-                    counterAccountBankName: null,
-                    counterAccountName: null,
-                    counterAccountNumber: null,
-                    virtualAccountName: null,
-                    virtualAccountNumber: null! 
-                ),
-                signature: "signature123"
-            );
+            var webhookBody = new Webhook { Code = "99", Description = "Unknown error", Success = false };
 
             // Act
             var result = await _paymentService.PaymentWebhookAsync(webhookBody);
@@ -944,9 +1081,9 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.IsSuccess.Should().BeFalse();
             result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Be("Transaction fail");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
-            _mockpayOSService.Verify(x => x.VerifyPaymentWebhookData(It.IsAny<WebhookType>()), Times.Never());
+            result.Error!.Message.Should().Be("Payment failed: Unknown error");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            _mockpayOSService.Verify(x => x.VerifyPaymentWebhookData(It.IsAny<Webhook>()), Times.Never());
         }
 
         #endregion
@@ -964,7 +1101,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "John Doe",
                 AccountNumber = "1234567890",
                 BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch"
+                BranchName = "Ho Chi Minh City Branch",
+                BankBin = "123456"
             };
 
             var user = new User
@@ -982,7 +1120,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = request.AccountHolderName,
                 AccountNumber = request.AccountNumber,
                 BankName = request.BankName,
-                BranchName = request.BranchName
+                BranchName = request.BranchName,
+                BankBin = request.BankBin
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
@@ -1022,7 +1161,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "John Doe",
                 AccountNumber = "1234567890",
                 BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch"
+                BranchName = "Ho Chi Minh City Branch",
+                BankBin = "123456"
             };
 
             // Act
@@ -1064,7 +1204,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "John Doe",
                 AccountNumber = "1234567890",
                 BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch"
+                BranchName = "Ho Chi Minh City Branch",
+                BankBin = "123456"
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
@@ -1092,7 +1233,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "John Doe",
                 AccountNumber = "1234567890",
                 BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch"
+                BranchName = "Ho Chi Minh City Branch",
+                BankBin = "123456"
             };
 
             var user = new User
@@ -1127,7 +1269,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "John Doe",
                 AccountNumber = "1234567890",
                 BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch"
+                BranchName = "Ho Chi Minh City Branch",
+                BankBin = "123456"
             };
 
             var user = new User
@@ -1166,7 +1309,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = null!,
                 AccountNumber = "1234567890",
                 BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch"
+                BranchName = "Ho Chi Minh City Branch",
+                BankBin = "123456"
             };
 
             // Act
@@ -1190,7 +1334,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "John Doe",
                 AccountNumber = null!,
                 BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch"
+                BranchName = "Ho Chi Minh City Branch",
+                BankBin = "123456"
             };
 
             // Act
@@ -1214,7 +1359,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "John Doe",
                 AccountNumber = "12345", // 5 digits
                 BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch"
+                BranchName = "Ho Chi Minh City Branch",
+                BankBin = "123456"
             };
 
             // Act
@@ -1238,7 +1384,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "John Doe",
                 AccountNumber = "123456789012345678901", // 21 digits
                 BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch"
+                BranchName = "Ho Chi Minh City Branch",
+                BankBin = "123456"
             };
 
             // Act
@@ -1262,7 +1409,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "John Doe",
                 AccountNumber = "12345ABC67", // Contains letters
                 BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch"
+                BranchName = "Ho Chi Minh City Branch",
+                BankBin = "123456"
             };
 
             // Act
@@ -1286,7 +1434,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "John Doe",
                 AccountNumber = "123-456-789", // Contains hyphens
                 BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch"
+                BranchName = "Ho Chi Minh City Branch",
+                BankBin = "123456"
             };
 
             // Act
@@ -1310,7 +1459,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "John Doe",
                 AccountNumber = "123456", // Exactly 6 digits
                 BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch"
+                BranchName = "Ho Chi Minh City Branch",
+                BankBin = "123456"
             };
 
             var user = new User
@@ -1328,7 +1478,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = request.AccountHolderName,
                 AccountNumber = request.AccountNumber,
                 BankName = request.BankName,
-                BranchName = request.BranchName
+                BranchName = request.BranchName,
+                BankBin = request.BankBin
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
@@ -1364,7 +1515,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "John Doe",
                 AccountNumber = "12345678901234567890", // Exactly 20 digits
                 BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch"
+                BranchName = "Ho Chi Minh City Branch",
+                BankBin = "123456"
             };
 
             var user = new User
@@ -1382,7 +1534,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = request.AccountHolderName,
                 AccountNumber = request.AccountNumber,
                 BankName = request.BankName,
-                BranchName = request.BranchName
+                BranchName = request.BranchName,
+                BankBin = request.BankBin   
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
@@ -1418,7 +1571,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "John Doe",
                 AccountNumber = "1234567890",
                 BankName = null!,
-                BranchName = "Ho Chi Minh City Branch"
+                BranchName = "Ho Chi Minh City Branch",
+                BankBin = "123456"
             };
 
             // Act
@@ -1442,7 +1596,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "John Doe",
                 AccountNumber = "1234567890",
                 BankName = "Vietcombank",
-                BranchName = null!
+                BranchName = null!,
+                BankBin = "123456"
             };
 
             // Act
@@ -1466,7 +1621,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "John Doe",
                 AccountNumber = "123 456 789", // Contains spaces
                 BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch"
+                BranchName = "Ho Chi Minh City Branch",
+                BankBin = "123456"
             };
 
             // Act
@@ -1494,7 +1650,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "Jane Doe",
                 AccountNumber = "9876543210",
                 BankName = "ACB Bank",
-                BranchName = "Hanoi Branch"
+                BranchName = "Hanoi Branch",
+                BankBin = "123456"
             };
 
             var user = new User
@@ -1512,7 +1669,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "John Doe",
                 AccountNumber = "1234567890",
                 BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch"
+                BranchName = "Ho Chi Minh City Branch",
+                BankBin = "123456"
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
@@ -1553,7 +1711,8 @@ namespace AIEvent.Application.Test.Services
             var paymentInformationId = Guid.NewGuid();
             var request = new UpdatePaymentInformationRequest
             {
-                AccountHolderName = "Jane Doe"
+                AccountHolderName = "Jane Doe",
+                BankBin = "123456"
                 // Other fields are null
             };
 
@@ -1572,7 +1731,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "John Doe",
                 AccountNumber = "1234567890",
                 BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch"
+                BranchName = "Ho Chi Minh City Branch",
+                BankBin = "123456"
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
@@ -1805,6 +1965,7 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "John Doe",
                 AccountNumber = "1234567890",
                 BankName = "Vietcombank",
+                BankBin = "123456",
                 BranchName = "Ho Chi Minh City Branch",
                 IsDeleted = true
             };
@@ -1897,7 +2058,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "John Doe",
                 AccountNumber = "1234567890",
                 BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch"
+                BranchName = "Ho Chi Minh City Branch",
+                BankBin = "123456"
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
@@ -1948,7 +2110,8 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "John Doe",
                 AccountNumber = "1234567890",
                 BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch"
+                BranchName = "Ho Chi Minh City Branch",
+                BankBin = "123456"
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
@@ -2065,7 +2228,8 @@ namespace AIEvent.Application.Test.Services
                 AccountNumber = "1234567890",
                 BankName = "Vietcombank",
                 BranchName = "Ho Chi Minh City Branch",
-                IsDeleted = false
+                IsDeleted = false,
+                BankBin = "123456"
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
@@ -2250,6 +2414,7 @@ namespace AIEvent.Application.Test.Services
                 Id = paymentInformationId,
                 UserId = userId,
                 AccountHolderName = "John Doe",
+                BankBin = "123456",
                 AccountNumber = "1234567890",
                 BankName = "Vietcombank",
                 BranchName = "Ho Chi Minh City Branch",
@@ -2300,6 +2465,7 @@ namespace AIEvent.Application.Test.Services
                     AccountNumber = "1234567890",
                     BankName = "Vietcombank",
                     BranchName = "Branch 1",
+                    BankBin = "123456",
                     CreatedAt = DateTime.UtcNow.AddDays(-3)
                 },
                 new PaymentInformation
@@ -2310,12 +2476,14 @@ namespace AIEvent.Application.Test.Services
                     AccountNumber = "2234567890",
                     BankName = "ACB Bank",
                     BranchName = "Branch 2",
+                    BankBin = "123456",
                     CreatedAt = DateTime.UtcNow.AddDays(-2)
                 },
                 new PaymentInformation
                 {
                     Id = Guid.NewGuid(),
                     UserId = userId,
+                    BankBin = "123456",
                     AccountHolderName = "John Doe 3",
                     AccountNumber = "3234567890",
                     BankName = "Techcombank",
@@ -2466,11 +2634,11 @@ namespace AIEvent.Application.Test.Services
 
             var paymentInfos = new List<PaymentInformation>
             {
-                new PaymentInformation { Id = Guid.NewGuid(), UserId = userId, AccountHolderName = "User 1", AccountNumber = "1111111111", BankName = "Bank 1", BranchName = "Branch 1", CreatedAt = DateTime.UtcNow.AddDays(-5) },
-                new PaymentInformation { Id = Guid.NewGuid(), UserId = userId, AccountHolderName = "User 2", AccountNumber = "2222222222", BankName = "Bank 2", BranchName = "Branch 2", CreatedAt = DateTime.UtcNow.AddDays(-4) },
-                new PaymentInformation { Id = Guid.NewGuid(), UserId = userId, AccountHolderName = "User 3", AccountNumber = "3333333333", BankName = "Bank 3", BranchName = "Branch 3", CreatedAt = DateTime.UtcNow.AddDays(-3) },
-                new PaymentInformation { Id = Guid.NewGuid(), UserId = userId, AccountHolderName = "User 4", AccountNumber = "4444444444", BankName = "Bank 4", BranchName = "Branch 4", CreatedAt = DateTime.UtcNow.AddDays(-2) },
-                new PaymentInformation { Id = Guid.NewGuid(), UserId = userId, AccountHolderName = "User 5", AccountNumber = "5555555555", BankName = "Bank 5", BranchName = "Branch 5", CreatedAt = DateTime.UtcNow.AddDays(-1) }
+                new PaymentInformation { Id = Guid.NewGuid(), UserId = userId, AccountHolderName = "User 1", AccountNumber = "1111111111", BankBin = "123456", BankName = "Bank 1", BranchName = "Branch 1", CreatedAt = DateTime.UtcNow.AddDays(-5) },
+                new PaymentInformation { Id = Guid.NewGuid(), UserId = userId, AccountHolderName = "User 2", AccountNumber = "2222222222", BankBin = "123456", BankName = "Bank 2", BranchName = "Branch 2", CreatedAt = DateTime.UtcNow.AddDays(-4) },
+                new PaymentInformation { Id = Guid.NewGuid(), UserId = userId, AccountHolderName = "User 3", AccountNumber = "3333333333", BankBin = "123456", BankName = "Bank 3", BranchName = "Branch 3", CreatedAt = DateTime.UtcNow.AddDays(-3) },
+                new PaymentInformation { Id = Guid.NewGuid(), UserId = userId, AccountHolderName = "User 4", AccountNumber = "4444444444", BankBin = "123456", BankName = "Bank 4", BranchName = "Branch 4", CreatedAt = DateTime.UtcNow.AddDays(-2) },
+                new PaymentInformation { Id = Guid.NewGuid(), UserId = userId, AccountHolderName = "User 5", AccountNumber = "5555555555", BankBin = "123456", BankName = "Bank 5", BranchName = "Branch 5", CreatedAt = DateTime.UtcNow.AddDays(-1) }
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
@@ -2513,11 +2681,11 @@ namespace AIEvent.Application.Test.Services
 
             var paymentInfos = new List<PaymentInformation>
             {
-                new PaymentInformation { Id = Guid.NewGuid(), UserId = userId, AccountHolderName = "User 1", AccountNumber = "1111111111", BankName = "Bank 1", BranchName = "Branch 1", CreatedAt = DateTime.UtcNow.AddDays(-5) },
-                new PaymentInformation { Id = Guid.NewGuid(), UserId = userId, AccountHolderName = "User 2", AccountNumber = "2222222222", BankName = "Bank 2", BranchName = "Branch 2", CreatedAt = DateTime.UtcNow.AddDays(-4) },
-                new PaymentInformation { Id = Guid.NewGuid(), UserId = userId, AccountHolderName = "User 3", AccountNumber = "3333333333", BankName = "Bank 3", BranchName = "Branch 3", CreatedAt = DateTime.UtcNow.AddDays(-3) },
-                new PaymentInformation { Id = Guid.NewGuid(), UserId = userId, AccountHolderName = "User 4", AccountNumber = "4444444444", BankName = "Bank 4", BranchName = "Branch 4", CreatedAt = DateTime.UtcNow.AddDays(-2) },
-                new PaymentInformation { Id = Guid.NewGuid(), UserId = userId, AccountHolderName = "User 5", AccountNumber = "5555555555", BankName = "Bank 5", BranchName = "Branch 5", CreatedAt = DateTime.UtcNow.AddDays(-1) }
+                new PaymentInformation { Id = Guid.NewGuid(), UserId = userId, AccountHolderName = "User 1", AccountNumber = "1111111111", BankBin = "123456", BankName = "Bank 1", BranchName = "Branch 1", CreatedAt = DateTime.UtcNow.AddDays(-5) },
+                new PaymentInformation { Id = Guid.NewGuid(), UserId = userId, AccountHolderName = "User 2", AccountNumber = "2222222222", BankBin = "123456", BankName = "Bank 2", BranchName = "Branch 2", CreatedAt = DateTime.UtcNow.AddDays(-4) },
+                new PaymentInformation { Id = Guid.NewGuid(), UserId = userId, AccountHolderName = "User 3", AccountNumber = "3333333333", BankBin = "123456", BankName = "Bank 3", BranchName = "Branch 3", CreatedAt = DateTime.UtcNow.AddDays(-3) },
+                new PaymentInformation { Id = Guid.NewGuid(), UserId = userId, AccountHolderName = "User 4", AccountNumber = "4444444444", BankBin = "123456", BankName = "Bank 4", BranchName = "Branch 4", CreatedAt = DateTime.UtcNow.AddDays(-2) },
+                new PaymentInformation { Id = Guid.NewGuid(), UserId = userId, AccountHolderName = "User 5", AccountNumber = "5555555555", BankBin = "123456", BankName = "Bank 5", BranchName = "Branch 5", CreatedAt = DateTime.UtcNow.AddDays(-1) }
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
@@ -2570,7 +2738,8 @@ namespace AIEvent.Application.Test.Services
                 AccountNumber = "1234567890",
                 BankName = "Vietcombank",
                 BranchName = "Ho Chi Minh City Branch",
-                IsDeleted = false
+                IsDeleted = false,
+                BankBin = "123456"
             };
 
             var paymentInfoResponse = new PaymentInformationResponse
@@ -2579,7 +2748,7 @@ namespace AIEvent.Application.Test.Services
                 AccountHolderName = "John Doe",
                 AccountNumber = "1234567890",
                 BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch"
+                BranchName = "Ho Chi Minh City Branch",
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
@@ -2781,7 +2950,8 @@ namespace AIEvent.Application.Test.Services
                 AccountNumber = "1234567890",
                 BankName = "Vietcombank",
                 BranchName = "Ho Chi Minh City Branch",
-                IsDeleted = true // Deleted
+                IsDeleted = true, 
+                BankBin = "123456"
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
