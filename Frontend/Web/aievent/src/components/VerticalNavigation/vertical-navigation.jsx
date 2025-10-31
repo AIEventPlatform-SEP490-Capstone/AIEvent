@@ -315,6 +315,8 @@ export function VerticalNavigation() {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       const searchValue = e.target.value.trim();
+                      // Clear the input field
+                      e.target.value = '';
                       if (searchValue) {
                         navigate(`/search?q=${encodeURIComponent(searchValue)}`);
                       } else {
