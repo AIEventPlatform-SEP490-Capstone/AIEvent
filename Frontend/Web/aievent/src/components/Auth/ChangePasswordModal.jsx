@@ -209,7 +209,7 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
 
   // Check if form is valid for submission
   const isFormValid = useMemo(() => {
-    const hasCurrentPassword = formData.currentPassword.length >= 6;
+    const hasCurrentPassword = formData.currentPassword.length >= 3;
     const hasNewPassword =
       formData.newPassword.length >= 8 &&
       /[A-Z]/.test(formData.newPassword) &&

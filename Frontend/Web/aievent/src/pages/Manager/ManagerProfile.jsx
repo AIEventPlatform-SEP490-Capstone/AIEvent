@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useUserProfile } from '../../hooks/userProfile';
 import { 
@@ -7,7 +7,7 @@ import {
   Activity,
   Calendar,
   Users,
-  Shield,
+  Briefcase,
   Lock,
   Mail,
   Phone,
@@ -22,17 +22,12 @@ import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import LoadingSpinner from '../../components/LoadingSpinner/LoadingSpinner';
 import ChangePasswordModal from '../../components/Auth/ChangePasswordModal';
-import fireworkSound from '../../assets/firework.mp3';
 
-const AdminProfile = () => {
+const ManagerProfile = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('personal');
   const [isEditing, setIsEditing] = useState(false);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
-  const [superAdminClickCount, setSuperAdminClickCount] = useState(0);
-  const [showFireworks, setShowFireworks] = useState(false);
-  const [easterEggActivated, setEasterEggActivated] = useState(false);
-  const [fireworkTrigger, setFireworkTrigger] = useState(0);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -41,7 +36,6 @@ const AdminProfile = () => {
     introduction: ''
   });
   const hasFetchedProfile = useRef(false);
-  const clickTimeoutRef = useRef(null);
   
   const {
     profile,
@@ -73,24 +67,15 @@ const AdminProfile = () => {
     }
   }, [profile]);
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (clickTimeoutRef.current) {
-        clearTimeout(clickTimeoutRef.current);
-      }
-    };
-  }, []);
-
   // Transform API data to display
-  const adminData = profile ? {
+  const managerData = profile ? {
     name: profile.fullName || "Chưa cập nhật",
     email: profile.email || "Chưa cập nhật",
     phone: profile.phoneNumber || "Chưa cập nhật",
     address: profile.address || "Chưa cập nhật",
-    description: profile.introduction || "Quản trị viên hệ thống AIEvent Platform",
-    role: profile.jobTitle || "System Administrator",
-    department: profile.occupation || "IT Administration",
+    description: profile.introduction || "Quản lý sự kiện và hệ thống AIEvent Platform",
+    role: profile.jobTitle || "Event Manager",
+    department: profile.occupation || "Event Management",
     avatarUrl: profile.avatarImgUrl || null,
     joinDate: profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('vi-VN') : "Chưa có",
     lastLogin: profile.lastLoginAt ? new Date(profile.lastLoginAt).toLocaleString('vi-VN') : "Chưa có"
@@ -100,18 +85,18 @@ const AdminProfile = () => {
     phone: "Chưa tải",
     address: "Chưa tải",
     description: "Đang tải thông tin...",
-    role: "System Administrator",
-    department: "IT Administration",
+    role: "Event Manager",
+    department: "Event Management",
     avatarUrl: null,
     joinDate: "Chưa có",
     lastLogin: "Chưa có"
   };
 
   // Mock stats - có thể tích hợp API riêng sau
-  const adminStats = {
-    totalOperations: 1247,
-    eventsApproved: 89,
-    usersManaged: 156,
+  const managerStats = {
+    totalOperations: 856,
+    eventsReviewed: 142,
+    categoriesManaged: 28,
   };
 
   const tabs = [
@@ -160,31 +145,6 @@ const AdminProfile = () => {
     }));
   };
 
-  const handleSuperAdminClick = () => {
-    if (clickTimeoutRef.current) {
-      clearTimeout(clickTimeoutRef.current);
-    }
-    if (easterEggActivated && showFireworks) {
-      setFireworkTrigger(prev => prev + 1);
-      return;
-    }
-    const newCount = superAdminClickCount + 1;
-    setSuperAdminClickCount(newCount);
-    if (newCount >= 7) {
-      setShowFireworks(true);
-      setEasterEggActivated(true);
-      setSuperAdminClickCount(0);
-            setTimeout(() => {
-        setShowFireworks(false);
-        setEasterEggActivated(false);
-      }, 15000);
-    } else {
-      clickTimeoutRef.current = setTimeout(() => {
-        setSuperAdminClickCount(0);
-      }, 2000);
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[600px]">
@@ -202,7 +162,7 @@ const AdminProfile = () => {
         <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 rounded-2xl p-8 shadow-2xl">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Hồ sơ Admin</h1>
+              <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Hồ sơ Manager</h1>
               <p className="text-gray-300">Quản lý thông tin cá nhân và cài đặt bảo mật</p>
             </div>
           </div>
@@ -211,7 +171,7 @@ const AdminProfile = () => {
           <CardContent className="pt-6">
             <div className="text-center py-8">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Shield className="h-8 w-8 text-red-600" />
+                <Briefcase className="h-8 w-8 text-red-600" />
               </div>
               <p className="text-lg font-semibold text-gray-900 mb-2">Đã xảy ra lỗi khi tải thông tin hồ sơ</p>
               <p className="text-sm text-muted-foreground mb-6">{error.message || 'Vui lòng thử lại sau'}</p>
@@ -232,16 +192,9 @@ const AdminProfile = () => {
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] opacity-50"></div>
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div>
-            <h1 className="text-4xl font-bold text-white tracking-tight mb-2">Hồ sơ Admin</h1>
+            <h1 className="text-4xl font-bold text-white tracking-tight mb-2">Hồ sơ Manager</h1>
             <p className="text-gray-300 text-lg">Quản lý thông tin cá nhân và cài đặt bảo mật</p>
           </div>
-          <Badge 
-            className="bg-white/10 backdrop-blur-sm text-white border-white/20 px-5 py-2 text-base h-auto hover:bg-white/20 transition-colors cursor-pointer select-none"
-            onClick={handleSuperAdminClick}
-          >
-            <Shield className="h-4 w-4 mr-2" />
-            Super Admin
-          </Badge>
         </div>
       </div>
 
@@ -297,10 +250,10 @@ const AdminProfile = () => {
                   <div className="relative group">
                     <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 p-1 shadow-2xl group-hover:scale-105 transition-transform duration-300">
                       <div className="w-full h-full rounded-full bg-white p-1">
-                        {adminData.avatarUrl ? (
+                        {managerData.avatarUrl ? (
                           <img
-                            src={adminData.avatarUrl}
-                            alt={adminData.name}
+                            src={managerData.avatarUrl}
+                            alt={managerData.name}
                             className="w-full h-full rounded-full object-cover"
                             onError={(e) => {
                               e.target.onerror = null;
@@ -315,14 +268,14 @@ const AdminProfile = () => {
                       </div>
                     </div>
                     <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center border-4 border-white shadow-xl">
-                      <Shield className="h-5 w-5 text-white" />
+                      <Briefcase className="h-5 w-5 text-white" />
                     </div>
                   </div>
                   <div className="flex-1">
-                    <h4 className="text-3xl font-bold text-gray-900 mb-2">{adminData.name}</h4>
-                    <p className="text-lg text-gray-600 mb-3">{adminData.role}</p>
+                    <h4 className="text-3xl font-bold text-gray-900 mb-2">{managerData.name}</h4>
+                    <p className="text-lg text-gray-600 mb-3">{managerData.role}</p>
                     <Badge className="bg-gradient-to-r from-blue-100 to-purple-100 text-blue-800 border-0 px-4 py-1.5 text-sm font-semibold">
-                      {adminData.department}
+                      {managerData.department}
                     </Badge>
                   </div>
                 </div>
@@ -345,7 +298,7 @@ const AdminProfile = () => {
                         />
                       ) : (
                         <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                          <p className="text-gray-900 font-medium">{adminData.name}</p>
+                          <p className="text-gray-900 font-medium">{managerData.name}</p>
                         </div>
                       )}
                     </div>
@@ -365,7 +318,7 @@ const AdminProfile = () => {
                         />
                       ) : (
                         <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                          <p className="text-gray-900 font-medium">{adminData.phone}</p>
+                          <p className="text-gray-900 font-medium">{managerData.phone}</p>
                         </div>
                       )}
                     </div>
@@ -385,7 +338,7 @@ const AdminProfile = () => {
                         />
                       ) : (
                         <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                          <p className="text-gray-900">{adminData.description}</p>
+                          <p className="text-gray-900">{managerData.description}</p>
                         </div>
                       )}
                     </div>
@@ -399,7 +352,7 @@ const AdminProfile = () => {
                         Email
                       </Label>
                       <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <p className="text-gray-900 font-medium">{adminData.email}</p>
+                        <p className="text-gray-900 font-medium">{managerData.email}</p>
                         <p className="text-xs text-gray-500 mt-1">Email không thể thay đổi</p>
                       </div>
                     </div>
@@ -419,7 +372,7 @@ const AdminProfile = () => {
                         />
                       ) : (
                         <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                          <p className="text-gray-900 font-medium">{adminData.address}</p>
+                          <p className="text-gray-900 font-medium">{managerData.address}</p>
                         </div>
                       )}
                     </div>
@@ -456,11 +409,11 @@ const AdminProfile = () => {
               </CardContent>
             </Card>
 
-            {/* Admin Statistics - Moved below Personal Information */}
+            {/* Manager Statistics - Moved below Personal Information */}
             <Card className="shadow-xl border-0 overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50/50 border-b">
                 <div>
-                  <CardTitle className="text-2xl font-bold text-gray-900">Thống kê Admin</CardTitle>
+                  <CardTitle className="text-2xl font-bold text-gray-900">Thống kê Manager</CardTitle>
                   <CardDescription className="text-base mt-1">Thống kê hoạt động của bạn</CardDescription>
                 </div>
               </CardHeader>
@@ -471,34 +424,34 @@ const AdminProfile = () => {
                       <Activity className="h-5 w-5 text-muted-foreground mr-3" />
                       <span className="text-sm">Tổng thao tác</span>
                     </div>
-                    <span className="font-semibold">{adminStats.totalOperations.toLocaleString()}</span>
+                    <span className="font-semibold">{managerStats.totalOperations.toLocaleString()}</span>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <Calendar className="h-5 w-5 text-muted-foreground mr-3" />
-                      <span className="text-sm">Sự kiện đã duyệt</span>
+                      <span className="text-sm">Sự kiện đã xem xét</span>
                     </div>
-                    <span className="font-semibold">{adminStats.eventsApproved}</span>
+                    <span className="font-semibold">{managerStats.eventsReviewed}</span>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <Users className="h-5 w-5 text-muted-foreground mr-3" />
-                      <span className="text-sm">User đã quản lý</span>
+                      <span className="text-sm">Danh mục đã quản lý</span>
                     </div>
-                    <span className="font-semibold">{adminStats.usersManaged}</span>
+                    <span className="font-semibold">{managerStats.categoriesManaged}</span>
                   </div>
 
                   <div className="border-t border-gray-200 pt-4 mt-4">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">Tham gia từ:</span>
-                        <span className="text-sm font-medium">{adminData.joinDate}</span>
+                        <span className="text-sm font-medium">{managerData.joinDate}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">Đăng nhập cuối:</span>
-                        <span className="text-sm font-medium">{adminData.lastLogin}</span>
+                        <span className="text-sm font-medium">{managerData.lastLogin}</span>
                       </div>
                     </div>
                   </div>
@@ -569,11 +522,11 @@ const AdminProfile = () => {
                     <Calendar className="h-6 w-6 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 mb-1">Duyệt sự kiện "Tech Conference 2024"</p>
-                    <p className="text-sm text-gray-600 mb-2">Bạn đã phê duyệt sự kiện thành công</p>
+                    <p className="font-bold text-gray-900 mb-1">Xem xét sự kiện "Tech Conference 2024"</p>
+                    <p className="text-sm text-gray-600 mb-2">Bạn đã xem xét và quản lý sự kiện thành công</p>
                     <p className="text-xs text-gray-500">10:15:00 15/3/2024</p>
                   </div>
-                  <Badge className="bg-blue-100 text-blue-800 border-0">Đã duyệt</Badge>
+                  <Badge className="bg-blue-100 text-blue-800 border-0">Đã xem xét</Badge>
                 </div>
                 
                 <div className="relative flex items-start space-x-4 p-5 bg-gradient-to-r from-purple-50/50 to-transparent rounded-xl border-l-4 border-purple-500 hover:shadow-lg transition-all duration-300">
@@ -581,8 +534,8 @@ const AdminProfile = () => {
                     <Users className="h-6 w-6 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 mb-1">Quản lý người dùng mới</p>
-                    <p className="text-sm text-gray-600 mb-2">Bạn đã thêm và quản lý người dùng mới vào hệ thống</p>
+                    <p className="font-bold text-gray-900 mb-1">Quản lý danh mục sự kiện</p>
+                    <p className="text-sm text-gray-600 mb-2">Bạn đã cập nhật và quản lý danh mục sự kiện mới</p>
                     <p className="text-xs text-gray-500">09:45:00 15/3/2024</p>
                   </div>
                   <Badge className="bg-purple-100 text-purple-800 border-0">Hoàn thành</Badge>
@@ -599,145 +552,9 @@ const AdminProfile = () => {
         isOpen={isChangePasswordModalOpen}
         onClose={() => setIsChangePasswordModalOpen(false)}
       />
-
-      {/* Fireworks Easter Egg */}
-      {showFireworks && <Fireworks trigger={fireworkTrigger} />}
     </div>
   );
 };
 
-const Fireworks = ({ trigger }) => {
-  const [particles, setParticles] = useState([]);
-  const waveCountRef = useRef(0);
-  const audioRef = useRef(null);
+export default ManagerProfile;
 
-  useEffect(() => {
-    audioRef.current = new Audio(fireworkSound);
-    audioRef.current.volume = 0.5;
-    
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
-  }, []);
-
-  const playFireworkSound = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(error => {
-        console.log('Không thể phát âm thanh:', error);
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ff8800'];
-    
-    const createFireworks = () => {
-      const newParticles = [];
-      
-      for (let i = 0; i < 8; i++) {
-        const x = Math.random() * 100;
-        const y = Math.random() * 50 + 10;
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        
-        for (let j = 0; j < 40; j++) {
-          const angle = (Math.PI * 2 * j) / 40;
-          const velocity = 2 + Math.random() * 4;
-          newParticles.push({
-            id: `${waveCountRef.current}-${i}-${j}`,
-            x,
-            y,
-            color,
-            vx: Math.cos(angle) * velocity,
-            vy: Math.sin(angle) * velocity,
-            life: 1,
-          });
-        }
-      }
-      
-      return newParticles;
-    };
-
-    setParticles(createFireworks());
-    playFireworkSound();
-
-    const waveInterval = setInterval(() => {
-      waveCountRef.current += 1;
-      setParticles(prev => [...prev, ...createFireworks()]);
-      playFireworkSound();
-    }, 2000);
-
-    const interval = setInterval(() => {
-      setParticles(prev => 
-        prev.map(p => ({
-          ...p,
-          x: p.x + p.vx * 0.3,
-          y: p.y + p.vy * 0.3,
-          vy: p.vy + 0.15, // Gravity (nhẹ hơn)
-          life: p.life - 0.008, // Fade out chậm hơn
-        })).filter(p => p.life > 0 && p.y < 110)
-      );
-    }, 16);
-
-    return () => {
-      clearInterval(interval);
-      clearInterval(waveInterval);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (trigger > 0) {
-      const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ff8800'];
-      const newParticles = [];
-      
-      for (let i = 0; i < 8; i++) {
-        const x = Math.random() * 100;
-        const y = Math.random() * 50 + 10;
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        
-        for (let j = 0; j < 40; j++) {
-          const angle = (Math.PI * 2 * j) / 40;
-          const velocity = 2 + Math.random() * 4;
-          waveCountRef.current += 1;
-          newParticles.push({
-            id: `trigger-${trigger}-${waveCountRef.current}-${i}-${j}`,
-            x,
-            y,
-            color,
-            vx: Math.cos(angle) * velocity,
-            vy: Math.sin(angle) * velocity,
-            life: 1,
-          });
-        }
-      }
-      
-      setParticles(prev => [...prev, ...newParticles]);
-      playFireworkSound();
-    }
-  }, [trigger]);
-
-  return (
-    <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden">
-      {particles.map(particle => (
-        <div
-          key={particle.id}
-          className="absolute w-2 h-2 rounded-full"
-          style={{
-            left: `${particle.x}%`,
-            top: `${particle.y}%`,
-            backgroundColor: particle.color,
-            opacity: particle.life,
-            transform: `scale(${particle.life})`,
-            boxShadow: `0 0 ${particle.life * 10}px ${particle.color}`,
-            transition: 'none',
-          }}
-        />
-      ))}
-    </div>
-  );
-};
-
-export default AdminProfile;
