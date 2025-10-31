@@ -312,6 +312,16 @@ export function VerticalNavigation() {
                 <Input
                   placeholder="Tìm kiếm sự kiện..."
                   className="pl-10 h-10 bg-background/50 border-border/60 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all duration-300 rounded-xl hover:border-border"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const searchValue = e.target.value.trim();
+                      if (searchValue) {
+                        navigate(`/search?q=${encodeURIComponent(searchValue)}`);
+                      } else {
+                        navigate('/search');
+                      }
+                    }
+                  }}
                 />
               </div>
               <Button

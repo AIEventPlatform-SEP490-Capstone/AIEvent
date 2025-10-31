@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Card, CardContent } from "../../components/ui/card";
@@ -19,6 +19,7 @@ import { useCategories } from "../../hooks/useCategories";
 
 export default function SearchPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { getEvents, loading: eventsLoading } = useEvents();
   const { categories, loading: categoriesLoading, refreshCategories } = useCategories();
   const [searchQuery, setSearchQuery] = useState("");
@@ -31,6 +32,12 @@ export default function SearchPage() {
   // Fetch categories once on component mount
   useEffect(() => {
     refreshCategories();
+    
+    // Set initial search query from URL params
+    const query = searchParams.get('q');
+    if (query) {
+      setSearchQuery(decodeURIComponent(query));
+    }
   }, []);
 
   // Create filter object with useMemo to prevent unnecessary re-renders
@@ -75,7 +82,14 @@ export default function SearchPage() {
         
         // Add date filter if not "all"
         if (filters.dateFilter !== "all") {
-          params.timeLine = filters.dateFilter;
+          // Map frontend filter values to backend enum values
+          const timeLineMap = {
+            "today": "Today",
+            "tomorrow": "Tomorrow",
+            "this_week": "ThisWeek",
+            "this_month": "ThisMonth"
+          };
+          params.timeLine = timeLineMap[filters.dateFilter] || filters.dateFilter;
         }
         
         const response = await getEvents(params);
