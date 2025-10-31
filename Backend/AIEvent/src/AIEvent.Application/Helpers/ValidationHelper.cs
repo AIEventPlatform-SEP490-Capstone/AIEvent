@@ -36,5 +36,24 @@ namespace AIEvent.Application.Helpers
 
             return Result.Success();
         }
+
+        public static Result<T> ValidateModelWithResult<T>(T request)
+        {
+            var validationResult = ValidateModel(request);
+            if (!validationResult.IsSuccess)
+                return Result<T>.Failure(validationResult.Error!);
+
+            return Result<T>.Success(request);
+        }
+
+        public static Result<List<T>> ValidateModelListWithResult<T>(IEnumerable<T> items)
+        {
+            var list = items.ToList();
+            var result = ValidateModelList(list);
+            if (!result.IsSuccess)
+                return Result<List<T>>.Failure(result.Error!);
+
+            return Result<List<T>>.Success(list);
+        }
     }
 }

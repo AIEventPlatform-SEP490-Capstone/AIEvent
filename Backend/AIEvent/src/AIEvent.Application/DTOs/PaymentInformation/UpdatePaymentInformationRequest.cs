@@ -13,5 +13,8 @@ namespace AIEvent.Application.DTOs.PaymentInformation
         public string? BankName { get; set; }
 
         public string? BranchName { get; set; }
+        public string? BankBin { get; set; }
+        public string? BankShortName { get; set; }
+        public string? BankLogo { get; set; }
     }
 }
