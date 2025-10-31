@@ -24,6 +24,26 @@ export const bookingAPI = {
     const response = await fetcher.patch(`/booking/ticket/refund/${ticketId}`);
     return response.data?.data;
   },
+
+  //  Get booked events for current user (timeline)
+  getBookedEvents: async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.pageNumber) query.append("pageNumber", params.pageNumber);
+    if (params.pageSize) query.append("pageSize", params.pageSize);
+    const response = await fetcher.get(`/booking/event?${query.toString()}`);
+    return response.data?.data || response.data;
+  },
+
+  //  Get tickets of a booked event by eventId
+  getEventTickets: async (eventId, params = {}) => {
+    const query = new URLSearchParams();
+    if (params.pageNumber) query.append("pageNumber", params.pageNumber);
+    if (params.pageSize) query.append("pageSize", params.pageSize);
+    const response = await fetcher.get(
+      `/booking/event/${eventId}/ticket?${query.toString()}`
+    );
+    return response.data?.data || response.data;
+  },
 };
 
 export default bookingAPI;
