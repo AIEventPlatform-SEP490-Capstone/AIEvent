@@ -12,8 +12,7 @@ namespace AIEvent.Application.DTOs.Event
         public required string Title { get; set; }
         public required string Description { get; set; }
         public required DateTime StartTime { get; set; }
-        public required DateTime EndTime { get; set; }
-        public bool? isOnlineEvent { get; set; }
+        public required DateTime EndTime { get; set; } 
         public string? LocationName { get; set; }
         public string? DetailedDescription { get; set; }
         public int TotalTickets { get; set; }
@@ -21,11 +20,14 @@ namespace AIEvent.Application.DTOs.Event
         public int RemainingTickets { get; set; }
         public TicketType TicketType { get; set; }
         public List<string>? ImgListEvent { get; set; }
+        public List<string>? ImgEventEvidences { get; set; }
         public ConfirmStatus RequireApproval { get; set; }
         public string? City { get; set; }
         public string? Address { get; set; }
         public float? Latitude { get; set; }
         public float? Longitude { get; set; }
+        public DateTime? SaleStartTime { get; set; } 
+        public DateTime? SaleEndTime { get; set; }
         public OrganizerEventResponse OrganizerEvent { get; set; } = default!;
         public List<TagResponse> EventTags { get; set; } = new List<TagResponse>();
         public EventCategoryResponse EventCategory { get; set; } = default!;

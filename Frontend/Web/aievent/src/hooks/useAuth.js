@@ -5,6 +5,7 @@ import {
   register,
   clearAuth,
   verifyOtp,
+  changePassword,
 } from "../store/slices/authSlice";
 
 export const useAuth = () => {
@@ -16,6 +17,8 @@ export const useAuth = () => {
     isAuthenticated,
     verifyingOtp,
     verifyOtpError,
+    changingPassword,
+    changePasswordError,
   } = useSelector((state) => state.auth);
 
   const loginUser = async (credentials) => dispatch(login(credentials));
@@ -23,6 +26,7 @@ export const useAuth = () => {
   const logoutUser = async () => dispatch(logout());
   const clearAuthError = () => dispatch(clearAuth());
   const verifyOtpAction = async (payload) => dispatch(verifyOtp(payload));
+  const changePasswordAction = async (passwordData) => dispatch(changePassword(passwordData));
   return {
     user,
     isLoading,
@@ -30,10 +34,13 @@ export const useAuth = () => {
     isAuthenticated,
     verifyingOtp,
     verifyOtpError,
+    changingPassword,
+    changePasswordError,
     login: loginUser,
     register: registerUser,
     logout: logoutUser,
     clearError: clearAuthError,
     verifyOtp: verifyOtpAction,
+    changePassword: changePasswordAction,
   };
 };

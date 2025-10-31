@@ -5,11 +5,11 @@ using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
-using AIEvent.Domain.Interfaces;
+using AIEvent.Domain.Enums;
+using AIEvent.Infrastructure.Repositories.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -43,21 +43,28 @@ namespace AIEvent.Application.Services.Implements
 
             var userResponse = _mapper.Map<UserDetailResponse>(user);
 
+            var joinedEventsTask = await _unitOfWork.BookingRepository
+                                            .Query()
+                                            .AsNoTracking()
+                                            .Where(b => b.UserId == userId && b.Status == BookingStatus.Completed)
+                                            .CountAsync();
+
+            var favoriteEventsTask = await _unitOfWork.FavoriteEventRepository
+                                            .Query()
+                                            .AsNoTracking()
+                                            .Where(fe => fe.UserId == userId)
+                                            .CountAsync();
             return Result<UserDetailResponse>.Success(userResponse);
         }
 
         public async Task<Result> UpdateUserAsync(Guid userId, UpdateUserRequest request)
         {
-            if (userId == Guid.Empty || request == null)
+            if (userId == Guid.Empty)
                 return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
-            var context = new ValidationContext(request);
-            var results = new List<ValidationResult>();
-            bool isValid = Validator.TryValidateObject(request, context, results, true);
-            if (!isValid)
-            {
-                var messages = string.Join("; ", results.Select(r => r.ErrorMessage));
-                return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
-            }
+            
+            var validationResult = ValidationHelper.ValidateModel(request);
+            if (!validationResult.IsSuccess)
+                return validationResult;
             var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
             if (user == null)
                 return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
@@ -76,12 +83,33 @@ namespace AIEvent.Application.Services.Implements
             return Result.Success();
         }
 
-        public async Task<Result<BasePaginated<UserResponse>>> GetAllUsersAsync(int pageNumber = 1, int pageSize = 10)
+        public async Task<Result<BasePaginated<UserResponse>>> GetAllUsersAsync(int pageNumber, int pageSize, string? email, string? name, string? role)
         {
             IQueryable<User> userQuery = _unitOfWork.UserRepository
                 .Query()
                 .AsNoTracking()
                 .OrderByDescending(s => s.CreatedAt);
+
+            if (!string.IsNullOrEmpty(email))
+            {
+                userQuery = userQuery.Where(u => u.Email!.Contains(email));
+            }
+
+            if (!string.IsNullOrEmpty(name))
+            {
+                userQuery = userQuery.Where(u => u.FullName!.Contains(name));
+            }
+
+            if (!string.IsNullOrEmpty(role))
+            {
+                var roleData = await _unitOfWork.RoleRepository.Query()
+                    .AsNoTracking()
+                    .Select(r => new { r.Id, r.Name, r.IsDeleted })
+                    .FirstOrDefaultAsync(r => r.Name == role && !r.IsDeleted);
+                if (roleData == null)
+                    return ErrorResponse.FailureResult("Role not found", ErrorCodes.NotFound);
+                userQuery = userQuery.Where(u => u.RoleId == roleData.Id);
+            }
 
             int totalCount = await userQuery.CountAsync();
 
@@ -95,5 +123,23 @@ namespace AIEvent.Application.Services.Implements
             return new BasePaginated<UserResponse>(result, totalCount, pageNumber, pageSize);
         }
 
+
+        public async Task<Result> BanUserAsync(Guid userId, string id)
+        {
+            if (!Guid.TryParse(id, out var Id))
+                return ErrorResponse.FailureResult("Invalid ticket ID format", ErrorCodes.InvalidInput);
+
+            var user = await _unitOfWork.UserRepository.Query()
+                .FirstOrDefaultAsync(u => u.Id == Id && !u.IsDeleted && u.IsActive);
+
+            if(user == null)
+                return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
+
+            user.SetDeleted(userId.ToString());
+            await _unitOfWork.UserRepository.UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
+
+            return Result.Success();
+        }
     }
 }

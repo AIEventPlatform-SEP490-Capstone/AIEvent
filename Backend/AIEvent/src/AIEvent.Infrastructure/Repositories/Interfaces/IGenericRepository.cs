@@ -1,4 +1,4 @@
-﻿namespace AIEvent.Domain.Interfaces
+﻿namespace AIEvent.Infrastructure.Repositories.Interfaces
 {
     public interface IGenericRepository<T> where T : class
     {
@@ -9,5 +9,6 @@
         Task<T> UpdateAsync(T entity);
         Task DeleteAsync(T entity);
         IQueryable<T> Query(bool asNoTracking = false);
+        Task UpdateRangeAsync(IEnumerable<T> entities);
     }
 }

@@ -1,15 +1,17 @@
-﻿using AIEvent.Application.Constants;
+using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Auth;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.User;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
-using AIEvent.Domain.Interfaces;
+using AIEvent.Domain.Enums;
+using AIEvent.Infrastructure.Repositories.Interfaces;
 using AutoMapper;
+using Google.Apis.Auth;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using MimeKit;
-using System.ComponentModel.DataAnnotations;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -21,6 +23,7 @@ namespace AIEvent.Application.Services.Implements
         private readonly IHasherHelper _hasherHelper;
         private readonly ICacheService _cacheService;
         private readonly IMapper _mapper;
+        private readonly IConfiguration _configuration;
 
         public AuthService(
             IUnitOfWork unitOfWork,
@@ -28,7 +31,8 @@ namespace AIEvent.Application.Services.Implements
             IMapper mapper,
             IEmailService emailService,
             IHasherHelper hasherHelper,
-            ICacheService cacheService)
+            ICacheService cacheService,
+            IConfiguration configuration)
         {
             _unitOfWork = unitOfWork;
             _jwtService = jwtService;
@@ -36,17 +40,13 @@ namespace AIEvent.Application.Services.Implements
             _emailService = emailService;
             _hasherHelper = hasherHelper;
             _cacheService = cacheService;
+            _configuration = configuration;
         }
 
         public async Task<Result<AuthResponse>> LoginAsync(LoginRequest request)
         {
-            if(request == null)
-                return ErrorResponse.FailureResult("Invalid email or password", ErrorCodes.Unauthorized);
-
-            var context = new ValidationContext(request);
-            var results = new List<ValidationResult>();
-            bool isValid = Validator.TryValidateObject(request, context, results, true);
-            if (!isValid)
+            var validationResult = ValidationHelper.ValidateModel(request);
+            if (!validationResult.IsSuccess)
                 return ErrorResponse.FailureResult("Invalid email or password", ErrorCodes.Unauthorized);
 
             var user = await _unitOfWork.UserRepository
@@ -56,14 +56,13 @@ namespace AIEvent.Application.Services.Implements
                                 .Include(u => u.Role)
                                 .FirstOrDefaultAsync(u => u.Email == request.Email);
             if (user == null || !user.IsActive)
-            {
                 return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
-            }
+
+            if (user.IsDeleted)
+                return ErrorResponse.FailureResult("User has been banned", ErrorCodes.PermissionDenied);
 
             if (!_hasherHelper.Verify(request.Password ,user.PasswordHash!))
-            {
                 return ErrorResponse.FailureResult("Invalid email or password", ErrorCodes.Unauthorized);
-            }
 
             var accessToken = _jwtService.GenerateAccessToken(user);
             var refreshToken = _jwtService.GenerateRefreshToken();
@@ -133,14 +132,9 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result<AuthResponse>> VerifyOTPAsync(VerifyOTPRequest request)
         {
-            if (request == null)
+            var validationResult = ValidationHelper.ValidateModel(request);
+            if (!validationResult.IsSuccess)
                 return ErrorResponse.FailureResult("Invalid email or otp code", ErrorCodes.Unauthorized);
-
-            var context = new ValidationContext(request);
-            var results = new List<ValidationResult>();
-            bool isValid = Validator.TryValidateObject(request, context, results, true);
-            if (!isValid)
-                return ErrorResponse.FailureResult("Invalid email", ErrorCodes.Unauthorized);
 
 
             var otp = await _cacheService.GetAsync<string>($"Register {request.Email}");
@@ -163,6 +157,13 @@ namespace AIEvent.Application.Services.Implements
             user.IsActive = true;
             await _unitOfWork.UserRepository.UpdateAsync(user);
 
+            Wallet wallet = new()
+            {
+                UserId = user.Id,
+                Balance = 0
+            };
+            await _unitOfWork.WalletRepository.AddAsync(wallet);
+
             var accessToken = _jwtService.GenerateAccessToken(user);
             var refreshToken = _jwtService.GenerateRefreshToken();
 
@@ -183,29 +184,35 @@ namespace AIEvent.Application.Services.Implements
                 ExpiresAt = DateTime.UtcNow.AddHours(1)
             };
 
+            await _cacheService.RemoveAsync($"Register {request.Email}");
+            await _cacheService.RemoveAsync($"ResendCount {request.Email}");
+
             return Result<AuthResponse>.Success(authResponse);
         }
 
         public async Task<Result> RegisterAsync(RegisterRequest request)
         {
-            if (request == null || string.IsNullOrEmpty(request.FullName) || string.IsNullOrEmpty(request.Email) ||
-        string.IsNullOrEmpty(request.Password) || string.IsNullOrEmpty(request.ConfirmPassword))
-                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
-
-            var context = new ValidationContext(request);
-            var results = new List<ValidationResult>();
-            bool isValid = Validator.TryValidateObject(request, context, results, true);
-            if (!isValid)
-            {
-                var messages = string.Join("; ", results.Select(r => r.ErrorMessage));
-                return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
-            }
+            var validationResult = ValidationHelper.ValidateModel(request);
+            if (!validationResult.IsSuccess)
+                return validationResult;
 
             var existingUser = await _unitOfWork.UserRepository
                                                 .Query()
                                                 .FirstOrDefaultAsync(u => u.Email == request.Email);
-            if (existingUser != null)
+            
+            if (existingUser != null && existingUser.IsActive)
                 return ErrorResponse.FailureResult("Email address is already registered", ErrorCodes.InvalidInput);
+            
+            if (existingUser != null && !existingUser.IsActive)
+            {
+                _unitOfWork.DisableSoftDelete();
+                await _unitOfWork.UserRepository.DeleteAsync(existingUser);
+                await _unitOfWork.SaveChangesAsync();
+                _unitOfWork.EnableSoftDelete();
+
+                await _cacheService.RemoveAsync($"Register {request.Email}");
+                await _cacheService.RemoveAsync($"ResendCount {request.Email}");
+            }
 
             var role = await _unitOfWork.RoleRepository
                                     .Query()
@@ -243,6 +250,49 @@ namespace AIEvent.Application.Services.Implements
 
             return Result.Success();
         }
+
+        public async Task<Result> ReSendOTPAsync(string email)
+        {
+            if (string.IsNullOrEmpty(email))
+                return ErrorResponse.FailureResult("Invalid email or email is empty", ErrorCodes.InvalidInput); ;
+
+            var existingUser = await _unitOfWork.UserRepository
+                                                .Query()
+                                                .FirstOrDefaultAsync(u => u.Email == email);
+            
+            if (existingUser != null && existingUser.IsActive)
+                return ErrorResponse.FailureResult("Email address is already registered", ErrorCodes.InvalidInput);
+            
+            if (existingUser == null)
+                return ErrorResponse.FailureResult("User not found. Please register first.", ErrorCodes.NotFound);
+             
+            var resendCountKey = $"ResendCount {email}";
+            var resendCount = await _cacheService.GetAsync<int?>(resendCountKey) ?? 0;
+            
+            if (resendCount >= 3)
+                return ErrorResponse.FailureResult("Maximum OTP resend attempts exceeded. Please try again later.", ErrorCodes.InvalidInput);
+
+            var otpCode = new Random().Next(100000, 999999).ToString();
+            var message = new MimeMessage
+            {
+                Subject = "Mã OTP của bạn",
+                Body = new TextPart("plain")
+                {
+                    Text = $"Mã xác thực của bạn là: {otpCode}. Mã này sẽ hết hạn sau 5 phút."
+                }
+            };
+            var userOtps = await _emailService.SendEmailAsync(email, message);
+            if (!userOtps.IsSuccess)
+                return ErrorResponse.FailureResult("Failed to send email", ErrorCodes.InternalServerError);
+
+            await _cacheService.RemoveAsync($"Register {email}");
+            await _cacheService.SetAsync($"Register {email}", otpCode, TimeSpan.FromMinutes(5));
+             
+            resendCount++;
+            await _cacheService.SetAsync(resendCountKey, resendCount, TimeSpan.FromMinutes(30));
+
+            return Result.Success();
+        }
         public async Task<Result> RevokeRefreshTokenAsync(string refreshToken)
         {
             if (string.IsNullOrEmpty(refreshToken))
@@ -263,16 +313,12 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result> ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
         {
-            if (userId == Guid.Empty || request == null)
+            if (userId == Guid.Empty)
                 return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
-            var context = new ValidationContext(request);
-            var results = new List<ValidationResult>();
-            bool isValid = Validator.TryValidateObject(request, context, results, true);
-            if (!isValid)
-            {
-                var messages = string.Join("; ", results.Select(r => r.ErrorMessage));
-                return ErrorResponse.FailureResult(messages, ErrorCodes.InvalidInput);
-            }
+            
+            var validationResult = ValidationHelper.ValidateModel(request);
+            if (!validationResult.IsSuccess)
+                return validationResult;
             var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
             if (user == null)
                 return ErrorResponse.FailureResult("User not found", ErrorCodes.Unauthorized);
@@ -289,6 +335,77 @@ namespace AIEvent.Application.Services.Implements
             await _unitOfWork.UserRepository.UpdateAsync(user);
             await _unitOfWork.SaveChangesAsync();
             return Result.Success();
+        }
+
+        public async Task<Result<AuthResponse>> GoogleLoginAsync(GoogleLoginRequest request)
+        {
+            try
+            {
+                var settings = new GoogleJsonWebSignature.ValidationSettings
+                {
+                    Audience = new List<string> { _configuration["Authentication:Google:ClientId"]! }
+                };
+
+                var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
+
+                var user = await _unitOfWork.UserRepository.Query()
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.Email == payload.Email && payload.EmailVerified && !x.IsDeleted && x.IsActive);
+
+                if(user == null)
+                {
+                    var role = await _unitOfWork.RoleRepository.Query()
+                        .Where(r => r.Name == "User" && !r.IsDeleted)
+                        .FirstOrDefaultAsync();
+
+                    User newUser = new()
+                    {
+                        RoleId = role!.Id,
+                        Role = role,
+                        Email = payload.Email,
+                        IsActive = true,
+                        FullName = payload.Name,
+                        ParticipationFrequency = ParticipationFrequency.Monthly,
+                        BudgetOption = BudgetOption.Flexible,
+                    };
+                    await _unitOfWork.UserRepository.AddAsync(newUser);
+
+                    user = newUser;
+
+                    Wallet wallet = new()
+                    {
+                        UserId = newUser.Id,
+                        Balance = 0,
+                    };
+                    await _unitOfWork.WalletRepository.AddAsync(wallet);
+                }
+
+                var accessToken = _jwtService.GenerateAccessToken(user!);
+                var refreshToken = _jwtService.GenerateRefreshToken();
+
+                var refreshTokenEntity = new RefreshToken
+                {
+                    Token = refreshToken,
+                    UserId = user!.Id,
+                    ExpiresAt = DateTime.UtcNow.AddDays(7)
+                };
+
+                await _unitOfWork.RefreshTokenRepository.AddAsync(refreshTokenEntity);
+                await _unitOfWork.SaveChangesAsync();
+
+                var authResponse = new AuthResponse
+                {
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken,
+                    ExpiresAt = DateTime.UtcNow.AddHours(1)
+                };
+
+                return Result<AuthResponse>.Success(authResponse);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error: {ex.Message}");
+            }
         }
     }
 }

@@ -4,7 +4,7 @@ using AIEvent.Application.DTOs.EventField;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Domain.Entities;
-using AIEvent.Domain.Interfaces;
+using AIEvent.Infrastructure.Repositories.Interfaces;
 using FluentAssertions;
 using MockQueryable.Moq;
 using Moq;
@@ -403,7 +403,7 @@ namespace AIEvent.Application.Test.Services
             Assert.False(result.IsSuccess);
             Assert.NotNull(result.Error);
             Assert.Equal(ErrorCodes.NotFound, result.Error.StatusCode);
-            Assert.Contains("Can not found", result.Error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Event category not found", result.Error.Message, StringComparison.OrdinalIgnoreCase);
 
             _categoryRepoMock.Verify(r => r.UpdateAsync(It.IsAny<EventCategory>()), Times.Never);
         }
@@ -437,7 +437,7 @@ namespace AIEvent.Application.Test.Services
             Assert.False(result.IsSuccess);
             Assert.NotNull(result.Error);
             Assert.Equal(ErrorCodes.NotFound, result.Error.StatusCode);
-            Assert.Contains("deleted", result.Error.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Event category not found", result.Error.Message, StringComparison.OrdinalIgnoreCase);
             _categoryRepoMock.Verify(r => r.UpdateAsync(It.IsAny<EventCategory>()), Times.Never);
         }
 

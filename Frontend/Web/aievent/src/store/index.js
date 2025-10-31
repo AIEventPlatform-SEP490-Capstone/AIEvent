@@ -6,6 +6,10 @@ import refundRulesReducer from "./slices/refundRulesSlice";
 import appReducer from "./slices/appSlice";
 import interestsReducer from "./slices/interestsSlice";
 import eventsReducer from "./slices/eventsSlice";
+import userProfileReducer from "./slices/userProfileSlice";
+import walletReducer from "./slices/walletSlice";
+import bookingReducer from "./slices/bookingSlice";
+import userManagementReducer from "./slices/userManagementSlice";
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +20,10 @@ export const store = configureStore({
     app: appReducer,
     interests: interestsReducer,
     events: eventsReducer,
+    userProfile: userProfileReducer,
+    wallet: walletReducer,
+    booking: bookingReducer,
+    userManagement: userManagementReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

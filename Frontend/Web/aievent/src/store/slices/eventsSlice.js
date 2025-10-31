@@ -14,17 +14,7 @@ export const fetchEvents = createAsyncThunk(
   }
 );
 
-export const fetchEventsByOrganizer = createAsyncThunk(
-  'events/fetchEventsByOrganizer',
-  async (params = {}, { rejectWithValue }) => {
-    try {
-      const response = await eventAPI.getEventsByOrganizer(params);
-      return response;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || 'Failed to fetch events');
-    }
-  }
-);
+
 
 export const fetchEventById = createAsyncThunk(
   'events/fetchEventById',
@@ -76,9 +66,9 @@ export const updateEvent = createAsyncThunk(
 
 export const deleteEvent = createAsyncThunk(
   'events/deleteEvent',
-  async (eventId, { rejectWithValue }) => {
+  async ({ eventId, reasonCancel = null }, { rejectWithValue }) => {
     try {
-      const response = await eventAPI.deleteEvent(eventId);
+      const response = await eventAPI.deleteEvent(eventId, reasonCancel);
       return response;
     } catch (error) {
       return rejectWithValue(error.response?.data || 'Failed to delete event');
@@ -86,15 +76,41 @@ export const deleteEvent = createAsyncThunk(
   }
 );
 
-// Get events needing approval (requires Manager role)
-export const fetchEventsNeedApproval = createAsyncThunk(
-  'events/fetchEventsNeedApproval',
+// Get draft events (requires Organizer role)
+export const fetchDraftEvents = createAsyncThunk(
+  'events/fetchDraftEvents',
   async (params = {}, { rejectWithValue }) => {
     try {
-      const response = await eventAPI.getEventsNeedApproval(params);
+      const response = await eventAPI.getDraftEvents(params);
       return response;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Failed to fetch events needing approval');
+      return rejectWithValue(error.response?.data || 'Failed to fetch draft events');
+    }
+  }
+);
+
+// Get events by status (requires Admin, Manager, Organizer roles)
+export const fetchEventsByStatus = createAsyncThunk(
+  'events/fetchEventsByStatus',
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      const response = await eventAPI.getEventsByStatus(params);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to fetch events by status');
+    }
+  }
+);
+
+// Confirm event (requires Admin, Manager roles)
+export const confirmEvent = createAsyncThunk(
+  'events/confirmEvent',
+  async ({ eventId, confirmData }, { rejectWithValue }) => {
+    try {
+      const response = await eventAPI.confirmEvent(eventId, confirmData);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to confirm event');
     }
   }
 );
@@ -138,20 +154,6 @@ const eventsSlice = createSlice({
         state.totalCount = action.payload?.totalCount || 0;
       })
       .addCase(fetchEvents.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-      // Fetch events by organizer
-      .addCase(fetchEventsByOrganizer.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchEventsByOrganizer.fulfilled, (state, action) => {
-        state.loading = false;
-        state.events = action.payload?.items || action.payload || [];
-        state.totalCount = action.payload?.totalCount || 0;
-      })
-      .addCase(fetchEventsByOrganizer.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
@@ -239,17 +241,52 @@ const eventsSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // Fetch events needing approval
-      .addCase(fetchEventsNeedApproval.pending, (state) => {
+      // Fetch draft events
+      .addCase(fetchDraftEvents.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchEventsNeedApproval.fulfilled, (state, action) => {
+      .addCase(fetchDraftEvents.fulfilled, (state, action) => {
         state.loading = false;
         state.events = action.payload?.items || action.payload || [];
         state.totalCount = action.payload?.totalCount || 0;
       })
-      .addCase(fetchEventsNeedApproval.rejected, (state, action) => {
+      .addCase(fetchDraftEvents.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Fetch events by status
+      .addCase(fetchEventsByStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchEventsByStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        state.events = action.payload?.items || action.payload || [];
+        state.totalCount = action.payload?.totalCount || 0;
+      })
+      .addCase(fetchEventsByStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Confirm event
+      .addCase(confirmEvent.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(confirmEvent.fulfilled, (state, action) => {
+        state.loading = false;
+        // Update the event status in the events list if it exists
+        const index = state.events.findIndex(event => event.eventId === action.meta.arg.eventId);
+        if (index !== -1) {
+          state.events[index].requireApproval = action.meta.arg.confirmData.status;
+        }
+        // Update current event if it's the same
+        if (state.currentEvent && state.currentEvent.eventId === action.meta.arg.eventId) {
+          state.currentEvent.requireApproval = action.meta.arg.confirmData.status;
+        }
+      })
+      .addCase(confirmEvent.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

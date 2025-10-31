@@ -2,6 +2,8 @@
 using AIEvent.API.Middleware;
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
+using Hangfire;
+using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
 using StackExchange.Redis;
@@ -28,7 +30,7 @@ namespace AIEvent.API
                 });
             }
 
-
+            
             // Add services to the container.
             builder.Services.AddControllers()
                             .AddJsonOptions(options =>
@@ -65,11 +67,28 @@ namespace AIEvent.API
                             .AddInfrastructureServices(builder.Configuration)
                             .AddExternalServices(builder.Configuration);
 
+            builder.Services.AddHangfire(config =>
+            {
+                config.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                      .UseSimpleAssemblyNameTypeSerializer()
+                      .UseRecommendedSerializerSettings()
+                      .UseSqlServerStorage(builder.Configuration.GetConnectionString("HangfireConnection"),
+                          new SqlServerStorageOptions
+                          {
+                              CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+                              SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+                              QueuePollInterval = TimeSpan.FromSeconds(15),
+                              UseRecommendedIsolationLevel = true,
+                              DisableGlobalLocks = true
+                          });
+            });
+
+            builder.Services.AddHangfireServer();
+
             builder.Services.AddJwtAuthentication(builder.Configuration);
 
             builder.Services.AddCustomCors(builder.Configuration);
 
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
 
             builder.Services.AddSwaggerCustoms();
@@ -81,7 +100,11 @@ namespace AIEvent.API
             app.UseSwagger();
             app.UseSwaggerUI();
 
-            app.UseHttpsRedirection();
+            if (app.Environment.IsProduction())
+            {
+                app.UseHttpsRedirection();
+            }
+
 
             app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
@@ -103,6 +126,7 @@ namespace AIEvent.API
                 RequestPath = "/.well-known"
             });
 
+            app.UseHangfireDashboard("/hangfire");
 
             app.MapControllers();
 

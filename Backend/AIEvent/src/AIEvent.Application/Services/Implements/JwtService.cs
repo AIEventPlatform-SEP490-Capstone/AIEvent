@@ -38,7 +38,7 @@ namespace AIEvent.Application.Services.Implements
 
             if (user.OrganizerProfile != null)
             {
-                claims.Add(new("organizerId", user.OrganizerProfile.Id.ToString()));
+                claims.Add(new("organizer", user.OrganizerProfile.Id.ToString()));
             }
 
             var credentials = new SigningCredentials(

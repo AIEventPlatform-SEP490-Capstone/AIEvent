@@ -7,12 +7,12 @@ namespace AIEvent.Application.Services.Interfaces
 {
     public interface IRuleRefundService
     {
-        Task<Result> CreateRuleAsync(Guid userId, CreateRuleRefundRequest request);
-        Task<Result> DeleteRuleAsync(Guid userId, Guid ruleId);
-        Task<Result> UpdateRuleAsync(Guid userId, Guid RuleRefundId, UpdateRuleRefundRequest request);
-        Task<Result<BasePaginated<RuleRefundResponse>>> GetRuleRefundAsync(Guid userId, int pageNumber, int pageSize);
-        Task<Result> UpdateRuleDetailAsync(Guid userId, Guid ruleRefundDetailId, UpdateRuleRefundDetailRequest request);
-        Task<Result> DeleteRuleDetailAsync(Guid userId, Guid ruleRefundDetailId);
-        Task<Result> CreateRuleDetailAsync(Guid userId, Guid ruleRefundId, RuleRefundDetailRequest request);
+        Task<Result> CreateRuleAsync(CreateRuleRefundRequest request);
+        Task<Result> DeleteRuleAsync(Guid ruleId);
+        Task<Result> UpdateRuleAsync(Guid RuleRefundId, UpdateRuleRefundRequest request);
+        Task<Result<BasePaginated<RuleRefundResponse>>> GetRuleRefundAsync(int pageNumber, int pageSize);
+        Task<Result> UpdateRuleDetailAsync(Guid ruleRefundDetailId, UpdateRuleRefundDetailRequest request);
+        Task<Result> DeleteRuleDetailAsync(Guid ruleRefundDetailId);
+        Task<Result> CreateRuleDetailAsync(Guid ruleRefundId, RuleRefundDetailRequest request);
     }
 }

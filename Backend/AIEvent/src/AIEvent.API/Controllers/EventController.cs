@@ -88,42 +88,13 @@ namespace AIEvent.API.Controllers
                 "Event related retrieved successfully"));
         }
 
-        [HttpGet("organizer")]
-        [Authorize(Roles = "Organizer")]
-        public async Task<ActionResult<SuccessResponse<BasePaginated<EventsResponse>>>> GetEventOrganizer([FromQuery] string? search,
-                                                                                                          [FromQuery] string? eventCategoryId,
-                                                                                                          [FromQuery] List<EventTagRequest> tags,
-                                                                                                          [FromQuery] TicketType? ticketType,
-                                                                                                          [FromQuery] string? city,
-                                                                                                          [FromQuery] bool? IsSortByNewest,
-                                                                                                          [FromQuery] int pageNumber = 1,
-                                                                                                          [FromQuery] int pageSize = 5)
-        {
-
-            Guid userId = User.GetRequiredUserId();
-            Guid organizer = User.GetRequiredOrganizerId();
-
-            var result = await _eventService.GetEventByOrganizerAsync(userId, organizer, search, eventCategoryId, tags, ticketType, city, IsSortByNewest, pageNumber, pageSize);
-
-            if (!result.IsSuccess)
-            {
-                return BadRequest(result.Error!);
-            }
-
-            return Ok(SuccessResponse<BasePaginated<EventsResponse>>.SuccessResult(
-                result.Value!,
-                SuccessCodes.Success,
-                "Event by Organizer retrieved successfully"));
-        }
-
-        [HttpPut("{id}")]
+        [HttpPatch("{id}")]
         [Authorize(Roles = "Organizer, Manager")]
         public async Task<ActionResult<SuccessResponse<object>>> UpdateEvent(Guid id, [FromForm] UpdateEventRequest request)
         {
-            Guid userId = User.GetRequiredUserId();
             Guid organizerId = User.GetRequiredOrganizerId();
 
-            var result = await _eventService.UpdateEventAsync(organizerId, userId, id, request);
+            var result = await _eventService.UpdateEventAsync(organizerId, id, request);
 
             if (!result.IsSuccess)
             {
@@ -140,7 +111,7 @@ namespace AIEvent.API.Controllers
         [Authorize(Roles = "Admin, Organizer, Manager")]
         public async Task<ActionResult<SuccessResponse<object>>> CreateEvent([FromForm] CreateEventRequest request)
         {
-            var organizerId = User.GetRequiredOrganizerId();
+            Guid organizerId = User.GetRequiredOrganizerId();
             var result = await _eventService.CreateEventAsync(organizerId, request);
             if (!result.IsSuccess)
             {
@@ -153,12 +124,13 @@ namespace AIEvent.API.Controllers
                 "Register Event successfully"));
         }
 
-        [HttpDelete]
-        [Authorize(Roles = "Admin, Organizer, Manager")]
-        public async Task<ActionResult<SuccessResponse<object>>> DeleteEvent(Guid eventId)
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Organizer")]
+        public async Task<ActionResult<SuccessResponse<object>>> DeleteEvent(Guid id, [FromQuery] string? reasonCancel)
         {
-            var result = await _eventService.DeleteEventAsync(eventId);
-            if (    !result.IsSuccess)
+            var organizerId = User.GetRequiredOrganizerId();
+            var result = await _eventService.DeleteEventAsync(id, organizerId, reasonCancel);
+            if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
@@ -169,19 +141,46 @@ namespace AIEvent.API.Controllers
                 "Delete Event successfully"));
         }
 
-        [HttpGet("need-approve")]
-        [Authorize(Roles = "Admin, Manager")]
-        public async Task<ActionResult<SuccessResponse<BasePaginated<ListEventNeedConfirm>>>> GetEvent(int pageNumber = 1, int pageSize = 10)
+        [HttpGet("draft")]
+        [Authorize(Roles = "Organizer")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<EventsRawResponse>>>> GetEventsDraft([FromQuery] int pageNumber = 1,
+                                                                                                        [FromQuery] int pageSize = 10)
         {
-
-            var result = await _eventService.GetAllEventNeedConfirmAsync(pageNumber, pageSize);
+            var organizerId = User.GetRequiredOrganizerId();
+            var result = await _eventService.GetAllEventDraftAsync(organizerId, pageNumber, pageSize);
 
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
 
-            return Ok(SuccessResponse<BasePaginated<ListEventNeedConfirm>>.SuccessResult(
+            return Ok(SuccessResponse<BasePaginated<EventsRawResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Event raw retrieved successfully"));
+        }
+
+
+        [HttpGet("status")]
+        [Authorize(Roles = "Admin, Manager, Organizer")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<EventsRawResponse>>>> GetEventStatus([FromQuery] string? search,
+                                                                                                          [FromQuery] ConfirmStatus? status = null,
+                                                                                                          [FromQuery] int pageNumber = 1,
+                                                                                                          [FromQuery] int pageSize = 10)
+        {
+            Guid organizerId = Guid.Empty;
+            if (User.IsInRole("Organizer"))
+            {
+                organizerId = User.GetRequiredOrganizerId();
+            }
+            var result = await _eventService.GetAllEventStatusAsync(organizerId, search, status, pageNumber, pageSize);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<EventsRawResponse>>.SuccessResult(
                 result.Value!,
                 SuccessCodes.Success,
                 "Event retrieved successfully"));
@@ -190,7 +189,7 @@ namespace AIEvent.API.Controllers
 
         [HttpPatch("confirm/{id}")]
         [Authorize(Roles = "Admin,Manager")]
-        public async Task<ActionResult<SuccessResponse<object>>> ConfirmEvent(string id, [FromForm] ConfirmRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> ConfirmEvent(Guid id, [FromForm] ConfirmRequest request)
         {
             var userId = User.GetRequiredUserId();
             var result = await _eventService.ConfirmEventAsync(userId, id, request);
@@ -203,6 +202,40 @@ namespace AIEvent.API.Controllers
                 new { },
                 SuccessCodes.Updated,
                 "Confirm event successfully"));
+        }
+
+        [HttpPost("request-end/{id}")]
+        [Authorize(Roles = "Admin,Manager,Organizer")]
+        public async Task<ActionResult<SuccessResponse<object>>> RequestEndEvent(string id)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _eventService.RequestEndEventAsync(userId, id);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Created,
+                "Reuquest event successfully"));
+        }
+
+        [HttpPatch("end-event/{id}")]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<ActionResult<SuccessResponse<object>>> ConfirmEndEvent(string id)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _eventService.ConfirmEndEventAsync(id);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Created,
+                "End event successfully"));
         }
     }
 }

@@ -11,7 +11,7 @@ namespace AIEvent.Infrastructure.Context
     public class DatabaseContext : DbContext
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
-
+        public bool EnableSoftDelete { get; set; } = true;
         public DatabaseContext(DbContextOptions<DatabaseContext> options, IHttpContextAccessor httpContextAccessor) : base(options)
         {
             _httpContextAccessor = httpContextAccessor;
@@ -33,6 +33,8 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<Booking> Bookings { get; set; }
         public DbSet<BookingItem> BookingItems { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
+        public DbSet<WithdrawRequest> WithdrawRequests { get; set; }
+        public DbSet<PaymentInformation> PaymentInformations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -140,6 +142,25 @@ namespace AIEvent.Infrastructure.Context
             builder.Entity<EventTag>()
                 .HasKey(et => new { et.EventId, et.TagId });
 
+            //-----------------EndReuqestEvent-------------
+            builder.Entity<EndEventRequest>(entity =>
+            {
+                entity.HasOne(e => e.OrganizerProfile)
+                    .WithMany(o => o.EndRequests)
+                    .HasForeignKey(e => e.OrganizerProfileId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Event)
+                    .WithOne(o => o.EndRequest)
+                    .HasForeignKey<EndEventRequest>(o => o.EventId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.EventId).HasDatabaseName("IX_EndEventRequests_EventId");
+                entity.HasIndex(e => e.OrganizerProfileId).HasDatabaseName("IX_EndEventRequests_OrganizerProfileId");
+                entity.HasIndex(e => e.Status).HasDatabaseName("IX_EndEventRequests_Status");
+                entity.HasIndex(e => new { e.OrganizerProfileId, e.Status }).HasDatabaseName("IX_EndEventRequests_OrganizerProfile_Status");
+            });
+
             //------------------Booking-------------------
             builder.Entity<Booking>(entity =>
             {
@@ -204,6 +225,8 @@ namespace AIEvent.Infrastructure.Context
                     .WithOne(o => o.Wallet)
                     .HasForeignKey<Wallet>(o => o.UserId)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.UserId).HasDatabaseName("IX_Wallet_UserId").IsUnique();
             });
 
             //--------------WalletTransaction--------------
@@ -213,16 +236,13 @@ namespace AIEvent.Infrastructure.Context
                     .WithMany(o => o.WalletTransactions)
                     .HasForeignKey(e => e.WalletId)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.WalletId).HasDatabaseName("IX_WalletTransaction_WalletId");
+                entity.HasIndex(e => new { e.ReferenceId, e.ReferenceType }).HasDatabaseName("IX_WalletTransaction_Reference");
+                entity.HasIndex(e => e.Type).HasDatabaseName("IX_WalletTransaction_Type");
+                entity.HasIndex(e => e.CreatedAt).HasDatabaseName("IX_WalletTransaction_CreatedAt");
             });
 
-            //--------------TopupRequest--------------
-            builder.Entity<TopupRequest>(entity =>
-            {
-                entity.HasOne(e => e.Wallet)
-                    .WithMany(o => o.TopupRequests)
-                    .HasForeignKey(e => e.WalletId)
-                    .OnDelete(DeleteBehavior.Restrict);
-            });
 
             //--------------PaymentTransaction--------------
             builder.Entity<PaymentTransaction>(entity =>
@@ -231,6 +251,11 @@ namespace AIEvent.Infrastructure.Context
                     .WithMany(o => o.PaymentTransactions)
                     .HasForeignKey(e => e.BookingId)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.BookingId).HasDatabaseName("IX_PaymentTransaction_BookingId");
+                entity.HasIndex(e => e.UserId).HasDatabaseName("IX_PaymentTransaction_UserId");
+                entity.HasIndex(e => e.Status).HasDatabaseName("IX_PaymentTransaction_Status");
+                entity.HasIndex(e => e.CreatedAt).HasDatabaseName("IX_PaymentTransaction_CreatedAt");
             });
 
             // ----------------- EventTag -----------------
@@ -271,7 +296,6 @@ namespace AIEvent.Infrastructure.Context
 
                 entity.HasIndex(td => new { td.EventId, td.TicketName }).IsUnique();
                 entity.HasIndex(e => e.RefundRuleId).HasDatabaseName("IX_TicketDetail_RefundRuleId");
-                entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_TicketDetail_IsDeleted");
             });
 
             // ----------------- UserAction -----------------
@@ -291,13 +315,6 @@ namespace AIEvent.Infrastructure.Context
                       .WithMany(e => e.Filters)
                       .HasForeignKey(td => td.UserActionId)
                       .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            // ----------------- RefundRuleDetail -----------------
-            builder.Entity<RefundRule>(entity =>
-            {
-                entity.HasIndex(rd => rd.IsSystem).HasDatabaseName("IX_RefundRule_IsSystem");
-
             });
 
             // ----------------- RefundRuleDetail -----------------
@@ -331,6 +348,38 @@ namespace AIEvent.Infrastructure.Context
 
             });
 
+            // ----------------- WithdrawRequest -----------------
+            builder.Entity<WithdrawRequest>(entity =>
+            {
+                entity.HasOne(w => w.User)
+                    .WithMany(u => u.WithdrawRequests)
+                    .HasForeignKey(w => w.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.Property(w => w.BankName).IsRequired().HasMaxLength(500);
+                entity.Property(w => w.BankAccountNumber).IsRequired().HasMaxLength(100);
+                entity.Property(w => w.BankAccountName).IsRequired().HasMaxLength(500);
+                entity.Property(w => w.Amount).HasColumnType("decimal(18,2)");
+            });
+
+            // ----------------- PaymentInformation -----------------
+            builder.Entity<PaymentInformation>(entity =>
+            {
+                entity.ToTable("PaymentInfomations"); 
+
+                entity.HasOne(pi => pi.User)
+                      .WithMany(u => u.PaymentInformations)
+                      .HasForeignKey(pi => pi.UserId)
+                      .OnDelete(DeleteBehavior.Cascade); 
+
+                entity.HasIndex(pi => new { pi.UserId, pi.AccountNumber })
+                      .IsUnique()
+                      .HasDatabaseName("IX_PaymentInfo_User_Account");
+
+                entity.HasIndex(pi => pi.UserId)
+                      .HasDatabaseName("IX_PaymentInfo_UserId");
+            });
+
             builder.Seed();
         }
 
@@ -352,8 +401,11 @@ namespace AIEvent.Infrastructure.Context
                 switch (entry.State)
                 {
                     case EntityState.Deleted:
-                        entry.State = EntityState.Modified;
-                        entry.Entity.SetDeleted(userId);
+                        if (EnableSoftDelete)
+                        { 
+                            entry.State = EntityState.Modified;
+                            entry.Entity.SetDeleted(userId);
+                        }
                         break;
                     case EntityState.Modified:
                         entry.Entity.SetUpdated(userId);

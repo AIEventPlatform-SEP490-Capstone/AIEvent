@@ -2,6 +2,7 @@ import { useRoutes, Navigate } from "react-router-dom";
 import { PATH } from "./path";
 import MainLayout from "../layouts/MainLayout";
 import HomePage from "../pages/Home/HomePage";
+import TimelinePage from "../pages/Timeline/TimelinePage";
 import LoginPage from "../pages/Auth/LoginPage/LoginPage";
 import CreateEventPage from "../pages/Organizer/CreateEventPage";
 import MyEventsPage from "../pages/Organizer/MyEventsPage";
@@ -16,7 +17,6 @@ import EventDetailGuestPage from "../pages/Event/EventDetailGuestPage";
 // Manager Pages
 import ManagerDashboard from "../pages/Manager/ManagerDashboard";
 import ManagerEventsPage from "../pages/Manager/ManagerEventsPage";
-import ManagerEventsNeedApprovalPage from "../pages/Manager/ManagerEventsNeedApprovalPage";
 import ManagerEventDetailPage from "../pages/Manager/ManagerEventDetailPage";
 import ManagerEditEventPage from "../pages/Manager/ManagerEditEventPage";
 import RefundRulesPage from "../pages/RefundRule/RefundRulesPage";
@@ -24,8 +24,15 @@ import AdminProfile from "../pages/Admin/AdminProfile";
 import UserManagement from "../pages/Admin/UserManagement";
 import EventCategory from "../pages/Event Category/EventCategory";
 import VerifyOtpPage from "../pages/Auth/RegisterPage/VerifyOtpPage";
+import GoogleCallbackPage from "../pages/Auth/GoogleCallbackPage";
 import BecomeOrganizerPage from "../pages/User/BecomeOrganizerPage";
 import ApplicationStatusPage from "../pages/User/ApplicationStatusPage";
+import UserProfilePage from "../pages/User/UserProfilePage";
+import TagManagementPage from "../pages/Shared/TagManagementPage";
+import OrganizerProfilePage from "../pages/Organizer/OrganizerProfilePage";
+import WalletDashboard from "../pages/Wallet/WalletDashboard";
+import BookingFlow from "../pages/User/BookingFlow";
+import MyTickets from "../pages/User/MyTickets";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -36,7 +43,7 @@ export default function useRouterElement() {
         { index: true, element: <HomePage /> },
         { path: "search", element: <div>Search Page</div> },
         { path: "nearby", element: <div>Nearby Events Page</div> },
-        { path: "timeline", element: <div>Timeline Page</div> },
+        { path: "timeline", element: <TimelinePage /> },
         { path: "friends", element: <div>Friends Page</div> },
         { path: "friends/search", element: <div>Friend Search Page</div> },
         {
@@ -51,7 +58,7 @@ export default function useRouterElement() {
           path: "wallet",
           element: (
             <ProtectedRoute>
-              <div>Wallet Page</div>
+              <WalletDashboard />
             </ProtectedRoute>
           ),
         },
@@ -59,7 +66,7 @@ export default function useRouterElement() {
           path: "my-tickets",
           element: (
             <ProtectedRoute>
-              <div>My Tickets Page</div>
+              <MyTickets />
             </ProtectedRoute>
           ),
         },
@@ -71,21 +78,13 @@ export default function useRouterElement() {
             </ProtectedRoute>
           ),
         },
-        {
-          path: "settings",
-          element: (
-            <ProtectedRoute>
-              <div>Settings Page</div>
-            </ProtectedRoute>
-          ),
-        },
         { path: "help", element: <div>Help Page</div> },
         { path: "about", element: <div>About Page</div> },
         {
           path: "profile",
           element: (
             <ProtectedRoute>
-              <div>Profile Page</div>
+              <UserProfilePage />
             </ProtectedRoute>
           ),
         },
@@ -102,7 +101,7 @@ export default function useRouterElement() {
           path: "booking/:id",
           element: (
             <ProtectedRoute>
-              <div>Booking Page</div>
+              <BookingFlow />
             </ProtectedRoute>
           ),
         },
@@ -162,6 +161,7 @@ export default function useRouterElement() {
         { path: "login", element: <LoginPage /> },
         { path: "register", element: <RegisterPage /> },
         { path: "verify-otp", element: <VerifyOtpPage /> },
+        { path: "google-callback", element: <GoogleCallbackPage /> },
       ],
     },
     {
@@ -185,12 +185,19 @@ export default function useRouterElement() {
         { path: "my-events", element: <MyEventsPage /> },
         { path: "event/:eventId", element: <EventDetailPage /> },
         { path: "event/:eventId/edit", element: <EditEventPage /> },
-        { path: "profile", element: <div>Organizer Profile Page</div> },
+        {
+          path: "profile",
+          element: (
+            <ProtectedRoute allowedRoles={["Organizer"]}>
+              <OrganizerProfilePage />
+            </ProtectedRoute>
+          ),
+        },
         { path: "settings", element: <div>Organizer Settings Page</div> },
         { path: "support", element: <div>Organizer Support Page</div> },
         { path: "analytics/:id", element: <div>Organizer Analytics Page</div> },
         { path: "checkin/:id", element: <div>Organizer Check-in Page</div> },
-        { path: "refund-rules", element: <RefundRulesPage userRole="organizer" /> },
+        { path: "tags", element: <TagManagementPage userRole="organizer" /> },
       ],
     },
     {
@@ -203,14 +210,14 @@ export default function useRouterElement() {
       children: [
         { index: true, element: <ManagerDashboard /> },
         { path: "events", element: <ManagerEventsPage /> },
-        {
-          path: "events/need-approval",
-          element: <ManagerEventsNeedApprovalPage />,
-        },
         { path: "event/:eventId", element: <ManagerEventDetailPage /> },
         { path: "event/:eventId/edit", element: <ManagerEditEventPage /> },
         { path: "events/category", element: <EventCategory /> },
-        { path: "refund-rules", element: <RefundRulesPage userRole="manager" /> },
+        { path: "tags", element: <TagManagementPage userRole="manager" /> },
+        {
+          path: "refund-rules",
+          element: <RefundRulesPage userRole="manager" />,
+        },
         { path: "profile", element: <div>Manager Profile Page</div> },
         { path: "settings", element: <div>Manager Settings Page</div> },
         { path: "support", element: <div>Manager Support Page</div> },

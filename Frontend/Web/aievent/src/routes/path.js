@@ -4,6 +4,7 @@ export const PATH = {
   LOGIN: "/auth/login",
   REGISTER: "/auth/register",
   VERIFY_OTP: "/auth/verify-otp",
+  GOOGLE_CALLBACK: "/auth/google-callback",
 
   // HOME
   HOME: "/",
@@ -16,7 +17,6 @@ export const PATH = {
   WALLET: "/wallet",
   MY_TICKETS: "/my-tickets",
   NOTIFICATIONS: "/notifications",
-  SETTINGS: "/settings",
   HELP: "/help",
   ABOUT: "/about",
   PROFILE: "/profile",
@@ -45,16 +45,17 @@ export const PATH = {
   ORGANIZER_ANALYTICS: "/organizer/analytics/:id",
   ORGANIZER_CHECKIN: "/organizer/checkin/:id",
   ORGANIZER_REFUND_RULES: "/organizer/refund-rules",
-  BECOME_ORGANIZER: "/become-organizer",
+  ORGANIZER_TAGS: "/organizer/tags",
+
 
   // MANAGER
   MANAGER: "/manager",
   MANAGER_EVENTS: "/manager/events",
   MANAGER_EVENTS_CATEGORY: "/manager/events/category",
-  MANAGER_EVENTS_NEED_APPROVAL: "/manager/events/need-approval",
   MANAGER_EVENT_DETAIL: "/manager/event/:eventId",
   MANAGER_EVENT_EDIT: "/manager/event/:eventId/edit",
   MANAGER_REFUND_RULES: "/manager/refund-rules",
+  MANAGER_TAGS: "/manager/tags",
   MANAGER_PROFILE: "/manager/profile",
   MANAGER_SETTINGS: "/manager/settings",
   MANAGER_SUPPORT: "/manager/support",

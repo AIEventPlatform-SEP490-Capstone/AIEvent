@@ -1,8 +1,8 @@
-using AIEvent.Domain.Interfaces;
 using AIEvent.Infrastructure.Context;
+using AIEvent.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace AIEvent.Infrastructure.Implements
+namespace AIEvent.Infrastructure.Repositories.Implements
 {
     public class GenericRepository<T> : IGenericRepository<T> where T : class
     {
@@ -56,6 +56,12 @@ namespace AIEvent.Infrastructure.Implements
         {
             _dbSet.Update(entity);
             return Task.FromResult(entity);
+        }
+
+        public async Task UpdateRangeAsync(IEnumerable<T> entities)
+        {
+            _dbSet.UpdateRange(entities);
+            await Task.CompletedTask; // EF Core batch update
         }
     }
 }

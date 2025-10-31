@@ -109,6 +109,23 @@ namespace AIEvent.API.Controllers
             return Ok(SuccessResponse<AuthResponse>.SuccessResult(result.Value!));
         }
 
+        [HttpPost("resend-otp")]
+        [AllowAnonymous]
+        public async Task<ActionResult<SuccessResponse<object>>> ReSendOTP([FromBody]string request)
+        {
+            var result = await _authService.ReSendOTPAsync(request);
+
+            if (!result.IsSuccess)
+            {
+                return Unauthorized(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Created,
+                "Resend successful. Send email successfully"));
+        }
+
         [HttpPost("revoke-token")]
         [Authorize]
         public async Task<ActionResult<SuccessResponse<object>>> RevokeToken()
@@ -148,6 +165,28 @@ namespace AIEvent.API.Controllers
                 new { },
                 SuccessCodes.Updated,
                 "Change password successfully"));
+        }
+
+        [HttpPost("google-login")]
+        [AllowAnonymous]
+        public async Task<ActionResult<SuccessResponse<AuthResponse>>> GoogleLogin(GoogleLoginRequest request)
+        {
+            var result = await _authService.GoogleLoginAsync(request);
+
+            if (!result.IsSuccess)
+            {
+                return Unauthorized(result.Error!);
+            }
+
+            Response.Cookies.Append("refreshToken", result.Value!.RefreshToken!, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTime.UtcNow.AddDays(7)
+            });
+
+            return Ok(SuccessResponse<AuthResponse>.SuccessResult(result.Value!));
         }
     }
 }

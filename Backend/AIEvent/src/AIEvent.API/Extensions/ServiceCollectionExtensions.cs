@@ -2,11 +2,13 @@
 using AIEvent.Application.Mappings;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
-using AIEvent.Domain.Interfaces;
+using AIEvent.Infrastructure.Repositories.Interfaces;
 using AIEvent.Infrastructure.Context;
-using AIEvent.Infrastructure.Implements;
+using AIEvent.Infrastructure.Repositories.Implements;
+using CloudinaryDotNet;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
+using PayOS;
 
 namespace AIEvent.API.Extensions
 {
@@ -36,8 +38,12 @@ namespace AIEvent.API.Extensions
                     .AddScoped<IEventCategoryService, EventCategoryService>()
                     .AddScoped<IBookingService, BookingService>()
                     .AddScoped<IQrCodeService, QrCodeService>()
-                    .AddScoped<ITicketTokenService, TicketTokenService>()
-                    .AddScoped<IPdfService, PdfService>();
+                    .AddScoped<ITicketSignatureService, TicketSignatureService>()
+                    .AddScoped<IPaymentService, PaymentService>()
+                    .AddScoped<IPayOSService, PayOSService>()
+                    .AddScoped<IWalletService, WalletService>()
+                    .AddScoped<IPdfService, PdfService>()
+                    .AddScoped<IHangfireJobService, HangfireJobService>();
 
             return services;
         }
@@ -55,6 +61,45 @@ namespace AIEvent.API.Extensions
         {
             services.AddSingleton<IConnectionMultiplexer>(
                 ConnectionMultiplexer.Connect(configuration["Redis:ConnectionString"]!));
+
+            services.AddSingleton(x =>
+            {
+                var config = x.GetRequiredService<IConfiguration>().GetSection("Cloudinary");
+                var account = new Account(
+                    config["CloudName"],
+                    config["Key"],
+                    config["Secret"]
+                );
+
+                var cloudinary = new Cloudinary(account)
+                {
+                    Api = { Secure = true } 
+                };
+
+                return cloudinary;
+            });
+
+            services.AddKeyedSingleton("PaymentClient", (sp, key) =>
+            {
+                var config = sp.GetRequiredService<IConfiguration>().GetSection("PayOS:Payment");
+                return new PayOSClient(new PayOSOptions
+                {
+                    ClientId = config["ClientId"] ?? throw new Exception("Payment ClientId not found"),
+                    ApiKey = config["ApiKey"] ?? throw new Exception("Payment ApiKey not found"),
+                    ChecksumKey = config["ChecksumKey"] ?? throw new Exception("Payment ChecksumKey not found"),
+                });
+            });
+             
+            services.AddKeyedSingleton("PayoutClient", (sp, key) =>
+            {
+                var config = sp.GetRequiredService<IConfiguration>().GetSection("PayOS:Payout");
+                return new PayOSClient(new PayOSOptions
+                {
+                    ClientId = config["ClientId"] ?? throw new Exception("Payout ClientId not found"),
+                    ApiKey = config["ApiKey"] ?? throw new Exception("Payout ApiKey not found"),
+                    ChecksumKey = config["ChecksumKey"] ?? throw new Exception("Payout ChecksumKey not found"),
+                });
+            });
 
             return services;
         }

@@ -1,4 +1,4 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet, Dimensions, Platform } from 'react-native';
 import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
 
@@ -7,140 +7,83 @@ const { width, height } = Dimensions.get('window');
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#F5F7FA',
   },
   
-  // Header styles
+  // Premium Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 15,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'ios' ? 60 : 50,
+    paddingBottom: 20,
     backgroundColor: Colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
     zIndex: 2,
-  },
-  menuButton: {
-    padding: 8,
   },
   headerTitle: {
     fontSize: Fonts.xxl,
     fontFamily: Fonts.bold,
     color: Colors.textPrimary,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   notificationButton: {
-    padding: 8,
-  },
-  menuIcon: {
-    width: 24,
-    height: 24,
-    tintColor: Colors.textPrimary,
+    position: 'absolute',
+    right: 24,
+    padding: 10,
+    backgroundColor: '#F0F3F7',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
   },
   notificationIcon: {
-    width: 24,
-    height: 24,
-    tintColor: Colors.textPrimary,
+    width: 22,
+    height: 22,
+    tintColor: Colors.primary,
   },
 
-  // Search styles
+  // Modern Search
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.white,
     marginHorizontal: 20,
-    marginVertical: 15,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    zIndex: 0,
+    marginTop: 20,
+    marginBottom: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+    borderWidth: 2,
+    borderColor: '#F0F3F7',
   },
   searchIcon: {
     width: 20,
     height: 20,
-    tintColor: Colors.textLight,
-    marginRight: 10,
+    tintColor: Colors.primary,
+    marginRight: 12,
   },
   searchInput: {
     flex: 1,
     fontSize: Fonts.md,
-    fontFamily: Fonts.regular,
+    fontFamily: Fonts.medium,
     color: Colors.textPrimary,
-  },
-
-  // Side menu styles
-  menuOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    zIndex: 9998,
-  },
-  sideMenu: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: width * 0.8,
-    height: height,
-    backgroundColor: Colors.white,
-    paddingTop: 60,
-    shadowColor: Colors.shadowDark,
-    shadowOffset: { width: 2, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 10,
-    zIndex: 9999,
-  },
-  menuHeader: {
-    alignItems: 'center',
-    paddingBottom: 30,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
-    marginBottom: 20,
-  },
-  menuAvatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginBottom: 10,
-  },
-  menuUserName: {
-    fontSize: Fonts.lg,
-    fontFamily: Fonts.bold,
-    color: Colors.textPrimary,
-    marginBottom: 5,
-  },
-  menuUserEmail: {
-    fontSize: Fonts.sm,
-    fontFamily: Fonts.regular,
-    color: Colors.textSecondary,
-  },
-  menuItems: {
-    paddingHorizontal: 20,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
-  },
-  menuItemText: {
-    fontSize: Fonts.md,
-    fontFamily: Fonts.regular,
-    color: Colors.textPrimary,
-    marginLeft: 15,
+    paddingVertical: 0,
   },
 
   // Content styles
@@ -149,35 +92,69 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   welcomeSection: {
-    paddingVertical: 20,
+    paddingVertical: 24,
+    paddingBottom: 20,
   },
   welcomeTitle: {
-    fontSize: Fonts.title,
+    fontSize: 32,
     fontFamily: Fonts.bold,
     color: Colors.textPrimary,
-    marginBottom: 8,
+    marginBottom: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textAlign: 'center',
   },
   welcomeSubtitle: {
     fontSize: Fonts.md,
     fontFamily: Fonts.regular,
     color: Colors.textSecondary,
-    lineHeight: 22,
+    lineHeight: 24,
+    textAlign: 'center',
   },
 
   // Events section styles
   eventsSection: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: Fonts.xl,
+    fontSize: 24,
     fontFamily: Fonts.bold,
     color: Colors.textPrimary,
-    marginBottom: 15,
+    marginBottom: 20,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
 
   // Loading styles
   loadingContainer: {
-    paddingVertical: 40,
+    paddingVertical: 60,
+    alignItems: 'center',
+  },
+
+  // Empty state
+  emptyContainer: {
+    paddingVertical: 60,
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderRadius: 24,
+    marginTop: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    tintColor: Colors.textLight,
+    marginBottom: 16,
+    opacity: 0.5,
+  },
+  emptyText: {
+    fontSize: Fonts.lg,
+    fontFamily: Fonts.semiBold,
+    color: Colors.textSecondary,
   },
 });
 

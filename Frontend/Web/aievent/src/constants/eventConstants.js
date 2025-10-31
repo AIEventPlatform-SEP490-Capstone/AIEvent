@@ -14,10 +14,12 @@ export const ConfirmStatusDisplay = {
 
 export const TicketType = {
   Free: 1,
-  Paid: 2
+  Paid: 2,
+  Donate: 3
 };
 
 export const TicketTypeDisplay = {
   [TicketType.Free]: 'Miễn phí',
-  [TicketType.Paid]: 'Có phí'
+  [TicketType.Paid]: 'Có phí',
+  [TicketType.Donate]: 'Quyên góp'
 };

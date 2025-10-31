@@ -217,12 +217,12 @@ const RefundRuleManager = ({ className }) => {
           <div className="flex items-center justify-between mb-2">
             <Label className="text-sm font-medium">Quy tắc có sẵn:</Label>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
+              {/* <DialogTrigger asChild>
                 <Button type="button" variant="outline" size="sm" className="flex items-center gap-1">
                   <Plus className="h-3 w-3" />
                   Tạo quy tắc mới
                 </Button>
-              </DialogTrigger>
+              </DialogTrigger> */}
               <DialogContent className="bg-white max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Tạo quy tắc hoàn tiền mới</DialogTitle>

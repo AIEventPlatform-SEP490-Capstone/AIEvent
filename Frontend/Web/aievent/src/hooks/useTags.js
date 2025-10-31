@@ -14,10 +14,12 @@ import {
   selectSelectedTags,
   selectShouldFetchTags,
   selectTagById,
-  clearError
+  clearError,
+  invalidateTags,
+  clearTags
 } from '../store/slices/tagsSlice';
 
-export const useTags = () => {
+export const useTags = (userRole = null) => {
   const dispatch = useDispatch();
   const tags = useSelector(selectTags);
   const selectedTags = useSelector(selectSelectedTags);
@@ -29,12 +31,12 @@ export const useTags = () => {
   // Auto-fetch tags if needed
   useEffect(() => {
     if (shouldFetch) {
-      dispatch(fetchTags());
+      dispatch(fetchTags(userRole));
     }
-  }, [dispatch, shouldFetch]);
+  }, [dispatch, shouldFetch, userRole]);
 
   const refreshTags = () => {
-    dispatch(fetchTags());
+    dispatch(fetchTags(userRole));
   };
 
   const createNewTag = async (tagData) => {
@@ -65,6 +67,16 @@ export const useTags = () => {
     dispatch(clearError());
   };
 
+  const clearAllTags = () => {
+    dispatch(clearTags());
+  };
+
+  // Refresh tags with cache invalidation
+  const forceRefreshTags = () => {
+    dispatch(invalidateTags());
+    dispatch(fetchTags(userRole));
+  };
+
   const getTagById = (tagId) => {
     return tags.find(tag => tag.tagId === tagId) || null;
   };
@@ -75,6 +87,8 @@ export const useTags = () => {
     loading: loading || creating, // Include creating state
     error,
     refreshTags,
+    forceRefreshTags,
+    clearAllTags,
     createNewTag,
     updateExistingTag,
     removeTag,

@@ -31,6 +31,8 @@ import {
   ChevronRight,
   ArrowRight,
   Receipt,
+  BookmarkMinus,
+  Tag,
 } from "lucide-react";
 import {
   Sidebar,
@@ -172,10 +174,10 @@ export function VerticalNavigation() {
           isActive: pathname === "/organizer/events",
         },
         {
-          title: "Quy tắc hoàn tiền",
-          url: "/organizer/refund-rules",
-          icon: Receipt,
-          isActive: pathname === "/organizer/refund-rules",
+          title: "Quản lý Tags",
+          url: "/organizer/tags",
+          icon: Tag,
+          isActive: pathname === "/organizer/tags",
         },
       ];
     }
@@ -195,12 +197,6 @@ export function VerticalNavigation() {
           isActive: pathname === "/manager/events",
         },
         {
-          title: "Sự kiện cần duyệt",
-          url: "/manager/events/need-approval",
-          icon: CheckSquare,
-          isActive: pathname === "/manager/events/need-approval",
-        },
-        {
           title: "Quản lý danh mục",
           url: "/manager/events/category",
           icon: BookmarkMinus,
@@ -212,17 +208,30 @@ export function VerticalNavigation() {
           icon: Receipt,
           isActive: pathname === "/manager/refund-rules",
         },
+        {
+          title: "Quản lý Tags",
+          url: "/manager/tags",
+          icon: Tag,
+          isActive: pathname === "/manager/tags",
+        },
       ];
     }
 
     // Default user navigation - theo thứ tự trong ảnh
     return [
       {
+        title: "Trang chủ",
+        url: "/",
+        icon: Home,
+        isActive: pathname === "/",
+        special: true,
+      },
+
+      {
         title: "Timeline",
         url: "/timeline",
         icon: Calendar,
         isActive: pathname === "/timeline",
-        special: true,
       },
       {
         title: "Yêu thích",
@@ -486,7 +495,15 @@ export function VerticalNavigation() {
                       )}
                     >
                       <NavLink
-                        to="/profile"
+                        to={
+                          user?.role?.toLowerCase() === "admin"
+                            ? "/admin/profile"
+                            : user?.role?.toLowerCase() === "organizer"
+                            ? "/organizer/profile"
+                            : user?.role?.toLowerCase() === "manager"
+                            ? "/manager/profile"
+                            : "/profile"
+                        }
                         className="flex items-center gap-3 px-3 py-2.5"
                       >
                         <User className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
@@ -494,26 +511,6 @@ export function VerticalNavigation() {
                           <span className="font-medium text-sm">
                             Hồ sơ cá nhân
                           </span>
-                        )}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={pathname === "/settings"}
-                      className={cn(
-                        "group rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/15 data-[active=true]:text-primary",
-                        state === "collapsed" && "p-1 justify-center"
-                      )}
-                    >
-                      <NavLink
-                        to="/settings"
-                        className="flex items-center gap-3 px-3 py-2.5"
-                      >
-                        <Settings className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                        {state !== "collapsed" && (
-                          <span className="font-medium text-sm">Cài đặt</span>
                         )}
                       </NavLink>
                     </SidebarMenuButton>

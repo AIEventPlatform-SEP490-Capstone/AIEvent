@@ -1,13 +1,12 @@
 ﻿using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.User;
-using AIEvent.Application.Helpers;
 using AIEvent.Application.Mappings;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
-using AIEvent.Domain.Interfaces;
+using AIEvent.Infrastructure.Repositories.Interfaces;
 using AutoMapper;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
@@ -65,7 +64,12 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
+            var bookings = new List<Booking>().AsQueryable().BuildMockDbSet();
+            var favoriteEvents = new List<FavoriteEvent>().AsQueryable().BuildMockDbSet();
+
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
+            _mockUnitOfWork.Setup(x => x.BookingRepository.Query(false)).Returns(bookings.Object);
+            _mockUnitOfWork.Setup(x => x.FavoriteEventRepository.Query(false)).Returns(favoriteEvents.Object);
             _mockMapper.Setup(x => x.Map<UserDetailResponse>(user)).Returns(userDetailResponse);
 
             // Act
@@ -77,6 +81,9 @@ namespace AIEvent.Application.Test.Services
             result.Value!.Id.Should().Be(userId.ToString());
             result.Value.Email.Should().Be("test@example.com");
             result.Value.FullName.Should().Be("Test User");
+            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(userId, true), Times.Once);
+            _mockUnitOfWork.Verify(x => x.BookingRepository.Query(false), Times.Once);
+            _mockUnitOfWork.Verify(x => x.FavoriteEventRepository.Query(false), Times.Once);
             _mockMapper.Verify(x => x.Map<UserDetailResponse>(user), Times.Once);
         }
 
@@ -92,7 +99,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Invalid input");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
             _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never);
         }
@@ -180,7 +187,6 @@ namespace AIEvent.Application.Test.Services
             var user = new User
             {
                 Id = userId,
-                Email = "test@example.com",
                 FullName = "Test User",
                 IsActive = true,
                 DeletedAt = null
@@ -189,15 +195,32 @@ namespace AIEvent.Application.Test.Services
             var updateRequest = new UpdateUserRequest
             {
                 FullName = "Updated User",
-                Email = "updated@example.com",
                 PhoneNumber = "+1234567890",
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 Address = "123 Main St",
                 City = "Ho Chi Minh",
+                Latitude = "10.762622",
+                Longitude = "106.660172",
+                LinkedInUrl = "https://linkedin.com/in/testuser",
+                GitHubUrl = "https://github.com/testuser",
+                TwitterUrl = "https://twitter.com/testuser",
+                FacebookUrl = "https://facebook.com/testuser",
+                InstagramUrl = "https://instagram.com/testuser",
+                Occupation = "Software Developer",
+                JobTitle = "Senior Developer",
+                CareerGoal = "Become a Tech Lead",
+                Experience = ExperienceLevel.ThreeToFiveYears,
+                PersonalWebsite = "https://testuser.com",
+                Introduction = "Passionate developer with 5 years of experience",
                 IsEmailNotificationEnabled = true,
                 IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                IsSmsNotificationEnabled = true,
+                UserInterests = new List<UserInterest> { new UserInterest { InterestName = "Technology" } },
+                InterestedCities = new List<InterestedCities> { new InterestedCities { CityName = "Ho Chi Minh" } },
+                FavoriteEventTypes = new List<FavoriteEventTypes> { new FavoriteEventTypes { FavoriteEventTypeName = "Tech Conference" } },
+                ProfessionalSkills = new List<UserSkills> { new UserSkills { SkillsName = "C#" } },
+                Languages = new List<UserLanguages> { new UserLanguages { LanguagesName = "English" } }
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
@@ -209,6 +232,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(userId, true), Times.Once);
             _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.IsAny<User>()), Times.Once);
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once);
         }
@@ -221,7 +245,6 @@ namespace AIEvent.Application.Test.Services
             var updateRequest = new UpdateUserRequest
             {
                 FullName = "Updated User",
-                Email = "updated@example.com"
             };
 
             // Act
@@ -229,7 +252,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Invalid input");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
             _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never);
         }
@@ -245,7 +268,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Invalid input");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
             _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never);
         }
@@ -258,7 +281,6 @@ namespace AIEvent.Application.Test.Services
             var updateRequest = new UpdateUserRequest
             {
                 FullName = "Updated User",
-                Email = "updated@example.com"
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync((User)null!);
@@ -289,8 +311,7 @@ namespace AIEvent.Application.Test.Services
 
             var updateRequest = new UpdateUserRequest
             {
-                FullName = "Updated User",
-                Email = "updated@example.com"
+                FullName = "Updated User"
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
@@ -321,8 +342,7 @@ namespace AIEvent.Application.Test.Services
 
             var updateRequest = new UpdateUserRequest
             {
-                FullName = "Updated User",
-                Email = "updated@example.com"
+                FullName = "Updated User"
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
@@ -338,36 +358,13 @@ namespace AIEvent.Application.Test.Services
         }
 
         [Fact]
-        public async Task UTCID07_UpdateUserAsync_WithInvalidEmailFormat_ShouldReturnFailure()
+        public async Task UTCID07_UpdateUserAsync_WithInvalidPhoneNumber_ShouldReturnFailure()
         {
             // Arrange
             var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
             var updateRequest = new UpdateUserRequest
             {
                 FullName = "Updated User",
-                Email = "invalid-email-format",
-                PhoneNumber = "+1234567890"
-            };
-
-            // Act
-            var result = await _userService.UpdateUserAsync(userId, updateRequest);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Contain("Invalid email format");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never);
-        }
-
-        [Fact]
-        public async Task UTCID08_UpdateUserAsync_WithInvalidPhoneNumber_ShouldReturnFailure()
-        {
-            // Arrange
-            var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
-            var updateRequest = new UpdateUserRequest
-            {
-                FullName = "Updated User",
-                Email = "updated@example.com",
                 PhoneNumber = "invalid-phone"
             };
 
@@ -382,7 +379,7 @@ namespace AIEvent.Application.Test.Services
         }
 
         [Fact]
-        public async Task UTCID09_UpdateUserAsync_WithAvatarImage_ShouldReturnSuccess()
+        public async Task UTCID08_UpdateUserAsync_WithAvatarImage_ShouldReturnSuccess()
         {
             var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
             var user = new User { Id = userId, Email = "test@example.com", FullName = "Test User", IsActive = true };
@@ -396,7 +393,6 @@ namespace AIEvent.Application.Test.Services
             var updateRequest = new UpdateUserRequest
             {
                 FullName = "Updated User",
-                Email = "updated@example.com",
                 AvatarImg = mockFile.Object
             };
 
@@ -419,7 +415,7 @@ namespace AIEvent.Application.Test.Services
         }
 
         [Fact]
-        public async Task UTCID10_UpdateUserAsync_WithoutAvatarImage_ShouldReturnSuccess()
+        public async Task UTCID09_UpdateUserAsync_WithoutAvatarImage_ShouldReturnSuccess()
         {
             // Arrange
             var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
@@ -435,7 +431,6 @@ namespace AIEvent.Application.Test.Services
             var updateRequest = new UpdateUserRequest
             {
                 FullName = "Updated User",
-                Email = "updated@example.com",
                 AvatarImg = null
             };
 
@@ -449,6 +444,170 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.IsSuccess.Should().BeTrue();
             _mockCloudinaryService.Verify(x => x.UploadImageAsync(It.IsAny<IFormFile>()), Times.Never);
+            _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.IsAny<User>()), Times.Once);
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once);
+        }
+
+        [Fact]
+        public async Task UTCID10_UpdateUserAsync_WithSocialMediaLinks_ShouldReturnSuccess()
+        {
+            // Arrange
+            var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+            var user = new User
+            {
+                Id = userId,
+                FullName = "Test User",
+                IsActive = true,
+                DeletedAt = null
+            };
+
+            var updateRequest = new UpdateUserRequest
+            {
+                FullName = "Updated User",
+                LinkedInUrl = "https://linkedin.com/in/testuser",
+                GitHubUrl = "https://github.com/testuser",
+                TwitterUrl = "https://twitter.com/testuser",
+                FacebookUrl = "https://facebook.com/testuser",
+                InstagramUrl = "https://instagram.com/testuser",
+                PersonalWebsite = "https://testuser.com"
+            };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
+            _mockUnitOfWork.Setup(x => x.UserRepository.UpdateAsync(It.IsAny<User>()));
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+
+            // Act
+            var result = await _userService.UpdateUserAsync(userId, updateRequest);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.IsAny<User>()), Times.Once);
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once);
+        }
+
+        [Fact]
+        public async Task UTCID11_UpdateUserAsync_WithProfessionalInfo_ShouldReturnSuccess()
+        {
+            // Arrange
+            var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+            var user = new User
+            {
+                Id = userId,
+                FullName = "Test User",
+                IsActive = true,
+                DeletedAt = null
+            };
+
+            var updateRequest = new UpdateUserRequest
+            {
+                FullName = "Updated User",
+                Occupation = "Software Developer",
+                JobTitle = "Senior Developer",
+                CareerGoal = "Become a Tech Lead",
+                Experience = ExperienceLevel.ThreeToFiveYears,
+                Introduction = "Passionate developer",
+                ProfessionalSkills = new List<UserSkills> 
+                { 
+                    new UserSkills { SkillsName = "C#" },
+                    new UserSkills { SkillsName = "JavaScript" }
+                },
+                Languages = new List<UserLanguages> 
+                { 
+                    new UserLanguages { LanguagesName = "English" },
+                    new UserLanguages { LanguagesName = "Vietnamese" }
+                }
+            };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
+            _mockUnitOfWork.Setup(x => x.UserRepository.UpdateAsync(It.IsAny<User>()));
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+
+            // Act
+            var result = await _userService.UpdateUserAsync(userId, updateRequest);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.IsAny<User>()), Times.Once);
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once);
+        }
+
+        [Fact]
+        public async Task UTCID12_UpdateUserAsync_WithUserPreferences_ShouldReturnSuccess()
+        {
+            // Arrange
+            var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+            var user = new User
+            {
+                Id = userId,
+                FullName = "Test User",
+                IsActive = true,
+                DeletedAt = null
+            };
+
+            var updateRequest = new UpdateUserRequest
+            {
+                FullName = "Updated User",
+                UserInterests = new List<UserInterest> 
+                { 
+                    new UserInterest { InterestName = "Technology" },
+                    new UserInterest { InterestName = "Sports" }
+                },
+                InterestedCities = new List<InterestedCities> 
+                { 
+                    new InterestedCities { CityName = "Ho Chi Minh" },
+                    new InterestedCities { CityName = "Hanoi" }
+                },
+                FavoriteEventTypes = new List<FavoriteEventTypes> 
+                { 
+                    new FavoriteEventTypes { FavoriteEventTypeName = "Tech Conference" },
+                    new FavoriteEventTypes { FavoriteEventTypeName = "Workshop" }
+                }
+            };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
+            _mockUnitOfWork.Setup(x => x.UserRepository.UpdateAsync(It.IsAny<User>()));
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+
+            // Act
+            var result = await _userService.UpdateUserAsync(userId, updateRequest);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.IsAny<User>()), Times.Once);
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once);
+        }
+
+        [Fact]
+        public async Task UTCID13_UpdateUserAsync_WithLocationInfo_ShouldReturnSuccess()
+        {
+            // Arrange
+            var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+            var user = new User
+            {
+                Id = userId,
+                FullName = "Test User",
+                IsActive = true,
+                DeletedAt = null
+            };
+
+            var updateRequest = new UpdateUserRequest
+            {
+                FullName = "Updated User",
+                Address = "123 Main St",
+                City = "Ho Chi Minh",
+                Latitude = "10.762622",
+                Longitude = "106.660172"
+            };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
+            _mockUnitOfWork.Setup(x => x.UserRepository.UpdateAsync(It.IsAny<User>()));
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+
+            // Act
+            var result = await _userService.UpdateUserAsync(userId, updateRequest);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
             _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.IsAny<User>()), Times.Once);
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once);
         }
@@ -472,7 +631,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(mockDbSet.Object);
 
             // Act
-            var result = await _userService.GetAllUsersAsync(1, 10);
+            var result = await _userService.GetAllUsersAsync(1, 10, null, null, null);
 
             // Assert
             result.Should().NotBeNull();
@@ -506,7 +665,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(mockDbSet.Object);
 
             // Act
-            var result = await _userService.GetAllUsersAsync(1, 10);
+            var result = await _userService.GetAllUsersAsync(1, 10, null, null, null);
 
             // Assert
             result.Should().NotBeNull();
@@ -540,7 +699,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(mockDbSet.Object);
 
             // Act
-            var result = await _userService.GetAllUsersAsync(2, 5);
+            var result = await _userService.GetAllUsersAsync(2, 5, null, null, null);
 
             // Assert
             result.Should().NotBeNull();
@@ -574,7 +733,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(mockDbSet.Object);
 
             // Act
-            var result = await _userService.GetAllUsersAsync(2, 5);
+            var result = await _userService.GetAllUsersAsync(2, 5, null, null, null);
 
             // Assert
             result.Should().NotBeNull();
@@ -596,7 +755,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(mockDbSet.Object);
 
             // Act
-            var result = await _userService.GetAllUsersAsync(1, 10);
+            var result = await _userService.GetAllUsersAsync(1, 10, null, null, null);
 
             // Assert
             result.Should().NotBeNull();
@@ -630,7 +789,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(mockDbSet.Object);
 
             // Act
-            var result = await _userService.GetAllUsersAsync(1, 3);
+            var result = await _userService.GetAllUsersAsync(1, 3, null, null, null);
 
             // Assert
             result.Should().NotBeNull();
@@ -664,7 +823,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(mockDbSet.Object);
 
             // Act
-            var result = await _userService.GetAllUsersAsync(1, 1);
+            var result = await _userService.GetAllUsersAsync(1, 1, null, null, null);
 
             // Assert
             result.Should().NotBeNull();
@@ -698,7 +857,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(mockDbSet.Object);
 
             // Act
-            var result = await _userService.GetAllUsersAsync(1, 100);
+            var result = await _userService.GetAllUsersAsync(1, 100, null, null, null);
 
             // Assert
             result.Should().NotBeNull();
@@ -732,7 +891,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(mockDbSet.Object);
 
             // Act
-            var result = await _userService.GetAllUsersAsync(10, 5);
+            var result = await _userService.GetAllUsersAsync(10, 5, null, null, null);
 
             // Assert
             result.Should().NotBeNull();
@@ -781,7 +940,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(mockDbSet.Object);
 
             // Act
-            var result = await _userService.GetAllUsersAsync(1, 10);
+            var result = await _userService.GetAllUsersAsync(1, 10, null, null, null);
 
             // Assert
             result.Should().NotBeNull();

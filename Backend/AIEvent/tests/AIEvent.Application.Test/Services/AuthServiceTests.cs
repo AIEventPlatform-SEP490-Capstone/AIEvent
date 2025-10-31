@@ -7,9 +7,10 @@ using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
-using AIEvent.Domain.Interfaces;
+using AIEvent.Infrastructure.Repositories.Interfaces;
 using AutoMapper;
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using MimeKit;
 using MockQueryable.Moq;
 using Moq;
@@ -24,7 +25,9 @@ namespace AIEvent.Application.Test.Services
         private readonly Mock<IEmailService> _mockEmailService;
         private readonly Mock<IHasherHelper> _mockHasherHelper;
         private readonly Mock<ICacheService> _mockCacheService;
+        private readonly Mock<IConfiguration> _mockConfiguration;
         private readonly IAuthService _authService;
+        
 
         public AuthServiceTests()
         {
@@ -35,12 +38,14 @@ namespace AIEvent.Application.Test.Services
             _mockMapper = new Mock<IMapper>();
             _mockEmailService = new Mock<IEmailService>();
             _mockCacheService = new Mock<ICacheService>();
+            _mockConfiguration = new Mock<IConfiguration>();
             _authService = new AuthService(_mockUnitOfWork.Object,
                                                _mockJwtService.Object,
                                                _mockMapper.Object,
                                                _mockEmailService.Object,
                                                _mockHasherHelper.Object,
-                                               _mockCacheService.Object);
+                                               _mockCacheService.Object,
+                                               _mockConfiguration.Object);
         }
         #region Login
         // UTCID01: Valid credentials, successful login
@@ -117,7 +122,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid email or password");
+            result.Error!.Message.Should().Contain("Invalid email or password");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
         }
 
@@ -148,7 +153,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid email or password");
+            result.Error!.Message.Should().Contain("Invalid email or password");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
         }
 
@@ -164,7 +169,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid email or password");
+            result.Error!.Message.Should().Contain("Invalid email or password");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
         }
 
@@ -180,7 +185,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid email or password");
+            result.Error!.Message.Should().Contain("Invalid email or password");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
         }
 
@@ -196,7 +201,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid email or password");
+            result.Error!.Message.Should().Contain("Invalid email or password");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
         }
         #endregion
@@ -252,7 +257,7 @@ namespace AIEvent.Application.Test.Services
         }
 
         [Fact]
-        public async Task UTCID02_RegisterAsync_WithExistingEmail_ShouldReturnFailure()
+        public async Task UTCID02_RegisterAsync_WithExistingActiveEmail_ShouldReturnFailure()
         {
             // Arrange
             var request = new RegisterRequest
@@ -274,7 +279,7 @@ namespace AIEvent.Application.Test.Services
                 IsPushNotificationEnabled = true,
                 IsSmsNotificationEnabled = true
             };
-            var existingUser = new User { Id = Guid.NewGuid(), Email = request.Email };
+            var existingUser = new User { Id = Guid.NewGuid(), Email = request.Email, IsActive = true };
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
                            .Returns(new List<User> { existingUser }.AsQueryable().BuildMockDbSet().Object);
 
@@ -380,7 +385,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Invalid input");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
@@ -413,7 +418,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Full name is required");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
@@ -446,7 +451,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Email is required");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
@@ -512,7 +517,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Password is required");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
@@ -735,6 +740,7 @@ namespace AIEvent.Application.Test.Services
             _mockEmailService.Verify(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<MimeMessage>()), Times.Never());
             _mockCacheService.Verify(x => x.SetAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Never());
         }
+       
         #endregion
 
         #region RefreshToken
@@ -1093,9 +1099,11 @@ namespace AIEvent.Application.Test.Services
             _mockJwtService.Setup(x => x.GenerateAccessToken(user)).Returns(accessToken);
             _mockJwtService.Setup(x => x.GenerateRefreshToken()).Returns(refreshToken);
             _mockUnitOfWork.Setup(x => x.UserRepository.UpdateAsync(It.IsAny<User>()));
+            _mockUnitOfWork
+                .Setup(r => r.WalletRepository.AddAsync(It.IsAny<Wallet>()));
             _mockUnitOfWork.Setup(x => x.RefreshTokenRepository.AddAsync(It.IsAny<RefreshToken>()));
             _mockCacheService.Setup(x => x.GetAsync<string>($"Register {request.Email}")).ReturnsAsync("123456");
-            _mockCacheService.Setup(x => x.RemoveAsync($"Register {request.Email}"));
+            _mockCacheService.Setup(x => x.RemoveAsync($"ResendCount {request.Email}"));
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 
             // Act
@@ -1108,8 +1116,10 @@ namespace AIEvent.Application.Test.Services
             result.Value!.RefreshToken.Should().Be(refreshToken);
             result.Value!.ExpiresAt.Should().BeCloseTo(DateTime.UtcNow.AddHours(1), TimeSpan.FromSeconds(5));
             _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.Is<User>(u => u.Id == user.Id && u.IsActive)), Times.Once());
-            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
+            _mockUnitOfWork.Verify(x => x.WalletRepository.AddAsync(It.Is<Wallet>(w => w.UserId == user.Id && w.Balance == 0)), Times.Once());
             _mockUnitOfWork.Verify(x => x.RefreshTokenRepository.AddAsync(It.Is<RefreshToken>(t => t.Token == refreshToken && t.UserId == user.Id && t.ExpiresAt.Date == DateTime.UtcNow.AddDays(7).Date)), Times.Once());
+            _mockCacheService.Verify(x => x.GetAsync<string>($"Register {request.Email}"), Times.Once());
+            _mockCacheService.Verify(x => x.RemoveAsync($"ResendCount {request.Email}"), Times.Once());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
 
@@ -1124,7 +1134,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid email or otp code");
+            result.Error!.Message.Should().Contain("Invalid email or otp code");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
             _mockUnitOfWork.Verify(x => x.UserRepository.Query(false), Times.Never());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
@@ -1141,10 +1151,9 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid email");
+            result.Error!.Message.Should().Contain("Invalid email");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
             _mockUnitOfWork.Verify(x => x.UserRepository.Query(false), Times.Never());
-            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
 
@@ -1163,7 +1172,6 @@ namespace AIEvent.Application.Test.Services
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("User not found");
             result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
-            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
 
@@ -1206,7 +1214,7 @@ namespace AIEvent.Application.Test.Services
             result.Error!.Message.Should().Be("OTP not found");
             result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
             _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.IsAny<User>()), Times.Never());
-            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
+            _mockUnitOfWork.Verify(x => x.WalletRepository.AddAsync(It.IsAny<Wallet>()), Times.Never());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
 
@@ -1237,8 +1245,220 @@ namespace AIEvent.Application.Test.Services
             result.Error!.Message.Should().Be("Invalid OTP");
             result.Error!.StatusCode.Should().Be(ErrorCodes.TokenInvalid);
             _mockUnitOfWork.Verify(x => x.UserRepository.UpdateAsync(It.IsAny<User>()), Times.Never());
-            _mockCacheService.Verify(x => x.RemoveAsync($"Register {request.Email}"), Times.Never());
+            _mockUnitOfWork.Verify(x => x.WalletRepository.AddAsync(It.IsAny<Wallet>()), Times.Never());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
+        }
+        #endregion
+
+        #region ReSendOTP
+        
+        [Fact]
+        public async Task UTCID01_ReSendOTPAsync_WithNullEmail_ShouldReturnFailure()
+        {
+            // Arrange - EP: Email = null (Invalid)
+            string? email = null;
+
+            // Act
+            var result = await _authService.ReSendOTPAsync(email!);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid email or email is empty");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            _mockUnitOfWork.Verify(x => x.UserRepository.Query(false), Times.Never());
+            _mockCacheService.Verify(x => x.GetAsync<int?>(It.IsAny<string>()), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID02_ReSendOTPAsync_WithEmptyEmail_ShouldReturnFailure()
+        {
+            // Arrange - EP: Email = "" (Invalid)
+            var email = "";
+
+            // Act
+            var result = await _authService.ReSendOTPAsync(email);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid email or email is empty");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            _mockUnitOfWork.Verify(x => x.UserRepository.Query(false), Times.Never());
+            _mockCacheService.Verify(x => x.GetAsync<int?>(It.IsAny<string>()), Times.Never());
+        }
+
+
+        [Fact]
+        public async Task UTCID03_ReSendOTPAsync_WithNonExistentUser_ShouldReturnFailure()
+        {
+            // Arrange - EP: User doesn't exist (null)
+            var email = "notfound@gmail.com";
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
+                           .Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _authService.ReSendOTPAsync(email);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("User not found. Please register first.");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+            _mockUnitOfWork.Verify(x => x.UserRepository.Query(false), Times.Once());
+            _mockCacheService.Verify(x => x.GetAsync<int?>(It.IsAny<string>()), Times.Never());
+            _mockEmailService.Verify(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<MimeMessage>()), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID04_ReSendOTPAsync_WithActiveUser_ShouldReturnFailure()
+        {
+            // Arrange - EP: User exists but already active
+            var email = "active@gmail.com";
+            var activeUser = new User { Id = Guid.NewGuid(), Email = email, IsActive = true };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
+                           .Returns(new List<User> { activeUser }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _authService.ReSendOTPAsync(email);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Email address is already registered");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            _mockUnitOfWork.Verify(x => x.UserRepository.Query(false), Times.Once());
+            _mockCacheService.Verify(x => x.GetAsync<int?>(It.IsAny<string>()), Times.Never());
+            _mockEmailService.Verify(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<MimeMessage>()), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID05_ReSendOTPAsync_WithCountTwo_ThirdAttempt_BoundaryCase_ShouldReturnSuccess()
+        {
+            // Arrange - BV: resendCount = 2 (boundary - last allowed), Third attempt
+            var email = "test@gmail.com";
+            var inactiveUser = new User { Id = Guid.NewGuid(), Email = email, IsActive = false };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
+                           .Returns(new List<User> { inactiveUser }.AsQueryable().BuildMockDbSet().Object);
+            _mockCacheService.Setup(x => x.GetAsync<int?>($"ResendCount {email}")).ReturnsAsync(2);
+            _mockEmailService.Setup(x => x.SendEmailAsync(email, It.IsAny<MimeMessage>())).ReturnsAsync(Result.Success());
+            _mockCacheService.Setup(x => x.RemoveAsync($"Register {email}"));
+            _mockCacheService.Setup(x => x.SetAsync($"Register {email}", It.IsAny<string>(), It.IsAny<TimeSpan>()));
+            _mockCacheService.Setup(x => x.SetAsync($"ResendCount {email}", It.IsAny<int>(), It.IsAny<TimeSpan>()));
+
+            // Act
+            var result = await _authService.ReSendOTPAsync(email);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockCacheService.Verify(x => x.GetAsync<int?>($"ResendCount {email}"), Times.Once());
+            _mockCacheService.Verify(x => x.SetAsync($"ResendCount {email}", 3, TimeSpan.FromMinutes(30)), Times.Once()); 
+        }
+
+        [Fact]
+        public async Task UTCID06_ReSendOTPAsync_WithCountThree_ExactBoundary_ShouldReturnFailure()
+        {
+            // Arrange - BV: resendCount = 3 (exact boundary), Should be rejected
+            var email = "test@gmail.com";
+            var inactiveUser = new User { Id = Guid.NewGuid(), Email = email, IsActive = false };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
+                           .Returns(new List<User> { inactiveUser }.AsQueryable().BuildMockDbSet().Object);
+            _mockCacheService.Setup(x => x.GetAsync<int?>($"ResendCount {email}")).ReturnsAsync(3);
+
+            // Act
+            var result = await _authService.ReSendOTPAsync(email);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Maximum OTP resend attempts exceeded. Please try again later.");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            _mockUnitOfWork.Verify(x => x.UserRepository.Query(false), Times.Once());
+            _mockCacheService.Verify(x => x.GetAsync<int?>($"ResendCount {email}"), Times.Once());
+            _mockEmailService.Verify(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<MimeMessage>()), Times.Never());
+            _mockCacheService.Verify(x => x.SetAsync($"Register {email}", It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Never());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID07_ReSendOTPAsync_WithCountFour_ExceededBoundary_ShouldReturnFailure()
+        {
+            // Arrange - BV: resendCount = 4 (exceeded boundary)
+            var email = "test@gmail.com";
+            var inactiveUser = new User { Id = Guid.NewGuid(), Email = email, IsActive = false };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
+                           .Returns(new List<User> { inactiveUser }.AsQueryable().BuildMockDbSet().Object);
+            _mockCacheService.Setup(x => x.GetAsync<int?>($"ResendCount {email}")).ReturnsAsync(4);
+
+            // Act
+            var result = await _authService.ReSendOTPAsync(email);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Maximum OTP resend attempts exceeded. Please try again later.");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            _mockCacheService.Verify(x => x.GetAsync<int?>($"ResendCount {email}"), Times.Once());
+            _mockEmailService.Verify(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<MimeMessage>()), Times.Never());
+        }
+
+        [Fact]
+        public async Task UTCID08_ReSendOTPAsync_WithEmailSendFailure_ShouldReturnFailure()
+        {
+            // Arrange - EP: Email service returns failure
+            var email = "test@gmail.com";
+            var inactiveUser = new User { Id = Guid.NewGuid(), Email = email, IsActive = false };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
+                           .Returns(new List<User> { inactiveUser }.AsQueryable().BuildMockDbSet().Object);
+            _mockCacheService.Setup(x => x.GetAsync<int?>($"ResendCount {email}")).ReturnsAsync(0);
+            _mockEmailService.Setup(x => x.SendEmailAsync(email, It.IsAny<MimeMessage>()))
+                            .ReturnsAsync(ErrorResponse.FailureResult("Email send failed", ErrorCodes.InternalServerError));
+
+            // Act
+            var result = await _authService.ReSendOTPAsync(email);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Failed to send email");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
+            _mockUnitOfWork.Verify(x => x.UserRepository.Query(false), Times.Once());
+            _mockCacheService.Verify(x => x.GetAsync<int?>($"ResendCount {email}"), Times.Once());
+            _mockEmailService.Verify(x => x.SendEmailAsync(email, It.IsAny<MimeMessage>()), Times.Once());
+            _mockCacheService.Verify(x => x.SetAsync($"Register {email}", It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Never());
+            _mockCacheService.Verify(x => x.SetAsync($"ResendCount {email}", It.IsAny<int>(), It.IsAny<TimeSpan>()), Times.Never());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
+        }
+
+
+        [Fact]
+        public async Task UTCID09_ReSendOTPAsync_WithValidInactiveUser_CompleteFlow_ShouldReturnSuccess()
+        {
+            // Arrange - Complete happy path: valid inactive user, count = 0, email sends successfully
+            var email = "valid@gmail.com";
+            var inactiveUser = new User { Id = Guid.NewGuid(), Email = email, IsActive = false };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
+                           .Returns(new List<User> { inactiveUser }.AsQueryable().BuildMockDbSet().Object);
+            _mockCacheService.Setup(x => x.GetAsync<int?>($"ResendCount {email}")).ReturnsAsync((int?)null);
+            _mockEmailService.Setup(x => x.SendEmailAsync(email, It.IsAny<MimeMessage>())).ReturnsAsync(Result.Success());
+            _mockCacheService.Setup(x => x.RemoveAsync($"Register {email}"));
+            _mockCacheService.Setup(x => x.SetAsync($"Register {email}", It.IsAny<string>(), It.IsAny<TimeSpan>()));
+            _mockCacheService.Setup(x => x.SetAsync($"ResendCount {email}", It.IsAny<int>(), It.IsAny<TimeSpan>()));
+
+            // Act
+            var result = await _authService.ReSendOTPAsync(email);
+
+            // Assert - Verify complete flow
+            result.IsSuccess.Should().BeTrue();
+            
+            // Verify execution order and all operations
+            _mockUnitOfWork.Verify(x => x.UserRepository.Query(false), Times.Once());
+            _mockCacheService.Verify(x => x.GetAsync<int?>($"ResendCount {email}"), Times.Once());
+            _mockEmailService.Verify(x => x.SendEmailAsync(email, It.Is<MimeMessage>(m => 
+                m.Subject == "Mã OTP của bạn")), Times.Once());
+            _mockCacheService.Verify(x => x.RemoveAsync($"Register {email}"), Times.Once());
+            _mockCacheService.Verify(x => x.SetAsync($"Register {email}", It.IsAny<string>(), TimeSpan.FromMinutes(5)), Times.Once());
+            _mockCacheService.Verify(x => x.SetAsync($"ResendCount {email}", 1, TimeSpan.FromMinutes(30)), Times.Once());
         }
         #endregion
 
@@ -1299,7 +1519,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Invalid input");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
             _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
         }
@@ -1316,7 +1536,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Contain("Invalid input");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
             _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
         }

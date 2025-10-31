@@ -7,6 +7,12 @@ export const tagAPI = {
     return response.data;
   },
 
+  // Get tags created by the current user (organizer/manager)
+  getUserTags: async (pageNumber = 1, pageSize = 50) => {
+    const response = await fetcher.get(`/tag/user?pageNumber=${pageNumber}&pageSize=${pageSize}`);
+    return response.data;
+  },
+
   // Get tag by ID
   getTagById: async (tagId) => {
     const response = await fetcher.get(`/tag/${tagId}`);
@@ -23,9 +29,8 @@ export const tagAPI = {
 
   // Update tag (Admin/Organizer only)
   updateTag: async (tagId, tagData) => {
-    const response = await fetcher.put(`/tag/${tagId}`, {
-      nameTag: tagData.nameTag,
-    });
+    // Send the complete tag object with all fields
+    const response = await fetcher.put(`/tag/${tagId}`, tagData);
     return response.data;
   },
 

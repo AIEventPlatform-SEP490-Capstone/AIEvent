@@ -5,7 +5,7 @@ using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
-using AIEvent.Domain.Interfaces;
+using AIEvent.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace AIEvent.Application.Services.Implements
@@ -21,14 +21,14 @@ namespace AIEvent.Application.Services.Implements
             _unitOfWork = unitOfWork;  
         }
 
-        public async Task<Result> CreateTagAsync(CreateTagRequest request)
+        public async Task<Result> CreateTagAsync(CreateTagRequest request, string role)
         {
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
                 var existingTag = await _unitOfWork.TagRepository
                                             .Query()
                                             .AsNoTracking()
-                                            .FirstOrDefaultAsync(t => t.NameTag.ToLower() == request.NameTag.ToLower());
+                                            .FirstOrDefaultAsync(t => t.NameTag.ToLower() == request.NameTag.ToLower() && !t.IsDeleted);
                 if(existingTag != null)
                 {
                     return ErrorResponse.FailureResult("Tag is already existing", ErrorCodes.InvalidInput);
@@ -39,6 +39,10 @@ namespace AIEvent.Application.Services.Implements
                     NameTag = request.NameTag,
                 };
 
+                if(role == "Manager" || role == "Admin")
+                {
+                    tag.CreatedBy = "System";
+                }
                 await _unitOfWork.TagRepository.AddAsync(tag);
 
                 return Result.Success();
@@ -51,6 +55,30 @@ namespace AIEvent.Application.Services.Implements
                 .Query()
                 .AsNoTracking()
                 .Where(p => !p.DeletedAt.HasValue)
+                .OrderByDescending(s => s.CreatedAt);
+
+            int totalCount = await tagQuery.CountAsync();
+
+            var result = await tagQuery
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(p => new TagResponse
+                {
+                    TagId = p.Id.ToString(),
+                    TagName = p.NameTag,
+                })
+                .ToListAsync();
+
+            return new BasePaginated<TagResponse>(result, totalCount, pageNumber, pageSize);
+        }
+
+        public async Task<Result<BasePaginated<TagResponse>>> GetListTagByUserIdAsync(int pageNumber, int pageSize, Guid userId)
+        {
+            var Id = userId.ToString();
+            IQueryable<Tag> tagQuery = _unitOfWork.TagRepository
+                .Query()
+                .AsNoTracking()
+                .Where(p => !p.DeletedAt.HasValue && (p.CreatedBy == Id || p.CreatedBy == "System"))
                 .OrderByDescending(s => s.CreatedAt);
 
             int totalCount = await tagQuery.CountAsync();

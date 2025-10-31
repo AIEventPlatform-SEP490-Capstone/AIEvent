@@ -6,7 +6,7 @@ using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
-using AIEvent.Domain.Interfaces;
+using AIEvent.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace AIEvent.Application.Services.Implements
@@ -33,7 +33,7 @@ namespace AIEvent.Application.Services.Implements
 
                 var existingCategory = await _unitOfWork.EventCategoryRepository
                                             .Query()
-                                            .FirstOrDefaultAsync(t => t.CategoryName.ToLower() == request.EventCategoryName.ToLower());
+                                            .FirstOrDefaultAsync(t => t.CategoryName.ToLower() == request.EventCategoryName.ToLower() && !t.IsDeleted);
                 if (existingCategory != null)
                 {
                     return ErrorResponse.FailureResult("EventCateogry is already existing", ErrorCodes.InvalidInput);
