@@ -226,6 +226,12 @@ export function VerticalNavigation() {
         isActive: pathname === "/",
         special: true,
       },
+      {
+        title: "Tìm Kiếm",
+        url: "/search",
+        icon: Search,
+        isActive: pathname === "/search",
+      },
 
       {
         title: "Timeline",
