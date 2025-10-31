@@ -20,20 +20,17 @@ namespace AIEvent.Application.Services.Implements
             var qrBytesDict = new Dictionary<string, byte[]>();
             var qrFiles = new List<(string Content, IFormFile File)>();
 
-            // Generate QR codes and store bytes
             foreach (var content in contents)
             {
-                using var qrGenerator = new QRCodeGenerator();
-                using var qrCodeData = qrGenerator.CreateQrCode(content, QRCodeGenerator.ECCLevel.Q);
-                using var qrCode = new QRCode(qrCodeData);
-                using var bitmap = qrCode.GetGraphic(20);
+                using var generator = new QRCodeGenerator();
+                using var data = generator.CreateQrCode(content, QRCodeGenerator.ECCLevel.Q);
 
-                using var stream = new MemoryStream();
-                bitmap.Save(stream, ImageFormat.Png);
-                var bytes = stream.ToArray();
+                // ✅ Dùng ImageSharp renderer thay vì Bitmap
+                var qrCode = new PngByteQRCode(data);
+                var bytes = qrCode.GetGraphic(20);
+
                 qrBytesDict[content] = bytes;
 
-                // Create IFormFile for Cloudinary upload
                 var fileStream = new MemoryStream(bytes);
                 var file = new FormFile(fileStream, 0, bytes.Length, "qr", $"qr_{Guid.NewGuid():N}.png")
                 {
@@ -43,18 +40,15 @@ namespace AIEvent.Application.Services.Implements
                 qrFiles.Add((content, file));
             }
 
-            // Upload to Cloudinary concurrently
             var urls = new ConcurrentDictionary<string, string>();
-            var uploadTasks = qrFiles.Select(async (item, index) =>
+            var uploadTasks = qrFiles.Select(async item =>
             {
                 var url = await _cloudinaryService.UploadImageAsync(item.File);
                 if (!string.IsNullOrEmpty(url))
-                {
                     urls[item.Content] = url;
-                }
             });
-            await Task.WhenAll(uploadTasks);
 
+            await Task.WhenAll(uploadTasks);
             return (qrBytesDict, urls.ToDictionary());
         }
     }
