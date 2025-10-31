@@ -14,7 +14,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     paddingHorizontal: 24,
     paddingTop: Platform.OS === 'ios' ? 60 : 50,
     paddingBottom: 20,
@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: Fonts.xxl,
     fontFamily: Fonts.bold,
-    color: Colors.textPrimary,
+    color: Colors.white,
     fontWeight: '800',
     letterSpacing: 0.5,
   },

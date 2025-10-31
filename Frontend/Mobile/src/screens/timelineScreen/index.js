@@ -3,15 +3,17 @@ import {
   View,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   Modal,
   RefreshControl,
   Dimensions,
   ActivityIndicator,
   Image,
+  Linking,
 } from 'react-native';
 import { styles, enhancedStyles } from './styles';
 import CustomText from '../../components/common/customTextRN';
+import { GoogleCalendarButton, LocationRow, GradientBackground } from '../../components/common';
+import { LinearGradient } from 'expo-linear-gradient';
 import Images from '../../constants/Images';
 import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
@@ -189,7 +191,6 @@ const TimelineScreen = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [searchText, setSearchText] = useState('');
   const [viewMode, setViewMode] = useState('month');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [currentWeek, setCurrentWeek] = useState(new Date());
@@ -204,6 +205,10 @@ const TimelineScreen = () => {
   const [loadingQR, setLoadingQR] = useState({});
   const [statsModalVisible, setStatsModalVisible] = useState(false);
   const [statsFilterType, setStatsFilterType] = useState('all');
+  const [eventDetailTab, setEventDetailTab] = useState('info');
+  const [ticketPage, setTicketPage] = useState(1);
+  const [hasMoreTickets, setHasMoreTickets] = useState(false);
+  const [expandedTicketGroups, setExpandedTicketGroups] = useState({});
 
   const resetToToday = () => {
     const today = new Date();
@@ -246,19 +251,8 @@ const TimelineScreen = () => {
 
   const filteredEvents = useMemo(() => {
     if (!Array.isArray(events)) return [];
-    let list = events;
-
-    if (searchText.trim()) {
-      const query = searchText.toLowerCase();
-      list = list.filter(
-        (e) =>
-          e &&
-          ((e.title || '').toLowerCase().includes(query) ||
-            (e.address || '').toLowerCase().includes(query))
-      );
-    }
-    return list;
-  }, [events, searchText]);
+    return events;
+  }, [events]);
 
   const eventsByDay = useMemo(() => {
     const map = {};
@@ -310,6 +304,8 @@ const TimelineScreen = () => {
     setSelectedEvent(event);
     setLoadingTickets(true);
     setModalVisible(true);
+    setTicketPage(1);
+    setExpandedTicketGroups({});
 
     try {
       const detailResponse = await EventService.getEventById(event.eventId);
@@ -319,16 +315,55 @@ const TimelineScreen = () => {
 
       const ticketsResponse = await BookingService.getEventTickets(event.eventId, {
         pageNumber: 1,
-        pageSize: 100,
+        pageSize: 50,
       });
       if (ticketsResponse.success) {
-        setTickets(ticketsResponse.data || []);
+        const ticketsData = ticketsResponse.data || [];
+        setTickets(ticketsData);
+        // Check if there are more tickets to load
+        const totalTickets = ticketsData.reduce((sum, group) => sum + (group.quantity || 0), 0);
+        setHasMoreTickets(totalTickets >= 50);
       }
     } catch (error) {
       console.error('Error loading event details:', error);
     } finally {
       setLoadingTickets(false);
     }
+  };
+
+  const loadMoreTickets = async () => {
+    if (!selectedEvent || loadingTickets || !hasMoreTickets) return;
+    
+    setLoadingTickets(true);
+    try {
+      const nextPage = ticketPage + 1;
+      const ticketsResponse = await BookingService.getEventTickets(selectedEvent.eventId, {
+        pageNumber: nextPage,
+        pageSize: 50,
+      });
+      if (ticketsResponse.success) {
+        const newTickets = ticketsResponse.data || [];
+        if (newTickets.length > 0) {
+          setTickets((prev) => [...prev, ...newTickets]);
+          setTicketPage(nextPage);
+          const totalNewTickets = newTickets.reduce((sum, group) => sum + (group.quantity || 0), 0);
+          setHasMoreTickets(totalNewTickets >= 50);
+        } else {
+          setHasMoreTickets(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading more tickets:', error);
+    } finally {
+      setLoadingTickets(false);
+    }
+  };
+
+  const toggleTicketGroup = (groupIndex) => {
+    setExpandedTicketGroups((prev) => ({
+      ...prev,
+      [groupIndex]: !prev[groupIndex],
+    }));
   };
 
   const handleViewQR = async (ticketId) => {
@@ -349,32 +384,38 @@ const TimelineScreen = () => {
     }
   };
 
+
   const renderStats = () => (
-    <View style={styles.statsContainer}>
-      <TouchableOpacity 
-        style={[styles.statCard, { borderLeftWidth: 4, borderLeftColor: Colors.primary }]} 
-        onPress={() => handleStatPress('all')}
-        activeOpacity={0.7}
-      >
-        <CustomText variant="h2" color="primary" style={{ fontSize: 28, fontWeight: '700' }}>{stats.total}</CustomText>
-        <CustomText variant="caption" color="secondary" style={{ marginTop: 4, fontSize: Fonts.sm }}>Tổng sự kiện</CustomText>
-      </TouchableOpacity>
-      <TouchableOpacity 
-        style={[styles.statCard, { borderLeftWidth: 4, borderLeftColor: Colors.success }]} 
-        onPress={() => handleStatPress('attended')}
-        activeOpacity={0.7}
-      >
-        <CustomText variant="h2" color="success" style={{ fontSize: 28, fontWeight: '700' }}>{stats.attended}</CustomText>
-        <CustomText variant="caption" color="secondary" style={{ marginTop: 4, fontSize: Fonts.sm }}>Đã tham gia</CustomText>
-      </TouchableOpacity>
-      <TouchableOpacity 
-        style={[styles.statCard, { borderLeftWidth: 4, borderLeftColor: Colors.warning }]} 
-        onPress={() => handleStatPress('upcoming')}
-        activeOpacity={0.7}
-      >
-        <CustomText variant="h2" color="primary" style={{ fontSize: 28, fontWeight: '700', color: Colors.warning }}>{stats.upcoming}</CustomText>
-        <CustomText variant="caption" color="secondary" style={{ marginTop: 4, fontSize: Fonts.sm }}>Sắp diễn ra</CustomText>
-      </TouchableOpacity>
+    <View>
+      <View style={styles.statsContainer}>
+        <TouchableOpacity 
+          style={[styles.statCard, { borderLeftWidth: 4, borderLeftColor: Colors.primary }]} 
+          onPress={() => handleStatPress('all')}
+          activeOpacity={0.7}
+        >
+          <CustomText variant="h2" color="primary" style={{ fontSize: 28, fontWeight: '700' }}>{stats.total}</CustomText>
+          <CustomText variant="caption" color="secondary" style={{ marginTop: 4, fontSize: Fonts.sm }}>Tổng sự kiện</CustomText>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.statCard, { borderLeftWidth: 4, borderLeftColor: Colors.success }]} 
+          onPress={() => handleStatPress('attended')}
+          activeOpacity={0.7}
+        >
+          <CustomText variant="h2" color="success" style={{ fontSize: 28, fontWeight: '700' }}>{stats.attended}</CustomText>
+          <CustomText variant="caption" color="secondary" style={{ marginTop: 4, fontSize: Fonts.sm }}>Đã tham gia</CustomText>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.statCard, { borderLeftWidth: 4, borderLeftColor: Colors.warning }]} 
+          onPress={() => handleStatPress('upcoming')}
+          activeOpacity={0.7}
+        >
+          <CustomText variant="h2" color="primary" style={{ fontSize: 28, fontWeight: '700', color: Colors.warning }}>{stats.upcoming}</CustomText>
+          <CustomText variant="caption" color="secondary" style={{ marginTop: 4, fontSize: Fonts.sm }}>Sắp diễn ra</CustomText>
+        </TouchableOpacity>
+      </View>
+      <CustomText variant="caption" color="secondary" align="center" style={styles.statsHint}>
+        Nhấn vào các thẻ trên để xem danh sách sự kiện
+      </CustomText>
     </View>
   );
 
@@ -417,15 +458,6 @@ const TimelineScreen = () => {
           <CustomText variant="h3" color="primary" style={styles.calendarMonthYearText}>
             {monthYear}
           </CustomText>
-          <TouchableOpacity 
-            style={styles.todayButton}
-            onPress={resetToToday}
-            activeOpacity={0.7}
-          >
-            <CustomText variant="caption" color="white" style={{ fontSize: Fonts.xs, fontWeight: '600' }}>
-              Hôm nay
-            </CustomText>
-          </TouchableOpacity>
         </View>
         <View style={styles.calendarHeader}>
           {weekDays.map((day) => (
@@ -488,11 +520,6 @@ const TimelineScreen = () => {
               </View>
             );
           })}
-        </View>
-        <View style={styles.selectedDateContainer}>
-          <CustomText variant="body" color="primary" style={styles.selectedDateText}>
-            {formatDateWithDayName(selectedDate)}
-          </CustomText>
         </View>
       </View>
     );
@@ -818,9 +845,6 @@ const TimelineScreen = () => {
             <View style={enhancedStyles.modalHeaderGradient}>
               <View style={enhancedStyles.modalHeader}>
                 <View style={enhancedStyles.modalHeaderLeft}>
-                  <View style={enhancedStyles.modalHeaderIconBadge}>
-                    <Image source={Images.calendar} style={{ width: 24, height: 24, tintColor: Colors.white }} />
-                  </View>
                   <CustomText variant="h2" color="primary" style={enhancedStyles.modalTitle}>
                     {selectedEvent.title}
                   </CustomText>
@@ -831,6 +855,11 @@ const TimelineScreen = () => {
                     setSelectedEvent(null);
                     setTickets([]);
                     setEventDetail(null);
+                    setEventDetailTab('info');
+                    setTicketPage(1);
+                    setHasMoreTickets(false);
+                    setExpandedTicketGroups({});
+                    setQrCodes({});
                   }}
                   style={enhancedStyles.modalCloseButton}
                   activeOpacity={0.7}
@@ -838,208 +867,242 @@ const TimelineScreen = () => {
                   <Image source={Images.logout} style={{ width: 24, height: 24, tintColor: Colors.textSecondary }} />
                 </TouchableOpacity>
               </View>
+              {/* Tab Bar */}
+              <View style={enhancedStyles.eventDetailTabs}>
+                <TouchableOpacity
+                  style={[enhancedStyles.eventDetailTab, eventDetailTab === 'info' && enhancedStyles.eventDetailTabActive]}
+                  onPress={() => setEventDetailTab('info')}
+                  activeOpacity={0.7}
+                >
+                  <CustomText variant="body" color={eventDetailTab === 'info' ? 'white' : 'secondary'} style={enhancedStyles.eventDetailTabText}>
+                    Thông tin
+                  </CustomText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[enhancedStyles.eventDetailTab, eventDetailTab === 'tickets' && enhancedStyles.eventDetailTabActive]}
+                  onPress={() => setEventDetailTab('tickets')}
+                  activeOpacity={0.7}
+                >
+                  <CustomText variant="body" color={eventDetailTab === 'tickets' ? 'white' : 'secondary'} style={enhancedStyles.eventDetailTabText}>
+                    Vé ({tickets.reduce((sum, t) => sum + (t.quantity || 0), 0)})
+                  </CustomText>
+                </TouchableOpacity>
+              </View>
             </View>
             <ScrollView style={enhancedStyles.modalBody} showsVerticalScrollIndicator={false}>
-              {eventDetail && (
-                <View style={enhancedStyles.eventDetailHero}>
-                  <View style={enhancedStyles.sectionHeader}>
-                    <View style={[enhancedStyles.sectionIconBadge, { backgroundColor: '#4CAF50' }]}>
-                      <Image source={Images.calendar} style={{ width: 20, height: 20, tintColor: Colors.white }} />
-                    </View>
-                    <CustomText variant="h3" color="primary" style={enhancedStyles.sectionTitle}>
-                      Mô tả sự kiện
-                    </CustomText>
-                  </View>
-                  <CustomText variant="body" color="secondary" style={enhancedStyles.descriptionText}>
-                    {eventDetail.description || eventDetail.detailedDescription || 'Chưa có mô tả cho sự kiện này.'}
-                  </CustomText>
-                </View>
-              )}
-              <View style={enhancedStyles.eventInfoSection}>
-                <View style={enhancedStyles.sectionHeader}>
-                  <View style={[enhancedStyles.sectionIconBadge, { backgroundColor: '#FF9800' }]}>
-                    <Image source={Images.clock} style={{ width: 20, height: 20, tintColor: Colors.white }} />
-                  </View>
-                  <CustomText variant="h3" color="primary" style={enhancedStyles.sectionTitle}>
-                    Thông tin chi tiết
-                  </CustomText>
-                </View>
-                <View style={enhancedStyles.infoDetailRow}>
-                  <View style={enhancedStyles.infoDetailLeft}>
-                    <View style={[enhancedStyles.infoDetailIconCircle, { backgroundColor: '#E3F2FD' }]}>
-                      <Image source={Images.clock} style={{ width: 16, height: 16, tintColor: Colors.primary }} />
-                    </View>
-                    <CustomText variant="caption" color="secondary" style={enhancedStyles.infoDetailLabel}>Ngày giờ:</CustomText>
-                  </View>
-                  <CustomText variant="body" color="primary" style={enhancedStyles.infoDetailValue}>
-                    {formatDateTime(selectedEvent.startTime)}
-                  </CustomText>
-                </View>
-                {selectedEvent.address && (
-                  <View style={[enhancedStyles.infoDetailRow, { marginBottom: 0 }]}>
-                    <View style={enhancedStyles.infoDetailLeft}>
-                      <View style={[enhancedStyles.infoDetailIconCircle, { backgroundColor: '#E3F2FD' }]}>
-                        <Image source={Images.location} style={{ width: 18, height: 18, tintColor: Colors.primary }} resizeMode="contain" />
+              {eventDetailTab === 'info' && (
+                <>
+                  {eventDetail && (
+                    <View style={enhancedStyles.eventDetailHero}>
+                      <View style={enhancedStyles.sectionHeader}>
+                        <View style={enhancedStyles.sectionIconBadge}>
+                          <Image source={Images.calendar} style={{ width: 22, height: 22, tintColor: Colors.white }} />
+                        </View>
+                        <CustomText variant="h3" color="primary" style={enhancedStyles.sectionTitle}>
+                          Mô tả sự kiện
+                        </CustomText>
                       </View>
-                      <CustomText variant="caption" color="secondary" style={enhancedStyles.infoDetailLabel}>Địa điểm:</CustomText>
+                      <CustomText variant="body" color="secondary" style={enhancedStyles.descriptionText}>
+                        {eventDetail.description || eventDetail.detailedDescription || 'Chưa có mô tả cho sự kiện này.'}
+                      </CustomText>
                     </View>
-                    <CustomText variant="body" color="primary" numberOfLines={3} style={enhancedStyles.infoDetailValue}>
-                      {selectedEvent.address}
-                    </CustomText>
-                  </View>
-                )}
-              </View>
-              <View style={enhancedStyles.ticketsSection}>
-                <View style={enhancedStyles.ticketsSectionHeader}>
-                  <View style={enhancedStyles.ticketsHeaderRow}>
-                    <View style={[enhancedStyles.sectionIconBadge, { backgroundColor: '#2196F3' }]}>
-                      <Image source={Images.calendar} style={{ width: 20, height: 20, tintColor: Colors.white }} />
+                  )}
+                  <View style={enhancedStyles.eventInfoSection}>
+                    <View style={enhancedStyles.infoSectionTitle}>
+                      <CustomText variant="h3" color="primary" style={enhancedStyles.infoSectionTitleText}>
+                        Thông tin chi tiết
+                      </CustomText>
                     </View>
-                    <CustomText variant="h3" color="primary" style={enhancedStyles.sectionTitle}>
-                      Vé của bạn ({tickets.reduce((sum, t) => sum + (t.quantity || 0), 0)})
-                    </CustomText>
+                    
+                    <View style={enhancedStyles.infoDetailRow}>
+                      <View style={enhancedStyles.infoDetailLeft}>
+                        <View style={enhancedStyles.infoDetailIconCircle}>
+                          <Image source={Images.clock} style={{ width: 24, height: 24 }} resizeMode="contain" />
+                        </View>
+                        <View style={enhancedStyles.infoDetailContent}>
+                          <CustomText variant="caption" color="secondary" style={enhancedStyles.infoDetailLabel}>
+                            Ngày & Giờ
+                          </CustomText>
+                          <CustomText variant="body" color="primary" style={enhancedStyles.infoDetailValue}>
+                            {formatDateTime(selectedEvent.startTime)}
+                          </CustomText>
+                        </View>
+                      </View>
+                    </View>
+                    
+                    {selectedEvent.address && (
+                      <LocationRow
+                        address={selectedEvent.address}
+                        label="Địa điểm"
+                        style={enhancedStyles.locationRowCustom}
+                        labelStyle={enhancedStyles.locationLabelCustom}
+                        valueStyle={enhancedStyles.locationValueCustom}
+                      />
+                    )}
+                    
+                    {/* Add to Google Calendar Button */}
+                    <View style={enhancedStyles.googleCalendarButtonContainer}>
+                      <GoogleCalendarButton
+                        eventTitle={selectedEvent.title}
+                        startTime={selectedEvent.startTime}
+                        endTime={selectedEvent.endTime}
+                        description={eventDetail?.description || eventDetail?.detailedDescription}
+                        location={selectedEvent.address}
+                        style={enhancedStyles.googleCalendarButton}
+                      />
+                    </View>
                   </View>
-                </View>
-                {loadingTickets ? (
-                  <ActivityIndicator size="large" color={Colors.primary} />
-                ) : tickets.length === 0 ? (
-                  <View style={enhancedStyles.emptyEventsContainer}>
-                    <Image source={Images.calendar} style={enhancedStyles.emptyStateIcon} />
-                    <CustomText variant="body" color="secondary" align="center" style={enhancedStyles.emptyStateTitle}>
-                      Bạn chưa có vé cho sự kiện này
-                    </CustomText>
-                  </View>
-                ) : (
-                  <View style={enhancedStyles.ticketsList}>
-                    {tickets.map((ticketGroup, idx) => {
-                      const ticketList = Array.isArray(ticketGroup.tickets) ? ticketGroup.tickets : [];
-                      return (
-                        <View key={idx} style={enhancedStyles.ticketGroup}>
-                          <View style={enhancedStyles.ticketGroupHeader}>
-                            <CustomText variant="body" color="primary" style={enhancedStyles.ticketGroupTitle}>
-                              {ticketGroup.ticketTypeName}
-                            </CustomText>
-                            <View style={enhancedStyles.ticketCountBadge}>
-                              <CustomText variant="caption" color="white" style={enhancedStyles.eventStatusText}>
-                                {ticketGroup.quantity} vé
-                              </CustomText>
-                            </View>
-                          </View>
-                          {ticketList.map((ticket) => (
-                            <View key={ticket.ticketId} style={enhancedStyles.ticketItem}>
-                              {/* Ticket Header */}
-                              <View style={enhancedStyles.ticketItemHeader}>
-                                <View style={enhancedStyles.ticketItemHeaderLeft}>
-                                  <View style={enhancedStyles.ticketItemIcon}>
-                                    <Image source={Images.calendar} style={{ width: 20, height: 20, tintColor: Colors.white }} />
-                                  </View>
-                                  <View style={enhancedStyles.ticketItemCodeContainer}>
-                                    <CustomText variant="caption" style={enhancedStyles.ticketItemCodeLabel}>
-                                      Mã vé
-                                    </CustomText>
-                                    <CustomText variant="body" style={enhancedStyles.ticketItemCode}>
-                                      {ticket.ticketCode}
-                                    </CustomText>
-                                  </View>
-                                </View>
-                                <View style={[enhancedStyles.ticketStatusBadge, { backgroundColor: ticket.status === 'Valid' ? Colors.success : Colors.error }]}>
-                                  <CustomText variant="caption" color="white" style={enhancedStyles.eventStatusText}>
-                                    {ticket.status === 'Valid' ? 'Hợp lệ' : ticket.status}
+                </>
+              )}
+              
+              {eventDetailTab === 'tickets' && (
+                <View style={enhancedStyles.ticketsSection}>
+                  {loadingTickets && ticketPage === 1 ? (
+                    <View style={enhancedStyles.emptyEventsContainer}>
+                      <ActivityIndicator size="large" color={Colors.primary} />
+                    </View>
+                  ) : tickets.length === 0 ? (
+                    <View style={enhancedStyles.emptyEventsContainer}>
+                      <Image source={Images.calendar} style={enhancedStyles.emptyStateIcon} />
+                      <CustomText variant="body" color="secondary" align="center" style={enhancedStyles.emptyStateTitle}>
+                        Bạn chưa có vé cho sự kiện này
+                      </CustomText>
+                    </View>
+                  ) : (
+                    <>
+                      <View style={enhancedStyles.ticketsList}>
+                        {tickets.map((ticketGroup, idx) => {
+                          const ticketList = Array.isArray(ticketGroup.tickets) ? ticketGroup.tickets : [];
+                          const isExpanded = expandedTicketGroups[idx] !== false; // Default expanded
+                          const displayTickets = isExpanded ? ticketList : ticketList.slice(0, 3);
+                          const hasMoreInGroup = ticketList.length > 3;
+
+                          return (
+                            <View key={idx} style={enhancedStyles.ticketGroup}>
+                              <TouchableOpacity
+                                style={enhancedStyles.ticketGroupHeader}
+                                onPress={() => toggleTicketGroup(idx)}
+                                activeOpacity={0.7}
+                              >
+                                <View style={enhancedStyles.ticketGroupHeaderLeft}>
+                                  <CustomText variant="body" color="primary" style={enhancedStyles.ticketGroupTitle}>
+                                    {ticketGroup.ticketTypeName}
                                   </CustomText>
+                                  <View style={enhancedStyles.ticketCountBadge}>
+                                    <CustomText variant="caption" color="white" style={enhancedStyles.eventStatusText}>
+                                      {ticketGroup.quantity} vé
+                                    </CustomText>
+                                  </View>
                                 </View>
-                              </View>
+                                {hasMoreInGroup && (
+                                  <CustomText variant="caption" color="secondary" style={enhancedStyles.expandIcon}>
+                                    {isExpanded ? '▲' : '▼'}
+                                  </CustomText>
+                                )}
+                              </TouchableOpacity>
                               
-                              {/* Ticket Body */}
-                              <View style={enhancedStyles.ticketItemBody}>
-                                <View style={enhancedStyles.ticketInfoGrid}>
-                                  <View style={enhancedStyles.ticketInfoRow}>
-                                    <View style={enhancedStyles.ticketInfoIcon}>
-                                      <Image source={Images.calendar} style={{ width: 18, height: 18, tintColor: Colors.primary }} />
+                              {displayTickets.map((ticket) => (
+                                <View key={ticket.ticketId} style={enhancedStyles.ticketItem}>
+                                  <View style={enhancedStyles.ticketItemCompact}>
+                                    <View style={enhancedStyles.ticketItemLeft}>
+                                      <View style={[enhancedStyles.ticketStatusIndicator, { backgroundColor: ticket.status === 'Valid' ? Colors.success : Colors.error }]} />
+                                      <View style={enhancedStyles.ticketItemInfo}>
+                                        <CustomText variant="body" color="primary" style={enhancedStyles.ticketCodeCompact}>
+                                          {ticket.ticketCode}
+                                        </CustomText>
+                                        <CustomText variant="caption" color="secondary" style={enhancedStyles.ticketTypeCompact}>
+                                          {ticketGroup.ticketTypeName}
+                                        </CustomText>
+                                      </View>
                                     </View>
-                                    <View style={enhancedStyles.ticketInfoContent}>
-                                      <CustomText variant="caption" color="secondary" style={enhancedStyles.ticketLabel}>
-                                        Loại vé
-                                      </CustomText>
-                                      <CustomText variant="body" color="primary" style={enhancedStyles.ticketValue}>
-                                        {ticketGroup.ticketTypeName}
-                                      </CustomText>
+                                    <View style={enhancedStyles.ticketItemRight}>
+                                      <View style={[enhancedStyles.ticketStatusBadgeCompact, { backgroundColor: ticket.status === 'Valid' ? Colors.success : Colors.error }]}>
+                                        <CustomText variant="caption" color="white" style={enhancedStyles.ticketStatusTextCompact}>
+                                          {ticket.status === 'Valid' ? 'Hợp lệ' : 'Không hợp lệ'}
+                                        </CustomText>
+                                      </View>
+                                      <TouchableOpacity
+                                        style={enhancedStyles.qrButtonCompact}
+                                        onPress={() => {
+                                          if (qrCodes[ticket.ticketId]) {
+                                            setQrCodes((prev) => {
+                                              const newCodes = { ...prev };
+                                              delete newCodes[ticket.ticketId];
+                                              return newCodes;
+                                            });
+                                          } else {
+                                            handleViewQR(ticket.ticketId);
+                                          }
+                                        }}
+                                        disabled={loadingQR[ticket.ticketId]}
+                                        activeOpacity={0.8}
+                                      >
+                                        {loadingQR[ticket.ticketId] ? (
+                                          <ActivityIndicator size="small" color={Colors.primary} />
+                                        ) : (
+                                          <Image 
+                                            source={Images.qrCode} 
+                                            style={{ 
+                                              width: 18, 
+                                              height: 18,
+                                            }} 
+                                          />
+                                        )}
+                                      </TouchableOpacity>
                                     </View>
                                   </View>
                                   
-                                  <View style={enhancedStyles.ticketInfoRow}>
-                                    <View style={[enhancedStyles.ticketInfoIcon, { backgroundColor: ticket.status === 'Valid' ? '#E8F5E9' : '#FFEBEE' }]}>
-                                      <Image 
-                                        source={Images.star} 
-                                        style={{ 
-                                          width: 18, 
-                                          height: 18, 
-                                          tintColor: ticket.status === 'Valid' ? Colors.success : Colors.error 
-                                        }} 
-                                      />
-                                    </View>
-                                    <View style={enhancedStyles.ticketInfoContent}>
-                                      <CustomText variant="caption" color="secondary" style={enhancedStyles.ticketLabel}>
-                                        Trạng thái
-                                      </CustomText>
-                                      <CustomText variant="body" color="primary" style={enhancedStyles.ticketValue}>
-                                        {ticket.status === 'Valid' ? 'Vé hợp lệ' : 'Vé không hợp lệ'}
+                                  {/* QR Code Display */}
+                                  {qrCodes[ticket.ticketId] && (
+                                    <View style={enhancedStyles.qrContainerCompact}>
+                                      <View style={enhancedStyles.qrImageWrapperCompact}>
+                                        <Image source={{ uri: qrCodes[ticket.ticketId] }} style={enhancedStyles.qrImageCompact} resizeMode="contain" />
+                                      </View>
+                                      <CustomText variant="caption" color="secondary" style={enhancedStyles.qrHelperTextCompact}>
+                                        Hiển thị mã này tại cửa vào sự kiện
                                       </CustomText>
                                     </View>
-                                  </View>
-                                </View>
-                                
-                                {/* QR Code Button */}
-                                <TouchableOpacity
-                                  style={enhancedStyles.qrButton}
-                                  onPress={() => {
-                                    if (qrCodes[ticket.ticketId]) {
-                                      setQrCodes((prev) => {
-                                        const newCodes = { ...prev };
-                                        delete newCodes[ticket.ticketId];
-                                        return newCodes;
-                                      });
-                                    } else {
-                                      handleViewQR(ticket.ticketId);
-                                    }
-                                  }}
-                                  disabled={loadingQR[ticket.ticketId]}
-                                  activeOpacity={0.8}
-                                >
-                                  {loadingQR[ticket.ticketId] ? (
-                                    <ActivityIndicator size="small" color={Colors.white} />
-                                  ) : (
-                                    <>
-                                      <Image source={Images.star} style={{ width: 20, height: 20, tintColor: Colors.white }} />
-                                      <CustomText variant="caption" color="white" style={enhancedStyles.qrButtonText}>
-                                        {qrCodes[ticket.ticketId] ? 'Ẩn QR Code' : 'Xem QR Code'}
-                                      </CustomText>
-                                    </>
                                   )}
+                                </View>
+                              ))}
+                              
+                              {hasMoreInGroup && !isExpanded && (
+                                <TouchableOpacity
+                                  style={enhancedStyles.showMoreButton}
+                                  onPress={() => toggleTicketGroup(idx)}
+                                  activeOpacity={0.7}
+                                >
+                                  <CustomText variant="caption" color="primary" style={enhancedStyles.showMoreText}>
+                                    + {ticketList.length - 3} vé khác
+                                  </CustomText>
                                 </TouchableOpacity>
-                                
-                                {/* QR Code Display */}
-                                {qrCodes[ticket.ticketId] && (
-                                  <View style={enhancedStyles.qrContainer}>
-                                    <CustomText variant="caption" color="primary" style={enhancedStyles.qrLabel}>
-                                      Mã QR Code
-                                    </CustomText>
-                                    <View style={enhancedStyles.qrImageWrapper}>
-                                      <Image source={{ uri: qrCodes[ticket.ticketId] }} style={enhancedStyles.qrImage} resizeMode="contain" />
-                                    </View>
-                                    <CustomText variant="caption" color="secondary" style={enhancedStyles.qrHelperText}>
-                                      Hiển thị mã này tại cửa vào sự kiện để được quét mã
-                                    </CustomText>
-                                  </View>
-                                )}
-                              </View>
+                              )}
                             </View>
-                          ))}
-                        </View>
-                      );
-                    })}
-                  </View>
-                )}
-              </View>
+                          );
+                        })}
+                      </View>
+                      
+                      {/* Load More Button */}
+                      {hasMoreTickets && (
+                        <TouchableOpacity
+                          style={enhancedStyles.loadMoreButton}
+                          onPress={loadMoreTickets}
+                          disabled={loadingTickets}
+                          activeOpacity={0.8}
+                        >
+                          {loadingTickets ? (
+                            <ActivityIndicator size="small" color={Colors.white} />
+                          ) : (
+                            <CustomText variant="body" color="white" style={enhancedStyles.loadMoreText}>
+                              Tải thêm vé
+                            </CustomText>
+                          )}
+                        </TouchableOpacity>
+                      )}
+                    </>
+                  )}
+                </View>
+              )}
             </ScrollView>
           </View>
         </View>
@@ -1048,23 +1111,17 @@ const TimelineScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <CustomText variant="h2" color="primary" style={{ fontSize: Fonts.xxl, fontWeight: '700', fontFamily: Fonts.bold }}>
+    <GradientBackground style={styles.container}>
+      <LinearGradient
+        colors={Colors.gradientHeaderTitle}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.header}
+      >
+        <CustomText variant="h2" color="white" style={{ fontSize: Fonts.xxl, fontWeight: '700', fontFamily: Fonts.bold }}>
           Timeline Sự Kiện
         </CustomText>
-      </View>
-
-      <View style={styles.searchContainer}>
-        <Image source={Images.search} style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Tìm kiếm sự kiện..."
-          placeholderTextColor={Colors.textLight}
-          value={searchText}
-          onChangeText={setSearchText}
-        />
-      </View>
+      </LinearGradient>
 
       {renderStats()}
 
@@ -1116,7 +1173,7 @@ const TimelineScreen = () => {
 
       {renderEventModal()}
       {renderStatsModal()}
-    </View>
+    </GradientBackground>
   );
 };
 

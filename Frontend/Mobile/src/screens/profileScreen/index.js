@@ -11,10 +11,12 @@ import {
   TextInput,
   FlatList,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useDispatch } from 'react-redux';
 import * as ImagePicker from 'expo-image-picker';
 import { styles } from './styles';
 import CustomText from '../../components/common/customTextRN';
+import { GradientBackground } from '../../components/common';
 import Images from '../../constants/Images';
 import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
@@ -48,7 +50,7 @@ const ProfileScreen = ({ navigation }) => {
 
   const menuItems = [
     { id: 'tickets', label: 'Vé của tôi', icon: '🎫', screen: ScreenNames.TICKETS_SCREEN },
-    { id: 'wallet', label: 'Ví điện tử', icon: '💳', screen: ScreenNames.WALLET_SCREEN },
+    { id: 'wallet', label: 'Ví của tôi', icon: '💳', screen: ScreenNames.WALLET_SCREEN },
     { id: 'likes', label: 'Yêu thích', icon: '❤️', screen: ScreenNames.LIKES_SCREEN },
     { id: 'friends', label: 'Bạn bè', icon: '👥', screen: ScreenNames.FRIENDS_SCREEN },
     { id: 'history', label: 'Lịch sử', icon: '📊', screen: ScreenNames.HISTORY_SCREEN },
@@ -168,7 +170,12 @@ const ProfileScreen = ({ navigation }) => {
 
   const renderProfileHeader = () => (
     <View style={styles.profileHeaderCard}>
-      <View style={styles.profileHeaderContent}>
+      <LinearGradient
+        colors={['#000000', '#2196F3', '#808080']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.profileHeaderContent}
+      >
         <View style={styles.avatarSection}>
         <View style={styles.avatarContainer}>
             {profileData.avatarImgUrl && profileData.avatarImgUrl.trim() !== '' ? (
@@ -260,7 +267,7 @@ const ProfileScreen = ({ navigation }) => {
             </CustomText>
           </View>
         </View>
-      </View>
+      </LinearGradient>
     </View>
   );
 
@@ -297,18 +304,18 @@ const ProfileScreen = ({ navigation }) => {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
+      <GradientBackground style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={Colors.primary} />
         <CustomText variant="body" color="secondary" style={styles.loadingText}>
           Đang tải thông tin cá nhân...
         </CustomText>
-      </View>
+      </GradientBackground>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.errorContainer}>
+      <GradientBackground style={styles.errorContainer}>
         <CustomText variant="h3" color="error">
           Lỗi khi tải thông tin
         </CustomText>
@@ -333,12 +340,12 @@ const ProfileScreen = ({ navigation }) => {
             </CustomText>
           </TouchableOpacity>
         )}
-      </View>
+      </GradientBackground>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <GradientBackground style={styles.container}>
       <ScrollView 
         style={styles.scrollView}
         refreshControl={
@@ -384,7 +391,7 @@ const ProfileScreen = ({ navigation }) => {
           }}
         />
       </Modal>
-    </View>
+    </GradientBackground>
   );
 };
 
@@ -1283,8 +1290,8 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
             disabled={isUpdating}
           >
             {isUpdating ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color={Colors.success} />
+              <View style={styles.buttonLoadingContainer}>
+                <ActivityIndicator size="small" color={Colors.white} />
                 <CustomText variant="body" color="white" style={{ marginLeft: 8 }}>
                   Đang cập nhật...
                 </CustomText>

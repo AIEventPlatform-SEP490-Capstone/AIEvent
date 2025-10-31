@@ -130,8 +130,6 @@ const styles = StyleSheet.create({
 
     paddingHorizontal: 20,
 
-    backgroundColor: Colors.primary,
-
     paddingTop: 40,
 
     paddingBottom: 24,
@@ -2117,6 +2115,16 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.textLight,
 
     opacity: 0.7,
+
+  },
+
+  buttonLoadingContainer: {
+
+    flexDirection: 'row',
+
+    alignItems: 'center',
+
+    justifyContent: 'center',
 
   },
 

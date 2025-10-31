@@ -12,6 +12,8 @@ import { useNavigation } from '@react-navigation/native';
 import { styles } from './styles';
 import CustomText from '../../components/common/customTextRN';
 import CustomButton from '../../components/common/customButtonRN';
+import { GradientBackground } from '../../components/common';
+import { LinearGradient } from 'expo-linear-gradient';
 import EventCard from '../../components/presentation/EventCard';
 import Images from '../../constants/Images';
 import Colors from '../../constants/Colors';
@@ -79,17 +81,22 @@ const HomeScreen = () => {
 
     
       return (
-        <View style={styles.container}>
+        <GradientBackground style={styles.container}>
           {/* Premium Header */}
-          <View style={styles.header}>
-            <CustomText variant="h2" color="primary" style={styles.headerTitle}>
-              {Strings.APP_NAME}
+          <LinearGradient
+            colors={Colors.gradientHeaderTitle}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.header}
+          >
+            <CustomText variant="h2" color="white" style={styles.headerTitle}>
+              Danh sách sự kiện
             </CustomText>
             
             <TouchableOpacity style={styles.notificationButton} activeOpacity={0.7}>
               <Image source={Images.bell} style={styles.notificationIcon} />
             </TouchableOpacity>
-          </View>
+          </LinearGradient>
     
           {/* Modern Search Bar */}
           <View style={styles.searchContainer}>
@@ -145,7 +152,7 @@ const HomeScreen = () => {
               )}
             </View>
           </ScrollView>
-        </View>
+        </GradientBackground>
       );
     };
 

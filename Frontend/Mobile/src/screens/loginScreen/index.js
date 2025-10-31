@@ -12,10 +12,12 @@ import {
     ImageBackground,
     ActivityIndicator,
     Animated,
+    Modal,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { login } from '../../redux/actions/Action';
 import { styles } from './styles';
+import { LoadingScreen } from '../../components/common';
 
 const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
@@ -258,6 +260,15 @@ const LoginScreen = ({ navigation }) => {
                     </ScrollView>
                 </View>
             </KeyboardAvoidingView>
+
+            {/* Fullscreen Loading Overlay */}
+            <Modal
+                visible={isLoading}
+                transparent={true}
+                animationType="fade"
+            >
+                <LoadingScreen message="Đang đăng nhập..." />
+            </Modal>
         </ImageBackground>
     );
 };

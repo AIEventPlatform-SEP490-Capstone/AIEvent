@@ -1,14 +1,13 @@
 import React, { useEffect } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useDispatch, useSelector } from 'react-redux';
-import { ActivityIndicator } from 'react-native';
 import { checkAuth } from '../redux/actions/Action';
 import HomeScreen from '../screens/homeScreen';
 import EventDetailScreen from '../screens/eventDetailScreen';
 import TabNavigator from './TabNavigator';
 import AuthNavigator from './AuthNavigator';
 import ScreenNames from '../constants/ScreenNames';
-import Colors from '../constants/Colors.js';
+import { LoadingScreen } from '../components/common';
 
 const Stack = createStackNavigator();
 
@@ -17,12 +16,11 @@ const AppNavigator = () => {
   const { isLoggedIn, isLoading } = useSelector(state => state.auth);
 
   useEffect(() => {
-    // Kiểm tra xem người dùng khi app start
     dispatch(checkAuth());
   }, [dispatch]);
 
   if (isLoading) {
-    return <ActivityIndicator size="large" color="#FF6B6B" />;
+    return <LoadingScreen message="Đang đăng nhập..." />;
   }
 
   return (

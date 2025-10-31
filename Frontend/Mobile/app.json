@@ -4,10 +4,10 @@
     "slug": "aievent",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./src/assets/images/icon.png",
+    "icon": "./src/assets/images/AIEventLogo.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./src/assets/images/icon.png",
+      "image": "./src/assets/images/AIEventLogo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -31,7 +31,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./src/assets/images/icon.png",
+        "foregroundImage": "./src/assets/images/AIEventLogo.png",
         "backgroundColor": "#FFFFFF"
       },
       "permissions": [
@@ -41,7 +41,7 @@
       ]
     },
     "web": {
-      "favicon": "./src/assets/images/icon.png"
+      "favicon": "./src/assets/images/AIEventLogo.png"
     },
     "plugins": [
       [

@@ -10,6 +10,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { styles } from './styles';
 import CustomText from '../../components/common/customTextRN';
+import { LinearGradient } from 'expo-linear-gradient';
 import EventCard from '../../components/presentation/EventCard';
 import Images from '../../constants/Images';
 import Colors from '../../constants/Colors';
@@ -85,14 +86,19 @@ const MyEventsScreen = () => {
   return (
     <View style={styles.container}>
       {/* Premium Header */}
-      <View style={styles.header}>
-        <CustomText variant="h2" color="primary" style={{ fontSize: Fonts.xxl, fontWeight: '800', fontFamily: Fonts.bold }}>
+      <LinearGradient
+        colors={Colors.gradientHeaderTitle}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.header}
+      >
+        <CustomText variant="h2" color="white" style={{ fontSize: Fonts.xxl, fontWeight: '800', fontFamily: Fonts.bold }}>
           Sự kiện của tôi
         </CustomText>
         <TouchableOpacity style={styles.filterButton} activeOpacity={0.7}>
           <Image source={Images.settings} style={styles.filterIcon} />
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
       {/* Content */}
       <ScrollView 
