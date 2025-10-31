@@ -7,5 +7,8 @@
         public string? AccountNumber { get; set; }
         public string? BankName { get; set; }
         public string? BranchName { get; set; }
+        public string? BankLogo { get; set; }
+        public string? BankBin { get; set; }
+        public string? BankShortName { get; set; }
     }
 }

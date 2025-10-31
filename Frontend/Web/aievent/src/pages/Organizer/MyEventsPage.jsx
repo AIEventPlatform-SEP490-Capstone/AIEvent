@@ -17,7 +17,8 @@ import {
   TrendingUp,
   Plus,
   CheckCircle,
-  XCircle
+  XCircle,
+  Copy
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
@@ -421,6 +422,31 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
     return null;
   };
 
+  const handleCloneEvent = (event) => {
+    // Store event data in localStorage or pass as state
+    const cloneData = {
+      ...event,
+      // Reset fields that shouldn't be copied
+      eventId: undefined,
+      createDate: undefined,
+      updateDate: undefined,
+      status: undefined,
+      publish: false, // Start as draft
+      viewCount: 0,
+      soldQuantity: 0,
+      revenue: 0,
+      refundCount: 0,
+      rating: 0,
+      totalPersonJoin: 0
+    };
+    
+    // Store in localStorage
+    localStorage.setItem('cloneEventData', JSON.stringify(cloneData));
+    
+    // Navigate to create event page
+    navigate(PATH.ORGANIZER_CREATE);
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       {/* Header */}
@@ -776,6 +802,16 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                           >
                             <Trash2 className="w-4 h-4 mr-2" />
                             Xóa
+                          </Button>
+
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="bg-transparent"
+                            onClick={() => handleCloneEvent(event)}
+                          >
+                            <Copy className="w-4 h-4 mr-2" />
+                            Clone
                           </Button>
 
                           <Button 
