@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -115,6 +115,13 @@ const CreateEventPage = () => {
   const [evidenceImagePreview, setEvidenceImagePreview] = useState([]);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [clonedEventData, setClonedEventData] = useState(null);
+  // Add state for individual date validation errors
+  const [dateErrors, setDateErrors] = useState({
+    startTime: '',
+    endTime: '',
+    saleStartTime: '',
+    saleEndTime: ''
+  });
 
   // Redux hooks
   const { categories, loading: categoriesLoading } = useCategories();
@@ -550,43 +557,42 @@ const CreateEventPage = () => {
     const saleStartTime = watch('saleStartTime');
     const saleEndTime = watch('saleEndTime');
     
-    const errors = [];
+    // Initialize error object
+    const newErrors = {
+      startTime: '',
+      endTime: '',
+      saleStartTime: '',
+      saleEndTime: ''
+    };
+    
     const now = new Date();
     
     // Check if any datetime is in the past
     if (startTime) {
       const start = new Date(startTime);
       if (start <= now) {
-        errors.push('Thời gian bắt đầu phải sau thời điểm hiện tại');
-        // Clear the field if it's in the past
-        setValue('startTime', '');
+        newErrors.startTime = 'Thời gian bắt đầu phải sau thời điểm hiện tại';
       }
     }
     
     if (endTime) {
       const end = new Date(endTime);
       if (end <= now) {
-        errors.push('Thời gian kết thúc phải sau thời điểm hiện tại');
-        // Clear the field if it's in the past
-        setValue('endTime', '');
+        newErrors.endTime = 'Thời gian kết thúc phải sau thời điểm hiện tại';
       }
     }
     
     if (saleStartTime) {
       const saleStart = new Date(saleStartTime);
       if (saleStart <= now) {
-        errors.push('Thời gian bắt đầu bán vé phải sau thời điểm hiện tại');
-        // Clear the field if it's in the past
-        setValue('saleStartTime', '');
+        newErrors.saleStartTime = 'Thời gian bắt đầu bán vé phải sau thời điểm hiện tại';
       }
     }
     
     if (saleEndTime) {
       const saleEnd = new Date(saleEndTime);
       if (saleEnd <= now) {
-        errors.push('Thời gian kết thúc bán vé phải sau thời điểm hiện tại');
-        // Clear the field if it's in the past
-        setValue('saleEndTime', '');
+        newErrors.saleEndTime = 'Thời gian kết thúc bán vé phải sau thời điểm hiện tại';
       }
     }
     
@@ -596,9 +602,7 @@ const CreateEventPage = () => {
       const end = new Date(endTime);
       
       if (end <= start) {
-        errors.push('Thời gian kết thúc phải sau thời gian bắt đầu');
-        // Clear the endTime field if it's not after startTime
-        setValue('endTime', '');
+        newErrors.endTime = 'Thời gian kết thúc phải sau thời gian bắt đầu';
       }
     }
     
@@ -608,28 +612,62 @@ const CreateEventPage = () => {
       const saleEnd = new Date(saleEndTime);
       
       if (saleStart >= start) {
-        errors.push('Thời gian bắt đầu bán vé phải trước thời gian bắt đầu sự kiện');
-        // Clear the saleStartTime field if it's not before event start
-        setValue('saleStartTime', '');
+        newErrors.saleStartTime = 'Thời gian bắt đầu bán vé phải trước thời gian bắt đầu sự kiện';
       }
       
       if (saleEnd <= saleStart) {
-        errors.push('Thời gian kết thúc bán vé phải sau thời gian bắt đầu bán vé');
-        // Clear the saleEndTime field if it's not after sale start
-        setValue('saleEndTime', '');
+        newErrors.saleEndTime = 'Thời gian kết thúc bán vé phải sau thời gian bắt đầu bán vé';
       }
       
       if (saleEnd >= start) {
-        errors.push('Thời gian kết thúc bán vé phải trước thời gian bắt đầu sự kiện');
-        // Clear the saleEndTime field if it's not before event start
-        setValue('saleEndTime', '');
+        newErrors.saleEndTime = 'Thời gian kết thúc bán vé phải trước thời gian bắt đầu sự kiện';
       }
     }
     
-    return errors;
+    // Update state with new errors
+    setDateErrors(newErrors);
+    
+    // Return the errors object for backward compatibility
+    return Object.values(newErrors).filter(error => error !== '');
   };
 
-  const dateErrors = validateDates();
+  // Real-time validation effect
+  useEffect(() => {
+    validateDates();
+  }, [watch('startTime'), watch('endTime'), watch('saleStartTime'), watch('saleEndTime')]);
+  
+  // Ref to track if we're processing a blur event to avoid infinite loops
+  const isProcessingBlur = useRef(false);
+
+  // Handle field clearing when they lose focus and are invalid
+  const handleDateTimeBlur = (fieldName) => {
+    // Prevent infinite loop by checking if we're already processing
+    if (isProcessingBlur.current) return;
+    
+    const fieldValue = watch(fieldName);
+    if (!fieldValue) return;
+    
+    const fieldDate = new Date(fieldValue);
+    const now = new Date();
+    
+    // Clear field if it's in the past
+    if (fieldDate <= now) {
+      isProcessingBlur.current = true;
+      setValue(fieldName, '');
+      // Update the specific error state
+      setDateErrors(prev => ({
+        ...prev,
+        [fieldName]: fieldName.includes('start') ? 
+          (fieldName.includes('sale') ? 'Thời gian bắt đầu bán vé phải sau thời điểm hiện tại' : 'Thời gian bắt đầu phải sau thời điểm hiện tại') :
+          (fieldName.includes('sale') ? 'Thời gian kết thúc bán vé phải sau thời điểm hiện tại' : 'Thời gian kết thúc phải sau thời điểm hiện tại')
+      }));
+      
+      // Reset the flag after a short delay to allow normal operation
+      setTimeout(() => {
+        isProcessingBlur.current = false;
+      }, 0);
+    }
+  };
   
   // Get minimum datetime for input fields (current time)
   const getMinDateTime = () => {
@@ -644,11 +682,6 @@ const CreateEventPage = () => {
   };
   
   const minDateTime = getMinDateTime();
-
-  // Real-time validation effect
-  useEffect(() => {
-    validateDates();
-  }, [watch('startTime'), watch('endTime'), watch('saleStartTime'), watch('saleEndTime')]);
 
   if (!user || !['Organizer', 'Admin', 'Manager'].includes(user.role)) {
     return (
@@ -837,8 +870,11 @@ const CreateEventPage = () => {
                       id="startTime"
                       min={minDateTime}
                       {...register('startTime')}
+                      className={dateErrors.startTime || errors.startTime ? "border-red-500" : ""}
+                      onBlur={() => handleDateTimeBlur('startTime')}
                     />
                     {errors.startTime && <p className="text-red-500 text-sm mt-1">{errors.startTime.message}</p>}
+                    {dateErrors.startTime && <p className="text-red-500 text-sm mt-1">{dateErrors.startTime}</p>}
                   </div>
 
                   <div>
@@ -848,8 +884,11 @@ const CreateEventPage = () => {
                       id="endTime"
                       min={minDateTime}
                       {...register('endTime')}
+                      className={dateErrors.endTime || errors.endTime ? "border-red-500" : ""}
+                      onBlur={() => handleDateTimeBlur('endTime')}
                     />
                     {errors.endTime && <p className="text-red-500 text-sm mt-1">{errors.endTime.message}</p>}
+                    {dateErrors.endTime && <p className="text-red-500 text-sm mt-1">{dateErrors.endTime}</p>}
                   </div>
                 </div>
 
@@ -861,8 +900,11 @@ const CreateEventPage = () => {
                       id="saleStartTime"
                       min={minDateTime}
                       {...register('saleStartTime')}
+                      className={dateErrors.saleStartTime || errors.saleStartTime ? "border-red-500" : ""}
+                      onBlur={() => handleDateTimeBlur('saleStartTime')}
                     />
                     {errors.saleStartTime && <p className="text-red-500 text-sm mt-1">{errors.saleStartTime.message}</p>}
+                    {dateErrors.saleStartTime && <p className="text-red-500 text-sm mt-1">{dateErrors.saleStartTime}</p>}
                   </div>
 
                   <div>
@@ -872,8 +914,11 @@ const CreateEventPage = () => {
                       id="saleEndTime"
                       min={minDateTime}
                       {...register('saleEndTime')}
+                      className={dateErrors.saleEndTime || errors.saleEndTime ? "border-red-500" : ""}
+                      onBlur={() => handleDateTimeBlur('saleEndTime')}
                     />
                     {errors.saleEndTime && <p className="text-red-500 text-sm mt-1">{errors.saleEndTime.message}</p>}
+                    {dateErrors.saleEndTime && <p className="text-red-500 text-sm mt-1">{dateErrors.saleEndTime}</p>}
                   </div>
                 </div>
 
@@ -910,7 +955,7 @@ const CreateEventPage = () => {
                 </div>
 
                 {/* Display real-time date validation errors */}
-                {dateErrors.length > 0 && (
+                {/* {dateErrors.length > 0 && (
                   <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
                     <h4 className="font-semibold text-red-800 mb-2">Lỗi thời gian:</h4>
                     <ul className="list-disc list-inside text-red-600">
@@ -919,7 +964,7 @@ const CreateEventPage = () => {
                       ))}
                     </ul>
                   </div>
-                )}
+                )} */}
               </CardContent>
             </Card>
 
