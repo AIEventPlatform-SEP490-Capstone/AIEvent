@@ -1320,47 +1320,6 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Verify(x => x.EventRepository.AddAsync(It.IsAny<Event>()), Times.Once);
        }
 
-       // UTCID27: Missing LocationName - Failure
-       [Fact]
-       public async Task UTCID27_CreateEventAsync_WithMissingLocationName_ShouldReturnFailure()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-
-           var createEventRequest = new CreateEventRequest
-           {
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
-               LocationName = "", // Missing LocationName
-               District = "Test District",
-               Address = "Test Address",
-               TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
-               EventCategoryId = Guid.NewGuid(),
-               ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
-               TicketTypes = new List<TicketTypeRequest>
-               {
-                   new TicketTypeRequest
-                   {
-                       TicketName = "Standard Ticket",
-                       TicketPrice = 0,
-                       TicketQuantity = 100
-                   }
-               }
-           };
-
-           // Act
-           var result = await _eventService.CreateEventAsync(organizerId, createEventRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Be("LocationName is required for offline events");
-           result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-       }
 
        // UTCID28: Publish = false should not require evidence - Success
        [Fact]
@@ -1386,6 +1345,79 @@ namespace AIEvent.Application.Test.Services
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                Publish = false, // Not publishing
                ImgListEvidences = null, // No evidence needed
+               TicketTypes = new List<TicketTypeRequest>
+               {
+                   new TicketTypeRequest
+                   {
+                       TicketName = "Standard Ticket",
+                       TicketPrice = 0,
+                       TicketQuantity = 100
+                   }
+               }
+           };
+
+           var organizer = new OrganizerProfile
+           {
+               Id = organizerId,
+               Status = ConfirmStatus.Approve,
+               OrganizationType = OrganizationType.PrivateCompany,
+               EventFrequency = EventFrequency.Monthly,
+               EventSize = EventSize.Medium,
+               OrganizerType = OrganizerType.Individual,
+               EventExperienceLevel = EventExperienceLevel.Intermediate,
+               ContactName = "Test Contact",
+               ContactEmail = "test@example.com",
+               ContactPhone = "0123456789",
+               Address = "Test Address"
+           };
+
+           var eventEntity = new Event
+           {
+               Id = Guid.NewGuid(),
+               Title = createEventRequest.Title,
+               Description = createEventRequest.Description,
+               StartTime = createEventRequest.StartTime,
+               EndTime = createEventRequest.EndTime
+           };
+
+           _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.GetByIdAsync(organizerId, true))
+               .ReturnsAsync(organizer);
+           _mockMapper.Setup(x => x.Map<Event>(createEventRequest))
+               .Returns(eventEntity);
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+           _mockUnitOfWork.Setup(x => x.EventRepository.AddAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.CreateEventAsync(organizerId, createEventRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+       }
+
+       // UTCID29: Boundary - SaleEndTime equals StartTime - Success
+       [Fact]
+       public async Task UTCID29_CreateEventAsync_WithSaleEndTimeEqualsStartTime_ShouldReturnSuccess()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var startTime = DateTime.Now.AddDays(5);
+
+           var createEventRequest = new CreateEventRequest
+           {
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = startTime,
+               EndTime = startTime.AddHours(2),
+               SaleStartTime = DateTime.Now.AddDays(1),
+               SaleEndTime = startTime, // Boundary: equals StartTime
+               LocationName = "Test Location",
+               District = "Test District",
+               Address = "Test Address",
+               TotalTickets = 100,
+               TicketPricingType = TicketPricingType.Free,
+               EventCategoryId = Guid.NewGuid(),
+               ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                TicketTypes = new List<TicketTypeRequest>
                {
                    new TicketTypeRequest
@@ -2691,6 +2723,140 @@ namespace AIEvent.Application.Test.Services
            result.Value.PageSize.Should().Be(1);
        }
 
+       // UTCID20: GetEventAsync with userId = Guid.Empty - Should not show favorite
+       [Fact]
+       public async Task UTCID20_GetEventAsync_WithEmptyGuidUserId_ShouldNotShowFavorite()
+       {
+           // Arrange
+           var userId = Guid.Empty;
+           var futureDate = DateTime.Now.AddDays(10);
+           var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
+
+           var events = new List<Event>
+           {
+               new Event
+               {
+                   Id = Guid.NewGuid(),
+                   Title = "Test Event",
+                   Description = "Description",
+                   StartTime = futureDate,
+                   EndTime = futureDate.AddHours(2),
+                   RequireApproval = ConfirmStatus.Approve,
+                   DeletedAt = null,
+                   EventCategoryId = eventCategory.Id,
+                   EventCategory = eventCategory,
+                   TicketPricingType = TicketPricingType.Free,
+                   TotalTickets = 100,
+                   SoldQuantity = 0,
+                   LocationName = "Location",
+                   Publish = true,
+                   CreatedAt = DateTime.Now,
+                   EventTags = new List<EventTag>(),
+                   FavoriteEvents = new List<FavoriteEvent>(),
+                   TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard", TicketQuantity = 100, TicketPrice = 0 } }
+               }
+           }.AsQueryable().BuildMock();
+
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
+
+           // Act
+           var result = await _eventService.GetEventAsync(userId, null, null, null!, null, null, null, 1, 5);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.Value!.Items.Should().HaveCount(1);
+           result.Value.Items.First().IsFavorite.Should().BeFalse();
+       }
+
+       // UTCID21: GetEventAsync with TicketTypes = null - Should return 0 for TicketPrice
+       [Fact]
+       public async Task UTCID21_GetEventAsync_WithNullTicketTypes_ShouldReturnZeroPrice()
+       {
+           // Arrange
+           var futureDate = DateTime.Now.AddDays(10);
+           var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
+
+           var events = new List<Event>
+           {
+               new Event
+               {
+                   Id = Guid.NewGuid(),
+                   Title = "Test Event",
+                   Description = "Description",
+                   StartTime = futureDate,
+                   EndTime = futureDate.AddHours(2),
+                   RequireApproval = ConfirmStatus.Approve,
+                   DeletedAt = null,
+                   EventCategoryId = eventCategory.Id,
+                   EventCategory = eventCategory,
+                   TicketPricingType = TicketPricingType.Free,
+                   TotalTickets = 100,
+                   SoldQuantity = 0,
+                   LocationName = "Location",
+                   Publish = true,
+                   CreatedAt = DateTime.Now,
+                   EventTags = new List<EventTag>(),
+                   FavoriteEvents = new List<FavoriteEvent>(),
+                   TicketTypes = null! // Null TicketTypes
+               }
+           }.AsQueryable().BuildMock();
+
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
+
+           // Act
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, 1, 5);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.Value!.Items.Should().HaveCount(1);
+           result.Value.Items.First().TicketPrice.Should().Be(0);
+       }
+
+       // UTCID22: GetEventAsync with empty ImgListEvent - Should return empty list
+       [Fact]
+       public async Task UTCID22_GetEventAsync_WithEmptyImgListEvent_ShouldReturnEmptyImageList()
+       {
+           // Arrange
+           var futureDate = DateTime.Now.AddDays(10);
+           var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
+
+           var events = new List<Event>
+           {
+               new Event
+               {
+                   Id = Guid.NewGuid(),
+                   Title = "Test Event",
+                   Description = "Description",
+                   StartTime = futureDate,
+                   EndTime = futureDate.AddHours(2),
+                   RequireApproval = ConfirmStatus.Approve,
+                   DeletedAt = null,
+                   EventCategoryId = eventCategory.Id,
+                   EventCategory = eventCategory,
+                   TicketPricingType = TicketPricingType.Free,
+                   TotalTickets = 100,
+                   SoldQuantity = 0,
+                   LocationName = "Location",
+                   Publish = true,
+                   CreatedAt = DateTime.Now,
+                   ImgListEvent = "", // Empty ImgListEvent
+                   EventTags = new List<EventTag>(),
+                   FavoriteEvents = new List<FavoriteEvent>(),
+                   TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard", TicketQuantity = 100, TicketPrice = 0 } }
+               }
+           }.AsQueryable().BuildMock();
+
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
+
+           // Act
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, 1, 5);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.Value!.Items.Should().HaveCount(1);
+           result.Value.Items.First().ImgListEvent.Should().BeEmpty();
+       }
+
        #endregion
 
        #region GetEventByIdAsync Tests
@@ -2856,6 +3022,2014 @@ namespace AIEvent.Application.Test.Services
            result.Error!.StatusCode.Should().Contain(ErrorCodes.InvalidInput);
        }
        #endregion
+
+       #region UpdateEventAsync Tests
+
+       // UTCID01: Valid update request - Success
+       [Fact]
+       public async Task UTCID01_UpdateEventAsync_WithValidRequest_ShouldReturnSuccess()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var updateRequest = new UpdateEventRequest
+           {
+               Title = "Updated Title",
+               Description = "Updated Description"
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Original Title",
+               Description = "Original Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               LocationName = "Test Location",
+               District = "Test District",
+               Address = "Test Address",
+               Publish = false,
+               IsDeleted = false,
+               ImgListEvent = "image1.jpg",
+               ImgListEvidences = "evidence1.jpg",
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Ticket 1", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
+       }
+
+       // UTCID02: Empty organizerId - Failure
+       [Fact]
+       public async Task UTCID02_UpdateEventAsync_WithEmptyOrganizerId_ShouldReturnFailure()
+       {
+           // Arrange
+           var organizerId = Guid.Empty;
+           var eventId = Guid.NewGuid();
+           var updateRequest = new UpdateEventRequest { Title = "Updated Title" };
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Invalid input");
+           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+           _mockUnitOfWork.Verify(x => x.EventRepository.Query(false), Times.Never());
+       }
+
+       // UTCID03: Empty eventId - Failure
+       [Fact]
+       public async Task UTCID03_UpdateEventAsync_WithEmptyEventId_ShouldReturnFailure()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.Empty;
+           var updateRequest = new UpdateEventRequest { Title = "Updated Title" };
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Invalid input");
+           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+           _mockUnitOfWork.Verify(x => x.EventRepository.Query(false), Times.Never());
+       }
+
+       // UTCID04: Event not found - Failure
+       [Fact]
+       public async Task UTCID04_UpdateEventAsync_WithNonExistentEvent_ShouldReturnFailure()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var updateRequest = new UpdateEventRequest { Title = "Updated Title" };
+
+           var eventQueryable = new List<Event>().AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Event not found");
+           result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+       }
+
+       // UTCID05: Event is deleted - Failure
+       [Fact]
+       public async Task UTCID05_UpdateEventAsync_WithDeletedEvent_ShouldReturnFailure()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var updateRequest = new UpdateEventRequest { Title = "Updated Title" };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               IsDeleted = true
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Event not found");
+           result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+       }
+
+       // UTCID06: Unauthorized - Different organizer - Failure
+       [Fact]
+       public async Task UTCID06_UpdateEventAsync_WithDifferentOrganizer_ShouldReturnFailure()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var differentOrganizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var updateRequest = new UpdateEventRequest { Title = "Updated Title" };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = differentOrganizerId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               IsDeleted = false,
+               TicketTypes = new List<TicketType>(),
+               EventTags = new List<EventTag>()
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("You don't have permission to update this event");
+           result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
+       }
+
+
+       // UTCID07: Publish validation - Missing title - Failure
+       [Fact]
+       public async Task UTCID07_UpdateEventAsync_WithPublishAndMissingTitle_ShouldReturnFailure()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var updateRequest = new UpdateEventRequest
+           {
+               Publish = true,
+               Title = ""
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Publish = false,
+               IsDeleted = false,
+               Title = "",
+               Description = "Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Contain("Title is required");
+           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+       }
+
+       // UTCID08: Publish validation - EndTime before StartTime - Failure
+       [Fact]
+       public async Task UTCID08_UpdateEventAsync_WithPublishAndEndTimeBeforeStartTime_ShouldReturnFailure()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var startTime = DateTime.Now.AddDays(5);
+           var endTime = DateTime.Now.AddDays(3);
+
+           var updateRequest = new UpdateEventRequest
+           {
+               Publish = true,
+               StartTime = startTime,
+               EndTime = endTime
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Publish = false,
+               IsDeleted = false,
+               Title = "Title",
+               Description = "Description",
+               StartTime = startTime,
+               EndTime = endTime,
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Contain("EndTime must be after StartTime");
+           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+       }
+
+       // UTCID09: Publish validation - SaleEndTime after event StartTime - Failure
+       [Fact]
+       public async Task UTCID09_UpdateEventAsync_WithPublishAndSaleEndTimeAfterStartTime_ShouldReturnFailure()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var startTime = DateTime.Now.AddDays(5);
+           var saleEndTime = DateTime.Now.AddDays(6);
+
+           var updateRequest = new UpdateEventRequest
+           {
+               Publish = true,
+               SaleEndTime = saleEndTime
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Publish = false,
+               IsDeleted = false,
+               Title = "Title",
+               Description = "Description",
+               StartTime = startTime,
+               EndTime = startTime.AddHours(2),
+               SaleStartTime = DateTime.Now.AddDays(1),
+               SaleEndTime = saleEndTime,
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Contain("SaleEndTime cannot be after event StartTime");
+           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+       }
+
+
+       // UTCID11: Publish validation - Missing evidence - Failure
+       [Fact]
+       public async Task UTCID11_UpdateEventAsync_WithPublishAndMissingEvidence_ShouldReturnFailure()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+
+           var updateRequest = new UpdateEventRequest
+           {
+               Publish = true
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Publish = false,
+               IsDeleted = false,
+               Title = "Title",
+               Description = "Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.Now.AddDays(1),
+               SaleEndTime = DateTime.Now.AddDays(4),
+               LocationName = "Test Location",
+               District = "Test District",
+               Address = "Test Address",
+               ImgListEvent = "image1.jpg",
+               ImgListEvidences = "", // Missing evidence
+               TicketPricingType = TicketPricingType.Free,
+               TotalTickets = 100,
+               EventCategoryId = Guid.NewGuid(),
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Contain("Evidence is required when publishing an event");
+           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+       }
+
+       // UTCID12: Publish validation - Missing images - Failure
+       [Fact]
+       public async Task UTCID12_UpdateEventAsync_WithPublishAndNoImages_ShouldReturnFailure()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+
+           var updateRequest = new UpdateEventRequest
+           {
+               Publish = true
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Publish = false,
+               IsDeleted = false,
+               Title = "Title",
+               Description = "Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.Now.AddDays(1),
+               SaleEndTime = DateTime.Now.AddDays(4),
+               LocationName = "Test Location",
+               District = "Test District",
+               Address = "Test Address",
+               ImgListEvent = "", // Missing images
+               ImgListEvidences = "evidence1.jpg",
+               TicketPricingType = TicketPricingType.Free,
+               TotalTickets = 100,
+               EventCategoryId = Guid.NewGuid(),
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Contain("At least one event image is required");
+           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+       }
+
+       // UTCID13: Publish validation - No ticket details - Failure
+       [Fact]
+       public async Task UTCID13_UpdateEventAsync_WithPublishAndNoTicketTypes_ShouldReturnFailure()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+
+           var updateRequest = new UpdateEventRequest
+           {
+               Publish = true
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Publish = false,
+               IsDeleted = false,
+               Title = "Title",
+               Description = "Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.Now.AddDays(1),
+               SaleEndTime = DateTime.Now.AddDays(4),
+               LocationName = "Test Location",
+               District = "Test District",
+               Address = "Test Address",
+               ImgListEvent = "image1.jpg",
+               ImgListEvidences = "evidence1.jpg",
+               TicketPricingType = TicketPricingType.Free,
+               TotalTickets = 100,
+               EventCategoryId = Guid.NewGuid(),
+               TicketTypes = new List<TicketType>(),
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Contain("At least one ticket type is required");
+           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+       }
+
+
+       // UTCID14: Publish validation - Valid data with Publish=true - Success
+       [Fact]
+       public async Task UTCID14_UpdateEventAsync_WithValidPublishData_ShouldSetPublishAndRequireApproval()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+
+           var updateRequest = new UpdateEventRequest
+           {
+               Publish = true
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Publish = false,
+               IsDeleted = false,
+               Title = "Title",
+               Description = "Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.Now.AddDays(1),
+               SaleEndTime = DateTime.Now.AddDays(4),
+               LocationName = "Test Location",
+               District = "Test District",
+               Address = "Test Address",
+               ImgListEvent = "image1.jpg",
+               ImgListEvidences = "evidence1.jpg",
+               TicketPricingType = TicketPricingType.Free,
+               TotalTickets = 100,
+               EventCategoryId = Guid.NewGuid(),
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+           existingEvent.Publish.Should().BeTrue();
+           existingEvent.RequireApproval.Should().Be(ConfirmStatus.NeedConfirm);
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
+       }
+
+       // UTCID15: Add new images - Success
+       [Fact]
+       public async Task UTCID15_UpdateEventAsync_WithAddImages_ShouldUploadAndAddImages()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var mockFile = CreateMockFormFile();
+
+           var updateRequest = new UpdateEventRequest
+           {
+               ImgListEvent = new List<string> { "new-uploaded-image.jpg" }
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = false,
+               IsDeleted = false,
+               ImgListEvent = "existing-image.jpg",
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+           _mockCloudinaryService.Setup(x => x.UploadImageAsync(It.IsAny<IFormFile>()))
+               .ReturnsAsync("new-uploaded-image.jpg");
+
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+           _mockCloudinaryService.Verify(x => x.UploadImageAsync(It.IsAny<IFormFile>()), Times.Once());
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
+       }
+
+       // UTCID16: Remove images - Success
+       [Fact]
+       public async Task UTCID16_UpdateEventAsync_WithRemoveImages_ShouldDeleteImages()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var imageToRemove = "image-to-remove.jpg";
+
+           var updateRequest = new UpdateEventRequest
+           {
+               RemoveImageUrls = new List<string> { imageToRemove }
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = false,
+               IsDeleted = false,
+               ImgListEvent = $"{imageToRemove}, keep-image.jpg",
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+           _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
+               .Returns(Task.CompletedTask);
+
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+           _mockCloudinaryService.Verify(x => x.DeleteImageAsync(imageToRemove), Times.Once());
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
+       }
+
+       // UTCID17: Add new ticket detail - Success
+       [Fact]
+       public async Task UTCID17_UpdateEventAsync_WithAddNewTicketType_ShouldAddTicket()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+
+           var updateRequest = new UpdateEventRequest
+           {
+               TicketTypes = new List<TicketTypeRequest>
+               {
+                   new TicketTypeRequest
+                   {
+                       Id = null, // New ticket
+                       TicketName = "New Ticket",
+                       TicketPrice = 50,
+                       TicketQuantity = 100
+                   }
+               }
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = false,
+               IsDeleted = false,
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Existing Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var newTicket = new TicketType
+           {
+               TicketName = "New Ticket",
+               TicketPrice = 50,
+               TicketQuantity = 100
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+           _mockMapper.Setup(x => x.Map<TicketType>(It.IsAny<TicketTypeRequest>())).Returns(newTicket);
+
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
+       }
+
+       // UTCID18: Update existing ticket detail - Success
+       [Fact]
+       public async Task UTCID18_UpdateEventAsync_WithUpdateExistingTicketType_ShouldUpdateTicket()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var ticketId = Guid.NewGuid();
+
+           var updateRequest = new UpdateEventRequest
+           {
+               TicketTypes = new List<TicketTypeRequest>
+               {
+                   new TicketTypeRequest
+                   {
+                       Id = ticketId,
+                       TicketName = "Updated Ticket",
+                       TicketPrice = 75,
+                       TicketQuantity = 150
+                   }
+               }
+           };
+
+           var existingTicket = new TicketType
+           {
+               Id = ticketId,
+               TicketName = "Original Ticket",
+               TicketPrice = 50,
+               TicketQuantity = 100,
+               SoldQuantity = 10
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = false,
+               IsDeleted = false,
+               TicketTypes = new List<TicketType> { existingTicket },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+           _mockMapper.Setup(x => x.Map(It.IsAny<TicketTypeRequest>(), existingTicket)).Returns(existingTicket);
+
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
+       }
+
+       // UTCID19: Remove all ticket details without adding new ones - Failure
+       [Fact]
+       public async Task UTCID19_UpdateEventAsync_WithRemoveAllTicketTypesAndNoNewOnes_ShouldReturnFailure()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var ticketId = Guid.NewGuid();
+
+           var updateRequest = new UpdateEventRequest
+           {
+               RemoveTicketTypeIds = new List<Guid> { ticketId }
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = false,
+               IsDeleted = false,
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = ticketId, TicketName = "Only ticket", TicketQuantity = 100, SoldQuantity = 0 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+
+           // Act & Assert
+           await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+               await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest));
+       }
+
+       // UTCID20: Add new tag - Success
+       [Fact]
+       public async Task UTCID20_UpdateEventAsync_WithAddNewTag_ShouldAddTag()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var newTagId = Guid.NewGuid();
+
+           var updateRequest = new UpdateEventRequest
+           {
+               AddTagIds = new List<Guid> { newTagId }
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = false,
+               IsDeleted = false,
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
+       }
+
+       // UTCID21: Remove tag - Success
+       [Fact]
+       public async Task UTCID21_UpdateEventAsync_WithRemoveTag_ShouldRemoveTag()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var tagIdToRemove = Guid.NewGuid();
+
+           var updateRequest = new UpdateEventRequest
+           {
+               RemoveTagIds = new List<Guid> { tagIdToRemove }
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = false,
+               IsDeleted = false,
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = tagIdToRemove },
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
+       }
+
+
+       // UTCID22: Publish validation - with
+       [Fact]
+       public async Task UTCID22_UpdateEventAsync_WithPublishAndZeroTotalTickets_ShouldReturnFailure()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+
+           var updateRequest = new UpdateEventRequest
+           {
+               Publish = true,
+               TotalTickets = 0
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Publish = false,
+               IsDeleted = false,
+               Title = "Title",
+               Description = "Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.Now.AddDays(1),
+               SaleEndTime = DateTime.Now.AddDays(4),
+               LocationName = "Test Location",
+               District = "Test District",
+               Address = "Test Address",
+               ImgListEvent = "image1.jpg",
+               ImgListEvidences = "evidence1.jpg",
+               TicketPricingType = TicketPricingType.Free,
+               TotalTickets = 0,
+               EventCategoryId = Guid.NewGuid(),
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Contain("TotalTickets must be greater than 0");
+           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+       }
+
+       // UTCID23: Publish validation - Missing EventCategoryId
+       [Fact]
+       public async Task UTCID23_UpdateEventAsync_WithPublishAndMissingEventCategoryId_ShouldReturnFailure()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+
+           var updateRequest = new UpdateEventRequest
+           {
+               Publish = true,
+               EventCategoryId = Guid.Empty
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Publish = false,
+               IsDeleted = false,
+               Title = "Title",
+               Description = "Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.Now.AddDays(1),
+               SaleEndTime = DateTime.Now.AddDays(4),
+               LocationName = "Test Location",
+               District = "Test District",
+               Address = "Test Address",
+               ImgListEvent = "image1.jpg",
+               ImgListEvidences = "evidence1.jpg",
+               TicketPricingType = TicketPricingType.Free,
+               TotalTickets = 100,
+               EventCategoryId = Guid.Empty,
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Contain("EventCategoryId is required");
+           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+       }
+
+       // UTCID24: Add evidence images - Success
+       [Fact]
+       public async Task UTCID24_UpdateEventAsync_WithAddEvidence_ShouldUploadAndAddEvidence()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var mockEvidenceFile = CreateMockFormFile("evidence.jpg");
+
+           var updateRequest = new UpdateEventRequest
+           {
+               ImgListEvidences = new List<string> { "uploaded-evidence.jpg" }
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = false,
+               IsDeleted = false,
+               ImgListEvent = "image1.jpg",
+               ImgListEvidences = "",
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+           _mockCloudinaryService.Setup(x => x.UploadImageAsync(It.IsAny<IFormFile>()))
+               .ReturnsAsync("uploaded-evidence.jpg");
+
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+           _mockCloudinaryService.Verify(x => x.UploadImageAsync(It.IsAny<IFormFile>()), Times.Once());
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
+       }
+
+       // UTCID25: Published event with active bookings (Pending) - Failure
+       [Fact]
+       public async Task UTCID25_UpdateEventAsync_WithPublishedEventAndPendingBookings_ShouldReturnFailure()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var updateRequest = new UpdateEventRequest { Title = "Updated Title" };
+
+           var booking = new Booking
+           {
+               Id = Guid.NewGuid(),
+               EventId = eventId,
+               Status = BookingStatus.Pending
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = true,
+               IsDeleted = false,
+               Bookings = new List<Booking> { booking },
+               TicketTypes = new List<TicketType>(),
+               EventTags = new List<EventTag>()
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+
+           _mockUnitOfWork.SetupSequence(x => x.EventRepository.Query(false))
+               .Returns(eventQueryable)
+               .Returns(eventQueryable);
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Cannot update published event that has existing bookings");
+           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+       }
+
+       // UTCID27: Published event without active bookings (Cancelled only) - Success
+       [Fact]
+       public async Task UTCID27_UpdateEventAsync_WithPublishedEventAndOnlyCancelledBookings_ShouldReturnSuccess()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var updateRequest = new UpdateEventRequest { Title = "Updated Title" };
+           var booking = new Booking { Id = Guid.NewGuid(), EventId = eventId, Status = BookingStatus.Cancelled };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test",
+               Description = "Test",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = true,
+               IsDeleted = false,
+               Bookings = new List<Booking> { booking },
+               TicketTypes = new List<TicketType> { new TicketType { Id = Guid.NewGuid(), TicketName = "Standard", TicketQuantity = 100 } },
+               EventTags = new List<EventTag> { new EventTag { EventId = eventId, TagId = Guid.NewGuid() } }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+
+           _mockUnitOfWork.SetupSequence(x => x.EventRepository.Query(false))
+               .Returns(eventQueryable)
+               .Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+       }
+
+       // UTCID28: Published event without any bookings - Success
+       [Fact]
+       public async Task UTCID28_UpdateEventAsync_WithPublishedEventAndNoBookings_ShouldReturnSuccess()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var updateRequest = new UpdateEventRequest { Title = "Updated Title" };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test",
+               Description = "Test",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = true,
+               IsDeleted = false,
+               Bookings = new List<Booking>(),
+               TicketTypes = new List<TicketType> { new TicketType { Id = Guid.NewGuid(), TicketName = "Standard", TicketQuantity = 100 } },
+               EventTags = new List<EventTag> { new EventTag { EventId = eventId, TagId = Guid.NewGuid() } }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+
+           _mockUnitOfWork.SetupSequence(x => x.EventRepository.Query(false))
+               .Returns(eventQueryable)
+               .Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+       }
+
+       // UTCID29: Publish validation - Missing Description
+       [Fact]
+       public async Task UTCID29_UpdateEventAsync_WithPublishAndMissingDescription_ShouldReturnFailure()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var updateRequest = new UpdateEventRequest { Publish = true, Description = "" };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test",
+               Description = "",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.Now.AddDays(1),
+               SaleEndTime = DateTime.Now.AddDays(4),
+               LocationName = "Location",
+               District = "District",
+               Address = "Address",
+               ImgListEvent = "image.jpg",
+               ImgListEvidences = "evidence.jpg",
+               TicketPricingType = TicketPricingType.Free,
+               TotalTickets = 100,
+               EventCategoryId = Guid.NewGuid(),
+               TicketTypes = new List<TicketType> { new TicketType { Id = Guid.NewGuid(), TicketName = "Standard", TicketQuantity = 100 } },
+               EventTags = new List<EventTag> { new EventTag { EventId = eventId, TagId = Guid.NewGuid() } }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Contain("Description is required");
+       }
+
+
+       // UTCID31: Publish validation - TotalTickets boundary value = 1
+       [Fact]
+       public async Task UTCID31_UpdateEventAsync_WithPublishAndTotalTicketsEqualOne_ShouldReturnSuccess()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var updateRequest = new UpdateEventRequest { Publish = true, TotalTickets = 1 };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test",
+               Description = "Test",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.Now.AddDays(1),
+               SaleEndTime = DateTime.Now.AddDays(4),
+               LocationName = "Location",
+               District = "District",
+               Address = "Address",
+               ImgListEvent = "image.jpg",
+               ImgListEvidences = "evidence.jpg",
+               TicketPricingType = TicketPricingType.Free,
+               TotalTickets = 1,
+               EventCategoryId = Guid.NewGuid(),
+               TicketTypes = new List<TicketType> { new TicketType { Id = Guid.NewGuid(), TicketName = "Standard", TicketQuantity = 100 } },
+               EventTags = new List<EventTag> { new EventTag { EventId = eventId, TagId = Guid.NewGuid() } }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+       }
+
+       // UTCID32: Remove all images without adding new ones - Failure
+       [Fact]
+       public async Task UTCID32_UpdateEventAsync_WithRemoveAllImagesAndNoNewOnes_ShouldThrowException()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var imageToRemove = "image1.jpg";
+
+           var updateRequest = new UpdateEventRequest
+           {
+               RemoveImageUrls = new List<string> { imageToRemove }
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = false,
+               IsDeleted = false,
+               ImgListEvent = imageToRemove,
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+           _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
+               .Returns(Task.CompletedTask);
+
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+
+           // Act & Assert
+           await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+               await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest));
+       }
+
+       // UTCID33: Remove all images but add new ones - Success
+       [Fact]
+       public async Task UTCID33_UpdateEventAsync_WithRemoveAllImagesAndAddNewOnes_ShouldReplaceImages()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var imageToRemove = "image1.jpg";
+
+           var updateRequest = new UpdateEventRequest
+           {
+               RemoveImageUrls = new List<string> { imageToRemove },
+               ImgListEvent = new List<string> { "new-image.jpg" }
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = false,
+               IsDeleted = false,
+               ImgListEvent = imageToRemove,
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+           _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
+               .Returns(Task.CompletedTask);
+
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+           _mockCloudinaryService.Verify(x => x.DeleteImageAsync(imageToRemove), Times.Once());
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
+       }
+
+       // UTCID34: Remove all evidence without adding new ones - Failure
+       [Fact]
+       public async Task UTCID34_UpdateEventAsync_WithRemoveAllEvidenceAndNoNewOnes_ShouldThrowException()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var evidenceToRemove = "evidence1.jpg";
+
+           var updateRequest = new UpdateEventRequest
+           {
+               RemoveImageEvidenceUrls = new List<string> { evidenceToRemove }
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = false,
+               IsDeleted = false,
+               ImgListEvent = "image1.jpg",
+               ImgListEvidences = evidenceToRemove,
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+           _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
+               .Returns(Task.CompletedTask);
+
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+
+           // Act & Assert
+           await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+               await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest));
+       }
+
+       // UTCID35: Remove all evidence but add new ones - Success
+       [Fact]
+       public async Task UTCID35_UpdateEventAsync_WithRemoveAllEvidenceAndAddNewOnes_ShouldReplaceEvidence()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var evidenceToRemove = "evidence1.jpg";
+
+           var updateRequest = new UpdateEventRequest
+           {
+               RemoveImageEvidenceUrls = new List<string> { evidenceToRemove },
+               ImgListEvidences = new List<string> { "new-evidence.jpg" }
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = false,
+               IsDeleted = false,
+               ImgListEvent = "image1.jpg",
+               ImgListEvidences = evidenceToRemove,
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+           _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
+               .Returns(Task.CompletedTask);
+
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+           _mockCloudinaryService.Verify(x => x.DeleteImageAsync(evidenceToRemove), Times.Once());
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
+       }
+
+       // UTCID36: Update with SoldQuantity preserved when mapped to zero - Success
+       [Fact]
+       public async Task UTCID36_UpdateEventAsync_WithSoldQuantityPreserved_ShouldKeepOriginalSoldQuantity()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var originalSoldQuantity = 50;
+
+           var updateRequest = new UpdateEventRequest
+           {
+               TotalTickets = 200, // This would normally reset SoldQuantity to 0
+               Title = "Updated Title"
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Original Title",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = false,
+               IsDeleted = false,
+               SoldQuantity = originalSoldQuantity,
+               TotalTickets = 100,
+               ImgListEvent = "image1.jpg",
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var updatedEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Updated Title",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = false,
+               IsDeleted = false,
+               SoldQuantity = 0, // This would be set by mapper
+               TotalTickets = 200,
+               ImgListEvent = "image1.jpg",
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           
+           // Mock mapper to return event with SoldQuantity = 0
+           _mockMapper.Setup(x => x.Map(updateRequest, It.IsAny<Event>()))
+               .Callback<UpdateEventRequest, Event>((request, evt) => 
+               {
+                   evt.SoldQuantity = 0; // Simulate mapper behavior
+                   evt.TotalTickets = request.TotalTickets ?? evt.TotalTickets;
+                   evt.Title = request.Title ?? evt.Title;
+               })
+               .Returns(updatedEvent);
+
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.Is<Event>(e => e.SoldQuantity == originalSoldQuantity)), Times.Once());
+       }
+
+       // UTCID37: Update with add and remove images simultaneously - Success
+       [Fact]
+       public async Task UTCID37_UpdateEventAsync_WithAddAndRemoveImagesSimultaneously_ShouldUpdateImages()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+
+           var updateRequest = new UpdateEventRequest
+           {
+               RemoveImageUrls = new List<string> { "old-image.jpg" },
+               ImgListEvent = new List<string> { "new-image.jpg" }
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = false,
+               IsDeleted = false,
+               ImgListEvent = "old-image.jpg, keep-image.jpg",
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+           _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
+               .Returns(Task.CompletedTask);
+
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+           _mockCloudinaryService.Verify(x => x.DeleteImageAsync("old-image.jpg"), Times.Once());
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
+       }
+
+       // UTCID38: Update with add and remove evidence simultaneously - Success
+       [Fact]
+       public async Task UTCID38_UpdateEventAsync_WithAddAndRemoveEvidenceSimultaneously_ShouldUpdateEvidence()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+
+           var updateRequest = new UpdateEventRequest
+           {
+               RemoveImageEvidenceUrls = new List<string> { "old-evidence.jpg" },
+               ImgListEvidences = new List<string> { "new-evidence.jpg" }
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = false,
+               IsDeleted = false,
+               ImgListEvent = "image1.jpg",
+               ImgListEvidences = "old-evidence.jpg, keep-evidence.jpg",
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+           _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
+               .Returns(Task.CompletedTask);
+
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+           _mockCloudinaryService.Verify(x => x.DeleteImageAsync("old-evidence.jpg"), Times.Once());
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
+       }
+
+       // UTCID39: Update without Publish - Success
+       [Fact]
+       public async Task UTCID39_UpdateEventAsync_WithoutPublish_ShouldReturnSuccess()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+
+           var updateRequest = new UpdateEventRequest
+           {
+               Title = "Updated Title",
+               Description = "Updated Description"
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Original Title",
+               Description = "Original Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = false,
+               IsDeleted = false,
+               ImgListEvent = "image1.jpg",
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
+       }
+
+       // UTCID40: AddTagIds with existing tag - Success (should not duplicate)
+       [Fact]
+       public async Task UTCID40_UpdateEventAsync_WithAddExistingTag_ShouldNotDuplicateTag()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var existingTagId = Guid.NewGuid();
+
+           var updateRequest = new UpdateEventRequest
+           {
+               AddTagIds = new List<Guid> { existingTagId }
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = false,
+               IsDeleted = false,
+               ImgListEvent = "image1.jpg",
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = existingTagId } // Tag already exists
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+           existingEvent.EventTags.Should().HaveCount(1); // Should not add duplicate
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
+       }
+
+
+       // UTCID42: RemoveImageUrls with URL not in existing images - Success
+       [Fact]
+       public async Task UTCID42_UpdateEventAsync_WithRemoveNonExistentImage_ShouldIgnoreRemoval()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+
+           var updateRequest = new UpdateEventRequest
+           {
+               RemoveImageUrls = new List<string> { "non-existent-image.jpg" }
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = false,
+               IsDeleted = false,
+               ImgListEvent = "image1.jpg, image2.jpg", // Different images
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+           _mockCloudinaryService.Verify(x => x.DeleteImageAsync(It.IsAny<string>()), Times.Never); // Should not delete non-existent image
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
+       }
+
+       // UTCID43: Add images that already exist - Success (should not duplicate)
+       [Fact]
+       public async Task UTCID43_UpdateEventAsync_WithAddExistingImages_ShouldNotDuplicate()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var existingImage = "image1.jpg";
+
+           var updateRequest = new UpdateEventRequest
+           {
+               ImgListEvent = new List<string> { existingImage, "new-image.jpg" }
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = false,
+               IsDeleted = false,
+               ImgListEvent = existingImage, // Image already exists
+               TicketTypes = new List<TicketType>
+               {
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
+       }
+
+       // UTCID44: Remove ticket with no sold quantity - Success
+       [Fact]
+       public async Task UTCID44_UpdateEventAsync_WithRemoveTicketNoSoldQuantity_ShouldRemoveTicket()
+       {
+           // Arrange
+           var organizerId = Guid.NewGuid();
+           var eventId = Guid.NewGuid();
+           var ticketToRemoveId = Guid.NewGuid();
+
+           var updateRequest = new UpdateEventRequest
+           {
+               RemoveTicketTypeIds = new List<Guid> { ticketToRemoveId }
+           };
+
+           var ticketToRemove = new TicketType
+           {
+               Id = ticketToRemoveId,
+               TicketName = "Ticket to Remove",
+               TicketQuantity = 50,
+               SoldQuantity = 0 // No sold tickets
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               OrganizerProfileId = organizerId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               Publish = false,
+               IsDeleted = false,
+               ImgListEvent = "image1.jpg",
+               TicketTypes = new List<TicketType>
+               {
+                   ticketToRemove,
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Keep Ticket", TicketQuantity = 100 }
+               },
+               EventTags = new List<EventTag>
+               {
+                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
+               }
+           };
+
+           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+               .Returns(eventQueryable); // For checking sold quantity
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(func => func());
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+           // Act
+           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
+
+           // Assert
+           result.IsSuccess.Should().BeTrue();
+           existingEvent.TicketTypes.Should().HaveCount(1); // Should remove the ticket
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
+       }
+       #endregion
+
 
        #region DeleteEventAsync Tests
 
@@ -3783,21 +5957,63 @@ namespace AIEvent.Application.Test.Services
            result.Error!.StatusCode.Should().Contain(ErrorCodes.InvalidInput);
        }
 
+       // UTCID17: DeleteEventAsync with Publish=true and no bookings - Should succeed
        [Fact]
-       public async Task UTCID15_DeleteEventAsync_WithEmptyOrganizerIdAndEventId_ShouldReturnFailure()
+       public async Task UTCID17_DeleteEventAsync_WithPublishedEventAndNoBookings_ShouldSucceed()
        {
            // Arrange
-           var eventId = Guid.Empty;
-           var organizerId = Guid.Empty;
+           var eventId = Guid.NewGuid();
+           var organizerId = Guid.NewGuid();
 
-           // Act
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               Title = "Published Event",
+               Description = "Test Description",
+               StartTime = DateTime.Now.AddDays(5),
+               EndTime = DateTime.Now.AddDays(5).AddHours(3),
+               OrganizerProfileId = organizerId,
+               EventCategoryId = Guid.NewGuid(),
+               TicketPricingType = TicketPricingType.Free,
+               TotalTickets = 100,
+               SoldQuantity = 0,
+               DeletedAt = null,
+               IsDeleted = false,
+               Publish = true, // Published event
+               CreatedAt = DateTime.Now,
+               OrganizerProfile = new OrganizerProfile
+               {
+                   Id = organizerId,
+                   UserId = Guid.NewGuid(),
+                   ContactName = "Test Organizer",
+                   ContactEmail = "test@test.com",
+                   ContactPhone = "123456789",
+                   Address = "Test Address",
+                   OrganizationType = OrganizationType.PrivateCompany,
+                   EventFrequency = EventFrequency.Occasionally,
+                   EventSize = EventSize.Small,
+                   OrganizerType = OrganizerType.Individual,
+                   EventExperienceLevel = EventExperienceLevel.Beginner
+               },
+               Bookings = new List<Booking>() // No bookings
+           };
+
+           var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+           _mockUnitOfWork.Setup(x => x.EventRepository.DeleteAsync(It.IsAny<Event>()))
+               .Returns(Task.CompletedTask);
+
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(async func => await func());
+
+           // Act - no reason needed because no bookings
            var result = await _eventService.DeleteEventAsync(eventId, organizerId, null);
 
            // Assert
            result.Should().NotBeNull();
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Contain("Invalid input");
-           result.Error!.StatusCode.Should().Contain(ErrorCodes.InvalidInput);
+           result.IsSuccess.Should().BeTrue();
+           _mockUnitOfWork.Verify(x => x.EventRepository.DeleteAsync(It.IsAny<Event>()), Times.Once);
        }
        #endregion
 
@@ -6001,1882 +8217,5 @@ namespace AIEvent.Application.Test.Services
        }
        #endregion
 
-       #region UpdateEventAsync Tests
-
-       // UTCID01: Valid update request - Success
-       [Fact]
-       public async Task UTCID01_UpdateEventAsync_WithValidRequest_ShouldReturnSuccess()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var updateRequest = new UpdateEventRequest
-           {
-               Title = "Updated Title",
-               Description = "Updated Description"
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Original Title",
-               Description = "Original Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               LocationName = "Test Location",
-               District = "Test District",
-               Address = "Test Address",
-               Publish = false,
-               IsDeleted = false,
-               ImgListEvent = "image1.jpg",
-               ImgListEvidences = "evidence1.jpg",
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Ticket 1", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
-       }
-
-       // UTCID02: Empty organizerId - Failure
-       [Fact]
-       public async Task UTCID02_UpdateEventAsync_WithEmptyOrganizerId_ShouldReturnFailure()
-       {
-           // Arrange
-           var organizerId = Guid.Empty;
-           var eventId = Guid.NewGuid();
-           var updateRequest = new UpdateEventRequest { Title = "Updated Title" };
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Be("Invalid input");
-           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-           _mockUnitOfWork.Verify(x => x.EventRepository.Query(false), Times.Never());
-       }
-
-       // UTCID03: Empty eventId - Failure
-       [Fact]
-       public async Task UTCID03_UpdateEventAsync_WithEmptyEventId_ShouldReturnFailure()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.Empty;
-           var updateRequest = new UpdateEventRequest { Title = "Updated Title" };
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Be("Invalid input");
-           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-           _mockUnitOfWork.Verify(x => x.EventRepository.Query(false), Times.Never());
-       }
-
-       // UTCID04: Event not found - Failure
-       [Fact]
-       public async Task UTCID04_UpdateEventAsync_WithNonExistentEvent_ShouldReturnFailure()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var updateRequest = new UpdateEventRequest { Title = "Updated Title" };
-
-           var eventQueryable = new List<Event>().AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Be("Event not found");
-           result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
-       }
-
-       // UTCID05: Event is deleted - Failure
-       [Fact]
-       public async Task UTCID05_UpdateEventAsync_WithDeletedEvent_ShouldReturnFailure()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var updateRequest = new UpdateEventRequest { Title = "Updated Title" };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               IsDeleted = true
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Be("Event not found");
-           result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
-       }
-
-       // UTCID06: Unauthorized - Different organizer - Failure
-       [Fact]
-       public async Task UTCID06_UpdateEventAsync_WithDifferentOrganizer_ShouldReturnFailure()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var differentOrganizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var updateRequest = new UpdateEventRequest { Title = "Updated Title" };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = differentOrganizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               IsDeleted = false,
-               TicketTypes = new List<TicketType>(),
-               EventTags = new List<EventTag>()
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Be("You don't have permission to update this event");
-           result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
-       }
-
-
-       // UTCID07: Publish validation - Missing title - Failure
-       [Fact]
-       public async Task UTCID07_UpdateEventAsync_WithPublishAndMissingTitle_ShouldReturnFailure()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var updateRequest = new UpdateEventRequest
-           {
-               Publish = true,
-               Title = ""
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Publish = false,
-               IsDeleted = false,
-               Title = "",
-               Description = "Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Contain("Title is required");
-           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-       }
-
-       // UTCID08: Publish validation - EndTime before StartTime - Failure
-       [Fact]
-       public async Task UTCID08_UpdateEventAsync_WithPublishAndEndTimeBeforeStartTime_ShouldReturnFailure()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var startTime = DateTime.Now.AddDays(5);
-           var endTime = DateTime.Now.AddDays(3);
-
-           var updateRequest = new UpdateEventRequest
-           {
-               Publish = true,
-               StartTime = startTime,
-               EndTime = endTime
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Publish = false,
-               IsDeleted = false,
-               Title = "Title",
-               Description = "Description",
-               StartTime = startTime,
-               EndTime = endTime,
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Contain("EndTime must be after StartTime");
-           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-       }
-
-       // UTCID09: Publish validation - SaleEndTime after event StartTime - Failure
-       [Fact]
-       public async Task UTCID09_UpdateEventAsync_WithPublishAndSaleEndTimeAfterStartTime_ShouldReturnFailure()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var startTime = DateTime.Now.AddDays(5);
-           var saleEndTime = DateTime.Now.AddDays(6);
-
-           var updateRequest = new UpdateEventRequest
-           {
-               Publish = true,
-               SaleEndTime = saleEndTime
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Publish = false,
-               IsDeleted = false,
-               Title = "Title",
-               Description = "Description",
-               StartTime = startTime,
-               EndTime = startTime.AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = saleEndTime,
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Contain("SaleEndTime cannot be after event StartTime");
-           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-       }
-
-       // UTCID10: Publish validation - Missing location - Failure
-       [Fact]
-       public async Task UTCID10_UpdateEventAsync_WithPublishAndMissingLocation_ShouldReturnFailure()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-
-           var updateRequest = new UpdateEventRequest
-           {
-               Publish = true,
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Publish = false,
-               IsDeleted = false,
-               Title = "Title",
-               Description = "Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
-               LocationName = "",
-               District = "",
-               Address = "",
-               ImgListEvent = "image1.jpg",
-               ImgListEvidences = "evidence1.jpg",
-               TicketPricingType = TicketPricingType.Free,
-               TotalTickets = 100,
-               EventCategoryId = Guid.NewGuid(),
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Contain("LocationName is required for offline events");
-           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-       }
-
-       // UTCID11: Publish validation - Missing evidence - Failure
-       [Fact]
-       public async Task UTCID11_UpdateEventAsync_WithPublishAndMissingEvidence_ShouldReturnFailure()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-
-           var updateRequest = new UpdateEventRequest
-           {
-               Publish = true
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Publish = false,
-               IsDeleted = false,
-               Title = "Title",
-               Description = "Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
-               LocationName = "Test Location",
-               District = "Test District",
-               Address = "Test Address",
-               ImgListEvent = "image1.jpg",
-               ImgListEvidences = "", // Missing evidence
-               TicketPricingType = TicketPricingType.Free,
-               TotalTickets = 100,
-               EventCategoryId = Guid.NewGuid(),
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Contain("Evidence is required when publishing an event");
-           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-       }
-
-       // UTCID12: Publish validation - Missing images - Failure
-       [Fact]
-       public async Task UTCID12_UpdateEventAsync_WithPublishAndNoImages_ShouldReturnFailure()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-
-           var updateRequest = new UpdateEventRequest
-           {
-               Publish = true
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Publish = false,
-               IsDeleted = false,
-               Title = "Title",
-               Description = "Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
-               LocationName = "Test Location",
-               District = "Test District",
-               Address = "Test Address",
-               ImgListEvent = "", // Missing images
-               ImgListEvidences = "evidence1.jpg",
-               TicketPricingType = TicketPricingType.Free,
-               TotalTickets = 100,
-               EventCategoryId = Guid.NewGuid(),
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Contain("At least one event image is required");
-           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-       }
-
-       // UTCID13: Publish validation - No ticket details - Failure
-       [Fact]
-       public async Task UTCID13_UpdateEventAsync_WithPublishAndNoTicketTypes_ShouldReturnFailure()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-
-           var updateRequest = new UpdateEventRequest
-           {
-               Publish = true
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Publish = false,
-               IsDeleted = false,
-               Title = "Title",
-               Description = "Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
-               LocationName = "Test Location",
-               District = "Test District",
-               Address = "Test Address",
-               ImgListEvent = "image1.jpg",
-               ImgListEvidences = "evidence1.jpg",
-               TicketPricingType = TicketPricingType.Free,
-               TotalTickets = 100,
-               EventCategoryId = Guid.NewGuid(),
-               TicketTypes = new List<TicketType>(),
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Contain("At least one ticket type is required");
-           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-       }
-
-
-       // UTCID14: Publish validation - Valid data with Publish=true - Success
-       [Fact]
-       public async Task UTCID14_UpdateEventAsync_WithValidPublishData_ShouldSetPublishAndRequireApproval()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-
-           var updateRequest = new UpdateEventRequest
-           {
-               Publish = true
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Publish = false,
-               IsDeleted = false,
-               Title = "Title",
-               Description = "Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
-               LocationName = "Test Location",
-               District = "Test District",
-               Address = "Test Address",
-               ImgListEvent = "image1.jpg",
-               ImgListEvidences = "evidence1.jpg",
-               TicketPricingType = TicketPricingType.Free,
-               TotalTickets = 100,
-               EventCategoryId = Guid.NewGuid(),
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           existingEvent.Publish.Should().BeTrue();
-           existingEvent.RequireApproval.Should().Be(ConfirmStatus.NeedConfirm);
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
-       }
-
-       // UTCID15: Add new images - Success
-       [Fact]
-       public async Task UTCID15_UpdateEventAsync_WithAddImages_ShouldUploadAndAddImages()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var mockFile = CreateMockFormFile();
-
-           var updateRequest = new UpdateEventRequest
-           {
-               ImgListEvent = new List<string> { "new-uploaded-image.jpg" }
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               ImgListEvent = "existing-image.jpg",
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockCloudinaryService.Setup(x => x.UploadImageAsync(It.IsAny<IFormFile>()))
-               .ReturnsAsync("new-uploaded-image.jpg");
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           _mockCloudinaryService.Verify(x => x.UploadImageAsync(It.IsAny<IFormFile>()), Times.Once());
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
-       }
-
-       // UTCID16: Remove images - Success
-       [Fact]
-       public async Task UTCID16_UpdateEventAsync_WithRemoveImages_ShouldDeleteImages()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var imageToRemove = "image-to-remove.jpg";
-
-           var updateRequest = new UpdateEventRequest
-           {
-               RemoveImageUrls = new List<string> { imageToRemove }
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               ImgListEvent = $"{imageToRemove}, keep-image.jpg",
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
-               .Returns(Task.CompletedTask);
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           _mockCloudinaryService.Verify(x => x.DeleteImageAsync(imageToRemove), Times.Once());
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
-       }
-
-       // UTCID17: Add new ticket detail - Success
-       [Fact]
-       public async Task UTCID17_UpdateEventAsync_WithAddNewTicketType_ShouldAddTicket()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-
-           var updateRequest = new UpdateEventRequest
-           {
-               TicketTypes = new List<TicketTypeRequest>
-               {
-                   new TicketTypeRequest
-                   {
-                       Id = null, // New ticket
-                       TicketName = "New Ticket",
-                       TicketPrice = 50,
-                       TicketQuantity = 100
-                   }
-               }
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Existing Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var newTicket = new TicketType
-           {
-               TicketName = "New Ticket",
-               TicketPrice = 50,
-               TicketQuantity = 100
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockMapper.Setup(x => x.Map<TicketType>(It.IsAny<TicketTypeRequest>())).Returns(newTicket);
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
-       }
-
-       // UTCID18: Update existing ticket detail - Success
-       [Fact]
-       public async Task UTCID18_UpdateEventAsync_WithUpdateExistingTicketType_ShouldUpdateTicket()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var ticketId = Guid.NewGuid();
-
-           var updateRequest = new UpdateEventRequest
-           {
-               TicketTypes = new List<TicketTypeRequest>
-               {
-                   new TicketTypeRequest
-                   {
-                       Id = ticketId,
-                       TicketName = "Updated Ticket",
-                       TicketPrice = 75,
-                       TicketQuantity = 150
-                   }
-               }
-           };
-
-           var existingTicket = new TicketType
-           {
-               Id = ticketId,
-               TicketName = "Original Ticket",
-               TicketPrice = 50,
-               TicketQuantity = 100,
-               SoldQuantity = 10
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               TicketTypes = new List<TicketType> { existingTicket },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockMapper.Setup(x => x.Map(It.IsAny<TicketTypeRequest>(), existingTicket)).Returns(existingTicket);
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
-       }
-
-       // UTCID19: Remove all ticket details without adding new ones - Failure
-       [Fact]
-       public async Task UTCID19_UpdateEventAsync_WithRemoveAllTicketTypesAndNoNewOnes_ShouldReturnFailure()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var ticketId = Guid.NewGuid();
-
-           var updateRequest = new UpdateEventRequest
-           {
-               RemoveTicketTypeIds = new List<Guid> { ticketId }
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = ticketId, TicketName = "Only ticket", TicketQuantity = 100, SoldQuantity = 0 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           // Act & Assert
-           await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-               await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest));
-       }
-
-       // UTCID20: Add new tag - Success
-       [Fact]
-       public async Task UTCID20_UpdateEventAsync_WithAddNewTag_ShouldAddTag()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var newTagId = Guid.NewGuid();
-
-           var updateRequest = new UpdateEventRequest
-           {
-               AddTagIds = new List<Guid> { newTagId }
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
-       }
-
-       // UTCID21: Remove tag - Success
-       [Fact]
-       public async Task UTCID21_UpdateEventAsync_WithRemoveTag_ShouldRemoveTag()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var tagIdToRemove = Guid.NewGuid();
-
-           var updateRequest = new UpdateEventRequest
-           {
-               RemoveTagIds = new List<Guid> { tagIdToRemove }
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = tagIdToRemove },
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
-       }
-
-
-       // UTCID22: Publish validation - with
-       [Fact]
-       public async Task UTCID22_UpdateEventAsync_WithPublishAndZeroTotalTickets_ShouldReturnFailure()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-
-           var updateRequest = new UpdateEventRequest
-           {
-               Publish = true,
-               TotalTickets = 0
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Publish = false,
-               IsDeleted = false,
-               Title = "Title",
-               Description = "Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
-               LocationName = "Test Location",
-               District = "Test District",
-               Address = "Test Address",
-               ImgListEvent = "image1.jpg",
-               ImgListEvidences = "evidence1.jpg",
-               TicketPricingType = TicketPricingType.Free,
-               TotalTickets = 0,
-               EventCategoryId = Guid.NewGuid(),
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Contain("TotalTickets must be greater than 0");
-           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-       }
-
-       // UTCID23: Publish validation - Missing EventCategoryId
-       [Fact]
-       public async Task UTCID23_UpdateEventAsync_WithPublishAndMissingEventCategoryId_ShouldReturnFailure()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-
-           var updateRequest = new UpdateEventRequest
-           {
-               Publish = true,
-               EventCategoryId = Guid.Empty
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Publish = false,
-               IsDeleted = false,
-               Title = "Title",
-               Description = "Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
-               LocationName = "Test Location",
-               District = "Test District",
-               Address = "Test Address",
-               ImgListEvent = "image1.jpg",
-               ImgListEvidences = "evidence1.jpg",
-               TicketPricingType = TicketPricingType.Free,
-               TotalTickets = 100,
-               EventCategoryId = Guid.Empty,
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Contain("EventCategoryId is required");
-           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-       }
-
-       // UTCID24: Add evidence images - Success
-       [Fact]
-       public async Task UTCID24_UpdateEventAsync_WithAddEvidence_ShouldUploadAndAddEvidence()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var mockEvidenceFile = CreateMockFormFile("evidence.jpg");
-
-           var updateRequest = new UpdateEventRequest
-           {
-               ImgListEvidences = new List<string> { "uploaded-evidence.jpg" }
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               ImgListEvent = "image1.jpg",
-               ImgListEvidences = "",
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockCloudinaryService.Setup(x => x.UploadImageAsync(It.IsAny<IFormFile>()))
-               .ReturnsAsync("uploaded-evidence.jpg");
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           _mockCloudinaryService.Verify(x => x.UploadImageAsync(It.IsAny<IFormFile>()), Times.Once());
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
-       }
-
-       // UTCID25: Published event with active bookings (Pending) - Failure
-       [Fact]
-       public async Task UTCID25_UpdateEventAsync_WithPublishedEventAndPendingBookings_ShouldReturnFailure()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var updateRequest = new UpdateEventRequest { Title = "Updated Title" };
-
-           var booking = new Booking
-           {
-               Id = Guid.NewGuid(),
-               EventId = eventId,
-               Status = BookingStatus.Pending
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = true,
-               IsDeleted = false,
-               Bookings = new List<Booking> { booking },
-               TicketTypes = new List<TicketType>(),
-               EventTags = new List<EventTag>()
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-
-           _mockUnitOfWork.SetupSequence(x => x.EventRepository.Query(false))
-               .Returns(eventQueryable)
-               .Returns(eventQueryable);
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Be("Cannot update published event that has existing bookings");
-           result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-       }
-
-       // UTCID26: Published event with active bookings (Completed) - Failure
-       [Fact]
-       public async Task UTCID26_UpdateEventAsync_WithPublishedEventAndCompletedBookings_ShouldReturnFailure()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var updateRequest = new UpdateEventRequest { Title = "Updated Title" };
-
-           var booking = new Booking { Id = Guid.NewGuid(), EventId = eventId, Status = BookingStatus.Completed };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test",
-               Description = "Test",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = true,
-               IsDeleted = false,
-               Bookings = new List<Booking> { booking },
-               TicketTypes = new List<TicketType>(),
-               EventTags = new List<EventTag>()
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-
-           _mockUnitOfWork.SetupSequence(x => x.EventRepository.Query(false))
-               .Returns(eventQueryable)
-               .Returns(eventQueryable);
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Be("Cannot update published event that has existing bookings");
-       }
-
-       // UTCID27: Published event without active bookings (Cancelled only) - Success
-       [Fact]
-       public async Task UTCID27_UpdateEventAsync_WithPublishedEventAndOnlyCancelledBookings_ShouldReturnSuccess()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var updateRequest = new UpdateEventRequest { Title = "Updated Title" };
-           var booking = new Booking { Id = Guid.NewGuid(), EventId = eventId, Status = BookingStatus.Cancelled };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test",
-               Description = "Test",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = true,
-               IsDeleted = false,
-               Bookings = new List<Booking> { booking },
-               TicketTypes = new List<TicketType> { new TicketType { Id = Guid.NewGuid(), TicketName = "Standard", TicketQuantity = 100 } },
-               EventTags = new List<EventTag> { new EventTag { EventId = eventId, TagId = Guid.NewGuid() } }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-
-           _mockUnitOfWork.SetupSequence(x => x.EventRepository.Query(false))
-               .Returns(eventQueryable)
-               .Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-       }
-
-       // UTCID28: Published event without any bookings - Success
-       [Fact]
-       public async Task UTCID28_UpdateEventAsync_WithPublishedEventAndNoBookings_ShouldReturnSuccess()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var updateRequest = new UpdateEventRequest { Title = "Updated Title" };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test",
-               Description = "Test",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = true,
-               IsDeleted = false,
-               Bookings = new List<Booking>(),
-               TicketTypes = new List<TicketType> { new TicketType { Id = Guid.NewGuid(), TicketName = "Standard", TicketQuantity = 100 } },
-               EventTags = new List<EventTag> { new EventTag { EventId = eventId, TagId = Guid.NewGuid() } }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-
-           _mockUnitOfWork.SetupSequence(x => x.EventRepository.Query(false))
-               .Returns(eventQueryable)
-               .Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-       }
-
-       // UTCID29: Publish validation - Missing Description
-       [Fact]
-       public async Task UTCID29_UpdateEventAsync_WithPublishAndMissingDescription_ShouldReturnFailure()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var updateRequest = new UpdateEventRequest { Publish = true, Description = "" };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test",
-               Description = "",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
-               LocationName = "Location",
-               District = "District",
-               Address = "Address",
-               ImgListEvent = "image.jpg",
-               ImgListEvidences = "evidence.jpg",
-               TicketPricingType = TicketPricingType.Free,
-               TotalTickets = 100,
-               EventCategoryId = Guid.NewGuid(),
-               TicketTypes = new List<TicketType> { new TicketType { Id = Guid.NewGuid(), TicketName = "Standard", TicketQuantity = 100 } },
-               EventTags = new List<EventTag> { new EventTag { EventId = eventId, TagId = Guid.NewGuid() } }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Contain("Description is required");
-       }
-
-       // UTCID30: Publish validation - Missing TicketType
-       [Fact]
-       public async Task UTCID30_UpdateEventAsync_WithPublishAndMissingTicketType_ShouldReturnFailure()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var updateRequest = new UpdateEventRequest { Publish = true };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test",
-               Description = "Test",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
-               LocationName = "Location",
-               District = "District",
-               Address = "Address",
-               ImgListEvent = "image.jpg",
-               ImgListEvidences = "evidence.jpg",
-               TicketPricingType = default,
-               TotalTickets = 100,
-               EventCategoryId = Guid.NewGuid(),
-               TicketTypes = new List<TicketType> { new TicketType { Id = Guid.NewGuid(), TicketName = "Standard", TicketQuantity = 100 } },
-               EventTags = new List<EventTag> { new EventTag { EventId = eventId, TagId = Guid.NewGuid() } }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Contain("TicketType is required");
-       }
-
-       // UTCID31: Publish validation - TotalTickets boundary value = 1
-       [Fact]
-       public async Task UTCID31_UpdateEventAsync_WithPublishAndTotalTicketsEqualOne_ShouldReturnSuccess()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var updateRequest = new UpdateEventRequest { Publish = true, TotalTickets = 1 };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test",
-               Description = "Test",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
-               LocationName = "Location",
-               District = "District",
-               Address = "Address",
-               ImgListEvent = "image.jpg",
-               ImgListEvidences = "evidence.jpg",
-               TicketPricingType = TicketPricingType.Free,
-               TotalTickets = 1,
-               EventCategoryId = Guid.NewGuid(),
-               TicketTypes = new List<TicketType> { new TicketType { Id = Guid.NewGuid(), TicketName = "Standard", TicketQuantity = 100 } },
-               EventTags = new List<EventTag> { new EventTag { EventId = eventId, TagId = Guid.NewGuid() } }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-       }
-
-       // UTCID32: Remove all images without adding new ones - Failure
-       [Fact]
-       public async Task UTCID32_UpdateEventAsync_WithRemoveAllImagesAndNoNewOnes_ShouldThrowException()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var imageToRemove = "image1.jpg";
-
-           var updateRequest = new UpdateEventRequest
-           {
-               RemoveImageUrls = new List<string> { imageToRemove }
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               ImgListEvent = imageToRemove,
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
-               .Returns(Task.CompletedTask);
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           // Act & Assert
-           await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-               await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest));
-       }
-
-       // UTCID33: Remove all images but add new ones - Success
-       [Fact]
-       public async Task UTCID33_UpdateEventAsync_WithRemoveAllImagesAndAddNewOnes_ShouldReplaceImages()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var imageToRemove = "image1.jpg";
-
-           var updateRequest = new UpdateEventRequest
-           {
-               RemoveImageUrls = new List<string> { imageToRemove },
-               ImgListEvent = new List<string> { "new-image.jpg" }
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               ImgListEvent = imageToRemove,
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
-               .Returns(Task.CompletedTask);
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           _mockCloudinaryService.Verify(x => x.DeleteImageAsync(imageToRemove), Times.Once());
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
-       }
-
-       // UTCID34: Remove all evidence without adding new ones - Failure
-       [Fact]
-       public async Task UTCID34_UpdateEventAsync_WithRemoveAllEvidenceAndNoNewOnes_ShouldThrowException()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var evidenceToRemove = "evidence1.jpg";
-
-           var updateRequest = new UpdateEventRequest
-           {
-               RemoveImageEvidenceUrls = new List<string> { evidenceToRemove }
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               ImgListEvent = "image1.jpg",
-               ImgListEvidences = evidenceToRemove,
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
-               .Returns(Task.CompletedTask);
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           // Act & Assert
-           await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-               await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest));
-       }
-
-       // UTCID35: Remove all evidence but add new ones - Success
-       [Fact]
-       public async Task UTCID35_UpdateEventAsync_WithRemoveAllEvidenceAndAddNewOnes_ShouldReplaceEvidence()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var evidenceToRemove = "evidence1.jpg";
-
-           var updateRequest = new UpdateEventRequest
-           {
-               RemoveImageEvidenceUrls = new List<string> { evidenceToRemove },
-               ImgListEvidences = new List<string> { "new-evidence.jpg" }
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               ImgListEvent = "image1.jpg",
-               ImgListEvidences = evidenceToRemove,
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
-               .Returns(Task.CompletedTask);
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           _mockCloudinaryService.Verify(x => x.DeleteImageAsync(evidenceToRemove), Times.Once());
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
-       }
-
-       // UTCID36: Update with SoldQuantity preserved when mapped to zero - Success
-       [Fact]
-       public async Task UTCID36_UpdateEventAsync_WithSoldQuantityPreserved_ShouldKeepOriginalSoldQuantity()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var originalSoldQuantity = 50;
-
-           var updateRequest = new UpdateEventRequest
-           {
-               TotalTickets = 200, // This would normally reset SoldQuantity to 0
-               Title = "Updated Title"
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Original Title",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               SoldQuantity = originalSoldQuantity,
-               TotalTickets = 100,
-               ImgListEvent = "image1.jpg",
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var updatedEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Updated Title",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               SoldQuantity = 0, // This would be set by mapper
-               TotalTickets = 200,
-               ImgListEvent = "image1.jpg",
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           
-           // Mock mapper to return event with SoldQuantity = 0
-           _mockMapper.Setup(x => x.Map(updateRequest, It.IsAny<Event>()))
-               .Callback<UpdateEventRequest, Event>((request, evt) => 
-               {
-                   evt.SoldQuantity = 0; // Simulate mapper behavior
-                   evt.TotalTickets = request.TotalTickets ?? evt.TotalTickets;
-                   evt.Title = request.Title ?? evt.Title;
-               })
-               .Returns(updatedEvent);
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.Is<Event>(e => e.SoldQuantity == originalSoldQuantity)), Times.Once());
-       }
-
-       // UTCID37: Update with add and remove images simultaneously - Success
-       [Fact]
-       public async Task UTCID37_UpdateEventAsync_WithAddAndRemoveImagesSimultaneously_ShouldUpdateImages()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-
-           var updateRequest = new UpdateEventRequest
-           {
-               RemoveImageUrls = new List<string> { "old-image.jpg" },
-               ImgListEvent = new List<string> { "new-image.jpg" }
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               ImgListEvent = "old-image.jpg, keep-image.jpg",
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
-               .Returns(Task.CompletedTask);
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           _mockCloudinaryService.Verify(x => x.DeleteImageAsync("old-image.jpg"), Times.Once());
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
-       }
-
-       // UTCID38: Update with add and remove evidence simultaneously - Success
-       [Fact]
-       public async Task UTCID38_UpdateEventAsync_WithAddAndRemoveEvidenceSimultaneously_ShouldUpdateEvidence()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-
-           var updateRequest = new UpdateEventRequest
-           {
-               RemoveImageEvidenceUrls = new List<string> { "old-evidence.jpg" },
-               ImgListEvidences = new List<string> { "new-evidence.jpg" }
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               ImgListEvent = "image1.jpg",
-               ImgListEvidences = "old-evidence.jpg, keep-evidence.jpg",
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
-               .Returns(Task.CompletedTask);
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           _mockCloudinaryService.Verify(x => x.DeleteImageAsync("old-evidence.jpg"), Times.Once());
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
-       }
-       #endregion
    }
 }
