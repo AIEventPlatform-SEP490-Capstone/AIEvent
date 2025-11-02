@@ -8,12 +8,12 @@ import MyEventsScreen from '../screens/myEventsScreen';
 import ProfileScreen from '../screens/profileScreen';
 import WalletScreen from '../screens/walletScreen';
 import PaymentScreen from '../screens/paymentScreen';
+import PaymentInformationScreen from '../screens/paymentInfoScreen';
 import ChangePasswordScreen from '../screens/changePasswordScreen';
 import SettingsScreen from '../screens/settingsScreen';
 import TicketsScreen from '../screens/ticketsScreen';
 import LikesScreen from '../screens/likesScreen';
 import FriendsScreen from '../screens/friendsScreen';
-import HistoryScreen from '../screens/historyScreen';
 import TimelineScreen from '../screens/timelineScreen';
 import ScreenNames from '../constants/ScreenNames';
 import Images from '../constants/Images';
@@ -126,20 +126,7 @@ const ProfileStack = () => {
         name={ScreenNames.WALLET_SCREEN} 
         component={WalletScreen}
         options={{
-          headerShown: true,
-          title: 'Ví điện tử',
-          headerStyle: {
-            backgroundColor: Colors.white,
-            elevation: 0,
-            shadowOpacity: 0,
-            borderBottomWidth: 1,
-            borderBottomColor: Colors.border,
-          },
-          headerTitleStyle: {
-            color: Colors.textPrimary,
-            fontSize: 18,
-            fontWeight: '600',
-          },
+          headerShown: false,
         }}
       />
       <Stack.Screen 
@@ -150,23 +137,17 @@ const ProfileStack = () => {
         }}
       />
       <Stack.Screen 
+        name={ScreenNames.PAYMENT_INFORMATION_SCREEN} 
+        component={PaymentInformationScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
         name={ScreenNames.SETTINGS_SCREEN} 
         component={SettingsScreen}
         options={{
-          headerShown: true,
-          title: 'Cài đặt',
-          headerStyle: {
-            backgroundColor: Colors.white,
-            elevation: 0,
-            shadowOpacity: 0,
-            borderBottomWidth: 1,
-            borderBottomColor: Colors.border,
-          },
-          headerTitleStyle: {
-            color: Colors.textPrimary,
-            fontSize: 18,
-            fontWeight: '600',
-          },
+          headerShown: false,
         }}
       />
       <Stack.Screen 
@@ -180,80 +161,21 @@ const ProfileStack = () => {
         name={ScreenNames.TICKETS_SCREEN} 
         component={TicketsScreen}
         options={{
-          headerShown: true,
-          title: 'Vé của tôi',
-          headerStyle: {
-            backgroundColor: Colors.white,
-            elevation: 0,
-            shadowOpacity: 0,
-            borderBottomWidth: 1,
-            borderBottomColor: Colors.border,
-          },
-          headerTitleStyle: {
-            color: Colors.textPrimary,
-            fontSize: 18,
-            fontWeight: '600',
-          },
+          headerShown: false,
         }}
       />
       <Stack.Screen 
         name={ScreenNames.LIKES_SCREEN} 
         component={LikesScreen}
         options={{
-          headerShown: true,
-          title: 'Yêu thích',
-          headerStyle: {
-            backgroundColor: Colors.white,
-            elevation: 0,
-            shadowOpacity: 0,
-            borderBottomWidth: 1,
-            borderBottomColor: Colors.border,
-          },
-          headerTitleStyle: {
-            color: Colors.textPrimary,
-            fontSize: 18,
-            fontWeight: '600',
-          },
+          headerShown: false,
         }}
       />
       <Stack.Screen 
         name={ScreenNames.FRIENDS_SCREEN} 
         component={FriendsScreen}
         options={{
-          headerShown: true,
-          title: 'Bạn bè',
-          headerStyle: {
-            backgroundColor: Colors.white,
-            elevation: 0,
-            shadowOpacity: 0,
-            borderBottomWidth: 1,
-            borderBottomColor: Colors.border,
-          },
-          headerTitleStyle: {
-            color: Colors.textPrimary,
-            fontSize: 18,
-            fontWeight: '600',
-          },
-        }}
-      />
-      <Stack.Screen 
-        name={ScreenNames.HISTORY_SCREEN} 
-        component={HistoryScreen}
-        options={{
-          headerShown: true,
-          title: 'Lịch sử',
-          headerStyle: {
-            backgroundColor: Colors.white,
-            elevation: 0,
-            shadowOpacity: 0,
-            borderBottomWidth: 1,
-            borderBottomColor: Colors.border,
-          },
-          headerTitleStyle: {
-            color: Colors.textPrimary,
-            fontSize: 18,
-            fontWeight: '600',
-          },
+          headerShown: false,
         }}
       />
     </Stack.Navigator>

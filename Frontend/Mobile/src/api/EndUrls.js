@@ -27,6 +27,12 @@ const EndUrls = {
   WALLET_TRANSACTIONS: `${BASE_URL}/wallet/{walletId}/transactions`,
   PAYMENT_TOPUP: `${BASE_URL}/payment/topup`,
   
+  // Payment Information
+  PAYMENT_INFORMATIONS: `${BASE_URL}/payment/informations`,
+  PAYMENT_INFORMATION: `${BASE_URL}/payment/information`,
+  PAYMENT_INFORMATION_DELETE: (id) => `${BASE_URL}/payment/information/${id}`,
+  PAYMENT_WITHDRAW: `${BASE_URL}/payment/withdraw`,
+  
   // Search
   SEARCH_EVENTS: `${BASE_URL}/events/search`,
   

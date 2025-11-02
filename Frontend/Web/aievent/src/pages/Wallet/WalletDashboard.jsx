@@ -685,12 +685,12 @@ const WalletDashboard = () => {
                       <>
                         {/* Withdraw Form */}
                         <div className="space-y-6">
-                          {/* Selected Payment Card - Giống style trong UserProfilePage */}
-                          <div className="group relative overflow-hidden bg-[#f9f7f5] rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-[#e8e4df]">
+                          {/* Selected Payment Card - White-gray gradient style */}
+                          <div className="group relative overflow-hidden bg-gradient-to-br from-[#F8F8F8] to-[#E8E8E8] rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-[#D1D5DB]">
                             {/* Decorative Pattern */}
-                            <div className="absolute inset-0 opacity-3">
-                              <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full -mr-24 -mt-24"></div>
-                              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full -ml-16 -mb-16"></div>
+                            <div className="absolute inset-0 opacity-5">
+                              <div className="absolute top-0 right-0 w-48 h-48 bg-gray-300 rounded-full -mr-24 -mt-24"></div>
+                              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gray-300 rounded-full -ml-16 -mb-16"></div>
                             </div>
                             
                             {/* Card Content */}
@@ -699,7 +699,7 @@ const WalletDashboard = () => {
                               <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center space-x-3">
                                   {selectedPaymentInfo.bankLogo ? (
-                                    <div className="bg-white rounded-xl p-4 border border-[#e8e4df] shadow-sm">
+                                    <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
                                       <img
                                         src={selectedPaymentInfo.bankLogo}
                                         alt={selectedPaymentInfo.bankName}
@@ -710,12 +710,12 @@ const WalletDashboard = () => {
                                       />
                                     </div>
                                   ) : (
-                                    <div className="bg-white rounded-xl p-4 border border-[#e8e4df] shadow-sm">
-                                      <Building2 className="w-20 h-20 text-blue-600" />
+                                    <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                                      <Building2 className="w-20 h-20 text-gray-700" />
                                     </div>
                                   )}
                                   <div>
-                                    <Badge className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-0 text-xs px-3 py-1 shadow-sm">
+                                    <Badge className="bg-gray-300/40 text-gray-800 border border-gray-300/50 text-xs px-3 py-1 shadow-sm">
                                       {selectedPaymentInfo.bankShortName || selectedPaymentInfo.bankName}
                                     </Badge>
                                     {selectedPaymentInfo.branchName && (
@@ -724,8 +724,8 @@ const WalletDashboard = () => {
                                   </div>
                                 </div>
                                 <div className="flex items-center space-x-2">
-                                  <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center border border-[#e8e4df] shadow-sm">
-                                    <CreditCard className="w-4 h-4 text-blue-600" />
+                                  <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center border border-gray-200 shadow-sm">
+                                    <CreditCard className="w-4 h-4 text-gray-700" />
                                   </div>
                                   <button
                                     onClick={() => {
@@ -736,10 +736,10 @@ const WalletDashboard = () => {
                                       setWithdrawSuccess(false);
                                     }}
                                     disabled={isWithdrawing || withdrawSuccess}
-                                    className="w-8 h-8 bg-white hover:bg-blue-50 rounded-lg flex items-center justify-center border border-[#e8e4df] hover:border-blue-300 shadow-sm transition-all duration-200 hover:scale-105 disabled:opacity-50"
+                                    className="w-8 h-8 bg-white hover:bg-gray-50 rounded-lg flex items-center justify-center border border-gray-200 hover:border-gray-300 shadow-sm transition-all duration-200 hover:scale-105 disabled:opacity-50"
                                     title="Thay đổi"
                                   >
-                                    <X className="w-4 h-4 text-blue-600" />
+                                    <X className="w-4 h-4 text-gray-700" />
                                   </button>
                                 </div>
                               </div>
@@ -753,13 +753,13 @@ const WalletDashboard = () => {
                                   </p>
                                   <button
                                     onClick={() => handleCopyToClipboard(selectedPaymentInfo.accountNumber, selectedPaymentInfo.accountNumber)}
-                                    className="ml-3 p-2 bg-white hover:bg-blue-50 rounded-lg transition-all duration-200 border border-[#e8e4df] hover:border-blue-300 hover:scale-105 shadow-sm"
+                                    className="ml-3 p-2 bg-white hover:bg-gray-50 rounded-lg transition-all duration-200 border border-gray-200 hover:border-gray-300 hover:scale-105 shadow-sm"
                                     title="Sao chép số tài khoản"
                                   >
                                     {copiedAccountNumber === selectedPaymentInfo.accountNumber ? (
                                       <CheckCircle2 className="w-4 h-4 text-green-600" />
                                     ) : (
-                                      <Copy className="w-4 h-4 text-blue-600" />
+                                      <Copy className="w-4 h-4 text-gray-700" />
                                     )}
                                   </button>
                                 </div>
@@ -769,8 +769,8 @@ const WalletDashboard = () => {
                               <div>
                                 <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Chủ tài khoản</p>
                                 <div className="flex items-center">
-                                  <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center mr-2 border border-[#e8e4df] shadow-sm">
-                                    <User className="w-4 h-4 text-blue-600" />
+                                  <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center mr-2 border border-gray-200 shadow-sm">
+                                    <User className="w-4 h-4 text-gray-700" />
                                   </div>
                                   <p className="text-base font-semibold text-gray-900">
                                     {selectedPaymentInfo.accountHolderName}
@@ -779,10 +779,10 @@ const WalletDashboard = () => {
                               </div>
                               
                               {/* Bottom Decoration */}
-                              <div className="absolute bottom-3 right-3 opacity-5">
+                              <div className="absolute bottom-3 right-3 opacity-10">
                                 <div className="grid grid-cols-4 gap-1">
                                   {[...Array(16)].map((_, i) => (
-                                    <div key={i} className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+                                    <div key={i} className="w-1.5 h-1.5 bg-gray-600 rounded-full"></div>
                                   ))}
                                 </div>
                               </div>
@@ -829,6 +829,56 @@ const WalletDashboard = () => {
                               />
                               <div className="absolute right-5 top-1/2 -translate-y-1/2 bg-emerald-100 text-emerald-700 font-bold px-3 py-1.5 rounded-lg text-sm">
                                 VNĐ
+                              </div>
+                            </div>
+
+                            {/* Quick Amount Buttons */}
+                            <div className="mt-4">
+                              <p className="text-xs text-gray-600 mb-2 font-medium">Chọn nhanh:</p>
+                              <div className="flex flex-wrap gap-2">
+                                {[50000, 100000, 200000, 500000, 1000000].map((amount) => {
+                                  if (wallet?.balance && amount > wallet.balance) return null;
+                                  const isSelected = withdrawAmount === amount.toString();
+                                  return (
+                                    <button
+                                      key={amount}
+                                      type="button"
+                                      onClick={() => {
+                                        setWithdrawAmount(amount.toString());
+                                        setWithdrawError(null);
+                                      }}
+                                      disabled={isWithdrawing}
+                                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 border-2 ${
+                                        isSelected
+                                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg transform scale-105'
+                                          : 'bg-white text-emerald-600 border-emerald-600 hover:bg-emerald-50 hover:shadow-md'
+                                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    >
+                                      {amount >= 1000000 
+                                        ? `${amount / 1000000}M` 
+                                        : amount >= 1000 
+                                          ? `${amount / 1000}k` 
+                                          : amount}
+                                    </button>
+                                  );
+                                })}
+                                {wallet?.balance && wallet.balance >= 10000 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setWithdrawAmount(wallet.balance.toString());
+                                      setWithdrawError(null);
+                                    }}
+                                    disabled={isWithdrawing}
+                                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 border-2 ${
+                                      withdrawAmount === wallet.balance.toString()
+                                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg transform scale-105'
+                                        : 'bg-white text-emerald-600 border-emerald-600 hover:bg-emerald-50 hover:shadow-md'
+                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                  >
+                                    Rút hết
+                                  </button>
+                                )}
                               </div>
                             </div>
                             
@@ -983,12 +1033,12 @@ const WalletDashboard = () => {
                           <div
                             key={paymentInfo.paymentInformationId}
                             onClick={() => handleSelectPaymentInfo(paymentInfo)}
-                            className="group relative overflow-hidden bg-[#f9f7f5] rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 border border-[#e8e4df] cursor-pointer"
+                            className="group relative overflow-hidden bg-gradient-to-br from-[#F8F8F8] to-[#E8E8E8] rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 border border-[#D1D5DB] cursor-pointer"
                           >
                             {/* Decorative Pattern */}
-                            <div className="absolute inset-0 opacity-3">
-                              <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full -mr-24 -mt-24"></div>
-                              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full -ml-16 -mb-16"></div>
+                            <div className="absolute inset-0 opacity-5">
+                              <div className="absolute top-0 right-0 w-48 h-48 bg-gray-300 rounded-full -mr-24 -mt-24"></div>
+                              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gray-300 rounded-full -ml-16 -mb-16"></div>
                             </div>
                             
                             {/* Card Content */}
@@ -997,7 +1047,7 @@ const WalletDashboard = () => {
                               <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center space-x-3">
                                   {paymentInfo.bankLogo ? (
-                                    <div className="bg-white rounded-xl p-4 border border-[#e8e4df] shadow-sm">
+                                    <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
                                       <img
                                         src={paymentInfo.bankLogo}
                                         alt={paymentInfo.bankName}
@@ -1008,12 +1058,12 @@ const WalletDashboard = () => {
                                       />
                                     </div>
                                   ) : (
-                                    <div className="bg-white rounded-xl p-4 border border-[#e8e4df] shadow-sm">
-                                      <Building2 className="w-20 h-20 text-blue-600" />
+                                    <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                                      <Building2 className="w-20 h-20 text-gray-700" />
                                     </div>
                                   )}
                                   <div>
-                                    <Badge className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-0 text-xs px-3 py-1 shadow-sm">
+                                    <Badge className="bg-gray-300/40 text-gray-800 border border-gray-300/50 text-xs px-3 py-1 shadow-sm">
                                       {paymentInfo.bankShortName || paymentInfo.bankName}
                                     </Badge>
                                     {paymentInfo.branchName && (
@@ -1022,8 +1072,8 @@ const WalletDashboard = () => {
                                   </div>
                                 </div>
                                 <div className="flex items-center space-x-2">
-                                  <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center border border-[#e8e4df] shadow-sm">
-                                    <CreditCard className="w-4 h-4 text-blue-600" />
+                                  <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center border border-gray-200 shadow-sm">
+                                    <CreditCard className="w-4 h-4 text-gray-700" />
                                   </div>
                                 </div>
                               </div>
@@ -1040,13 +1090,13 @@ const WalletDashboard = () => {
                                       e.stopPropagation();
                                       handleCopyToClipboard(paymentInfo.accountNumber, paymentInfo.accountNumber);
                                     }}
-                                    className="ml-3 p-2 bg-white hover:bg-blue-50 rounded-lg transition-all duration-200 border border-[#e8e4df] hover:border-blue-300 hover:scale-105 shadow-sm"
+                                    className="ml-3 p-2 bg-white hover:bg-gray-50 rounded-lg transition-all duration-200 border border-gray-200 hover:border-gray-300 hover:scale-105 shadow-sm"
                                     title="Sao chép số tài khoản"
                                   >
                                     {copiedAccountNumber === paymentInfo.accountNumber ? (
                                       <CheckCircle2 className="w-4 h-4 text-green-600" />
                                     ) : (
-                                      <Copy className="w-4 h-4 text-blue-600" />
+                                      <Copy className="w-4 h-4 text-gray-700" />
                                     )}
                                   </button>
                                 </div>
@@ -1056,8 +1106,8 @@ const WalletDashboard = () => {
                               <div>
                                 <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Chủ tài khoản</p>
                                 <div className="flex items-center">
-                                  <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center mr-2 border border-[#e8e4df] shadow-sm">
-                                    <User className="w-4 h-4 text-blue-600" />
+                                  <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center mr-2 border border-gray-200 shadow-sm">
+                                    <User className="w-4 h-4 text-gray-700" />
                                   </div>
                                   <p className="text-base font-semibold text-gray-900">
                                     {paymentInfo.accountHolderName}
@@ -1066,10 +1116,10 @@ const WalletDashboard = () => {
                               </div>
                               
                               {/* Bottom Decoration */}
-                              <div className="absolute bottom-3 right-3 opacity-5">
+                              <div className="absolute bottom-3 right-3 opacity-10">
                                 <div className="grid grid-cols-4 gap-1">
                                   {[...Array(16)].map((_, i) => (
-                                    <div key={i} className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+                                    <div key={i} className="w-1.5 h-1.5 bg-gray-600 rounded-full"></div>
                                   ))}
                                 </div>
                               </div>
