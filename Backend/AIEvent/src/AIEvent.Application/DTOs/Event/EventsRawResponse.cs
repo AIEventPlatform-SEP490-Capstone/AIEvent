@@ -15,7 +15,7 @@ namespace AIEvent.Application.DTOs.Event
         public int? TotalPerson { get; set; }
         public int? TotalPersonJoin { get; set; }
         public List<string>? ImgListEvent { get; set; }
-        public TicketType TicketType { get; set; }
+        public TicketPricingType TicketPricingType { get; set; }
         public ConfirmStatus? Status { get; set; }
         public string? OrganizedBy { get; set; }
     }

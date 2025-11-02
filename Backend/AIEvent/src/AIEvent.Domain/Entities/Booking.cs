@@ -24,6 +24,7 @@ namespace AIEvent.Domain.Entities
         public BookingStatus Status { get; set; }
         public PaymentStatus PaymentStatus { get; set; }
         public PaymentMethod PaymentMethod { get; set; }
+        public DateTime ExpiredAt { get; set; }
         public ICollection<BookingItem> BookingItems { get; set; } = new List<BookingItem>();
         public ICollection<PaymentTransaction> PaymentTransactions { get; set; } = new List<PaymentTransaction>();
     }

@@ -16,8 +16,8 @@ namespace AIEvent.Application.Mappings
                 .ForMember(dest => dest.InterestedCities,
                     opt => opt.MapFrom(src =>
                         !string.IsNullOrEmpty(src.InterestedCitiesJson)
-                            ? JsonConvert.DeserializeObject<List<InterestedCities>>(src.InterestedCitiesJson)
-                            : new List<InterestedCities>()))
+                            ? JsonConvert.DeserializeObject<List<InterestedDistricts>>(src.InterestedCitiesJson)
+                            : new List<InterestedDistricts>()))
                 .ForMember(dest => dest.UserInterests,
                     opt => opt.MapFrom(src =>
                         !string.IsNullOrEmpty(src.UserInterestsJson)

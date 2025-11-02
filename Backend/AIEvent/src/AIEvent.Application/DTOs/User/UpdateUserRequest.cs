@@ -13,7 +13,7 @@ namespace AIEvent.Application.DTOs.User
         public ParticipationFrequency ParticipationFrequency { get; set; }
         public BudgetOption BudgetOption { get; set; }
         public string? Address { get; set; }
-        public string? City { get; set; }
+        public string? District { get; set; }
         public string? Latitude { get; set; }
         public string? Longitude { get; set; }
         public IFormFile? AvatarImg { get; set; }
@@ -32,7 +32,7 @@ namespace AIEvent.Application.DTOs.User
         public bool? IsPushNotificationEnabled { get; set; } = false;
         public bool? IsSmsNotificationEnabled { get; set; } = false;
         public List<UserInterest>? UserInterests { get; set; }
-        public List<InterestedCities>? InterestedCities { get; set; }
+        public List<InterestedDistricts>? InterestedCities { get; set; }
         public List<FavoriteEventTypes>? FavoriteEventTypes { get; set; }
         public List<UserSkills>? ProfessionalSkills { get; set; }
         public List<UserLanguages>? Languages { get; set; }

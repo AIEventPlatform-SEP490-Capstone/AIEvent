@@ -95,7 +95,7 @@ namespace AIEvent.Application.Test.Services
                 Description = "Description",
             };
 
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = ticketTypeId,
                 TicketName = "VIP",
@@ -111,9 +111,9 @@ namespace AIEvent.Application.Test.Services
             var request = new CreateBookingRequest
             {
                 EventId = eventId,
-                TicketTypeRequests = new List<TicketTypeRequest>
+                TicketTypeRequests = new List<BookingTicketRequest>
         {
-            new TicketTypeRequest { TicketTypeId = ticketTypeId, Quantity = 2 }
+            new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 2 }
         }
             };
 
@@ -123,8 +123,8 @@ namespace AIEvent.Application.Test.Services
             _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
                 .Returns(new List<Event> { eventEntity }.AsQueryable().BuildMockDbSet().Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketDetailRepository.Query(false))
-                .Returns(new List<TicketDetail> { ticketType }.AsQueryable().BuildMockDbSet().Object);
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+                .Returns(new List<TicketType> { ticketType }.AsQueryable().BuildMockDbSet().Object);
 
             _unitOfWorkMock.Setup(u => u.WalletRepository.Query(false))
                 .Returns(new List<Wallet> { walletUser, walletOrg }.AsQueryable().BuildMockDbSet().Object);
@@ -135,7 +135,7 @@ namespace AIEvent.Application.Test.Services
                 .Returns(Task.CompletedTask);
             _unitOfWorkMock.Setup(u => u.TicketRepository.AddRangeAsync(It.IsAny<IEnumerable<Ticket>>()))
                 .Returns(Task.CompletedTask);
-            _unitOfWorkMock.Setup(u => u.TicketDetailRepository.UpdateRangeAsync(It.IsAny<IEnumerable<TicketDetail>>()))
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.UpdateRangeAsync(It.IsAny<IEnumerable<TicketType>>()))
                 .Returns(Task.CompletedTask);
             _unitOfWorkMock.Setup(u => u.EventRepository.UpdateAsync(It.IsAny<Event>()))
                 .ReturnsAsync((Event b) => b);
@@ -243,7 +243,7 @@ namespace AIEvent.Application.Test.Services
                 Description = "Free event for testing"
             };
 
-            var freeTicket = new TicketDetail
+            var freeTicket = new TicketType
             {
                 Id = ticketTypeId,
                 TicketName = "Free Pass",
@@ -259,9 +259,9 @@ namespace AIEvent.Application.Test.Services
             var request = new CreateBookingRequest
             {
                 EventId = eventId,
-                TicketTypeRequests = new List<TicketTypeRequest>
+                TicketTypeRequests = new List<BookingTicketRequest>
         {
-            new TicketTypeRequest { TicketTypeId = ticketTypeId, Quantity = 2 }
+            new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 2 }
         }
             };
 
@@ -272,8 +272,8 @@ namespace AIEvent.Application.Test.Services
             _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
                 .Returns(new List<Event> { eventEntity }.AsQueryable().BuildMockDbSet().Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketDetailRepository.Query(false))
-                .Returns(new List<TicketDetail> { freeTicket }.AsQueryable().BuildMockDbSet().Object);
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+                .Returns(new List<TicketType> { freeTicket }.AsQueryable().BuildMockDbSet().Object);
 
             _unitOfWorkMock.Setup(u => u.WalletRepository.Query(false))
                 .Returns(new List<Wallet> { walletUser, walletOrg }.AsQueryable().BuildMockDbSet().Object);
@@ -287,7 +287,7 @@ namespace AIEvent.Application.Test.Services
                 .Returns(Task.CompletedTask);
             _unitOfWorkMock.Setup(u => u.EventRepository.UpdateAsync(It.IsAny<Event>()))
                 .ReturnsAsync((Event e) => e);
-            _unitOfWorkMock.Setup(u => u.TicketDetailRepository.UpdateRangeAsync(It.IsAny<IEnumerable<TicketDetail>>()))
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.UpdateRangeAsync(It.IsAny<IEnumerable<TicketType>>()))
                 .Returns(Task.CompletedTask);
             _unitOfWorkMock.Setup(u => u.SaveChangesAsync()).ReturnsAsync(1);
 
@@ -364,7 +364,7 @@ namespace AIEvent.Application.Test.Services
                 Description = "Test",
             };
 
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = ticketTypeId,
                 TicketName = "VIP",
@@ -377,9 +377,9 @@ namespace AIEvent.Application.Test.Services
             var request = new CreateBookingRequest
             {
                 EventId = eventId,
-                TicketTypeRequests = new List<TicketTypeRequest>
+                TicketTypeRequests = new List<BookingTicketRequest>
         {
-            new TicketTypeRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
+            new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
         }
             };
 
@@ -393,8 +393,8 @@ namespace AIEvent.Application.Test.Services
             _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
                 .Returns(new List<Event> { eventEntity }.AsQueryable().BuildMockDbSet().Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketDetailRepository.Query(false))
-                .Returns(new List<TicketDetail> { ticketType }.AsQueryable().BuildMockDbSet().Object);
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+                .Returns(new List<TicketType> { ticketType }.AsQueryable().BuildMockDbSet().Object);
 
             // ===== Mock TransactionHelper =====
             _transactionHelperMock.Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
@@ -462,7 +462,7 @@ namespace AIEvent.Application.Test.Services
                 Description = "Sample Event",
             };
 
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = ticketTypeId,
                 TicketName = "VIP",
@@ -475,9 +475,9 @@ namespace AIEvent.Application.Test.Services
             var request = new CreateBookingRequest
             {
                 EventId = eventId,
-                TicketTypeRequests = new List<TicketTypeRequest>
+                TicketTypeRequests = new List<BookingTicketRequest>
         {
-            new TicketTypeRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
+            new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
         }
             };
 
@@ -488,8 +488,8 @@ namespace AIEvent.Application.Test.Services
             _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
                 .Returns(new List<Event> { eventEntity }.AsQueryable().BuildMockDbSet().Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketDetailRepository.Query(false))
-                .Returns(new List<TicketDetail> { ticketType }.AsQueryable().BuildMockDbSet().Object);
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+                .Returns(new List<TicketType> { ticketType }.AsQueryable().BuildMockDbSet().Object);
 
             // Không cần mock wallet vì code sẽ return sớm trước khi đến đó
             _unitOfWorkMock.Setup(u => u.WalletRepository.Query(false))
@@ -549,7 +549,7 @@ namespace AIEvent.Application.Test.Services
             _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
                 .Returns(new List<Event>().AsQueryable().BuildMockDbSet().Object);
 
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = ticketTypeId,
                 TicketName = "VIP",
@@ -576,9 +576,9 @@ namespace AIEvent.Application.Test.Services
             var request = new CreateBookingRequest
             {
                 EventId = eventId_NotFound,
-                TicketTypeRequests = new List<TicketTypeRequest>
+                TicketTypeRequests = new List<BookingTicketRequest>
                 {
-                    new TicketTypeRequest
+                    new BookingTicketRequest
                     {
                         TicketTypeId = ticketTypeId,
                         Quantity = 1
@@ -590,8 +590,8 @@ namespace AIEvent.Application.Test.Services
             _unitOfWorkMock.Setup(u => u.UserRepository.Query(false))
                 .Returns(new List<User> { user }.AsQueryable().BuildMockDbSet().Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketDetailRepository.Query(false))
-                .Returns(new List<TicketDetail> { ticketType }.AsQueryable().BuildMockDbSet().Object);
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+                .Returns(new List<TicketType> { ticketType }.AsQueryable().BuildMockDbSet().Object);
 
             _unitOfWorkMock.Setup(u => u.WalletRepository.Query(false))
                 .Returns(new List<Wallet> { walletUser, walletOrg }.AsQueryable().BuildMockDbSet().Object);
@@ -662,7 +662,7 @@ namespace AIEvent.Application.Test.Services
                 Description = "Test event not approved yet"
             };
 
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = ticketTypeId,
                 TicketName = "VIP Ticket",
@@ -689,9 +689,9 @@ namespace AIEvent.Application.Test.Services
             var request = new CreateBookingRequest
             {
                 EventId = eventId,
-                TicketTypeRequests = new List<TicketTypeRequest>
+                TicketTypeRequests = new List<BookingTicketRequest>
         {
-            new TicketTypeRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
+            new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
         }
             };
 
@@ -702,9 +702,9 @@ namespace AIEvent.Application.Test.Services
             _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
                 .Returns(new List<Event> { eventEntity }.AsQueryable().BuildMockDbSet().Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketDetailRepository.Query(false))
-                .Returns(new List<TicketDetail> { ticketType }.AsQueryable().BuildMockDbSet().Object);
-
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+                .Returns(new List<TicketType> { ticketType }.AsQueryable().BuildMockDbSet().Object);
+                
             _unitOfWorkMock.Setup(u => u.WalletRepository.Query(false))
                 .Returns(new List<Wallet> { walletUser, walletOrg }.AsQueryable().BuildMockDbSet().Object);
 
@@ -773,7 +773,7 @@ namespace AIEvent.Application.Test.Services
                 Description = "Expired sale event"
             };
 
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = ticketTypeId,
                 TicketName = "Standard",
@@ -800,9 +800,9 @@ namespace AIEvent.Application.Test.Services
             var request = new CreateBookingRequest
             {
                 EventId = eventId,
-                TicketTypeRequests = new List<TicketTypeRequest>
+                TicketTypeRequests = new List<BookingTicketRequest>
         {
-            new TicketTypeRequest
+            new BookingTicketRequest
             {
                 TicketTypeId = ticketTypeId,
                 Quantity = 1
@@ -817,8 +817,8 @@ namespace AIEvent.Application.Test.Services
             _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
                 .Returns(new List<Event> { eventEntity }.AsQueryable().BuildMockDbSet().Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketDetailRepository.Query(false))
-                .Returns(new List<TicketDetail> { ticketType }.AsQueryable().BuildMockDbSet().Object);
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+                .Returns(new List<TicketType> { ticketType }.AsQueryable().BuildMockDbSet().Object);
 
             _unitOfWorkMock.Setup(u => u.WalletRepository.Query(false))
                 .Returns(new List<Wallet> { walletUser, walletOrg }.AsQueryable().BuildMockDbSet().Object);
@@ -888,7 +888,7 @@ namespace AIEvent.Application.Test.Services
                 Description = "Upcoming sale event"
             };
 
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = ticketTypeId,
                 TicketName = "VIP",
@@ -915,9 +915,9 @@ namespace AIEvent.Application.Test.Services
             var request = new CreateBookingRequest
             {
                 EventId = eventId,
-                TicketTypeRequests = new List<TicketTypeRequest>
+                TicketTypeRequests = new List<BookingTicketRequest>
         {
-            new TicketTypeRequest
+            new BookingTicketRequest
             {
                 TicketTypeId = ticketTypeId,
                 Quantity = 1
@@ -932,8 +932,8 @@ namespace AIEvent.Application.Test.Services
             _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
                 .Returns(new List<Event> { eventEntity }.AsQueryable().BuildMockDbSet().Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketDetailRepository.Query(false))
-                .Returns(new List<TicketDetail> { ticketType }.AsQueryable().BuildMockDbSet().Object);
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+                .Returns(new List<TicketType> { ticketType }.AsQueryable().BuildMockDbSet().Object);
 
             _unitOfWorkMock.Setup(u => u.WalletRepository.Query(false))
                 .Returns(new List<Wallet> { walletUser, walletOrg }.AsQueryable().BuildMockDbSet().Object);
@@ -1004,7 +1004,7 @@ namespace AIEvent.Application.Test.Services
             };
 
             // Chỉ có 1 TicketType tồn tại trong DB (validTicketTypeId)
-            var existingTicketType = new TicketDetail
+            var existingTicketType = new TicketType
             {
                 Id = validTicketTypeId,
                 TicketName = "VIP",
@@ -1022,10 +1022,10 @@ namespace AIEvent.Application.Test.Services
             var request = new CreateBookingRequest
             {
                 EventId = eventId,
-                TicketTypeRequests = new List<TicketTypeRequest>
+                TicketTypeRequests = new List<BookingTicketRequest>
                 {
-                    new TicketTypeRequest { TicketTypeId = validTicketTypeId, Quantity = 1 },
-                    new TicketTypeRequest { TicketTypeId = invalidTicketTypeId, Quantity = 1 } // không tồn tại trong DB
+                    new BookingTicketRequest { TicketTypeId = validTicketTypeId, Quantity = 1 },
+                    new BookingTicketRequest { TicketTypeId = invalidTicketTypeId, Quantity = 1 } // không tồn tại trong DB
                 }
             };
 
@@ -1037,8 +1037,8 @@ namespace AIEvent.Application.Test.Services
                 .Returns(new List<Event> { eventEntity }.AsQueryable().BuildMockDbSet().Object);
 
             // Chỉ có 1 ticket type hợp lệ trong DB
-            _unitOfWorkMock.Setup(u => u.TicketDetailRepository.Query(false))
-                .Returns(new List<TicketDetail> { existingTicketType }.AsQueryable().BuildMockDbSet().Object);
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+                .Returns(new List<TicketType> { existingTicketType }.AsQueryable().BuildMockDbSet().Object);
 
             _unitOfWorkMock.Setup(u => u.WalletRepository.Query(false))
                 .Returns(new List<Wallet> { walletUser, walletOrg }.AsQueryable().BuildMockDbSet().Object);
@@ -1116,7 +1116,7 @@ namespace AIEvent.Application.Test.Services
                 Description = "Description"
             };
 
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = ticketTypeId,
                 TicketName = "VIP Ticket",
@@ -1134,9 +1134,9 @@ namespace AIEvent.Application.Test.Services
             var request = new CreateBookingRequest
             {
                 EventId = eventId,
-                TicketTypeRequests = new List<TicketTypeRequest>
+                TicketTypeRequests = new List<BookingTicketRequest>
                 {
-                    new TicketTypeRequest { TicketTypeId = ticketTypeId, Quantity = 2 }
+                    new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 2 }
                 }
             };
 
@@ -1146,8 +1146,8 @@ namespace AIEvent.Application.Test.Services
             _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
                 .Returns(new List<Event> { eventEntity }.AsQueryable().BuildMockDbSet().Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketDetailRepository.Query(false))
-                .Returns(new List<TicketDetail> { ticketType }.AsQueryable().BuildMockDbSet().Object);
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+                .Returns(new List<TicketType> { ticketType }.AsQueryable().BuildMockDbSet().Object);
 
             _unitOfWorkMock.Setup(u => u.WalletRepository.Query(false))
                 .Returns(new List<Wallet> { walletUser, walletOrg }.AsQueryable().BuildMockDbSet().Object);
@@ -1232,7 +1232,7 @@ namespace AIEvent.Application.Test.Services
                 Description = "Test"
             };
 
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = ticketTypeId,
                 TicketName = "VIP",
@@ -1250,9 +1250,9 @@ namespace AIEvent.Application.Test.Services
             var request = new CreateBookingRequest
             {
                 EventId = eventId,
-                TicketTypeRequests = new List<TicketTypeRequest>
+                TicketTypeRequests = new List<BookingTicketRequest>
         {
-            new TicketTypeRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
+            new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
         }
             };
 
@@ -1261,8 +1261,8 @@ namespace AIEvent.Application.Test.Services
                 .Returns(new List<User> { user, organizerUser }.AsQueryable().BuildMockDbSet().Object);
             _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
                 .Returns(new List<Event> { eventEntity }.AsQueryable().BuildMockDbSet().Object);
-            _unitOfWorkMock.Setup(u => u.TicketDetailRepository.Query(false))
-                .Returns(new List<TicketDetail> { ticketType }.AsQueryable().BuildMockDbSet().Object);
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+                .Returns(new List<TicketType> { ticketType }.AsQueryable().BuildMockDbSet().Object);
             _unitOfWorkMock.Setup(u => u.WalletRepository.Query(false))
                 .Returns(new List<Wallet> { walletUser, walletOrg }.AsQueryable().BuildMockDbSet().Object);
             _unitOfWorkMock.Setup(u => u.BookingRepository.Query(false))
@@ -1338,7 +1338,7 @@ namespace AIEvent.Application.Test.Services
                 Description = "Sample Event",
             };
 
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = ticketTypeId,
                 TicketName = "VIP",
@@ -1351,9 +1351,9 @@ namespace AIEvent.Application.Test.Services
             var request = new CreateBookingRequest
             {
                 EventId = eventId,
-                TicketTypeRequests = new List<TicketTypeRequest>
+                TicketTypeRequests = new List<BookingTicketRequest>
         {
-            new TicketTypeRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
+            new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
         }
             };
 
@@ -1364,8 +1364,8 @@ namespace AIEvent.Application.Test.Services
             _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
                 .Returns(new List<Event> { eventEntity }.AsQueryable().BuildMockDbSet().Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketDetailRepository.Query(false))
-                .Returns(new List<TicketDetail> { ticketType }.AsQueryable().BuildMockDbSet().Object);
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+                .Returns(new List<TicketType> { ticketType }.AsQueryable().BuildMockDbSet().Object);
 
             // Không cần mock wallet vì code sẽ return sớm trước khi đến đó
             _unitOfWorkMock.Setup(u => u.WalletRepository.Query(false))
@@ -1438,7 +1438,7 @@ namespace AIEvent.Application.Test.Services
                 Description = "Sample Event",
             };
 
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = ticketTypeId,
                 TicketName = "VIP",
@@ -1460,9 +1460,9 @@ namespace AIEvent.Application.Test.Services
             var request = new CreateBookingRequest
             {
                 EventId = eventId,
-                TicketTypeRequests = new List<TicketTypeRequest>
+                TicketTypeRequests = new List<BookingTicketRequest>
         {
-            new TicketTypeRequest { TicketTypeId = ticketTypeId, Quantity = 2 }
+            new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 2 }
         }
             };
 
@@ -1473,8 +1473,8 @@ namespace AIEvent.Application.Test.Services
             _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
                 .Returns(new List<Event> { eventEntity }.AsQueryable().BuildMockDbSet().Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketDetailRepository.Query(false))
-                .Returns(new List<TicketDetail> { ticketType }.AsQueryable().BuildMockDbSet().Object);
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+                .Returns(new List<TicketType> { ticketType }.AsQueryable().BuildMockDbSet().Object);
 
             // ⚠️ Wallet thiếu của user
             _unitOfWorkMock.Setup(u => u.WalletRepository.Query(false))
@@ -1487,7 +1487,7 @@ namespace AIEvent.Application.Test.Services
                 .Returns(Task.CompletedTask);
             _unitOfWorkMock.Setup(u => u.TicketRepository.AddRangeAsync(It.IsAny<IEnumerable<Ticket>>()))
                 .Returns(Task.CompletedTask);
-            _unitOfWorkMock.Setup(u => u.TicketDetailRepository.UpdateRangeAsync(It.IsAny<IEnumerable<TicketDetail>>()))
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.UpdateRangeAsync(It.IsAny<IEnumerable<TicketType>>()))
                 .Returns(Task.CompletedTask);
             _unitOfWorkMock.Setup(u => u.EventRepository.UpdateAsync(It.IsAny<Event>()))
                 .ReturnsAsync((Event b) => b);
@@ -1564,7 +1564,7 @@ namespace AIEvent.Application.Test.Services
                 Description = "Sample Event",
             };
 
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = ticketTypeId,
                 TicketName = "Standard",
@@ -1585,9 +1585,9 @@ namespace AIEvent.Application.Test.Services
             var request = new CreateBookingRequest
             {
                 EventId = eventId,
-                TicketTypeRequests = new List<TicketTypeRequest>
+                TicketTypeRequests = new List<BookingTicketRequest>
         {
-            new TicketTypeRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
+            new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
         }
             };
 
@@ -1597,8 +1597,8 @@ namespace AIEvent.Application.Test.Services
             _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
                 .Returns(new List<Event> { eventEntity }.AsQueryable().BuildMockDbSet().Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketDetailRepository.Query(false))
-                .Returns(new List<TicketDetail> { ticketType }.AsQueryable().BuildMockDbSet().Object);
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+                .Returns(new List<TicketType> { ticketType }.AsQueryable().BuildMockDbSet().Object);
 
             _unitOfWorkMock.Setup(u => u.WalletRepository.Query(false))
                 .Returns(new List<Wallet> { walletUser }.AsQueryable().BuildMockDbSet().Object);
@@ -1695,7 +1695,7 @@ namespace AIEvent.Application.Test.Services
                 Description = "Sample Event",
             };
 
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = ticketTypeId,
                 TicketName = "VIP",
@@ -1720,9 +1720,9 @@ namespace AIEvent.Application.Test.Services
             var request = new CreateBookingRequest
             {
                 EventId = eventId,
-                TicketTypeRequests = new List<TicketTypeRequest>
+                TicketTypeRequests = new List<BookingTicketRequest>
                 {
-                    new TicketTypeRequest { TicketTypeId = ticketTypeId, Quantity = 2 }
+                    new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 2 }
                 }
             };
 
@@ -1732,8 +1732,8 @@ namespace AIEvent.Application.Test.Services
             _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
                 .Returns(new List<Event> { eventEntity }.AsQueryable().BuildMockDbSet().Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketDetailRepository.Query(false))
-                .Returns(new List<TicketDetail> { ticketType }.AsQueryable().BuildMockDbSet().Object);
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+                .Returns(new List<TicketType> { ticketType }.AsQueryable().BuildMockDbSet().Object);
 
             // ⚠️ Chỉ có wallet user, không có wallet organizer
             _unitOfWorkMock.Setup(u => u.WalletRepository.Query(false))
@@ -1745,7 +1745,7 @@ namespace AIEvent.Application.Test.Services
                 .Returns(Task.CompletedTask);
             _unitOfWorkMock.Setup(u => u.TicketRepository.AddRangeAsync(It.IsAny<IEnumerable<Ticket>>()))
                 .Returns(Task.CompletedTask);
-            _unitOfWorkMock.Setup(u => u.TicketDetailRepository.UpdateRangeAsync(It.IsAny<IEnumerable<TicketDetail>>()))
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.UpdateRangeAsync(It.IsAny<IEnumerable<TicketType>>()))
                 .Returns(Task.CompletedTask);
             _unitOfWorkMock.Setup(u => u.EventRepository.UpdateAsync(It.IsAny<Event>()))
                 .ReturnsAsync((Event b) => b);
@@ -1870,18 +1870,11 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.UtcNow.AddDays(5)
             };
 
-            var refundRule = new RefundRule
-            {
-                Id = Guid.NewGuid(),
-                RuleName = "Test",
-                RefundRuleDetails = new List<RefundRuleDetail>()
-            };
 
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = Guid.NewGuid(),
-                Event = eventEntity,
-                RefundRule = refundRule,
+                Event = eventEntity, 
                 TicketName = "Test",
                 TicketQuantity = 1,
             };
@@ -1956,18 +1949,10 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.UtcNow.AddHours(1)
             };
 
-            var refundRule = new RefundRule
-            {
-                Id = Guid.NewGuid(),
-                RuleName = "Test",
-                RefundRuleDetails = new List<RefundRuleDetail>()
-            };
-
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = Guid.NewGuid(),
                 Event = eventEntity,
-                RefundRule = refundRule,
                 TicketName = "Test",
                 TicketQuantity = 1,
             };
@@ -2041,26 +2026,18 @@ namespace AIEvent.Application.Test.Services
                 IsDeleted = false,
                 RemainingTickets = 10,
                 SoldQuantity = 5,
-                TicketType = TicketType.Free,
+                TicketPricingType = TicketPricingType.Free,
                 Description = "test"
-            };
+            }; 
 
-            var refundRule = new RefundRule
-            {
-                Id = Guid.NewGuid(),
-                RuleName = "Empty rule",
-                RefundRuleDetails = new List<RefundRuleDetail>()
-            };
-
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = Guid.NewGuid(),
                 Event = eventEntity,
                 TicketName = "Free Ticket",
                 TicketQuantity = 10,
                 RemainingQuantity = 5,
-                SoldQuantity = 5,
-                RefundRule = refundRule,
+                SoldQuantity = 5, 
             };
 
             var bookingItem = new BookingItem
@@ -2147,36 +2124,17 @@ namespace AIEvent.Application.Test.Services
                 RemainingTickets = 10,
                 SoldQuantity = 5,
                 Description = "Boundary test event",
-                TicketType = TicketType.Paid
+                TicketPricingType = TicketPricingType.Paid
             };
 
-            var refundRuleDetails = new List<RefundRuleDetail>
-            {
-                new RefundRuleDetail
-                {
-                    Id = Guid.NewGuid(),
-                    MinDaysBeforeEvent = 5, 
-                    MaxDaysBeforeEvent = 10,
-                    RefundPercent = 50
-                }
-            };
-
-            var refundRule = new RefundRule
-            {
-                Id = Guid.NewGuid(),
-                RuleName = "Boundary rule",
-                RefundRuleDetails = refundRuleDetails
-            };
-
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = Guid.NewGuid(),
                 Event = eventEntity,
                 TicketName = "Normal Ticket",
                 TicketQuantity = 10,
                 RemainingQuantity = 5,
-                SoldQuantity = 5,
-                RefundRule = refundRule,
+                SoldQuantity = 5
             };
 
             var bookingItem = new BookingItem
@@ -2261,36 +2219,17 @@ namespace AIEvent.Application.Test.Services
                 RemainingTickets = 10,
                 SoldQuantity = 5,
                 Description = "Refund test event",
-                TicketType = TicketType.Paid
+                TicketPricingType = TicketPricingType.Paid
             };
-
-            var refundRuleDetails = new List<RefundRuleDetail>
-            {
-                new RefundRuleDetail
-                {
-                    Id = Guid.NewGuid(),
-                    MinDaysBeforeEvent = 5,
-                    MaxDaysBeforeEvent = 10,
-                    RefundPercent = 50
-                }
-            };
-
-            var refundRule = new RefundRule
-            {
-                Id = Guid.NewGuid(),
-                RuleName = "Valid Refund Rule",
-                RefundRuleDetails = refundRuleDetails
-            };
-
-            var ticketType = new TicketDetail
+             
+            var ticketType = new TicketType
             {
                 Id = Guid.NewGuid(),
                 Event = eventEntity,
                 TicketName = "Standard Ticket",
                 TicketQuantity = 10,
                 RemainingQuantity = 5,
-                SoldQuantity = 5,
-                RefundRule = refundRule,
+                SoldQuantity = 5,  
             };
 
             var bookingItem = new BookingItem
@@ -2389,36 +2328,17 @@ namespace AIEvent.Application.Test.Services
                 RemainingTickets = 10,
                 SoldQuantity = 5,
                 Description = "Refund test event",
-                TicketType = TicketType.Paid
+                TicketPricingType = TicketPricingType.Paid
             };
 
-            var refundRuleDetails = new List<RefundRuleDetail>
-            {
-                new RefundRuleDetail
-                {
-                    Id = Guid.NewGuid(),
-                    MinDaysBeforeEvent = 5,
-                    MaxDaysBeforeEvent = 10,
-                    RefundPercent = 50
-                }
-            };
-
-            var refundRule = new RefundRule
-            {
-                Id = Guid.NewGuid(),
-                RuleName = "Valid Refund Rule",
-                RefundRuleDetails = refundRuleDetails
-            };
-
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = Guid.NewGuid(),
                 Event = eventEntity,
                 TicketName = "Standard Ticket",
                 TicketQuantity = 10,
                 RemainingQuantity = 5,
-                SoldQuantity = 5,
-                RefundRule = refundRule,
+                SoldQuantity = 5
             };
 
             var bookingItem = new BookingItem
@@ -2524,36 +2444,17 @@ namespace AIEvent.Application.Test.Services
                 RemainingTickets = 10,
                 SoldQuantity = 5,
                 Description = "Refund test event",
-                TicketType = TicketType.Paid
+                TicketPricingType = TicketPricingType.Paid
             };
 
-            var refundRuleDetails = new List<RefundRuleDetail>
-            {
-                new RefundRuleDetail
-                {
-                    Id = Guid.NewGuid(),
-                    MinDaysBeforeEvent = 5,
-                    MaxDaysBeforeEvent = 10,
-                    RefundPercent = 100
-                }
-            };
-
-            var refundRule = new RefundRule
-            {
-                Id = Guid.NewGuid(),
-                RuleName = "Full Refund Rule",
-                RefundRuleDetails = refundRuleDetails
-            };
-
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = Guid.NewGuid(),
                 Event = eventEntity,
                 TicketName = "Standard Ticket",
                 TicketQuantity = 10,
                 RemainingQuantity = 5,
-                SoldQuantity = 5,
-                RefundRule = refundRule,
+                SoldQuantity = 5
             };
 
             var bookingItem = new BookingItem
@@ -2676,43 +2577,17 @@ namespace AIEvent.Application.Test.Services
                 RemainingTickets = 10,
                 SoldQuantity = 5,
                 Description = "Refund test event",
-                TicketType = TicketType.Paid
+                TicketPricingType = TicketPricingType.Paid
             };
 
-            var refundRuleDetails = new List<RefundRuleDetail>
-            {
-                new RefundRuleDetail
-                {
-                    Id = Guid.NewGuid(),
-                    MinDaysBeforeEvent = 5,
-                    MaxDaysBeforeEvent = 10,
-                    RefundPercent = 50
-                },
-                new RefundRuleDetail
-                {
-                    Id = Guid.NewGuid(),
-                    MinDaysBeforeEvent = 15,
-                    MaxDaysBeforeEvent = 20,
-                    RefundPercent = 80
-                },
-            };
-
-            var refundRule = new RefundRule
-            {
-                Id = Guid.NewGuid(),
-                RuleName = "Half Refund Rule",
-                RefundRuleDetails = refundRuleDetails
-            };
-
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = Guid.NewGuid(),
                 Event = eventEntity,
                 TicketName = "Standard Ticket",
                 TicketQuantity = 10,
                 RemainingQuantity = 5,
-                SoldQuantity = 5,
-                RefundRule = refundRule,
+                SoldQuantity = 5
             };
 
             var bookingItem = new BookingItem
@@ -2835,36 +2710,17 @@ namespace AIEvent.Application.Test.Services
                 RemainingTickets = 10,
                 SoldQuantity = 5,
                 Description = "Refund test event",
-                TicketType = TicketType.Paid
+                TicketPricingType = TicketPricingType.Paid
             };
 
-            var refundRuleDetails = new List<RefundRuleDetail>
-            {
-                new RefundRuleDetail
-                {
-                    Id = Guid.NewGuid(),
-                    MinDaysBeforeEvent = 5,
-                    MaxDaysBeforeEvent = 10,
-                    RefundPercent = 0
-                }
-            };
-
-            var refundRule = new RefundRule
-            {
-                Id = Guid.NewGuid(),
-                RuleName = "No Refund Rule",
-                RefundRuleDetails = refundRuleDetails
-            };
-
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = Guid.NewGuid(),
                 Event = eventEntity,
                 TicketName = "Standard Ticket",
                 TicketQuantity = 10,
                 RemainingQuantity = 5,
-                SoldQuantity = 5,
-                RefundRule = refundRule,
+                SoldQuantity = 5
             };
 
             var bookingItem = new BookingItem
@@ -2995,43 +2851,17 @@ namespace AIEvent.Application.Test.Services
                 RemainingTickets = 10,
                 SoldQuantity = 5,
                 Description = "Refund 80% test event",
-                TicketType = TicketType.Paid
+                TicketPricingType = TicketPricingType.Paid
             };
 
-            var refundRuleDetails = new List<RefundRuleDetail>
-            {
-                new RefundRuleDetail
-                {
-                    Id = Guid.NewGuid(),
-                    MinDaysBeforeEvent = 5,
-                    MaxDaysBeforeEvent = 10,
-                    RefundPercent = 50
-                },
-                new RefundRuleDetail
-                {
-                    Id = Guid.NewGuid(),
-                    MinDaysBeforeEvent = 15,
-                    MaxDaysBeforeEvent = 20,
-                    RefundPercent = 80
-                }
-            };
-
-            var refundRule = new RefundRule
-            {
-                Id = Guid.NewGuid(),
-                RuleName = "80% Refund Rule",
-                RefundRuleDetails = refundRuleDetails
-            };
-
-            var ticketType = new TicketDetail
+            var ticketType = new TicketType
             {
                 Id = Guid.NewGuid(),
                 Event = eventEntity,
                 TicketName = "VIP Ticket",
                 TicketQuantity = 10,
                 RemainingQuantity = 5,
-                SoldQuantity = 5,
-                RefundRule = refundRule,
+                SoldQuantity = 5
             };
 
             var bookingItem = new BookingItem
@@ -3154,28 +2984,11 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.UtcNow.AddDays(5)
             };
 
-            var refundRule = new RefundRule
-            {
-                Id = Guid.NewGuid(),
-                RuleName = "Test",
-                RefundRuleDetails = new List<RefundRuleDetail>(),
-            };
-
-            var ticketType = new TicketDetail
-            {
-                Id = Guid.NewGuid(),
-                Event = eventEntity,
-                RefundRule = refundRule,
-                TicketName = "Test",
-                TicketQuantity = 1,
-            };
-
             var ticket = new Ticket
             {
                 Id = Guid.Parse(validTicketId),
                 UserId = userId,
                 Status = TicketStatus.Valid,
-                TicketType = ticketType,
                 IsDeleted = true,
                 EventName = "Test",
                 QrCodeUrl = "Test",

@@ -199,7 +199,7 @@ namespace AIEvent.Application.Test.Services
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 Address = "123 Main St",
-                City = "Ho Chi Minh",
+                District = "Quận 1",
                 Latitude = "10.762622",
                 Longitude = "106.660172",
                 LinkedInUrl = "https://linkedin.com/in/testuser",
@@ -217,7 +217,7 @@ namespace AIEvent.Application.Test.Services
                 IsPushNotificationEnabled = true,
                 IsSmsNotificationEnabled = true,
                 UserInterests = new List<UserInterest> { new UserInterest { InterestName = "Technology" } },
-                InterestedCities = new List<InterestedCities> { new InterestedCities { CityName = "Ho Chi Minh" } },
+                InterestedCities = new List<InterestedDistricts> { new InterestedDistricts { DistrictName = "Quận 1" } },
                 FavoriteEventTypes = new List<FavoriteEventTypes> { new FavoriteEventTypes { FavoriteEventTypeName = "Tech Conference" } },
                 ProfessionalSkills = new List<UserSkills> { new UserSkills { SkillsName = "C#" } },
                 Languages = new List<UserLanguages> { new UserLanguages { LanguagesName = "English" } }
@@ -552,10 +552,10 @@ namespace AIEvent.Application.Test.Services
                     new UserInterest { InterestName = "Technology" },
                     new UserInterest { InterestName = "Sports" }
                 },
-                InterestedCities = new List<InterestedCities> 
-                { 
-                    new InterestedCities { CityName = "Ho Chi Minh" },
-                    new InterestedCities { CityName = "Hanoi" }
+                InterestedCities = new List<InterestedDistricts> 
+                {
+                    new InterestedDistricts { DistrictName = "Quận 1"},
+                    new InterestedDistricts { DistrictName = "Quận 7"}
                 },
                 FavoriteEventTypes = new List<FavoriteEventTypes> 
                 { 
@@ -594,7 +594,7 @@ namespace AIEvent.Application.Test.Services
             {
                 FullName = "Updated User",
                 Address = "123 Main St",
-                City = "Ho Chi Minh",
+                District = "Quận 1",
                 Latitude = "10.762622",
                 Longitude = "106.660172"
             };

@@ -96,7 +96,7 @@ namespace AIEvent.Application.Services.Implements
                     .header-subtitle {{
                         color: #ffffff;
                         font-size: 14px;
-                        opacity: 0.9;
+                        opadistrict: 0.9;
                         font-weight: 300;
                     }}
                     .content {{

@@ -12,7 +12,6 @@ using AIEvent.Infrastructure.Repositories.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -33,13 +32,13 @@ namespace AIEvent.Application.Services.Implements
         public async Task<Result> CreateEventAsync(Guid organizerId, CreateEventRequest request)
         {
             if (organizerId == Guid.Empty)
-                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
+                return ErrorResponse.FailureResult("Invalid OrganizerId", ErrorCodes.InvalidInput);
 
             var validationResult = ValidationHelper.ValidateModel(request);
             if (!validationResult.IsSuccess)
                 return validationResult;
 
-            var validationTicketDetailsResult = ValidationHelper.ValidateModelList(request.TicketDetails);
+            var validationTicketDetailsResult = ValidationHelper.ValidateModelList(request.TicketTypes);
             if (!validationTicketDetailsResult.IsSuccess)
                 return validationTicketDetailsResult;
 
@@ -66,54 +65,6 @@ namespace AIEvent.Application.Services.Implements
             if (events == null)
                 return ErrorResponse.FailureResult("Failed to map event", ErrorCodes.InternalServerError);
             
-            if (request.TicketDetails != null && request.TicketDetails.Any())
-            {
-                events.TicketDetails = request.TicketDetails.Select(td =>
-                {
-                    var ticket = new TicketDetail
-                    {
-                        Id = Guid.NewGuid(),
-                        TicketName = td.TicketName,
-                        TicketPrice = td.TicketPrice,
-                        TicketQuantity = td.TicketQuantity,
-                        TicketDescription = td.TicketDescription,
-                        SoldQuantity = 0,
-                        RemainingQuantity = td.TicketQuantity, 
-                        RefundRuleId = !string.IsNullOrEmpty(td.RuleRefundRequestId)
-                            ? Guid.Parse(td.RuleRefundRequestId)
-                            : null
-                    };
-                    ticket.SetCreated(organizerId.ToString());
-                    return ticket;
-                }).ToList();
-            }
-
-            if (request.ImgListEvent?.Any() == true)
-            {
-                var uploadTasks = request.ImgListEvent
-                    .Select(img => _cloudinaryService.UploadImageAsync(img))
-                    .ToList();
-
-                var uploadResults = await Task.WhenAll(uploadTasks);
-                var failedUploads = uploadResults.Where(r => r == null || string.IsNullOrEmpty(r)).ToList();
-                if (failedUploads.Any())
-                    return ErrorResponse.FailureResult("Some images failed to upload", ErrorCodes.InternalServerError);
-                events.ImgListEvent = JsonSerializer.Serialize(uploadResults.Where(r => r != null));
-            }
-             
-            if (request.ImgListEvidences?.Any() == true)
-            {
-                var uploadTasks = request.ImgListEvidences
-                    .Select(img => _cloudinaryService.UploadImageAsync(img))
-                    .ToList();
-
-                var uploadResults = await Task.WhenAll(uploadTasks);
-                var failedUploads = uploadResults.Where(r => r == null || string.IsNullOrEmpty(r)).ToList();
-                if (failedUploads.Any())
-                    return ErrorResponse.FailureResult("Some evidence images failed to upload", ErrorCodes.InternalServerError);
-                events.Evidences = JsonSerializer.Serialize(uploadResults.Where(r => r != null));
-            }
-
             events.OrganizerProfileId = organizerId;
 
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
@@ -127,8 +78,8 @@ namespace AIEvent.Application.Services.Implements
                                                                                 string? search, 
                                                                                 string? eventCategoryId, 
                                                                                 List<EventTagRequest> tags, 
-                                                                                TicketType? ticketType, 
-                                                                                string? city, 
+                                                                                TicketPricingType? ticketType, 
+                                                                                string? district, 
                                                                                 TimeLine? timeLine, 
                                                                                 int pageNumber = 1, 
                                                                                 int pageSize = 5)
@@ -155,11 +106,11 @@ namespace AIEvent.Application.Services.Implements
 
             if (ticketType.HasValue)
                 events = events
-                                .Where(e => e.TicketType == ticketType);
+                                .Where(e => e.TicketPricingType == ticketType);
 
-            if (!string.IsNullOrEmpty(city))
+            if (!string.IsNullOrEmpty(district))
                 events = events
-                                .Where(e => (e.City ?? string.Empty).ToLower().Contains(city.ToLower()));
+                                .Where(e => (e.District ?? string.Empty).ToLower().Contains(district.ToLower()));
 
             if (timeLine.HasValue)
             {
@@ -209,7 +160,7 @@ namespace AIEvent.Application.Services.Implements
                     StartTime = e.StartTime,
                     EndTime = e.EndTime,
                     Description = e.Description,
-                    TicketType = e.TicketType,
+                    TicketPricingType = e.TicketPricingType,
                     TotalTickets = e.TotalTickets,
                     SoldQuantity = e.SoldQuantity,
                     LocationName = e.LocationName,
@@ -220,13 +171,13 @@ namespace AIEvent.Application.Services.Implements
                         TagId = t.TagId.ToString(),
                         TagName = t.Tag.NameTag
                     }).ToList(),
-                    TicketPrice = e.TicketDetails != null
-                        ? e.TicketDetails.Min(t => t.TicketPrice)
+                    TicketPrice = e.TicketTypes != null
+                        ? e.TicketTypes.Min(t => t.TicketPrice)
                         : 0,
                     IsFavorite = userId.HasValue && userId != Guid.Empty && e.FavoriteEvents.Any(fe => fe.UserId == userId),
                     ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
                         ? new List<string>()
-                        : JsonSerializer.Deserialize<List<string>>(e.ImgListEvent, new JsonSerializerOptions()) ?? new List<string>()
+                        : e.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()
                 })
                 .ToListAsync();
 
@@ -240,7 +191,7 @@ namespace AIEvent.Application.Services.Implements
 
             var eventQuery = await _unitOfWork.EventRepository
                 .Query()
-                .Include(e => e.TicketDetails)
+                .Include(e => e.TicketTypes)
                 .Include(e => e.EventTags)
                 .Where(e => e.Id == eventId && !e.IsDeleted)
                 .FirstOrDefaultAsync();
@@ -276,14 +227,33 @@ namespace AIEvent.Application.Services.Implements
             }
 
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
-            {
+            { 
+                var originalSoldQuantity = eventQuery.SoldQuantity;
+
                 _mapper.Map(request, eventQuery);
+                
+                if (eventQuery.SoldQuantity == 0 && originalSoldQuantity > 0)
+                    eventQuery.SoldQuantity = originalSoldQuantity;
 
                 await UpdateEventImagesAsync(eventQuery, request);
                 
                 await UpdateEventEvidenceAsync(eventQuery, request);
 
                 await HandleTicketDetailsOperationsAsync(eventQuery, eventId, organizerId, request);
+                 
+                if (request.TicketTypes != null && request.TicketTypes.Any() || 
+                    request.RemoveTicketTypeIds != null && request.RemoveTicketTypeIds.Any())
+                {
+                    eventQuery.TotalTickets = eventQuery.TicketTypes.Sum(t => t.TicketQuantity);
+                    eventQuery.RemainingTickets = eventQuery.TotalTickets - eventQuery.SoldQuantity;
+                }
+                else if (request.TotalTickets.HasValue)
+                {
+                    eventQuery.TotalTickets = request.TotalTickets.Value;
+                    eventQuery.RemainingTickets = eventQuery.TotalTickets - eventQuery.SoldQuantity;
+                }
+                else
+                    eventQuery.RemainingTickets = eventQuery.TotalTickets - eventQuery.SoldQuantity;
 
                 HandleEventTagsOperations(eventQuery, eventId, request);
 
@@ -292,6 +262,7 @@ namespace AIEvent.Application.Services.Implements
                     eventQuery.Publish = true;
                     eventQuery.RequireApproval = ConfirmStatus.NeedConfirm;
                 }
+                
                 await _unitOfWork.EventRepository.UpdateAsync(eventQuery);
 
                 return Result.Success();
@@ -304,12 +275,12 @@ namespace AIEvent.Application.Services.Implements
                 && (request.ImgListEvent == null || !request.ImgListEvent.Any()))
                 return;
 
-                var existingImages = string.IsNullOrEmpty(events.ImgListEvent)
-                                        ? new List<string>()
-                : JsonSerializer.Deserialize<List<string>>(events.ImgListEvent) ?? new List<string>();
+            var existingImages = string.IsNullOrEmpty(events.ImgListEvent)
+                                    ? new List<string>()
+                                    : events.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList();
 
-                if (request.RemoveImageUrls != null && request.RemoveImageUrls.Any())
-                {
+            if (request.RemoveImageUrls != null && request.RemoveImageUrls.Any())
+            {
                 var imagesToRemove = request.RemoveImageUrls.Where(url => existingImages.Contains(url)).ToList();
                 var remainingImagesCount = existingImages.Count - imagesToRemove.Count;
                 var willAddNewImages = request.ImgListEvent != null && request.ImgListEvent.Any();
@@ -327,19 +298,18 @@ namespace AIEvent.Application.Services.Implements
 
                 await Task.WhenAll(deleteImageTasks);
                 existingImages = existingImages.Where(img => !request.RemoveImageUrls.Contains(img)).ToList();
-                }
+            }
 
-                if (request.ImgListEvent != null && request.ImgListEvent.Any())
-                {
-                var uploadResults = await Task.WhenAll(
-                    request.ImgListEvent.Select(img => _cloudinaryService.UploadImageAsync(img))
-                );
+            if (request.ImgListEvent != null && request.ImgListEvent.Any())
+            {
+                var newImageUrls = request.ImgListEvent
+                    .Where(url => !string.IsNullOrWhiteSpace(url) && !existingImages.Contains(url))
+                    .ToList();
+                
+                existingImages.AddRange(newImageUrls);
+            }
 
-                var successfulUploads = uploadResults.Where(url => !string.IsNullOrEmpty(url)).ToList();
-                existingImages.AddRange(successfulUploads!);
-                }
-
-                events.ImgListEvent = JsonSerializer.Serialize(existingImages);
+            events.ImgListEvent = existingImages.Any() ? string.Join(", ", existingImages) : null;
         }
 
         private async Task UpdateEventEvidenceAsync(Event events, UpdateEventRequest request)
@@ -348,9 +318,9 @@ namespace AIEvent.Application.Services.Implements
                 && (request.ImgListEvidences == null || !request.ImgListEvidences.Any()))
                 return;
 
-            var existingEvidence = string.IsNullOrEmpty(events.Evidences)
+            var existingEvidence = string.IsNullOrEmpty(events.ImgListEvidences)
                 ? new List<string>()
-                : JsonSerializer.Deserialize<List<string>>(events.Evidences) ?? new List<string>();
+                : events.ImgListEvidences.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList();
 
             if (request.RemoveImageEvidenceUrls != null && request.RemoveImageEvidenceUrls.Any())
             {
@@ -375,24 +345,23 @@ namespace AIEvent.Application.Services.Implements
 
             if (request.ImgListEvidences != null && request.ImgListEvidences.Any())
             {
-                var uploadResults = await Task.WhenAll(
-                    request.ImgListEvidences.Select(img => _cloudinaryService.UploadImageAsync(img))
-                );
-
-                var successfulUploads = uploadResults.Where(url => !string.IsNullOrEmpty(url)).ToList();
-                existingEvidence.AddRange(successfulUploads!);
+                var newEvidenceUrls = request.ImgListEvidences
+                    .Where(url => !string.IsNullOrWhiteSpace(url) && !existingEvidence.Contains(url))
+                    .ToList();
+                
+                existingEvidence.AddRange(newEvidenceUrls);
             }
 
-            events.Evidences = JsonSerializer.Serialize(existingEvidence);
+            events.ImgListEvidences = existingEvidence.Any() ? string.Join(", ", existingEvidence) : null;
         }
 
         private async Task HandleTicketDetailsOperationsAsync(Event events, Guid eventId, Guid organizerId, UpdateEventRequest request)
         { 
-            if (request.RemoveTicketDetailIds != null && request.RemoveTicketDetailIds.Any())
+            if (request.RemoveTicketTypeIds != null && request.RemoveTicketTypeIds.Any())
             {
-                var remainingTicketsCount = events.TicketDetails.Count - request.RemoveTicketDetailIds.Count;
-                var willAddNewTickets = request.TicketDetails != null && 
-                                       request.TicketDetails.Any(td => !td.Id.HasValue || td.Id.Value == Guid.Empty);
+                var remainingTicketsCount = events.TicketTypes.Count - request.RemoveTicketTypeIds.Count;
+                var willAddNewTickets = request.TicketTypes != null && 
+                                       request.TicketTypes.Any(td => !td.Id.HasValue || td.Id.Value == Guid.Empty);
                 
                 if (remainingTicketsCount <= 0 && !willAddNewTickets)
                 {
@@ -401,8 +370,8 @@ namespace AIEvent.Application.Services.Implements
                     );
                 }
 
-                var ticketsToRemove = events.TicketDetails
-                    .Where(td => request.RemoveTicketDetailIds.Contains(td.Id))
+                var ticketsToRemove = events.TicketTypes
+                    .Where(td => request.RemoveTicketTypeIds.Contains(td.Id))
                     .ToList();
 
                 foreach (var ticket in ticketsToRemove)
@@ -410,7 +379,7 @@ namespace AIEvent.Application.Services.Implements
                     var hasSoldTickets = await _unitOfWork.EventRepository
                         .Query()
                         .Where(e => e.Id == eventId)
-                        .SelectMany(e => e.TicketDetails)
+                        .SelectMany(e => e.TicketTypes)
                         .Where(td => td.Id == ticket.Id)
                         .AnyAsync(td => td.SoldQuantity > 0);
 
@@ -421,16 +390,16 @@ namespace AIEvent.Application.Services.Implements
                         );
                     }
 
-                    events.TicketDetails.Remove(ticket);
+                    events.TicketTypes.Remove(ticket);
                 }
             } 
-            if (request.TicketDetails != null && request.TicketDetails.Any())
+            if (request.TicketTypes != null && request.TicketTypes.Any())
             {
-                foreach (var ticketRequest in request.TicketDetails)
+                foreach (var ticketRequest in request.TicketTypes)
                 {
                     if (ticketRequest.Id.HasValue && ticketRequest.Id.Value != Guid.Empty)
                     { 
-                        var existingTicket = events.TicketDetails.FirstOrDefault(td => td.Id == ticketRequest.Id.Value);
+                        var existingTicket = events.TicketTypes.FirstOrDefault(td => td.Id == ticketRequest.Id.Value);
                         
                         if (existingTicket != null)
                         {
@@ -448,14 +417,14 @@ namespace AIEvent.Application.Services.Implements
                     }
                     else
                     {
-                        var newTicket = _mapper.Map<TicketDetail>(ticketRequest);
+                        var newTicket = _mapper.Map<TicketType>(ticketRequest);
                         newTicket.Id = Guid.NewGuid();
                         newTicket.EventId = eventId;
                         newTicket.SoldQuantity = 0;
                         newTicket.RemainingQuantity = ticketRequest.TicketQuantity;
                         newTicket.SetCreated(organizerId.ToString()); 
                         
-                        events.TicketDetails.Add(newTicket);
+                        events.TicketTypes.Add(newTicket);
                     }
                 }
             }
@@ -514,7 +483,9 @@ namespace AIEvent.Application.Services.Implements
             var saleStartTime = request.SaleStartTime ?? existingEvent.SaleStartTime;
             var saleEndTime = request.SaleEndTime ?? existingEvent.SaleEndTime; 
             var totalTickets = request.TotalTickets ?? existingEvent.TotalTickets;
-            var ticketType = request.TicketType ?? existingEvent.TicketType;
+            var ticketPricingType = request.TicketPricingType.HasValue 
+                ? request.TicketPricingType.Value 
+                : existingEvent.TicketPricingType;
 
             if (string.IsNullOrWhiteSpace(title))
                 errors.Add("Title is required");
@@ -539,15 +510,15 @@ namespace AIEvent.Application.Services.Implements
             }
 
             var locationName = request.LocationName ?? existingEvent.LocationName;
-                var city = request.City ?? existingEvent.City;
+                var district = request.District ?? existingEvent.District;
                 var address = request.Address ?? existingEvent.Address;
 
                 if (string.IsNullOrWhiteSpace(locationName))
-                    errors.Add("LocationName is required for offline events");
-                if (string.IsNullOrWhiteSpace(city))
-                    errors.Add("City is required for offline events");
+                    errors.Add("LocationName is required");
+                if (string.IsNullOrWhiteSpace(district))
+                    errors.Add("District is required");
                 if (string.IsNullOrWhiteSpace(address))
-                    errors.Add("Address is required for offline events");
+                    errors.Add("Address is required");
 
             var hasImages = HasEventImages(request, existingEvent);
             if (!hasImages)
@@ -557,15 +528,15 @@ namespace AIEvent.Application.Services.Implements
             if (!hasEvidence)
                 errors.Add("Evidence is required when publishing an event");
               
-            var hasTicketDetailsAfterOperations = existingEvent.TicketDetails != null && existingEvent.TicketDetails.Any();
+            var hasTicketDetailsAfterOperations = existingEvent.TicketTypes != null && existingEvent.TicketTypes.Any();
             
-            if (request.RemoveTicketDetailIds != null && request.RemoveTicketDetailIds.Any())
+            if (request.RemoveTicketTypeIds != null && request.RemoveTicketTypeIds.Any())
             {
-                var remainingTicketsCount = (existingEvent.TicketDetails?.Count ?? 0) - request.RemoveTicketDetailIds.Count;
+                var remainingTicketsCount = (existingEvent.TicketTypes?.Count ?? 0) - request.RemoveTicketTypeIds.Count;
                 hasTicketDetailsAfterOperations = remainingTicketsCount > 0;
             }
             
-            if (request.TicketDetails != null && request.TicketDetails.Any(td => !td.Id.HasValue || td.Id.Value == Guid.Empty))
+            if (request.TicketTypes != null && request.TicketTypes.Any(td => !td.Id.HasValue || td.Id.Value == Guid.Empty))
             {
                 hasTicketDetailsAfterOperations = true; 
             }
@@ -576,14 +547,9 @@ namespace AIEvent.Application.Services.Implements
             if (totalTickets <= 0)
                 errors.Add("TotalTickets must be greater than 0");
 
-            if (ticketType == default)
-                errors.Add("TicketType is required");
+            var eventCategoryId = request.EventCategoryId ?? existingEvent.EventCategoryId;
 
-            var eventCategoryId = !string.IsNullOrWhiteSpace(request.EventCategoryId)
-                ? request.EventCategoryId
-                : existingEvent.EventCategoryId.ToString();
-
-            if (string.IsNullOrWhiteSpace(eventCategoryId) || eventCategoryId == Guid.Empty.ToString())
+            if (eventCategoryId == Guid.Empty)
                 errors.Add("EventCategoryId is required");
 
             if (errors.Any())
@@ -601,7 +567,7 @@ namespace AIEvent.Application.Services.Implements
         {
             var existingImagesList = string.IsNullOrEmpty(existingEvent.ImgListEvent)
                 ? new List<string>()
-                : JsonSerializer.Deserialize<List<string>>(existingEvent.ImgListEvent ?? "[]") ?? new List<string>();
+                : existingEvent.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList();
 
             if (request.RemoveImageUrls != null && request.RemoveImageUrls.Any())
             {
@@ -616,9 +582,9 @@ namespace AIEvent.Application.Services.Implements
 
         private bool HasEventEvidence(UpdateEventRequest request, Event existingEvent)
         {
-            var existingEvidenceList = string.IsNullOrEmpty(existingEvent.Evidences)
+            var existingEvidenceList = string.IsNullOrEmpty(existingEvent.ImgListEvidences)
                 ? new List<string>()
-                : JsonSerializer.Deserialize<List<string>>(existingEvent.Evidences ?? "[]") ?? new List<string>();
+                : existingEvent.ImgListEvidences.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList();
 
             if (request.RemoveImageEvidenceUrls != null && request.RemoveImageEvidenceUrls.Any())
             {
@@ -823,16 +789,16 @@ namespace AIEvent.Application.Services.Implements
                     Title = e.Title,
                     StartTime = e.StartTime,
                     EndTime = e.EndTime,
-                    MinTicketPrice = e.TicketDetails.Any()
-                        ? e.TicketDetails.Min(t => t.TicketPrice)
+                    MinTicketPrice = e.TicketTypes.Any()
+                        ? e.TicketTypes.Min(t => t.TicketPrice)
                         : 0,
-                    MaxTicketPrice = e.TicketDetails.Any() 
-                        ? e.TicketDetails.Max(t => t.TicketPrice)
+                    MaxTicketPrice = e.TicketTypes.Any() 
+                        ? e.TicketTypes.Max(t => t.TicketPrice)
                         : 0,
                     Description = e.Description,
                     ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
                         ? new List<string>()
-                        : JsonSerializer.Deserialize<List<string>>(e.ImgListEvent, new JsonSerializerOptions())
+                        : e.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()
                 })
                 .ToListAsync();
 
@@ -865,10 +831,10 @@ namespace AIEvent.Application.Services.Implements
                     EndTime = e.EndTime,
                     Status = e.RequireApproval,
                     Description = e.Description,
-                    TicketType = e.TicketType,
+                    TicketPricingType = e.TicketPricingType,
                     LocationName = e.LocationName,
-                    Price = e.TicketDetails != null && e.TicketDetails.Any()
-                        ? e.TicketDetails.Min(t => t.TicketPrice)
+                    Price = e.TicketTypes != null && e.TicketTypes.Any()
+                        ? e.TicketTypes.Min(t => t.TicketPrice)
                         : 0,
                     OrganizedBy = e.OrganizerProfile != null 
                         ? (e.OrganizerProfile.CompanyName ?? e.OrganizerProfile.ContactName) 
@@ -877,7 +843,7 @@ namespace AIEvent.Application.Services.Implements
                     TotalPersonJoin = e.SoldQuantity,
                     ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
                         ? new List<string>()
-                        : JsonSerializer.Deserialize<List<string>>(e.ImgListEvent, new JsonSerializerOptions())
+                        : e.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()
                 })
                 .ToListAsync();
 
@@ -921,10 +887,10 @@ namespace AIEvent.Application.Services.Implements
                     EndTime = e.EndTime,
                     Status = e.RequireApproval,
                     Description = e.Description,
-                    TicketType = e.TicketType,
+                    TicketPricingType = e.TicketPricingType,
                     LocationName = e.LocationName,
-                    Price = e.TicketDetails != null && e.TicketDetails.Any()
-                        ? e.TicketDetails.Min(t => t.TicketPrice)
+                    Price = e.TicketTypes != null && e.TicketTypes.Any()
+                        ? e.TicketTypes.Min(t => t.TicketPrice)
                         : 0,
                     OrganizedBy = e.OrganizerProfile != null 
                         ? (e.OrganizerProfile.CompanyName ?? e.OrganizerProfile.ContactName) 
@@ -933,7 +899,7 @@ namespace AIEvent.Application.Services.Implements
                     TotalPersonJoin = e.SoldQuantity,
                     ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
                         ? new List<string>()
-                        : JsonSerializer.Deserialize<List<string>>(e.ImgListEvent, new JsonSerializerOptions())
+                        : e.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()
                 })
                 .ToListAsync();
 

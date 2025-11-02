@@ -43,7 +43,7 @@ namespace AIEvent.API.Controllers
         public async Task<ActionResult<SuccessResponse<BasePaginated<EventsResponse>>>> GetEvent([FromQuery]string? search,
                                                                                                  [FromQuery] string? eventCategoryId,
                                                                                                  [FromQuery] List<EventTagRequest> tags,
-                                                                                                 [FromQuery] TicketType? ticketType, 
+                                                                                                 [FromQuery] TicketPricingType? ticketType, 
                                                                                                  [FromQuery] string? city, 
                                                                                                  [FromQuery] TimeLine? timeLine,
                                                                                                  [FromQuery] int pageNumber = 1,
