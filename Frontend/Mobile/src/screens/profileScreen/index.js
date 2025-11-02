@@ -21,7 +21,7 @@ import Images from '../../constants/Images';
 import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
 import Strings from '../../constants/Strings';
-import { UserService } from '../../api/services';
+import { UserService, walletAPI } from '../../api/services';
 import { logoutUser } from '../../redux/actions/Action';
 import ScreenNames from '../../constants/ScreenNames';
 import { 
@@ -50,10 +50,10 @@ const ProfileScreen = ({ navigation }) => {
 
   const menuItems = [
     { id: 'tickets', label: 'Vé của tôi', icon: '🎫', screen: ScreenNames.TICKETS_SCREEN },
-    { id: 'wallet', label: 'Ví của tôi', icon: '💳', screen: ScreenNames.WALLET_SCREEN },
+    { id: 'wallet', label: 'Ví điện tử', icon: '💳', screen: ScreenNames.WALLET_SCREEN },
+    { id: 'payment', label: 'Thông tin tài khoản', icon: '🏦', screen: ScreenNames.PAYMENT_INFORMATION_SCREEN },
     { id: 'likes', label: 'Yêu thích', icon: '❤️', screen: ScreenNames.LIKES_SCREEN },
     { id: 'friends', label: 'Bạn bè', icon: '👥', screen: ScreenNames.FRIENDS_SCREEN },
-    { id: 'history', label: 'Lịch sử', icon: '📊', screen: ScreenNames.HISTORY_SCREEN },
     { id: 'settings', label: 'Cài đặt', icon: '⚙️', screen: ScreenNames.SETTINGS_SCREEN }
   ];
 

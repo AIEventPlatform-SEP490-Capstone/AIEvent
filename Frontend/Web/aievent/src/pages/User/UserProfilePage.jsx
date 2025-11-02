@@ -413,12 +413,12 @@ const UserProfilePage = () => {
                       {paymentInformations.map((paymentInfo) => (
                         <div
                           key={paymentInfo.paymentInformationId}
-                          className="group relative overflow-hidden bg-[#f9f7f5] rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 border border-[#e8e4df]"
+                          className="group relative overflow-hidden bg-gradient-to-br from-[#F8F8F8] to-[#E8E8E8] rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 border border-[#D1D5DB]"
                         >
                           {/* Decorative Pattern */}
-                          <div className="absolute inset-0 opacity-3">
-                            <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full -mr-24 -mt-24"></div>
-                            <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full -ml-16 -mb-16"></div>
+                          <div className="absolute inset-0 opacity-5">
+                            <div className="absolute top-0 right-0 w-48 h-48 bg-gray-300 rounded-full -mr-24 -mt-24"></div>
+                            <div className="absolute bottom-0 left-0 w-32 h-32 bg-gray-300 rounded-full -ml-16 -mb-16"></div>
                           </div>
                           
                           {/* Card Content */}
@@ -427,7 +427,7 @@ const UserProfilePage = () => {
                             <div className="flex items-start justify-between mb-4">
                               <div className="flex items-center space-x-3">
                                 {paymentInfo.bankLogo ? (
-                                  <div className="bg-white rounded-xl p-4 border border-[#e8e4df] shadow-sm">
+                                  <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
                                     <img
                                       src={paymentInfo.bankLogo}
                                       alt={paymentInfo.bankName}
@@ -438,12 +438,12 @@ const UserProfilePage = () => {
                                     />
                                   </div>
                                 ) : (
-                                  <div className="bg-white rounded-xl p-4 border border-[#e8e4df] shadow-sm">
-                                    <Building2 className="w-20 h-20 text-blue-600" />
+                                  <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                                    <Building2 className="w-20 h-20 text-gray-700" />
                                   </div>
                                 )}
                                 <div>
-                                  <Badge className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-0 text-xs px-3 py-1 shadow-sm">
+                                  <Badge className="bg-gray-300/40 text-gray-800 border border-gray-300/50 text-xs px-3 py-1 shadow-sm">
                                     {paymentInfo.bankShortName || paymentInfo.bankName}
                                   </Badge>
                                   {paymentInfo.branchName && (
@@ -452,13 +452,13 @@ const UserProfilePage = () => {
                                 </div>
                               </div>
                               <div className="flex items-center space-x-2">
-                                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center border border-[#e8e4df] shadow-sm">
-                                  <CreditCard className="w-4 h-4 text-blue-600" />
+                                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center border border-gray-200 shadow-sm">
+                                  <CreditCard className="w-4 h-4 text-gray-700" />
                                 </div>
                                 <button
                                   onClick={() => handleDeletePaymentInfo(paymentInfo.paymentInformationId)}
                                   disabled={isDeleting}
-                                  className="w-8 h-8 bg-white hover:bg-red-50 rounded-lg flex items-center justify-center border border-[#e8e4df] hover:border-red-300 shadow-sm transition-all duration-200 hover:scale-105 disabled:opacity-50"
+                                  className="w-8 h-8 bg-white hover:bg-red-50 rounded-lg flex items-center justify-center border border-gray-200 hover:border-red-300 shadow-sm transition-all duration-200 hover:scale-105 disabled:opacity-50"
                                   title="Xóa thông tin thẻ"
                                 >
                                   <Trash2 className="w-4 h-4 text-red-600" />
@@ -475,13 +475,13 @@ const UserProfilePage = () => {
                                 </p>
                                 <button
                                   onClick={() => handleCopyToClipboard(paymentInfo.accountNumber, paymentInfo.accountNumber)}
-                                  className="ml-3 p-2 bg-white hover:bg-blue-50 rounded-lg transition-all duration-200 border border-[#e8e4df] hover:border-blue-300 hover:scale-105 shadow-sm"
+                                  className="ml-3 p-2 bg-white hover:bg-gray-50 rounded-lg transition-all duration-200 border border-gray-200 hover:border-gray-300 hover:scale-105 shadow-sm"
                                   title="Sao chép số tài khoản"
                                 >
                                   {copiedAccountNumber === paymentInfo.accountNumber ? (
                                     <CheckCircle2 className="w-4 h-4 text-green-600" />
                                   ) : (
-                                    <Copy className="w-4 h-4 text-blue-600" />
+                                    <Copy className="w-4 h-4 text-gray-700" />
                                   )}
                                 </button>
                               </div>
@@ -491,8 +491,8 @@ const UserProfilePage = () => {
                             <div>
                               <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Chủ tài khoản</p>
                               <div className="flex items-center">
-                                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center mr-2 border border-[#e8e4df] shadow-sm">
-                                  <User className="w-4 h-4 text-blue-600" />
+                                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center mr-2 border border-gray-200 shadow-sm">
+                                  <User className="w-4 h-4 text-gray-700" />
                                 </div>
                                 <p className="text-base font-semibold text-gray-900">
                                   {paymentInfo.accountHolderName}
@@ -501,10 +501,10 @@ const UserProfilePage = () => {
                             </div>
                             
                             {/* Bottom Decoration */}
-                            <div className="absolute bottom-3 right-3 opacity-5">
+                            <div className="absolute bottom-3 right-3 opacity-10">
                               <div className="grid grid-cols-4 gap-1">
                                 {[...Array(16)].map((_, i) => (
-                                  <div key={i} className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+                                  <div key={i} className="w-1.5 h-1.5 bg-gray-600 rounded-full"></div>
                                 ))}
                               </div>
                             </div>
@@ -810,10 +810,8 @@ const EditProfileModal = ({ profileData, originalProfile, onClose }) => {
     try {
       clearError();
 
-      // Transform form data to API format
       const apiData = transformFormDataToAPI(formData, originalProfile);
 
-      // Validate the data
       const validation = validateProfileData(apiData);
       if (!validation.isValid) {
         alert(validation.errors.join('\n'));
@@ -826,8 +824,7 @@ const EditProfileModal = ({ profileData, originalProfile, onClose }) => {
         throw new Error(result.error);
       }
       
-      // Refresh profile data after successful update
-      await getUserProfile(); // Refresh the profile data
+      await getUserProfile();
       
       onClose();
     } catch (error) {
@@ -1565,6 +1562,10 @@ const AddPaymentModal = ({ onClose, onSuccess }) => {
       setError('Vui lòng nhập số tài khoản');
       return;
     }
+    if (formData.accountNumber.trim().length < 6) {
+      setError('Số tài khoản phải có ít nhất 6 ký tự');
+      return;
+    }
     if (!formData.bankName) {
       setError('Vui lòng chọn ngân hàng');
       return;
@@ -1582,7 +1583,76 @@ const AddPaymentModal = ({ onClose, onSuccess }) => {
       onSuccess();
     } catch (error) {
       console.error('Error creating payment information:', error);
-      setError(error.message || 'Không thể thêm thông tin thanh toán');
+      
+      // Xử lý error message từ server và chuyển sang tiếng Việt
+      let errorMessage = 'Không thể thêm thông tin thanh toán';
+      
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        
+        // Xử lý error từ validation server
+        if (errorData.errors && typeof errorData.errors === 'object') {
+          const firstError = Object.values(errorData.errors)[0];
+          if (Array.isArray(firstError) && firstError.length > 0) {
+            const serverMessage = firstError[0];
+            // Map các thông báo lỗi phổ biến từ server sang tiếng Việt
+            if (serverMessage.includes('AccountNumber') || serverMessage.includes('account number')) {
+              if (serverMessage.includes('minimum') || serverMessage.includes('least')) {
+                errorMessage = 'Số tài khoản phải có ít nhất 6 ký tự';
+              } else if (serverMessage.includes('required')) {
+                errorMessage = 'Vui lòng nhập số tài khoản';
+              } else {
+                errorMessage = 'Số tài khoản không hợp lệ';
+              }
+            } else if (serverMessage.includes('AccountHolderName') || serverMessage.includes('account holder')) {
+              errorMessage = 'Tên chủ tài khoản không hợp lệ';
+            } else if (serverMessage.includes('Bank') || serverMessage.includes('bank')) {
+              errorMessage = 'Thông tin ngân hàng không hợp lệ';
+            } else if (serverMessage.includes('Branch') || serverMessage.includes('branch')) {
+              errorMessage = 'Thông tin chi nhánh không hợp lệ';
+            } else if (serverMessage.includes('duplicate') || serverMessage.includes('already exists')) {
+              errorMessage = 'Thông tin thanh toán này đã tồn tại';
+            } else {
+              errorMessage = serverMessage;
+            }
+          }
+        } else if (errorData.message) {
+          // Xử lý error message trực tiếp
+          const serverMessage = errorData.message.toLowerCase();
+          if (serverMessage.includes('accountnumber') || serverMessage.includes('account number')) {
+            if (serverMessage.includes('minimum') || serverMessage.includes('least') || serverMessage.includes('6')) {
+              errorMessage = 'Số tài khoản phải có ít nhất 6 ký tự';
+            } else if (serverMessage.includes('required')) {
+              errorMessage = 'Vui lòng nhập số tài khoản';
+            } else {
+              errorMessage = 'Số tài khoản không hợp lệ';
+            }
+          } else if (serverMessage.includes('duplicate') || serverMessage.includes('already exists')) {
+            errorMessage = 'Thông tin thanh toán này đã tồn tại';
+          } else if (serverMessage.includes('invalid')) {
+            errorMessage = 'Thông tin không hợp lệ. Vui lòng kiểm tra lại';
+          } else {
+            errorMessage = errorData.message;
+          }
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        }
+      } else if (error.message) {
+        const errorMsg = error.message.toLowerCase();
+        if (errorMsg.includes('network') || errorMsg.includes('fetch')) {
+          errorMessage = 'Lỗi kết nối mạng. Vui lòng kiểm tra kết nối internet và thử lại';
+        } else if (errorMsg.includes('timeout')) {
+          errorMessage = 'Hết thời gian chờ. Vui lòng thử lại';
+        } else if (errorMsg.includes('500')) {
+          errorMessage = 'Lỗi máy chủ. Vui lòng thử lại sau';
+        } else if (errorMsg.includes('400')) {
+          errorMessage = 'Thông tin không hợp lệ. Vui lòng kiểm tra lại';
+        } else if (errorMsg.includes('401') || errorMsg.includes('403')) {
+          errorMessage = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại';
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -1746,7 +1816,16 @@ const AddPaymentModal = ({ onClose, onSuccess }) => {
             <Input
               id="accountNumber"
               value={formData.accountNumber}
-              onChange={(e) => handleInputChange('accountNumber', e.target.value)}
+              onChange={(e) => {
+                // Chỉ không cho phép ký tự đặc biệt và khoảng trắng
+                // Cho phép: chữ, số
+                const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
+                handleInputChange('accountNumber', value);
+                // Xóa error khi user bắt đầu nhập
+                if (error && error.includes('số tài khoản')) {
+                  setError(null);
+                }
+              }}
               placeholder="0337252208"
               className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 h-12 font-mono text-lg tracking-widest"
               type="text"
@@ -1792,11 +1871,11 @@ const AddPaymentModal = ({ onClose, onSuccess }) => {
         <div className="flex-1 min-w-0">
           <div className="sticky top-0">
             {formData.bankName ? (
-              <div className="group relative overflow-hidden bg-[#f9f7f5] rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 border border-[#e8e4df]">
+              <div className="group relative overflow-hidden bg-gradient-to-br from-[#F8F8F8] to-[#E8E8E8] rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 border border-[#D1D5DB]">
                 {/* Decorative Pattern */}
-                <div className="absolute inset-0 opacity-3">
-                  <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full -mr-24 -mt-24"></div>
-                  <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full -ml-16 -mb-16"></div>
+                <div className="absolute inset-0 opacity-5">
+                  <div className="absolute top-0 right-0 w-48 h-48 bg-gray-300 rounded-full -mr-24 -mt-24"></div>
+                  <div className="absolute bottom-0 left-0 w-32 h-32 bg-gray-300 rounded-full -ml-16 -mb-16"></div>
                 </div>
                 
                 {/* Card Content */}
@@ -1805,7 +1884,7 @@ const AddPaymentModal = ({ onClose, onSuccess }) => {
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       {formData.bankLogo ? (
-                        <div className="bg-white rounded-xl p-4 border border-[#e8e4df] shadow-sm">
+                        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
                           <img
                             src={formData.bankLogo}
                             alt={formData.bankName}
@@ -1816,12 +1895,12 @@ const AddPaymentModal = ({ onClose, onSuccess }) => {
                           />
                         </div>
                       ) : (
-                        <div className="bg-white rounded-xl p-4 border border-[#e8e4df] shadow-sm">
-                          <Building2 className="w-20 h-20 text-blue-600" />
+                        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                          <Building2 className="w-20 h-20 text-gray-700" />
                         </div>
                       )}
                       <div>
-                        <Badge className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-0 text-xs px-3 py-1 shadow-sm">
+                        <Badge className="bg-gray-300/40 text-gray-800 border border-gray-300/50 text-xs px-3 py-1 shadow-sm">
                           {formData.bankShortName || formData.bankName}
                         </Badge>
                         <p className="text-gray-600 text-xs mt-1">
@@ -1830,8 +1909,8 @@ const AddPaymentModal = ({ onClose, onSuccess }) => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center border border-[#e8e4df] shadow-sm">
-                        <CreditCard className="w-4 h-4 text-blue-600" />
+                      <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center border border-gray-200 shadow-sm">
+                        <CreditCard className="w-4 h-4 text-gray-700" />
                       </div>
                     </div>
                   </div>
@@ -1850,8 +1929,8 @@ const AddPaymentModal = ({ onClose, onSuccess }) => {
                   <div>
                     <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Chủ tài khoản</p>
                     <div className="flex items-center">
-                      <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center mr-2 border border-[#e8e4df] shadow-sm">
-                        <User className="w-4 h-4 text-blue-600" />
+                      <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center mr-2 border border-gray-200 shadow-sm">
+                        <User className="w-4 h-4 text-gray-700" />
                       </div>
                       <p className="text-base font-semibold text-gray-900">
                         {formData.accountHolderName || 'Chưa nhập'}
@@ -1860,10 +1939,10 @@ const AddPaymentModal = ({ onClose, onSuccess }) => {
                   </div>
                   
                   {/* Bottom Decoration */}
-                  <div className="absolute bottom-3 right-3 opacity-5">
+                  <div className="absolute bottom-3 right-3 opacity-10">
                     <div className="grid grid-cols-4 gap-1">
                       {[...Array(16)].map((_, i) => (
-                        <div key={i} className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+                        <div key={i} className="w-1.5 h-1.5 bg-gray-600 rounded-full"></div>
                       ))}
                     </div>
                   </div>

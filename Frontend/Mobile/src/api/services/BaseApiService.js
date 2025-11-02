@@ -1,9 +1,6 @@
 import AuthService from './AuthService';
 
 class BaseApiService {
-  /**
-   * Get authentication headers
-   */
   static async getAuthHeaders() {
     const accessToken = await AuthService.getAccessToken();
     
@@ -17,27 +14,21 @@ class BaseApiService {
     };
   }
 
-  /**
-   * Handle API response with token refresh
-   */
   static async handleApiResponse(response, retryCallback) {
     if (response.ok) {
       return await response.json();
     }
 
     if (response.status === 401) {
-      // Token might be expired, try to refresh
       const refreshResult = await AuthService.refreshToken();
       
       if (refreshResult.success) {
-        // Retry with new token
         return await retryCallback();
       }
       
       throw new Error('Authentication failed. Please login again.');
     }
 
-    // Handle 400 Bad Request with detailed error message
     if (response.status === 400) {
       try {
         const errorData = await response.json();
@@ -46,13 +37,9 @@ class BaseApiService {
         throw new Error('Bad Request: Invalid data provided');
       }
     }
-
     throw new Error(`HTTP error! status: ${response.status}`);
   }
 
-  /**
-   * Make authenticated GET request
-   */
   static async get(url) {
     try {
       const headers = await this.getAuthHeaders();
@@ -75,9 +62,6 @@ class BaseApiService {
     }
   }
 
-  /**
-   * Make authenticated POST request
-   */
   static async post(url, data) {
     try {
       const headers = await this.getAuthHeaders();
@@ -102,9 +86,6 @@ class BaseApiService {
     }
   }
 
-  /**
-   * Make authenticated PATCH request
-   */
   static async patch(url, formData) {
     try {
       const accessToken = await AuthService.getAccessToken();
@@ -129,6 +110,28 @@ class BaseApiService {
           headers: {
             'Authorization': `Bearer ${newToken}`,
           },
+        });
+        return await this.handleApiResponse(retryResponse, null);
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async delete(url) {
+    try {
+      const headers = await this.getAuthHeaders();
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers,
+      });
+
+      return await this.handleApiResponse(response, async () => {
+        const newHeaders = await this.getAuthHeaders();
+        const retryResponse = await fetch(url, {
+          method: 'DELETE',
+          headers: newHeaders,
         });
         return await this.handleApiResponse(retryResponse, null);
       });
