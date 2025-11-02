@@ -55,7 +55,7 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("Ticket sales period has passed or not yet come", ErrorCodes.InvalidInput);
 
             var ticketTypeIds = request.TicketTypeRequests.Select(x => x.TicketTypeId).Distinct().ToList();
-            var ticketTypes = await _unitOfWork.TicketDetailRepository.Query()
+            var ticketTypes = await _unitOfWork.TicketTypeRepository.Query()
                 .Where(t => ticketTypeIds.Contains(t.Id))
                 .ToDictionaryAsync(x => x.Id);
             if (ticketTypes.Count != ticketTypeIds.Count)
@@ -78,7 +78,7 @@ namespace AIEvent.Application.Services.Implements
                 decimal totalAmount = 0m;
                 var bookingItems = new List<BookingItem>();
                 var tickets = new List<Ticket>();
-                var ticketTypesToUpdate = new List<TicketDetail>();
+                var ticketTypesToUpdate = new List<TicketType>();
 
                 foreach (var item in request.TicketTypeRequests)
                 {
@@ -129,7 +129,7 @@ namespace AIEvent.Application.Services.Implements
                 eventEntity.SoldQuantity += tickets.Count;
 
                 // Batch updates
-                await _unitOfWork.TicketDetailRepository.UpdateRangeAsync(ticketTypesToUpdate);
+                await _unitOfWork.TicketTypeRepository.UpdateRangeAsync(ticketTypesToUpdate);
                 await _unitOfWork.EventRepository.UpdateAsync(eventEntity);
                 await _unitOfWork.BookingItemRepository.AddRangeAsync(bookingItems);
 
@@ -443,8 +443,6 @@ namespace AIEvent.Application.Services.Implements
                 var ticketData = await _unitOfWork.TicketRepository.Query()
                     .Include(t => t.User)
                     .Include(t => t.TicketType)
-                        .ThenInclude(tt => tt.RefundRule!)
-                            .ThenInclude(r => r.RefundRuleDetails)
                     .Include(t => t.TicketType.Event)
                         .ThenInclude(e => e.OrganizerProfile)
                     .Include(t => t.BookingItem)
@@ -463,7 +461,6 @@ namespace AIEvent.Application.Services.Implements
                 var ticket = ticketData;
                 var ticketType = ticket.TicketType;
                 var eventEntity = ticketType.Event;
-                var refundRule = ticketType.RefundRule;
                 var now = DateTime.UtcNow;
 
                 if (eventEntity.StartTime <= now)
@@ -471,77 +468,77 @@ namespace AIEvent.Application.Services.Implements
 
                 decimal refundPrice = 0;
                 decimal refundPercent = 0;
-                if (refundRule != null && refundRule.RefundRuleDetails?.Any() == true && eventEntity.TicketType != TicketType.Free)
-                {
-                    var refundDetail = refundRule.RefundRuleDetails
-                        .FirstOrDefault(d =>
-                            now >= eventEntity.StartTime.AddDays(-d.MaxDaysBeforeEvent!.Value) &&
-                            now < eventEntity.StartTime.AddDays(-d.MinDaysBeforeEvent!.Value));
+                //if (refundRule != null && refundRule.RefundRuleDetails?.Any() == true && eventEntity.TicketType != TicketType.Free)
+                //{
+                //    var refundDetail = refundRule.RefundRuleDetails
+                //        .FirstOrDefault(d =>
+                //            now >= eventEntity.StartTime.AddDays(-d.MaxDaysBeforeEvent!.Value) &&
+                //            now < eventEntity.StartTime.AddDays(-d.MinDaysBeforeEvent!.Value));
 
-                    if (refundDetail == null)
-                        return ErrorResponse.FailureResult("Refund rule not applicable for this time", ErrorCodes.InvalidInput);
+                //    if (refundDetail == null)
+                //        return ErrorResponse.FailureResult("Refund rule not applicable for this time", ErrorCodes.InvalidInput);
 
-                    refundPercent = refundDetail.RefundPercent ?? 0;
-                    refundPrice = ticket.Price * refundPercent / 100;
+                //    refundPercent = refundDetail.RefundPercent ?? 0;
+                //    refundPrice = ticket.Price * refundPercent / 100;
 
-                    var wallets = await _unitOfWork.WalletRepository.Query()
-                        .Where(w =>
-                            (w.UserId == userId || w.UserId == eventEntity.OrganizerProfile!.UserId)
-                            && !w.IsDeleted)
-                        .ToListAsync();
+                //    var wallets = await _unitOfWork.WalletRepository.Query()
+                //        .Where(w =>
+                //            (w.UserId == userId || w.UserId == eventEntity.OrganizerProfile!.UserId)
+                //            && !w.IsDeleted)
+                //        .ToListAsync();
 
-                    var userWallet = wallets.FirstOrDefault(w => w.UserId == userId);
-                    var organizerWallet = wallets.FirstOrDefault(w => w.UserId == eventEntity.OrganizerProfile!.UserId);
+                //    var userWallet = wallets.FirstOrDefault(w => w.UserId == userId);
+                //    var organizerWallet = wallets.FirstOrDefault(w => w.UserId == eventEntity.OrganizerProfile!.UserId);
 
-                    if (userWallet == null || organizerWallet == null)
-                        return ErrorResponse.FailureResult("Wallet not found", ErrorCodes.NotFound);
+                //    if (userWallet == null || organizerWallet == null)
+                //        return ErrorResponse.FailureResult("Wallet not found", ErrorCodes.NotFound);
 
-                    var paymentTransaction = new PaymentTransaction
-                    {
-                        UserId = userId,
-                        BookingId = ticket.BookingItem.BookingId,
-                        Amount = refundPrice,
-                        PaymentMethod = PaymentMethod.Wallet,
-                        Description = $"Hoàn {refundPercent}% tiền vé sự kiện '{eventEntity.Title}'",
-                        CompletedAt = now,
-                        TransactionType = TransactionType.Refund,
-                        Status = TransactionStatus.Success,
-                    };
+                //    var paymentTransaction = new PaymentTransaction
+                //    {
+                //        UserId = userId,
+                //        BookingId = ticket.BookingItem.BookingId,
+                //        Amount = refundPrice,
+                //        PaymentMethod = PaymentMethod.Wallet,
+                //        Description = $"Hoàn {refundPercent}% tiền vé sự kiện '{eventEntity.Title}'",
+                //        CompletedAt = now,
+                //        TransactionType = TransactionType.Refund,
+                //        Status = TransactionStatus.Success,
+                //    };
 
-                    var walletTransactionUser = new WalletTransaction
-                    {
-                        WalletId = userWallet.Id,
-                        Type = TransactionType.Refund,
-                        Amount = refundPrice,
-                        BalanceBefore = userWallet.Balance,
-                        BalanceAfter = userWallet.Balance + refundPrice,
-                        Status = TransactionStatus.Success,
-                        Description = $"Hoàn {refundPercent}% tiền vé '{eventEntity.Title}'",
-                        ReferenceId = paymentTransaction.Id,
-                        ReferenceType = ReferenceType.Refund,
-                        Direction = TransactionDirection.In,
-                    };
+                //    var walletTransactionUser = new WalletTransaction
+                //    {
+                //        WalletId = userWallet.Id,
+                //        Type = TransactionType.Refund,
+                //        Amount = refundPrice,
+                //        BalanceBefore = userWallet.Balance,
+                //        BalanceAfter = userWallet.Balance + refundPrice,
+                //        Status = TransactionStatus.Success,
+                //        Description = $"Hoàn {refundPercent}% tiền vé '{eventEntity.Title}'",
+                //        ReferenceId = paymentTransaction.Id,
+                //        ReferenceType = ReferenceType.Refund,
+                //        Direction = TransactionDirection.In,
+                //    };
 
-                    var walletTransactionOrg = new WalletTransaction
-                    {
-                        WalletId = organizerWallet.Id,
-                        Type = TransactionType.Refund,
-                        Amount = refundPrice,
-                        BalanceBefore = organizerWallet.Balance,
-                        BalanceAfter = organizerWallet.Balance - refundPrice,
-                        Status = TransactionStatus.Success,
-                        Description = $"Hoàn {refundPercent}% tiền vé '{eventEntity.Title}' cho {ticket.User!.FullName}",
-                        ReferenceId = paymentTransaction.Id,
-                        ReferenceType = ReferenceType.Refund,
-                        Direction = TransactionDirection.Out,
-                    };
+                //    var walletTransactionOrg = new WalletTransaction
+                //    {
+                //        WalletId = organizerWallet.Id,
+                //        Type = TransactionType.Refund,
+                //        Amount = refundPrice,
+                //        BalanceBefore = organizerWallet.Balance,
+                //        BalanceAfter = organizerWallet.Balance - refundPrice,
+                //        Status = TransactionStatus.Success,
+                //        Description = $"Hoàn {refundPercent}% tiền vé '{eventEntity.Title}' cho {ticket.User!.FullName}",
+                //        ReferenceId = paymentTransaction.Id,
+                //        ReferenceType = ReferenceType.Refund,
+                //        Direction = TransactionDirection.Out,
+                //    };
 
-                    userWallet.Balance += refundPrice;
-                    organizerWallet.Balance -= refundPrice;
+                //    userWallet.Balance += refundPrice;
+                //    organizerWallet.Balance -= refundPrice;
 
-                    await _unitOfWork.PaymentTransactionRepository.AddAsync(paymentTransaction);
-                    await _unitOfWork.WalletTransactionRepository.AddRangeAsync(new[] { walletTransactionUser, walletTransactionOrg });
-                }
+                //    await _unitOfWork.PaymentTransactionRepository.AddAsync(paymentTransaction);
+                //    await _unitOfWork.WalletTransactionRepository.AddRangeAsync(new[] { walletTransactionUser, walletTransactionOrg });
+                //}
 
                 ticketType.RemainingQuantity++;
                 ticketType.SoldQuantity--;

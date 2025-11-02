@@ -1,7 +1,6 @@
 ﻿using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.DTOs.Ticket;
 using AIEvent.Domain.Enums;
-using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
 
 namespace AIEvent.Application.DTOs.Event
@@ -16,21 +15,23 @@ namespace AIEvent.Application.DTOs.Event
         public required DateTime StartTime { get; set; }
         [Required(ErrorMessage = "EndTime is required")]
         public required DateTime EndTime { get; set; }
-        [Required(ErrorMessage = "LocationName is required for offline events")]
+        [Required(ErrorMessage = "LocationName is required")]
         public string? LocationName { get; set; }
         public string? DetailedDescription { get; set; }
         public string? LinkRef { get; set; }
         public int TotalTickets { get; set; }
         [Required(ErrorMessage = "Ticket type is required")]
-        public TicketType TicketType { get; set; }
+        public TicketPricingType TicketPricingType { get; set; }
         [MinLength(1, ErrorMessage = "Please upload at least one image")]
         [Required(ErrorMessage = "Please upload at least one image")]
-        public List<IFormFile>? ImgListEvent { get; set; }
-        public List<IFormFile>? ImgListEvidences { get; set; }
+        public List<string>? ImgListEvent { get; set; }
+        [MinLength(1, ErrorMessage = "Please upload at least one image")]
+        [Required(ErrorMessage = "Please upload at least one image")]
+        public List<string>? ImgListEvidences { get; set; }
         public ConfirmStatus? RequireApproval { get; set; } = ConfirmStatus.NeedConfirm;
-        [Required(ErrorMessage = "City is required for offline events")]
-        public string? City { get; set; }
-        [Required(ErrorMessage = "Address is required for offline events")]
+        [Required(ErrorMessage = "District is required")]
+        public string? District { get; set; }
+        [Required(ErrorMessage = "Address is required")]
         public string? Address { get; set; }
         public float? Latitude { get; set; }
         public float? Longitude { get; set; }
@@ -39,10 +40,11 @@ namespace AIEvent.Application.DTOs.Event
         public DateTime? SaleStartTime { get; set; }  
         [Required(ErrorMessage = "SaleEndTime is required")]
         public DateTime? SaleEndTime { get; set; }
-        [MinLength(1, ErrorMessage = "Ticket is required")]
-        [Required(ErrorMessage = "Ticket is required")]
-        public List<TicketDetailRequest> TicketDetails { get; set; } = new List<TicketDetailRequest>();
+        [MinLength(1, ErrorMessage = "TicketTypes is required")]
+        [Required(ErrorMessage = "TicketTypes is required")]
+        public List<TicketTypeRequest> TicketTypes { get; set; } = new List<TicketTypeRequest>();
         public List<EventTagRequest>? Tags { get; set; } = new List<EventTagRequest>();
-        public string? EventCategoryId { get; set; }
+        [Required(ErrorMessage = "EventCategoryId is required")]
+        public Guid? EventCategoryId { get; set; }
     }
 }

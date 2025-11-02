@@ -2,7 +2,7 @@
 
 namespace AIEvent.Application.DTOs.Ticket
 {
-    public class TicketDetailRequest
+    public class TicketTypeRequest
     {
         public Guid? Id { get; set; }
 
@@ -17,8 +17,6 @@ namespace AIEvent.Application.DTOs.Ticket
         [Range(1, int.MaxValue, ErrorMessage = "TicketQuantity must be greater than 0")]
         public int TicketQuantity { get; set; }
 
-        public string? TicketDescription { get; set; }
-
-        public string RuleRefundRequestId { get; set; } = string.Empty;  
+        public string? TicketDescription { get; set; } 
     }
 }
