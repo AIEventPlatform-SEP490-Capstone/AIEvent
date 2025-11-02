@@ -350,16 +350,11 @@ namespace AIEvent.Infrastructure.Context
             // ----------------- PaymentInformation -----------------
             builder.Entity<PaymentInformation>(entity =>
             {
-                entity.ToTable("PaymentInfomations"); 
-
                 entity.HasOne(pi => pi.User)
                       .WithMany(u => u.PaymentInformations)
                       .HasForeignKey(pi => pi.UserId)
                       .OnDelete(DeleteBehavior.Cascade); 
-
-                entity.HasIndex(pi => new { pi.UserId, pi.AccountNumber })
-                      .HasDatabaseName("IX_PaymentInfo_User_Account");
-
+                      
                 entity.HasIndex(pi => pi.UserId)
                       .HasDatabaseName("IX_PaymentInfo_UserId");
             });
