@@ -22,13 +22,11 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<OrganizerProfile> OrganizerProfiles { get; set; }
         public DbSet<Event> Events { get; set; }
         public DbSet<EventCategory> EventCategories { get; set; }
-        public DbSet<TicketDetail> TicketDetails { get; set; }
+        public DbSet<TicketType> TicketTypes { get; set; }
         public DbSet<Tag> Tags { get; set; }
         public DbSet<EventTag> EventTags { get; set; }
         public DbSet<UserAction> UserActions { get; set; }
         public DbSet<UserActionFilter> UserActionFilters { get; set; }
-        public DbSet<RefundRule> RefundRules { get; set; }
-        public DbSet<RefundRuleDetail> RefundRuleDetails { get; set; }
         public DbSet<FavoriteEvent> FavoriteEvents { get; set; }
         public DbSet<Booking> Bookings { get; set; }
         public DbSet<BookingItem> BookingItems { get; set; }
@@ -283,10 +281,10 @@ namespace AIEvent.Infrastructure.Context
             });
 
             // ----------------- TicketDetail -----------------
-            builder.Entity<TicketDetail>(entity =>
+            builder.Entity<TicketType>(entity =>
             {
                 entity.HasOne(td => td.Event)
-                      .WithMany(e => e.TicketDetails)
+                      .WithMany(e => e.TicketTypes)
                       .HasForeignKey(td => td.EventId);
 
                 entity.Property(t => t.TicketQuantity).IsRequired();
@@ -295,7 +293,6 @@ namespace AIEvent.Infrastructure.Context
                 entity.Property(td => td.TicketPrice).HasPrecision(18, 2);
 
                 entity.HasIndex(td => new { td.EventId, td.TicketName }).IsUnique();
-                entity.HasIndex(e => e.RefundRuleId).HasDatabaseName("IX_TicketDetail_RefundRuleId");
             });
 
             // ----------------- UserAction -----------------
@@ -315,18 +312,6 @@ namespace AIEvent.Infrastructure.Context
                       .WithMany(e => e.Filters)
                       .HasForeignKey(td => td.UserActionId)
                       .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            // ----------------- RefundRuleDetail -----------------
-            builder.Entity<RefundRuleDetail>(entity =>
-            {
-                entity.HasOne(d => d.RefundRule)
-                      .WithMany(r => r.RefundRuleDetails)
-                      .HasForeignKey(d => d.RefundRuleId);
-
-                entity.Property(d => d.RefundPercent).HasPrecision(5, 2);
-                entity.HasIndex(rd => new { rd.RefundRuleId, rd.MinDaysBeforeEvent, rd.MaxDaysBeforeEvent}).HasDatabaseName("IX_RefundRuleDetail_Range");
-
             });
 
             // ----------------- FavoriteEvent -----------------
