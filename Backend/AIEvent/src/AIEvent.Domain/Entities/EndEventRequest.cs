@@ -14,7 +14,9 @@ namespace AIEvent.Domain.Entities
         public decimal PlatformFee { get; set; }
         [Column(TypeName = "decimal(18,2)")]
         public decimal NetRevenue { get; set; }
-        public string? Note { get; set; }
+        public string? Summary { get; set; }
+        public string? AdminNote { get; set; }
+        public string? EvidenceImages { get; set; }
         public ConfirmStatus Status { get; set; }
         public DateTime ReviewedAt { get; set; }
         public virtual OrganizerProfile OrganizerProfile { get; set; } = default!;

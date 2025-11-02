@@ -183,7 +183,7 @@ namespace AIEvent.Application.Services.Implements
             }
         }
 
-        public async Task<Result> AddPaymendInformationAsync(Guid userId, CreatePaymentInformationRequest request)
+        public async Task<Result> AddPaymendInformationAsync(Guid userId, PaymentInformationRequest request)
         {
             if (userId == Guid.Empty)
                 return ErrorResponse.FailureResult("Invalid userId input", ErrorCodes.Unauthorized);
@@ -206,32 +206,6 @@ namespace AIEvent.Application.Services.Implements
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
                 await _unitOfWork.PaymentInformationRepository.AddAsync(paymentInfor);
-                return Result.Success();
-            });
-        }
-
-        public async Task<Result> UpdatePaymendInformationAsync(Guid userId, Guid paymentInformationId, UpdatePaymentInformationRequest request)
-        {
-            if (userId == Guid.Empty || paymentInformationId == Guid.Empty)
-                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
-
-            var validationResult = ValidationHelper.ValidateModel(request);
-            if (!validationResult.IsSuccess)
-                return validationResult;
-
-            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
-            if (user == null || user.IsDeleted)
-                return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
-
-            var paymentInfor = await _unitOfWork.PaymentInformationRepository.GetByIdAsync(paymentInformationId, true);
-            if (paymentInfor == null || paymentInfor.IsDeleted)
-                return ErrorResponse.FailureResult("Payment Infor not found or inactive", ErrorCodes.NotFound);
-
-            _mapper.Map(request, paymentInfor);
-
-            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
-            {
-                await _unitOfWork.PaymentInformationRepository.UpdateAsync(paymentInfor);
                 return Result.Success();
             });
         }
@@ -291,25 +265,6 @@ namespace AIEvent.Application.Services.Implements
             return new BasePaginated<PaymentInformationResponse>(result, totalCount, pageNumber, pageSize);
         }
 
-        public async Task<Result<PaymentInformationResponse>> GetPaymendInformationByIdAsync(Guid userId, Guid paymentInformationId)
-        {
-            if (userId == Guid.Empty || paymentInformationId == Guid.Empty)
-                return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
-
-            var user = await _unitOfWork.UserRepository.GetByIdAsync(userId, true);
-            if (user == null || user.IsDeleted)
-                return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
-
-            var paymentInfor = await _unitOfWork.PaymentInformationRepository
-                                            .Query()
-                                            .Where(pi => pi.Id == paymentInformationId && !pi.IsDeleted)
-                                            .ProjectTo<PaymentInformationResponse>(_mapper.ConfigurationProvider)
-                                            .FirstOrDefaultAsync();
-            if (paymentInfor == null)
-                return ErrorResponse.FailureResult("Payment Infor not found or inactive", ErrorCodes.NotFound);
-            return Result<PaymentInformationResponse>.Success(paymentInfor);
-        }
-
         public async Task<Result<Payout>> WithdrawAsync(Guid userId, OnlyPayOutRequest request)
         {
             if (userId == Guid.Empty)
@@ -366,7 +321,7 @@ namespace AIEvent.Application.Services.Implements
                         Type = TransactionType.Withdraw,
                         Direction = TransactionDirection.Out,
                         Status = TransactionStatus.Success, 
-                        Description = $"{request.Description ?? "Rút tiền"} | PayoutId: {payoutResponse.Id}",
+                        Description = $"{request.Description ?? "Rút tiền"} | Số tài khoản nhận: {paymentInfo.Id}",
                         ReferenceId = userId,
                         ReferenceType = ReferenceType.WithdrawRequest,
                     };
