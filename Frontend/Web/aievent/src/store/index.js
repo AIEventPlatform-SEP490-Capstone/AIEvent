@@ -9,6 +9,7 @@ import eventsReducer from "./slices/eventsSlice";
 import userProfileReducer from "./slices/userProfileSlice";
 import walletReducer from "./slices/walletSlice";
 import bookingReducer from "./slices/bookingSlice";
+import organizersReducer from "./slices/organizersSlice";
 import userManagementReducer from "./slices/userManagementSlice";
 
 export const store = configureStore({
@@ -23,6 +24,7 @@ export const store = configureStore({
     userProfile: userProfileReducer,
     wallet: walletReducer,
     booking: bookingReducer,
+    organizers: organizersReducer,
     userManagement: userManagementReducer,
   },
   middleware: (getDefaultMiddleware) =>
