@@ -20,6 +20,6 @@ namespace AIEvent.Application.DTOs.Event
         public List<TagResponse>? Tags { get; set; }
         public List<string>? ImgListEvent { get; set; }
         public bool? IsFavorite { get; set; }
-        public TicketType TicketType { get; set; }
+        public TicketPricingType TicketPricingType { get; set; }
     }
 }

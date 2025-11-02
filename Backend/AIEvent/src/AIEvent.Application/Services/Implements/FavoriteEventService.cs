@@ -90,7 +90,7 @@ namespace AIEvent.Application.Services.Implements
                     StartTime = e.StartTime,
                     EndTime = e.EndTime,
                     Description = e.Description,
-                    TicketType = e.TicketType,
+                    TicketPricingType = e.TicketPricingType,
                     TotalTickets = e.TotalTickets,
                     SoldQuantity = e.SoldQuantity,
                     LocationName = e.LocationName,

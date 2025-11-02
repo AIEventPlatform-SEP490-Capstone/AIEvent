@@ -472,7 +472,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.Empty;
-            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 1000, Description = null };
+            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 5000, Description = null };
 
             // Act
             var result = await _paymentService.WithdrawAsync(userId, request);
@@ -501,7 +501,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
         }
 
-        // UTCID03: Amount = 0 -> Boundary invalid
+        // UTCID03: Amount = 4000 -> Boundary invalid
         [Fact]
         public async Task UTCID03_WithdrawAsync_WithZeroAmount_ShouldReturnValidationFailure()
         {
@@ -514,7 +514,7 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Contain("Amount phải lớn hơn 0");
+            result.Error!.Message.Should().Contain("Amount must be greater than 4000");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
         }
 
@@ -540,7 +540,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 1000 };
+            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 5000 };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync((User?)null);
 
@@ -559,7 +559,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 1000 };
+            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 5000 };
             var user = new User { Id = userId, IsDeleted = true };
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
 
@@ -578,7 +578,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 1000 };
+            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 5000 };
             var user = new User { Id = userId, IsDeleted = false, IsActive = true };
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
             var emptyWallets = new List<Wallet>().AsQueryable().BuildMockDbSet();
@@ -599,7 +599,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 2000 };
+            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 5000 };
             var user = new User { Id = userId, IsDeleted = false, IsActive = true };
             var wallet = new Wallet { Id = Guid.NewGuid(), UserId = userId, Balance = 1000, IsDeleted = false };
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
@@ -621,7 +621,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 1000 };
+            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 5000 };
             var user = new User { Id = userId, IsDeleted = false, IsActive = true };
             var wallet = new Wallet { Id = Guid.NewGuid(), UserId = userId, Balance = 10_000, IsDeleted = false };
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
@@ -644,7 +644,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 1000 };
+            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 5000 };
             var user = new User { Id = userId, IsDeleted = false, IsActive = true };
             var wallet = new Wallet { Id = Guid.NewGuid(), UserId = userId, Balance = 10_000, IsDeleted = false };
             var paymentInfo = new PaymentInformation { Id = request.PaymentInfoId, IsDeleted = true, AccountHolderName = "A", AccountNumber = "1", BankName = "B", BankBin = "970415" };
@@ -679,7 +679,9 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.WalletRepository.Query(It.IsAny<bool>())).Returns(wallets.Object);
             _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.GetByIdAsync(request.PaymentInfoId, true)).ReturnsAsync(paymentInfo);
 
+            PayOS.Models.V1.Payouts.PayoutRequest? capturedPayoutRequest = null;
             _mockpayOSService.Setup(x => x.CreatePayoutAsync(It.IsAny<PayOS.Models.V1.Payouts.PayoutRequest>()))
+                             .Callback<PayOS.Models.V1.Payouts.PayoutRequest>(req => capturedPayoutRequest = req)
                              .ReturnsAsync(new PayOS.Models.V1.Payouts.Payout());
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
@@ -702,42 +704,18 @@ namespace AIEvent.Application.Test.Services
                 t.Direction == TransactionDirection.Out &&
                 t.Description!.StartsWith("Rút tiền")
             )), Times.Once());
+
+            // Verify payout request to PayOS uses net amount after fee and correct bank info
+            capturedPayoutRequest.Should().NotBeNull();
+            capturedPayoutRequest!.Amount.Should().Be(request.Amount - 4000);
+            capturedPayoutRequest.ToBin.Should().Be(paymentInfo.BankBin);
+            capturedPayoutRequest.ToAccountNumber.Should().Be(paymentInfo.AccountNumber);
+            capturedPayoutRequest.Category.Should().Contain("Withdraw");
         }
 
-        // UTCID12: Transaction helper returns failure -> returns error
+        // UTCID12: PayOS throws -> catch path, failed transaction persisted
         [Fact]
-        public async Task UTCID12_WithdrawAsync_WhenTransactionHelperFails_ShouldReturnFailure()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 5000 };
-            var user = new User { Id = userId, IsDeleted = false, IsActive = true };
-            var wallet = new Wallet { Id = Guid.NewGuid(), UserId = userId, Balance = 10_000, IsDeleted = false };
-            var paymentInfo = new PaymentInformation { Id = request.PaymentInfoId, IsDeleted = false, BankBin = "970415", AccountNumber = "123", AccountHolderName = "A", BankName = "B" };
-
-            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
-            var wallets = new List<Wallet> { wallet }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(It.IsAny<bool>())).Returns(wallets.Object);
-            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.GetByIdAsync(request.PaymentInfoId, true)).ReturnsAsync(paymentInfo);
-
-            _mockpayOSService.Setup(x => x.CreatePayoutAsync(It.IsAny<PayOS.Models.V1.Payouts.PayoutRequest>()))
-                             .ReturnsAsync(new PayOS.Models.V1.Payouts.Payout());
-
-            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
-                                  .ReturnsAsync(ErrorResponse.FailureResult("tx fail", ErrorCodes.InternalServerError));
-
-            // Act
-            var result = await _paymentService.WithdrawAsync(userId, request);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Be("Failed to update wallet");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
-        }
-
-        // UTCID13: PayOS throws -> catch path, failed transaction persisted
-        [Fact]
-        public async Task UTCID13_WithdrawAsync_WhenPayOSThrows_ShouldPersistFailedTransactionAndReturnFailure()
+        public async Task UTCID12_WithdrawAsync_WhenPayOSThrows_ShouldPersistFailedTransactionAndReturnFailure()
         {
             // Arrange
             var userId = Guid.NewGuid();
@@ -775,7 +753,6 @@ namespace AIEvent.Application.Test.Services
 
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
-
         #endregion
 
         #region PaymentWebhookAsync

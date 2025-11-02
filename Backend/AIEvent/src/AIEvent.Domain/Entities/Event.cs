@@ -16,7 +16,7 @@ namespace AIEvent.Domain.Entities
         public int TotalTickets { get; set; }
         public int SoldQuantity { get; set; } = 0;
         public int RemainingTickets { get; set; }
-        public TicketType TicketType { get; set; }
+        public TicketPricingType TicketPricingType { get; set; }
         public string? ImgListEvent { get; set; }
         public bool? Publish { get; set; } = false;
         public ConfirmStatus? RequireApproval { get; set; }
@@ -25,8 +25,8 @@ namespace AIEvent.Domain.Entities
         public string? ReasonReject { get; set; }
         public string? ReasonCancel { get; set; } 
         public string? LinkRef { get; set; }
-        public string? City { get; set; }
-        public string? Evidences { get; set; }
+        public string? District { get; set; }
+        public string? ImgListEvidences { get; set; }
         public string? Address { get; set; }
         public float? Latitude { get; set; }
         public float? Longitude { get; set; }
@@ -35,7 +35,7 @@ namespace AIEvent.Domain.Entities
         public EventCategory EventCategory { get; set; } = default!;
         public virtual OrganizerProfile? OrganizerProfile { get; set; }
         public virtual EndEventRequest? EndRequest { get; set; }
-        public virtual ICollection<TicketDetail> TicketDetails { get; set; } = new List<TicketDetail>();
+        public virtual ICollection<TicketType> TicketTypes { get; set; } = new List<TicketType>();
         public virtual ICollection<EventTag> EventTags { get; set; } = new List<EventTag>();
         public ICollection<FavoriteEvent> FavoriteEvents { get; set; } = new List<FavoriteEvent>();
         public ICollection<Booking> Bookings { get; set; } = new List<Booking>();

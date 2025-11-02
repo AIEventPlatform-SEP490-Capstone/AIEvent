@@ -23,7 +23,7 @@ namespace AIEvent.Domain.Entities
         public Guid TicketTypeId { get; set; }
 
         [ForeignKey("TicketTypeId")]
-        public virtual TicketDetail TicketType { get; set; } = default!;
+        public virtual TicketType TicketType { get; set; } = default!;
 
         public required string EventName { get; set; }
         public string? Address { get; set; }

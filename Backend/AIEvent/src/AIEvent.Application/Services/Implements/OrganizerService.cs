@@ -168,7 +168,7 @@ namespace AIEvent.Application.Services.Implements
                         FullName = profile.ContactName,
                         Address = profile.Address,
                         RoleId = role.Id,
-                        City = profile.Address,
+                        District = profile.Address,
                         IsActive = true,
                         LinkedUserId = profile.UserId,
                         PhoneNumber = profile.ContactPhone,

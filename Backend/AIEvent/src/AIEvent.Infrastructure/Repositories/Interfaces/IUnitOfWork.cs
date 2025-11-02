@@ -12,9 +12,7 @@ namespace AIEvent.Infrastructure.Repositories.Interfaces
         IGenericRepository<EventTag> EventTagRepository { get; }
         IGenericRepository<EventCategory> EventCategoryRepository { get; }
         IGenericRepository<OrganizerProfile> OrganizerProfileRepository { get; }
-        IGenericRepository<TicketDetail> TicketDetailRepository { get; }
-        IGenericRepository<RefundRule> RefundRuleRepository { get; }
-        IGenericRepository<RefundRuleDetail> RefundRuleDetailRepository { get; }
+        IGenericRepository<TicketType> TicketTypeRepository { get; } 
         IGenericRepository<FavoriteEvent> FavoriteEventRepository { get; }
         IGenericRepository<BookingItem> BookingItemRepository { get; }
         IGenericRepository<Ticket> TicketRepository { get; }

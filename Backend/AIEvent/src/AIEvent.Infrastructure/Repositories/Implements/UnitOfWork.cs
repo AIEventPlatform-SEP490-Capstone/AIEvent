@@ -19,9 +19,7 @@ namespace AIEvent.Infrastructure.Repositories.Implements
         public IGenericRepository<EventCategory> EventCategoryRepository => GetRepository<EventCategory>();
         public IGenericRepository<EventTag> EventTagRepository => GetRepository<EventTag>();
         public IGenericRepository<OrganizerProfile> OrganizerProfileRepository => GetRepository<OrganizerProfile>();
-        public IGenericRepository<TicketDetail> TicketDetailRepository => GetRepository<TicketDetail>();
-        public IGenericRepository<RefundRule> RefundRuleRepository => GetRepository<RefundRule>();
-        public IGenericRepository<RefundRuleDetail> RefundRuleDetailRepository => GetRepository<RefundRuleDetail>();
+        public IGenericRepository<TicketType> TicketTypeRepository => GetRepository<TicketType>(); 
         public IGenericRepository<FavoriteEvent> FavoriteEventRepository => GetRepository<FavoriteEvent>();
         public IGenericRepository<Booking> BookingRepository => GetRepository<Booking>();
         public IGenericRepository<Ticket> TicketRepository => GetRepository<Ticket>();
