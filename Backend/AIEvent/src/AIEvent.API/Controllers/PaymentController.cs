@@ -62,22 +62,6 @@ namespace AIEvent.API.Controllers
                 "Payment successfuly"));
         }
 
-        [HttpGet("information/{id}")]
-        [Authorize]
-        public async Task<ActionResult<SuccessResponse<PaymentInformationResponse>>> GetPaymentInformationById(Guid id)
-        {
-            var userId = User.GetRequiredUserId();
-
-            var result = await _paymentService.GetPaymendInformationByIdAsync(userId, id);
-            if (!result.IsSuccess)
-                return NotFound(result.Error!);
-
-            return Ok(SuccessResponse<PaymentInformationResponse>.SuccessResult(
-                result.Value!,
-                SuccessCodes.Success,
-                "Retrieve payment information successfully"));
-        }
-
         [HttpGet("informations")]
         [Authorize]
         public async Task<ActionResult<SuccessResponse<BasePaginated<PaymentInformationResponse>>>> GetPaymentInformations(
@@ -98,7 +82,7 @@ namespace AIEvent.API.Controllers
 
         [HttpPost("information")]
         [Authorize]
-        public async Task<ActionResult<SuccessResponse<object>>> AddPaymentInformation([FromBody] CreatePaymentInformationRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> AddPaymentInformation([FromBody] PaymentInformationRequest request)
         {
             var userId = User.GetRequiredUserId();
 
@@ -110,22 +94,6 @@ namespace AIEvent.API.Controllers
                 new { },
                 SuccessCodes.Created,
                 "Payment information created successfully"));
-        }
-
-        [HttpPatch("information/{id}")]
-        [Authorize]
-        public async Task<ActionResult<SuccessResponse<object>>> UpdatePaymentInformation(Guid id, [FromBody] UpdatePaymentInformationRequest request)
-        {
-            var userId = User.GetRequiredUserId();
-
-            var result = await _paymentService.UpdatePaymendInformationAsync(userId, id, request);
-            if (!result.IsSuccess)
-                return BadRequest(result.Error!);
-
-            return Ok(SuccessResponse<object>.SuccessResult(
-                new { },
-                SuccessCodes.Updated,
-                "Payment information updated successfully"));
         }
 
         [HttpDelete("information/{id}")]

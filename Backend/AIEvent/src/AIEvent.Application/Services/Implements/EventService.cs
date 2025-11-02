@@ -1015,7 +1015,6 @@ namespace AIEvent.Application.Services.Implements
 
                 var totalRevenue = totalPayment - totalRefund;
 
-                //Tính phí nền tảng
                 var platformFee = totalRevenue * 0.066m + 45000m;
                 var netRevenue = totalRevenue - platformFee;
 
@@ -1024,8 +1023,7 @@ namespace AIEvent.Application.Services.Implements
 
                 if (organizerWallet == null)
                     return ErrorResponse.FailureResult("Organizer wallet not found", ErrorCodes.NotFound);
-
-                //Tạo các transaction
+                 
                 var walletTransaction = new WalletTransaction
                 {
                     WalletId = organizerWallet.Id,

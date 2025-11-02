@@ -12,9 +12,7 @@ namespace AIEvent.Application.Services.Interfaces
     {
         Task<Result<CreatePaymentLinkResponse>> CreatePaymentTopUpAsync(Guid userId, long amount);
         Task<Result> PaymentWebhookAsync(Webhook webhookBody);
-        Task<Result<PaymentInformationResponse>> GetPaymendInformationByIdAsync(Guid userId, Guid paymentInformationId);
-        Task<Result> AddPaymendInformationAsync(Guid userId, CreatePaymentInformationRequest request);
-        Task<Result> UpdatePaymendInformationAsync(Guid userId, Guid paymentInformationId, UpdatePaymentInformationRequest request);
+        Task<Result> AddPaymendInformationAsync(Guid userId, PaymentInformationRequest request);
         Task<Result> DeletePaymendInformationAsync(Guid userId, Guid paymentInformationId);
         Task<Result<BasePaginated<PaymentInformationResponse>>> GetPaymendInformationsAsync(Guid userId, int pageNumber = 1, int pageSize = 5);
         Task<Result<Payout>> WithdrawAsync(Guid userId, OnlyPayOutRequest request);

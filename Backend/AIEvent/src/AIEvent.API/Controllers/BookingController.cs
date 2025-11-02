@@ -56,24 +56,6 @@ namespace AIEvent.API.Controllers
                 message: "QrCode retrieved successfully"));
         }
 
-        [HttpPatch("ticket/refund/{id}")]
-        [Authorize(Roles = "User")]
-        public async Task<ActionResult<SuccessResponse<object>>> RefundTicket(string id)
-        {
-            var userId = User.GetRequiredUserId();
-            var result = await _bookingService.RefundTicketAsync(userId, id);
-
-            if (!result.IsSuccess)
-            {
-                return BadRequest(result.Error!);
-            }
-
-            return Ok(SuccessResponse<object>.SuccessResult(
-                new { },
-                SuccessCodes.Updated,
-                "Refund ticket successfully"));
-        }
-
         [HttpGet("event")]
         [Authorize(Roles = "User")]
         public async Task<ActionResult<SuccessResponse<BasePaginated<ListEventOfUser>>>> GetListEventOfUser(string? title, DateTime? startTime,DateTime? endTime,

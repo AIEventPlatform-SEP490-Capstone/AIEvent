@@ -358,7 +358,6 @@ namespace AIEvent.Infrastructure.Context
                       .OnDelete(DeleteBehavior.Cascade); 
 
                 entity.HasIndex(pi => new { pi.UserId, pi.AccountNumber })
-                      .IsUnique()
                       .HasDatabaseName("IX_PaymentInfo_User_Account");
 
                 entity.HasIndex(pi => pi.UserId)
