@@ -35,6 +35,8 @@ import WalletDashboard from "../pages/Wallet/WalletDashboard";
 import BookingFlow from "../pages/User/BookingFlow";
 import MyTickets from "../pages/User/MyTickets";
 import SearchPage from "../pages/Search/SearchPage";
+import OrganizerApprovalListPage from "../pages/Admin/OrganizerApprovalListPage";
+import OrganizerApprovalDetailPage from "../pages/Admin/OrganizerApprovalDetailPage";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -237,7 +239,8 @@ export default function useRouterElement() {
         { path: "events", element: <div>Admin Events Page</div> },
         { path: "users", element: <UserManagement /> },
         { path: "refund-rules", element: <RefundRulesPage userRole="admin" /> },
-        { path: "organizers", element: <div>Admin Organizers Page</div> },
+        { path: "organizers", element: <OrganizerApprovalListPage /> },
+        { path: "organizers/:id", element: <OrganizerApprovalDetailPage /> },
         { path: "profile", element: <AdminProfile /> },
         { path: "settings", element: <div>Admin Settings Page</div> },
         {

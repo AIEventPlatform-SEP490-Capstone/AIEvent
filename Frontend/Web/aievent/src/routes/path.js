@@ -47,7 +47,6 @@ export const PATH = {
   ORGANIZER_REFUND_RULES: "/organizer/refund-rules",
   ORGANIZER_TAGS: "/organizer/tags",
 
-
   // MANAGER
   MANAGER: "/manager",
   MANAGER_EVENTS: "/manager/events",
@@ -67,6 +66,7 @@ export const PATH = {
   ADMIN_USERS: "/admin/users",
   ADMIN_REFUND_RULES: "/admin/refund-rules",
   ADMIN_ORGANIZERS: "/admin/organizers",
+  ADMIN_ORGANIZERS_DETAILS: "/admin/organizers/:id",
   ADMIN_PROFILE: "/admin/profile",
   ADMIN_SETTINGS: "/admin/settings",
   ADMIN_SYSTEM_SETTINGS: "/admin/system-settings",
