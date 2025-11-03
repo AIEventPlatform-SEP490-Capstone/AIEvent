@@ -1,5 +1,6 @@
 ﻿using AIEvent.Domain.Base;
 using AIEvent.Domain.Enums;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AIEvent.Domain.Entities
 {
@@ -17,6 +18,8 @@ namespace AIEvent.Domain.Entities
         public int SoldQuantity { get; set; } = 0;
         public int RemainingTickets { get; set; }
         public TicketPricingType TicketPricingType { get; set; }
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal TotalAmount { get; set; }
         public string? ImgListEvent { get; set; }
         public bool? Publish { get; set; } = false;
         public ConfirmStatus? RequireApproval { get; set; }
@@ -39,5 +42,6 @@ namespace AIEvent.Domain.Entities
         public virtual ICollection<EventTag> EventTags { get; set; } = new List<EventTag>();
         public ICollection<FavoriteEvent> FavoriteEvents { get; set; } = new List<FavoriteEvent>();
         public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
+        public virtual RevenueReport? RevenueReport { get; set; }
     }
 }

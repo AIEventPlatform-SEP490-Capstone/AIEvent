@@ -23,11 +23,13 @@ namespace AIEvent.Infrastructure.Repositories.Interfaces
         IGenericRepository<WithdrawRequest> WithdrawRequestRepository { get; }
         IGenericRepository<PaymentInformation> PaymentInformationRepository { get; }
         IGenericRepository<EndEventRequest> EndRequestRepository { get; }
+        IGenericRepository<RevenueReport> RevenueReportRepository { get; }
         void EnableSoftDelete();
         void DisableSoftDelete();
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();
         Task CommitTransactionAsync();
         Task RollbackTransactionAsync();
+        Task<int> ExecuteSqlRawAsync(string sql, params object[] parameters);
     }
 }

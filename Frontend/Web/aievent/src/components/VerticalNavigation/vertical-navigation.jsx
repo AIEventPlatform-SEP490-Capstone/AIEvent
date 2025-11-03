@@ -108,23 +108,12 @@ export function VerticalNavigation() {
           icon: Users,
           isActive: pathname === "/admin/users",
         },
-        {
-          title: "Quy tắc hoàn tiền",
-          url: "/admin/refund-rules",
-          icon: Receipt,
-          isActive: pathname === "/admin/refund-rules",
-        },
+
         {
           title: "Quản lý Organizer",
           url: "/admin/organizers",
           icon: User,
           isActive: pathname === "/admin/organizers",
-        },
-        {
-          title: "Hồ sơ Admin",
-          url: "/admin/profile",
-          icon: User,
-          isActive: pathname === "/admin/profile",
         },
         {
           title: "Cài đặt hệ thống",
@@ -202,12 +191,7 @@ export function VerticalNavigation() {
           icon: BookmarkMinus,
           isActive: pathname === "/manager/events/category",
         },
-        {
-          title: "Quy tắc hoàn tiền",
-          url: "/manager/refund-rules",
-          icon: Receipt,
-          isActive: pathname === "/manager/refund-rules",
-        },
+
         {
           title: "Quản lý Tags",
           url: "/manager/tags",
@@ -225,6 +209,12 @@ export function VerticalNavigation() {
         icon: Home,
         isActive: pathname === "/",
         special: true,
+      },
+      {
+        title: "Tìm Kiếm",
+        url: "/search",
+        icon: Search,
+        isActive: pathname === "/search",
       },
 
       {
@@ -306,6 +296,18 @@ export function VerticalNavigation() {
                 <Input
                   placeholder="Tìm kiếm sự kiện..."
                   className="pl-10 h-10 bg-background/50 border-border/60 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all duration-300 rounded-xl hover:border-border"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const searchValue = e.target.value.trim();
+                      // Clear the input field
+                      e.target.value = '';
+                      if (searchValue) {
+                        navigate(`/search?q=${encodeURIComponent(searchValue)}`);
+                      } else {
+                        navigate('/search');
+                      }
+                    }
+                  }}
                 />
               </div>
               <Button
@@ -314,7 +316,7 @@ export function VerticalNavigation() {
                 className="w-full h-10 hover:bg-primary/10 hover:text-primary hover:border-primary hover:scale-[1.02] bg-background/50 border-border/60 transition-all duration-300 rounded-xl font-medium shadow-sm"
               >
                 <MapPin className="w-4 h-4 mr-2" />
-                Hà Nội
+                Hồ Chí Minh
               </Button>
             </div>
           )}
@@ -445,8 +447,8 @@ export function VerticalNavigation() {
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                  {/* Only show "Lời mời sự kiện" for regular users, not for admin */}
-                  {user?.role?.toLowerCase() !== "admin" && (
+                  {/* Only show "Lời mời sự kiện" for regular users, not for admin and manager */}
+                  {!["admin", "manager"].includes(user?.role?.toLowerCase()) && (
                     <SidebarMenuItem>
                       <SidebarMenuButton
                         asChild
@@ -488,7 +490,15 @@ export function VerticalNavigation() {
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
-                      isActive={pathname === "/profile"}
+                      isActive={
+                        user?.role?.toLowerCase() === "admin"
+                          ? pathname === "/admin/profile"
+                          : user?.role?.toLowerCase() === "organizer"
+                          ? pathname === "/organizer/profile"
+                          : user?.role?.toLowerCase() === "manager"
+                          ? pathname === "/manager/profile"
+                          : pathname === "/profile"
+                      }
                       className={cn(
                         "group rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/15 data-[active=true]:text-primary",
                         state === "collapsed" && "p-1 justify-center"

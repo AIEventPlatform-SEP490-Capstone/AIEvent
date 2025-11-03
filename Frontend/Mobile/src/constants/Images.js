@@ -18,6 +18,8 @@ const Images = {
   phone: require('../assets/icons/phone.png'),
   closeEye: require('../assets/icons/close-eye.png'),
   showEye: require('../assets/icons/show-eye.png'),
+  pushpin: require('../assets/icons/pushpin.png'),
+  qrCode: require('../assets/icons/qr-code.png'),
 
   // Event images (using existing card images)
   event1: require('../assets/images/card1.png'),
@@ -30,6 +32,9 @@ const Images = {
   // Avatars
   avatar1: require('../assets/images/avatar1.jpg'),
   avatar2: require('../assets/images/avatar1.jpg'), // Using avatar1 as placeholder
+  
+  // Logo
+  aiEventLogo: require('../assets/images/AIEventLogo.png'),
   
 };
 

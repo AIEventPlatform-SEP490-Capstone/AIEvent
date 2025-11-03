@@ -12,6 +12,7 @@ import {
 import QRCode from 'react-native-qrcode-svg';
 import { styles } from './styles';
 import CustomText from '../../components/common/customTextRN';
+import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
 
@@ -120,23 +121,28 @@ const PaymentScreen = ({ route, navigation }) => {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View style={styles.header}>
+        <LinearGradient
+          colors={Colors.gradientHeaderTitle}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.header}
+        >
           <TouchableOpacity 
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <CustomText variant="h3" color="primary">←</CustomText>
+            <CustomText variant="h3" color="white">←</CustomText>
           </TouchableOpacity>
-          <CustomText variant="h3" color="primary" style={styles.headerTitle}>
+          <CustomText variant="h3" color="white" style={styles.headerTitle}>
             Thông tin thanh toán
           </CustomText>
           <TouchableOpacity 
             style={styles.shareButton}
             onPress={handleSharePayment}
           >
-            <CustomText variant="h3" color="primary">📤</CustomText>
+            <CustomText variant="h3" color="white">📤</CustomText>
           </TouchableOpacity>
-        </View>
+        </LinearGradient>
 
         {/* Payment Status Card */}
         <View style={styles.statusCard}>

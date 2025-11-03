@@ -8,7 +8,13 @@ import MyEventsScreen from '../screens/myEventsScreen';
 import ProfileScreen from '../screens/profileScreen';
 import WalletScreen from '../screens/walletScreen';
 import PaymentScreen from '../screens/paymentScreen';
+import PaymentInformationScreen from '../screens/paymentInfoScreen';
 import ChangePasswordScreen from '../screens/changePasswordScreen';
+import SettingsScreen from '../screens/settingsScreen';
+import TicketsScreen from '../screens/ticketsScreen';
+import LikesScreen from '../screens/likesScreen';
+import FriendsScreen from '../screens/friendsScreen';
+import TimelineScreen from '../screens/timelineScreen';
 import ScreenNames from '../constants/ScreenNames';
 import Images from '../constants/Images';
 import Colors from '../constants/Colors';
@@ -27,6 +33,42 @@ const HomeStack = () => {
       <Stack.Screen 
         name={ScreenNames.HOME_SCREEN} 
         component={HomeScreen}
+      />
+      <Stack.Screen 
+        name={ScreenNames.EVENT_DETAIL_SCREEN} 
+        component={EventDetailScreen}
+        options={{
+          headerShown: true,
+          title: 'Chi tiết sự kiện',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
+        }}
+      />
+    </Stack.Navigator>
+  );
+};
+
+// Stack Navigator cho Timeline tab
+const TimelineStack = () => {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen 
+        name={ScreenNames.TIMELINE_SCREEN} 
+        component={TimelineScreen}
       />
       <Stack.Screen 
         name={ScreenNames.EVENT_DETAIL_SCREEN} 
@@ -81,28 +123,29 @@ const ProfileStack = () => {
         component={ProfileScreen}
       />
       <Stack.Screen 
-        name="WalletScreen" 
+        name={ScreenNames.WALLET_SCREEN} 
         component={WalletScreen}
         options={{
-          headerShown: true,
-          title: 'Ví điện tử',
-          headerStyle: {
-            backgroundColor: Colors.white,
-            elevation: 0,
-            shadowOpacity: 0,
-            borderBottomWidth: 1,
-            borderBottomColor: Colors.border,
-          },
-          headerTitleStyle: {
-            color: Colors.textPrimary,
-            fontSize: 18,
-            fontWeight: '600',
-          },
+          headerShown: false,
         }}
       />
       <Stack.Screen 
-        name="PaymentScreen" 
+        name={ScreenNames.PAYMENT_SCREEN} 
         component={PaymentScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name={ScreenNames.PAYMENT_INFORMATION_SCREEN} 
+        component={PaymentInformationScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name={ScreenNames.SETTINGS_SCREEN} 
+        component={SettingsScreen}
         options={{
           headerShown: false,
         }}
@@ -110,6 +153,27 @@ const ProfileStack = () => {
       <Stack.Screen 
         name={ScreenNames.CHANGE_PASSWORD_SCREEN} 
         component={ChangePasswordScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name={ScreenNames.TICKETS_SCREEN} 
+        component={TicketsScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name={ScreenNames.LIKES_SCREEN} 
+        component={LikesScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name={ScreenNames.FRIENDS_SCREEN} 
+        component={FriendsScreen}
         options={{
           headerShown: false,
         }}
@@ -127,6 +191,8 @@ const TabNavigator = () => {
 
           if (route.name === 'HomeTab') {
             iconName = Images.home;
+          } else if (route.name === 'Timeline') {
+            iconName = Images.calendar;
           } else if (route.name === 'MyEvents') {
             iconName = Images.calendar;
           } else if (route.name === 'Profile') {
@@ -158,6 +224,13 @@ const TabNavigator = () => {
         component={HomeStack}
         options={{
           title: 'Trang chủ',
+        }}
+      />
+      <Tab.Screen 
+        name="Timeline" 
+        component={TimelineStack}
+        options={{
+          title: 'Timeline',
         }}
       />
       <Tab.Screen 

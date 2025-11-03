@@ -17,7 +17,8 @@ import {
   TrendingUp,
   Plus,
   CheckCircle,
-  XCircle
+  XCircle,
+  Copy
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
@@ -286,12 +287,18 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
 
   const getTicketTypeLabel = (ticketType) => {
     // Handle both string enum names and number values
-    if (ticketType === 1 || ticketType === "Free" || ticketType === "free") return 'Miễn phí';
-    if (ticketType === 2 || ticketType === "Paid" || ticketType === "paid") return 'Có phí';
-    if (ticketType === 3 || ticketType === "Donate" || ticketType === "donate") return 'Quyên góp';
+    if (ticketType === 1 || ticketType === "Free" || ticketType === "free" || ticketType === "Miễn phí") return 'Miễn phí';
+    if (ticketType === 2 || ticketType === "Paid" || ticketType === "paid" || ticketType === "Có phí") return 'Có phí';
+    
+    // Additional check for string values (case insensitive)
+    if (typeof ticketType === 'string') {
+      const lowerTicketType = ticketType.toLowerCase();
+      if (lowerTicketType === 'free') return 'Miễn phí';
+      if (lowerTicketType === 'paid') return 'Có phí';
+    }
     
     // Default fallback
-    return 'Quyên góp';
+    return 'Không xác định';
   };
 
   const getTabDisplayName = (tab) => {
@@ -419,6 +426,31 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       return event.imgListEvent[0];
     }
     return null;
+  };
+
+  const handleCloneEvent = (event) => {
+    // Store event data in localStorage or pass as state
+    const cloneData = {
+      ...event,
+      // Reset fields that shouldn't be copied
+      eventId: undefined,
+      createDate: undefined,
+      updateDate: undefined,
+      status: undefined,
+      publish: false, // Start as draft
+      viewCount: 0,
+      soldQuantity: 0,
+      revenue: 0,
+      refundCount: 0,
+      rating: 0,
+      totalPersonJoin: 0
+    };
+    
+    // Store in localStorage
+    localStorage.setItem('cloneEventData', JSON.stringify(cloneData));
+    
+    // Navigate to create event page
+    navigate(PATH.ORGANIZER_CREATE);
   };
 
   return (
@@ -707,7 +739,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                           </Badge>
                         )}
                         <Badge variant="outline" className="text-xs">
-                          {getTicketTypeLabel(event.ticketType)}
+                          {getTicketTypeLabel(event.ticketPricingType || event.ticketType)}
                         </Badge>
                       </div>
 
@@ -776,6 +808,16 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                           >
                             <Trash2 className="w-4 h-4 mr-2" />
                             Xóa
+                          </Button>
+
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="bg-transparent"
+                            onClick={() => handleCloneEvent(event)}
+                          >
+                            <Copy className="w-4 h-4 mr-2" />
+                            Clone
                           </Button>
 
                           <Button 

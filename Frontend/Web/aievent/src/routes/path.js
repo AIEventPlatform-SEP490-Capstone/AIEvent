@@ -44,9 +44,7 @@ export const PATH = {
   ORGANIZER_SUPPORT: "/organizer/support",
   ORGANIZER_ANALYTICS: "/organizer/analytics/:id",
   ORGANIZER_CHECKIN: "/organizer/checkin/:id",
-  ORGANIZER_REFUND_RULES: "/organizer/refund-rules",
   ORGANIZER_TAGS: "/organizer/tags",
-
 
   // MANAGER
   MANAGER: "/manager",
@@ -54,7 +52,6 @@ export const PATH = {
   MANAGER_EVENTS_CATEGORY: "/manager/events/category",
   MANAGER_EVENT_DETAIL: "/manager/event/:eventId",
   MANAGER_EVENT_EDIT: "/manager/event/:eventId/edit",
-  MANAGER_REFUND_RULES: "/manager/refund-rules",
   MANAGER_TAGS: "/manager/tags",
   MANAGER_PROFILE: "/manager/profile",
   MANAGER_SETTINGS: "/manager/settings",
@@ -65,8 +62,8 @@ export const PATH = {
   ADMIN_DASHBOARD: "/admin/dashboard",
   ADMIN_EVENTS: "/admin/events",
   ADMIN_USERS: "/admin/users",
-  ADMIN_REFUND_RULES: "/admin/refund-rules",
   ADMIN_ORGANIZERS: "/admin/organizers",
+  ADMIN_ORGANIZERS_DETAILS: "/admin/organizers/:id",
   ADMIN_PROFILE: "/admin/profile",
   ADMIN_SETTINGS: "/admin/settings",
   ADMIN_SYSTEM_SETTINGS: "/admin/system-settings",
@@ -75,7 +72,6 @@ export const PATH = {
   ADMIN_QUICK_ACTIONS: "/admin/quick-actions",
 
   // SHARED
-  REFUND_RULES: "/refund-rules",
 
   // ERROR
   ERROR: "*",

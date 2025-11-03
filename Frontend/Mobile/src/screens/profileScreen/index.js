@@ -11,17 +11,19 @@ import {
   TextInput,
   FlatList,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useDispatch } from 'react-redux';
 import * as ImagePicker from 'expo-image-picker';
 import { styles } from './styles';
 import CustomText from '../../components/common/customTextRN';
+import { GradientBackground } from '../../components/common';
 import Images from '../../constants/Images';
 import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
 import Strings from '../../constants/Strings';
-import { UserService } from '../../api/services';
+import { UserService, walletAPI } from '../../api/services';
 import { logoutUser } from '../../redux/actions/Action';
-import WalletScreen from '../walletScreen';
+import ScreenNames from '../../constants/ScreenNames';
 import { 
   PredefinedSkills, 
   PredefinedLanguages, 
@@ -38,7 +40,6 @@ import {
 
 const ProfileScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const [activeTab, setActiveTab] = useState('tickets');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,25 +48,13 @@ const ProfileScreen = ({ navigation }) => {
   const [error, setError] = useState(null);
   const hasFetchedProfile = useRef(false);
 
-  const tabs = [
-    { id: 'tickets', label: 'Vé của tôi', icon: '🎫', shortLabel: 'Vé của tôi' },
-    { id: 'wallet', label: 'Ví điện tử', icon: '💳', shortLabel: 'Ví điện tử' },
-    { id: 'likes', label: 'Yêu thích', icon: '❤️', shortLabel: 'Yêu thích' },
-    { id: 'friends', label: 'Bạn bè', icon: '👥', shortLabel: 'Bạn bè' },
-    { id: 'history', label: 'Lịch sử', icon: '📊', shortLabel: 'Lịch sử' },
-    { id: 'settings', label: 'Cài đặt', icon: '⚙️', shortLabel: 'Cài đặt' }
-  ];
-
-  const eventTickets = [
-    {
-      id: 1,
-      name: "Vietnam Tech Conference 2024",
-      date: "15/3/2024",
-      time: "09:00",
-      location: "Trung tâm Hội nghị Quốc gia, Đường Thăng Long, Mỹ Đình, Nam Từ Liêm, Hà Nội",
-      status: "Có hiệu lực",
-      image: "/api/placeholder/300/200"
-    }
+  const menuItems = [
+    { id: 'tickets', label: 'Vé của tôi', icon: '🎫', screen: ScreenNames.TICKETS_SCREEN },
+    { id: 'wallet', label: 'Ví điện tử', icon: '💳', screen: ScreenNames.WALLET_SCREEN },
+    { id: 'payment', label: 'Thông tin tài khoản', icon: '🏦', screen: ScreenNames.PAYMENT_INFORMATION_SCREEN },
+    { id: 'likes', label: 'Yêu thích', icon: '❤️', screen: ScreenNames.LIKES_SCREEN },
+    { id: 'friends', label: 'Bạn bè', icon: '👥', screen: ScreenNames.FRIENDS_SCREEN },
+    { id: 'settings', label: 'Cài đặt', icon: '⚙️', screen: ScreenNames.SETTINGS_SCREEN }
   ];
 
   useEffect(() => {
@@ -105,53 +94,8 @@ const ProfileScreen = ({ navigation }) => {
     setIsRefreshing(false);
   };
 
-  const handleLogoutSuccess = () => {
-    console.log('Logout successful');
-  };
-
   const handleEditProfile = () => {
     setIsEditModalOpen(true);
-  };
-
-  const handleSettings = () => {
-    Alert.alert('Thông báo', 'Chức năng cài đặt sẽ được phát triển trong tương lai');
-  };
-
-  const handleNotifications = () => {
-    Alert.alert('Thông báo', 'Chức năng thông báo sẽ được phát triển trong tương lai');
-  };
-
-  const handleViewQR = (ticketId) => {
-    Alert.alert('QR Code', `View QR code for ticket ${ticketId}`);
-  };
-
-  const handleViewDetails = (ticketId) => {
-    Alert.alert('Ticket Details', `View details for ticket ${ticketId}`);
-  };
-
-  const handleLogout = async () => {
-    Alert.alert(
-      'Đăng xuất',
-      'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?',
-      [
-        {
-          text: 'Hủy',
-          style: 'cancel',
-        },
-        {
-          text: 'Đăng xuất',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              // Dispatch logout action - this will automatically navigate to login screen
-              dispatch(logoutUser());
-            } catch (error) {
-              Alert.alert('Lỗi', 'Có lỗi xảy ra khi đăng xuất');
-            }
-          },
-        },
-      ]
-    );
   };
 
   // Transform API data to match component expectations
@@ -226,7 +170,12 @@ const ProfileScreen = ({ navigation }) => {
 
   const renderProfileHeader = () => (
     <View style={styles.profileHeaderCard}>
-      <View style={styles.profileHeaderContent}>
+      <LinearGradient
+        colors={['#000000', '#2196F3', '#808080']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.profileHeaderContent}
+      >
         <View style={styles.avatarSection}>
         <View style={styles.avatarContainer}>
             {profileData.avatarImgUrl && profileData.avatarImgUrl.trim() !== '' ? (
@@ -318,520 +267,55 @@ const ProfileScreen = ({ navigation }) => {
             </CustomText>
           </View>
         </View>
-      </View>
+      </LinearGradient>
     </View>
   );
 
-  const renderTabNavigation = () => (
-    <View style={styles.tabNavigation}>
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tabScrollContainer}
-      >
-        {tabs.map((tab) => (
-          <TouchableOpacity
-            key={tab.id}
-            style={[
-              styles.tabButton,
-              activeTab === tab.id && styles.activeTabButton
-            ]}
-            onPress={() => setActiveTab(tab.id)}
-            activeOpacity={0.7}
-          >
-            <View style={styles.tabButtonContent}>
-              <View style={[
-                styles.tabIconContainer,
-                activeTab === tab.id && styles.activeTabIconContainer
-              ]}>
-                <CustomText 
-                  variant="h4" 
-                  color={activeTab === tab.id ? "white" : "primary"}
-                  style={styles.tabIcon}
-                >
-                  {tab.icon}
-                </CustomText>
-              </View>
-              <CustomText 
-                variant="caption" 
-                color={activeTab === tab.id ? "white" : "primary"}
-                style={[
-                  styles.tabButtonText,
-                  activeTab === tab.id && styles.activeTabButtonText
-                ]}
-              >
-                {tab.shortLabel}
-              </CustomText>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
-  );
-
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'tickets':
-        return (
-          <View style={styles.tabContent}>
-            <View style={styles.tabHeader}>
-              <View style={styles.tabHeaderLeft}>
-                <View style={styles.tabIconContainer}>
-                  <CustomText variant="h3" color="white">🎫</CustomText>
-                </View>
-                <View>
-                  <CustomText variant="h3" color="primary">
-                    Vé sự kiện của tôi
-                  </CustomText>
-                  <CustomText variant="caption" color="secondary">
-                    Quản lý vé tham gia sự kiện
-                  </CustomText>
-                </View>
-              </View>
-              <View style={styles.ticketCountBadge}>
-                <CustomText variant="caption" color="white" style={styles.ticketCountText}>
-                  {eventTickets.length} vé
-                </CustomText>
-              </View>
-            </View>
-            
-            {eventTickets.length > 0 ? (
-              eventTickets.map((ticket) => (
-                <View key={ticket.id} style={styles.ticketCard}>
-                  <View style={styles.ticketLeft}>
-                    <View style={styles.ticketLogo}>
-                      <CustomText variant="h3" color="white">🎫</CustomText>
-                    </View>
-                    <View style={styles.ticketInfo}>
-                      <CustomText variant="body" color="white" style={styles.ticketTitle}>
-                        EVENT TICKET
-                      </CustomText>
-                      <CustomText variant="caption" color="white">
-                        Valid Entry Pass
-                      </CustomText>
-                    </View>
-                  </View>
-                  <View style={styles.ticketRight}>
-                    <CustomText variant="h4" color="primary" style={styles.eventTitle}>
-                      {ticket.name}
-                    </CustomText>
-                    <View style={styles.ticketStatus}>
-                      <View style={styles.statusDot} />
-                      <CustomText variant="caption" color="success">
-                        {ticket.status}
-                      </CustomText>
-                    </View>
-                    <View style={styles.ticketDetails}>
-                      <View style={styles.ticketDetailRow}>
-                        <CustomText variant="caption" color="secondary">📅</CustomText>
-                        <CustomText variant="caption" color="secondary" style={styles.ticketDetailText}>
-                          {ticket.date} • {ticket.time}
-                        </CustomText>
-                      </View>
-                      <View style={styles.ticketDetailRow}>
-                        <CustomText variant="caption" color="secondary">📍</CustomText>
-                        <CustomText variant="caption" color="secondary" style={styles.ticketDetailText}>
-                          {ticket.location}
-                        </CustomText>
-                      </View>
-                    </View>
-                    <View style={styles.ticketActions}>
-                      <TouchableOpacity 
-                        style={styles.ticketActionButton}
-                        onPress={() => handleViewQR(ticket.id)}
-                      >
-                        <CustomText variant="caption" color="primary">QR Code</CustomText>
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={[styles.ticketActionButton, styles.ticketActionButtonPrimary]}
-                        onPress={() => handleViewDetails(ticket.id)}
-                      >
-                        <CustomText variant="caption" color="white">Chi tiết</CustomText>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </View>
-              ))
-            ) : (
-              <View style={styles.emptyState}>
-                <View style={styles.emptyStateIcon}>
-                  <CustomText variant="h1" color="secondary">🎫</CustomText>
-                </View>
-                <CustomText variant="h4" color="primary" style={styles.emptyStateTitle}>
-                  Chưa có vé nào
-                </CustomText>
-                <CustomText variant="body" color="secondary" style={styles.emptyStateDescription}>
-                  Bạn chưa tham gia sự kiện nào. Hãy khám phá và đăng ký tham gia các sự kiện thú vị!
-                </CustomText>
-                <TouchableOpacity style={styles.emptyStateButton}>
-                  <CustomText variant="body" color="white">Khám phá sự kiện</CustomText>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        );
-      case 'wallet':
-        return <WalletScreen navigation={navigation} />;
-      case 'likes':
-        return (
-          <View style={styles.tabContent}>
-            <View style={styles.tabHeader}>
-              <View style={styles.tabHeaderLeft}>
-                <View style={[styles.tabIconContainer, styles.likesIconContainer]}>
-                  <CustomText variant="h3" color="white">❤️</CustomText>
-                </View>
-                <View>
-                  <CustomText variant="h3" color="primary">
-                    Sự kiện yêu thích
-                  </CustomText>
-                  <CustomText variant="caption" color="secondary">
-                    Các sự kiện bạn đã lưu
-                  </CustomText>
-                </View>
-              </View>
-              <View style={styles.likesCountBadge}>
-                <CustomText variant="caption" color="white" style={styles.likesCountText}>
-                  {stats.likes} sự kiện
-                </CustomText>
-              </View>
-            </View>
-            
-            {stats.likes > 0 ? (
-              <View style={styles.likesList}>
-                {/* Placeholder for liked events */}
-                <CustomText variant="body" color="secondary">
-                  Danh sách sự kiện yêu thích sẽ hiển thị ở đây
-                </CustomText>
-              </View>
-            ) : (
-              <View style={styles.emptyState}>
-                <View style={styles.emptyStateIcon}>
-                  <CustomText variant="h1" color="secondary">💔</CustomText>
-                </View>
-                <CustomText variant="h4" color="primary" style={styles.emptyStateTitle}>
-                  Chưa có sự kiện yêu thích
-                </CustomText>
-                <CustomText variant="body" color="secondary" style={styles.emptyStateDescription}>
-                  Bạn chưa lưu sự kiện nào vào danh sách yêu thích. Hãy khám phá và lưu những sự kiện thú vị!
-                </CustomText>
-                <TouchableOpacity style={styles.emptyStateButton}>
-                  <CustomText variant="body" color="white">Khám phá sự kiện</CustomText>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        );
-      case 'friends':
-        return (
-          <View style={styles.tabContent}>
-            <View style={styles.tabHeader}>
-              <View style={styles.tabHeaderLeft}>
-                <View style={[styles.tabIconContainer, styles.friendsIconContainer]}>
-                  <CustomText variant="h3" color="white">👥</CustomText>
-                </View>
-                <View>
-                  <CustomText variant="h3" color="primary">
-                    Bạn bè
-                  </CustomText>
-                  <CustomText variant="caption" color="secondary">
-                    Kết nối với cộng đồng
-                  </CustomText>
-                </View>
-              </View>
-              <View style={styles.friendsCountBadge}>
-                <CustomText variant="caption" color="white" style={styles.friendsCountText}>
-                  {stats.friends} bạn
-                </CustomText>
-              </View>
-            </View>
-            
-            {stats.friends > 0 ? (
-              <View style={styles.friendsList}>
-                {/* Placeholder for friends list */}
-                <CustomText variant="body" color="secondary">
-                  Danh sách bạn bè sẽ hiển thị ở đây
-                </CustomText>
-              </View>
-            ) : (
-              <View style={styles.emptyState}>
-                <View style={styles.emptyStateIcon}>
-                  <CustomText variant="h1" color="secondary">👤</CustomText>
-                </View>
-                <CustomText variant="h4" color="primary" style={styles.emptyStateTitle}>
-                  Chưa có bạn bè
-                </CustomText>
-                <CustomText variant="body" color="secondary" style={styles.emptyStateDescription}>
-                  Bạn chưa kết bạn với ai. Hãy tham gia các sự kiện để gặp gỡ và kết bạn với những người có cùng sở thích!
-                </CustomText>
-                <TouchableOpacity style={styles.emptyStateButton}>
-                  <CustomText variant="body" color="white">Tìm bạn bè</CustomText>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        );
-      case 'history':
-        return (
-          <View style={styles.tabContent}>
-            <View style={styles.tabHeader}>
-              <View style={styles.tabHeaderLeft}>
-                <View style={[styles.tabIconContainer, styles.historyIconContainer]}>
-                  <CustomText variant="h3" color="white">📊</CustomText>
-                </View>
-                <View>
-                  <CustomText variant="h3" color="primary">
-                    Lịch sử hoạt động
-                  </CustomText>
-                  <CustomText variant="caption" color="secondary">
-                    Theo dõi hoạt động của bạn
-                  </CustomText>
-                </View>
-              </View>
-            </View>
-            
-            <View style={styles.emptyState}>
-              <View style={styles.emptyStateIcon}>
-                <CustomText variant="h1" color="secondary">📈</CustomText>
-              </View>
-              <CustomText variant="h4" color="primary" style={styles.emptyStateTitle}>
-                Chưa có hoạt động
-              </CustomText>
-              <CustomText variant="body" color="secondary" style={styles.emptyStateDescription}>
-                Lịch sử hoạt động của bạn sẽ được hiển thị ở đây khi bạn tham gia các sự kiện.
-              </CustomText>
-            </View>
-          </View>
-        );
-      case 'settings':
-        return (
-          <View style={styles.tabContent}>
-            <View style={styles.settingsHeader}>
-              <CustomText variant="h3" color="primary" style={styles.settingsTitle}>
-                Cài đặt
-              </CustomText>
-              <CustomText variant="caption" color="secondary" style={styles.settingsSubtitle}>
-                Quản lý tài khoản và ứng dụng
-              </CustomText>
-            </View>
-            
-            {/* Account Settings Section */}
-            <View style={styles.settingsSection}>
-              <View style={styles.sectionHeader}>
-                <View style={styles.sectionIconContainer}>
-                  <CustomText variant="h4" color="white">👤</CustomText>
-                </View>
-                <CustomText variant="h4" color="primary" style={styles.sectionTitle}>
-                  Tài khoản
-                </CustomText>
-              </View>
-              
-              {/* Notifications Setting */}
-              <TouchableOpacity style={styles.settingCard} activeOpacity={0.7}>
-                <View style={styles.settingLeft}>
-                  <View style={[styles.settingIconContainer, styles.notificationIcon]}>
-                    <CustomText variant="h4" color="white">🔔</CustomText>
-                  </View>
-                  <View style={styles.settingContent}>
-                    <CustomText variant="body" color="primary" style={styles.settingTitle}>
-                      Thông báo
-                    </CustomText>
-                    <CustomText variant="caption" color="secondary" style={styles.settingDescription}>
-                      Nhận thông báo về sự kiện mới và cập nhật
-                    </CustomText>
-                  </View>
-                </View>
-                <View style={styles.settingRight}>
-                  <View style={styles.toggleSwitch}>
-                    <View style={styles.toggleThumb} />
-                  </View>
-                </View>
-              </TouchableOpacity>
-
-              {/* Privacy Setting */}
-              <TouchableOpacity style={styles.settingCard} activeOpacity={0.7}>
-                <View style={styles.settingLeft}>
-                  <View style={[styles.settingIconContainer, styles.privacyIcon]}>
-                    <CustomText variant="h4" color="white">🔒</CustomText>
-                  </View>
-                  <View style={styles.settingContent}>
-                    <CustomText variant="body" color="primary" style={styles.settingTitle}>
-                      Quyền riêng tư
-                    </CustomText>
-                    <CustomText variant="caption" color="secondary" style={styles.settingDescription}>
-                      Hiển thị hồ sơ công khai cho người khác
-                    </CustomText>
-                  </View>
-                </View>
-                <View style={styles.settingRight}>
-                  <View style={[styles.toggleSwitch, styles.toggleSwitchActive]}>
-                    <View style={[styles.toggleThumb, styles.toggleThumbActive]} />
-                  </View>
-                </View>
-              </TouchableOpacity>
-            </View>
-
-            {/* Security Section */}
-            <View style={styles.settingsSection}>
-              <View style={styles.sectionHeader}>
-                <View style={[styles.sectionIconContainer, styles.securityIconContainer]}>
-                  <CustomText variant="h4" color="white">🛡️</CustomText>
-                </View>
-                <CustomText variant="h4" color="primary" style={styles.sectionTitle}>
-                  Bảo mật
-                </CustomText>
-              </View>
-              
-              {/* Change Password */}
-              <TouchableOpacity 
-                style={styles.settingCard} 
-                activeOpacity={0.7}
-                onPress={() => navigation.navigate('ChangePasswordScreen')}
-              >
-                <View style={styles.settingLeft}>
-                  <View style={[styles.settingIconContainer, styles.passwordIcon]}>
-                    <CustomText variant="h4" color="white">🔑</CustomText>
-                  </View>
-                  <View style={styles.settingContent}>
-                    <CustomText variant="body" color="primary" style={styles.settingTitle}>
-                      Đổi mật khẩu
-                    </CustomText>
-                    <CustomText variant="caption" color="secondary" style={styles.settingDescription}>
-                      Cập nhật mật khẩu để bảo vệ tài khoản
-                    </CustomText>
-                  </View>
-                </View>
-                <View style={styles.settingRight}>
-                  <View style={styles.chevronContainer}>
-                    <CustomText variant="body" color="secondary" style={styles.chevron}>›</CustomText>
-                  </View>
-                </View>
-              </TouchableOpacity>
-
-              {/* Two-Factor Authentication */}
-              <TouchableOpacity style={styles.settingCard} activeOpacity={0.7}>
-                <View style={styles.settingLeft}>
-                  <View style={[styles.settingIconContainer, styles.securityIcon]}>
-                    <CustomText variant="h4" color="white">🔐</CustomText>
-                  </View>
-                  <View style={styles.settingContent}>
-                    <CustomText variant="body" color="primary" style={styles.settingTitle}>
-                      Xác thực 2 bước
-                    </CustomText>
-                    <CustomText variant="caption" color="secondary" style={styles.settingDescription}>
-                      Bảo mật tài khoản với mã xác thực
-                    </CustomText>
-                  </View>
-                </View>
-                <View style={styles.settingRight}>
-                  <View style={[styles.toggleSwitch, styles.toggleSwitchActive]}>
-                    <View style={[styles.toggleThumb, styles.toggleThumbActive]} />
-                  </View>
-                </View>
-              </TouchableOpacity>
-
-              {/* Logout */}
-              <TouchableOpacity 
-                style={[styles.settingCard, styles.logoutCard]} 
-                onPress={handleLogout}
-                activeOpacity={0.7}
-              >
-                <View style={styles.settingLeft}>
-                  <View style={[styles.settingIconContainer, styles.logoutIconContainer]}>
-                    <CustomText variant="h4" color="white">🚪</CustomText>
-                  </View>
-                  <View style={styles.settingContent}>
-                    <CustomText variant="body" color="error" style={styles.settingTitle}>
-                      Đăng xuất
-                    </CustomText>
-                    <CustomText variant="caption" color="secondary" style={styles.settingDescription}>
-                      Đăng xuất khỏi tài khoản hiện tại
-                    </CustomText>
-                  </View>
-                </View>
-                <View style={styles.settingRight}>
-                  <View style={styles.chevronContainer}>
-                    <CustomText variant="body" color="error" style={styles.chevron}>›</CustomText>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            </View>
-
-            {/* App Info Section */}
-            <View style={styles.settingsSection}>
-              <View style={styles.sectionHeader}>
-                <View style={[styles.sectionIconContainer, styles.appIconContainer]}>
-                  <CustomText variant="h4" color="white">📱</CustomText>
-                </View>
-                <CustomText variant="h4" color="primary" style={styles.sectionTitle}>
-                  Ứng dụng
-                </CustomText>
-              </View>
-              
-              <View style={styles.settingCard}>
-                <View style={styles.settingLeft}>
-                  <View style={[styles.settingIconContainer, styles.infoIcon]}>
-                    <CustomText variant="h4" color="white">ℹ️</CustomText>
-                  </View>
-                  <View style={styles.settingContent}>
-                    <CustomText variant="body" color="primary" style={styles.settingTitle}>
-                      Phiên bản
-                    </CustomText>
-                    <CustomText variant="caption" color="secondary" style={styles.settingDescription}>
-                      AIEvent v1.0.0 (Build 1001)
-                    </CustomText>
-                  </View>
-                </View>
-                <View style={styles.settingRight}>
-                  <View style={styles.versionBadge}>
-                    <CustomText variant="caption" color="white" style={styles.versionText}>
-                      Mới nhất
-                    </CustomText>
-                  </View>
-                </View>
-              </View>
-
-              <TouchableOpacity style={styles.settingCard} activeOpacity={0.7}>
-                <View style={styles.settingLeft}>
-                  <View style={[styles.settingIconContainer, styles.helpIcon]}>
-                    <CustomText variant="h4" color="white">❓</CustomText>
-                  </View>
-                  <View style={styles.settingContent}>
-                    <CustomText variant="body" color="primary" style={styles.settingTitle}>
-                      Trợ giúp & Hỗ trợ
-                    </CustomText>
-                    <CustomText variant="caption" color="secondary" style={styles.settingDescription}>
-                      FAQ, liên hệ và hướng dẫn sử dụng
-                    </CustomText>
-                  </View>
-                </View>
-                <View style={styles.settingRight}>
-                  <View style={styles.chevronContainer}>
-                    <CustomText variant="body" color="secondary" style={styles.chevron}>›</CustomText>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            </View>
-          </View>
-        );
-      default:
-        return null;
+  const handleMenuItemPress = (item) => {
+    if (item.onPress) {
+      item.onPress();
+    } else if (item.screen) {
+      navigation.navigate(item.screen);
     }
   };
 
+  const renderMenuGrid = () => (
+    <View style={styles.menuGridContainer}>
+      {menuItems.map((item) => (
+        <TouchableOpacity
+          key={item.id}
+          style={styles.menuItem}
+          onPress={() => handleMenuItemPress(item)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.menuIconContainer}>
+            <CustomText variant="h2" color="primary" style={styles.menuIcon}>
+              {item.icon}
+            </CustomText>
+          </View>
+          <CustomText variant="caption" color="primary" style={styles.menuLabel}>
+            {item.label}
+          </CustomText>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
+      <GradientBackground style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={Colors.primary} />
         <CustomText variant="body" color="secondary" style={styles.loadingText}>
           Đang tải thông tin cá nhân...
         </CustomText>
-      </View>
+      </GradientBackground>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.errorContainer}>
+      <GradientBackground style={styles.errorContainer}>
         <CustomText variant="h3" color="error">
           Lỗi khi tải thông tin
         </CustomText>
@@ -856,12 +340,12 @@ const ProfileScreen = ({ navigation }) => {
             </CustomText>
           </TouchableOpacity>
         )}
-      </View>
+      </GradientBackground>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <GradientBackground style={styles.container}>
       <ScrollView 
         style={styles.scrollView}
         refreshControl={
@@ -874,8 +358,7 @@ const ProfileScreen = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
       >
         {renderProfileHeader()}
-        {renderTabNavigation()}
-        {renderTabContent()}
+        {renderMenuGrid()}
       </ScrollView>
 
       {/* Edit Profile Modal */}
@@ -908,7 +391,7 @@ const ProfileScreen = ({ navigation }) => {
           }}
         />
       </Modal>
-    </View>
+    </GradientBackground>
   );
 };
 
@@ -1807,8 +1290,8 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
             disabled={isUpdating}
           >
             {isUpdating ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color={Colors.success} />
+              <View style={styles.buttonLoadingContainer}>
+                <ActivityIndicator size="small" color={Colors.white} />
                 <CustomText variant="body" color="white" style={{ marginLeft: 8 }}>
                   Đang cập nhật...
                 </CustomText>

@@ -52,7 +52,7 @@ export const eventAPI = {
     formData.append('StartTime', eventData.startTime);
     formData.append('EndTime', eventData.endTime);
     formData.append('TotalTickets', eventData.totalTickets);
-    formData.append('TicketType', eventData.ticketType);
+    formData.append('TicketPricingType', eventData.ticketPricingType);
     formData.append('RequireApproval', eventData.requireApproval || ConfirmStatus.NeedConfirm);
     formData.append('Publish', eventData.publish || false);
     
@@ -66,8 +66,8 @@ export const eventAPI = {
     if (eventData.linkRef) {
       formData.append('LinkRef', eventData.linkRef);
     }
-    if (eventData.city) {
-      formData.append('City', eventData.city);
+    if (eventData.district) {
+      formData.append('District', eventData.district);
     }
     if (eventData.address) {
       formData.append('Address', eventData.address);
@@ -102,16 +102,15 @@ export const eventAPI = {
       });
     }
 
-    // Add ticket details
-    if (eventData.ticketDetails && eventData.ticketDetails.length > 0) {
-      eventData.ticketDetails.forEach((ticket, index) => {
-        formData.append(`TicketDetails[${index}].TicketName`, ticket.ticketName);
-        formData.append(`TicketDetails[${index}].TicketPrice`, ticket.ticketPrice);
-        formData.append(`TicketDetails[${index}].TicketQuantity`, ticket.ticketQuantity);
+    // Add ticket types
+    if (eventData.ticketTypes && eventData.ticketTypes.length > 0) {
+      eventData.ticketTypes.forEach((ticket, index) => {
+        formData.append(`TicketTypes[${index}].TicketName`, ticket.ticketName);
+        formData.append(`TicketTypes[${index}].TicketPrice`, ticket.ticketPrice);
+        formData.append(`TicketTypes[${index}].TicketQuantity`, ticket.ticketQuantity);
         if (ticket.ticketDescription) {
-          formData.append(`TicketDetails[${index}].TicketDescription`, ticket.ticketDescription);
+          formData.append(`TicketTypes[${index}].TicketDescription`, ticket.ticketDescription);
         }
-        formData.append(`TicketDetails[${index}].RuleRefundRequestId`, ticket.ruleRefundRequestId);
       });
     }
 
@@ -151,7 +150,7 @@ export const eventAPI = {
     formData.append('StartTime', eventData.startTime);
     formData.append('EndTime', eventData.endTime);
     formData.append('TotalTickets', eventData.totalTickets);
-    formData.append('TicketType', eventData.ticketType);
+    formData.append('TicketPricingType', eventData.ticketPricingType);
     if (eventData.requireApproval !== undefined) {
       formData.append('RequireApproval', eventData.requireApproval);
     }
@@ -167,8 +166,8 @@ export const eventAPI = {
     if (eventData.linkRef) {
       formData.append('LinkRef', eventData.linkRef);
     }
-    if (eventData.city) {
-      formData.append('City', eventData.city);
+    if (eventData.district) {
+      formData.append('District', eventData.district);
     }
     if (eventData.address) {
       formData.append('Address', eventData.address);
@@ -217,27 +216,26 @@ export const eventAPI = {
       });
     }
 
-    // Add ticket details
-    if (eventData.ticketDetails && eventData.ticketDetails.length > 0) {
-      eventData.ticketDetails.forEach((ticket, index) => {
+    // Add ticket types
+    if (eventData.ticketTypes && eventData.ticketTypes.length > 0) {
+      eventData.ticketTypes.forEach((ticket, index) => {
         // Add ticket ID if it exists (for existing tickets)
         if (ticket.id) {
-          formData.append(`TicketDetails[${index}].Id`, ticket.id);
+          formData.append(`TicketTypes[${index}].Id`, ticket.id);
         }
-        formData.append(`TicketDetails[${index}].TicketName`, ticket.ticketName);
-        formData.append(`TicketDetails[${index}].TicketPrice`, ticket.ticketPrice);
-        formData.append(`TicketDetails[${index}].TicketQuantity`, ticket.ticketQuantity);
+        formData.append(`TicketTypes[${index}].TicketName`, ticket.ticketName);
+        formData.append(`TicketTypes[${index}].TicketPrice`, ticket.ticketPrice);
+        formData.append(`TicketTypes[${index}].TicketQuantity`, ticket.ticketQuantity);
         if (ticket.ticketDescription) {
-          formData.append(`TicketDetails[${index}].TicketDescription`, ticket.ticketDescription);
+          formData.append(`TicketTypes[${index}].TicketDescription`, ticket.ticketDescription);
         }
-        formData.append(`TicketDetails[${index}].RuleRefundRequestId`, ticket.ruleRefundRequestId);
       });
     }
 
-    // Add ticket detail IDs to remove
-    if (eventData.removeTicketDetailIds && eventData.removeTicketDetailIds.length > 0) {
-      eventData.removeTicketDetailIds.forEach((id) => {
-        formData.append('RemoveTicketDetailIds', id);
+    // Add ticket type IDs to remove
+    if (eventData.removeTicketTypeIds && eventData.removeTicketTypeIds.length > 0) {
+      eventData.removeTicketTypeIds.forEach((id) => {
+        formData.append('RemoveTicketTypeIds', id);
       });
     }
 
