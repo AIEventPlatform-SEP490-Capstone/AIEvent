@@ -159,6 +159,25 @@ namespace AIEvent.Infrastructure.Context
                 entity.HasIndex(e => new { e.OrganizerProfileId, e.Status }).HasDatabaseName("IX_EndEventRequests_OrganizerProfile_Status");
             });
 
+            //-----------------RevenueReport-------------
+            builder.Entity<RevenueReport>(entity =>
+            {
+                entity.HasOne(e => e.OrganizerProfile)
+                    .WithMany(o => o.RevenueReports)
+                    .HasForeignKey(e => e.OrganizerProfileId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Event)
+                    .WithOne(o => o.RevenueReport)
+                    .HasForeignKey<RevenueReport>(o => o.EventId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => e.OrganizerProfileId).HasDatabaseName("IX_RevenueReports_OrganizerProfileId");
+                entity.HasIndex(e => e.EventId).HasDatabaseName("IX_RevenueReports_EventId");
+                entity.HasIndex(e => new { e.ReportYear, e.ReportMonth }).HasDatabaseName("IX_RevenueReports_ReportYearMonth");
+                entity.HasIndex(e => new { e.OrganizerProfileId, e.ReportYear, e.ReportMonth }).HasDatabaseName("IX_RevenueReports_Organizer_YearMonth");
+            });
+
             //------------------Booking-------------------
             builder.Entity<Booking>(entity =>
             {
