@@ -591,11 +591,11 @@ Nhấn OK để xác nhận xóa.`;
             )}
 
             {/* Evidence Image Gallery */}
-            {event.imgEventEvidences && event.imgEventEvidences.length > 0 && (
+            {event.imgListEvidences && event.imgListEvidences.length > 0 && (
               <div>
                 <h2 className="text-xl font-semibold mb-4">Hình ảnh bằng chứng tổ chức</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {event.imgEventEvidences.map((img, index) => (
+                  {event.imgListEvidences.map((img, index) => (
                     <img
                       key={index}
                       src={img}

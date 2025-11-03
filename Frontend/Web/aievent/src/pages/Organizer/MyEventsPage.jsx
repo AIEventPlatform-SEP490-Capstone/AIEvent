@@ -289,10 +289,9 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
     // Handle both string enum names and number values
     if (ticketType === 1 || ticketType === "Free" || ticketType === "free") return 'Miễn phí';
     if (ticketType === 2 || ticketType === "Paid" || ticketType === "paid") return 'Có phí';
-    if (ticketType === 3 || ticketType === "Donate" || ticketType === "donate") return 'Quyên góp';
     
     // Default fallback
-    return 'Quyên góp';
+    return 'Không xác định';
   };
 
   const getTabDisplayName = (tab) => {
