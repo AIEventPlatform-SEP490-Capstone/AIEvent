@@ -5,6 +5,7 @@ using AIEvent.Domain.Entities;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using AutoMapper;
 using FluentAssertions;
+using MockQueryable.Moq;
 using Moq;
 
 namespace AIEvent.Application.Test.Services
@@ -27,10 +28,11 @@ namespace AIEvent.Application.Test.Services
         [Fact]
         public async Task CreateRoleAsync_ValidWith_ShouldReturnSuccessResult()
         {
+            // Arrange
             var request = new CreateRoleRequest
             {
-                Name = "ExistingRole",
-                Description = "Existing role description"
+                Name = "NewRole",
+                Description = "New role description"
             };
 
             var mapRole = new Role
@@ -40,27 +42,35 @@ namespace AIEvent.Application.Test.Services
                 Description = request.Description
             };
 
+            // Mock empty roles list (no existing role with same name)
+            var emptyRoles = new List<Role>().AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.RoleRepository.Query(It.IsAny<bool>()))
+                          .Returns(emptyRoles.Object);
+
             _mockMapper.Setup(m => m.Map<Role>(It.IsAny<CreateRoleRequest>()))
                 .Returns(mapRole);
 
-            _mockMapper.Setup(m => m.Map<RoleResponse>(It.IsAny<Role>()))
-                .Returns(new RoleResponse
-                {
-                    Id = mapRole.Id.ToString(),
-                    Name = mapRole.Name,
-                    Description = mapRole.Description
-                });
+            _mockUnitOfWork.Setup(x => x.RoleRepository.AddAsync(It.IsAny<Role>()))
+                          .ReturnsAsync((Role r) => r);
 
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync())
+                          .ReturnsAsync(1);
+
+            // Act
             var result = await _roleService.CreateRoleAsync(request);
 
+            // Assert
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.RoleRepository.AddAsync(It.Is<Role>(r => r.Name == request.Name)), Times.Once());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
 
 
         [Fact]
         public async Task CreateRoleAsync_WithExistingName_ShouldReturnFailureResult()
         {
+            // Arrange
             var request = new CreateRoleRequest
             {
                 Name = "ExistingRole",
@@ -73,23 +83,36 @@ namespace AIEvent.Application.Test.Services
                 Name = request.Name
             };
 
+            // Mock existing role found
+            var roles = new List<Role> { existingRole }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.RoleRepository.Query(It.IsAny<bool>()))
+                          .Returns(roles.Object);
+
+            // Act
             var result = await _roleService.CreateRoleAsync(request);
 
+            // Assert
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Be("Role with this name already exists");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            _mockUnitOfWork.Verify(x => x.RoleRepository.AddAsync(It.IsAny<Role>()), Times.Never());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
 
         [Fact]
         public async Task UpdateRoleAsync_WithInvalidId_ShouldReturnFailureResult()
         {
+            // Arrange
             var roleId = Guid.Parse("22222222-2222-2222-2222-222222222222").ToString();
             var request = new UpdateRoleRequest
             {
                 Description = "Updated role description"
             };
 
+            // Mock role not found (returns null)
+            _mockUnitOfWork.Setup(x => x.RoleRepository.GetByIdAsync(Guid.Parse(roleId), true))
+                          .ReturnsAsync((Role?)null);
 
             // Act
             var result = await _roleService.UpdateRoleAsync(roleId, request);
@@ -97,6 +120,10 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Role not found");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+            _mockUnitOfWork.Verify(x => x.RoleRepository.UpdateAsync(It.IsAny<Role>()), Times.Never());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
 
         [Fact]
@@ -105,6 +132,9 @@ namespace AIEvent.Application.Test.Services
             // Arrange
             var roleId = Guid.NewGuid().ToString();
 
+            // Mock role not found (returns null)
+            _mockUnitOfWork.Setup(x => x.RoleRepository.GetByIdAsync(Guid.Parse(roleId), true))
+                          .ReturnsAsync((Role?)null);
 
             // Act
             var result = await _roleService.DeleteRoleAsync(roleId);
@@ -112,6 +142,11 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.Should().NotBeNull();
             result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Role not found");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+            _mockUnitOfWork.Verify(x => x.UserRepository.Query(It.IsAny<bool>()), Times.Never());
+            _mockUnitOfWork.Verify(x => x.RoleRepository.DeleteAsync(It.IsAny<Role>()), Times.Never());
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
     }
 }

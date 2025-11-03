@@ -52,7 +52,6 @@ namespace AIEvent.Infrastructure.Context
 
                 entity.Property(e => e.Email).HasMaxLength(256).IsRequired();
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
-                entity.HasIndex(e => e.Email).IsUnique().HasDatabaseName("IX_User_Email");
                 entity.HasIndex(e => e.IsActive).HasDatabaseName("IX_User_IsActive");
             });
 
