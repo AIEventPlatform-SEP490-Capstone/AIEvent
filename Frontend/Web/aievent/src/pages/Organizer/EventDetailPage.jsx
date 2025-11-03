@@ -354,7 +354,7 @@ Nhấn OK để xác nhận xóa.`;
               )}
               <div className="absolute bottom-4 left-4 flex gap-2">
                 <Badge variant="secondary" className="bg-background/80 backdrop-blur">
-                  {event.ticketType === 1 ? 'Miễn phí' : 'Có phí'}
+                  {event.ticketType === 1 || event.ticketType === "free" ? 'Miễn phí' : 'Có phí'}
                 </Badge>
                 {event.eventCategoryName && (
                   <Badge variant="outline" className="bg-background/80 backdrop-blur">
@@ -722,7 +722,7 @@ Nhấn OK để xác nhận xóa.`;
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Loại vé</span>
                   <span className="font-medium">
-                    {event.ticketType === 1 ? 'Miễn phí' : 'Có phí'}
+                    {event.ticketType === 1 || event.ticketType === "free" ? 'Miễn phí' : 'Có phí'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">

@@ -72,7 +72,7 @@ export default function SearchPage() {
         
         // Add price filter if not "all"
         if (filters.priceFilter !== "all") {
-          params.ticketType = filters.priceFilter === "free" ? 1 : 2; // 1 = Free, 2 = Paid
+          params.ticketType = filters.priceFilter === "free" ? "free" : "paid"; // "free" = Free, "paid" = Paid
         }
         
         // Add location filter if not "all"
@@ -143,7 +143,7 @@ export default function SearchPage() {
     const ticketType = event.ticketType;
     const price = event.ticketPrice || 0;
     
-    if (ticketType === 1 || price === 0) {
+    if (ticketType === 1 || ticketType === "free" || price === 0) {
       return "Miễn phí";
     }
     

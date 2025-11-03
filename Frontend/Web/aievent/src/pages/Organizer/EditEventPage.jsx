@@ -253,10 +253,9 @@ const EditEventPage = () => {
           district: event.district || '',
           eventCategoryId: event.eventCategoryId || event.eventCategory?.eventCategoryId || '',
           publish: event.publish || false,
-          ticketPricingType: (event.ticketType !== undefined && event.ticketType !== null) ? 
-          (event.ticketType === 1 ? '1' : 
-           event.ticketType === 2 ? '2' : 
-           event.ticketType === 0 ? '2' : '1') : '1',
+          ticketPricingType: (event.ticketPricingType !== undefined && event.ticketPricingType !== null) ? 
+          (event.ticketPricingType === 'Free' || event.ticketPricingType === 1 ? '1' : 
+           event.ticketPricingType === 'Paid' || event.ticketPricingType === 2 ? '2' : '1') : '1',
           ticketTypes: event.ticketDetails && event.ticketDetails.length > 0 
             ? event.ticketDetails.map(ticket => ({
                 ticketName: ticket.ticketName || '',
@@ -275,18 +274,6 @@ const EditEventPage = () => {
                 }
               ],
         };
-
-        // Debug ticket pricing type
-        console.log('Event full object:', event);
-        console.log('Event ticketType from backend:', event.ticketType);
-        console.log('Event ticketType type:', typeof event.ticketType);
-        console.log('Event ticketType truthiness check:', event.ticketType !== undefined && event.ticketType !== null);
-        console.log('Mapped ticketPricingType:', 
-          (event.ticketType !== undefined && event.ticketType !== null) ? 
-          (event.ticketType === 1 ? '1' : 
-           event.ticketType === 2 ? '2' : 
-           event.ticketType === 0 ? '2' : '1') : '1');
-        console.log('Setting ticketPricingType to:', formData.ticketPricingType);
         
         // Reset form with loaded data
         reset(formData);
@@ -543,7 +530,7 @@ const EditEventPage = () => {
         toast.error(`Thiếu thông tin bắt buộc: ${missingFields.join(', ')}`);
         return;
       }
-      
+
       if (eventDataToSend.totalTickets <= 0) {
         toast.error('Tổng số vé phải lớn hơn 0');
         return;

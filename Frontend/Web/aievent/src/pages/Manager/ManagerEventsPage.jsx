@@ -371,8 +371,15 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
 
   const getTicketTypeLabel = (ticketType) => {
     // Handle both string enum names and number values
-    if (ticketType === 1 || ticketType === "Free" || ticketType === "free") return 'Miễn phí';
-    if (ticketType === 2 || ticketType === "Paid" || ticketType === "paid") return 'Có phí';
+    if (ticketType === 1 || ticketType === "Free" || ticketType === "free" || ticketType === "Miễn phí") return 'Miễn phí';
+    if (ticketType === 2 || ticketType === "Paid" || ticketType === "paid" || ticketType === "Có phí") return 'Có phí';
+    
+    // Additional check for string values (case insensitive)
+    if (typeof ticketType === 'string') {
+      const lowerTicketType = ticketType.toLowerCase();
+      if (lowerTicketType === 'free') return 'Miễn phí';
+      if (lowerTicketType === 'paid') return 'Có phí';
+    }
     
     // Default fallback
     return 'Không xác định';
@@ -788,7 +795,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                           </Badge>
                         )}
                         <Badge variant="outline" className="text-xs">
-                          {getTicketTypeLabel(event.ticketType)}
+                          {getTicketTypeLabel(event.ticketPricingType || event.ticketType)}
                         </Badge>
                       </div>
 
