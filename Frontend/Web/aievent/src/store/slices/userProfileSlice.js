@@ -108,4 +108,8 @@ const userProfileSlice = createSlice({
 });
 
 export const { clearUserProfileError, setProfile } = userProfileSlice.actions;
+
+// Selector
+export const selectUserProfile = (state) => state.userProfile.profile;
+
 export default userProfileSlice.reducer;

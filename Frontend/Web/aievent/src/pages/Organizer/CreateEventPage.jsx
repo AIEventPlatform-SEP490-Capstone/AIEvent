@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -31,12 +31,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 
 import { useEvents } from '../../hooks/useEvents';
 import TagSelector from '../../components/Event/TagSelector';
-import RefundRuleManager from '../../components/Event/RefundRuleManager';
 
 // Redux hooks
 import { useCategories } from '../../hooks/useCategories';
 import { useTags } from '../../hooks/useTags';
-import { useRefundRules } from '../../hooks/useRefundRules';
 import { useApp } from '../../hooks/useApp';
 
 // Import the EventDetailGuestPage component for preview
@@ -44,6 +42,9 @@ import EventDetailGuestPage from '../Event/EventDetailGuestPage';
 
 // Import ConfirmStatus enum
 import { ConfirmStatus } from '../../constants/eventConstants';
+
+// Import Cloudinary utility
+import { uploadImagesToCloudinary } from '../../utils/cloudinary';
 
 // Validation schema
 const createEventSchema = z.object({
@@ -54,20 +55,20 @@ const createEventSchema = z.object({
   endTime: z.string().min(1, 'Thời gian kết thúc là bắt buộc'),
   locationName: z.string().optional(),
   address: z.string().optional(),
-  city: z.string().optional(),
+  district: z.string().optional(),
   linkRef: z.string().optional(),
   eventCategoryId: z.string().optional(),
-  ticketType: z.string().min(1, 'Loại vé là bắt buộc'),
+  ticketPricingType: z.string().min(1, 'Loại vé là bắt buộc'),
   requireApproval: z.nativeEnum(ConfirmStatus).default(ConfirmStatus.NeedConfirm),
   publish: z.boolean().default(false),
   saleStartTime: z.string().min(1, 'Thời gian bắt đầu bán vé là bắt buộc'),
   saleEndTime: z.string().min(1, 'Thời gian kết thúc bán vé là bắt buộc'),
-  ticketDetails: z.array(z.object({
+  ticketTypes: z.array(z.object({
     ticketName: z.string().min(1, 'Tên vé là bắt buộc'),
     ticketPrice: z.number().min(0, 'Giá vé không được âm'),
     ticketQuantity: z.number().min(1, 'Số lượng vé phải lớn hơn 0'),
     ticketDescription: z.string().optional(),
-    ruleRefundRequestId: z.string().min(1, 'Quy tắc hoàn tiền là bắt buộc'),
+    // ruleRefundRequestId: z.string().min(1, 'Quy tắc hoàn tiền là bắt buộc'),
   })).min(1, 'Phải có ít nhất một loại vé')
 }).refine((data) => {
   if (!data.locationName) {
@@ -78,13 +79,13 @@ const createEventSchema = z.object({
   message: 'Địa điểm là bắt buộc',
   path: ['locationName'],
 }).refine((data) => {
-  if (!data.city) {
+  if (!data.district) {
     return false;
   }
   return true;
 }, {
-  message: 'Thành phố là bắt buộc',
-  path: ['city'],
+  message: 'Quận/Huyện là bắt buộc',
+  path: ['district'],
 }).refine((data) => {
   const saleStart = new Date(data.saleStartTime);
   const saleEnd = new Date(data.saleEndTime);
@@ -110,15 +111,23 @@ const CreateEventPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
-  const [selectedEvidenceImages, setSelectedEvidenceImages] = useState([]);
+  const [selectedEvidenceImages, setSelectedEvidenceImageUrls] = useState([]);
   const [imagePreview, setImagePreview] = useState([]);
   const [evidenceImagePreview, setEvidenceImagePreview] = useState([]);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [clonedEventData, setClonedEventData] = useState(null);
+  // Add state for individual date validation errors
+  const [dateErrors, setDateErrors] = useState({
+    startTime: '',
+    endTime: '',
+    saleStartTime: '',
+    saleEndTime: ''
+  });
 
   // Redux hooks
   const { categories, loading: categoriesLoading } = useCategories();
   const { tags: reduxSelectedTags, clearAllSelectedTags } = useTags();
-  const { selectedRules, clearSelectedRefundRules } = useRefundRules();
+  // const { selectedRules, clearSelectedRefundRules } = useRefundRules();
   const { showLoading, hideLoading, updatePageTitle } = useApp();
   const { createEvent: createEventAPI, loading: eventLoading } = useEvents();
 
@@ -139,21 +148,21 @@ const CreateEventPage = () => {
       endTime: '',
       locationName: '',
       address: '',
-      city: '',
+      district: '',
       linkRef: '',
       eventCategoryId: '',
       requireApproval: ConfirmStatus.NeedConfirm,
       publish: false,
       saleStartTime: '',
       saleEndTime: '',
-      ticketType: '1',
-      ticketDetails: [
+      ticketPricingType: '1',
+      ticketTypes: [
         {
           ticketName: 'Vé thường',
           ticketPrice: 0,
           ticketQuantity: 1,
           ticketDescription: '',
-          ruleRefundRequestId: '',
+          // ruleRefundRequestId: '',
         }
       ],
     },
@@ -161,20 +170,96 @@ const CreateEventPage = () => {
 
   const { fields, append, remove } = useFieldArray({
     control,
-    name: 'ticketDetails',
+    name: 'ticketTypes',
   });
 
-  const watchTicketType = watch('ticketType');
+  const watchTicketPricingType = watch('ticketPricingType');
 
   // Set page title and cleanup on mount
   useEffect(() => {
     updatePageTitle('Tạo sự kiện mới');
     
+    // Check for cloned event data
+    const storedCloneData = localStorage.getItem('cloneEventData');
+    if (storedCloneData) {
+      try {
+        const cloneData = JSON.parse(storedCloneData);
+        setClonedEventData(cloneData);
+        
+        // Populate form with cloned data
+        populateFormWithCloneData(cloneData);
+        
+        // Remove from localStorage after use
+        localStorage.removeItem('cloneEventData');
+      } catch (error) {
+        console.error('Error parsing cloned event data:', error);
+      }
+    }
+    
     return () => {
       clearAllSelectedTags();
-      clearSelectedRefundRules();
+      // clearSelectedRefundRules();
     };
   }, []); // Empty dependency array - only run on mount/unmount
+
+  // Populate form with cloned event data
+  const populateFormWithCloneData = (cloneData) => {
+    // Set basic fields
+    setValue('title', `${cloneData.title} (Bản sao)`);
+    setValue('description', cloneData.description);
+    setValue('detailedDescription', cloneData.detailedDescription || '');
+    setValue('linkRef', cloneData.linkRef || '');
+    setValue('locationName', cloneData.locationName || '');
+    setValue('address', cloneData.address || '');
+    setValue('district', cloneData.district || '');
+    setValue('eventCategoryId', cloneData.eventCategoryId || '');
+    setValue('ticketPricingType', cloneData.ticketPricingType?.toString() || '1');
+    
+    // Format dates for datetime-local inputs
+    if (cloneData.startTime) {
+      const startDate = new Date(cloneData.startTime);
+      // Add one day to the start date for the clone
+      startDate.setDate(startDate.getDate() + 1);
+      setValue('startTime', startDate.toISOString().slice(0, 16));
+    }
+    
+    if (cloneData.endTime) {
+      const endDate = new Date(cloneData.endTime);
+      // Add one day to the end date for the clone
+      endDate.setDate(endDate.getDate() + 1);
+      setValue('endTime', endDate.toISOString().slice(0, 16));
+    }
+    
+    // Set sale dates (add one day)
+    if (cloneData.saleStartTime) {
+      const saleStartDate = new Date(cloneData.saleStartTime);
+      saleStartDate.setDate(saleStartDate.getDate() + 1);
+      setValue('saleStartTime', saleStartDate.toISOString().slice(0, 16));
+    }
+    
+    if (cloneData.saleEndTime) {
+      const saleEndDate = new Date(cloneData.saleEndTime);
+      saleEndDate.setDate(saleEndDate.getDate() + 1);
+      setValue('saleEndTime', saleEndDate.toISOString().slice(0, 16));
+    }
+    
+    // Handle ticket types
+    if (cloneData.ticketTypes && cloneData.ticketTypes.length > 0) {
+      // Clear existing ticket types
+      remove(0);
+      
+      // Add cloned ticket types
+      cloneData.ticketTypes.forEach((ticket, index) => {
+        append({
+          ticketName: ticket.ticketName,
+          ticketPrice: ticket.ticketPrice || 0,
+          ticketQuantity: ticket.ticketQuantity || 1,
+          ticketDescription: ticket.ticketDescription || '',
+          // ruleRefundRequestId: ticket.ruleRefundRequestId || '',
+        });
+      });
+    }
+  };
 
   // Real-time validation effect
   useEffect(() => {
@@ -202,7 +287,7 @@ const CreateEventPage = () => {
       return;
     }
 
-    setSelectedEvidenceImages(files);
+    setSelectedEvidenceImageUrls(files);
     const previews = files.map(file => URL.createObjectURL(file));
     setEvidenceImagePreview(previews);
   };
@@ -221,23 +306,23 @@ const CreateEventPage = () => {
     const newImages = selectedEvidenceImages.filter((_, i) => i !== index);
     const newPreviews = evidenceImagePreview.filter((_, i) => i !== index);
     
-    setSelectedEvidenceImages(newImages);
+    setSelectedEvidenceImageUrls(newImages);
     setEvidenceImagePreview(newPreviews);
   };
 
-  // Add ticket detail
-  const addTicketDetail = () => {
+  // Add ticket type
+  const addTicketType = () => {
     append({
       ticketName: '',
-      ticketPrice: watchTicketType === '1' ? 0 : '',
+      ticketPrice: watchTicketPricingType === '1' ? 0 : '',
       ticketQuantity: 1,
       ticketDescription: '',
-      ruleRefundRequestId: selectedRules.length > 0 ? selectedRules[0].ruleRefundId : '',
+      // ruleRefundRequestId: selectedRules.length > 0 ? selectedRules[0].ruleRefundId : '',
     });
   };
 
-  // Remove ticket detail
-  const removeTicketDetail = (index) => {
+  // Remove ticket type
+  const removeTicketType = (index) => {
     if (fields.length > 1) {
       remove(index);
     } else {
@@ -256,21 +341,20 @@ const CreateEventPage = () => {
       tagName: tag.tagName || tag.nameTag
     }));
     
-    // Format ticket details with refund rule names
-    const ticketDetails = formData.ticketDetails.map(ticket => {
-      const refundRule = selectedRules.find(rule => rule.ruleRefundId === ticket.ruleRefundRequestId);
+    // Format ticket types with refund rule names
+    const ticketTypes = formData.ticketTypes.map(ticket => {
       return {
         ...ticket,
         ticketPrice: parseFloat(ticket.ticketPrice) || 0,
         ticketQuantity: parseInt(ticket.ticketQuantity) || 0,
         soldQuantity: 0, // Default for preview
         remainingQuantity: parseInt(ticket.ticketQuantity) || 0, // Default for preview
-        ruleRefundRequestName: refundRule ? refundRule.ruleName : ''
+        // ruleRefundRequestName: refundRule ? refundRule.ruleName : ''
       };
     });
     
     // Calculate total tickets
-    const totalTickets = ticketDetails.reduce((sum, ticket) => sum + (parseInt(ticket.ticketQuantity) || 0), 0);
+    const totalTickets = ticketTypes.reduce((sum, ticket) => sum + (parseInt(ticket.ticketQuantity) || 0), 0);
     
     // Format image previews
     const imgListEvent = imagePreview.length > 0 ? imagePreview : [];
@@ -289,19 +373,19 @@ const CreateEventPage = () => {
       isOnlineEvent: formData.isOnlineEvent || false,
       locationName: formData.locationName || '',
       address: formData.address || '',
-      city: formData.city || '', // Add city field
+      district: formData.district || '', // Add district field
       latitude: null,
       longitude: null,
       totalTickets: totalTickets,
       soldQuantity: 0,
       remainingTickets: totalTickets,
-      ticketType: parseInt(formData.ticketType) || 1,
+      ticketPricingType: parseInt(formData.ticketPricingType) || 1,
       imgListEvent: imgListEvent,
       requireApproval: formData.requireApproval === ConfirmStatus.Approve ? 1 : 
                      formData.requireApproval === ConfirmStatus.Reject ? -1 : 0,
       eventCategoryName: selectedCategory ? selectedCategory.eventCategoryName : '',
       eventTags: eventTags, // Only use selected tags
-      ticketDetails: ticketDetails,
+      ticketTypes: ticketTypes,
       organizerEvent: {
         organizerId: user?.id || 'preview-organizer-id',
         companyName: user?.fullName || 'Nhà tổ chức mẫu',
@@ -322,17 +406,17 @@ const CreateEventPage = () => {
     }
 
     // Validate refund rules selection
-    if (selectedRules.length === 0) {
-      toast.error('Vui lòng chọn ít nhất một quy tắc hoàn tiền');
-      return;
-    }
+    // if (selectedRules.length === 0) {
+    //   toast.error('Vui lòng chọn ít nhất một quy tắc hoàn tiền');
+    //   return;
+    // }
 
     // Validate refund rule selection for each ticket
-    const hasEmptyRefundRule = data.ticketDetails.some(ticket => !ticket.ruleRefundRequestId);
-    if (hasEmptyRefundRule) {
-      toast.error('Vui lòng chọn quy tắc hoàn tiền cho tất cả các loại vé');
-      return;
-    }
+    // const hasEmptyRefundRule = data.ticketTypes.some(ticket => !ticket.ruleRefundRequestId);
+    // if (hasEmptyRefundRule) {
+    //   toast.error('Vui lòng chọn quy tắc hoàn tiền cho tất cả các loại vé');
+    //   return;
+    // }
 
     // Validate category selection
     if (!data.eventCategoryId) {
@@ -340,104 +424,112 @@ const CreateEventPage = () => {
       return;
     }
 
-    // Filter out empty images
-    const validImages = selectedImages.filter(img => img instanceof File);
-    const validEvidenceImages = selectedEvidenceImages.filter(img => img instanceof File);
-    
-    // Calculate total tickets from ticketDetails array
-    const totalTickets = data.ticketDetails.reduce((sum, ticket) => sum + parseInt(ticket.ticketQuantity), 0);
-
-    const eventData = {
-      title: data.title,
-      description: data.description,
-      detailedDescription: data.detailedDescription || '',
-      linkRef: data.linkRef || '',
-      startTime: new Date(data.startTime).toISOString(),
-      endTime: new Date(data.endTime).toISOString(),
-      saleStartTime: new Date(data.saleStartTime).toISOString(),
-      saleEndTime: new Date(data.saleEndTime).toISOString(),
-      locationName: data.locationName || '',
-      address: data.address || '',
-      city: data.city || '',
-      latitude: null,
-      longitude: null,
-      totalTickets: totalTickets,
-      ticketType: data.ticketType && !isNaN(parseInt(data.ticketType)) ? parseInt(data.ticketType) : 1,
-      requireApproval: data.requireApproval,
-      publish: data.publish || false, // This will be false for drafts
-      images: validImages,
-      evidenceImages: validEvidenceImages,
-      eventCategoryId: data.eventCategoryId,
-      tags: reduxSelectedTags.map(tag => ({ tagId: tag.tagId })),
-      refundRules: selectedRules.map(rule => ({ ruleRefundId: rule.ruleRefundId })),
-      ticketDetails: data.ticketDetails.map(ticket => ({
-        ticketName: ticket.ticketName,
-        ticketPrice: parseFloat(ticket.ticketPrice),
-        ticketQuantity: parseInt(ticket.ticketQuantity),
-        ticketDescription: ticket.ticketDescription || '',
-        ruleRefundRequestId: ticket.ruleRefundRequestId,
-      })),
-    };
-
-    // Validate required fields (từ logic cũ)
-    const requiredFields = ['title', 'description', 'startTime', 'endTime', 'saleStartTime', 'saleEndTime', 'totalTickets', 'eventCategoryId'];
-    if (!eventData.isOnlineEvent) {
-      requiredFields.push('locationName', 'address');
-    }
-    
-    const missingFields = requiredFields.filter(field => !eventData[field]);
-    if (missingFields.length > 0) {
-      toast.error(`Thiếu thông tin bắt buộc: ${missingFields.join(', ')}`);
-      return;
-    }
-    
-    if (eventData.totalTickets <= 0) {
-      toast.error('Tổng số vé phải lớn hơn 0');
-      return;
-    }
-
-    // Validate dates (từ logic cũ)
-    const startDate = new Date(eventData.startTime);
-    const endDate = new Date(eventData.endTime);
-    const saleStartDate = new Date(eventData.saleStartTime);
-    const saleEndDate = new Date(eventData.saleEndTime);
-    const now = new Date();
-
-    if (startDate <= now) {
-      toast.error('Thời gian bắt đầu phải sau thời điểm hiện tại');
-      return;
-    }
-
-    if (endDate <= startDate) {
-      toast.error('Thời gian kết thúc phải sau thời gian bắt đầu');
-      return;
-    }
-
-    if (saleStartDate >= startDate) {
-      toast.error('Thời gian bắt đầu bán vé phải trước thời gian bắt đầu sự kiện');
-      return;
-    }
-
-    if (saleEndDate <= saleStartDate) {
-      toast.error('Thời gian kết thúc bán vé phải sau thời gian bắt đầu bán vé');
-      return;
-    }
-
-    if (saleEndDate >= startDate) {
-      toast.error('Thời gian kết thúc bán vé phải trước thời gian bắt đầu sự kiện');
-      return;
-    }
-
     try {
       showLoading();
       setIsSubmitting(true);
       
+      // Upload images to Cloudinary and get URLs
+      let imageUrls = [];
+      if (selectedImages.length > 0) {
+        imageUrls = await uploadImagesToCloudinary(selectedImages);
+      }
+      
+      // Upload evidence images to Cloudinary and get URLs
+      let evidenceImageUrls = [];
+      if (selectedEvidenceImages.length > 0) {
+        evidenceImageUrls = await uploadImagesToCloudinary(selectedEvidenceImages);
+      }
+      
+      // Calculate total tickets from ticketTypes array
+      const totalTickets = data.ticketTypes.reduce((sum, ticket) => sum + parseInt(ticket.ticketQuantity), 0);
+
+      const eventData = {
+        title: data.title,
+        description: data.description,
+        detailedDescription: data.detailedDescription || '',
+        linkRef: data.linkRef || '',
+        startTime: new Date(data.startTime).toISOString(),
+        endTime: new Date(data.endTime).toISOString(),
+        saleStartTime: new Date(data.saleStartTime).toISOString(),
+        saleEndTime: new Date(data.saleEndTime).toISOString(),
+        locationName: data.locationName || '',
+        address: data.address || '',
+        district: data.district || '',
+        latitude: null,
+        longitude: null,
+        totalTickets: totalTickets,
+        ticketPricingType: data.ticketPricingType && !isNaN(parseInt(data.ticketPricingType)) ? parseInt(data.ticketPricingType) : 1,
+        requireApproval: data.requireApproval,
+        publish: data.publish || false, // This will be false for drafts
+        images: imageUrls, // Send Cloudinary URLs instead of File objects
+        evidenceImages: evidenceImageUrls, // Send Cloudinary URLs instead of File objects
+        eventCategoryId: data.eventCategoryId,
+        tags: reduxSelectedTags.map(tag => ({ tagId: tag.tagId })),
+        // refundRules: selectedRules.map(rule => ({ ruleRefundId: rule.ruleRefundId })),
+        ticketTypes: data.ticketTypes.map(ticket => ({
+          ticketName: ticket.ticketName,
+          ticketPrice: parseFloat(ticket.ticketPrice),
+          ticketQuantity: parseInt(ticket.ticketQuantity),
+          ticketDescription: ticket.ticketDescription || '',
+          // ruleRefundRequestId: ticket.ruleRefundRequestId,
+        })),
+      };
+
+      // Validate required fields (từ logic cũ)
+      const requiredFields = ['title', 'description', 'startTime', 'endTime', 'saleStartTime', 'saleEndTime', 'totalTickets', 'eventCategoryId'];
+      if (!eventData.isOnlineEvent) {
+        requiredFields.push('locationName', 'address');
+      }
+      
+      const missingFields = requiredFields.filter(field => !eventData[field]);
+      if (missingFields.length > 0) {
+        toast.error(`Thiếu thông tin bắt buộc: ${missingFields.join(', ')}`);
+        return;
+      }
+      
+      if (eventData.totalTickets <= 0) {
+        toast.error('Tổng số vé phải lớn hơn 0');
+        return;
+      }
+
+      // Validate dates (từ logic cũ)
+      const startDate = new Date(eventData.startTime);
+      const endDate = new Date(eventData.endTime);
+      const saleStartDate = new Date(eventData.saleStartTime);
+      const saleEndDate = new Date(eventData.saleEndTime);
+      const now = new Date();
+
+      if (startDate <= now) {
+        toast.error('Thời gian bắt đầu phải sau thời điểm hiện tại');
+        return;
+      }
+
+      if (endDate <= startDate) {
+        toast.error('Thời gian kết thúc phải sau thời gian bắt đầu');
+        return;
+      }
+
+      if (saleStartDate >= startDate) {
+        toast.error('Thời gian bắt đầu bán vé phải trước thời gian bắt đầu sự kiện');
+        return;
+      }
+
+      if (saleEndDate <= saleStartDate) {
+        toast.error('Thời gian kết thúc bán vé phải sau thời gian bắt đầu bán vé');
+        return;
+      }
+
+      if (saleEndDate >= startDate) {
+        toast.error('Thời gian kết thúc bán vé phải trước thời gian bắt đầu sự kiện');
+        return;
+      }
+
       const response = await createEventAPI(eventData);
       
       if (response) {
         toast.success(data.publish ? '✅ Tạo sự kiện thành công!' : '✅ Lưu nháp sự kiện thành công!');
         clearAllSelectedTags();
-        clearSelectedRefundRules();
+        // clearSelectedRefundRules();
         navigate(PATH.ORGANIZER_MY_EVENTS);
       }
     } catch (error) {
@@ -473,43 +565,42 @@ const CreateEventPage = () => {
     const saleStartTime = watch('saleStartTime');
     const saleEndTime = watch('saleEndTime');
     
-    const errors = [];
+    // Initialize error object
+    const newErrors = {
+      startTime: '',
+      endTime: '',
+      saleStartTime: '',
+      saleEndTime: ''
+    };
+    
     const now = new Date();
     
     // Check if any datetime is in the past
     if (startTime) {
       const start = new Date(startTime);
       if (start <= now) {
-        errors.push('Thời gian bắt đầu phải sau thời điểm hiện tại');
-        // Clear the field if it's in the past
-        setValue('startTime', '');
+        newErrors.startTime = 'Thời gian bắt đầu phải sau thời điểm hiện tại';
       }
     }
     
     if (endTime) {
       const end = new Date(endTime);
       if (end <= now) {
-        errors.push('Thời gian kết thúc phải sau thời điểm hiện tại');
-        // Clear the field if it's in the past
-        setValue('endTime', '');
+        newErrors.endTime = 'Thời gian kết thúc phải sau thời điểm hiện tại';
       }
     }
     
     if (saleStartTime) {
       const saleStart = new Date(saleStartTime);
       if (saleStart <= now) {
-        errors.push('Thời gian bắt đầu bán vé phải sau thời điểm hiện tại');
-        // Clear the field if it's in the past
-        setValue('saleStartTime', '');
+        newErrors.saleStartTime = 'Thời gian bắt đầu bán vé phải sau thời điểm hiện tại';
       }
     }
     
     if (saleEndTime) {
       const saleEnd = new Date(saleEndTime);
       if (saleEnd <= now) {
-        errors.push('Thời gian kết thúc bán vé phải sau thời điểm hiện tại');
-        // Clear the field if it's in the past
-        setValue('saleEndTime', '');
+        newErrors.saleEndTime = 'Thời gian kết thúc bán vé phải sau thời điểm hiện tại';
       }
     }
     
@@ -519,9 +610,7 @@ const CreateEventPage = () => {
       const end = new Date(endTime);
       
       if (end <= start) {
-        errors.push('Thời gian kết thúc phải sau thời gian bắt đầu');
-        // Clear the endTime field if it's not after startTime
-        setValue('endTime', '');
+        newErrors.endTime = 'Thời gian kết thúc phải sau thời gian bắt đầu';
       }
     }
     
@@ -531,28 +620,62 @@ const CreateEventPage = () => {
       const saleEnd = new Date(saleEndTime);
       
       if (saleStart >= start) {
-        errors.push('Thời gian bắt đầu bán vé phải trước thời gian bắt đầu sự kiện');
-        // Clear the saleStartTime field if it's not before event start
-        setValue('saleStartTime', '');
+        newErrors.saleStartTime = 'Thời gian bắt đầu bán vé phải trước thời gian bắt đầu sự kiện';
       }
       
       if (saleEnd <= saleStart) {
-        errors.push('Thời gian kết thúc bán vé phải sau thời gian bắt đầu bán vé');
-        // Clear the saleEndTime field if it's not after sale start
-        setValue('saleEndTime', '');
+        newErrors.saleEndTime = 'Thời gian kết thúc bán vé phải sau thời gian bắt đầu bán vé';
       }
       
       if (saleEnd >= start) {
-        errors.push('Thời gian kết thúc bán vé phải trước thời gian bắt đầu sự kiện');
-        // Clear the saleEndTime field if it's not before event start
-        setValue('saleEndTime', '');
+        newErrors.saleEndTime = 'Thời gian kết thúc bán vé phải trước thời gian bắt đầu sự kiện';
       }
     }
     
-    return errors;
+    // Update state with new errors
+    setDateErrors(newErrors);
+    
+    // Return the errors object for backward compatibility
+    return Object.values(newErrors).filter(error => error !== '');
   };
 
-  const dateErrors = validateDates();
+  // Real-time validation effect
+  useEffect(() => {
+    validateDates();
+  }, [watch('startTime'), watch('endTime'), watch('saleStartTime'), watch('saleEndTime')]);
+  
+  // Ref to track if we're processing a blur event to avoid infinite loops
+  const isProcessingBlur = useRef(false);
+
+  // Handle field clearing when they lose focus and are invalid
+  const handleDateTimeBlur = (fieldName) => {
+    // Prevent infinite loop by checking if we're already processing
+    if (isProcessingBlur.current) return;
+    
+    const fieldValue = watch(fieldName);
+    if (!fieldValue) return;
+    
+    const fieldDate = new Date(fieldValue);
+    const now = new Date();
+    
+    // Clear field if it's in the past
+    if (fieldDate <= now) {
+      isProcessingBlur.current = true;
+      setValue(fieldName, '');
+      // Update the specific error state
+      setDateErrors(prev => ({
+        ...prev,
+        [fieldName]: fieldName.includes('start') ? 
+          (fieldName.includes('sale') ? 'Thời gian bắt đầu bán vé phải sau thời điểm hiện tại' : 'Thời gian bắt đầu phải sau thời điểm hiện tại') :
+          (fieldName.includes('sale') ? 'Thời gian kết thúc bán vé phải sau thời điểm hiện tại' : 'Thời gian kết thúc phải sau thời điểm hiện tại')
+      }));
+      
+      // Reset the flag after a short delay to allow normal operation
+      setTimeout(() => {
+        isProcessingBlur.current = false;
+      }, 0);
+    }
+  };
   
   // Get minimum datetime for input fields (current time)
   const getMinDateTime = () => {
@@ -567,11 +690,6 @@ const CreateEventPage = () => {
   };
   
   const minDateTime = getMinDateTime();
-
-  // Real-time validation effect
-  useEffect(() => {
-    validateDates();
-  }, [watch('startTime'), watch('endTime'), watch('saleStartTime'), watch('saleEndTime')]);
 
   if (!user || !['Organizer', 'Admin', 'Manager'].includes(user.role)) {
     return (
@@ -725,15 +843,14 @@ const CreateEventPage = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="ticketType">Loại vé *</Label>
-                    <Select onValueChange={(value) => setValue('ticketType', value)} defaultValue="1">
+                    <Label htmlFor="ticketPricingType">Loại vé *</Label>
+                    <Select onValueChange={(value) => setValue('ticketPricingType', value)} defaultValue="1">
                       <SelectTrigger>
                         <SelectValue placeholder="Chọn loại vé" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="1">Miễn phí</SelectItem>
                         <SelectItem value="2">Có phí</SelectItem>
-                        <SelectItem value="3">Quyên góp</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -760,8 +877,11 @@ const CreateEventPage = () => {
                       id="startTime"
                       min={minDateTime}
                       {...register('startTime')}
+                      className={dateErrors.startTime || errors.startTime ? "border-red-500" : ""}
+                      onBlur={() => handleDateTimeBlur('startTime')}
                     />
                     {errors.startTime && <p className="text-red-500 text-sm mt-1">{errors.startTime.message}</p>}
+                    {dateErrors.startTime && <p className="text-red-500 text-sm mt-1">{dateErrors.startTime}</p>}
                   </div>
 
                   <div>
@@ -771,8 +891,11 @@ const CreateEventPage = () => {
                       id="endTime"
                       min={minDateTime}
                       {...register('endTime')}
+                      className={dateErrors.endTime || errors.endTime ? "border-red-500" : ""}
+                      onBlur={() => handleDateTimeBlur('endTime')}
                     />
                     {errors.endTime && <p className="text-red-500 text-sm mt-1">{errors.endTime.message}</p>}
+                    {dateErrors.endTime && <p className="text-red-500 text-sm mt-1">{dateErrors.endTime}</p>}
                   </div>
                 </div>
 
@@ -784,8 +907,11 @@ const CreateEventPage = () => {
                       id="saleStartTime"
                       min={minDateTime}
                       {...register('saleStartTime')}
+                      className={dateErrors.saleStartTime || errors.saleStartTime ? "border-red-500" : ""}
+                      onBlur={() => handleDateTimeBlur('saleStartTime')}
                     />
                     {errors.saleStartTime && <p className="text-red-500 text-sm mt-1">{errors.saleStartTime.message}</p>}
+                    {dateErrors.saleStartTime && <p className="text-red-500 text-sm mt-1">{dateErrors.saleStartTime}</p>}
                   </div>
 
                   <div>
@@ -795,19 +921,23 @@ const CreateEventPage = () => {
                       id="saleEndTime"
                       min={minDateTime}
                       {...register('saleEndTime')}
+                      className={dateErrors.saleEndTime || errors.saleEndTime ? "border-red-500" : ""}
+                      onBlur={() => handleDateTimeBlur('saleEndTime')}
                     />
                     {errors.saleEndTime && <p className="text-red-500 text-sm mt-1">{errors.saleEndTime.message}</p>}
+                    {dateErrors.saleEndTime && <p className="text-red-500 text-sm mt-1">{dateErrors.saleEndTime}</p>}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="city">Thành phố</Label>
+                    <Label htmlFor="district">Quận/Huyện *</Label>
                     <Input
-                      id="city"
-                      placeholder="Nhập thành phố"
-                      {...register('city')}
+                      id="district"
+                      placeholder="Nhập quận/huyện"
+                      {...register('district')}
                     />
+                    {errors.district && <p className="text-red-500 text-sm mt-1">{errors.district.message}</p>}
                   </div>
 
                   <div>
@@ -833,7 +963,7 @@ const CreateEventPage = () => {
                 </div>
 
                 {/* Display real-time date validation errors */}
-                {dateErrors.length > 0 && (
+                {/* {dateErrors.length > 0 && (
                   <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
                     <h4 className="font-semibold text-red-800 mb-2">Lỗi thời gian:</h4>
                     <ul className="list-disc list-inside text-red-600">
@@ -842,7 +972,7 @@ const CreateEventPage = () => {
                       ))}
                     </ul>
                   </div>
-                )}
+                )} */}
               </CardContent>
             </Card>
 
@@ -970,9 +1100,6 @@ const CreateEventPage = () => {
             {/* Tags */}
             <TagSelector />
 
-            {/* Refund Rules */}
-            <RefundRuleManager />
-
             {/* Tickets - Dynamic Management */}
             <Card>
               <CardHeader>
@@ -994,7 +1121,7 @@ const CreateEventPage = () => {
                             type="button"
                             variant="ghost"
                             size="sm"
-                            onClick={() => removeTicketDetail(index)}
+                            onClick={() => removeTicketType(index)}
                             className="text-red-500 hover:text-red-700"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -1006,10 +1133,10 @@ const CreateEventPage = () => {
                         <div>
                           <Label className="text-sm">Tên vé *</Label>
                           <Input
-                            {...register(`ticketDetails.${index}.ticketName`)}
+                            {...register(`ticketTypes.${index}.ticketName`)}
                             placeholder="Ví dụ: Vé VIP"
                           />
-                          {errors.ticketDetails?.[index]?.ticketName && <p className="text-red-500 text-xs mt-1">{errors.ticketDetails[index].ticketName.message}</p>}
+                          {errors.ticketTypes?.[index]?.ticketName && <p className="text-red-500 text-xs mt-1">{errors.ticketTypes[index].ticketName.message}</p>}
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
@@ -1017,40 +1144,40 @@ const CreateEventPage = () => {
                             <Label className="text-sm">Giá vé</Label>
                             <Input
                               type="number"
-                              {...register(`ticketDetails.${index}.ticketPrice`, { valueAsNumber: true })}
+                              {...register(`ticketTypes.${index}.ticketPrice`, { valueAsNumber: true })}
                               placeholder="0"
                               min="0"
-                              disabled={watchTicketType === '1'}
+                              disabled={watchTicketPricingType === '1'}
                             />
-                            {errors.ticketDetails?.[index]?.ticketPrice && <p className="text-red-500 text-xs mt-1">{errors.ticketDetails[index].ticketPrice.message}</p>}
+                            {errors.ticketTypes?.[index]?.ticketPrice && <p className="text-red-500 text-xs mt-1">{errors.ticketTypes[index].ticketPrice.message}</p>}
                           </div>
 
                           <div>
                             <Label className="text-sm">Số lượng *</Label>
                             <Input
                               type="number"
-                              {...register(`ticketDetails.${index}.ticketQuantity`, { valueAsNumber: true })}
+                              {...register(`ticketTypes.${index}.ticketQuantity`, { valueAsNumber: true })}
                               placeholder="Số lượng"
                               min="1"
                             />
-                            {errors.ticketDetails?.[index]?.ticketQuantity && <p className="text-red-500 text-xs mt-1">{errors.ticketDetails[index].ticketQuantity.message}</p>}
+                            {errors.ticketTypes?.[index]?.ticketQuantity && <p className="text-red-500 text-xs mt-1">{errors.ticketTypes[index].ticketQuantity.message}</p>}
                           </div>
                         </div>
 
                         <div>
                           <Label className="text-sm">Mô tả vé</Label>
                           <Textarea
-                            {...register(`ticketDetails.${index}.ticketDescription`)}
+                            {...register(`ticketTypes.${index}.ticketDescription`)}
                             placeholder="Mô tả chi tiết về loại vé này"
                             rows={2}
                           />
                         </div>
 
-                        <div>
+                        {/* <div>
                           <Label className="text-sm">Quy tắc hoàn tiền *</Label>
                           <Select 
-                            onValueChange={(value) => setValue(`ticketDetails.${index}.ruleRefundRequestId`, value)}
-                            value={watch(`ticketDetails.${index}.ruleRefundRequestId`) || ''}
+                            // onValueChange={(value) => setValue(`ticketTypes.${index}.ruleRefundRequestId`, value)}
+                            // value={watch(`ticketTypes.${index}.ruleRefundRequestId`) || ''}
                           >
                             <SelectTrigger className="bg-white">
                               <SelectValue placeholder="Chọn quy tắc hoàn tiền" />
@@ -1070,13 +1197,13 @@ const CreateEventPage = () => {
                               ))}
                             </SelectContent>
                           </Select>
-                          {errors.ticketDetails?.[index]?.ruleRefundRequestId && <p className="text-red-500 text-xs mt-1">{errors.ticketDetails[index].ruleRefundRequestId.message}</p>}
+                          {errors.ticketTypes?.[index]?.ruleRefundRequestId && <p className="text-red-500 text-xs mt-1">{errors.ticketTypes[index].ruleRefundRequestId.message}</p>}
                           {selectedRules.length === 0 && (
                             <p className="text-xs text-orange-600 mt-1">
                               Vui lòng tạo và chọn quy tắc hoàn tiền ở phần trên
                             </p>
                           )}
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   ))}
@@ -1084,7 +1211,7 @@ const CreateEventPage = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={addTicketDetail}
+                    onClick={addTicketType}
                     className="w-full"
                   >
                     <Plus className="h-4 w-4 mr-2" />

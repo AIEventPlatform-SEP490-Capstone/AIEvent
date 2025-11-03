@@ -1,6 +1,7 @@
 ﻿using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Organizer;
+using AIEvent.Application.DTOs.User;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
@@ -9,6 +10,7 @@ using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using AutoMapper;
 using FluentAssertions;
+using Microsoft.AspNetCore.Http;
 using MimeKit;
 using MockQueryable.Moq;
 using Moq;
@@ -24,6 +26,9 @@ namespace AIEvent.Application.Test.Services
         private readonly IOrganizerService _organizerService;
         private readonly Mock<IEmailService> _mockEmailService;
         private readonly Mock<IHasherHelper> _mockHasherHelper;
+
+        private static readonly Guid UserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        private static readonly Guid OrganizerId = Guid.Parse("22222222-2222-2222-2222-222222222222");
 
         public OrganizerServiceTests()
         {
@@ -1269,5 +1274,987 @@ namespace AIEvent.Application.Test.Services
                 DeletedAt = deleted ? DateTime.UtcNow : null
             };
         }
+
+        #region GetOrganizerProfile
+        [Fact]
+        public async Task UTCID01_GetOrganizerProfileAsync_ShouldReturnUserNotFound_WhenUserDoesNotExist()
+        {
+            // Arrange
+            var userId = UserId;
+
+            _mockUnitOfWork
+                .Setup(u => u.UserRepository.Query(false))
+                .Returns(new List<User>().AsQueryable().BuildMock()); 
+
+            // Act
+            var result = await _organizerService.GetOrganizerProfileAsync(userId);
+
+            // Assert
+            _mockUnitOfWork.Verify(u => u.UserRepository.Query(false), Times.Once);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Be("User not found.");
+            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        [Fact]
+        public async Task UTCID02_GetOrganizerProfileAsync_ShouldReturnUserNotFound_WhenUserIsDeleted()
+        {
+            // Arrange
+            var userId = UserId;
+            var users = new List<User>
+            {
+                new User { Id = userId, IsDeleted = true, IsActive = true }
+            };
+
+            var mockUserQueryable = users.AsQueryable().BuildMock();
+
+            _mockUnitOfWork
+                .Setup(u => u.UserRepository.Query(false))
+                .Returns(mockUserQueryable);
+
+            // Act
+            var result = await _organizerService.GetOrganizerProfileAsync(userId);
+
+            // Assert
+            _mockUnitOfWork.Verify(u => u.UserRepository.Query(false), Times.Once);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Be("User not found.");
+            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        [Fact]
+        public async Task UTCID03_GetOrganizerProfileAsync_ShouldReturnUserNotFound_WhenUserIsInactive()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var users = new List<User>
+            {
+                new User { Id = userId, IsDeleted = false, IsActive = false }
+            };
+
+            var mockUserQueryable = users.AsQueryable().BuildMock();
+
+            _mockUnitOfWork
+                .Setup(u => u.UserRepository.Query(false))
+                .Returns(mockUserQueryable);
+
+            // Act
+            var result = await _organizerService.GetOrganizerProfileAsync(userId);
+
+            // Assert
+            _mockUnitOfWork.Verify(u => u.UserRepository.Query(false), Times.Once);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Be("User not found.");
+            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        [Fact]
+        public async Task UTCID04_GetOrganizerProfileAsync_ShouldReturnOrganizerNotFound_WhenOrganizerDoesNotExist()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+
+            var users = new List<User>
+            {
+                new User { Id = userId, IsDeleted = false, IsActive = true }
+            };
+            var mockUserQueryable = users.AsQueryable().BuildMock();
+
+            _mockUnitOfWork
+                .Setup(u => u.UserRepository.Query(false))
+                .Returns(mockUserQueryable);
+
+            var organizers = new List<OrganizerProfile>().AsQueryable().BuildMock();
+
+            _mockUnitOfWork
+                .Setup(u => u.OrganizerProfileRepository.Query(false))
+                .Returns(organizers);
+
+            // Act
+            var result = await _organizerService.GetOrganizerProfileAsync(userId);
+
+            // Assert
+            _mockUnitOfWork.Verify(u => u.UserRepository.Query(false), Times.Once);
+            _mockUnitOfWork.Verify(u => u.OrganizerProfileRepository.Query(false), Times.Once);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Be("Organizer not found or not approved yet");
+            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        [Fact]
+        public async Task UTCID05_GetOrganizerProfileAsync_ShouldReturnOrganizerNotFound_WhenOrganizerNotApproved()
+        {
+            // Arrange
+            var userId = UserId;
+
+            // User tồn tại, hợp lệ
+            var users = new List<User>
+            {
+                new User { Id = userId, IsDeleted = false, IsActive = true }
+            };
+            var mockUserQueryable = users.AsQueryable().BuildMock();
+
+            _mockUnitOfWork
+                .Setup(u => u.UserRepository.Query(false))
+                .Returns(mockUserQueryable);
+
+            // Organizer tồn tại nhưng chưa được duyệt
+            var organizers = new List<OrganizerProfile>
+            {
+                new OrganizerProfile
+                {
+                    Id = OrganizerId,
+                    UserId = userId,
+                    Address = "ABC",
+                    ContactEmail = "test@gmail.com",
+                    ContactName = "Test",
+                    ContactPhone = "1234567890",
+                    EventExperienceLevel = 0,
+                    EventFrequency = 0,
+                    EventSize = 0,
+                    OrganizationType = 0,
+                    OrganizerType = 0,
+                    Status = ConfirmStatus.Pending,
+                }
+            };
+            var mockOrganizerQueryable = organizers.AsQueryable().BuildMock();
+
+            _mockUnitOfWork
+                .Setup(u => u.OrganizerProfileRepository.Query(false))
+                .Returns(mockOrganizerQueryable);
+
+            // Act
+            var result = await _organizerService.GetOrganizerProfileAsync(userId);
+
+            // Assert
+            _mockUnitOfWork.Verify(u => u.UserRepository.Query(false), Times.Once);
+            _mockUnitOfWork.Verify(u => u.OrganizerProfileRepository.Query(false), Times.Once);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Be("Organizer not found or not approved yet");
+            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        [Fact]
+        public async Task UTCID06_GetOrganizerProfileAsync_ShouldReturnOrganizerNotFound_WhenOrganizerRejected()
+        {
+            // Arrange
+            var userId = UserId;
+
+            var users = new List<User>
+            {
+                new User { Id = userId, IsDeleted = false, IsActive = true }
+            };
+            var mockUserQueryable = users.AsQueryable().BuildMock();
+
+            _mockUnitOfWork
+                .Setup(u => u.UserRepository.Query(false))
+                .Returns(mockUserQueryable);
+
+            // Organizer tồn tại nhưng bị từ chối (Reject)
+            var organizers = new List<OrganizerProfile>
+            {
+                new OrganizerProfile
+                {
+                    Id = OrganizerId,
+                    UserId = userId,
+                    Address = "ABC",
+                    ContactEmail = "test@gmail.com",
+                    ContactName = "Test",
+                    ContactPhone = "1234567890",
+                    EventExperienceLevel = 0,
+                    EventFrequency = 0,
+                    EventSize = 0,
+                    OrganizationType = 0,
+                    OrganizerType = 0,
+                    Status = ConfirmStatus.Reject
+                }
+            };
+            var mockOrganizerQueryable = organizers.AsQueryable().BuildMock();
+
+            _mockUnitOfWork
+                .Setup(u => u.OrganizerProfileRepository.Query(false))
+                .Returns(mockOrganizerQueryable);
+
+            // Act
+            var result = await _organizerService.GetOrganizerProfileAsync(userId);
+
+            // Assert
+            _mockUnitOfWork.Verify(u => u.UserRepository.Query(false), Times.Once);
+            _mockUnitOfWork.Verify(u => u.OrganizerProfileRepository.Query(false), Times.Once);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Be("Organizer not found or not approved yet");
+            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        [Fact]
+        public async Task UTCID07_GetOrganizerProfileAsync_ShouldReturnSuccess_WhenOrganizerApproved()
+        {
+            // Arrange
+            var userId = UserId;
+
+            // User hợp lệ
+            var users = new List<User>
+            {
+                new User
+                {
+                    Id = userId,
+                    FullName = "John Doe",
+                    Email = "john@example.com",
+                    PhoneNumber = "0123456789",
+                    IsDeleted = false,
+                    IsActive = true
+                }
+            };
+            var mockUserQueryable = users.AsQueryable().BuildMock();
+
+            _mockUnitOfWork
+                .Setup(u => u.UserRepository.Query(false))
+                .Returns(mockUserQueryable);
+
+            // Organizer hợp lệ và đã được duyệt
+            var organizers = new List<OrganizerProfile>
+            {
+                new OrganizerProfile
+                {
+                    Id = OrganizerId,
+                    UserId = userId,
+                    Address = "123 Street",
+                    ContactEmail = "org@example.com",
+                    ContactName = "Organizer Name",
+                    ContactPhone = "0987654321",
+                    EventExperienceLevel = 0,
+                    EventFrequency = 0,
+                    EventSize = 0,
+                    OrganizationType = 0,
+                    OrganizerType = 0,
+                    Status = ConfirmStatus.Approve,
+                    IsDeleted = false,
+
+                    Website = "https://org.com",
+                    UrlFacebook = "https://facebook.com/org",
+                    UrlInstagram = "https://instagram.com/org",
+                    UrlLinkedIn = "https://linkedin.com/org",
+                    ExperienceDescription = "Experienced event host",
+                    IdentityNumber = "123456789",
+                    CompanyName = "Event Company",
+                    TaxCode = "TAX123",
+                    CompanyDescription = "Professional organizer",
+                    ImgCompany = "img_company.png",
+                    ImgFrontIdentity = "front.png",
+                    ImgBackIdentity = "back.png",
+                    ImgBusinessLicense = "license.png",
+
+                    User = users.First()
+                }
+            };
+            var mockOrganizerQueryable = organizers.AsQueryable().BuildMock();
+
+            _mockUnitOfWork
+                .Setup(u => u.OrganizerProfileRepository.Query(false))
+                .Returns(mockOrganizerQueryable);
+
+            var mapperConfig = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<OrganizerProfile, OrganizerDetailResponse>()
+                   .ForMember(d => d.OrganizerId, o => o.MapFrom(s => s.Id))
+                   .ForMember(d => d.UserRegisterInfo, o => o.Ignore());
+            });
+
+            var realMapper = mapperConfig.CreateMapper();
+            _mockMapper.SetupGet(m => m.ConfigurationProvider).Returns(mapperConfig);
+            _mockMapper.Setup(m => m.Map<OrganizerDetailResponse>(It.IsAny<OrganizerProfile>()))
+                .Returns((OrganizerProfile org) =>
+                {
+                    var mapped = realMapper.Map<OrganizerDetailResponse>(org);
+                    mapped.UserRegisterInfo = new UserOrganizerResponse
+                    {
+                        Id = org.User.Id.ToString(),
+                        Email = org.User.Email!,
+                        FullName = org.User.FullName!,
+                        PhoneNumber = org.User.PhoneNumber
+                    };
+                    return mapped;
+                });
+
+            // Act
+            var result = await _organizerService.GetOrganizerProfileAsync(userId);
+
+            // Assert
+            _mockUnitOfWork.Verify(u => u.UserRepository.Query(false), Times.Once);
+            _mockUnitOfWork.Verify(u => u.OrganizerProfileRepository.Query(false), Times.Once);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeTrue();
+            result.Error.Should().BeNull();
+            result.Value.Should().NotBeNull();
+
+            var response = result.Value!;
+            response.OrganizerId.Should().Be(OrganizerId);
+            response.ContactName.Should().Be("Organizer Name");
+            response.ContactEmail.Should().Be("org@example.com");
+            response.ContactPhone.Should().Be("0987654321");
+            response.Address.Should().Be("123 Street");
+
+            response.UserRegisterInfo.Should().NotBeNull();
+            response.UserRegisterInfo.Id.Should().Be(userId.ToString());
+            response.UserRegisterInfo.Email.Should().Be("john@example.com");
+            response.UserRegisterInfo.FullName.Should().Be("John Doe");
+            response.UserRegisterInfo.PhoneNumber.Should().Be("0123456789");
+        }
+
+        [Fact]
+        public async Task UTCID08_GetOrganizerProfileAsync_ShouldReturnOrganizerNotFound_WhenOrganizerDeleted()
+        {
+            // Arrange
+            var userId = UserId;
+
+            var users = new List<User>
+            {
+                new User { Id = userId, IsDeleted = false, IsActive = true }
+            };
+            var mockUserQueryable = users.AsQueryable().BuildMock();
+
+            _mockUnitOfWork
+                .Setup(u => u.UserRepository.Query(false))
+                .Returns(mockUserQueryable);
+
+            // Organizer tồn tại nhưng đã bị xóa (IsDeleted = true)
+            var organizers = new List<OrganizerProfile>
+            {
+                new OrganizerProfile
+                {
+                    Id = OrganizerId,
+                    UserId = userId,
+                    Address = "ABC",
+                    ContactEmail = "test@gmail.com",
+                    ContactName = "Test",
+                    ContactPhone = "1234567890",
+                    EventExperienceLevel = 0,
+                    EventFrequency = 0,
+                    EventSize = 0,
+                    OrganizationType = 0,
+                    OrganizerType = 0,
+                    Status = ConfirmStatus.Approve,
+                    IsDeleted = true
+                }
+            };
+            var mockOrganizerQueryable = organizers.AsQueryable().BuildMock();
+
+            _mockUnitOfWork
+                .Setup(u => u.OrganizerProfileRepository.Query(false))
+                .Returns(mockOrganizerQueryable);
+
+            // Act
+            var result = await _organizerService.GetOrganizerProfileAsync(userId);
+
+            // Assert
+            _mockUnitOfWork.Verify(u => u.UserRepository.Query(false), Times.Once);
+            _mockUnitOfWork.Verify(u => u.OrganizerProfileRepository.Query(false), Times.Once);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Be("Organizer not found or not approved yet");
+            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        #endregion
+
+        #region UpdateOrganizerProfile
+        [Fact]
+        public async Task UTCID01_UpdateOrganizerProfileAsync_ShouldReturnNotFound_WhenProfileDoesNotExist()
+        {
+            // Arrange
+            var userId = UserId;
+
+            var request = new UpdateOrganizerProfileRequest
+            {
+                ContactName = "Test Contact",
+                Address = "123 Test St",
+                Website = "https://test.com",
+                ImgCompany = null
+            };
+
+            var users = new List<User>
+            {
+                new User { Id = userId, IsDeleted = false, IsActive = true }
+            };
+            var mockUserQueryable = users.AsQueryable().BuildMock();
+
+            _mockUnitOfWork
+                .Setup(u => u.UserRepository.Query(false))
+                .Returns(mockUserQueryable);
+
+            var organizers = new List<OrganizerProfile>();
+            var mockOrganizerQueryable = organizers.AsQueryable().BuildMock();
+
+            _mockUnitOfWork
+                .Setup(u => u.OrganizerProfileRepository.Query(false))
+                .Returns(mockOrganizerQueryable);
+
+            // Act
+            var result = await _organizerService.UpdateOrganizerProfileAsync(userId, request);
+
+            // Assert
+            _mockUnitOfWork.Verify(u => u.UserRepository.Query(false), Times.Never); // không gọi khi profile null
+            _mockUnitOfWork.Verify(u => u.OrganizerProfileRepository.Query(false), Times.Once);
+            _mockUnitOfWork.Verify(u => u.OrganizerProfileRepository.UpdateAsync(It.IsAny<OrganizerProfile>()), Times.Never);
+            _mockUnitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Be("Organizer not found or not approved yet");
+            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        [Fact]
+        public async Task UTCID02_UpdateOrganizerProfileAsync_ShouldReturnNotFound_WhenUserInactive()
+        {
+            // Arrange
+            var userId = UserId;
+
+            var request = new UpdateOrganizerProfileRequest
+            {
+                ContactName = "Test Contact",
+                Address = "123 Test St",
+                Website = "https://test.com",
+                ImgCompany = null
+            };
+
+            var users = new List<User>
+            {
+                new User { Id = userId, IsDeleted = false, IsActive = false } // inactive
+            };
+            var mockUserQueryable = users.AsQueryable().BuildMock();
+
+            _mockUnitOfWork
+                .Setup(u => u.UserRepository.Query(false))
+                .Returns(mockUserQueryable);
+
+            var organizers = new List<OrganizerProfile>
+            {
+                new OrganizerProfile
+                {
+                    Id = OrganizerId,
+                    User = users[0],
+                    UserId = userId,
+                    Address = "ABC",
+                    ContactEmail = "test@gmail.com",
+                    ContactName = "Test",
+                    ContactPhone = "1234567890",
+                    EventExperienceLevel = 0,
+                    EventFrequency = 0,
+                    EventSize = 0,
+                    OrganizationType = 0,
+                    OrganizerType = 0,
+                    Status = ConfirmStatus.Approve,
+                }
+            };
+            var mockOrganizerQueryable = organizers.AsQueryable().BuildMock();
+
+            _mockUnitOfWork
+                .Setup(u => u.OrganizerProfileRepository.Query(false))
+                .Returns(mockOrganizerQueryable);
+
+            // Act
+            var result = await _organizerService.UpdateOrganizerProfileAsync(userId, request);
+
+            // Assert
+            _mockUnitOfWork.Verify(u => u.UserRepository.Query(false), Times.Never); // không gọi UserRepository query trực tiếp
+            _mockUnitOfWork.Verify(u => u.OrganizerProfileRepository.Query(false), Times.Once);
+            _mockUnitOfWork.Verify(u => u.OrganizerProfileRepository.UpdateAsync(It.IsAny<OrganizerProfile>()), Times.Never);
+            _mockUnitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Be("User not found.");
+            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        [Fact]
+        public async Task UTCID03_UpdateOrganizerProfileAsync_ShouldReturnNotFound_WhenProfileIsDeleted()
+        {
+            // Arrange
+            var userId = UserId;
+
+            var request = new UpdateOrganizerProfileRequest
+            {
+                ContactName = "Test Contact",
+                Address = "123 Test St",
+                Website = "https://test.com",
+                ImgCompany = null
+            };
+
+            var users = new List<User>
+            {
+                new User { Id = userId, IsDeleted = false, IsActive = true } 
+            };
+            var mockUserQueryable = users.AsQueryable().BuildMock();
+
+            _mockUnitOfWork
+                .Setup(u => u.UserRepository.Query(false))
+                .Returns(mockUserQueryable);
+
+            var organizers = new List<OrganizerProfile>
+            {
+                new OrganizerProfile
+                {
+                    Id = OrganizerId,
+                    User = users[0],      
+                    UserId = userId,
+                    Address = "ABC",
+                    ContactEmail = "test@gmail.com",
+                    ContactName = "Test",
+                    ContactPhone = "1234567890",
+                    EventExperienceLevel = 0,
+                    EventFrequency = 0,
+                    EventSize = 0,
+                    OrganizationType = 0,
+                    OrganizerType = 0,
+                    Status = ConfirmStatus.Approve,
+                    IsDeleted = true       
+                }
+            };
+            var mockOrganizerQueryable = organizers.AsQueryable().BuildMock();
+
+            _mockUnitOfWork
+                .Setup(u => u.OrganizerProfileRepository.Query(false))
+                .Returns(mockOrganizerQueryable);
+
+            // Act
+            var result = await _organizerService.UpdateOrganizerProfileAsync(userId, request);
+
+            // Assert
+            _mockUnitOfWork.Verify(u => u.UserRepository.Query(false), Times.Never); 
+            _mockUnitOfWork.Verify(u => u.OrganizerProfileRepository.Query(false), Times.Once);
+            _mockUnitOfWork.Verify(u => u.OrganizerProfileRepository.UpdateAsync(It.IsAny<OrganizerProfile>()), Times.Never);
+            _mockUnitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Be("Organizer not found or not approved yet");
+            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        [Fact]
+        public async Task UTCID04_UpdateOrganizerProfileAsync_ShouldReturnSuccess_WhenRequestFieldsAreAllNull()
+        {
+            // Arrange
+            var userId = UserId;
+
+            var request = new UpdateOrganizerProfileRequest
+            {
+                ContactName = null,
+                Address = null,
+                Website = null,
+                UrlFacebook = null,
+                UrlInstagram = null,
+                UrlLinkedIn = null,
+                ExperienceDescription = null,
+                CompanyDescription = null,
+                OrganizationType = null,
+                EventFrequency = null,
+                EventSize = null,
+                OrganizerType = null,
+                EventExperienceLevel = null,
+                ImgCompany = null
+            };
+
+            var users = new List<User>
+            {
+                new User
+                {
+                    Id = userId,
+                    FullName = "John Doe",
+                    Email = "john@example.com",
+                    PhoneNumber = "0123456789",
+                    IsDeleted = false,
+                    IsActive = true
+                }
+            };
+            var mockUserQueryable = users.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(u => u.UserRepository.Query(false))
+                .Returns(mockUserQueryable);
+
+            var originalProfile = new OrganizerProfile
+            {
+                Id = OrganizerId,
+                User = users[0],
+                UserId = userId,
+                ContactName = "Old Contact",
+                Address = "Old Address",
+                ContactEmail = "test@gmail.com",
+                Website = "https://old.com",
+                ContactPhone = "1234567890",
+                UrlFacebook = "https://facebook.com/old",
+                UrlInstagram = "https://instagram.com/old",
+                UrlLinkedIn = "https://linkedin.com/old",
+                ExperienceDescription = "Old experience",
+                CompanyDescription = "Old company",
+                OrganizationType = 0,
+                EventFrequency = 0,
+                EventSize = 0,
+                OrganizerType = 0,
+                EventExperienceLevel = 0,
+                ImgCompany = "old_img_url",
+                Status = ConfirmStatus.Approve,
+                IsDeleted = false
+            };
+
+            var organizers = new List<OrganizerProfile> { originalProfile };
+            var mockOrganizerQueryable = organizers.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(u => u.OrganizerProfileRepository.Query(false))
+                .Returns(mockOrganizerQueryable);
+
+            _mockCloudinaryService.Setup(c => c.UploadImageAsync(It.IsAny<IFormFile>()))
+                .ReturnsAsync((string?)null);
+
+            _mockUnitOfWork.Setup(u => u.OrganizerProfileRepository.UpdateAsync(It.IsAny<OrganizerProfile>()))
+                .ReturnsAsync((OrganizerProfile p) => p);
+
+            _mockUnitOfWork.Setup(u => u.SaveChangesAsync())
+                .ReturnsAsync(1);
+
+            var mapperConfig = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<OrganizerProfile, OrganizerDetailResponse>()
+                   .ForMember(d => d.OrganizerId, o => o.MapFrom(s => s.Id));
+            });
+            var realMapper = mapperConfig.CreateMapper();
+
+            _mockMapper.SetupGet(m => m.ConfigurationProvider).Returns(mapperConfig);
+            _mockMapper.Setup(m => m.Map<OrganizerDetailResponse>(It.IsAny<OrganizerProfile>()))
+                .Returns((OrganizerProfile org) =>
+                {
+                    var mapped = realMapper.Map<OrganizerDetailResponse>(org);
+                    mapped.UserRegisterInfo = new UserOrganizerResponse
+                    {
+                        Id = org.User.Id.ToString(),
+                        Email = org.User.Email!,
+                        FullName = org.User.FullName!,
+                        PhoneNumber = org.User.PhoneNumber
+                    };
+                    return mapped;
+                });
+
+            // Act
+            var result = await _organizerService.UpdateOrganizerProfileAsync(userId, request);
+
+            // Assert
+            _mockUnitOfWork.Verify(u => u.OrganizerProfileRepository.Query(false), Times.Once);
+            _mockCloudinaryService.Verify(
+                c => c.UploadImageAsync(It.Is<IFormFile>(f => f != null)), Times.Never);
+            _mockUnitOfWork.Verify(u => u.OrganizerProfileRepository.UpdateAsync(It.IsAny<OrganizerProfile>()), Times.Once);
+            _mockUnitOfWork.Verify(u => u.SaveChangesAsync(), Times.Once);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeTrue();
+            result.Error.Should().BeNull();
+
+            var updatedProfile = result.Value as OrganizerDetailResponse;
+            updatedProfile.Should().NotBeNull();
+            updatedProfile!.ContactName.Should().Be("Old Contact");
+            updatedProfile.Address.Should().Be("Old Address");
+            updatedProfile.Website.Should().Be("https://old.com");
+            updatedProfile.UrlFacebook.Should().Be("https://facebook.com/old");
+            updatedProfile.UrlInstagram.Should().Be("https://instagram.com/old");
+            updatedProfile.UrlLinkedIn.Should().Be("https://linkedin.com/old");
+            updatedProfile.ExperienceDescription.Should().Be("Old experience");
+            updatedProfile.CompanyDescription.Should().Be("Old company");
+            updatedProfile.OrganizationType.Should().Be(0);
+            updatedProfile.EventFrequency.Should().Be(0);
+            updatedProfile.EventSize.Should().Be(0);
+            updatedProfile.OrganizerType.Should().Be(0);
+            updatedProfile.EventExperienceLevel.Should().Be(0);
+            updatedProfile.ImgCompany.Should().Be("old_img_url");
+            updatedProfile.UserRegisterInfo.Should().NotBeNull();
+            updatedProfile.UserRegisterInfo.Id.Should().Be(userId.ToString());
+            updatedProfile.UserRegisterInfo.Email.Should().Be("john@example.com");
+            updatedProfile.UserRegisterInfo.FullName.Should().Be("John Doe");
+            updatedProfile.UserRegisterInfo.PhoneNumber.Should().Be("0123456789");
+        }
+
+        [Fact]
+        public async Task UTCID05_UpdateOrganizerProfileAsync_ShouldReturnSuccess_WhenRequestFieldsAllHaveValues_ImgCompanyNull()
+        {
+            // Arrange
+            var userId = UserId;
+
+            var request = new UpdateOrganizerProfileRequest
+            {
+                ContactName = "New Contact",
+                Address = "456 New Street",
+                Website = "https://new.com",
+                UrlFacebook = "https://facebook.com/new",
+                UrlInstagram = "https://instagram.com/new",
+                UrlLinkedIn = "https://linkedin.com/new",
+                ExperienceDescription = "New experience",
+                CompanyDescription = "New company",
+                OrganizationType = 0,
+                EventFrequency = 0,
+                EventSize = 0,
+                OrganizerType = 0,
+                EventExperienceLevel = 0,
+                ImgCompany = null 
+            };
+
+            var users = new List<User>
+            {
+                new User
+                {
+                    Id = userId,
+                    FullName = "John Doe",
+                    Email = "john@example.com",
+                    PhoneNumber = "0123456789",
+                    IsDeleted = false,
+                    IsActive = true
+                }
+            };
+            var mockUserQueryable = users.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(u => u.UserRepository.Query(false))
+                .Returns(mockUserQueryable);
+
+            var originalProfile = new OrganizerProfile
+            {
+                Id = OrganizerId,
+                User = users[0],
+                UserId = userId,
+                ContactName = "Old Contact",
+                Address = "Old Address",
+                Website = "https://old.com",
+                ContactEmail = "test@gmail.com",
+                ContactPhone = "0987654321",
+                UrlFacebook = "https://facebook.com/old",
+                UrlInstagram = "https://instagram.com/old",
+                UrlLinkedIn = "https://linkedin.com/old",
+                ExperienceDescription = "Old experience",
+                CompanyDescription = "Old company",
+                OrganizationType = 0,
+                EventFrequency = 0,
+                EventSize = 0,
+                OrganizerType = 0,
+                EventExperienceLevel = 0,
+                ImgCompany = "old_img_url",
+                Status = ConfirmStatus.Approve,
+                IsDeleted = false
+            };
+
+            var organizers = new List<OrganizerProfile> { originalProfile };
+            var mockOrganizerQueryable = organizers.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(u => u.OrganizerProfileRepository.Query(false))
+                .Returns(mockOrganizerQueryable);
+
+            _mockCloudinaryService.Setup(c => c.UploadImageAsync(It.IsAny<IFormFile>()))
+                .ReturnsAsync((string?)null);
+
+            _mockUnitOfWork.Setup(u => u.OrganizerProfileRepository.UpdateAsync(It.IsAny<OrganizerProfile>()))
+                .ReturnsAsync((OrganizerProfile p) => p);
+
+            _mockUnitOfWork.Setup(u => u.SaveChangesAsync())
+                .ReturnsAsync(1);
+
+            var mapperConfig = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<OrganizerProfile, OrganizerDetailResponse>()
+                   .ForMember(d => d.OrganizerId, o => o.MapFrom(s => s.Id));
+            });
+            var realMapper = mapperConfig.CreateMapper();
+
+            _mockMapper.SetupGet(m => m.ConfigurationProvider).Returns(mapperConfig);
+            _mockMapper.Setup(m => m.Map<OrganizerDetailResponse>(It.IsAny<OrganizerProfile>()))
+                .Returns((OrganizerProfile org) =>
+                {
+                    var mapped = realMapper.Map<OrganizerDetailResponse>(org);
+                    mapped.UserRegisterInfo = new UserOrganizerResponse
+                    {
+                        Id = org.User.Id.ToString(),
+                        Email = org.User.Email!,
+                        FullName = org.User.FullName!,
+                        PhoneNumber = org.User.PhoneNumber
+                    };
+                    return mapped;
+                });
+
+            // Act
+            var result = await _organizerService.UpdateOrganizerProfileAsync(userId, request);
+
+            // Assert
+            _mockUnitOfWork.Verify(u => u.OrganizerProfileRepository.Query(false), Times.Once);
+            _mockCloudinaryService.Verify(
+                c => c.UploadImageAsync(It.Is<IFormFile>(f => f != null)), Times.Never);
+            _mockUnitOfWork.Verify(u => u.OrganizerProfileRepository.UpdateAsync(It.IsAny<OrganizerProfile>()), Times.Once);
+            _mockUnitOfWork.Verify(u => u.SaveChangesAsync(), Times.Once);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeTrue();
+            result.Error.Should().BeNull();
+
+            var updatedProfile = result.Value as OrganizerDetailResponse;
+            updatedProfile.Should().NotBeNull();
+
+            updatedProfile!.ContactName.Should().Be("New Contact");
+            updatedProfile.Address.Should().Be("456 New Street");
+            updatedProfile.Website.Should().Be("https://new.com");
+            updatedProfile.UrlFacebook.Should().Be("https://facebook.com/new");
+            updatedProfile.UrlInstagram.Should().Be("https://instagram.com/new");
+            updatedProfile.UrlLinkedIn.Should().Be("https://linkedin.com/new");
+            updatedProfile.ExperienceDescription.Should().Be("New experience");
+            updatedProfile.CompanyDescription.Should().Be("New company");
+            updatedProfile.OrganizationType.Should().Be(0);
+            updatedProfile.EventFrequency.Should().Be(0);
+            updatedProfile.EventSize.Should().Be(0);
+            updatedProfile.OrganizerType.Should().Be(0);
+            updatedProfile.EventExperienceLevel.Should().Be(0);
+            updatedProfile.ImgCompany.Should().Be("old_img_url");
+            updatedProfile.UserRegisterInfo.Should().NotBeNull();
+            updatedProfile.UserRegisterInfo.Id.Should().Be(userId.ToString());
+            updatedProfile.UserRegisterInfo.Email.Should().Be("john@example.com");
+            updatedProfile.UserRegisterInfo.FullName.Should().Be("John Doe");
+            updatedProfile.UserRegisterInfo.PhoneNumber.Should().Be("0123456789");
+        }
+
+        [Fact]
+        public async Task UTCID06_UpdateOrganizerProfileAsync_ShouldReturnNotFound_WhenProfileStatusIsReject()
+        {
+            // Arrange
+            var userId = UserId;
+
+            var request = new UpdateOrganizerProfileRequest
+            {
+                ContactName = "Test Contact",
+                Address = "123 Test St",
+                Website = "https://test.com",
+                ImgCompany = null
+            };
+
+            var users = new List<User>
+            {
+                new User { Id = userId, IsDeleted = false, IsActive = true }
+            };
+            var mockUserQueryable = users.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(u => u.UserRepository.Query(false))
+                .Returns(mockUserQueryable);
+
+            var organizers = new List<OrganizerProfile>
+            {
+                new OrganizerProfile
+                {
+                    Id = OrganizerId,
+                    User = users[0],
+                    UserId = userId,
+                    Address = "ABC",
+                    ContactEmail = "test@gmail.com",
+                    ContactName = "Test",
+                    ContactPhone = "1234567890",
+                    EventExperienceLevel = 0,
+                    EventFrequency = 0,
+                    EventSize = 0,
+                    OrganizationType = 0,
+                    OrganizerType = 0,
+                    Status = ConfirmStatus.Reject, // Reject
+                    IsDeleted = false
+                }
+            };
+            var mockOrganizerQueryable = organizers.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(u => u.OrganizerProfileRepository.Query(false))
+                .Returns(mockOrganizerQueryable);
+
+            // Act
+            var result = await _organizerService.UpdateOrganizerProfileAsync(userId, request);
+
+            // Assert
+            _mockUnitOfWork.Verify(u => u.UserRepository.Query(false), Times.Never);
+            _mockUnitOfWork.Verify(u => u.OrganizerProfileRepository.Query(false), Times.Once);
+            _mockUnitOfWork.Verify(u => u.OrganizerProfileRepository.UpdateAsync(It.IsAny<OrganizerProfile>()), Times.Never);
+            _mockUnitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Organizer not found or not approved yet");
+            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        [Fact]
+        public async Task UTCID07_UpdateOrganizerProfileAsync_ShouldReturnNotFound_WhenProfileStatusIsPending()
+        {
+            // Arrange
+            var userId = UserId;
+
+            var request = new UpdateOrganizerProfileRequest
+            {
+                ContactName = "Test Contact",
+                Address = "123 Test St",
+                Website = "https://test.com",
+                ImgCompany = null
+            };
+
+            var users = new List<User>
+            {
+                new User { Id = userId, IsDeleted = false, IsActive = true }
+            };
+            var mockUserQueryable = users.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(u => u.UserRepository.Query(false))
+                .Returns(mockUserQueryable);
+
+            var organizers = new List<OrganizerProfile>
+            {
+                new OrganizerProfile
+                {
+                    Id = OrganizerId,
+                    User = users[0],
+                    UserId = userId,
+                    Address = "ABC",
+                    ContactEmail = "test@gmail.com",
+                    ContactName = "Test",
+                    ContactPhone = "1234567890",
+                    EventExperienceLevel = 0,
+                    EventFrequency = 0,
+                    EventSize = 0,
+                    OrganizationType = 0,
+                    OrganizerType = 0,
+                    Status = ConfirmStatus.Pending, // Pending
+                    IsDeleted = false
+                }
+            };
+            var mockOrganizerQueryable = organizers.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(u => u.OrganizerProfileRepository.Query(false))
+                .Returns(mockOrganizerQueryable);
+
+            // Act
+            var result = await _organizerService.UpdateOrganizerProfileAsync(userId, request);
+
+            // Assert
+            _mockUnitOfWork.Verify(u => u.UserRepository.Query(false), Times.Never);
+            _mockUnitOfWork.Verify(u => u.OrganizerProfileRepository.Query(false), Times.Once);
+            _mockUnitOfWork.Verify(u => u.OrganizerProfileRepository.UpdateAsync(It.IsAny<OrganizerProfile>()), Times.Never);
+            _mockUnitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
+
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Organizer not found or not approved yet");
+            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+        #endregion
     }
 }

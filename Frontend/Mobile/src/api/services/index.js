@@ -3,8 +3,8 @@ import UserService from './UserService';
 import EventService from './EventService';
 import AuthService from './AuthService';
 import WalletService from './WalletService';
+import BookingService from './BookingService';
 
-// Create walletAPI object similar to web version
 export const walletAPI = {
   getUserWallet: async () => {
     const result = await WalletService.getUserWallet();
@@ -17,6 +17,22 @@ export const walletAPI = {
   createTopupPayment: async (amount) => {
     const result = await WalletService.createTopupPayment(amount);
     return result.success ? result : Promise.reject(new Error(result.message));
+  },
+  getPaymentInformations: async (params = {}) => {
+    const result = await WalletService.getPaymentInformations(params);
+    return result.success ? { data: result.data } : Promise.reject(new Error(result.message));
+  },
+  createPaymentInformation: async (paymentInfo) => {
+    const result = await WalletService.createPaymentInformation(paymentInfo);
+    return result.success ? result : Promise.reject(new Error(result.message));
+  },
+  deletePaymentInformation: async (id) => {
+    const result = await WalletService.deletePaymentInformation(id);
+    return result.success ? result : Promise.reject(new Error(result.message));
+  },
+  withdraw: async (withdrawData) => {
+    const result = await WalletService.withdraw(withdrawData);
+    return result.success ? result : Promise.reject(new Error(result.message));
   }
 };
 
@@ -26,13 +42,14 @@ export {
   EventService,
   AuthService,
   WalletService,
+  BookingService,
 };
 
-// Default export for backward compatibility
 export default {
   BaseApiService,
   UserService,
   EventService,
   AuthService,
   WalletService,
+  BookingService,
 };

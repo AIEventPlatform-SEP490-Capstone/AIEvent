@@ -52,6 +52,12 @@ const styles = StyleSheet.create({
   accentText: {
     color: Colors.primary,
   },
+  successText: {
+    color: Colors.success,
+  },
+  errorText: {
+    color: Colors.error,
+  },
   
   // Alignment
   leftText: {
