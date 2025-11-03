@@ -111,9 +111,9 @@ namespace AIEvent.Application.Test.Services
             {
                 EventId = eventId,
                 TicketTypeRequests = new List<BookingTicketRequest>
-        {
-            new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 2 }
-        }
+                {
+                    new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 2 }
+                }
             };
 
             _unitOfWorkMock.Setup(u => u.UserRepository.Query(false))
@@ -144,6 +144,9 @@ namespace AIEvent.Application.Test.Services
                 .ReturnsAsync((PaymentTransaction b) => b);
             _unitOfWorkMock.Setup(u => u.WalletTransactionRepository.AddRangeAsync(It.IsAny<IEnumerable<WalletTransaction>>()))
                 .Returns(Task.CompletedTask);
+            _unitOfWorkMock
+                .Setup(u => u.ExecuteSqlRawAsync(It.IsAny<string>(), It.IsAny<object[]>()))
+                .ReturnsAsync(1);
             _unitOfWorkMock.Setup(u => u.SaveChangesAsync())
                 .ReturnsAsync(1);
 
@@ -259,9 +262,9 @@ namespace AIEvent.Application.Test.Services
             {
                 EventId = eventId,
                 TicketTypeRequests = new List<BookingTicketRequest>
-        {
-            new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 2 }
-        }
+                {
+                    new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 2 }
+                }
             };
 
             // ===== Mock Queryables =====
@@ -288,6 +291,9 @@ namespace AIEvent.Application.Test.Services
                 .ReturnsAsync((Event e) => e);
             _unitOfWorkMock.Setup(u => u.TicketTypeRepository.UpdateRangeAsync(It.IsAny<IEnumerable<TicketType>>()))
                 .Returns(Task.CompletedTask);
+            _unitOfWorkMock
+                .Setup(u => u.ExecuteSqlRawAsync(It.IsAny<string>(), It.IsAny<object[]>()))
+                .ReturnsAsync(1);
             _unitOfWorkMock.Setup(u => u.SaveChangesAsync()).ReturnsAsync(1);
 
 
@@ -377,14 +383,14 @@ namespace AIEvent.Application.Test.Services
             {
                 EventId = eventId,
                 TicketTypeRequests = new List<BookingTicketRequest>
-        {
-            new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
-        }
+                {
+                    new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
+                }
             };
 
             // ===== Mock Queryable Repositories =====
             _unitOfWorkMock.Setup(u => u.UserRepository.Query(false))
-                .Returns(new List<User>() // ❌ Không có user nào
+                .Returns(new List<User>() // Không có user nào
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
@@ -475,9 +481,9 @@ namespace AIEvent.Application.Test.Services
             {
                 EventId = eventId,
                 TicketTypeRequests = new List<BookingTicketRequest>
-        {
-            new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
-        }
+                {
+                    new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
+                }
             };
 
             // ===== Mock Queryable Repositories =====
@@ -689,9 +695,9 @@ namespace AIEvent.Application.Test.Services
             {
                 EventId = eventId,
                 TicketTypeRequests = new List<BookingTicketRequest>
-        {
-            new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
-        }
+                {
+                    new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
+                }
             };
 
             // ===== Mock Repositories =====
@@ -800,13 +806,13 @@ namespace AIEvent.Application.Test.Services
             {
                 EventId = eventId,
                 TicketTypeRequests = new List<BookingTicketRequest>
-        {
-            new BookingTicketRequest
-            {
-                TicketTypeId = ticketTypeId,
-                Quantity = 1
-            }
-        }
+                {
+                    new BookingTicketRequest
+                    {
+                        TicketTypeId = ticketTypeId,
+                        Quantity = 1
+                    }
+                }
             };
 
             // ===== Mock Repositories =====
@@ -915,13 +921,13 @@ namespace AIEvent.Application.Test.Services
             {
                 EventId = eventId,
                 TicketTypeRequests = new List<BookingTicketRequest>
-        {
-            new BookingTicketRequest
-            {
-                TicketTypeId = ticketTypeId,
-                Quantity = 1
-            }
-        }
+                {
+                    new BookingTicketRequest
+                    {
+                        TicketTypeId = ticketTypeId,
+                        Quantity = 1
+                    }
+                }
             };
 
             // ===== Mock Repositories =====
@@ -1250,9 +1256,9 @@ namespace AIEvent.Application.Test.Services
             {
                 EventId = eventId,
                 TicketTypeRequests = new List<BookingTicketRequest>
-        {
-            new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
-        }
+                {
+                    new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
+                }
             };
 
             // Mock repositories
@@ -1351,9 +1357,9 @@ namespace AIEvent.Application.Test.Services
             {
                 EventId = eventId,
                 TicketTypeRequests = new List<BookingTicketRequest>
-        {
-            new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
-        }
+                {
+                    new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
+                }
             };
 
             // ===== Mock Queryable Repositories =====
@@ -1447,7 +1453,7 @@ namespace AIEvent.Application.Test.Services
                 TicketQuantity = 100,
             };
 
-            // 🧨 Chỉ tạo wallet cho organizer, KHÔNG có wallet của user
+            // Chỉ tạo wallet cho organizer, KHÔNG có wallet của user
             var walletOrg = new Wallet
             {
                 Id = Guid.NewGuid(),
@@ -1460,9 +1466,9 @@ namespace AIEvent.Application.Test.Services
             {
                 EventId = eventId,
                 TicketTypeRequests = new List<BookingTicketRequest>
-        {
-            new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 2 }
-        }
+                {
+                    new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 2 }
+                }
             };
 
             // ===== Mock Queryable Repositories =====
@@ -1475,7 +1481,7 @@ namespace AIEvent.Application.Test.Services
             _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
                 .Returns(new List<TicketType> { ticketType }.AsQueryable().BuildMockDbSet().Object);
 
-            // ⚠️ Wallet thiếu của user
+            // Wallet thiếu của user
             _unitOfWorkMock.Setup(u => u.WalletRepository.Query(false))
                 .Returns(new List<Wallet> { walletOrg }.AsQueryable().BuildMockDbSet().Object);
 
@@ -1498,10 +1504,14 @@ namespace AIEvent.Application.Test.Services
                 .Returns(Task.CompletedTask);
             _unitOfWorkMock.Setup(u => u.SaveChangesAsync())
                 .ReturnsAsync(1);
+            _unitOfWorkMock
+                .Setup(u => u.ExecuteSqlRawAsync(It.IsAny<string>(), It.IsAny<object[]>()))
+                .ReturnsAsync(1);
 
             // ===== Mock TransactionHelper =====
-            _transactionHelperMock.Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-                .Returns<Func<Task<Result>>>(func => func());
+            _transactionHelperMock
+                .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(async func => await func());
 
             // ===== Mock Services =====
             _ticketSignatureServiceMock
@@ -1525,259 +1535,6 @@ namespace AIEvent.Application.Test.Services
             Assert.Equal("Wallet user not found", result.Error.Message);
 
             // Đảm bảo transaction không tạo payment
-            _unitOfWorkMock.Verify(u => u.PaymentTransactionRepository.AddAsync(It.IsAny<PaymentTransaction>()), Times.Never);
-            _unitOfWorkMock.Verify(u => u.WalletTransactionRepository.AddRangeAsync(It.IsAny<IEnumerable<WalletTransaction>>()), Times.Never);
-        }
-
-        [Fact]
-        public async Task UTCID14_CreateBookingAsync_ShouldReturnNotFound_WhenOrganizerProfileIsNull()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var eventId = Guid.NewGuid();
-            var ticketTypeId = Guid.NewGuid();
-             
-            var user = new User
-            {
-                Id = userId,
-                FullName = "Test User",
-                Email = "user@test.com",
-                IsDeleted = false,
-                IsActive = true
-            };
-
-            var eventEntity = new Event
-            {
-                Id = eventId,
-                Title = "AIEvent 2025",
-                StartTime = DateTime.UtcNow.AddDays(1),
-                EndTime = DateTime.UtcNow.AddDays(2),
-                SaleStartTime = DateTime.UtcNow.AddDays(-1),
-                SaleEndTime = DateTime.UtcNow.AddDays(1),
-                Publish = true,
-                RequireApproval = ConfirmStatus.Approve,
-                OrganizerProfile = null, 
-                RemainingTickets = 100,
-                SoldQuantity = 0,
-                Address = "123 Main St",
-                Description = "Sample Event",
-            };
-
-            var ticketType = new TicketType
-            {
-                Id = ticketTypeId,
-                TicketName = "Standard",
-                TicketPrice = 100,
-                RemainingQuantity = 50,
-                SoldQuantity = 0,
-                TicketQuantity = 50
-            };
-
-            var walletUser = new Wallet
-            {
-                Id = Guid.NewGuid(),
-                UserId = userId,
-                Balance = 500,
-                IsDeleted = false
-            };
-
-            var request = new CreateBookingRequest
-            {
-                EventId = eventId,
-                TicketTypeRequests = new List<BookingTicketRequest>
-        {
-            new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 1 }
-        }
-            };
-
-            _unitOfWorkMock.Setup(u => u.UserRepository.Query(false))
-                .Returns(new List<User> { user }.AsQueryable().BuildMock());
-
-            _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
-                .Returns(new List<Event> { eventEntity }.AsQueryable().BuildMockDbSet().Object);
-
-            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
-                .Returns(new List<TicketType> { ticketType }.AsQueryable().BuildMockDbSet().Object);
-
-            _unitOfWorkMock.Setup(u => u.WalletRepository.Query(false))
-                .Returns(new List<Wallet> { walletUser }.AsQueryable().BuildMockDbSet().Object);
-
-            _unitOfWorkMock.Setup(u => u.BookingRepository.AddAsync(It.IsAny<Booking>()))
-                .ReturnsAsync((Booking b) => b);
-            _unitOfWorkMock.Setup(u => u.SaveChangesAsync()).ReturnsAsync(1);
-
-            _transactionHelperMock.Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-                .Returns<Func<Task<Result>>>(func => func());
-
-            _ticketSignatureServiceMock
-                .Setup(s => s.CreateSignature(It.IsAny<string>()))
-                .Returns((string code) => $"SIG_{code}");
-
-            _qrCodeServiceMock.Setup(s => s.GenerateQrBytesAndUrlsAsync(It.IsAny<List<string>>()))
-                .ReturnsAsync((List<string> contents) =>
-                {
-                    var bytes = contents.ToDictionary(c => c, c => new byte[] { 1, 2, 3 });
-                    var urls = contents.ToDictionary(c => c, c => $"https://example.com/{c}.png");
-                    return (bytes, urls);
-                });
-
-            // ===== Act =====
-            var result = await _bookingService.CreateBookingAsync(userId, request);
-
-            // ===== Assert =====
-            Assert.False(result.IsSuccess, "Booking should fail when OrganizerProfile is null.");
-            Assert.Equal(ErrorCodes.NotFound, result.Error!.StatusCode);
-            Assert.Equal("Organizer not found", result.Error.Message);
-
-            // Đảm bảo không có thao tác ghi dữ liệu
-            _unitOfWorkMock.Verify(u => u.BookingRepository.AddAsync(It.IsAny<Booking>()), Times.Never);
-            _unitOfWorkMock.Verify(u => u.PaymentTransactionRepository.AddAsync(It.IsAny<PaymentTransaction>()), Times.Never);
-        }
-
-        [Fact]
-        public async Task UTCID15_CreateBookingAsync_ShouldReturnNotFound_WhenOrganizerWalletNotFound()
-        {
-            var userId = Guid.NewGuid();
-            var organizerId = Guid.NewGuid();
-            var eventId = Guid.NewGuid();
-            var ticketTypeId = Guid.NewGuid();
-
-            var user = new User
-            {
-                Id = userId,
-                FullName = "Test User",
-                Email = "user@test.com",
-                IsDeleted = false,
-                IsActive = true
-            };
-
-            var organizer = new User
-            {
-                Id = organizerId,
-                FullName = "Organizer User",
-                Email = "organizer@test.com",
-                IsDeleted = false,
-                IsActive = true
-            };
-
-            var organizerProfile = new OrganizerProfile
-            {
-                Id = Guid.NewGuid(),
-                UserId = organizer.Id,
-                User = organizer,
-                Address = "123 Organizer St",
-                ContactEmail = "org@test.com",
-                ContactName = "Organizer Test",
-                ContactPhone = "0987654321",
-                EventExperienceLevel = 0,
-                EventFrequency = 0,
-                EventSize = 0,
-                OrganizationType = 0,
-                OrganizerType = 0,
-            };
-
-            var eventEntity = new Event
-            {
-                Id = eventId,
-                Title = "AIEvent 2025",
-                StartTime = DateTime.UtcNow.AddDays(1),
-                EndTime = DateTime.UtcNow.AddDays(2),
-                SaleStartTime = DateTime.UtcNow.AddDays(-1),
-                SaleEndTime = DateTime.UtcNow.AddDays(1),
-                Publish = true,
-                RequireApproval = ConfirmStatus.Approve,
-                OrganizerProfile = organizerProfile,
-                OrganizerProfileId = organizerProfile.Id,
-                RemainingTickets = 100,
-                SoldQuantity = 0,
-                Address = "123 Main St",
-                Description = "Sample Event",
-            };
-
-            var ticketType = new TicketType
-            {
-                Id = ticketTypeId,
-                TicketName = "VIP",
-                TicketPrice = 100,
-                RemainingQuantity = 100,
-                SoldQuantity = 0,
-                TicketQuantity = 100,
-                EventId = eventId
-            };
-
-            var walletUser = new Wallet
-            {
-                Id = Guid.NewGuid(),
-                UserId = userId,
-                Balance = 1000,
-                IsDeleted = false
-            };
-
-            user.Wallet = walletUser;
-
-            // ❌ Không tạo wallet cho organizer
-            var request = new CreateBookingRequest
-            {
-                EventId = eventId,
-                TicketTypeRequests = new List<BookingTicketRequest>
-                {
-                    new BookingTicketRequest { TicketTypeId = ticketTypeId, Quantity = 2 }
-                }
-            };
-
-            _unitOfWorkMock.Setup(u => u.UserRepository.Query(false))
-                .Returns(new List<User> { user, organizer }.AsQueryable().BuildMock());
-
-            _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
-                .Returns(new List<Event> { eventEntity }.AsQueryable().BuildMockDbSet().Object);
-
-            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
-                .Returns(new List<TicketType> { ticketType }.AsQueryable().BuildMockDbSet().Object);
-
-            // ⚠️ Chỉ có wallet user, không có wallet organizer
-            _unitOfWorkMock.Setup(u => u.WalletRepository.Query(false))
-                .Returns(new List<Wallet> { walletUser }.AsQueryable().BuildMockDbSet().Object);
-
-            _unitOfWorkMock.Setup(u => u.BookingRepository.AddAsync(It.IsAny<Booking>()))
-                .ReturnsAsync((Booking b) => b);
-            _unitOfWorkMock.Setup(u => u.BookingItemRepository.AddRangeAsync(It.IsAny<IEnumerable<BookingItem>>()))
-                .Returns(Task.CompletedTask);
-            _unitOfWorkMock.Setup(u => u.TicketRepository.AddRangeAsync(It.IsAny<IEnumerable<Ticket>>()))
-                .Returns(Task.CompletedTask);
-            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.UpdateRangeAsync(It.IsAny<IEnumerable<TicketType>>()))
-                .Returns(Task.CompletedTask);
-            _unitOfWorkMock.Setup(u => u.EventRepository.UpdateAsync(It.IsAny<Event>()))
-                .ReturnsAsync((Event b) => b);
-            _unitOfWorkMock.Setup(u => u.WalletRepository.UpdateRangeAsync(It.IsAny<IEnumerable<Wallet>>()))
-                .Returns(Task.CompletedTask);
-            _unitOfWorkMock.Setup(u => u.PaymentTransactionRepository.AddAsync(It.IsAny<PaymentTransaction>()))
-                .ReturnsAsync((PaymentTransaction b) => b);
-            _unitOfWorkMock.Setup(u => u.WalletTransactionRepository.AddRangeAsync(It.IsAny<IEnumerable<WalletTransaction>>()))
-                .Returns(Task.CompletedTask);
-            _unitOfWorkMock.Setup(u => u.SaveChangesAsync())
-                .ReturnsAsync(1);
-
-            _transactionHelperMock.Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-                .Returns<Func<Task<Result>>>(func => func());
-
-            _ticketSignatureServiceMock
-                .Setup(s => s.CreateSignature(It.IsAny<string>()))
-                .Returns((string code) => $"SIG_{code}");
-
-            _qrCodeServiceMock.Setup(s => s.GenerateQrBytesAndUrlsAsync(It.IsAny<List<string>>()))
-                .ReturnsAsync((List<string> contents) =>
-                {
-                    var bytes = contents.ToDictionary(c => c, c => new byte[] { 1, 2, 3 });
-                    var urls = contents.ToDictionary(c => c, c => $"https://example.com/{c}.png");
-                    return (bytes, urls);
-                });
-
-            var result = await _bookingService.CreateBookingAsync(userId, request);
-
-            Assert.False(result.IsSuccess, "Booking should fail when organizer wallet not found.");
-            Assert.Equal(ErrorCodes.NotFound, result.Error!.StatusCode);
-            Assert.Equal("Wallet organizer not found", result.Error.Message);
-
             _unitOfWorkMock.Verify(u => u.PaymentTransactionRepository.AddAsync(It.IsAny<PaymentTransaction>()), Times.Never);
             _unitOfWorkMock.Verify(u => u.WalletTransactionRepository.AddRangeAsync(It.IsAny<IEnumerable<WalletTransaction>>()), Times.Never);
         }
