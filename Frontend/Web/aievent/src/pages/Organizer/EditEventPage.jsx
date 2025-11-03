@@ -32,12 +32,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 
 import { useEvents } from '../../hooks/useEvents';
 import TagSelector from '../../components/Event/TagSelector';
-import RefundRuleManager from '../../components/Event/RefundRuleManager';
 
 // Redux hooks
 import { useCategories } from '../../hooks/useCategories';
 import { useTags } from '../../hooks/useTags';
-import { useRefundRules } from '../../hooks/useRefundRules';
 import { useApp } from '../../hooks/useApp';
 
 // Import ConfirmStatus enum
@@ -64,7 +62,7 @@ const editEventSchema = z.object({
     ticketPrice: z.number().min(0, 'Giá vé không được âm'),
     ticketQuantity: z.number().min(1, 'Số lượng vé phải lớn hơn 0'),
     ticketDescription: z.string().optional(),
-    ruleRefundRequestId: z.string().min(1, 'Quy tắc hoàn tiền là bắt buộc'),
+    // ruleRefundRequestId: z.string().min(1, 'Quy tắc hoàn tiền là bắt buộc'),
   })).min(1, 'Phải có ít nhất một loại vé')
 }).refine((data) => {
   if (!data.locationName) {
@@ -128,7 +126,7 @@ const EditEventPage = () => {
   // Redux hooks
   const { categories, loading: categoriesLoading } = useCategories();
   const { tags: reduxSelectedTags, clearAllSelectedTags, selectTagForForm } = useTags();
-  const { selectedRules, clearSelectedRefundRules, selectRuleForForm } = useRefundRules();
+  // const { selectedRules, clearSelectedRefundRules, selectRuleForForm } = useRefundRules();
   const { showLoading, hideLoading, updatePageTitle } = useApp();
   const { getEventById, updateEvent: updateEventAPI, loading: eventLoading } = useEvents();
 
@@ -185,7 +183,7 @@ const EditEventPage = () => {
     
     return () => {
       clearAllSelectedTags();
-      clearSelectedRefundRules();
+      // clearSelectedRefundRules();
     };
   }, [eventId]);
 
@@ -259,7 +257,7 @@ const EditEventPage = () => {
                 ticketPrice: ticket.ticketPrice || 0,
                 ticketQuantity: ticket.ticketQuantity || 1,
                 ticketDescription: ticket.ticketDescription || '',
-                ruleRefundRequestId: ticket.ruleRefundRequestId || '',
+                // ruleRefundRequestId: ticket.ruleRefundRequestId || '',
               }))
             : [
                 {
@@ -267,7 +265,7 @@ const EditEventPage = () => {
                   ticketPrice: 0,
                   ticketQuantity: event.totalTickets || 1,
                   ticketDescription: '',
-                  ruleRefundRequestId: '',
+                  // ruleRefundRequestId: '',
                 }
               ],
         };
@@ -302,9 +300,9 @@ const EditEventPage = () => {
         // Load existing refund rule if any
         if (event.ticketDetails && event.ticketDetails.length > 0) {
           const firstTicket = event.ticketDetails[0];
-          if (firstTicket.ruleRefundRequestId && firstTicket.refundRule) {
-            selectRuleForForm(firstTicket.refundRule);
-          }
+          // if (firstTicket.ruleRefundRequestId && firstTicket.refundRule) {
+          //   selectRuleForForm(firstTicket.refundRule);
+          // }
         }
 
         toast.success('Đã tải thông tin sự kiện');
@@ -387,7 +385,7 @@ const EditEventPage = () => {
       ticketPrice: watchTicketType === '1' ? 0 : '',
       ticketQuantity: 1,
       ticketDescription: '',
-      ruleRefundRequestId: selectedRules.length > 0 ? selectedRules[0].ruleRefundId : '',
+      // ruleRefundRequestId: selectedRules.length > 0 ? selectedRules[0].ruleRefundId : '',
     });
   };
 
@@ -414,11 +412,11 @@ const EditEventPage = () => {
     }
 
     // Validate refund rule selection for each ticket
-    const hasEmptyRefundRule = formData.ticketDetails.some(ticket => !ticket.ruleRefundRequestId);
-    if (hasEmptyRefundRule) {
-      toast.error('Vui lòng chọn quy tắc hoàn tiền cho tất cả các loại vé');
-      return;
-    }
+    // const hasEmptyRefundRule = formData.ticketDetails.some(ticket => !ticket.ruleRefundRequestId);
+    // if (hasEmptyRefundRule) {
+    //   toast.error('Vui lòng chọn quy tắc hoàn tiền cho tất cả các loại vé');
+    //   return;
+    // }
 
     // Validate category selection
     if (!formData.eventCategoryId) {
@@ -493,7 +491,7 @@ const EditEventPage = () => {
         ticketPrice: parseFloat(ticket.ticketPrice),
         ticketQuantity: parseInt(ticket.ticketQuantity),
         ticketDescription: ticket.ticketDescription || '',
-        ruleRefundRequestId: ticket.ruleRefundRequestId,
+        // ruleRefundRequestId: ticket.ruleRefundRequestId,
       })),
       removeTicketDetailIds: removedTickets,
     };
@@ -1151,8 +1149,6 @@ const EditEventPage = () => {
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
             <TagSelector />
-            
-            <RefundRuleManager />
 
             {/* Tickets - Dynamic Management */}
             <Card>
@@ -1227,11 +1223,11 @@ const EditEventPage = () => {
                           />
                         </div>
 
-                        <div>
+                        {/* <div>
                           <Label className="text-sm">Quy tắc hoàn tiền *</Label>
                           <Select 
-                            onValueChange={(value) => setValue(`ticketDetails.${index}.ruleRefundRequestId`, value)}
-                            value={watch(`ticketDetails.${index}.ruleRefundRequestId`) || ''}
+                            // onValueChange={(value) => setValue(`ticketDetails.${index}.ruleRefundRequestId`, value)}
+                            // value={watch(`ticketDetails.${index}.ruleRefundRequestId`) || ''}
                           >
                             <SelectTrigger className="bg-white">
                               <SelectValue placeholder="Chọn quy tắc hoàn tiền" />
@@ -1257,7 +1253,7 @@ const EditEventPage = () => {
                               Vui lòng tạo và chọn quy tắc hoàn tiền ở phần trên
                             </p>
                           )}
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   ))}

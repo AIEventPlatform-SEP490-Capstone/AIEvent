@@ -2,7 +2,6 @@ import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./slices/authSlice";
 import categoriesReducer from "./slices/categoriesSlice";
 import tagsReducer from "./slices/tagsSlice";
-import refundRulesReducer from "./slices/refundRulesSlice";
 import appReducer from "./slices/appSlice";
 import interestsReducer from "./slices/interestsSlice";
 import eventsReducer from "./slices/eventsSlice";
@@ -17,7 +16,6 @@ export const store = configureStore({
     auth: authReducer,
     categories: categoriesReducer,
     tags: tagsReducer,
-    refundRules: refundRulesReducer,
     app: appReducer,
     interests: interestsReducer,
     events: eventsReducer,

@@ -20,7 +20,6 @@ import ManagerEventsPage from "../pages/Manager/ManagerEventsPage";
 import ManagerEventDetailPage from "../pages/Manager/ManagerEventDetailPage";
 import ManagerEditEventPage from "../pages/Manager/ManagerEditEventPage";
 import ManagerProfile from "../pages/Manager/ManagerProfile";
-import RefundRulesPage from "../pages/RefundRule/RefundRulesPage";
 import AdminProfile from "../pages/Admin/AdminProfile";
 import UserManagement from "../pages/Admin/UserManagement";
 import EventCategory from "../pages/Event Category/EventCategory";
@@ -218,10 +217,7 @@ export default function useRouterElement() {
         { path: "event/:eventId/edit", element: <ManagerEditEventPage /> },
         { path: "events/category", element: <EventCategory /> },
         { path: "tags", element: <TagManagementPage userRole="manager" /> },
-        {
-          path: "refund-rules",
-          element: <RefundRulesPage userRole="manager" />,
-        },
+
         { path: "profile", element: <ManagerProfile /> },
         { path: "settings", element: <div>Manager Settings Page</div> },
         { path: "support", element: <div>Manager Support Page</div> },
@@ -238,7 +234,7 @@ export default function useRouterElement() {
         { index: true, element: <AdminDashboard /> },
         { path: "events", element: <div>Admin Events Page</div> },
         { path: "users", element: <UserManagement /> },
-        { path: "refund-rules", element: <RefundRulesPage userRole="admin" /> },
+
         { path: "organizers", element: <OrganizerApprovalListPage /> },
         { path: "organizers/:id", element: <OrganizerApprovalDetailPage /> },
         { path: "profile", element: <AdminProfile /> },

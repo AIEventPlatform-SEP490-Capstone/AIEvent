@@ -31,12 +31,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 
 import { useEvents } from '../../hooks/useEvents';
 import TagSelector from '../../components/Event/TagSelector';
-import RefundRuleManager from '../../components/Event/RefundRuleManager';
+
 
 // Redux hooks
 import { useCategories } from '../../hooks/useCategories';
 import { useTags } from '../../hooks/useTags';
-import { useRefundRules } from '../../hooks/useRefundRules';
+
 import { useApp } from '../../hooks/useApp';
 
 // Import the EventDetailGuestPage component for preview
@@ -67,7 +67,7 @@ const createEventSchema = z.object({
     ticketPrice: z.number().min(0, 'Giá vé không được âm'),
     ticketQuantity: z.number().min(1, 'Số lượng vé phải lớn hơn 0'),
     ticketDescription: z.string().optional(),
-    ruleRefundRequestId: z.string().min(1, 'Quy tắc hoàn tiền là bắt buộc'),
+    // ruleRefundRequestId: z.string().min(1, 'Quy tắc hoàn tiền là bắt buộc'),
   })).min(1, 'Phải có ít nhất một loại vé')
 }).refine((data) => {
   if (!data.locationName) {
@@ -126,7 +126,7 @@ const CreateEventPage = () => {
   // Redux hooks
   const { categories, loading: categoriesLoading } = useCategories();
   const { tags: reduxSelectedTags, clearAllSelectedTags } = useTags();
-  const { selectedRules, clearSelectedRefundRules } = useRefundRules();
+  // const { selectedRules, clearSelectedRefundRules } = useRefundRules();
   const { showLoading, hideLoading, updatePageTitle } = useApp();
   const { createEvent: createEventAPI, loading: eventLoading } = useEvents();
 
@@ -161,7 +161,7 @@ const CreateEventPage = () => {
           ticketPrice: 0,
           ticketQuantity: 1,
           ticketDescription: '',
-          ruleRefundRequestId: '',
+          // ruleRefundRequestId: '',
         }
       ],
     },
@@ -197,7 +197,7 @@ const CreateEventPage = () => {
     
     return () => {
       clearAllSelectedTags();
-      clearSelectedRefundRules();
+      // clearSelectedRefundRules();
     };
   }, []); // Empty dependency array - only run on mount/unmount
 
@@ -254,7 +254,7 @@ const CreateEventPage = () => {
           ticketPrice: ticket.ticketPrice || 0,
           ticketQuantity: ticket.ticketQuantity || 1,
           ticketDescription: ticket.ticketDescription || '',
-          ruleRefundRequestId: ticket.ruleRefundRequestId || '',
+          // ruleRefundRequestId: ticket.ruleRefundRequestId || '',
         });
       });
     }
@@ -316,7 +316,7 @@ const CreateEventPage = () => {
       ticketPrice: watchTicketType === '1' ? 0 : '',
       ticketQuantity: 1,
       ticketDescription: '',
-      ruleRefundRequestId: selectedRules.length > 0 ? selectedRules[0].ruleRefundId : '',
+      // ruleRefundRequestId: selectedRules.length > 0 ? selectedRules[0].ruleRefundId : '',
     });
   };
 
@@ -342,14 +342,13 @@ const CreateEventPage = () => {
     
     // Format ticket details with refund rule names
     const ticketDetails = formData.ticketDetails.map(ticket => {
-      const refundRule = selectedRules.find(rule => rule.ruleRefundId === ticket.ruleRefundRequestId);
       return {
         ...ticket,
         ticketPrice: parseFloat(ticket.ticketPrice) || 0,
         ticketQuantity: parseInt(ticket.ticketQuantity) || 0,
         soldQuantity: 0, // Default for preview
         remainingQuantity: parseInt(ticket.ticketQuantity) || 0, // Default for preview
-        ruleRefundRequestName: refundRule ? refundRule.ruleName : ''
+        // ruleRefundRequestName: refundRule ? refundRule.ruleName : ''
       };
     });
     
@@ -406,17 +405,17 @@ const CreateEventPage = () => {
     }
 
     // Validate refund rules selection
-    if (selectedRules.length === 0) {
-      toast.error('Vui lòng chọn ít nhất một quy tắc hoàn tiền');
-      return;
-    }
+    // if (selectedRules.length === 0) {
+    //   toast.error('Vui lòng chọn ít nhất một quy tắc hoàn tiền');
+    //   return;
+    // }
 
     // Validate refund rule selection for each ticket
-    const hasEmptyRefundRule = data.ticketDetails.some(ticket => !ticket.ruleRefundRequestId);
-    if (hasEmptyRefundRule) {
-      toast.error('Vui lòng chọn quy tắc hoàn tiền cho tất cả các loại vé');
-      return;
-    }
+    // const hasEmptyRefundRule = data.ticketDetails.some(ticket => !ticket.ruleRefundRequestId);
+    // if (hasEmptyRefundRule) {
+    //   toast.error('Vui lòng chọn quy tắc hoàn tiền cho tất cả các loại vé');
+    //   return;
+    // }
 
     // Validate category selection
     if (!data.eventCategoryId) {
@@ -453,13 +452,13 @@ const CreateEventPage = () => {
       evidenceImages: validEvidenceImages,
       eventCategoryId: data.eventCategoryId,
       tags: reduxSelectedTags.map(tag => ({ tagId: tag.tagId })),
-      refundRules: selectedRules.map(rule => ({ ruleRefundId: rule.ruleRefundId })),
+      // refundRules: selectedRules.map(rule => ({ ruleRefundId: rule.ruleRefundId })),
       ticketDetails: data.ticketDetails.map(ticket => ({
         ticketName: ticket.ticketName,
         ticketPrice: parseFloat(ticket.ticketPrice),
         ticketQuantity: parseInt(ticket.ticketQuantity),
         ticketDescription: ticket.ticketDescription || '',
-        ruleRefundRequestId: ticket.ruleRefundRequestId,
+        // ruleRefundRequestId: ticket.ruleRefundRequestId,
       })),
     };
 
@@ -521,7 +520,7 @@ const CreateEventPage = () => {
       if (response) {
         toast.success(data.publish ? '✅ Tạo sự kiện thành công!' : '✅ Lưu nháp sự kiện thành công!');
         clearAllSelectedTags();
-        clearSelectedRefundRules();
+        // clearSelectedRefundRules();
         navigate(PATH.ORGANIZER_MY_EVENTS);
       }
     } catch (error) {
@@ -1092,9 +1091,6 @@ const CreateEventPage = () => {
             {/* Tags */}
             <TagSelector />
 
-            {/* Refund Rules */}
-            <RefundRuleManager />
-
             {/* Tickets - Dynamic Management */}
             <Card>
               <CardHeader>
@@ -1168,11 +1164,11 @@ const CreateEventPage = () => {
                           />
                         </div>
 
-                        <div>
+                        {/* <div>
                           <Label className="text-sm">Quy tắc hoàn tiền *</Label>
                           <Select 
-                            onValueChange={(value) => setValue(`ticketDetails.${index}.ruleRefundRequestId`, value)}
-                            value={watch(`ticketDetails.${index}.ruleRefundRequestId`) || ''}
+                            // onValueChange={(value) => setValue(`ticketDetails.${index}.ruleRefundRequestId`, value)}
+                            // value={watch(`ticketDetails.${index}.ruleRefundRequestId`) || ''}
                           >
                             <SelectTrigger className="bg-white">
                               <SelectValue placeholder="Chọn quy tắc hoàn tiền" />
@@ -1198,7 +1194,7 @@ const CreateEventPage = () => {
                               Vui lòng tạo và chọn quy tắc hoàn tiền ở phần trên
                             </p>
                           )}
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   ))}
