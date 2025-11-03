@@ -18,7 +18,7 @@ namespace AIEvent.Application.DTOs.Event
         public int TotalTickets { get; set; }
         public int SoldQuantity { get; set; } = 0;
         public int RemainingTickets { get; set; }
-        public TicketPricingType TicketType { get; set; }
+        public TicketPricingType TicketPricingType { get; set; }
         public List<string>? ImgListEvent { get; set; }
         public List<string>? ImgListEvidences { get; set; }
         public ConfirmStatus RequireApproval { get; set; }
