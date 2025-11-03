@@ -44,7 +44,7 @@ namespace AIEvent.API.Controllers
                                                                                                  [FromQuery] string? eventCategoryId,
                                                                                                  [FromQuery] List<EventTagRequest> tags,
                                                                                                  [FromQuery] TicketPricingType? ticketType, 
-                                                                                                 [FromQuery] string? city, 
+                                                                                                 [FromQuery] string? district, 
                                                                                                  [FromQuery] TimeLine? timeLine,
                                                                                                  [FromQuery] int pageNumber = 1,
                                                                                                  [FromQuery] int pageSize = 5)
@@ -56,7 +56,7 @@ namespace AIEvent.API.Controllers
                 userId = User.GetRequiredUserId();
             }
 
-            var result = await _eventService.GetEventAsync(userId, search, eventCategoryId, tags, ticketType, city, timeLine, pageNumber, pageSize);
+            var result = await _eventService.GetEventAsync(userId, search, eventCategoryId, tags, ticketType, district, timeLine, pageNumber, pageSize);
             
             if (!result.IsSuccess)
             {

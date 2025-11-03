@@ -1,5 +1,4 @@
 using AIEvent.Application.Constants;
-using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.PaymentInformation;
 using AIEvent.Application.DTOs.Payment;
 using AIEvent.Application.Helpers;
@@ -1073,7 +1072,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new CreatePaymentInformationRequest
+            var request = new PaymentInformationRequest
             {
                 AccountHolderName = "John Doe",
                 AccountNumber = "1234567890",
@@ -1103,6 +1102,11 @@ namespace AIEvent.Application.Test.Services
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
                           .ReturnsAsync(user);
+
+            // Setup Query() to return empty list (no existing account)
+            var emptyPaymentInfoList = new List<PaymentInformation>().AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                          .Returns(emptyPaymentInfoList.Object);
 
             _mockMapper.Setup(x => x.Map<PaymentInformation>(request))
                       .Returns(paymentInfo);
@@ -1133,7 +1137,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.Empty;
-            var request = new CreatePaymentInformationRequest
+            var request = new PaymentInformationRequest
             {
                 AccountHolderName = "John Doe",
                 AccountNumber = "1234567890",
@@ -1159,7 +1163,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            CreatePaymentInformationRequest? request = null;
+            PaymentInformationRequest? request = null;
 
             // Act
             var result = await _paymentService.AddPaymendInformationAsync(userId, request!);
@@ -1176,7 +1180,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new CreatePaymentInformationRequest
+            var request = new PaymentInformationRequest
             {
                 AccountHolderName = "John Doe",
                 AccountNumber = "1234567890",
@@ -1196,7 +1200,7 @@ namespace AIEvent.Application.Test.Services
             result.Error.Should().NotBeNull();
             result.Error!.Message.Should().Be("User not found or inactive");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
-            _mockMapper.Verify(x => x.Map<PaymentInformation>(It.IsAny<CreatePaymentInformationRequest>()), Times.Never());
+            _mockMapper.Verify(x => x.Map<PaymentInformation>(It.IsAny<PaymentInformationRequest>()), Times.Never());
         }
 
         // UTCID05: User is deleted - Should return failure
@@ -1205,7 +1209,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new CreatePaymentInformationRequest
+            var request = new PaymentInformationRequest
             {
                 AccountHolderName = "John Doe",
                 AccountNumber = "1234567890",
@@ -1232,7 +1236,7 @@ namespace AIEvent.Application.Test.Services
             result.Error.Should().NotBeNull();
             result.Error!.Message.Should().Be("User not found or inactive");
             result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
-            _mockMapper.Verify(x => x.Map<PaymentInformation>(It.IsAny<CreatePaymentInformationRequest>()), Times.Never());
+            _mockMapper.Verify(x => x.Map<PaymentInformation>(It.IsAny<PaymentInformationRequest>()), Times.Never());
         }
 
         // UTCID06: Mapper returns null - Should return failure
@@ -1241,7 +1245,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new CreatePaymentInformationRequest
+            var request = new PaymentInformationRequest
             {
                 AccountHolderName = "John Doe",
                 AccountNumber = "1234567890",
@@ -1261,6 +1265,11 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
                           .ReturnsAsync(user);
 
+            // Setup Query() to return empty list (no existing account)
+            var emptyPaymentInfoList = new List<PaymentInformation>().AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                          .Returns(emptyPaymentInfoList.Object);
+
             _mockMapper.Setup(x => x.Map<PaymentInformation>(request))
                       .Returns((PaymentInformation?)null!);
 
@@ -1270,7 +1279,7 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.IsSuccess.Should().BeFalse();
             result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Be("Failed to map payment information");
+            result.Error!.Message.Should().Be("Account number already exists");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
             _mockTransactionHelper.Verify(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()), Times.Never());
         }
@@ -1281,7 +1290,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new CreatePaymentInformationRequest
+            var request = new PaymentInformationRequest
             {
                 AccountHolderName = null!,
                 AccountNumber = "1234567890",
@@ -1306,7 +1315,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new CreatePaymentInformationRequest
+            var request = new PaymentInformationRequest
             {
                 AccountHolderName = "John Doe",
                 AccountNumber = null!,
@@ -1331,7 +1340,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new CreatePaymentInformationRequest
+            var request = new PaymentInformationRequest
             {
                 AccountHolderName = "John Doe",
                 AccountNumber = "12345", // 5 digits
@@ -1356,7 +1365,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new CreatePaymentInformationRequest
+            var request = new PaymentInformationRequest
             {
                 AccountHolderName = "John Doe",
                 AccountNumber = "123456789012345678901", // 21 digits
@@ -1375,29 +1384,64 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
         }
 
-        // UTCID11: AccountNumber with non-digits (letters) - Should return validation failure
+        // UTCID11: AccountNumber with non-digits (letters) - Should return success (account number can contain letters)
         [Fact]
-        public async Task UTCID11_AddPaymentInformation_WithNonDigitAccountNumber_ShouldReturnValidationFailure()
+        public async Task UTCID11_AddPaymentInformation_WithNonDigitAccountNumber_ShouldReturnSuccess()
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new CreatePaymentInformationRequest
+            var request = new PaymentInformationRequest
             {
                 AccountHolderName = "John Doe",
-                AccountNumber = "12345ABC67", // Contains letters
+                AccountNumber = "12345ABC67",
                 BankName = "Vietcombank",
                 BranchName = "Ho Chi Minh City Branch",
                 BankBin = "123456"
             };
 
+            var user = new User
+            {
+                Id = userId,
+                Email = "test@gmail.com",
+                IsDeleted = false,
+                IsActive = true
+            };
+
+            var paymentInfo = new PaymentInformation
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                AccountHolderName = request.AccountHolderName,
+                AccountNumber = request.AccountNumber,
+                BankName = request.BankName,
+                BranchName = request.BranchName,
+                BankBin = request.BankBin
+            };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
+                          .ReturnsAsync(user);
+
+            var emptyPaymentInfoList = new List<PaymentInformation>().AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                          .Returns(emptyPaymentInfoList.Object);
+
+            _mockMapper.Setup(x => x.Map<PaymentInformation>(request))
+                      .Returns(paymentInfo);
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                                 .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.AddAsync(It.IsAny<PaymentInformation>()))
+                          .ReturnsAsync(paymentInfo);
+
             // Act
             var result = await _paymentService.AddPaymendInformationAsync(userId, request);
 
             // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Contain("Account number must contain only digits");
-            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.PaymentInformationRepository.AddAsync(It.Is<PaymentInformation>(
+                p => p.AccountNumber == "12345ABC67"
+            )), Times.Once());
         }
 
         // UTCID12: AccountNumber with special characters - Should return validation failure
@@ -1406,7 +1450,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new CreatePaymentInformationRequest
+            var request = new PaymentInformationRequest
             {
                 AccountHolderName = "John Doe",
                 AccountNumber = "123-456-789", // Contains hyphens
@@ -1415,14 +1459,31 @@ namespace AIEvent.Application.Test.Services
                 BankBin = "123456"
             };
 
+            var user = new User
+            {
+                Id = userId,
+                Email = "test@gmail.com",
+                IsDeleted = false,
+                IsActive = true
+            };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
+                          .ReturnsAsync(user);
+
+            var emptyPaymentInfoList = new List<PaymentInformation>().AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                          .Returns(emptyPaymentInfoList.Object);
+
             // Act
             var result = await _paymentService.AddPaymendInformationAsync(userId, request);
 
             // Assert
             result.IsSuccess.Should().BeFalse();
             result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Contain("Account number must contain only digits");
-            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
+            var actualMessage = result.Error!.Message;
+            actualMessage.Should().NotBeNullOrEmpty();
+            actualMessage.Should().Be("Account number already exists");
         }
 
         // UTCID13: AccountNumber minimum valid (6 digits) - Boundary test - Success
@@ -1431,7 +1492,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new CreatePaymentInformationRequest
+            var request = new PaymentInformationRequest
             {
                 AccountHolderName = "John Doe",
                 AccountNumber = "123456", // Exactly 6 digits
@@ -1462,6 +1523,11 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
                           .ReturnsAsync(user);
 
+            // Setup Query() to return empty list (no existing account)
+            var emptyPaymentInfoList = new List<PaymentInformation>().AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                          .Returns(emptyPaymentInfoList.Object);
+
             _mockMapper.Setup(x => x.Map<PaymentInformation>(request))
                       .Returns(paymentInfo);
 
@@ -1487,7 +1553,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new CreatePaymentInformationRequest
+            var request = new PaymentInformationRequest
             {
                 AccountHolderName = "John Doe",
                 AccountNumber = "12345678901234567890", // Exactly 20 digits
@@ -1518,6 +1584,11 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
                           .ReturnsAsync(user);
 
+            // Setup Query() to return empty list (no existing account)
+            var emptyPaymentInfoList = new List<PaymentInformation>().AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                          .Returns(emptyPaymentInfoList.Object);
+
             _mockMapper.Setup(x => x.Map<PaymentInformation>(request))
                       .Returns(paymentInfo);
 
@@ -1543,7 +1614,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new CreatePaymentInformationRequest
+            var request = new PaymentInformationRequest
             {
                 AccountHolderName = "John Doe",
                 AccountNumber = "1234567890",
@@ -1568,7 +1639,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new CreatePaymentInformationRequest
+            var request = new PaymentInformationRequest
             {
                 AccountHolderName = "John Doe",
                 AccountNumber = "1234567890",
@@ -1593,7 +1664,7 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new CreatePaymentInformationRequest
+            var request = new PaymentInformationRequest
             {
                 AccountHolderName = "John Doe",
                 AccountNumber = "123 456 789", // Contains spaces
@@ -1602,32 +1673,46 @@ namespace AIEvent.Application.Test.Services
                 BankBin = "123456"
             };
 
+            var user = new User
+            {
+                Id = userId,
+                Email = "test@gmail.com",
+                IsDeleted = false,
+                IsActive = true
+            };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
+                          .ReturnsAsync(user);
+
+            var emptyPaymentInfoList = new List<PaymentInformation>().AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                          .Returns(emptyPaymentInfoList.Object);
+
             // Act
             var result = await _paymentService.AddPaymendInformationAsync(userId, request);
 
             // Assert
             result.IsSuccess.Should().BeFalse();
             result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Contain("Account number must contain only digits");
-            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
+            var actualMessage = result.Error!.Message;
+            actualMessage.Should().NotBeNullOrEmpty();
+            actualMessage.Should().Be("Account number already exists");
         }
-        #endregion
 
-        #region UpdatePaymentInformation
-
-        // UTCID01: Valid request with all fields, successful update
+        // UTCID18: Existing account number for same user - Should return failure
         [Fact]
-        public async Task UTCID01_UpdatePaymentInformation_WithValidRequestAllFields_ShouldReturnSuccess()
+        public async Task UTCID18_AddPaymentInformation_WithExistingAccountNumberForSameUser_ShouldReturnFailure()
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var paymentInformationId = Guid.NewGuid();
-            var request = new UpdatePaymentInformationRequest
+            var accountNumber = "1234567890";
+            var request = new PaymentInformationRequest
             {
-                AccountHolderName = "Jane Doe",
-                AccountNumber = "9876543210",
-                BankName = "ACB Bank",
-                BranchName = "Hanoi Branch",
+                AccountHolderName = "John Doe",
+                AccountNumber = accountNumber,
+                BankName = "Vietcombank",
+                BranchName = "Ho Chi Minh City Branch",
                 BankBin = "123456"
             };
 
@@ -1641,435 +1726,122 @@ namespace AIEvent.Application.Test.Services
 
             var existingPaymentInfo = new PaymentInformation
             {
-                Id = paymentInformationId,
+                Id = Guid.NewGuid(),
                 UserId = userId,
-                AccountHolderName = "John Doe",
-                AccountNumber = "1234567890",
-                BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch",
-                BankBin = "123456"
-            };
-
-            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
-                          .ReturnsAsync(user);
-
-            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.GetByIdAsync(paymentInformationId, true))
-                          .ReturnsAsync(existingPaymentInfo);
-
-            _mockMapper.Setup(x => x.Map(request, existingPaymentInfo))
-                      .Callback<UpdatePaymentInformationRequest, PaymentInformation>((src, dest) =>
-                      {
-                          dest.AccountHolderName = src.AccountHolderName ?? dest.AccountHolderName;
-                          dest.AccountNumber = src.AccountNumber ?? dest.AccountNumber;
-                          dest.BankName = src.BankName ?? dest.BankName;
-                          dest.BranchName = src.BranchName ?? dest.BranchName;
-                      });
-
-            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-                                 .Returns<Func<Task<Result>>>(func => func());
-
-            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.UpdateAsync(It.IsAny<PaymentInformation>()))
-                          .ReturnsAsync(existingPaymentInfo);
-
-            // Act
-            var result = await _paymentService.UpdatePaymendInformationAsync(userId, paymentInformationId, request);
-
-            // Assert
-            result.IsSuccess.Should().BeTrue();
-            _mockUnitOfWork.Verify(x => x.PaymentInformationRepository.UpdateAsync(existingPaymentInfo), Times.Once());
-        }
-
-        // UTCID02: Valid request with partial fields (only AccountHolderName)
-        [Fact]
-        public async Task UTCID02_UpdatePaymentInformation_WithPartialFields_ShouldReturnSuccess()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var paymentInformationId = Guid.NewGuid();
-            var request = new UpdatePaymentInformationRequest
-            {
-                AccountHolderName = "Jane Doe",
-                BankBin = "123456"
-                // Other fields are null
-            };
-
-            var user = new User
-            {
-                Id = userId,
-                Email = "test@gmail.com",
+                AccountNumber = accountNumber,
+                AccountHolderName = "Existing Name",
+                BankName = "Existing Bank",
+                BranchName = "Existing Branch",
                 IsDeleted = false,
-                IsActive = true
-            };
-
-            var existingPaymentInfo = new PaymentInformation
-            {
-                Id = paymentInformationId,
-                UserId = userId,
-                AccountHolderName = "John Doe",
-                AccountNumber = "1234567890",
-                BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch",
                 BankBin = "123456"
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
                           .ReturnsAsync(user);
 
-            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.GetByIdAsync(paymentInformationId, true))
-                          .ReturnsAsync(existingPaymentInfo);
-
-            _mockMapper.Setup(x => x.Map(request, existingPaymentInfo));
-
-            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-                                 .Returns<Func<Task<Result>>>(func => func());
-
-            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.UpdateAsync(It.IsAny<PaymentInformation>()))
-                          .ReturnsAsync(existingPaymentInfo);
+            var paymentInfoList = new List<PaymentInformation> { existingPaymentInfo }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                          .Returns(paymentInfoList.Object);
 
             // Act
-            var result = await _paymentService.UpdatePaymendInformationAsync(userId, paymentInformationId, request);
-
-            // Assert
-            result.IsSuccess.Should().BeTrue();
-        }
-
-        // UTCID03: Empty Guid userId - Should return failure
-        [Fact]
-        public async Task UTCID03_UpdatePaymentInformation_WithEmptyUserId_ShouldReturnFailure()
-        {
-            // Arrange
-            var userId = Guid.Empty;
-            var paymentInformationId = Guid.NewGuid();
-            var request = new UpdatePaymentInformationRequest
-            {
-                AccountHolderName = "Jane Doe"
-            };
-
-            // Act
-            var result = await _paymentService.UpdatePaymendInformationAsync(userId, paymentInformationId, request);
+            var result = await _paymentService.AddPaymendInformationAsync(userId, request);
 
             // Assert
             result.IsSuccess.Should().BeFalse();
             result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Be("Invalid input");
+            result.Error!.Message.Should().Be("This account is currently in use");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
+            _mockMapper.Verify(x => x.Map<PaymentInformation>(It.IsAny<PaymentInformationRequest>()), Times.Never());
+            _mockTransactionHelper.Verify(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()), Times.Never());
         }
 
-        // UTCID04: Empty Guid paymentInformationId - Should return failure
+        // UTCID19: Existing account number for different user - Should succeed
         [Fact]
-        public async Task UTCID04_UpdatePaymentInformation_WithEmptyPaymentInformationId_ShouldReturnFailure()
+        public async Task UTCID19_AddPaymentInformation_WithExistingAccountNumberForDifferentUser_ShouldReturnSuccess()
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var paymentInformationId = Guid.Empty;
-            var request = new UpdatePaymentInformationRequest
+            var differentUserId = Guid.NewGuid();
+            var accountNumber = "1234567890";
+            var request = new PaymentInformationRequest
             {
-                AccountHolderName = "Jane Doe"
-            };
-
-            // Act
-            var result = await _paymentService.UpdatePaymendInformationAsync(userId, paymentInformationId, request);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Be("Invalid input");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
-        }
-
-        // UTCID05: Both userId and paymentInformationId are empty - Should return failure
-        [Fact]
-        public async Task UTCID05_UpdatePaymentInformation_WithBothIdsEmpty_ShouldReturnFailure()
-        {
-            // Arrange
-            var userId = Guid.Empty;
-            var paymentInformationId = Guid.Empty;
-            var request = new UpdatePaymentInformationRequest
-            {
-                AccountHolderName = "Jane Doe"
-            };
-
-            // Act
-            var result = await _paymentService.UpdatePaymendInformationAsync(userId, paymentInformationId, request);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Be("Invalid input");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-        }
-
-        // UTCID06: Null request - Should return validation failure
-        [Fact]
-        public async Task UTCID06_UpdatePaymentInformation_WithNullRequest_ShouldReturnValidationFailure()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var paymentInformationId = Guid.NewGuid();
-            UpdatePaymentInformationRequest? request = null;
-
-            // Act
-            var result = await _paymentService.UpdatePaymendInformationAsync(userId, paymentInformationId, request!);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
-        }
-
-        // UTCID07: User not found - Should return failure
-        [Fact]
-        public async Task UTCID07_UpdatePaymentInformation_WithNonExistentUser_ShouldReturnFailure()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var paymentInformationId = Guid.NewGuid();
-            var request = new UpdatePaymentInformationRequest
-            {
-                AccountHolderName = "Jane Doe"
-            };
-
-            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
-                          .ReturnsAsync((User?)null);
-
-            // Act
-            var result = await _paymentService.UpdatePaymendInformationAsync(userId, paymentInformationId, request);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Be("User not found or inactive");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
-            _mockUnitOfWork.Verify(x => x.PaymentInformationRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
-        }
-
-        // UTCID08: User is deleted - Should return failure
-        [Fact]
-        public async Task UTCID08_UpdatePaymentInformation_WithDeletedUser_ShouldReturnFailure()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var paymentInformationId = Guid.NewGuid();
-            var request = new UpdatePaymentInformationRequest
-            {
-                AccountHolderName = "Jane Doe"
-            };
-
-            var user = new User
-            {
-                Id = userId,
-                Email = "test@gmail.com",
-                IsDeleted = true
-            };
-
-            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
-                          .ReturnsAsync(user);
-
-            // Act
-            var result = await _paymentService.UpdatePaymendInformationAsync(userId, paymentInformationId, request);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Be("User not found or inactive");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
-            _mockUnitOfWork.Verify(x => x.PaymentInformationRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
-        }
-
-        // UTCID09: PaymentInformation not found - Should return failure
-        [Fact]
-        public async Task UTCID09_UpdatePaymentInformation_WithNonExistentPaymentInfo_ShouldReturnFailure()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var paymentInformationId = Guid.NewGuid();
-            var request = new UpdatePaymentInformationRequest
-            {
-                AccountHolderName = "Jane Doe"
-            };
-
-            var user = new User
-            {
-                Id = userId,
-                Email = "test@gmail.com",
-                IsDeleted = false,
-                IsActive = true
-            };
-
-            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
-                          .ReturnsAsync(user);
-
-            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.GetByIdAsync(paymentInformationId, true))
-                          .ReturnsAsync((PaymentInformation?)null);
-
-            // Act
-            var result = await _paymentService.UpdatePaymendInformationAsync(userId, paymentInformationId, request);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Be("Payment Infor not found or inactive");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
-            _mockMapper.Verify(x => x.Map(It.IsAny<UpdatePaymentInformationRequest>(), It.IsAny<PaymentInformation>()), Times.Never());
-        }
-
-        // UTCID10: PaymentInformation is deleted - Should return failure
-        [Fact]
-        public async Task UTCID10_UpdatePaymentInformation_WithDeletedPaymentInfo_ShouldReturnFailure()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var paymentInformationId = Guid.NewGuid();
-            var request = new UpdatePaymentInformationRequest
-            {
-                AccountHolderName = "Jane Doe"
-            };
-
-            var user = new User
-            {
-                Id = userId,
-                Email = "test@gmail.com",
-                IsDeleted = false,
-                IsActive = true
-            };
-
-            var existingPaymentInfo = new PaymentInformation
-            {
-                Id = paymentInformationId,
-                UserId = userId,
                 AccountHolderName = "John Doe",
-                AccountNumber = "1234567890",
-                BankName = "Vietcombank",
-                BankBin = "123456",
-                BranchName = "Ho Chi Minh City Branch",
-                IsDeleted = true
-            };
-
-            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
-                          .ReturnsAsync(user);
-
-            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.GetByIdAsync(paymentInformationId, true))
-                          .ReturnsAsync(existingPaymentInfo);
-
-            // Act
-            var result = await _paymentService.UpdatePaymendInformationAsync(userId, paymentInformationId, request);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Be("Payment Infor not found or inactive");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
-            _mockMapper.Verify(x => x.Map(It.IsAny<UpdatePaymentInformationRequest>(), It.IsAny<PaymentInformation>()), Times.Never());
-        }
-
-        // UTCID11: AccountNumber too short (5 digits) - Boundary test
-        [Fact]
-        public async Task UTCID11_UpdatePaymentInformation_WithTooShortAccountNumber_ShouldReturnValidationFailure()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var paymentInformationId = Guid.NewGuid();
-            var request = new UpdatePaymentInformationRequest
-            {
-                AccountNumber = "12345" // 5 digits
-            };
-
-            // Act
-            var result = await _paymentService.UpdatePaymendInformationAsync(userId, paymentInformationId, request);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Contain("Account number must be between 6 and 20 digits");
-            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
-        }
-
-        // UTCID12: AccountNumber too long (21 digits) - Boundary test
-        [Fact]
-        public async Task UTCID12_UpdatePaymentInformation_WithTooLongAccountNumber_ShouldReturnValidationFailure()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var paymentInformationId = Guid.NewGuid();
-            var request = new UpdatePaymentInformationRequest
-            {
-                AccountNumber = "123456789012345678901" // 21 digits
-            };
-
-            // Act
-            var result = await _paymentService.UpdatePaymendInformationAsync(userId, paymentInformationId, request);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Contain("Account number must be between 6 and 20 digits");
-            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
-        }
-
-        // UTCID13: AccountNumber minimum valid (6 digits) - Boundary test - Success
-        [Fact]
-        public async Task UTCID13_UpdatePaymentInformation_WithMinimumValidAccountNumber_ShouldReturnSuccess()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var paymentInformationId = Guid.NewGuid();
-            var request = new UpdatePaymentInformationRequest
-            {
-                AccountNumber = "123456" // Exactly 6 digits
-            };
-
-            var user = new User
-            {
-                Id = userId,
-                Email = "test@gmail.com",
-                IsDeleted = false,
-                IsActive = true
-            };
-
-            var existingPaymentInfo = new PaymentInformation
-            {
-                Id = paymentInformationId,
-                UserId = userId,
-                AccountHolderName = "John Doe",
-                AccountNumber = "1234567890",
+                AccountNumber = accountNumber,
                 BankName = "Vietcombank",
                 BranchName = "Ho Chi Minh City Branch",
                 BankBin = "123456"
             };
 
+            var user = new User
+            {
+                Id = userId,
+                Email = "test@gmail.com",
+                IsDeleted = false,
+                IsActive = true
+            };
+
+            // Existing account for different user
+            var existingPaymentInfo = new PaymentInformation
+            {
+                Id = Guid.NewGuid(),
+                UserId = differentUserId, // Different user
+                AccountNumber = accountNumber,
+                AccountHolderName = "Existing Name",
+                BankName = "Existing Bank",
+                BranchName = "Existing Branch",
+                IsDeleted = false,
+                BankBin = "123456"
+            };
+
+            var paymentInfo = new PaymentInformation
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                AccountHolderName = request.AccountHolderName,
+                AccountNumber = request.AccountNumber,
+                BankName = request.BankName,
+                BranchName = request.BranchName,
+                BankBin = request.BankBin
+            };
+
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
                           .ReturnsAsync(user);
 
-            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.GetByIdAsync(paymentInformationId, true))
-                          .ReturnsAsync(existingPaymentInfo);
+            var paymentInfoList = new List<PaymentInformation> { existingPaymentInfo }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                          .Returns(paymentInfoList.Object);
 
-            _mockMapper.Setup(x => x.Map(request, existingPaymentInfo));
+            _mockMapper.Setup(x => x.Map<PaymentInformation>(request))
+                      .Returns(paymentInfo);
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                                  .Returns<Func<Task<Result>>>(func => func());
 
-            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.UpdateAsync(It.IsAny<PaymentInformation>()))
-                          .ReturnsAsync(existingPaymentInfo);
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.AddAsync(It.IsAny<PaymentInformation>()))
+                          .ReturnsAsync(paymentInfo);
 
             // Act
-            var result = await _paymentService.UpdatePaymendInformationAsync(userId, paymentInformationId, request);
+            var result = await _paymentService.AddPaymendInformationAsync(userId, request);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.PaymentInformationRepository.AddAsync(It.IsAny<PaymentInformation>()), Times.Once());
         }
 
-        // UTCID14: AccountNumber maximum valid (20 digits) - Boundary test - Success
+        // UTCID20: Existing account number but deleted - Should succeed
         [Fact]
-        public async Task UTCID14_UpdatePaymentInformation_WithMaximumValidAccountNumber_ShouldReturnSuccess()
+        public async Task UTCID20_AddPaymentInformation_WithDeletedExistingAccountNumber_ShouldReturnSuccess()
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var paymentInformationId = Guid.NewGuid();
-            var request = new UpdatePaymentInformationRequest
+            var accountNumber = "1234567890";
+            var request = new PaymentInformationRequest
             {
-                AccountNumber = "12345678901234567890" // Exactly 20 digits
+                AccountHolderName = "John Doe",
+                AccountNumber = accountNumber,
+                BankName = "Vietcombank",
+                BranchName = "Ho Chi Minh City Branch",
+                BankBin = "123456"
             };
 
             var user = new User
@@ -2080,103 +1852,54 @@ namespace AIEvent.Application.Test.Services
                 IsActive = true
             };
 
+            // Existing account but deleted
             var existingPaymentInfo = new PaymentInformation
             {
-                Id = paymentInformationId,
+                Id = Guid.NewGuid(),
                 UserId = userId,
-                AccountHolderName = "John Doe",
-                AccountNumber = "1234567890",
-                BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch",
+                AccountNumber = accountNumber,
+                AccountHolderName = "Existing Name",
+                BankName = "Existing Bank",
+                BranchName = "Existing Branch",
+                IsDeleted = true, // Deleted
                 BankBin = "123456"
+            };
+
+            var paymentInfo = new PaymentInformation
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                AccountHolderName = request.AccountHolderName,
+                AccountNumber = request.AccountNumber,
+                BankName = request.BankName,
+                BranchName = request.BranchName,
+                BankBin = request.BankBin
             };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
                           .ReturnsAsync(user);
 
-            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.GetByIdAsync(paymentInformationId, true))
-                          .ReturnsAsync(existingPaymentInfo);
+            var paymentInfoList = new List<PaymentInformation> { existingPaymentInfo }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                          .Returns(paymentInfoList.Object);
 
-            _mockMapper.Setup(x => x.Map(request, existingPaymentInfo));
+            _mockMapper.Setup(x => x.Map<PaymentInformation>(request))
+                      .Returns(paymentInfo);
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                                  .Returns<Func<Task<Result>>>(func => func());
 
-            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.UpdateAsync(It.IsAny<PaymentInformation>()))
-                          .ReturnsAsync(existingPaymentInfo);
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.AddAsync(It.IsAny<PaymentInformation>()))
+                          .ReturnsAsync(paymentInfo);
 
             // Act
-            var result = await _paymentService.UpdatePaymendInformationAsync(userId, paymentInformationId, request);
+            var result = await _paymentService.AddPaymendInformationAsync(userId, request);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.PaymentInformationRepository.AddAsync(It.IsAny<PaymentInformation>()), Times.Once());
         }
 
-        // UTCID15: AccountNumber with non-digits (letters) - Should return validation failure
-        [Fact]
-        public async Task UTCID15_UpdatePaymentInformation_WithNonDigitAccountNumber_ShouldReturnValidationFailure()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var paymentInformationId = Guid.NewGuid();
-            var request = new UpdatePaymentInformationRequest
-            {
-                AccountNumber = "12345ABC67" // Contains letters
-            };
-
-            // Act
-            var result = await _paymentService.UpdatePaymendInformationAsync(userId, paymentInformationId, request);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Contain("Account number must contain only digits");
-            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
-        }
-
-        // UTCID16: AccountNumber with special characters - Should return validation failure
-        [Fact]
-        public async Task UTCID16_UpdatePaymentInformation_WithSpecialCharactersInAccountNumber_ShouldReturnValidationFailure()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var paymentInformationId = Guid.NewGuid();
-            var request = new UpdatePaymentInformationRequest
-            {
-                AccountNumber = "123-456-789" // Contains hyphens
-            };
-
-            // Act
-            var result = await _paymentService.UpdatePaymendInformationAsync(userId, paymentInformationId, request);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Contain("Account number must contain only digits");
-            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
-        }
-
-        // UTCID17: AccountNumber with spaces - Should return validation failure
-        [Fact]
-        public async Task UTCID17_UpdatePaymentInformation_WithSpacesInAccountNumber_ShouldReturnValidationFailure()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var paymentInformationId = Guid.NewGuid();
-            var request = new UpdatePaymentInformationRequest
-            {
-                AccountNumber = "123 456 789" // Contains spaces
-            };
-
-            // Act
-            var result = await _paymentService.UpdatePaymendInformationAsync(userId, paymentInformationId, request);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Contain("Account number must contain only digits");
-            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
-        }
         #endregion
 
         #region DeletePaymentInformation
@@ -2687,275 +2410,6 @@ namespace AIEvent.Application.Test.Services
             result.Value!.Items.ElementAt(1).AccountHolderName.Should().Be("User 2");
         }
 
-        #endregion
-
-        #region GetPaymentInformationById
-
-        // UTCID01: Valid userId and paymentInformationId - Should return success
-        [Fact]
-        public async Task UTCID01_GetPaymentInformationById_WithValidIds_ShouldReturnSuccess()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var paymentInformationId = Guid.NewGuid();
-
-            var user = new User
-            {
-                Id = userId,
-                Email = "test@gmail.com",
-                IsDeleted = false,
-                IsActive = true
-            };
-
-            var paymentInfo = new PaymentInformation
-            {
-                Id = paymentInformationId,
-                UserId = userId,
-                AccountHolderName = "John Doe",
-                AccountNumber = "1234567890",
-                BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch",
-                IsDeleted = false,
-                BankBin = "123456"
-            };
-
-            var paymentInfoResponse = new PaymentInformationResponse
-            {
-                PaymentInformationId = paymentInformationId,
-                AccountHolderName = "John Doe",
-                AccountNumber = "1234567890",
-                BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch",
-            };
-
-            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
-                          .ReturnsAsync(user);
-
-            var paymentInfoList = new List<PaymentInformation> { paymentInfo };
-            var mockDbSet = paymentInfoList.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(false))
-                          .Returns(mockDbSet.Object);
-
-            _mockMapper.Setup(x => x.ConfigurationProvider)
-                      .Returns(new MapperConfiguration(cfg => {
-                          cfg.CreateMap<PaymentInformation, PaymentInformationResponse>()
-                             .ForMember(dest => dest.PaymentInformationId, opt => opt.MapFrom(src => src.Id));
-                      }));
-
-            // Act
-            var result = await _paymentService.GetPaymendInformationByIdAsync(userId, paymentInformationId);
-
-            // Assert
-            result.IsSuccess.Should().BeTrue();
-            result.Value.Should().NotBeNull();
-            result.Value!.PaymentInformationId.Should().Be(paymentInformationId);
-            result.Value!.AccountHolderName.Should().Be("John Doe");
-            result.Value!.AccountNumber.Should().Be("1234567890");
-            result.Value!.BankName.Should().Be("Vietcombank");
-            result.Value!.BranchName.Should().Be("Ho Chi Minh City Branch");
-        }
-
-        // UTCID02: Empty userId - Should return failure
-        [Fact]
-        public async Task UTCID02_GetPaymentInformationById_WithEmptyUserId_ShouldReturnFailure()
-        {
-            // Arrange
-            var userId = Guid.Empty;
-            var paymentInformationId = Guid.NewGuid();
-
-            // Act
-            var result = await _paymentService.GetPaymendInformationByIdAsync(userId, paymentInformationId);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Be("Invalid input");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
-        }
-
-        // UTCID03: Empty paymentInformationId - Should return failure
-        [Fact]
-        public async Task UTCID03_GetPaymentInformationById_WithEmptyPaymentInformationId_ShouldReturnFailure()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var paymentInformationId = Guid.Empty;
-
-            // Act
-            var result = await _paymentService.GetPaymendInformationByIdAsync(userId, paymentInformationId);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Be("Invalid input");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
-        }
-
-        // UTCID04: Both userId and paymentInformationId empty - Should return failure
-        [Fact]
-        public async Task UTCID04_GetPaymentInformationById_WithBothIdsEmpty_ShouldReturnFailure()
-        {
-            // Arrange
-            var userId = Guid.Empty;
-            var paymentInformationId = Guid.Empty;
-
-            // Act
-            var result = await _paymentService.GetPaymendInformationByIdAsync(userId, paymentInformationId);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Be("Invalid input");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-            _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
-        }
-
-        // UTCID05: User not found - Should return failure
-        [Fact]
-        public async Task UTCID05_GetPaymentInformationById_WithNonExistentUser_ShouldReturnFailure()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var paymentInformationId = Guid.NewGuid();
-
-            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
-                          .ReturnsAsync((User?)null);
-
-            // Act
-            var result = await _paymentService.GetPaymendInformationByIdAsync(userId, paymentInformationId);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Be("User not found or inactive");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
-            _mockUnitOfWork.Verify(x => x.PaymentInformationRepository.Query(false), Times.Never());
-        }
-
-        // UTCID06: User is deleted - Should return failure
-        [Fact]
-        public async Task UTCID06_GetPaymentInformationById_WithDeletedUser_ShouldReturnFailure()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var paymentInformationId = Guid.NewGuid();
-
-            var user = new User
-            {
-                Id = userId,
-                Email = "test@gmail.com",
-                IsDeleted = true
-            };
-
-            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
-                          .ReturnsAsync(user);
-
-            // Act
-            var result = await _paymentService.GetPaymendInformationByIdAsync(userId, paymentInformationId);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Be("User not found or inactive");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
-            _mockUnitOfWork.Verify(x => x.PaymentInformationRepository.Query(false), Times.Never());
-        }
-
-        // UTCID07: Payment information not found - Should return failure
-        [Fact]
-        public async Task UTCID07_GetPaymentInformationById_WithNonExistentPaymentInfo_ShouldReturnFailure()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var paymentInformationId = Guid.NewGuid();
-
-            var user = new User
-            {
-                Id = userId,
-                Email = "test@gmail.com",
-                IsDeleted = false,
-                IsActive = true
-            };
-
-            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
-                          .ReturnsAsync(user);
-
-            var emptyPaymentInfoList = new List<PaymentInformation>();
-            var mockDbSet = emptyPaymentInfoList.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(false))
-                          .Returns(mockDbSet.Object);
-
-            _mockMapper.Setup(x => x.ConfigurationProvider)
-                      .Returns(new MapperConfiguration(cfg => {
-                          cfg.CreateMap<PaymentInformation, PaymentInformationResponse>()
-                             .ForMember(dest => dest.PaymentInformationId, opt => opt.MapFrom(src => src.Id));
-                      }));
-
-            // Act
-            var result = await _paymentService.GetPaymendInformationByIdAsync(userId, paymentInformationId);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Be("Payment Infor not found or inactive");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
-        }
-
-        // UTCID08: Payment information is deleted - Should return failure
-        [Fact]
-        public async Task UTCID08_GetPaymentInformationById_WithDeletedPaymentInfo_ShouldReturnFailure()
-        {
-            // Arrange
-            var userId = Guid.NewGuid();
-            var paymentInformationId = Guid.NewGuid();
-
-            var user = new User
-            {
-                Id = userId,
-                Email = "test@gmail.com",
-                IsDeleted = false,
-                IsActive = true
-            };
-
-            var paymentInfo = new PaymentInformation
-            {
-                Id = paymentInformationId,
-                UserId = userId,
-                AccountHolderName = "John Doe",
-                AccountNumber = "1234567890",
-                BankName = "Vietcombank",
-                BranchName = "Ho Chi Minh City Branch",
-                IsDeleted = true, 
-                BankBin = "123456"
-            };
-
-            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
-                          .ReturnsAsync(user);
-
-            var paymentInfoList = new List<PaymentInformation> { paymentInfo };
-            var mockDbSet = paymentInfoList.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(false))
-                          .Returns(mockDbSet.Object);
-
-            _mockMapper.Setup(x => x.ConfigurationProvider)
-                      .Returns(new MapperConfiguration(cfg => {
-                          cfg.CreateMap<PaymentInformation, PaymentInformationResponse>()
-                             .ForMember(dest => dest.PaymentInformationId, opt => opt.MapFrom(src => src.Id));
-                      }));
-
-            // Act
-            var result = await _paymentService.GetPaymendInformationByIdAsync(userId, paymentInformationId);
-
-            // Assert
-            result.IsSuccess.Should().BeFalse();
-            result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Be("Payment Infor not found or inactive");
-            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
-        }
-
-  
         #endregion
     }
 }

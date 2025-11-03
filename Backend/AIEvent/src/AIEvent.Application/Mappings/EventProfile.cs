@@ -54,7 +54,8 @@ namespace AIEvent.Application.Mappings
                     opt => opt.MapFrom(src =>
                         !string.IsNullOrEmpty(src.ImgListEvidences)
                             ? src.ImgListEvidences.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()
-                            : new List<string>()));
+                            : new List<string>()))
+                .ForMember(dest => dest.TicketDetails, opt => opt.MapFrom(src => src.TicketTypes));
 
             CreateMap<EventTag, TagResponse>()
                 .ForMember(dest => dest.TagId, opt => opt.MapFrom(src => src.TagId.ToString()))

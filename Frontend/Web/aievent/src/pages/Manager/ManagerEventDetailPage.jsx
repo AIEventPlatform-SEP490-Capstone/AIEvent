@@ -345,7 +345,7 @@ Nhấn OK để xác nhận xóa.`;
               )}
               <div className="absolute bottom-4 left-4 flex gap-2">
                 <Badge variant="secondary" className="bg-background/80 backdrop-blur">
-                  {event.ticketType === 1 ? 'Miễn phí' : 'Có phí'}
+                  {event.ticketType === 1 || event.ticketType === "free" ? 'Miễn phí' : 'Có phí'}
                 </Badge>
                 {event.eventCategoryName && (
                   <Badge variant="outline" className="bg-background/80 backdrop-blur">
@@ -582,11 +582,11 @@ Nhấn OK để xác nhận xóa.`;
             )}
 
             {/* Evidence Image Gallery */}
-            {event.imgEventEvidences && event.imgEventEvidences.length > 0 && (
+            {event.imgListEvidences && event.imgListEvidences.length > 0 && (
               <div>
                 <h2 className="text-xl font-semibold mb-4">Hình ảnh bằng chứng tổ chức</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {event.imgEventEvidences.map((img, index) => (
+                  {event.imgListEvidences.map((img, index) => (
                     <img
                       key={index}
                       src={img}
@@ -726,7 +726,7 @@ Nhấn OK để xác nhận xóa.`;
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Loại vé</span>
                   <span className="font-medium">
-                    {event.ticketType === 1 ? 'Miễn phí' : 'Có phí'}
+                    {event.ticketType === 1 || event.ticketType === "free" ? 'Miễn phí' : 'Có phí'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">

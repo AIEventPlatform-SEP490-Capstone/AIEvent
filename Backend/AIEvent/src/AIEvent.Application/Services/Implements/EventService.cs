@@ -20,13 +20,11 @@ namespace AIEvent.Application.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly ITransactionHelper _transactionHelper;
         private readonly IMapper _mapper;
-        private readonly ICloudinaryService _cloudinaryService;
-        public EventService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper, IMapper mapper, ICloudinaryService cloudinaryService)
+        public EventService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _transactionHelper = transactionHelper;
             _mapper = mapper;
-            _cloudinaryService = cloudinaryService;
         }
 
         public async Task<Result> CreateEventAsync(Guid organizerId, CreateEventRequest request)
@@ -235,11 +233,17 @@ namespace AIEvent.Application.Services.Implements
                 if (eventQuery.SoldQuantity == 0 && originalSoldQuantity > 0)
                     eventQuery.SoldQuantity = originalSoldQuantity;
 
-                await UpdateEventImagesAsync(eventQuery, request);
+                var updateImagesResult = await UpdateEventImagesAsync(eventQuery, request);
+                if (!updateImagesResult.IsSuccess)
+                    return updateImagesResult;
                 
-                await UpdateEventEvidenceAsync(eventQuery, request);
+                var updateEvidenceResult = await UpdateEventEvidenceAsync(eventQuery, request);
+                if (!updateEvidenceResult.IsSuccess)
+                    return updateEvidenceResult;
 
-                await HandleTicketDetailsOperationsAsync(eventQuery, eventId, organizerId, request);
+                var handleTicketsResult = await HandleTicketDetailsOperationsAsync(eventQuery, eventId, organizerId, request);
+                if (!handleTicketsResult.IsSuccess)
+                    return handleTicketsResult;
                  
                 if (request.TicketTypes != null && request.TicketTypes.Any() || 
                     request.RemoveTicketTypeIds != null && request.RemoveTicketTypeIds.Any())
@@ -255,7 +259,9 @@ namespace AIEvent.Application.Services.Implements
                 else
                     eventQuery.RemainingTickets = eventQuery.TotalTickets - eventQuery.SoldQuantity;
 
-                HandleEventTagsOperations(eventQuery, eventId, request);
+                var handleTagsResult = HandleEventTagsOperations(eventQuery, eventId, request);
+                if (!handleTagsResult.IsSuccess)
+                    return handleTagsResult;
 
                 if (request.Publish == true)
                 {
@@ -269,11 +275,11 @@ namespace AIEvent.Application.Services.Implements
             });
         }
 
-        private async Task UpdateEventImagesAsync(Event events, UpdateEventRequest request)
+        private Task<Result> UpdateEventImagesAsync(Event events, UpdateEventRequest request)
         {
             if ((request.RemoveImageUrls == null || !request.RemoveImageUrls.Any()) 
                 && (request.ImgListEvent == null || !request.ImgListEvent.Any()))
-                return;
+                return Task.FromResult(Result.Success());
 
             var existingImages = string.IsNullOrEmpty(events.ImgListEvent)
                                     ? new List<string>()
@@ -286,17 +292,11 @@ namespace AIEvent.Application.Services.Implements
                 var willAddNewImages = request.ImgListEvent != null && request.ImgListEvent.Any();
                 
                 if (remainingImagesCount <= 0 && !willAddNewImages)
-                {
-                    throw new InvalidOperationException(
-                        "Cannot remove all images. Event must have at least 1 image."
-                    );
-                }
+                    return Task.FromResult(Result.Failure(ErrorResponse.FailureResult(
+                            "Cannot remove all images. Event must have at least 1 image.",
+                            ErrorCodes.InvalidInput
+                        )));
 
-                var deleteImageTasks = imagesToRemove
-                    .Select(url => _cloudinaryService.DeleteImageAsync(url))
-                    .ToList();
-
-                await Task.WhenAll(deleteImageTasks);
                 existingImages = existingImages.Where(img => !request.RemoveImageUrls.Contains(img)).ToList();
             }
 
@@ -310,13 +310,14 @@ namespace AIEvent.Application.Services.Implements
             }
 
             events.ImgListEvent = existingImages.Any() ? string.Join(", ", existingImages) : null;
+            return Task.FromResult(Result.Success());
         }
 
-        private async Task UpdateEventEvidenceAsync(Event events, UpdateEventRequest request)
+        private Task<Result> UpdateEventEvidenceAsync(Event events, UpdateEventRequest request)
         {
             if ((request.RemoveImageEvidenceUrls == null || !request.RemoveImageEvidenceUrls.Any()) 
                 && (request.ImgListEvidences == null || !request.ImgListEvidences.Any()))
-                return;
+                return Task.FromResult(Result.Success());
 
             var existingEvidence = string.IsNullOrEmpty(events.ImgListEvidences)
                 ? new List<string>()
@@ -329,17 +330,11 @@ namespace AIEvent.Application.Services.Implements
                 var willAddNewEvidence = request.ImgListEvidences != null && request.ImgListEvidences.Any();
                 
                 if (remainingEvidenceCount <= 0 && !willAddNewEvidence)
-                {
-                    throw new InvalidOperationException(
-                        "Cannot remove all evidence images. At least one evidence is required when publishing."
-                    );
-                }
+                    return Task.FromResult(Result.Failure(ErrorResponse.FailureResult(
+                            "Cannot remove all evidence images. At least one evidence is required when publishing.",
+                            ErrorCodes.InvalidInput
+                        )));
 
-                var deleteImageTasks = evidenceToRemove
-                    .Select(url => _cloudinaryService.DeleteImageAsync(url))
-                    .ToList();
-
-                await Task.WhenAll(deleteImageTasks);
                 existingEvidence = existingEvidence.Where(ev => !request.RemoveImageEvidenceUrls.Contains(ev)).ToList();
             }
 
@@ -353,9 +348,10 @@ namespace AIEvent.Application.Services.Implements
             }
 
             events.ImgListEvidences = existingEvidence.Any() ? string.Join(", ", existingEvidence) : null;
+            return Task.FromResult(Result.Success());
         }
 
-        private async Task HandleTicketDetailsOperationsAsync(Event events, Guid eventId, Guid organizerId, UpdateEventRequest request)
+        private async Task<Result> HandleTicketDetailsOperationsAsync(Event events, Guid eventId, Guid organizerId, UpdateEventRequest request)
         { 
             if (request.RemoveTicketTypeIds != null && request.RemoveTicketTypeIds.Any())
             {
@@ -364,11 +360,10 @@ namespace AIEvent.Application.Services.Implements
                                        request.TicketTypes.Any(td => !td.Id.HasValue || td.Id.Value == Guid.Empty);
                 
                 if (remainingTicketsCount <= 0 && !willAddNewTickets)
-                {
-                    throw new InvalidOperationException(
-                        "Cannot remove all ticket details. Event must have at least 1 ticket type."
-                    );
-                }
+                    return ErrorResponse.FailureResult(
+                            "Cannot remove all ticket details. Event must have at least 1 ticket type.",
+                            ErrorCodes.InvalidInput
+                        );
 
                 var ticketsToRemove = events.TicketTypes
                     .Where(td => request.RemoveTicketTypeIds.Contains(td.Id))
@@ -384,11 +379,10 @@ namespace AIEvent.Application.Services.Implements
                         .AnyAsync(td => td.SoldQuantity > 0);
 
                     if (hasSoldTickets)
-                    {
-                        throw new InvalidOperationException(
-                            $"Cannot remove ticket '{ticket.TicketName}' because it has already been sold"
-                        );
-                    }
+                        return ErrorResponse.FailureResult(
+                                $"Cannot remove ticket '{ticket.TicketName}' because it has already been sold",
+                                ErrorCodes.InvalidInput
+                            );
 
                     events.TicketTypes.Remove(ticket);
                 }
@@ -404,12 +398,10 @@ namespace AIEvent.Application.Services.Implements
                         if (existingTicket != null)
                         {
                             if (existingTicket.SoldQuantity > 0 && ticketRequest.TicketQuantity < existingTicket.SoldQuantity)
-                            {
-                                throw new InvalidOperationException(
-                                    $"Cannot reduce quantity below sold quantity ({existingTicket.SoldQuantity}) for ticket '{existingTicket.TicketName}'"
-                                );
-                            }
-
+                                return ErrorResponse.FailureResult(
+                                        $"Cannot reduce quantity below sold quantity ({existingTicket.SoldQuantity}) for ticket '{existingTicket.TicketName}'",
+                                        ErrorCodes.InvalidInput
+                                    );
                             _mapper.Map(ticketRequest, existingTicket);
                             existingTicket.RemainingQuantity = existingTicket.TicketQuantity - existingTicket.SoldQuantity;
                             existingTicket.SetUpdated(organizerId.ToString());
@@ -428,9 +420,11 @@ namespace AIEvent.Application.Services.Implements
                     }
                 }
             }
+            
+            return Result.Success();
         }
 
-        private void HandleEventTagsOperations(Event events, Guid eventId, UpdateEventRequest request)
+        private Result HandleEventTagsOperations(Event events, Guid eventId, UpdateEventRequest request)
         {
             if (request.RemoveTagIds != null && request.RemoveTagIds.Any())
             {
@@ -438,11 +432,10 @@ namespace AIEvent.Application.Services.Implements
                 var willAddNewTags = request.AddTagIds != null && request.AddTagIds.Any();
                 
                 if (remainingTagsCount <= 0 && !willAddNewTags)
-                {
-                    throw new InvalidOperationException(
-                        "Cannot remove all tags. Event must have at least 1 tag."
-                    );
-                }
+                    return ErrorResponse.FailureResult(
+                            "Cannot remove all tags. Event must have at least 1 tag.",
+                            ErrorCodes.InvalidInput
+                        );
 
                 var tagsToRemove = events.EventTags
                     .Where(et => request.RemoveTagIds.Contains(et.TagId))
@@ -470,6 +463,8 @@ namespace AIEvent.Application.Services.Implements
                     }
                 }
             }
+            
+            return Result.Success();
         }
 
         private Result ValidateEventForPublish(UpdateEventRequest request, Event existingEvent)
@@ -537,10 +532,8 @@ namespace AIEvent.Application.Services.Implements
             }
             
             if (request.TicketTypes != null && request.TicketTypes.Any(td => !td.Id.HasValue || td.Id.Value == Guid.Empty))
-            {
-                hasTicketDetailsAfterOperations = true; 
-            }
-            
+                hasTicketDetailsAfterOperations = true;
+
             if (!hasTicketDetailsAfterOperations)
                 errors.Add("At least one ticket type is required");
             
@@ -1015,7 +1008,6 @@ namespace AIEvent.Application.Services.Implements
 
                 var totalRevenue = totalPayment - totalRefund;
 
-                //Tính phí nền tảng
                 var platformFee = totalRevenue * 0.066m + 45000m;
                 var netRevenue = totalRevenue - platformFee;
 
@@ -1024,8 +1016,7 @@ namespace AIEvent.Application.Services.Implements
 
                 if (organizerWallet == null)
                     return ErrorResponse.FailureResult("Organizer wallet not found", ErrorCodes.NotFound);
-
-                //Tạo các transaction
+                 
                 var walletTransaction = new WalletTransaction
                 {
                     WalletId = organizerWallet.Id,

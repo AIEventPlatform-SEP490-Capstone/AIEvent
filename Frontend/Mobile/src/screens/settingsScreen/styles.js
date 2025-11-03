@@ -10,6 +10,32 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  // Header Gradient
+  headerGradient: {
+    paddingHorizontal: 24,
+    paddingTop: 50,
+    paddingBottom: 24,
+    marginBottom: 16,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontFamily: Fonts.bold,
+    fontWeight: '800',
+    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    fontFamily: Fonts.regular,
+    opacity: 0.9,
+  },
   settingsSection: {
     marginBottom: 32,
     paddingHorizontal: 16,

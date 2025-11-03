@@ -2,14 +2,10 @@ import BaseApiService from './BaseApiService';
 import EndUrls from '../EndUrls';
 
 class UserService {
-  /**
-   * Get user profile
-   */
   static async getProfile() {
     try {
       const data = await BaseApiService.get(EndUrls.PROFILE);
       
-      // Check for success status codes (both AIE20000 and AIE20001 indicate success)
       if ((data.statusCode === "AIE20000" || data.statusCode === "AIE20001") && data.data) {
         return {
           success: true,
@@ -33,14 +29,10 @@ class UserService {
     }
   }
 
-  /**
-   * Update user profile
-   */
   static async updateProfile(profileData) {
     try {
       const formData = new FormData();
 
-      // Basic Information Fields - only append if value exists and is not placeholder
       if (profileData.fullName && profileData.fullName !== 'Chưa cập nhật') {
         formData.append('FullName', profileData.fullName);
       }
@@ -66,12 +58,10 @@ class UserService {
         formData.append('Longitude', profileData.longitude);
       }
       
-      // Avatar image (binary)
       if (profileData.avatarImage) {
         formData.append('AvatarImg', profileData.avatarImage);
       }
 
-      // Social Links - only append if value exists and is not empty
       if (profileData.linkedInUrl && profileData.linkedInUrl !== '') {
         formData.append('LinkedInUrl', profileData.linkedInUrl);
       }
@@ -88,7 +78,6 @@ class UserService {
         formData.append('InstagramUrl', profileData.instagramUrl);
       }
 
-      // Professional Information - only append if value exists and is not placeholder
       if (profileData.occupation && profileData.occupation !== 'Chưa cập nhật') {
         formData.append('Occupation', profileData.occupation);
       }
@@ -108,12 +97,10 @@ class UserService {
         formData.append('Introduction', profileData.introduction);
       }
 
-      // Notification Settings - ensure boolean values are properly formatted
       formData.append('IsEmailNotificationEnabled', profileData.isEmailNotificationEnabled !== undefined ? (profileData.isEmailNotificationEnabled ? 'true' : 'false') : 'true');
       formData.append('IsPushNotificationEnabled', profileData.isPushNotificationEnabled !== undefined ? (profileData.isPushNotificationEnabled ? 'true' : 'false') : 'true');
       formData.append('IsSmsNotificationEnabled', profileData.isSmsNotificationEnabled !== undefined ? (profileData.isSmsNotificationEnabled ? 'true' : 'false') : 'false');
 
-      // Arrays - only append if arrays have content
       const userInterests = profileData.userInterests || [];
       if (userInterests.length > 0) {
         userInterests.forEach((interest, index) => {
@@ -166,7 +153,6 @@ class UserService {
 
       const data = await BaseApiService.patch(EndUrls.UPDATE_PROFILE, formData);
       
-      // Check for success status codes (both AIE20000 and AIE20001 indicate success)
       if ((data.statusCode === "AIE20000" || data.statusCode === "AIE20001") && data.message) {
         return {
           success: true,

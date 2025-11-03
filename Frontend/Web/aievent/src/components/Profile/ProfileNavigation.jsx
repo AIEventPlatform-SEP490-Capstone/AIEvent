@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ticket, Heart, Users, History, Settings } from 'lucide-react';
+import { Ticket, Heart, Users, History, Settings, Wallet } from 'lucide-react';
 
 const ProfileNavigation = ({ tabs, activeTab, onTabChange }) => {
   const tabIcons = {
@@ -7,6 +7,7 @@ const ProfileNavigation = ({ tabs, activeTab, onTabChange }) => {
     likes: Heart,
     friends: Users,
     history: History,
+    card: Wallet,
     settings: Settings
   };
 
