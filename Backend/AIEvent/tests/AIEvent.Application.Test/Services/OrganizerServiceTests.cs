@@ -1096,7 +1096,7 @@ namespace AIEvent.Application.Test.Services
             _mockMapper.SetupGet(m => m.ConfigurationProvider).Returns(mapperConfig);
 
             // Act
-            var result = await _organizerService.GetOrganizerAsync(pageNumber: 1, pageSize: 2, needApprove: null);
+            var result = await _organizerService.GetOrganizerAsync(pageNumber: 1, pageSize: 2, null);
 
             // Assert
             result.Value.Should().NotBeNull();
@@ -1127,7 +1127,7 @@ namespace AIEvent.Application.Test.Services
             _mockMapper.SetupGet(m => m.ConfigurationProvider).Returns(mapperConfig);
 
             // Act
-            var result = await _organizerService.GetOrganizerAsync(pageNumber: 1, pageSize: 10, needApprove: true);
+            var result = await _organizerService.GetOrganizerAsync(pageNumber: 1, pageSize: 10, ConfirmStatus.NeedConfirm);
 
             // Assert
             result.Value!.Items.Count.Should().Be(2);
@@ -1156,7 +1156,7 @@ namespace AIEvent.Application.Test.Services
             _mockMapper.SetupGet(m => m.ConfigurationProvider).Returns(mapperConfig);
 
             // Act
-            var result = await _organizerService.GetOrganizerAsync(pageNumber: 1, pageSize: 10, needApprove: false);
+            var result = await _organizerService.GetOrganizerAsync(pageNumber: 1, pageSize: 10, ConfirmStatus.NeedConfirm);
 
             // Assert
             result.Value!.Items.Count.Should().Be(2);
@@ -1185,7 +1185,7 @@ namespace AIEvent.Application.Test.Services
             _mockMapper.SetupGet(m => m.ConfigurationProvider).Returns(mapperConfig);
 
             // Act
-            var result = await _organizerService.GetOrganizerAsync(pageNumber: 1, pageSize: 10, needApprove: null);
+            var result = await _organizerService.GetOrganizerAsync(pageNumber: 1, pageSize: 10, ConfirmStatus.NeedConfirm);
 
             // Assert
             result.Value!.Items.Count.Should().Be(2);
@@ -1212,7 +1212,7 @@ namespace AIEvent.Application.Test.Services
             _mockMapper.SetupGet(m => m.ConfigurationProvider).Returns(mapperConfig);
 
             // Act
-            var result = await _organizerService.GetOrganizerAsync(pageNumber: 1, pageSize: 1, needApprove: null);
+            var result = await _organizerService.GetOrganizerAsync(pageNumber: 1, pageSize: 1, ConfirmStatus.NeedConfirm);
 
             // Assert
             result.Value!.Items.Count.Should().Be(1);
@@ -1239,7 +1239,7 @@ namespace AIEvent.Application.Test.Services
             _mockMapper.SetupGet(m => m.ConfigurationProvider).Returns(mapperConfig);
 
             // Act
-            var result = await _organizerService.GetOrganizerAsync(pageNumber: 2, pageSize: 1, needApprove: null);
+            var result = await _organizerService.GetOrganizerAsync(pageNumber: 2, pageSize: 1, ConfirmStatus.NeedConfirm);
 
             // Assert
             result.Value!.Items.Count.Should().Be(1);
