@@ -170,6 +170,7 @@ namespace AIEvent.Application.Services.Implements
                     if (userRegister != null && userRegister.Email?.ToLower() == profile.ContactEmail?.ToLower())
                     {
                         userRegister.RoleId = role.Id;
+                        userRegister.LinkedUserId = profile.UserId;
                         await _unitOfWork.UserRepository.UpdateAsync(userRegister);
                         var sb = new StringBuilder()
                             .AppendLine($"<p>Xin chào {profile.ContactName},</p>")
