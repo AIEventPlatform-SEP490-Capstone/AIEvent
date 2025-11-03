@@ -25,8 +25,6 @@ namespace AIEvent.Application.DTOs.Event
         [MinLength(1, ErrorMessage = "Please upload at least one image")]
         [Required(ErrorMessage = "Please upload at least one image")]
         public List<string>? ImgListEvent { get; set; }
-        [MinLength(1, ErrorMessage = "Please upload at least one image")]
-        [Required(ErrorMessage = "Please upload at least one image")]
         public List<string>? ImgListEvidences { get; set; }
         public ConfirmStatus? RequireApproval { get; set; } = ConfirmStatus.NeedConfirm;
         [Required(ErrorMessage = "District is required")]

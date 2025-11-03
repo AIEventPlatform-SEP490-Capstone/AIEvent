@@ -108,15 +108,15 @@ namespace AIEvent.Application.Services.Implements
             return Result<OrganizerDetailResponse>.Success(organizers);
         }
 
-        public async Task<Result<BasePaginated<OrganizerResponse>>> GetOrganizerAsync(int pageNumber, int pageSize, bool? needApprove)
+        public async Task<Result<BasePaginated<OrganizerResponse>>> GetOrganizerAsync(int pageNumber = 1, int pageSize = 10, ConfirmStatus? status = ConfirmStatus.NeedConfirm)
         {
             IQueryable<OrganizerProfile> query = _unitOfWork.OrganizerProfileRepository
                 .Query()
                 .AsNoTracking()
                 .Where(p => !p.DeletedAt.HasValue);
 
-            if(needApprove == true)
-                query = query.Where(o => o.Status == ConfirmStatus.NeedConfirm);
+            if(status != null)
+                query = query.Where(o => o.Status == status);
 
             var totalCount = await query.CountAsync();
 
@@ -146,7 +146,12 @@ namespace AIEvent.Application.Services.Implements
             if (profile.Status != ConfirmStatus.NeedConfirm)
                 return ErrorResponse.FailureResult("Profile already confirmed", ErrorCodes.InvalidInput);
 
-            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+            var userRegister = await _unitOfWork.UserRepository
+                                            .Query()
+                                            .FirstOrDefaultAsync(p => p.Id == profile.UserId && !p.IsDeleted);
+
+            MimeMessage msg = new MimeMessage();
+            var result = await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
                 profile.Status = request.Status;
                 profile.ConfirmAt = DateTime.UtcNow;
@@ -161,45 +166,61 @@ namespace AIEvent.Application.Services.Implements
 
                     if (role == null)
                         return ErrorResponse.FailureResult("Not found role", ErrorCodes.NotFound);
-                    
-                    var newOrganizerUser = new User
+
+                    if (userRegister != null && userRegister.Email?.ToLower() == profile.ContactEmail?.ToLower())
                     {
-                        Email = profile.ContactEmail,
-                        FullName = profile.ContactName,
-                        Address = profile.Address,
-                        RoleId = role.Id,
-                        District = profile.Address,
-                        IsActive = true,
-                        LinkedUserId = profile.UserId,
-                        PhoneNumber = profile.ContactPhone,
-                        Wallet = new Wallet
+                        userRegister.RoleId = role.Id;
+                        await _unitOfWork.UserRepository.UpdateAsync(userRegister);
+                        var sb = new StringBuilder()
+                            .AppendLine($"<p>Xin chào {profile.ContactName},</p>")
+                            .AppendLine($"<p>Hồ sơ đăng ký tổ chức của bạn <strong>{profile.CompanyName ?? profile.ContactName}</strong> đã được <b>chấp thuận</b>.</p>")
+                            .AppendLine($"<p>Tài khoản với email <b>{profile.ContactEmail}</b> của bạn đã trở thành nhà tổ chức.</p>")
+                            .AppendLine("<p>Trân trọng,<br/>Đội ngũ AIEvent</p>");
+
+                        msg = new MimeMessage
                         {
-                            Balance = 0
-                        }
-                    };
-                    var plainPassword = GenerateSecureRandomPassword();
-                    newOrganizerUser.PasswordHash = _hasherHelper.Hash(plainPassword);
-                    await _unitOfWork.UserRepository.AddAsync(newOrganizerUser);
-
-                    var sb = new StringBuilder()
-                        .AppendLine($"<p>Xin chào {profile.ContactName},</p>")
-                        .AppendLine($"<p>Hồ sơ đăng ký tổ chức của bạn <strong>{profile.CompanyName ?? profile.ContactName}</strong> đã được <b>chấp thuận</b>.</p>")
-                        .AppendLine("<p>Thông tin đăng nhập của bạn:</p>")
-                        .AppendLine("<ul>")
-                        .AppendLine($"<li>Email: <b>{profile.ContactEmail}</b></li>")
-                        .AppendLine($"<li>Mật khẩu: <b>{plainPassword}</b></li>")
-                        .AppendLine("</ul>")
-                        .AppendLine("<p>Vui lòng đăng nhập và <b>đổi mật khẩu ngay</b> sau khi truy cập để đảm bảo an toàn.</p>")
-                        .AppendLine("<p>Trân trọng,<br/>Đội ngũ AIEvent</p>");
-
-                    var msg = new MimeMessage
+                            Subject = "Tài khoản tổ chức của bạn đã được chấp thuận",
+                            Body = new TextPart("html") { Text = sb.ToString() }
+                        };
+                    }
+                    else
                     {
-                        Subject = "Tài khoản tổ chức của bạn đã được chấp thuận",
-                        Body = new TextPart("html") { Text = sb.ToString() }
-                    };
-                    var status = await _emailService.SendEmailAsync(profile.ContactEmail, msg);
-                    if (!status.IsSuccess)
-                        return ErrorResponse.FailureResult("Failed to send email", ErrorCodes.InternalServerError);
+                         var newOrganizerUser = new User
+                        {
+                            Email = profile.ContactEmail,
+                            FullName = profile.ContactName,
+                            Address = profile.Address,
+                            RoleId = role.Id,
+                            District = profile.Address,
+                            IsActive = true,
+                            LinkedUserId = profile.UserId,
+                            PhoneNumber = profile.ContactPhone,
+                            Wallet = new Wallet
+                            {
+                                Balance = 0
+                            }
+                        };
+                        var plainPassword = GenerateSecureRandomPassword();
+                        newOrganizerUser.PasswordHash = _hasherHelper.Hash(plainPassword);
+                        await _unitOfWork.UserRepository.AddAsync(newOrganizerUser);
+
+                        var sb = new StringBuilder()
+                            .AppendLine($"<p>Xin chào {profile.ContactName},</p>")
+                            .AppendLine($"<p>Hồ sơ đăng ký tổ chức của bạn <strong>{profile.CompanyName ?? profile.ContactName}</strong> đã được <b>chấp thuận</b>.</p>")
+                            .AppendLine("<p>Thông tin đăng nhập của bạn:</p>")
+                            .AppendLine("<ul>")
+                            .AppendLine($"<li>Email: <b>{profile.ContactEmail}</b></li>")
+                            .AppendLine($"<li>Mật khẩu: <b>{plainPassword}</b></li>")
+                            .AppendLine("</ul>")
+                            .AppendLine("<p>Vui lòng đăng nhập và <b>đổi mật khẩu ngay</b> sau khi truy cập để đảm bảo an toàn.</p>")
+                            .AppendLine("<p>Trân trọng,<br/>Đội ngũ AIEvent</p>");
+
+                        msg = new MimeMessage
+                        {
+                            Subject = "Tài khoản tổ chức của bạn đã được chấp thuận",
+                            Body = new TextPart("html") { Text = sb.ToString() }
+                        };
+                    }
                 }
                 else
                 {
@@ -213,19 +234,20 @@ namespace AIEvent.Application.Services.Implements
                         .AppendLine("<p>Nếu bạn cần thêm thông tin, vui lòng liên hệ đội ngũ hỗ trợ.</p>");
 
 
-                    var msg = new MimeMessage
+                    msg = new MimeMessage
                     {
                         Subject = "Hồ sơ đăng ký tổ chức của bạn đã bị từ chối",
                         Body = new TextPart("html") { Text = sb.ToString() }
                     };
 
-                    var emailResult = await _emailService.SendEmailAsync(profile.ContactEmail, msg);
-                    if (!emailResult.IsSuccess)
-                        return ErrorResponse.FailureResult("Failed to send rejection email", ErrorCodes.InternalServerError);
                 }
-
                 return Result.Success();
             });
+            var emailResult = await _emailService.SendEmailAsync(profile.ContactEmail, msg);
+            if (!emailResult.IsSuccess)
+                return ErrorResponse.FailureResult("Failed to send rejection email", ErrorCodes.InternalServerError);
+
+            return Result.Success();
         }
 
         private static string GenerateSecureRandomPassword(int length = 10)

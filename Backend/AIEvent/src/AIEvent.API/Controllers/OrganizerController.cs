@@ -4,6 +4,7 @@ using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Organizer;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
+using AIEvent.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,9 +24,9 @@ namespace AIEvent.API.Controllers
         [Authorize(Roles = "Admin, Manager")]
         public async Task<ActionResult<SuccessResponse<BasePaginated<OrganizerResponse>>>> GetOrganizer([FromQuery] int pageNumber = 1, 
                                                                                                         [FromQuery] int pageSize = 10, 
-                                                                                                        [FromQuery] bool? needApprove = false)
+                                                                                                        [FromQuery] ConfirmStatus? status = ConfirmStatus.NeedConfirm)
         {
-            var result = await _organizerService.GetOrganizerAsync(pageNumber, pageSize, false);
+            var result = await _organizerService.GetOrganizerAsync(pageNumber, pageSize, status);
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
