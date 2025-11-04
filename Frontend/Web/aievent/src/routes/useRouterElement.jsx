@@ -34,6 +34,7 @@ import WalletDashboard from "../pages/Wallet/WalletDashboard";
 import BookingFlow from "../pages/User/BookingFlow";
 import MyTickets from "../pages/User/MyTickets";
 import SearchPage from "../pages/Search/SearchPage";
+import FavoriteEventsPage from "../pages/User/FavoriteEventsPage";
 import OrganizerApprovalListPage from "../pages/Admin/OrganizerApprovalListPage";
 import OrganizerApprovalDetailPage from "../pages/Admin/OrganizerApprovalDetailPage";
 
@@ -53,7 +54,7 @@ export default function useRouterElement() {
           path: "favorites",
           element: (
             <ProtectedRoute>
-              <div>Favorites Page</div>
+              <FavoriteEventsPage />
             </ProtectedRoute>
           ),
         },

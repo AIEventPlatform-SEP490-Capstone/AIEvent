@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   User,
   MapPin,
@@ -65,6 +65,7 @@ import { walletAPI } from '../../api/walletAPI';
 const UserProfilePage = () => {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('tickets');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
@@ -352,7 +353,16 @@ const UserProfilePage = () => {
 
             {activeTab === 'likes' && (
               <div>
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Sự kiện yêu thích</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-gray-900">Sự kiện yêu thích</h2>
+                  <Button 
+                    onClick={() => navigate('/favorites')}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Xem tất cả
+                  </Button>
+                </div>
                 <p className="text-gray-600">Chưa có sự kiện yêu thích nào.</p>
               </div>
             )}
