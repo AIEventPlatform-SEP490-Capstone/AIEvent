@@ -140,7 +140,7 @@ namespace AIEvent.Application.Services.Implements
                                             .Include(p => p.User)
                                             .FirstOrDefaultAsync(p => p.Id == organizerProfileId && !p.IsDeleted);
 
-            if (profile == null)
+            if (profile == null || profile.ContactEmail == null || profile.ContactName == null || profile.ContactPhone == null)
                 return ErrorResponse.FailureResult("Organizer profile not found", ErrorCodes.NotFound);
 
             if (profile.Status != ConfirmOrganizerProfileStatus.Pending)
