@@ -16,7 +16,7 @@ namespace AIEvent.Application.DTOs.Event
         public int SoldQuantity { get; set; }
         public decimal TicketPrice { get; set; }
         public bool? Publish { get; set; }
-        public ConfirmStatus? RequireApproval { get; set; }
+        public ConfirmEventStatus? RequireApproval { get; set; }
         public List<TagResponse>? Tags { get; set; }
         public List<string>? ImgListEvent { get; set; }
         public bool? IsFavorite { get; set; }

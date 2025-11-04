@@ -60,7 +60,7 @@ namespace AIEvent.Application.Services.Implements
 
             var organizer = _mapper.Map<OrganizerProfile>(request);
             organizer.UserId = userId;
-            organizer.Status = ConfirmStatus.NeedConfirm;
+            organizer.Status = ConfirmOrganizerProfileStatus.Pending;
             if (organizer == null)
                 return ErrorResponse.FailureResult("Failed to map organizer profile", ErrorCodes.InternalServerError);
 
@@ -108,7 +108,7 @@ namespace AIEvent.Application.Services.Implements
             return Result<OrganizerDetailResponse>.Success(organizers);
         }
 
-        public async Task<Result<BasePaginated<OrganizerResponse>>> GetOrganizerAsync(int pageNumber = 1, int pageSize = 10, ConfirmStatus? status = ConfirmStatus.NeedConfirm)
+        public async Task<Result<BasePaginated<OrganizerResponse>>> GetOrganizerAsync(int pageNumber = 1, int pageSize = 10, ConfirmOrganizerProfileStatus? status = null)
         {
             IQueryable<OrganizerProfile> query = _unitOfWork.OrganizerProfileRepository
                 .Query()
@@ -130,7 +130,7 @@ namespace AIEvent.Application.Services.Implements
             return new BasePaginated<OrganizerResponse>(result, totalCount, pageNumber, pageSize);
         }
 
-        public async Task<Result> ConfirmBecomeOrganizerAsync(Guid userId, Guid organizerProfileId, ConfirmRequest request)
+        public async Task<Result> ConfirmBecomeOrganizerAsync(Guid userId, Guid organizerProfileId, ConfirmOrganizerRequest request)
         {
             if (userId == Guid.Empty || organizerProfileId == Guid.Empty)
                 return ErrorResponse.FailureResult("Invalid input", ErrorCodes.InvalidInput);
@@ -143,7 +143,7 @@ namespace AIEvent.Application.Services.Implements
             if (profile == null)
                 return ErrorResponse.FailureResult("Organizer profile not found", ErrorCodes.NotFound);
 
-            if (profile.Status != ConfirmStatus.NeedConfirm)
+            if (profile.Status != ConfirmOrganizerProfileStatus.Pending)
                 return ErrorResponse.FailureResult("Profile already confirmed", ErrorCodes.InvalidInput);
 
             var userRegister = await _unitOfWork.UserRepository
@@ -158,7 +158,7 @@ namespace AIEvent.Application.Services.Implements
                 profile.ConfirmBy = userId.ToString();
                 await _unitOfWork.OrganizerProfileRepository.UpdateAsync(profile);
 
-                if (request.Status == ConfirmStatus.Approve)
+                if (request.Status == ConfirmOrganizerProfileStatus.Approve)
                 {
                     var role = await _unitOfWork.RoleRepository
                                     .Query()
@@ -170,6 +170,7 @@ namespace AIEvent.Application.Services.Implements
                     if (userRegister != null && userRegister.Email?.ToLower() == profile.ContactEmail?.ToLower())
                     {
                         userRegister.RoleId = role.Id;
+                        userRegister.LinkedUserId = profile.UserId;
                         await _unitOfWork.UserRepository.UpdateAsync(userRegister);
                         var sb = new StringBuilder()
                             .AppendLine($"<p>Xin chào {profile.ContactName},</p>")
@@ -272,7 +273,7 @@ namespace AIEvent.Application.Services.Implements
                 .Query()
                 .AsNoTracking()
                 .Include(o => o.User)
-                .FirstOrDefaultAsync(o => o.UserId == userId && !o.IsDeleted && o.Status == ConfirmStatus.Approve);
+                .FirstOrDefaultAsync(o => o.UserId == userId && !o.IsDeleted && o.Status == ConfirmOrganizerProfileStatus.Approve);
 
             if (organizer == null)
                 return ErrorResponse.FailureResult("Organizer not found or not approved yet", ErrorCodes.NotFound);
@@ -292,7 +293,7 @@ namespace AIEvent.Application.Services.Implements
             var profile = await _unitOfWork.OrganizerProfileRepository
                 .Query()
                 .Include(o => o.User)
-                .FirstOrDefaultAsync(x => x.UserId == userId && !x.IsDeleted && x.Status == ConfirmStatus.Approve);
+                .FirstOrDefaultAsync(x => x.UserId == userId && !x.IsDeleted && x.Status == ConfirmOrganizerProfileStatus.Approve);
 
             if (profile == null)
                 return ErrorResponse.FailureResult("Organizer not found or not approved yet", ErrorCodes.NotFound);

@@ -70,6 +70,33 @@ namespace AIEvent.Application.Mappings
 
             CreateMap<TicketType, TicketTypeResponse>()
                 .ForMember(dest => dest.TicketDetailId, opt => opt.MapFrom(src => src.Id));
+
+            CreateMap<CompleteEventRequest, EndEventRequest>()
+                .ForMember(dest => dest.EvidenceImages, opt => opt.MapFrom(src =>
+                        src.EvidenceImages != null ? string.Join(", ", src.EvidenceImages) : null));
+
+            CreateMap<EndEventRequest, EndEventReview>()
+                 .ForMember(dest => dest.EndEventRequestId, opt => opt.MapFrom(src => src.Id))
+                 .ForMember(dest => dest.EvidenceImages,
+                    opt => opt.MapFrom(src =>
+                        !string.IsNullOrEmpty(src.EvidenceImages)
+                            ? src.EvidenceImages.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()
+                            : new List<string>()));
+
+            CreateMap<OrganizerProfile, EndEventReview>()
+                 .ForMember(dest => dest.OrganizerName, opt => opt.MapFrom(src => src.ContactName))
+                 .ForMember(dest => dest.ContactEmail, opt => opt.MapFrom(src => src.ContactEmail))
+                 .ForMember(dest => dest.ContactPhone, opt => opt.MapFrom(src => src.ContactPhone));
+
+            CreateMap<PaymentInformation, EndEventReview>();
+
+            CreateMap<Event, EndEventReview>()
+                 .ForMember(dest => dest.EventId, opt => opt.MapFrom(src => src.Id))
+                 .ForMember(dest => dest.EventTitle, opt => opt.MapFrom(src => src.Title))
+                 .ForMember(dest => dest.TotalAmount, opt => opt.MapFrom(src => src.TotalAmount))
+                 .ForMember(dest => dest.PlatformFee, opt => opt.MapFrom(src => src.PlatformFee))
+                 .ForMember(dest => dest.PayoutAmount, opt => opt.MapFrom(src => src.PayoutAmount));
+
         }
     }
 }

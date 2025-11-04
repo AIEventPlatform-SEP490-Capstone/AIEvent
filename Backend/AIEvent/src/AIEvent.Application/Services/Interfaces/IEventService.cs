@@ -1,5 +1,4 @@
 ﻿using AIEvent.Application.DTOs.Event;
-using AIEvent.Application.DTOs.Organizer;
 using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.Helpers;
 using AIEvent.Domain.Bases;
@@ -15,10 +14,11 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result> UpdateEventAsync(Guid organizerId, Guid eventId, UpdateEventRequest request);
         Task<Result<BasePaginated<EventsRelatedResponse>>> GetRelatedEventAsync(Guid eventId, int pageNumber = 1, int pageSize = 5);
         Task<Result<BasePaginated<EventsResponse>>> GetEventAsync(Guid? userId, string? search, string? eventCategoryId, List<EventTagRequest> tags, TicketPricingType? ticketType, string? district, TimeLine? timeLine, int pageNumber = 1, int pageSize = 5);
-        Task<Result<BasePaginated<EventsRawResponse>>> GetAllEventStatusAsync(Guid? organizerId, string? search, ConfirmStatus? status = null, int pageNumber = 1, int pageSize = 10);
-        Task<Result> ConfirmEventAsync(Guid userId, Guid eventId, ConfirmRequest request);
+        Task<Result<BasePaginated<EventsRawResponse>>> GetAllEventStatusAsync(Guid? organizerId, string? search, ConfirmEventStatus? status = null, int pageNumber = 1, int pageSize = 10);
+        Task<Result> ConfirmEventAsync(Guid userId, Guid eventId, ConfirmEventRequest request);
         Task<Result<BasePaginated<EventsRawResponse>>> GetAllEventDraftAsync(Guid organizerId, int pageNumber = 1, int pageSize = 10);
-        Task<Result> RequestEndEventAsync(Guid userId, string id);
-        Task<Result<object>> ConfirmEndEventAsync(string id);
+        Task<Result> RequestEndEventAsync(Guid userId, CompleteEventRequest request);
+        Task<Result> ConfirmEndEventAsync(ApproveEndEventRequest request);
+        Task<Result<EndEventReview>> GetEndEventRequestByIdAsync(Guid endEventRequestId);
     }
 }

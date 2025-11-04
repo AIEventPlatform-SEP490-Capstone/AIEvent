@@ -68,7 +68,7 @@ namespace AIEvent.Application.Test.Services
                Address = "Test Address",
                TotalTickets = 100,
                TicketPricingType = TicketPricingType.Free,
-               RequireApproval = ConfirmStatus.NeedConfirm,
+               RequireApproval = ConfirmEventStatus.NeedConfirm,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                TicketTypes = new List<TicketTypeRequest>
@@ -85,7 +85,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.Approve,
+               Status = ConfirmOrganizerProfileStatus.Approve,
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -481,7 +481,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.Reject, // Rejected
+               Status = ConfirmOrganizerProfileStatus.Reject, // Rejected
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -542,7 +542,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.NeedConfirm, // Pending
+               Status = ConfirmOrganizerProfileStatus.Pending, // Pending
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -602,7 +602,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.Approve,
+               Status = ConfirmOrganizerProfileStatus.Approve,
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -667,7 +667,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.Approve,
+               Status = ConfirmOrganizerProfileStatus.Approve,
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -742,7 +742,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.Approve,
+               Status = ConfirmOrganizerProfileStatus.Approve,
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -819,7 +819,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.Approve,
+               Status = ConfirmOrganizerProfileStatus.Approve,
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -973,7 +973,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.Approve,
+               Status = ConfirmOrganizerProfileStatus.Approve,
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -1290,7 +1290,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.Approve,
+               Status = ConfirmOrganizerProfileStatus.Approve,
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -1365,7 +1365,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.Approve,
+               Status = ConfirmOrganizerProfileStatus.Approve,
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -1438,7 +1438,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.Approve,
+               Status = ConfirmOrganizerProfileStatus.Approve,
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -1493,7 +1493,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1548,7 +1548,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1598,7 +1598,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1644,7 +1644,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1665,7 +1665,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1711,7 +1711,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = categoryId1,
                    EventCategory = eventCategory1,
@@ -1732,7 +1732,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = categoryId2,
                    EventCategory = eventCategory2,
@@ -1779,7 +1779,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1803,7 +1803,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1857,7 +1857,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1881,7 +1881,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1905,7 +1905,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 3",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1956,7 +1956,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1977,7 +1977,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2020,7 +2020,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2041,7 +2041,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2084,7 +2084,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2106,7 +2106,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2151,7 +2151,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = DateTime.Now.AddHours(1),
                    EndTime = DateTime.Now.AddHours(3),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2172,7 +2172,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = tomorrow.AddHours(10),
                    EndTime = tomorrow.AddHours(12),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2216,7 +2216,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = today.AddHours(20),
                    EndTime = today.AddHours(22),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2237,7 +2237,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = tomorrow.AddHours(10),
                    EndTime = tomorrow.AddHours(12),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2287,7 +2287,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = eventInWeek,
                    EndTime = eventInWeek.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2308,7 +2308,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = eventOutsideWeek,
                    EndTime = eventOutsideWeek.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2353,7 +2353,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = thisMonth.AddHours(14),
                    EndTime = thisMonth.AddHours(16),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2374,7 +2374,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = nextMonth.AddHours(10),
                    EndTime = nextMonth.AddHours(12),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2418,7 +2418,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = pastDate,
                    EndTime = pastDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2439,7 +2439,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2482,7 +2482,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = DateTime.Now.AddDays(-1), // Deleted
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2524,7 +2524,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.NeedConfirm, // Not approved
+                   RequireApproval = ConfirmEventStatus.NeedConfirm, // Not approved
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2545,7 +2545,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Reject, // Rejected
+                   RequireApproval = ConfirmEventStatus.Reject, // Rejected
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2566,7 +2566,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 3",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2612,7 +2612,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = categoryId,
                    EventCategory = eventCategory,
@@ -2634,7 +2634,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = categoryId,
                    EventCategory = eventCategory,
@@ -2680,7 +2680,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2701,7 +2701,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate.AddDays(1),
                    EndTime = futureDate.AddDays(1).AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2747,7 +2747,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2791,7 +2791,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2835,7 +2835,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2883,7 +2883,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Test Description",
                    StartTime = DateTime.Now.AddDays(5),
                    EndTime = DateTime.Now.AddDays(5).AddHours(3),
-                   RequireApproval = ConfirmStatus.Approve,
+                   RequireApproval = ConfirmEventStatus.Approve,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -3578,7 +3578,7 @@ namespace AIEvent.Application.Test.Services
            // Assert
            result.IsSuccess.Should().BeTrue();
            existingEvent.Publish.Should().BeTrue();
-           existingEvent.RequireApproval.Should().Be(ConfirmStatus.NeedConfirm);
+           existingEvent.RequireApproval.Should().Be(ConfirmEventStatus.NeedConfirm);
            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
        }
 
@@ -5476,7 +5476,7 @@ namespace AIEvent.Application.Test.Services
                EventCategoryId = categoryId,
                EventCategory = eventCategory,
                 District = "Quận 1",
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -5499,7 +5499,7 @@ namespace AIEvent.Application.Test.Services
                EventCategoryId = categoryId,
                EventCategory = eventCategory,
                District = "Quận 7",
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Paid,
@@ -5549,7 +5549,7 @@ namespace AIEvent.Application.Test.Services
                EndTime = futureDate.AddHours(2),
                EventCategoryId = Guid.NewGuid(),
                District = "Quận 1",
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -5574,7 +5574,7 @@ namespace AIEvent.Application.Test.Services
                EndTime = futureDate.AddDays(1).AddHours(2),
                EventCategoryId = Guid.NewGuid(),
                 District = "Quận 7",
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Paid,
@@ -5625,7 +5625,7 @@ namespace AIEvent.Application.Test.Services
                EndTime = futureDate.AddHours(2),
                EventCategoryId = Guid.NewGuid(),
                District = "Quận 1",
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -5647,7 +5647,7 @@ namespace AIEvent.Application.Test.Services
                EndTime = futureDate.AddDays(1).AddHours(2),
                EventCategoryId = Guid.NewGuid(),
                District = "Quận 1", // Same District
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Paid,
@@ -5695,7 +5695,7 @@ namespace AIEvent.Application.Test.Services
                EndTime = futureDate.AddHours(2),
                EventCategoryId = Guid.NewGuid(),
                 District = "Quận 1",
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -5717,7 +5717,7 @@ namespace AIEvent.Application.Test.Services
                EndTime = futureDate.AddDays(1).AddHours(2),
                EventCategoryId = Guid.NewGuid(), // Different category
                 District = "Quận 7", // Different District
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Paid,
@@ -5759,7 +5759,7 @@ namespace AIEvent.Application.Test.Services
                StartTime = futureDate,
                EndTime = futureDate.AddHours(2),
                EventCategoryId = Guid.NewGuid(),
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -5780,7 +5780,7 @@ namespace AIEvent.Application.Test.Services
                StartTime = futureDate.AddDays(1),
                EndTime = futureDate.AddDays(1).AddHours(2),
                EventCategoryId = Guid.NewGuid(),
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Paid,
@@ -5823,7 +5823,7 @@ namespace AIEvent.Application.Test.Services
                StartTime = futureDate,
                EndTime = futureDate.AddHours(2),
                EventCategoryId = Guid.NewGuid(),
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -5843,7 +5843,7 @@ namespace AIEvent.Application.Test.Services
                StartTime = pastDate, // Past event
                EndTime = pastDate.AddHours(2),
                EventCategoryId = Guid.NewGuid(),
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -5884,7 +5884,7 @@ namespace AIEvent.Application.Test.Services
                StartTime = futureDate,
                EndTime = futureDate.AddHours(2),
                EventCategoryId = Guid.NewGuid(),
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -5904,7 +5904,7 @@ namespace AIEvent.Application.Test.Services
                StartTime = futureDate.AddDays(1),
                EndTime = futureDate.AddDays(1).AddHours(2),
                EventCategoryId = Guid.NewGuid(),
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                DeletedAt = DateTime.Now, // Deleted
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -5945,7 +5945,7 @@ namespace AIEvent.Application.Test.Services
                StartTime = futureDate,
                EndTime = futureDate.AddHours(2),
                EventCategoryId = Guid.NewGuid(),
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -5965,7 +5965,7 @@ namespace AIEvent.Application.Test.Services
                StartTime = futureDate.AddDays(1),
                EndTime = futureDate.AddDays(1).AddHours(2),
                EventCategoryId = Guid.NewGuid(),
-               RequireApproval = ConfirmStatus.NeedConfirm, // Not approved
+               RequireApproval = ConfirmEventStatus.NeedConfirm, // Not approved
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -6031,7 +6031,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = ConfirmOrganizerProfileStatus.Approve
            };
 
            var draftEvent1 = new Event
@@ -6160,7 +6160,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = ConfirmOrganizerProfileStatus.Approve
            };
 
            var draftEvent = new Event
@@ -6240,7 +6240,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = ConfirmOrganizerProfileStatus.Approve
            };
 
            var draftEvent = new Event
@@ -6321,7 +6321,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = ConfirmOrganizerProfileStatus.Approve
            };
 
            var organizerProfile2 = new OrganizerProfile
@@ -6338,7 +6338,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = ConfirmOrganizerProfileStatus.Approve
            };
 
            var draftEventOrganizer1 = new Event
@@ -6422,7 +6422,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = ConfirmOrganizerProfileStatus.Approve
            };
 
            var organizerProfile2 = new OrganizerProfile
@@ -6439,7 +6439,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = ConfirmOrganizerProfileStatus.Approve
            };
 
            var needConfirmEvent = new Event
@@ -6455,7 +6455,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile1,
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.NeedConfirm,
+               RequireApproval = ConfirmEventStatus.NeedConfirm,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -6477,7 +6477,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile2,
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve, // Should be excluded
+               RequireApproval = ConfirmEventStatus.Approve, // Should be excluded
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -6491,7 +6491,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmStatus.NeedConfirm, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmEventStatus.NeedConfirm, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -6521,7 +6521,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = ConfirmOrganizerProfileStatus.Approve
            };
 
            var organizerProfile2 = new OrganizerProfile
@@ -6538,7 +6538,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = ConfirmOrganizerProfileStatus.Approve
            };
 
            var approvedEvent = new Event
@@ -6554,7 +6554,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile1,
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -6576,7 +6576,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile2,
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.NeedConfirm, // Should be excluded
+               RequireApproval = ConfirmEventStatus.NeedConfirm, // Should be excluded
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -6590,7 +6590,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmEventStatus.Approve, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -6620,7 +6620,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = ConfirmOrganizerProfileStatus.Approve
            };
 
            var organizerProfile2 = new OrganizerProfile
@@ -6637,7 +6637,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = ConfirmOrganizerProfileStatus.Approve
            };
 
            var rejectedEvent = new Event
@@ -6653,7 +6653,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile1,
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Reject,
+               RequireApproval = ConfirmEventStatus.Reject,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -6675,7 +6675,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile2,
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve, // Should be excluded
+               RequireApproval = ConfirmEventStatus.Approve, // Should be excluded
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -6689,7 +6689,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmStatus.Reject, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmEventStatus.Reject, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -6720,7 +6720,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = ConfirmOrganizerProfileStatus.Approve
            };
 
            var organizerProfile2 = new OrganizerProfile
@@ -6737,7 +6737,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = ConfirmOrganizerProfileStatus.Approve
            };
 
            var organizerEvent = new Event
@@ -6753,7 +6753,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile1,
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -6775,7 +6775,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile2,
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -6789,7 +6789,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(organizerId, null, ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(organizerId, null, ConfirmEventStatus.Approve, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -6816,7 +6816,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -6836,7 +6836,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -6849,7 +6849,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmEventStatus.Approve, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -6875,7 +6875,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -6895,7 +6895,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -6908,7 +6908,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "rock", ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "rock", ConfirmEventStatus.Approve, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -6936,7 +6936,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -6957,7 +6957,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -6970,7 +6970,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "minh", ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "minh", ConfirmEventStatus.Approve, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -6997,7 +6997,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -7017,7 +7017,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -7030,7 +7030,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "music", ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "music", ConfirmEventStatus.Approve, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -7057,7 +7057,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -7077,7 +7077,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -7090,7 +7090,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "", ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "", ConfirmEventStatus.Approve, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -7116,7 +7116,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -7136,7 +7136,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = false, // Unpublished - should be excluded
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -7149,7 +7149,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmEventStatus.Approve, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -7176,7 +7176,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -7196,7 +7196,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = true, // Deleted - should be excluded
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -7209,7 +7209,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmEventStatus.Approve, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -7237,7 +7237,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -7257,7 +7257,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(), // Different organizer
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -7277,7 +7277,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve, // Same organizer but different title
+               RequireApproval = ConfirmEventStatus.Approve, // Same organizer but different title
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 75,
                SoldQuantity = 0,
@@ -7290,7 +7290,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(organizerId, "rock", ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(organizerId, "rock", ConfirmEventStatus.Approve, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -7317,7 +7317,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -7337,7 +7337,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Reject,
+               RequireApproval = ConfirmEventStatus.Reject,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -7357,7 +7357,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.NeedConfirm,
+               RequireApproval = ConfirmEventStatus.NeedConfirm,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 75,
                SoldQuantity = 0,
@@ -7401,7 +7401,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -7421,7 +7421,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               RequireApproval = ConfirmEventStatus.Approve,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -7434,7 +7434,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(null, null, ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(null, null, ConfirmEventStatus.Approve, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -7459,12 +7459,12 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 10,
                RemainingTickets = 10,
                TicketPricingType = TicketPricingType.Free,
-               RequireApproval = ConfirmStatus.NeedConfirm,
+               RequireApproval = ConfirmEventStatus.NeedConfirm,
                IsDeleted = false
            };
        }
 
-       private static Event CreateEventProcessed(Guid id, ConfirmStatus? status)
+       private static Event CreateEventProcessed(Guid id, ConfirmEventStatus? status)
        {
            var e = CreateEventNeedConfirm(id);
            e.RequireApproval = status; // Approve/Reject/null represent already processed partition
@@ -7475,7 +7475,7 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID01_ConfirmEventAsync_WithEmptyUserId_ShouldReturnInvalidInput()
        {
            // Act
-           var result = await _eventService.ConfirmEventAsync(Guid.Empty, Guid.NewGuid(), new ConfirmRequest { Status = ConfirmStatus.Approve });
+           var result = await _eventService.ConfirmEventAsync(Guid.Empty, Guid.NewGuid(), new ConfirmEventRequest { Status = ConfirmEventStatus.Approve });
 
            // Assert
            result.IsSuccess.Should().BeFalse();
@@ -7487,7 +7487,7 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID02_ConfirmEventAsync_WithEmptyEventId_ShouldReturnInvalidInput()
        {
            // Act
-           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), Guid.Empty, new ConfirmRequest { Status = ConfirmStatus.Approve });
+           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), Guid.Empty, new ConfirmEventRequest { Status = ConfirmEventStatus.Approve });
 
            // Assert
            result.IsSuccess.Should().BeFalse();
@@ -7515,7 +7515,7 @@ namespace AIEvent.Application.Test.Services
                .Returns(new List<Event>().AsQueryable().BuildMock());
 
            // Act
-           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), Guid.NewGuid(), new ConfirmRequest { Status = ConfirmStatus.Approve });
+           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), Guid.NewGuid(), new ConfirmEventRequest { Status = ConfirmEventStatus.Approve });
 
            // Assert
            result.IsSuccess.Should().BeFalse();
@@ -7527,12 +7527,12 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID05_ConfirmEventAsync_AlreadyProcessed_ShouldReturnInvalidInput()
        {
            // Arrange: RequireApproval != NeedConfirm (Approve here)
-           var evt = CreateEventProcessed(Guid.NewGuid(), ConfirmStatus.Approve);
+           var evt = CreateEventProcessed(Guid.NewGuid(), ConfirmEventStatus.Approve);
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
                .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
 
            // Act
-           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmRequest { Status = ConfirmStatus.Approve });
+           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmEventRequest { Status = ConfirmEventStatus.Approve });
 
            // Assert
            result.IsSuccess.Should().BeFalse();
@@ -7549,7 +7549,7 @@ namespace AIEvent.Application.Test.Services
                .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
 
            // Act
-           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmRequest { Status = ConfirmStatus.Reject, Reason = "   " });
+           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmEventRequest { Status = ConfirmEventStatus.Reject, Reason = "   " });
 
            // Assert
            result.IsSuccess.Should().BeFalse();
@@ -7569,7 +7569,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 
            var userId = Guid.NewGuid();
-           var request = new ConfirmRequest { Status = ConfirmStatus.Reject, Reason = " invalid info  " };
+           var request = new ConfirmEventRequest { Status = ConfirmEventStatus.Reject, Reason = " invalid info  " };
 
            // Act
            var result = await _eventService.ConfirmEventAsync(userId, evt.Id, request);
@@ -7578,7 +7578,7 @@ namespace AIEvent.Application.Test.Services
            result.IsSuccess.Should().BeTrue();
            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.Is<Event>(e =>
                e.Id == evt.Id &&
-               e.RequireApproval == ConfirmStatus.Reject &&
+               e.RequireApproval == ConfirmEventStatus.Reject &&
                e.ReasonReject == "invalid info" &&
                e.RequireApprovalBy == userId &&
                e.RequireApprovalAt.HasValue
@@ -7598,7 +7598,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 
            var userId = Guid.NewGuid();
-           var request = new ConfirmRequest { Status = ConfirmStatus.Approve };
+           var request = new ConfirmEventRequest { Status = ConfirmEventStatus.Approve };
 
            // Act
            var result = await _eventService.ConfirmEventAsync(userId, evt.Id, request);
@@ -7607,7 +7607,7 @@ namespace AIEvent.Application.Test.Services
            result.IsSuccess.Should().BeTrue();
            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.Is<Event>(e =>
                e.Id == evt.Id &&
-               e.RequireApproval == ConfirmStatus.Approve &&
+               e.RequireApproval == ConfirmEventStatus.Approve &&
                e.RequireApprovalBy == userId &&
                e.RequireApprovalAt.HasValue
            )), Times.Once());
@@ -7624,7 +7624,7 @@ namespace AIEvent.Application.Test.Services
                .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
 
            // Act
-           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmRequest { Status = ConfirmStatus.Approve });
+           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmEventRequest { Status = ConfirmEventStatus.Approve });
 
            // Assert
            result.IsSuccess.Should().BeFalse();
@@ -7638,12 +7638,12 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID10_ConfirmEventAsync_AlreadyProcessedReject_ShouldReturnInvalidInput()
        {
            // Arrange
-           var evt = CreateEventProcessed(Guid.NewGuid(), ConfirmStatus.Reject);
+           var evt = CreateEventProcessed(Guid.NewGuid(), ConfirmEventStatus.Reject);
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
                .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
 
            // Act
-           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmRequest { Status = ConfirmStatus.Approve });
+           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmEventRequest { Status = ConfirmEventStatus.Approve });
 
            // Assert
            result.IsSuccess.Should().BeFalse();
