@@ -1058,9 +1058,6 @@ namespace AIEvent.Application.Services.Implements
 
             var endEventRequest = await _unitOfWork.EndEventRequestRepository
                 .Query()
-                    .Include(e => e.Event)
-                    .Include(e => e.OrganizerProfile)
-                    .Include(e => e.PaymentInformation)
                 .Where(e => e.Id == endEventRequestId && !e.IsDeleted)
                 .ProjectTo<EndEventReview>(_mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync();
@@ -1071,22 +1068,48 @@ namespace AIEvent.Application.Services.Implements
             return Result<EndEventReview>.Success(endEventRequest);
         }
 
-        public async Task<Result<EndEventReview>> GetEndEventRequestByEventIdAsync(Guid eventId)
+        public async Task<Result<BasePaginated<EndEventReviews>>> GetEndEventRequestsAsync(Guid? organizerId, ConfirmEventStatus? status = null, int pageNumber = 1, int pageSize = 10)
         {
-            if (eventId == Guid.Empty)
-                return ErrorResponse.FailureResult("Invalid EventId", ErrorCodes.InvalidInput);
+            IQueryable<EndEventRequest> endEventRequest = _unitOfWork.EndEventRequestRepository
+                                                .Query()
+                                                .AsNoTracking()
+                                                .Where(e => !e.IsDeleted);
 
-            var endRequest = await _unitOfWork.EndEventRequestRepository
-                .Query()
-                .Where(r => r.EventId == eventId)
-                .OrderByDescending(r => r.CreatedAt)
-                .ProjectTo<EndEventReview>(_mapper.ConfigurationProvider)
-                .FirstOrDefaultAsync();
+            if (organizerId.HasValue && organizerId != Guid.Empty)
+                endEventRequest = endEventRequest.Where(e => e.OrganizerProfileId == organizerId);
 
-            if (endRequest == null)
-                return ErrorResponse.FailureResult("No end event request found", ErrorCodes.NotFound);
+            if (status != null)
+                endEventRequest = endEventRequest.Where(e => e.Status == status);
 
-            return Result<EndEventReview>.Success(endRequest);
+            int totalCount = await endEventRequest.CountAsync();
+
+            var result = await endEventRequest
+                .OrderBy(p => p.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(e => new EndEventReviews
+                {
+                    OrganizerName = e.OrganizerProfile.ContactName ?? e.OrganizerProfile.ContactEmail,
+                    EventTitle = e.Event.Title,
+                    EventId = e.EventId,
+                    EndEventRequestId = e.Id,
+                    CreatedAt = e.CreatedAt,
+                    EndTime = e.Event.EndTime,
+                    StartTime = e.Event.StartTime,
+                    PayoutAmount = e.Event.PayoutAmount,
+                    PlatformFee = e.Event.PlatformFee,
+                    ReviewedAt = e.ReviewedAt,
+                    Status = e.Status,
+                    TotalAmount = e.Event.TotalAmount,
+                    AdminNote = e.AdminNote,
+                    Summary = e.Summary,
+                    EvidenceImages = string.IsNullOrEmpty(e.EvidenceImages)
+                        ? new List<string>()
+                        : e.EvidenceImages.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()
+                })
+                .ToListAsync();
+
+            return new BasePaginated<EndEventReviews>(result, totalCount, pageNumber, pageSize);
         }
 
     }

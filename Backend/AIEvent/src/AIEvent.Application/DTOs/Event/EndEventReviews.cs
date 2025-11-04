@@ -1,9 +1,8 @@
-﻿
-using AIEvent.Domain.Enums;
+﻿using AIEvent.Domain.Enums;
 
 namespace AIEvent.Application.DTOs.Event
 {
-    public class EndEventReview
+    public class EndEventReviews
     {
         public Guid EndEventRequestId { get; set; }
         public ConfirmEventStatus Status { get; set; }
@@ -22,11 +21,5 @@ namespace AIEvent.Application.DTOs.Event
         public decimal? PayoutAmount { get; set; }
 
         public string OrganizerName { get; set; } = default!;
-        public string ContactEmail { get; set; } = default!;
-        public string ContactPhone { get; set; } = default!;
-
-        public string BankName { get; set; } = default!;
-        public string AccountHolderName { get; set; } = default!;
-        public string AccountNumber { get; set; } = default!;
     }
 }
