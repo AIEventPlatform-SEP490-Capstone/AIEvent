@@ -143,13 +143,18 @@ namespace AIEvent.Infrastructure.Context
             builder.Entity<EndEventRequest>(entity =>
             {
                 entity.HasOne(e => e.OrganizerProfile)
-                    .WithMany(o => o.EndRequests)
+                    .WithMany(o => o.EndEventRequests)
                     .HasForeignKey(e => e.OrganizerProfileId)
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(e => e.Event)
-                    .WithOne(o => o.EndRequest)
+                    .WithOne(o => o.EndEventRequest)
                     .HasForeignKey<EndEventRequest>(o => o.EventId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.PaymentInformation)
+                    .WithMany(p => p.EndEventRequests)
+                    .HasForeignKey(e => e.PaymentInformationId)
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasIndex(e => e.EventId).HasDatabaseName("IX_EndEventRequests_EventId");
@@ -371,8 +376,8 @@ namespace AIEvent.Infrastructure.Context
                 entity.HasOne(pi => pi.User)
                       .WithMany(u => u.PaymentInformations)
                       .HasForeignKey(pi => pi.UserId)
-                      .OnDelete(DeleteBehavior.Cascade); 
-                      
+                      .OnDelete(DeleteBehavior.Cascade);
+
                 entity.HasIndex(pi => pi.UserId)
                       .HasDatabaseName("IX_PaymentInfo_UserId");
             });

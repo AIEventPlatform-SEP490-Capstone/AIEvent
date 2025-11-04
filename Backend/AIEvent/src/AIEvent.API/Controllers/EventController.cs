@@ -164,7 +164,7 @@ namespace AIEvent.API.Controllers
         [HttpGet("status")]
         [Authorize(Roles = "Admin, Manager, Organizer")]
         public async Task<ActionResult<SuccessResponse<BasePaginated<EventsRawResponse>>>> GetEventStatus([FromQuery] string? search,
-                                                                                                          [FromQuery] ConfirmStatus? status = null,
+                                                                                                          [FromQuery] ConfirmEventStatus? status = null,
                                                                                                           [FromQuery] int pageNumber = 1,
                                                                                                           [FromQuery] int pageSize = 10)
         {
@@ -189,7 +189,7 @@ namespace AIEvent.API.Controllers
 
         [HttpPatch("confirm/{id}")]
         [Authorize(Roles = "Admin,Manager")]
-        public async Task<ActionResult<SuccessResponse<object>>> ConfirmEvent(Guid id, [FromForm] ConfirmRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> ConfirmEvent(Guid id, [FromForm] ConfirmEventRequest request)
         {
             var userId = User.GetRequiredUserId();
             var result = await _eventService.ConfirmEventAsync(userId, id, request);
@@ -204,12 +204,12 @@ namespace AIEvent.API.Controllers
                 "Confirm event successfully"));
         }
 
-        [HttpPost("request-end/{id}")]
+        [HttpPost("request-end")]
         [Authorize(Roles = "Admin,Manager,Organizer")]
-        public async Task<ActionResult<SuccessResponse<object>>> RequestEndEvent(string id)
+        public async Task<ActionResult<SuccessResponse<object>>> RequestEndEvent(CompleteEventRequest request)
         {
             var userId = User.GetRequiredUserId();
-            var result = await _eventService.RequestEndEventAsync(userId, id);
+            var result = await _eventService.RequestEndEventAsync(userId, request);
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
@@ -218,15 +218,14 @@ namespace AIEvent.API.Controllers
             return Ok(SuccessResponse<object>.SuccessResult(
                 new { },
                 SuccessCodes.Created,
-                "Reuquest event successfully"));
+                "Request end event successfully"));
         }
 
         [HttpPatch("end-event/{id}")]
         [Authorize(Roles = "Admin,Manager")]
-        public async Task<ActionResult<SuccessResponse<object>>> ConfirmEndEvent(string id)
+        public async Task<ActionResult<SuccessResponse<object>>> ConfirmEndEvent(ApproveEndEventRequest request)
         {
-            var userId = User.GetRequiredUserId();
-            var result = await _eventService.ConfirmEndEventAsync(id);
+            var result = await _eventService.ConfirmEndEventAsync(request);
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
@@ -236,6 +235,22 @@ namespace AIEvent.API.Controllers
                 new { },
                 SuccessCodes.Created,
                 "End event successfully"));
+        }
+
+        [HttpGet("request-end/{endEventRequestId}")]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<ActionResult<SuccessResponse<EndEventReview>>> GetEndEventRequestById(Guid endEventRequestId)
+        {
+            var result = await _eventService.GetEndEventRequestByIdAsync(endEventRequestId);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<EndEventReview>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Created,
+                "Get end event request successfully"));
         }
     }
 }

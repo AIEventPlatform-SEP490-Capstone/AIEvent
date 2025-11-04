@@ -32,13 +32,13 @@ namespace AIEvent.Domain.Entities
         public string? TaxCode { get; set; }
         public string? CompanyDescription { get; set; }
 
-        public ConfirmStatus Status { get; set; } = ConfirmStatus.NeedConfirm;
+        public ConfirmOrganizerProfileStatus Status { get; set; } = ConfirmOrganizerProfileStatus.Pending;
         public DateTime? ConfirmAt { get; set; }
         public string? ConfirmBy { get; set; }
 
         public User User { get; set; } = default!;
         public ICollection<Event>? Events { get; set; }
-        public ICollection<EndEventRequest>? EndRequests { get; set; }
+        public ICollection<EndEventRequest> EndEventRequests { get; set; } = new List<EndEventRequest>();
         public ICollection<RevenueReport>? RevenueReports { get; set; }
     }
 }

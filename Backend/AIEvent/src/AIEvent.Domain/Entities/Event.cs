@@ -19,10 +19,14 @@ namespace AIEvent.Domain.Entities
         public int RemainingTickets { get; set; }
         public TicketPricingType TicketPricingType { get; set; }
         [Column(TypeName = "decimal(18,2)")]
-        public decimal TotalAmount { get; set; }
+        public decimal TotalAmount { get; set; } = 0;
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? PayoutAmount { get; set; } = 0;
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? PlatformFee { get; set; } = 0;
         public string? ImgListEvent { get; set; }
         public bool? Publish { get; set; } = false;
-        public ConfirmStatus? RequireApproval { get; set; }
+        public ConfirmEventStatus? RequireApproval { get; set; }
         public DateTime? RequireApprovalAt { get; set; }
         public Guid? RequireApprovalBy { get; set; }
         public string? ReasonReject { get; set; }
@@ -37,7 +41,7 @@ namespace AIEvent.Domain.Entities
         public DateTime? SaleEndTime { get; set; }
         public EventCategory EventCategory { get; set; } = default!;
         public virtual OrganizerProfile? OrganizerProfile { get; set; }
-        public virtual EndEventRequest? EndRequest { get; set; }
+        public virtual EndEventRequest? EndEventRequest { get; set; }
         public virtual ICollection<TicketType> TicketTypes { get; set; } = new List<TicketType>();
         public virtual ICollection<EventTag> EventTags { get; set; } = new List<EventTag>();
         public ICollection<FavoriteEvent> FavoriteEvents { get; set; } = new List<FavoriteEvent>();

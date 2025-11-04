@@ -294,7 +294,7 @@ namespace AIEvent.Infrastructure.Data
                     CompanyName = "EventPro Vietnam Co., Ltd",
                     TaxCode = "0312345678",
                     CompanyDescription = "Công ty hàng đầu trong lĩnh vực tổ chức sự kiện chuyên nghiệp tại Việt Nam.",
-                    Status = ConfirmStatus.Approve,
+                    Status = ConfirmOrganizerProfileStatus.Approve,
                     ConfirmAt = DateTime.UtcNow,
                     ConfirmBy = "SystemSeeder",
                     CreatedAt = DateTime.UtcNow,
@@ -327,7 +327,7 @@ namespace AIEvent.Infrastructure.Data
                     RemainingTickets = 101,
                     TicketPricingType = TicketPricingType.Paid,
                     Publish = true,
-                    RequireApproval = ConfirmStatus.Approve,
+                    RequireApproval = ConfirmEventStatus.Approve,
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System",
                 },
@@ -346,7 +346,7 @@ namespace AIEvent.Infrastructure.Data
                     RemainingTickets = 500,
                     TicketPricingType = TicketPricingType.Paid,
                     Publish = true,
-                    RequireApproval = ConfirmStatus.Approve,
+                    RequireApproval = ConfirmEventStatus.Approve,
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System",
                     LocationName = "Hà Nội tòa 3"
@@ -366,7 +366,7 @@ namespace AIEvent.Infrastructure.Data
                     RemainingTickets = 100,
                     TicketPricingType = TicketPricingType.Paid,
                     Publish = false, // chưa publish
-                    RequireApproval = ConfirmStatus.NeedConfirm,
+                    RequireApproval = ConfirmEventStatus.NeedConfirm,
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System",
                     LocationName = "Hà Nội tòa 2"
@@ -386,7 +386,7 @@ namespace AIEvent.Infrastructure.Data
                     RemainingTickets = 100,
                     TicketPricingType = TicketPricingType.Free,
                     Publish = true, 
-                    RequireApproval = ConfirmStatus.Approve,
+                    RequireApproval = ConfirmEventStatus.Approve,
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System",
                     LocationName = "Hà Nội tòa 1"
