@@ -20,6 +20,6 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result> RequestEndEventAsync(Guid userId, CompleteEventRequest request);
         Task<Result> ConfirmEndEventAsync(ApproveEndEventRequest request);
         Task<Result<EndEventReview>> GetEndEventRequestByIdAsync(Guid endEventRequestId);
-        Task<Result<BasePaginated<EndEventReviews>>> GetEndEventRequestsAsync(Guid? organizerId, ConfirmEventStatus? status = null, int pageNumber = 1, int pageSize = 10);
+        Task<Result<BasePaginated<EndEventReviews>>> GetEndEventRequestsAsync(Guid? organizerId, Guid? eventId, ConfirmEventStatus? status = null, int pageNumber = 1, int pageSize = 10);
     }
 }

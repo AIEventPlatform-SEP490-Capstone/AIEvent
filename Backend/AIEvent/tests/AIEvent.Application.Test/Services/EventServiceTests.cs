@@ -1887,7 +1887,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>())).Returns(set.Object);
 
             // Act
-            var result = await _eventService.GetEndEventRequestsAsync(null, null, 1, 10);
+            var result = await _eventService.GetEndEventRequestsAsync(null, null, null, 1, 10);
 
             // Assert
             result.Value!.Items.Should().HaveCount(2);
@@ -1910,7 +1910,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>())).Returns(set.Object);
 
             // Act
-            var result = await _eventService.GetEndEventRequestsAsync(org1.Id, null, 1, 10);
+            var result = await _eventService.GetEndEventRequestsAsync(org1.Id, null, null, 1, 10);
 
             // Assert
             result.Value!.Items.Should().HaveCount(1);
@@ -1930,7 +1930,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>())).Returns(set.Object);
 
             // Act
-            var result = await _eventService.GetEndEventRequestsAsync(Guid.Empty, ConfirmEventStatus.Approve, 1, 10);
+            var result = await _eventService.GetEndEventRequestsAsync(Guid.Empty, null, ConfirmEventStatus.Approve, 1, 10);
 
             // Assert
             result.Value!.Items.Should().HaveCount(1);
@@ -1951,7 +1951,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>())).Returns(set.Object);
 
             // Act
-            var result = await _eventService.GetEndEventRequestsAsync(null, ConfirmEventStatus.NeedMoreEvidence, 1, 10);
+            var result = await _eventService.GetEndEventRequestsAsync(null, null, ConfirmEventStatus.NeedMoreEvidence, 1, 10);
 
             // Assert
             result.Value!.Items.Should().HaveCount(1);
@@ -1970,7 +1970,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>())).Returns(set.Object);
 
             // Act
-            var result = await _eventService.GetEndEventRequestsAsync(null, null, 1, 10);
+            var result = await _eventService.GetEndEventRequestsAsync(null, null, null, 1, 10);
 
             // Assert
             result.Value!.Items.Should().HaveCount(1);
@@ -1990,7 +1990,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>())).Returns(set.Object);
 
             // Act
-            var result = await _eventService.GetEndEventRequestsAsync(null, null, 1, 1);
+            var result = await _eventService.GetEndEventRequestsAsync(null, null, null, 1, 1);
 
             // Assert
             result.Value!.Items.Should().HaveCount(1);
@@ -2009,13 +2009,55 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>())).Returns(set.Object);
 
             // Act
-            var result = await _eventService.GetEndEventRequestsAsync(null, null, 10, 10);
+            var result = await _eventService.GetEndEventRequestsAsync(null, null, null, 10, 10);
 
             // Assert
             result.Value!.Items.Should().HaveCount(0);
             result.Value.TotalItems.Should().Be(1);
             result.Value.CurrentPage.Should().Be(10);
             result.Value.PageSize.Should().Be(10);
+        }
+
+        [Fact]
+        public async Task UTCID08_GetEndEventRequestsAsync_FilterByEventId_ShouldReturnOnlyMatchingEvent()
+        {
+            // Arrange
+            var org = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Org", ContactEmail = "o@ex.com", ContactPhone = "1", Address = "addr" };
+            var ev1 = new Event { Id = Guid.NewGuid(), Title = "E1", Description = "D", StartTime = DateTime.UtcNow, EndTime = DateTime.UtcNow, TotalAmount = 0 };
+            var ev2 = new Event { Id = Guid.NewGuid(), Title = "E2", Description = "D", StartTime = DateTime.UtcNow, EndTime = DateTime.UtcNow, TotalAmount = 0 };
+            var r1 = new EndEventRequest { Id = Guid.NewGuid(), OrganizerProfileId = org.Id, EventId = ev1.Id, Status = ConfirmEventStatus.PendingApproval, OrganizerProfile = org, Event = ev1 };
+            var r2 = new EndEventRequest { Id = Guid.NewGuid(), OrganizerProfileId = org.Id, EventId = ev2.Id, Status = ConfirmEventStatus.PendingApproval, OrganizerProfile = org, Event = ev2 };
+            var set = new List<EndEventRequest> { r1, r2 }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>())).Returns(set.Object);
+
+            // Act
+            var result = await _eventService.GetEndEventRequestsAsync(null, ev1.Id, null, 1, 10);
+
+            // Assert
+            result.Value!.Items.Should().HaveCount(1);
+            result.Value.TotalItems.Should().Be(1);
+            result.Value.Items.First().EventId.Should().Be(ev1.Id);
+            result.Value.Items.First().EventTitle.Should().Be("E1");
+        }
+
+        [Fact]
+        public async Task UTCID09_GetEndEventRequestsAsync_FilterByEmptyEventId_ShouldNotFilterByEventId()
+        {
+            // Arrange
+            var org = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Org", ContactEmail = "o@ex.com", ContactPhone = "1", Address = "addr" };
+            var ev1 = new Event { Id = Guid.NewGuid(), Title = "E1", Description = "D", StartTime = DateTime.UtcNow, EndTime = DateTime.UtcNow, TotalAmount = 0 };
+            var ev2 = new Event { Id = Guid.NewGuid(), Title = "E2", Description = "D", StartTime = DateTime.UtcNow, EndTime = DateTime.UtcNow, TotalAmount = 0 };
+            var r1 = new EndEventRequest { Id = Guid.NewGuid(), OrganizerProfileId = org.Id, EventId = ev1.Id, Status = ConfirmEventStatus.PendingApproval, OrganizerProfile = org, Event = ev1 };
+            var r2 = new EndEventRequest { Id = Guid.NewGuid(), OrganizerProfileId = org.Id, EventId = ev2.Id, Status = ConfirmEventStatus.Approve, OrganizerProfile = org, Event = ev2 };
+            var set = new List<EndEventRequest> { r1, r2 }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>())).Returns(set.Object);
+
+            // Act
+            var result = await _eventService.GetEndEventRequestsAsync(null, Guid.Empty, null, 1, 10);
+
+            // Assert
+            result.Value!.Items.Should().HaveCount(2);
+            result.Value.TotalItems.Should().Be(2);
         }
 
         #endregion
