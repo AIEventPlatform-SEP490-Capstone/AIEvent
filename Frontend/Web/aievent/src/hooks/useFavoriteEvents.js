@@ -1,13 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
-import { favoriteEventAPI } from '../api/favoriteEventAPI';
-import { useSelector } from 'react-redux';
+import {
+  fetchFavoriteEvents,
+  addFavoriteEvent,
+  removeFavoriteEvent,
+  selectFavoriteEvents,
+  selectFavoriteEventsLoading,
+  selectFavoriteEventsError
+} from '../store/slices/favoriteEventsSlice';
+import { useSelector as useAuthSelector } from 'react-redux';
 
 export const useFavoriteEvents = () => {
-  const [favoriteEvents, setFavoriteEvents] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+  const favoriteEvents = useSelector(selectFavoriteEvents);
+  const loading = useSelector(selectFavoriteEventsLoading);
+  const error = useSelector(selectFavoriteEventsError);
+  const { isAuthenticated } = useAuthSelector((state) => state.auth);
+
+  // Automatically fetch favorite events when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(fetchFavoriteEvents());
+    }
+  }, [isAuthenticated, dispatch]);
 
   // Get favorite events
   const getFavoriteEvents = async (params = {}) => {
@@ -17,30 +33,17 @@ export const useFavoriteEvents = () => {
     }
     
     try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await favoriteEventAPI.getFavoriteEvents(params);
-      
-      if (response) {
-        const eventsData = response.items || response || [];
-        setFavoriteEvents(eventsData);
-        return eventsData;
-      }
-      
-      return [];
+      const result = await dispatch(fetchFavoriteEvents(params)).unwrap();
+      // Ensure we always return an array
+      return Array.isArray(result) ? result : [];
     } catch (err) {
-      setError('Không thể tải danh sách sự kiện yêu thích');
-      console.error('Error fetching favorite events:', err);
       toast.error('Không thể tải danh sách sự kiện yêu thích');
       return [];
-    } finally {
-      setLoading(false);
     }
   };
 
   // Add event to favorites
-  const addFavoriteEvent = async (eventId) => {
+  const addFavoriteEventHandler = async (eventId) => {
     // Only allow adding favorites if user is authenticated
     if (!isAuthenticated) {
       toast.error('Vui lòng đăng nhập để lưu sự kiện yêu thích');
@@ -48,25 +51,17 @@ export const useFavoriteEvents = () => {
     }
     
     try {
-      const response = await favoriteEventAPI.addFavoriteEvent(eventId);
-      
-      if (response) {
-        // Refresh the favorite events list
-        await getFavoriteEvents();
-        toast.success('Đã thêm vào danh sách yêu thích');
-        return true;
-      }
-      
-      return false;
+      await dispatch(addFavoriteEvent(eventId)).unwrap();
+      toast.success('Đã thêm vào danh sách yêu thích');
+      return true;
     } catch (err) {
-      console.error('Error adding favorite event:', err);
       toast.error('Không thể thêm sự kiện vào danh sách yêu thích');
       return false;
     }
   };
 
   // Remove event from favorites
-  const removeFavoriteEvent = async (eventId) => {
+  const removeFavoriteEventHandler = async (eventId) => {
     // Only allow removing favorites if user is authenticated
     if (!isAuthenticated) {
       toast.error('Vui lòng đăng nhập để lưu sự kiện yêu thích');
@@ -74,18 +69,10 @@ export const useFavoriteEvents = () => {
     }
     
     try {
-      const response = await favoriteEventAPI.removeFavoriteEvent(eventId);
-      
-      if (response) {
-        // Refresh the favorite events list
-        await getFavoriteEvents();
-        toast.success('Đã xóa khỏi danh sách yêu thích');
-        return true;
-      }
-      
-      return false;
+      await dispatch(removeFavoriteEvent(eventId)).unwrap();
+      toast.success('Đã xóa khỏi danh sách yêu thích');
+      return true;
     } catch (err) {
-      console.error('Error removing favorite event:', err);
       toast.error('Không thể xóa sự kiện khỏi danh sách yêu thích');
       return false;
     }
@@ -99,19 +86,22 @@ export const useFavoriteEvents = () => {
     }
     
     if (isCurrentlyFavorite) {
-      return await removeFavoriteEvent(eventId);
+      return await removeFavoriteEventHandler(eventId);
     } else {
-      return await addFavoriteEvent(eventId);
+      return await addFavoriteEventHandler(eventId);
     }
   };
 
+  // Ensure favoriteEvents is always an array
+  const safeFavoriteEvents = Array.isArray(favoriteEvents) ? favoriteEvents : [];
+
   return {
-    favoriteEvents,
+    favoriteEvents: safeFavoriteEvents,
     loading,
     error,
     getFavoriteEvents,
-    addFavoriteEvent,
-    removeFavoriteEvent,
+    addFavoriteEvent: addFavoriteEventHandler,
+    removeFavoriteEvent: removeFavoriteEventHandler,
     toggleFavorite
   };
 };

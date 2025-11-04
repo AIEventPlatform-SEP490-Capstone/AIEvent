@@ -24,6 +24,10 @@ const FavoriteEventsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
+  // Ensure favoriteEvents is always an array
+  const safeFavoriteEvents = Array.isArray(favoriteEvents) ? favoriteEvents : 
+                          (favoriteEvents && Array.isArray(favoriteEvents.items) ? favoriteEvents.items : []);
+
   useEffect(() => {
     // Only fetch favorite events if user is authenticated
     if (isAuthenticated) {
@@ -45,8 +49,6 @@ const FavoriteEventsPage = () => {
   const handleRemoveFavorite = async (eventId) => {
     // Remove the event from favorites
     await removeFavoriteEvent(eventId);
-    // Refresh the list after removal
-    getFavoriteEvents();
   };
 
   const formatDate = (dateString) => {
@@ -79,7 +81,7 @@ const FavoriteEventsPage = () => {
     { id: "all", name: "Tất cả" },
     ...Array.from(
       new Set(
-        favoriteEvents
+        safeFavoriteEvents
           .map(event => event.eventCategoryName)
           .filter(name => name)
       )
@@ -87,7 +89,7 @@ const FavoriteEventsPage = () => {
   ];
 
   // Filter events based on search and category
-  const filteredEvents = favoriteEvents.filter(event => {
+  const filteredEvents = safeFavoriteEvents.filter(event => {
     const matchesSearch = !searchQuery || 
       event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       event.description.toLowerCase().includes(searchQuery.toLowerCase());

@@ -18,7 +18,6 @@ import EventDetailGuestPage from "../pages/Event/EventDetailGuestPage";
 import ManagerDashboard from "../pages/Manager/ManagerDashboard";
 import ManagerEventsPage from "../pages/Manager/ManagerEventsPage";
 import ManagerEventDetailPage from "../pages/Manager/ManagerEventDetailPage";
-import ManagerEditEventPage from "../pages/Manager/ManagerEditEventPage";
 import ManagerProfile from "../pages/Manager/ManagerProfile";
 import AdminProfile from "../pages/Admin/AdminProfile";
 import UserManagement from "../pages/Admin/UserManagement";
@@ -215,7 +214,6 @@ export default function useRouterElement() {
         { index: true, element: <ManagerDashboard /> },
         { path: "events", element: <ManagerEventsPage /> },
         { path: "event/:eventId", element: <ManagerEventDetailPage /> },
-        { path: "event/:eventId/edit", element: <ManagerEditEventPage /> },
         { path: "events/category", element: <EventCategory /> },
         { path: "tags", element: <TagManagementPage userRole="manager" /> },
 
