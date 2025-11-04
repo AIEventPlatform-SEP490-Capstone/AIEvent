@@ -1,651 +1,591 @@
-import { useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import useOrganizers from "../../hooks/useOrganizers";
 import WalletDashboard from "./WalletDashboard";
+import {
+  User,
+  Building2,
+  Camera,
+  Edit3,
+  Save,
+  X,
+  FileBadge,
+  Globe,
+  Image as ImageIcon,
+  ListChecks,
+} from "lucide-react";
+
+const DICTIONARIES = {
+  organizationType: {
+    PrivateCompany: "Công ty tư nhân",
+    StateEnterprise: "Doanh nghiệp nhà nước",
+    NonProfit: "Tổ chức phi lợi nhuận",
+    IndividualBusiness: "Hộ kinh doanh",
+    StartUp: "Start-up",
+    CommunityClub: "Cộng đồng / CLB",
+    SchoolUniversity: "Trường / Đại học",
+    Other: "Khác",
+  },
+  organizerType: { Individual: "Cá nhân", Business: "Doanh nghiệp" },
+  eventFrequency: {
+    Weekly: "Hàng tuần",
+    Monthly: "Hàng tháng",
+    Quarterly: "Hàng quý",
+    Yearly: "Hàng năm",
+    Occasionally: "Thỉnh thoảng",
+  },
+  eventSize: {
+    Small: "Nhỏ",
+    Medium: "Trung bình",
+    Large: "Lớn",
+    ExtraLarge: "Rất lớn",
+  },
+  eventExperienceLevel: {
+    Beginner: "Mới bắt đầu",
+    Intermediate: "Trung bình",
+    Experienced: "Có kinh nghiệm",
+    Expert: "Chuyên nghiệp",
+  },
+};
 
 export default function OrganizerProfilePage() {
+  const { getOrganizerProfile, updateOrganizer } = useOrganizers();
+  const containerRef = useRef(null);
+
   const [activeTab, setActiveTab] = useState("profile");
-  const [profile, setProfile] = useState({
-    name: "Vietnam Tech Community",
-    email: "contact@vtechcommunity.com",
-    phone: "0123456789",
-    bio: "Cộng đồng công nghệ hàng đầu Việt Nam, tổ chức các sự kiện chất lượng cao về AI, Blockchain và Startup",
-    location: "Hà Nội",
-    website: "https://vtechcommunity.com",
-    avatar: "/tech-community-logo.png",
-    companyName: "Vietnam Tech Community",
-    taxCode: "0123456789",
-    address: "123 Nguyễn Huệ, Quận 1, TP.HCM",
-    bankAccount: "1234567890",
-    bankName: "Vietcombank",
-  });
+  const [profile, setProfile] = useState({});
+  const [originalProfile, setOriginalProfile] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const [notifications, setNotifications] = useState({
-    emailBookings: true,
-    emailPayments: true,
-    emailRefunds: true,
-    pushBookings: true,
-    pushPayments: false,
-    smsImportant: true,
-  });
+  // store ref to last focused element id and caret positions to restore after setState
+  const lastFocusRef = useRef({ id: null, start: null, end: null });
 
-  const [privacy, setPrivacy] = useState({
-    profilePublic: true,
-    showEvents: true,
-    showStats: false,
-    allowMessages: true,
-  });
+  //  Fetch dữ liệu từ API
+  useEffect(() => {
+    const fetchProfile = async () => {
+      setLoading(true);
+      const data = await getOrganizerProfile();
+      setProfile(data || {});
+      setOriginalProfile(JSON.parse(JSON.stringify(data || {})));
+      setLoading(false);
+    };
+    fetchProfile();
+  }, []);
 
-  const organizerStats = {
-    totalEvents: 24,
-    totalAttendees: 15420,
-    totalRevenue: 2450000000,
-    avgRating: 4.7,
-    totalReviews: 1250,
-    successRate: 98.5,
-    repeatCustomers: 65,
+  // stable callbacks
+  const handleChange = useCallback((key, value) => {
+    setProfile((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
+  const handleFileChange = useCallback((key, file) => {
+    if (!file) return;
+    const previewUrl = URL.createObjectURL(file);
+    setProfile((prev) => ({
+      ...prev,
+      [key]: file,
+      [`preview_${key}`]: previewUrl,
+    }));
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const formData = new FormData();
+      for (const key in profile) {
+        const val = profile[key];
+        if (val === undefined || val === null) continue;
+        if (val instanceof File) formData.append(key, val);
+        else formData.append(key, String(val));
+      }
+      await updateOrganizer(formData);
+      setOriginalProfile(JSON.parse(JSON.stringify(profile)));
+      setEditMode(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
   };
 
+  const handleCancel = () => {
+    setProfile(JSON.parse(JSON.stringify(originalProfile)));
+    setEditMode(false);
+  };
+
+  // Chỉ scroll khi đổi tab khác, không khi nhập
   const handleTabChange = (tab) => {
     setActiveTab(tab);
+    setTimeout(() => {
+      if (containerRef.current)
+        containerRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+    }, 50);
   };
 
-  const SwitchComponent = ({ checked, onChange, id, label, description }) => (
-    <div className="flex items-center justify-between mb-4">
-      <div>
-        <label htmlFor={id} className="block text-sm font-medium">
+  if (loading)
+    return (
+      <div className="flex justify-center items-center py-20 text-gray-500">
+        Đang tải hồ sơ tổ chức...
+      </div>
+    );
+
+  /**
+   * Helpers: restore focus & selection after a state update.
+   * We call this after each local change so the user can continue typing.
+   */
+  const restoreFocusForId = (id) => {
+    setTimeout(() => {
+      if (!id) return;
+      const el = document.getElementById(id);
+      if (!el) return;
+      try {
+        el.focus();
+        const { start, end } = lastFocusRef.current || {};
+        if (typeof el.setSelectionRange === "function") {
+          // if we have previous caret position, restore it; otherwise put caret at end
+          const len = el.value?.length ?? 0;
+          const s = Number.isInteger(start) ? start : len;
+          const e = Number.isInteger(end) ? end : s;
+          el.setSelectionRange(Math.min(s, len), Math.min(e, len));
+        }
+      } catch (err) {
+        // ignore (some elements like select won't support setSelectionRange)
+      }
+    }, 0);
+  };
+
+  /**
+   * Input (text) component which preserves caret/focus.
+   */
+  const Input = ({ label, id, value, onChange, type = "text" }) => {
+    const handleLocalChange = (e) => {
+      const v = e.target.value;
+      // remember caret position before update
+      lastFocusRef.current = {
+        id,
+        start: e.target.selectionStart,
+        end: e.target.selectionEnd,
+      };
+      onChange(v);
+      restoreFocusForId(id);
+    };
+
+    const handleFocus = (e) => {
+      lastFocusRef.current = {
+        id,
+        start: e.target.selectionStart,
+        end: e.target.selectionEnd,
+      };
+    };
+
+    const handleSelect = (e) => {
+      lastFocusRef.current = {
+        id,
+        start: e.target.selectionStart,
+        end: e.target.selectionEnd,
+      };
+    };
+
+    return (
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">
           {label}
         </label>
-        <p className="text-sm text-gray-500">{description}</p>
+        <input
+          id={id}
+          name={id}
+          type={type}
+          value={value ?? ""}
+          disabled={!editMode}
+          onChange={handleLocalChange}
+          onFocus={handleFocus}
+          onSelect={handleSelect}
+          className={`block w-full px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            editMode
+              ? "border border-gray-300 bg-white"
+              : "border border-transparent bg-gray-50"
+          }`}
+        />
       </div>
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-      />
-    </div>
-  );
-
-  const SelectComponent = ({ value, onChange, children, label, id }) => (
-    <div className="space-y-2 mb-4">
-      <label htmlFor={id} className="block text-sm font-medium">
-        {label}
-      </label>
-      <select
-        id={id}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-      >
-        {children}
-      </select>
-    </div>
-  );
-
-  const AvatarComponent = ({ src, fallback, className }) => (
-    <div
-      className={`relative inline-flex items-center justify-center w-24 h-24 overflow-hidden bg-gray-100 rounded-full ${className}`}
-    >
-      <img src={src} alt="" className="w-full h-full object-cover" />
-      {!src && <span className="text-gray-500 font-medium">{fallback}</span>}
-    </div>
-  );
-
-  const BadgeComponent = ({ children, className }) => (
-    <span
-      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${className}`}
-    >
-      {children}
-    </span>
-  );
-
-  const Card = ({ children, className }) => (
-    <div className={`border border-gray-200 rounded-lg shadow-sm ${className}`}>
-      {children}
-    </div>
-  );
-
-  const CardHeader = ({ children }) => (
-    <div className="px-6 py-4 border-b border-gray-200">{children}</div>
-  );
-
-  const CardTitle = ({ children, className }) => (
-    <h3 className={`text-lg font-semibold ${className}`}>{children}</h3>
-  );
-
-  const CardContent = ({ children, className }) => (
-    <div className={`p-6 ${className}`}>{children}</div>
-  );
-
-  const Button = ({
-    children,
-    variant = "default",
-    size = "default",
-    onClick,
-    className,
-    type = "button",
-  }) => {
-    const baseClasses =
-      "inline-flex items-center justify-center rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2";
-    const variants = {
-      default:
-        "px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500",
-      outline:
-        "px-4 py-2 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-blue-500",
-    };
-    const sizes = {
-      default: "text-sm",
-      sm: "text-xs px-3 py-1.5",
-    };
-    return (
-      <button
-        type={type}
-        onClick={onClick}
-        className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
-      >
-        {children}
-      </button>
     );
   };
 
-  const Input = ({ id, type = "text", value, onChange, className }) => (
-    <input
-      id={id}
-      type={type}
-      value={value}
-      onChange={onChange}
-      className={`block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${className}`}
-    />
+  /**
+   * Textarea with caret preservation.
+   */
+  const Textarea = ({ label, id, value, onChange }) => {
+    const handleLocalChange = (e) => {
+      const v = e.target.value;
+      lastFocusRef.current = {
+        id,
+        start: e.target.selectionStart,
+        end: e.target.selectionEnd,
+      };
+      onChange(v);
+      restoreFocusForId(id);
+    };
+
+    const handleFocus = (e) => {
+      lastFocusRef.current = {
+        id,
+        start: e.target.selectionStart,
+        end: e.target.selectionEnd,
+      };
+    };
+
+    return (
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">
+          {label}
+        </label>
+        <textarea
+          id={id}
+          name={id}
+          rows={3}
+          value={value ?? ""}
+          disabled={!editMode}
+          onChange={handleLocalChange}
+          onFocus={handleFocus}
+          className={`block w-full px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            editMode
+              ? "border border-gray-300 bg-white"
+              : "border border-transparent bg-gray-50"
+          }`}
+        />
+      </div>
+    );
+  };
+
+  /**
+   * Select that preserves focus after change.
+   */
+  const Select = ({ label, id, options, value, onChange }) => {
+    const handleLocalChange = (e) => {
+      const v = e.target.value;
+      // For select, we just remember the id (caret not applicable)
+      lastFocusRef.current = { id, start: null, end: null };
+      onChange(v);
+      restoreFocusForId(id);
+    };
+
+    const handleFocus = (e) => {
+      lastFocusRef.current = { id, start: null, end: null };
+    };
+
+    return (
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">
+          {label}
+        </label>
+        <select
+          id={id}
+          name={id}
+          value={value ?? ""}
+          disabled={!editMode}
+          onChange={handleLocalChange}
+          onFocus={handleFocus}
+          className={`block w-full px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            editMode
+              ? "border border-gray-300 bg-white"
+              : "border border-transparent bg-gray-50"
+          }`}
+        >
+          <option value="">-- Chọn --</option>
+          {Object.entries(options).map(([k, v]) => (
+            <option key={k} value={k}>
+              {v}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  };
+
+  const Section = ({ title, icon, children }) => (
+    <div className="border border-gray-200 rounded-lg shadow-sm">
+      <div className="px-6 py-4 border-b border-gray-200 flex items-center gap-2">
+        {icon}
+        <h3 className="text-lg font-semibold">{title}</h3>
+      </div>
+      <div className="p-6 space-y-4">{children}</div>
+    </div>
   );
 
-  const Label = ({ htmlFor, children, className }) => (
-    <label
-      htmlFor={htmlFor}
-      className={`block text-sm font-medium text-gray-700 ${className}`}
-    >
-      {children}
-    </label>
-  );
-
-  const Textarea = ({ id, value, onChange, rows = 3, className }) => (
-    <textarea
-      id={id}
-      rows={rows}
-      value={value}
-      onChange={onChange}
-      className={`block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${className}`}
-    />
-  );
+  const dictionaries = DICTIONARIES; // local alias for readability
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="flex items-center gap-3 mb-8">
-        <span className="h-6 w-6 text-gray-500">👤</span>
-        <h1 className="text-3xl font-bold">Hồ sơ Organizer</h1>
-      </div>
-
-      <div className="space-y-6">
-        {/* Tabs List */}
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-8" aria-label="Tabs">
-            {["profile", "business", "wallet", "notifications", "privacy"].map(
-              (tab) => (
-                <button
-                  key={tab}
-                  onClick={() => handleTabChange(tab)}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === tab
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                >
-                  {tab === "profile" && "Hồ sơ"}
-                  {tab === "business" && "Doanh nghiệp"}
-                  {tab === "wallet" && "Ví & Thanh toán"}
-                  {tab === "notifications" && "Thông báo"}
-                  {tab === "privacy" && "Quyền riêng tư"}
-                </button>
-              )
-            )}
-          </nav>
+    <div ref={containerRef} className="container mx-auto px-4 py-8 max-w-6xl">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <div className="flex items-center gap-3">
+          <Building2 className="text-gray-600" size={24} />
+          <h1 className="text-3xl font-bold">Hồ sơ tổ chức sự kiện</h1>
         </div>
 
-        {/* Tab Contents */}
-        {activeTab === "profile" && (
-          <div className="space-y-6">
-            {/* Profile Overview */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="h-5 w-5 text-gray-500">👤</span>
-                  Thông tin cá nhân
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center gap-6">
-                  <AvatarComponent
-                    src={profile.avatar || "/placeholder.svg"}
-                    fallback={profile.name.charAt(0)}
-                    className="h-24 w-24"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h2 className="text-2xl font-bold">{profile.name}</h2>
-                      <BadgeComponent className="bg-blue-100 text-blue-800">
-                        ✅ Đã xác minh
-                      </BadgeComponent>
-                      <BadgeComponent className="bg-green-100 text-green-800">
-                        🏆 Organizer Pro
-                      </BadgeComponent>
-                    </div>
-                    <p className="text-gray-500 mb-4">{profile.bio}</p>
-                    <Button variant="outline">Thay đổi ảnh đại diện</Button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Tên tổ chức</Label>
-                    <Input
-                      id="name"
-                      value={profile.name}
-                      onChange={(e) =>
-                        setProfile((prev) => ({
-                          ...prev,
-                          name: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={profile.email}
-                      onChange={(e) =>
-                        setProfile((prev) => ({
-                          ...prev,
-                          email: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Số điện thoại</Label>
-                    <Input
-                      id="phone"
-                      value={profile.phone}
-                      onChange={(e) =>
-                        setProfile((prev) => ({
-                          ...prev,
-                          phone: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="website">Website</Label>
-                    <Input
-                      id="website"
-                      value={profile.website}
-                      onChange={(e) =>
-                        setProfile((prev) => ({
-                          ...prev,
-                          website: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Giới thiệu tổ chức</Label>
-                  <Textarea
-                    id="bio"
-                    value={profile.bio}
-                    onChange={(e) =>
-                      setProfile((prev) => ({ ...prev, bio: e.target.value }))
-                    }
-                    rows={4}
-                  />
-                </div>
-
-                <SelectComponent
-                  value={profile.location}
-                  onChange={(value) =>
-                    setProfile((prev) => ({ ...prev, location: value }))
-                  }
-                  label="Địa điểm hoạt động"
-                  id="location"
-                >
-                  <option value="Hà Nội">Hà Nội</option>
-                  <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
-                  <option value="Đà Nẵng">Đà Nẵng</option>
-                  <option value="Cần Thơ">Cần Thơ</option>
-                  <option value="Toàn quốc">Toàn quốc</option>
-                </SelectComponent>
-              </CardContent>
-            </Card>
-
-            {/* Organizer Statistics */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="h-5 w-5 text-gray-500">📈</span>
-                  Thống kê hoạt động
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-2">
-                      <span className="h-8 w-8 text-blue-500">📅</span>
-                    </div>
-                    <div className="text-2xl font-bold">
-                      {organizerStats.totalEvents}
-                    </div>
-                    <p className="text-sm text-gray-500">Sự kiện đã tổ chức</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-2">
-                      <span className="h-8 w-8 text-green-500">👥</span>
-                    </div>
-                    <div className="text-2xl font-bold">
-                      {organizerStats.totalAttendees.toLocaleString()}
-                    </div>
-                    <p className="text-sm text-gray-500">Tổng người tham gia</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-2">
-                      <span className="h-8 w-8 text-purple-500">📈</span>
-                    </div>
-                    <div className="text-2xl font-bold">
-                      {(organizerStats.totalRevenue / 1000000000).toFixed(1)}B đ
-                    </div>
-                    <p className="text-sm text-gray-500">Tổng doanh thu</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-2">
-                      <span className="h-8 w-8 text-yellow-500">⭐</span>
-                    </div>
-                    <div className="text-2xl font-bold">
-                      {organizerStats.avgRating}
-                    </div>
-                    <p className="text-sm text-gray-500">Đánh giá trung bình</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {activeTab === "business" && (
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="h-5 w-5 text-gray-500">🏢</span>
-                  Thông tin doanh nghiệp
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="companyName">Tên công ty</Label>
-                    <Input
-                      id="companyName"
-                      value={profile.companyName}
-                      onChange={(e) =>
-                        setProfile((prev) => ({
-                          ...prev,
-                          companyName: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="taxCode">Mã số thuế</Label>
-                    <Input
-                      id="taxCode"
-                      value={profile.taxCode}
-                      onChange={(e) =>
-                        setProfile((prev) => ({
-                          ...prev,
-                          taxCode: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="address">Địa chỉ công ty</Label>
-                  <Textarea
-                    id="address"
-                    value={profile.address}
-                    onChange={(e) =>
-                      setProfile((prev) => ({
-                        ...prev,
-                        address: e.target.value,
-                      }))
-                    }
-                    rows={2}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="bankAccount">Số tài khoản ngân hàng</Label>
-                    <Input
-                      id="bankAccount"
-                      value={profile.bankAccount}
-                      onChange={(e) =>
-                        setProfile((prev) => ({
-                          ...prev,
-                          bankAccount: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <SelectComponent
-                      value={profile.bankName}
-                      onChange={(value) =>
-                        setProfile((prev) => ({ ...prev, bankName: value }))
-                      }
-                      label="Tên ngân hàng"
-                      id="bankName"
-                    >
-                      <option value="Vietcombank">Vietcombank</option>
-                      <option value="VietinBank">VietinBank</option>
-                      <option value="BIDV">BIDV</option>
-                      <option value="Agribank">Agribank</option>
-                      <option value="Techcombank">Techcombank</option>
-                      <option value="MB Bank">MB Bank</option>
-                    </SelectComponent>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t">
-                  <h3 className="font-semibold mb-4">Tài liệu xác minh</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                      <span className="h-8 w-8 mx-auto mb-2 text-gray-500 block">
-                        🏢
-                      </span>
-                      <p className="text-sm text-gray-500 mb-2">
-                        Giấy phép kinh doanh
-                      </p>
-                      <Button variant="outline" size="sm">
-                        Tải lên
-                      </Button>
-                    </div>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                      <span className="h-8 w-8 mx-auto mb-2 text-gray-500 block">
-                        💳
-                      </span>
-                      <p className="text-sm text-gray-500 mb-2">
-                        Chứng minh tài khoản ngân hàng
-                      </p>
-                      <Button variant="outline" size="sm">
-                        Tải lên
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {activeTab === "wallet" && (
-          <div className="space-y-6">
-            <WalletDashboard />
-          </div>
-        )}
-
-        {activeTab === "notifications" && (
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="h-5 w-5 text-gray-500">🔔</span>
-                  Cài đặt thông báo
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <SwitchComponent
-                    checked={notifications.emailBookings}
-                    onChange={(checked) =>
-                      setNotifications((prev) => ({
-                        ...prev,
-                        emailBookings: checked,
-                      }))
-                    }
-                    id="emailBookings"
-                    label="Email đặt vé mới"
-                    description="Thông báo khi có người đặt vé sự kiện"
-                  />
-                  <SwitchComponent
-                    checked={notifications.emailPayments}
-                    onChange={(checked) =>
-                      setNotifications((prev) => ({
-                        ...prev,
-                        emailPayments: checked,
-                      }))
-                    }
-                    id="emailPayments"
-                    label="Email thanh toán"
-                    description="Thông báo về các giao dịch thanh toán"
-                  />
-                  <SwitchComponent
-                    checked={notifications.emailRefunds}
-                    onChange={(checked) =>
-                      setNotifications((prev) => ({
-                        ...prev,
-                        emailRefunds: checked,
-                      }))
-                    }
-                    id="emailRefunds"
-                    label="Email hoàn tiền"
-                    description="Thông báo về yêu cầu hoàn tiền"
-                  />
-                  <SwitchComponent
-                    checked={notifications.pushBookings}
-                    onChange={(checked) =>
-                      setNotifications((prev) => ({
-                        ...prev,
-                        pushBookings: checked,
-                      }))
-                    }
-                    id="pushBookings"
-                    label="Push notification đặt vé"
-                    description="Thông báo đẩy trên thiết bị"
-                  />
-                  <SwitchComponent
-                    checked={notifications.smsImportant}
-                    onChange={(checked) =>
-                      setNotifications((prev) => ({
-                        ...prev,
-                        smsImportant: checked,
-                      }))
-                    }
-                    id="smsImportant"
-                    label="SMS quan trọng"
-                    description="Tin nhắn SMS cho thông báo quan trọng"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {activeTab === "privacy" && (
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="h-5 w-5 text-gray-500">🛡️</span>
-                  Cài đặt quyền riêng tư
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <SwitchComponent
-                    checked={privacy.profilePublic}
-                    onChange={(checked) =>
-                      setPrivacy((prev) => ({
-                        ...prev,
-                        profilePublic: checked,
-                      }))
-                    }
-                    id="profilePublic"
-                    label="Hồ sơ công khai"
-                    description="Cho phép người dùng xem thông tin tổ chức"
-                  />
-                  <SwitchComponent
-                    checked={privacy.showEvents}
-                    onChange={(checked) =>
-                      setPrivacy((prev) => ({ ...prev, showEvents: checked }))
-                    }
-                    id="showEvents"
-                    label="Hiển thị danh sách sự kiện"
-                    description="Cho phép xem các sự kiện đã tổ chức"
-                  />
-                  <SwitchComponent
-                    checked={privacy.showStats}
-                    onChange={(checked) =>
-                      setPrivacy((prev) => ({ ...prev, showStats: checked }))
-                    }
-                    id="showStats"
-                    label="Hiển thị thống kê"
-                    description="Cho phép xem số liệu thống kê hoạt động"
-                  />
-                  <SwitchComponent
-                    checked={privacy.allowMessages}
-                    onChange={(checked) =>
-                      setPrivacy((prev) => ({
-                        ...prev,
-                        allowMessages: checked,
-                      }))
-                    }
-                    id="allowMessages"
-                    label="Cho phép nhắn tin"
-                    description="Nhận tin nhắn từ người tham gia sự kiện"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        <div className="flex gap-3">
+          {!editMode ? (
+            <button
+              onClick={() => setEditMode(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              <Edit3 size={18} /> Chỉnh sửa hồ sơ
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-60"
+              >
+                <Save size={18} /> {saving ? "Đang lưu..." : "Lưu"}
+              </button>
+              <button
+                onClick={handleCancel}
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100"
+              >
+                <X size={18} /> Hủy
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
-      <div className="flex gap-4 pt-6">
-        <Button className="flex-1">Lưu tất cả thay đổi</Button>
-        <Button variant="outline">Hủy</Button>
+      {/* Avatar */}
+      <div className="flex items-center gap-6 mb-10">
+        <div className="relative w-28 h-28 rounded-full overflow-hidden border-4 border-blue-100 shadow-sm">
+          <img
+            src={
+              profile.preview_imgCompany ||
+              profile.imgCompany ||
+              "/placeholder.svg"
+            }
+            alt="Company Logo"
+            className="object-cover w-full h-full"
+          />
+          {editMode && (
+            <label className="absolute bottom-0 right-0 bg-blue-600 p-2 rounded-full cursor-pointer hover:bg-blue-700">
+              <Camera size={16} className="text-white" />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) =>
+                  handleFileChange("imgCompany", e.target.files?.[0])
+                }
+              />
+            </label>
+          )}
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold">
+            {profile.companyName || "Chưa có tên công ty"}
+          </h2>
+          <p className="text-gray-500">{profile.companyDescription}</p>
+        </div>
       </div>
+
+      {/* Tabs */}
+      <div className="border-b border-gray-200 mb-6">
+        <nav className="flex space-x-8" aria-label="Tabs">
+          {[
+            ["profile", "Hồ sơ"],
+            ["business", "Doanh nghiệp"],
+            ["social", "Mạng xã hội"],
+            ["wallet", "Ví & Thanh toán"],
+          ].map(([tab, label]) => (
+            <button
+              key={tab}
+              onClick={() => handleTabChange(tab)}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === tab
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* PROFILE TAB */}
+      {activeTab === "profile" && (
+        <div className="space-y-6">
+          <Section title="Thông tin cá nhân" icon={<User size={18} />}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Tên người liên hệ"
+                id="contactName"
+                value={profile.contactName}
+                onChange={(v) => handleChange("contactName", v)}
+              />
+              <Input
+                label="Email"
+                id="contactEmail"
+                type="email"
+                value={profile.contactEmail}
+                onChange={(v) => handleChange("contactEmail", v)}
+              />
+              <Input
+                label="Số điện thoại"
+                id="contactPhone"
+                value={profile.contactPhone}
+                onChange={(v) => handleChange("contactPhone", v)}
+              />
+              <Input
+                label="Địa chỉ"
+                id="address"
+                value={profile.address}
+                onChange={(v) => handleChange("address", v)}
+              />
+            </div>
+            <Textarea
+              label="Kinh nghiệm & mô tả"
+              id="experienceDescription"
+              value={profile.experienceDescription}
+              onChange={(v) => handleChange("experienceDescription", v)}
+            />
+          </Section>
+
+          <Section
+            title="Loại hình tổ chức & quy mô"
+            icon={<ListChecks size={18} />}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Select
+                label="Loại hình tổ chức"
+                id="organizationType"
+                value={profile.organizationType}
+                options={dictionaries.organizationType}
+                onChange={(v) => handleChange("organizationType", v)}
+              />
+              <Select
+                label="Loại Organizer"
+                id="organizerType"
+                value={profile.organizerType}
+                options={dictionaries.organizerType}
+                onChange={(v) => handleChange("organizerType", v)}
+              />
+              <Select
+                label="Kinh nghiệm tổ chức"
+                id="eventExperienceLevel"
+                value={profile.eventExperienceLevel}
+                options={dictionaries.eventExperienceLevel}
+                onChange={(v) => handleChange("eventExperienceLevel", v)}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Select
+                label="Tần suất tổ chức sự kiện"
+                id="eventFrequency"
+                value={profile.eventFrequency}
+                options={dictionaries.eventFrequency}
+                onChange={(v) => handleChange("eventFrequency", v)}
+              />
+              <Select
+                label="Quy mô sự kiện"
+                id="eventSize"
+                value={profile.eventSize}
+                options={dictionaries.eventSize}
+                onChange={(v) => handleChange("eventSize", v)}
+              />
+            </div>
+          </Section>
+        </div>
+      )}
+
+      {/* BUSINESS TAB */}
+      {activeTab === "business" && (
+        <div className="space-y-6">
+          <Section
+            title="Thông tin doanh nghiệp"
+            icon={<Building2 size={18} />}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Tên công ty"
+                id="companyName"
+                value={profile.companyName}
+                onChange={(v) => handleChange("companyName", v)}
+              />
+              <Input
+                label="Mã số thuế"
+                id="taxCode"
+                value={profile.taxCode}
+                onChange={(v) => handleChange("taxCode", v)}
+              />
+            </div>
+            <Textarea
+              label="Giới thiệu công ty"
+              id="companyDescription"
+              value={profile.companyDescription}
+              onChange={(v) => handleChange("companyDescription", v)}
+            />
+            <Input
+              label="Website"
+              id="website"
+              value={profile.website}
+              onChange={(v) => handleChange("website", v)}
+            />
+          </Section>
+
+          <Section title="Giấy tờ xác minh" icon={<FileBadge size={18} />}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                ["imgFrontIdentity", "Ảnh mặt trước CCCD"],
+                ["imgBackIdentity", "Ảnh mặt sau CCCD"],
+                ["imgBusinessLicense", "Giấy phép kinh doanh"],
+              ].map(([key, label]) => (
+                <div key={key} className="text-center">
+                  <p className="text-sm mb-2 font-medium">{label}</p>
+                  <div className="relative w-full h-48 rounded-lg overflow-hidden border border-gray-200 shadow-sm bg-gray-50">
+                    <img
+                      src={profile[key] || "/placeholder.svg"}
+                      alt={label}
+                      className="object-cover w-full h-full"
+                    />
+                    {/*  Không cho phép upload trong editMode */}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+        </div>
+      )}
+
+      {/* SOCIAL TAB */}
+      {activeTab === "social" && (
+        <div className="space-y-6">
+          <Section title="Mạng xã hội & liên kết" icon={<Globe size={18} />}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Facebook"
+                id="urlFacebook"
+                value={profile.urlFacebook}
+                onChange={(v) => handleChange("urlFacebook", v)}
+              />
+              <Input
+                label="Instagram"
+                id="urlInstagram"
+                value={profile.urlInstagram}
+                onChange={(v) => handleChange("urlInstagram", v)}
+              />
+              <Input
+                label="LinkedIn"
+                id="urlLinkedIn"
+                value={profile.urlLinkedIn}
+                onChange={(v) => handleChange("urlLinkedIn", v)}
+              />
+            </div>
+          </Section>
+        </div>
+      )}
+
+      {/* WALLET TAB */}
+      {activeTab === "wallet" && <WalletDashboard />}
     </div>
   );
 }

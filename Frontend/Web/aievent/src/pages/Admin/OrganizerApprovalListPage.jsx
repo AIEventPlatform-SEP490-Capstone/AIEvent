@@ -19,7 +19,6 @@ import {
   Phone,
 } from "lucide-react";
 
-// 🧩 Component thẻ thống kê nhỏ ở đầu trang
 const StatCard = ({ title, value, color, icon }) => {
   const gradients = {
     blue: "from-blue-100 to-blue-50 text-blue-700",
@@ -51,24 +50,55 @@ export default function OrganizerApprovalListPage() {
     currentPage: 1,
     totalItems: 0,
   });
+  const [allOrganizers, setAllOrganizers] = useState([]); //  dùng cho thống kê
 
   const [statusFilter, setStatusFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [pageNumber, setPageNumber] = useState(1);
 
-  // Gọi API
   useEffect(() => {
-    fetchData();
+    fetchAllData(); // load tổng cho thẻ thống kê
+  }, []);
+
+  useEffect(() => {
+    fetchData(); // load theo filter
   }, [statusFilter, pageNumber]);
 
+  //  Gọi API theo filter
   const fetchData = async () => {
+    const statusMap = {
+      All: undefined,
+      Pending: "Pending",
+      Approve: "Approve",
+      Reject: "Reject",
+    };
+
     const data = await getOrganizers({
-      status: statusFilter !== "All" ? statusFilter : undefined,
+      status: statusMap[statusFilter],
       search,
       pageNumber,
       pageSize: 10,
     });
-    if (data) setOrganizerData(data);
+    // if (data) setOrganizerData(data);
+    if (data?.items) {
+      //  Sắp xếp đơn mới nhất lên đầu
+      const sortedItems = [...data.items].sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.CreatedAt || 0);
+        const dateB = new Date(b.createdAt || b.CreatedAt || 0);
+        return dateB - dateA; // giảm dần
+      });
+
+      setOrganizerData({
+        ...data,
+        items: sortedItems,
+      });
+    }
+  };
+
+  //  Gọi API lấy tất cả để tính thống kê (không phân trang)
+  const fetchAllData = async () => {
+    const data = await getOrganizers({ pageSize: 9999 }); // load tất cả
+    if (data?.items) setAllOrganizers(data.items);
   };
 
   const handleSearch = () => {
@@ -84,21 +114,18 @@ export default function OrganizerApprovalListPage() {
     if (pageNumber < organizerData.totalPages) setPageNumber(pageNumber + 1);
   };
 
-  // Đếm số lượng từng trạng thái
-  const totalAll = organizerData.totalItems || 0;
-  const totalApprove = organizerData.items.filter(
+  //  Tính thống kê dựa trên allOrganizers (toàn bộ)
+  const totalAll = allOrganizers.length;
+  const totalApprove = allOrganizers.filter(
     (o) => o.status === "Approve"
   ).length;
-  const totalReject = organizerData.items.filter(
-    (o) => o.status === "Reject"
-  ).length;
-  const totalPending = organizerData.items.filter(
-    (o) => o.status === "NeedConfirm"
+  const totalReject = allOrganizers.filter((o) => o.status === "Reject").length;
+  const totalPending = allOrganizers.filter(
+    (o) => o.status === "Pending"
   ).length;
 
   return (
     <div className="min-h-screen p-8 bg-gradient-to-br from-slate-50 via-white to-slate-100">
-      {/* Header */}
       <h1 className="text-3xl font-bold text-gray-800">
         Duyệt hồ sơ Organizer
       </h1>
@@ -106,7 +133,7 @@ export default function OrganizerApprovalListPage() {
         Quản lý và phê duyệt các hồ sơ tổ chức đăng ký trên hệ thống
       </p>
 
-      {/* Thẻ thống kê */}
+      {/*  Thẻ thống kê — luôn hiển thị tổng toàn hệ thống */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
         <StatCard
           title="Tổng số hồ sơ"
@@ -151,7 +178,7 @@ export default function OrganizerApprovalListPage() {
         <Tabs value={statusFilter} onValueChange={setStatusFilter}>
           <TabsList>
             <TabsTrigger value="All">Tất cả</TabsTrigger>
-            <TabsTrigger value="NeedConfirm">Chờ duyệt</TabsTrigger>
+            <TabsTrigger value="Pending">Chờ duyệt</TabsTrigger>
             <TabsTrigger value="Approve">Đã duyệt</TabsTrigger>
             <TabsTrigger value="Reject">Từ chối</TabsTrigger>
           </TabsList>
