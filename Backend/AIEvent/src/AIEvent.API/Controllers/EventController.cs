@@ -233,7 +233,7 @@ namespace AIEvent.API.Controllers
 
             return Ok(SuccessResponse<object>.SuccessResult(
                 new { },
-                SuccessCodes.Created,
+                SuccessCodes.Success,
                 "End event successfully"));
         }
 
@@ -249,8 +249,31 @@ namespace AIEvent.API.Controllers
 
             return Ok(SuccessResponse<EndEventReview>.SuccessResult(
                 result.Value!,
-                SuccessCodes.Created,
+                SuccessCodes.Success,
                 "Get end event request successfully"));
+        }
+
+        [HttpGet("request-end")]
+        [Authorize(Roles = "Admin,Manager,Organizer")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<EndEventReviews>>>> GetEndEventRequest([FromQuery] ConfirmEventStatus? status = null,
+                                                                                                            [FromQuery] int pageNumber = 1,
+                                                                                                            [FromQuery] int pageSize = 10)
+        {
+            Guid organizerId = Guid.Empty;
+            if (User.IsInRole("Organizer"))
+            {
+                organizerId = User.GetRequiredOrganizerId();
+            }
+            var result = await _eventService.GetEndEventRequestsAsync(organizerId, status, pageNumber, pageSize);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<EndEventReviews>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Get list end event request successfully"));
         }
     }
 }
