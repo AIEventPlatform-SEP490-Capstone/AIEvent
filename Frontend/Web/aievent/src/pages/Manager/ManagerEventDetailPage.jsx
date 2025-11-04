@@ -301,22 +301,6 @@ Nhấn OK để xác nhận xóa.`;
               Quay lại
             </Button>
             <div className="flex space-x-2">
-              <Button variant="outline" size="sm" onClick={handleApproveEvent}>
-                <Shield className="w-4 h-4 mr-2" />
-                Phê duyệt
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleRejectEvent}>
-                <Shield className="w-4 h-4 mr-2" />
-                Từ chối
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleEditEvent}>
-                <Edit className="w-4 h-4 mr-2" />
-                Chỉnh sửa
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleViewPublicPage}>
-                <Eye className="w-4 h-4 mr-2" />
-                Xem công khai
-              </Button>
               <Button variant="outline" size="sm" onClick={handleShareEvent}>
                 <Share2 className="w-4 h-4 mr-2" />
                 Chia sẻ
@@ -624,10 +608,6 @@ Nhấn OK để xác nhận xóa.`;
                 <h3 className="text-lg font-semibold">Hành động nhanh</h3>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button className="w-full" onClick={handleEditEvent}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Chỉnh sửa sự kiện
-                </Button>
                 <Button variant="outline" className="w-full" onClick={handleViewPublicPage}>
                   <Eye className="h-4 w-4 mr-2" />
                   Xem trang công khai

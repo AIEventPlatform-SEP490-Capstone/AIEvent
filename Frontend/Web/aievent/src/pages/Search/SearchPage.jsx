@@ -16,18 +16,44 @@ import {
 } from "lucide-react";
 import { useEvents } from "../../hooks/useEvents";
 import { useCategories } from "../../hooks/useCategories";
+import { useFavoriteEvents } from "../../hooks/useFavoriteEvents";
+import { useSelector } from "react-redux";
 
 export default function SearchPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { getEvents, loading: eventsLoading } = useEvents();
   const { categories, loading: categoriesLoading, refreshCategories } = useCategories();
+  const { getFavoriteEvents, addFavoriteEvent, removeFavoriteEvent } = useFavoriteEvents();
+  const { isAuthenticated } = useSelector((state) => state.auth);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [priceFilter, setPriceFilter] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
   const [events, setEvents] = useState([]);
+  const [favoriteEvents, setFavoriteEvents] = useState(new Set());
+
+  // Fetch favorite events only when user is authenticated
+  useEffect(() => {
+    const loadFavoriteEvents = async () => {
+      // Only load favorite events if user is authenticated
+      if (isAuthenticated) {
+        try {
+          const favorites = await getFavoriteEvents();
+          const favoriteIds = new Set(favorites.map(event => event.eventId));
+          setFavoriteEvents(favoriteIds);
+        } catch (err) {
+          console.error("Error loading favorite events:", err);
+        }
+      } else {
+        // Clear favorite events if user is not authenticated
+        setFavoriteEvents(new Set());
+      }
+    };
+    
+    loadFavoriteEvents();
+  }, [isAuthenticated]);
 
   // Fetch categories once on component mount
   useEffect(() => {
@@ -134,8 +160,44 @@ export default function SearchPage() {
     navigate(`/event/${eventId}`);
   };
 
-  const toggleLike = (eventId) => {
-    console.log(`Toggled like for event ${eventId}`);
+  const toggleLike = async (eventId) => {
+    // Only allow toggling favorites if user is authenticated
+    if (!isAuthenticated) {
+      // Optionally redirect to login or show a message
+      console.log("User must be logged in to favorite events");
+      return;
+    }
+    
+    try {
+      const isCurrentlyLiked = favoriteEvents.has(eventId);
+      
+      // Update UI immediately for better UX
+      const newFavoriteEvents = new Set(favoriteEvents);
+      if (isCurrentlyLiked) {
+        newFavoriteEvents.delete(eventId);
+      } else {
+        newFavoriteEvents.add(eventId);
+      }
+      setFavoriteEvents(newFavoriteEvents);
+      
+      // Call API to update server
+      if (isCurrentlyLiked) {
+        await removeFavoriteEvent(eventId);
+      } else {
+        await addFavoriteEvent(eventId);
+      }
+    } catch (err) {
+      // Revert UI change if API call fails
+      const newFavoriteEvents = new Set(favoriteEvents);
+      if (favoriteEvents.has(eventId)) {
+        newFavoriteEvents.delete(eventId);
+      } else {
+        newFavoriteEvents.add(eventId);
+      }
+      setFavoriteEvents(newFavoriteEvents);
+      
+      console.error("Error toggling favorite:", err);
+    }
   };
 
   const formatPrice = (event) => {
@@ -368,7 +430,13 @@ export default function SearchPage() {
                       toggleLike(event.eventId || event.id);
                     }}
                   >
-                    <Heart className="w-4 h-4" />
+                    <Heart 
+                      className={`w-4 h-4 ${
+                        favoriteEvents.has(event.eventId || event.id)
+                          ? "fill-red-500 text-red-500"
+                          : ""
+                      }`} 
+                    />
                   </Button>
                 </div>
                 {(event.ticketType === 1 || event.ticketPrice === 0) && <Badge className="absolute top-3 left-3 bg-green-500">Miễn phí</Badge>}
