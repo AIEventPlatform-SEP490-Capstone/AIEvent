@@ -255,7 +255,8 @@ namespace AIEvent.API.Controllers
 
         [HttpGet("request-end")]
         [Authorize(Roles = "Admin,Manager,Organizer")]
-        public async Task<ActionResult<SuccessResponse<BasePaginated<EndEventReviews>>>> GetEndEventRequest([FromQuery] ConfirmEventStatus? status = null,
+        public async Task<ActionResult<SuccessResponse<BasePaginated<EndEventReviews>>>> GetEndEventRequest([FromQuery] Guid? eventId,
+                                                                                                            [FromQuery] ConfirmEventStatus? status = null,
                                                                                                             [FromQuery] int pageNumber = 1,
                                                                                                             [FromQuery] int pageSize = 10)
         {
@@ -264,7 +265,7 @@ namespace AIEvent.API.Controllers
             {
                 organizerId = User.GetRequiredOrganizerId();
             }
-            var result = await _eventService.GetEndEventRequestsAsync(organizerId, status, pageNumber, pageSize);
+            var result = await _eventService.GetEndEventRequestsAsync(organizerId, eventId, status, pageNumber, pageSize);
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);

@@ -1068,7 +1068,7 @@ namespace AIEvent.Application.Services.Implements
             return Result<EndEventReview>.Success(endEventRequest);
         }
 
-        public async Task<Result<BasePaginated<EndEventReviews>>> GetEndEventRequestsAsync(Guid? organizerId, ConfirmEventStatus? status = null, int pageNumber = 1, int pageSize = 10)
+        public async Task<Result<BasePaginated<EndEventReviews>>> GetEndEventRequestsAsync(Guid? organizerId, Guid? eventId, ConfirmEventStatus? status = null, int pageNumber = 1, int pageSize = 10)
         {
             IQueryable<EndEventRequest> endEventRequest = _unitOfWork.EndEventRequestRepository
                                                 .Query()
@@ -1080,6 +1080,9 @@ namespace AIEvent.Application.Services.Implements
 
             if (status != null)
                 endEventRequest = endEventRequest.Where(e => e.Status == status);
+
+            if (eventId.HasValue && eventId != Guid.Empty)
+                endEventRequest = endEventRequest.Where(e => e.EventId == eventId);
 
             int totalCount = await endEventRequest.CountAsync();
 
