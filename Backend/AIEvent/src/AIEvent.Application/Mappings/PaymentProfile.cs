@@ -8,9 +8,7 @@ namespace AIEvent.Application.Mappings
     {
         public PaymentProfile()
         {
-            CreateMap<CreatePaymentInformationRequest, PaymentInformation>();
-            CreateMap<UpdatePaymentInformationRequest, PaymentInformation>()
-                .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<PaymentInformationRequest, PaymentInformation>();
 
             CreateMap<PaymentInformation, PaymentInformationResponse>()
                 .ForMember(dest => dest.PaymentInformationId, opt => opt.MapFrom(src => src.Id));

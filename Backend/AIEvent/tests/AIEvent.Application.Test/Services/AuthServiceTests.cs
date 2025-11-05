@@ -221,8 +221,8 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedCities>{
-                    new InterestedCities { CityName = "HoChiMinh"}
+                InterestedCities = new List<InterestedDistricts>{
+                    new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
@@ -270,8 +270,8 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedCities>{
-                    new InterestedCities { CityName = "HoChiMinh"}
+                InterestedCities = new List<InterestedDistricts>{
+                    new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
@@ -306,8 +306,8 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedCities>{
-                    new InterestedCities { CityName = "HoChiMinh"}
+                InterestedCities = new List<InterestedDistricts>{
+                    new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
@@ -343,8 +343,8 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedCities>{
-                    new InterestedCities { CityName = "HoChiMinh"}
+                InterestedCities = new List<InterestedDistricts>{
+                    new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
@@ -403,8 +403,8 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedCities>{
-                    new InterestedCities { CityName = "HoChiMinh"}
+                InterestedCities = new List<InterestedDistricts>{
+                    new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
@@ -436,8 +436,8 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedCities>{
-                    new InterestedCities { CityName = "HoChiMinh"}
+                InterestedCities = new List<InterestedDistricts>{
+                    new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
@@ -469,8 +469,8 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedCities>{
-                    new InterestedCities { CityName = "HoChiMinh"}
+                InterestedCities = new List<InterestedDistricts>{
+                    new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
@@ -502,8 +502,8 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedCities>{
-                    new InterestedCities { CityName = "HoChiMinh"}
+                InterestedCities = new List<InterestedDistricts>{
+                    new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
@@ -535,8 +535,8 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedCities>{
-                    new InterestedCities { CityName = "HoChiMinh"}
+                InterestedCities = new List<InterestedDistricts>{
+                    new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
@@ -568,8 +568,8 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedCities>{
-                    new InterestedCities { CityName = "HoChiMinh"}
+                InterestedCities = new List<InterestedDistricts>{
+                    new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
@@ -601,8 +601,8 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedCities>{
-                    new InterestedCities { CityName = "HoChiMinh"}
+                InterestedCities = new List<InterestedDistricts>{
+                    new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
@@ -648,8 +648,8 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedCities>{
-                    new InterestedCities { CityName = "HoChiMinh"}
+                InterestedCities = new List<InterestedDistricts>{
+                    new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 IsEmailNotificationEnabled = true,
                 IsPushNotificationEnabled = true,
@@ -681,8 +681,8 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedCities>{
-                    new InterestedCities { CityName = "HoChiMinh"}
+                InterestedCities = new List<InterestedDistricts>{
+                    new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 IsEmailNotificationEnabled = true,
                 IsPushNotificationEnabled = true,
@@ -714,8 +714,8 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedCities>{
-                    new InterestedCities { CityName = "HoChiMinh"}
+                InterestedCities = new List<InterestedDistricts>{
+                    
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
@@ -766,7 +766,7 @@ namespace AIEvent.Application.Test.Services
                     ContactEmail = "john@example.com",
                     ContactPhone = "+1234567890",
                     Address = "123 Main St",
-                    Status = ConfirmStatus.NeedConfirm
+                    Status = ConfirmOrganizerProfileStatus.Pending
                 }
             };
             var tokenEntity = new RefreshToken
@@ -846,7 +846,7 @@ namespace AIEvent.Application.Test.Services
                     ContactEmail = "john@example.com",
                     ContactPhone = "+1234567890",
                     Address = "123 Main St",
-                    Status = ConfirmStatus.NeedConfirm
+                    Status = ConfirmOrganizerProfileStatus.Pending
                 }
             };
             var tokenEntity = new RefreshToken
@@ -914,7 +914,7 @@ namespace AIEvent.Application.Test.Services
                     ContactEmail = "john@example.com",
                     ContactPhone = "+1234567890",
                     Address = "123 Main St",
-                    Status = ConfirmStatus.NeedConfirm
+                    Status = ConfirmOrganizerProfileStatus.Pending
                 }
             };
             var tokenEntity = new RefreshToken
@@ -1087,7 +1087,7 @@ namespace AIEvent.Application.Test.Services
                     ContactEmail = "john@example.com",
                     ContactPhone = "+1234567890",
                     Address = "123 Main St",
-                    Status = ConfirmStatus.NeedConfirm
+                    Status = ConfirmOrganizerProfileStatus.Pending
                 }
             };
             var accessToken = "accessToken";
@@ -1199,7 +1199,7 @@ namespace AIEvent.Application.Test.Services
                     ContactEmail = "john@example.com",
                     ContactPhone = "+1234567890",
                     Address = "123 Main St",
-                    Status = ConfirmStatus.NeedConfirm
+                    Status = ConfirmOrganizerProfileStatus.Pending
                 }
             };
             _mockCacheService.Setup(x => x.GetAsync<string>($"Register {request.Email}")).ReturnsAsync((string)null!);
@@ -1229,7 +1229,7 @@ namespace AIEvent.Application.Test.Services
                 Email = request.Email,
                 IsActive = false,
                 Role = new Role { Id = Guid.NewGuid(), Name = "User" },
-                OrganizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.NonProfit, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Small, OrganizerType = OrganizerType.Individual, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "John Doe", ContactEmail = "john@example.com", ContactPhone = "+1234567890", Address = "123 Main St", Status = ConfirmStatus.NeedConfirm }
+                OrganizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.NonProfit, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Small, OrganizerType = OrganizerType.Individual, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "John Doe", ContactEmail = "john@example.com", ContactPhone = "+1234567890", Address = "123 Main St", Status = ConfirmOrganizerProfileStatus.Pending }
             };
 
             _mockCacheService.Setup(x => x.GetAsync<string>($"Register {request.Email}")).ReturnsAsync("123456");

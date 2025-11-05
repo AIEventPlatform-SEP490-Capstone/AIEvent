@@ -12,9 +12,7 @@ namespace AIEvent.Infrastructure.Repositories.Interfaces
         IGenericRepository<EventTag> EventTagRepository { get; }
         IGenericRepository<EventCategory> EventCategoryRepository { get; }
         IGenericRepository<OrganizerProfile> OrganizerProfileRepository { get; }
-        IGenericRepository<TicketDetail> TicketDetailRepository { get; }
-        IGenericRepository<RefundRule> RefundRuleRepository { get; }
-        IGenericRepository<RefundRuleDetail> RefundRuleDetailRepository { get; }
+        IGenericRepository<TicketType> TicketTypeRepository { get; } 
         IGenericRepository<FavoriteEvent> FavoriteEventRepository { get; }
         IGenericRepository<BookingItem> BookingItemRepository { get; }
         IGenericRepository<Ticket> TicketRepository { get; }
@@ -24,12 +22,14 @@ namespace AIEvent.Infrastructure.Repositories.Interfaces
         IGenericRepository<PaymentTransaction> PaymentTransactionRepository { get; }
         IGenericRepository<WithdrawRequest> WithdrawRequestRepository { get; }
         IGenericRepository<PaymentInformation> PaymentInformationRepository { get; }
-        IGenericRepository<EndEventRequest> EndRequestRepository { get; }
+        IGenericRepository<EndEventRequest> EndEventRequestRepository { get; }
+        IGenericRepository<RevenueReport> RevenueReportRepository { get; }
         void EnableSoftDelete();
         void DisableSoftDelete();
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();
         Task CommitTransactionAsync();
         Task RollbackTransactionAsync();
+        Task<int> ExecuteSqlRawAsync(string sql, params object[] parameters);
     }
 }

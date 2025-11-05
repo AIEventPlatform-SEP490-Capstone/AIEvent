@@ -148,6 +148,12 @@ export const authAPI = {
     const response = await fetcher.post("/auth/change-password", passwordData);
     return response.data;
   },
+  resendOtp: async (email) => {
+    const response = await fetcher.post("/auth/resend-otp", email, {
+      headers: { "Content-Type": "application/json" },
+    });
+    return response.data;
+  },
 };
 
 export default fetcher;

@@ -32,16 +32,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 
 import { useEvents } from '../../hooks/useEvents';
 import TagSelector from '../../components/Event/TagSelector';
-import RefundRuleManager from '../../components/Event/RefundRuleManager';
 
 // Redux hooks
 import { useCategories } from '../../hooks/useCategories';
 import { useTags } from '../../hooks/useTags';
-import { useRefundRules } from '../../hooks/useRefundRules';
 import { useApp } from '../../hooks/useApp';
 
 // Import ConfirmStatus enum
 import { ConfirmStatus } from '../../constants/eventConstants';
+
+// Import Cloudinary utility
+import { uploadImagesToCloudinary } from '../../utils/cloudinary';
+
+// Import predefined cities
+import { PredefinedCities } from '../../constants/userConstants';
 
 // Validation schema (updated to match CreateEventPage)
 const editEventSchema = z.object({
@@ -52,19 +56,19 @@ const editEventSchema = z.object({
   endTime: z.string().min(1, 'Thời gian kết thúc là bắt buộc'),
   locationName: z.string().optional(),
   address: z.string().optional(),
-  city: z.string().optional(),
+  district: z.string().optional(),
   linkRef: z.string().optional(),
   eventCategoryId: z.string().optional(),
-  ticketType: z.string().min(1, 'Loại vé là bắt buộc'),
+  ticketPricingType: z.string().min(1, 'Loại vé là bắt buộc'),
   publish: z.boolean().default(false),
   saleStartTime: z.string().min(1, 'Thời gian bắt đầu bán vé là bắt buộc'),
   saleEndTime: z.string().min(1, 'Thời gian kết thúc bán vé là bắt buộc'),
-  ticketDetails: z.array(z.object({
+  ticketTypes: z.array(z.object({
     ticketName: z.string().min(1, 'Tên vé là bắt buộc'),
     ticketPrice: z.number().min(0, 'Giá vé không được âm'),
     ticketQuantity: z.number().min(1, 'Số lượng vé phải lớn hơn 0'),
     ticketDescription: z.string().optional(),
-    ruleRefundRequestId: z.string().min(1, 'Quy tắc hoàn tiền là bắt buộc'),
+    // ruleRefundRequestId: z.string().min(1, 'Quy tắc hoàn tiền là bắt buộc'),
   })).min(1, 'Phải có ít nhất một loại vé')
 }).refine((data) => {
   if (!data.locationName) {
@@ -75,13 +79,13 @@ const editEventSchema = z.object({
   message: 'Địa điểm là bắt buộc',
   path: ['locationName'],
 }).refine((data) => {
-  if (!data.city) {
+  if (!data.district) {
     return false;
   }
   return true;
 }, {
-  message: 'Thành phố là bắt buộc',
-  path: ['city'],
+  message: 'Quận/Huyện là bắt buộc',
+  path: ['district'],
 }).refine((data) => {
   const saleStart = new Date(data.saleStartTime);
   const saleEnd = new Date(data.saleEndTime);
@@ -109,7 +113,7 @@ const EditEventPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [eventData, setEventData] = useState(null);
   const [selectedImages, setSelectedImages] = useState([]);
-  const [selectedEvidenceImages, setSelectedEvidenceImages] = useState([]);
+  const [selectedEvidenceImages, setSelectedEvidenceImageUrls] = useState([]);
   const [imagePreview, setImagePreview] = useState([]);
   const [evidenceImagePreview, setEvidenceImagePreview] = useState([]);
   const [existingImages, setExistingImages] = useState([]);
@@ -128,7 +132,7 @@ const EditEventPage = () => {
   // Redux hooks
   const { categories, loading: categoriesLoading } = useCategories();
   const { tags: reduxSelectedTags, clearAllSelectedTags, selectTagForForm } = useTags();
-  const { selectedRules, clearSelectedRefundRules, selectRuleForForm } = useRefundRules();
+  // const { selectedRules, clearSelectedRefundRules, selectRuleForForm } = useRefundRules();
   const { showLoading, hideLoading, updatePageTitle } = useApp();
   const { getEventById, updateEvent: updateEventAPI, loading: eventLoading } = useEvents();
 
@@ -150,14 +154,14 @@ const EditEventPage = () => {
       endTime: '',
       locationName: '',
       address: '',
-      city: '',
+      district: '',
       linkRef: '',
       eventCategoryId: '',
       publish: false,
       saleStartTime: '',
       saleEndTime: '',
-      ticketType: '1',
-      ticketDetails: [
+      ticketPricingType: '1',
+      ticketTypes: [
         {
           ticketName: 'Vé thường',
           ticketPrice: 0,
@@ -171,10 +175,10 @@ const EditEventPage = () => {
 
   const { fields, append, remove } = useFieldArray({
     control,
-    name: 'ticketDetails',
+    name: 'ticketTypes',
   });
 
-  const watchTicketType = watch('ticketType');
+  const watchTicketPricingType = watch('ticketPricingType');
 
   // Set page title and load event data
   useEffect(() => {
@@ -185,7 +189,7 @@ const EditEventPage = () => {
     
     return () => {
       clearAllSelectedTags();
-      clearSelectedRefundRules();
+      // clearSelectedRefundRules();
     };
   }, [eventId]);
 
@@ -249,17 +253,19 @@ const EditEventPage = () => {
           saleEndTime: event.saleEndTime ? new Date(event.saleEndTime).toISOString().slice(0, 16) : '',
           locationName: event.locationName || '',
           address: event.address || '',
-          city: event.city || '',
+          district: event.district || '',
           eventCategoryId: event.eventCategoryId || event.eventCategory?.eventCategoryId || '',
           publish: event.publish || false,
-          ticketType: String(event.ticketType || 1),
-          ticketDetails: event.ticketDetails && event.ticketDetails.length > 0 
+          ticketPricingType: (event.ticketPricingType !== undefined && event.ticketPricingType !== null) ? 
+          (event.ticketPricingType === 'Free' || event.ticketPricingType === 1 ? '1' : 
+           event.ticketPricingType === 'Paid' || event.ticketPricingType === 2 ? '2' : '1') : '1',
+          ticketTypes: event.ticketDetails && event.ticketDetails.length > 0 
             ? event.ticketDetails.map(ticket => ({
                 ticketName: ticket.ticketName || '',
                 ticketPrice: ticket.ticketPrice || 0,
                 ticketQuantity: ticket.ticketQuantity || 1,
                 ticketDescription: ticket.ticketDescription || '',
-                ruleRefundRequestId: ticket.ruleRefundRequestId || '',
+                // ruleRefundRequestId: ticket.ruleRefundRequestId || '',
               }))
             : [
                 {
@@ -267,11 +273,11 @@ const EditEventPage = () => {
                   ticketPrice: 0,
                   ticketQuantity: event.totalTickets || 1,
                   ticketDescription: '',
-                  ruleRefundRequestId: '',
+                  // ruleRefundRequestId: '',
                 }
               ],
         };
-
+        
         // Reset form with loaded data
         reset(formData);
 
@@ -281,8 +287,8 @@ const EditEventPage = () => {
         }
 
         // Load existing evidence images
-        if (event.imgEventEvidences && event.imgEventEvidences.length > 0) {
-          setExistingEvidenceImages(event.imgEventEvidences);
+        if (event.imgListEvidences && event.imgListEvidences.length > 0) {
+          setExistingEvidenceImages(event.imgListEvidences);
         }
 
         // Load existing tags if any
@@ -302,9 +308,9 @@ const EditEventPage = () => {
         // Load existing refund rule if any
         if (event.ticketDetails && event.ticketDetails.length > 0) {
           const firstTicket = event.ticketDetails[0];
-          if (firstTicket.ruleRefundRequestId && firstTicket.refundRule) {
-            selectRuleForForm(firstTicket.refundRule);
-          }
+          // if (firstTicket.ruleRefundRequestId && firstTicket.refundRule) {
+          //   selectRuleForForm(firstTicket.refundRule);
+          // }
         }
 
         toast.success('Đã tải thông tin sự kiện');
@@ -343,7 +349,7 @@ const EditEventPage = () => {
       return;
     }
 
-    setSelectedEvidenceImages(prev => [...prev, ...files]);
+    setSelectedEvidenceImageUrls(prev => [...prev, ...files]);
     const previews = files.map(file => URL.createObjectURL(file));
     setEvidenceImagePreview(prev => [...prev, ...previews]);
   };
@@ -376,23 +382,23 @@ const EditEventPage = () => {
     const newImages = selectedEvidenceImages.filter((_, i) => i !== index);
     const newPreviews = evidenceImagePreview.filter((_, i) => i !== index);
     
-    setSelectedEvidenceImages(newImages);
+    setSelectedEvidenceImageUrls(newImages);
     setEvidenceImagePreview(newPreviews);
   };
 
-  // Add ticket detail
-  const addTicketDetail = () => {
+  // Add ticket type
+  const addTicketType = () => {
     append({
       ticketName: '',
-      ticketPrice: watchTicketType === '1' ? 0 : '',
+      ticketPrice: watchTicketPricingType === '1' ? 0 : '',
       ticketQuantity: 1,
       ticketDescription: '',
-      ruleRefundRequestId: selectedRules.length > 0 ? selectedRules[0].ruleRefundId : '',
+      // ruleRefundRequestId: selectedRules.length > 0 ? selectedRules[0].ruleRefundId : '',
     });
   };
 
-  // Remove ticket detail
-  const removeTicketDetail = (index) => {
+  // Remove ticket type
+  const removeTicketType = (index) => {
     // If this is an existing ticket (has an ID), add it to removed tickets
     if (eventData && eventData.ticketDetails && eventData.ticketDetails[index] && eventData.ticketDetails[index].ticketDetailId) {
       setRemovedTickets(prev => [...prev, eventData.ticketDetails[index].ticketDetailId]);
@@ -414,11 +420,11 @@ const EditEventPage = () => {
     }
 
     // Validate refund rule selection for each ticket
-    const hasEmptyRefundRule = formData.ticketDetails.some(ticket => !ticket.ruleRefundRequestId);
-    if (hasEmptyRefundRule) {
-      toast.error('Vui lòng chọn quy tắc hoàn tiền cho tất cả các loại vé');
-      return;
-    }
+    // const hasEmptyRefundRule = formData.ticketTypes.some(ticket => !ticket.ruleRefundRequestId);
+    // if (hasEmptyRefundRule) {
+    //   toast.error('Vui lòng chọn quy tắc hoàn tiền cho tất cả các loại vé');
+    //   return;
+    // }
 
     // Validate category selection
     if (!formData.eventCategoryId) {
@@ -426,131 +432,145 @@ const EditEventPage = () => {
       return;
     }
 
-    // Calculate total tickets from ticketDetails array
-    const totalTickets = formData.ticketDetails.reduce((sum, ticket) => sum + parseInt(ticket.ticketQuantity), 0);
-
-    // Prepare tag operations
-    let addTagIds = [];
-    let removeTagIds = [];
-    
-    // If we have existing event data, calculate tag differences
-    if (eventData && eventData.eventTags) {
-      // Tags to add (in selected tags but not in existing tags)
-      addTagIds = reduxSelectedTags
-        .filter(selectedTag => 
-          !eventData.eventTags.some(existingTag => 
-            existingTag.tag?.tagId === selectedTag.tagId
-          )
-        )
-        .map(tag => tag.tagId);
-      
-      // Tags to remove (in existing tags but not in selected tags)
-      removeTagIds = eventData.eventTags
-        .filter(existingTag => 
-          !reduxSelectedTags.some(selectedTag => 
-            selectedTag.tagId === existingTag.tag?.tagId
-          )
-        )
-        .map(et => et.tag?.tagId)
-        .filter(id => id); // Remove any undefined/null values
-    } else {
-      // If no existing event data, add all selected tags
-      addTagIds = reduxSelectedTags.map(tag => tag.tagId);
-    }
-
-    const eventDataToSend = {
-      eventId: eventId,
-      title: formData.title,
-      description: formData.description,
-      detailedDescription: formData.detailedDescription || '',
-      linkRef: formData.linkRef || '',
-      startTime: new Date(formData.startTime).toISOString(),
-      endTime: new Date(formData.endTime).toISOString(),
-      saleStartTime: new Date(formData.saleStartTime).toISOString(),
-      saleEndTime: new Date(formData.saleEndTime).toISOString(),
-      locationName: formData.locationName || '',
-      address: formData.address || '',
-      city: formData.city || '',
-      latitude: null,
-      longitude: null,
-      totalTickets: totalTickets,
-      ticketType: formData.ticketType && !isNaN(parseInt(formData.ticketType)) ? parseInt(formData.ticketType) : 1,
-      publish: formData.publish || false,
-      images: selectedImages,
-      evidenceImages: selectedEvidenceImages,
-      removeImageUrls: removedImages,
-      removeEvidenceImageUrls: removedEvidenceImages,
-      eventCategoryId: formData.eventCategoryId,
-      // Handle tags correctly
-      addTagIds: addTagIds,
-      removeTagIds: removeTagIds,
-      ticketDetails: formData.ticketDetails.map((ticket, index) => ({
-        // Include the ID if it exists (for existing tickets)
-        ...(eventData?.ticketDetails?.[index]?.ticketDetailId && { 
-          id: eventData.ticketDetails[index].ticketDetailId 
-        }),
-        ticketName: ticket.ticketName,
-        ticketPrice: parseFloat(ticket.ticketPrice),
-        ticketQuantity: parseInt(ticket.ticketQuantity),
-        ticketDescription: ticket.ticketDescription || '',
-        ruleRefundRequestId: ticket.ruleRefundRequestId,
-      })),
-      removeTicketDetailIds: removedTickets,
-    };
-
-    // Validate required fields
-    const requiredFields = ['title', 'description', 'startTime', 'endTime', 'saleStartTime', 'saleEndTime', 'totalTickets', 'eventCategoryId'];
-    if (!eventData.isOnlineEvent) {
-      requiredFields.push('locationName', 'address');
-    }
-    
-    const missingFields = requiredFields.filter(field => !eventDataToSend[field]);
-    if (missingFields.length > 0) {
-      toast.error(`Thiếu thông tin bắt buộc: ${missingFields.join(', ')}`);
-      return;
-    }
-    
-    if (eventDataToSend.totalTickets <= 0) {
-      toast.error('Tổng số vé phải lớn hơn 0');
-      return;
-    }
-
-    // Validate dates
-    const startDate = new Date(eventDataToSend.startTime);
-    const endDate = new Date(eventDataToSend.endTime);
-    const saleStartDate = new Date(eventDataToSend.saleStartTime);
-    const saleEndDate = new Date(eventDataToSend.saleEndTime);
-    const now = new Date();
-
-    if (startDate <= now) {
-      toast.error('Thời gian bắt đầu phải sau thời điểm hiện tại');
-      return;
-    }
-
-    if (endDate <= startDate) {
-      toast.error('Thời gian kết thúc phải sau thời gian bắt đầu');
-      return;
-    }
-
-    if (saleStartDate >= startDate) {
-      toast.error('Thời gian bắt đầu bán vé phải trước thời gian bắt đầu sự kiện');
-      return;
-    }
-
-    if (saleEndDate <= saleStartDate) {
-      toast.error('Thời gian kết thúc bán vé phải sau thời gian bắt đầu bán vé');
-      return;
-    }
-
-    if (saleEndDate >= startDate) {
-      toast.error('Thời gian kết thúc bán vé phải trước thời gian bắt đầu sự kiện');
-      return;
-    }
-
     try {
       showLoading();
       setIsSaving(true);
       
+      // Upload new images to Cloudinary and get URLs
+      let imageUrls = [];
+      if (selectedImages.length > 0) {
+        imageUrls = await uploadImagesToCloudinary(selectedImages);
+      }
+      
+      // Upload new evidence images to Cloudinary and get URLs
+      let evidenceImageUrls = [];
+      if (selectedEvidenceImages.length > 0) {
+        evidenceImageUrls = await uploadImagesToCloudinary(selectedEvidenceImages);
+      }
+      
+      // Calculate total tickets from ticketTypes array
+      const totalTickets = formData.ticketTypes.reduce((sum, ticket) => sum + parseInt(ticket.ticketQuantity), 0);
+
+      // Prepare tag operations
+      let addTagIds = [];
+      let removeTagIds = [];
+      
+      // If we have existing event data, calculate tag differences
+      if (eventData && eventData.eventTags) {
+        // Tags to add (in selected tags but not in existing tags)
+        addTagIds = reduxSelectedTags
+          .filter(selectedTag => 
+            !eventData.eventTags.some(existingTag => 
+              existingTag.tag?.tagId === selectedTag.tagId
+            )
+          )
+          .map(tag => tag.tagId);
+        
+        // Tags to remove (in existing tags but not in selected tags)
+        removeTagIds = eventData.eventTags
+          .filter(existingTag => 
+            !reduxSelectedTags.some(selectedTag => 
+              selectedTag.tagId === existingTag.tag?.tagId
+            )
+          )
+          .map(et => et.tag?.tagId)
+          .filter(id => id); // Remove any undefined/null values
+      } else {
+        // If no existing event data, add all selected tags
+        addTagIds = reduxSelectedTags.map(tag => tag.tagId);
+      }
+
+      const eventDataToSend = {
+        eventId: eventId,
+        title: formData.title,
+        description: formData.description,
+        detailedDescription: formData.detailedDescription || '',
+        linkRef: formData.linkRef || '',
+        startTime: new Date(formData.startTime).toISOString(),
+        endTime: new Date(formData.endTime).toISOString(),
+        saleStartTime: new Date(formData.saleStartTime).toISOString(),
+        saleEndTime: new Date(formData.saleEndTime).toISOString(),
+        locationName: formData.locationName || '',
+        address: formData.address || '',
+        district: formData.district || '',
+        latitude: null,
+        longitude: null,
+        totalTickets: totalTickets,
+        ticketPricingType: formData.ticketPricingType && !isNaN(parseInt(formData.ticketPricingType)) ? parseInt(formData.ticketPricingType) : 1,
+        publish: formData.publish || false,
+        // Send existing images that are not removed + new images
+        images: [...existingImages.filter(img => !removedImages.includes(img)), ...imageUrls],
+        // Send existing evidence images that are not removed + new evidence images
+        evidenceImages: [...existingEvidenceImages.filter(img => !removedEvidenceImages.includes(img)), ...evidenceImageUrls],
+        removeImageUrls: removedImages,
+        removeEvidenceImageUrls: removedEvidenceImages,
+        eventCategoryId: formData.eventCategoryId,
+        // Handle tags correctly
+        addTagIds: addTagIds,
+        removeTagIds: removeTagIds,
+        ticketTypes: formData.ticketTypes.map((ticket, index) => ({
+          // Include the ID if it exists (for existing tickets)
+          ...(eventData?.ticketDetails?.[index]?.ticketDetailId && { 
+            id: eventData.ticketDetails[index].ticketDetailId 
+          }),
+          ticketName: ticket.ticketName,
+          ticketPrice: parseFloat(ticket.ticketPrice),
+          ticketQuantity: parseInt(ticket.ticketQuantity),
+          ticketDescription: ticket.ticketDescription || '',
+          // ruleRefundRequestId: ticket.ruleRefundRequestId,
+        })),
+        removeTicketTypeIds: removedTickets,
+      };
+
+      // Validate required fields
+      const requiredFields = ['title', 'description', 'startTime', 'endTime', 'saleStartTime', 'saleEndTime', 'totalTickets', 'eventCategoryId'];
+      if (!eventData.isOnlineEvent) {
+        requiredFields.push('locationName', 'address');
+      }
+      
+      const missingFields = requiredFields.filter(field => !eventDataToSend[field]);
+      if (missingFields.length > 0) {
+        toast.error(`Thiếu thông tin bắt buộc: ${missingFields.join(', ')}`);
+        return;
+      }
+
+      if (eventDataToSend.totalTickets <= 0) {
+        toast.error('Tổng số vé phải lớn hơn 0');
+        return;
+      }
+
+      // Validate dates
+      const startDate = new Date(eventDataToSend.startTime);
+      const endDate = new Date(eventDataToSend.endTime);
+      const saleStartDate = new Date(eventDataToSend.saleStartTime);
+      const saleEndDate = new Date(eventDataToSend.saleEndTime);
+      const now = new Date();
+
+      if (startDate <= now) {
+        toast.error('Thời gian bắt đầu phải sau thời điểm hiện tại');
+        return;
+      }
+
+      if (endDate <= startDate) {
+        toast.error('Thời gian kết thúc phải sau thời gian bắt đầu');
+        return;
+      }
+
+      if (saleStartDate >= startDate) {
+        toast.error('Thời gian bắt đầu bán vé phải trước thời gian bắt đầu sự kiện');
+        return;
+      }
+
+      if (saleEndDate <= saleStartDate) {
+        toast.error('Thời gian kết thúc bán vé phải sau thời gian bắt đầu bán vé');
+        return;
+      }
+
+      if (saleEndDate >= startDate) {
+        toast.error('Thời gian kết thúc bán vé phải trước thời gian bắt đầu sự kiện');
+        return;
+      }
+
       const response = await updateEventAPI(eventDataToSend);
       
       if (response) {
@@ -834,15 +854,14 @@ const EditEventPage = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="ticketType">Loại vé *</Label>
-                    <Select onValueChange={(value) => setValue('ticketType', value)} value={watchTicketType}>
+                    <Label htmlFor="ticketPricingType">Loại vé *</Label>
+                    <Select onValueChange={(value) => setValue('ticketPricingType', value)} value={watchTicketPricingType}>
                       <SelectTrigger>
                         <SelectValue placeholder="Chọn loại vé" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="1">Miễn phí</SelectItem>
                         <SelectItem value="2">Có phí</SelectItem>
-                        <SelectItem value="3">Quyên góp</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -923,12 +942,20 @@ const EditEventPage = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="city">Thành phố</Label>
-                    <Input
-                      id="city"
-                      placeholder="Nhập thành phố"
-                      {...register('city')}
-                    />
+                    <Label htmlFor="district">Quận/Huyện *</Label>
+                    <Select onValueChange={(value) => setValue('district', value)} value={watch('district')}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn quận/huyện" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PredefinedCities.map((city) => (
+                          <SelectItem key={city} value={city}>
+                            {city}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.district && <p className="text-red-500 text-sm mt-1">{errors.district.message}</p>}
                   </div>
 
                   <div>
@@ -1151,8 +1178,6 @@ const EditEventPage = () => {
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
             <TagSelector />
-            
-            <RefundRuleManager />
 
             {/* Tickets - Dynamic Management */}
             <Card>
@@ -1175,7 +1200,7 @@ const EditEventPage = () => {
                             type="button"
                             variant="ghost"
                             size="sm"
-                            onClick={() => removeTicketDetail(index)}
+                            onClick={() => removeTicketType(index)}
                             className="text-red-500 hover:text-red-700"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -1187,10 +1212,10 @@ const EditEventPage = () => {
                         <div>
                           <Label className="text-sm">Tên vé *</Label>
                           <Input
-                            {...register(`ticketDetails.${index}.ticketName`)}
+                            {...register(`ticketTypes.${index}.ticketName`)}
                             placeholder="Ví dụ: Vé VIP"
                           />
-                          {errors.ticketDetails?.[index]?.ticketName && <p className="text-red-500 text-xs mt-1">{errors.ticketDetails[index].ticketName.message}</p>}
+                          {errors.ticketTypes?.[index]?.ticketName && <p className="text-red-500 text-xs mt-1">{errors.ticketTypes[index].ticketName.message}</p>}
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
@@ -1198,40 +1223,40 @@ const EditEventPage = () => {
                             <Label className="text-sm">Giá vé</Label>
                             <Input
                               type="number"
-                              {...register(`ticketDetails.${index}.ticketPrice`, { valueAsNumber: true })}
+                              {...register(`ticketTypes.${index}.ticketPrice`, { valueAsNumber: true })}
                               placeholder="0"
                               min="0"
-                              disabled={watchTicketType === '1'}
+                              disabled={watchTicketPricingType === '1'}
                             />
-                            {errors.ticketDetails?.[index]?.ticketPrice && <p className="text-red-500 text-xs mt-1">{errors.ticketDetails[index].ticketPrice.message}</p>}
+                            {errors.ticketTypes?.[index]?.ticketPrice && <p className="text-red-500 text-xs mt-1">{errors.ticketTypes[index].ticketPrice.message}</p>}
                           </div>
 
                           <div>
                             <Label className="text-sm">Số lượng *</Label>
                             <Input
                               type="number"
-                              {...register(`ticketDetails.${index}.ticketQuantity`, { valueAsNumber: true })}
+                              {...register(`ticketTypes.${index}.ticketQuantity`, { valueAsNumber: true })}
                               placeholder="Số lượng"
                               min="1"
                             />
-                            {errors.ticketDetails?.[index]?.ticketQuantity && <p className="text-red-500 text-xs mt-1">{errors.ticketDetails[index].ticketQuantity.message}</p>}
+                            {errors.ticketTypes?.[index]?.ticketQuantity && <p className="text-red-500 text-xs mt-1">{errors.ticketTypes[index].ticketQuantity.message}</p>}
                           </div>
                         </div>
 
                         <div>
                           <Label className="text-sm">Mô tả vé</Label>
                           <Textarea
-                            {...register(`ticketDetails.${index}.ticketDescription`)}
+                            {...register(`ticketTypes.${index}.ticketDescription`)}
                             placeholder="Mô tả chi tiết về loại vé này"
                             rows={2}
                           />
                         </div>
 
-                        <div>
+                        {/* <div>
                           <Label className="text-sm">Quy tắc hoàn tiền *</Label>
                           <Select 
-                            onValueChange={(value) => setValue(`ticketDetails.${index}.ruleRefundRequestId`, value)}
-                            value={watch(`ticketDetails.${index}.ruleRefundRequestId`) || ''}
+                            // onValueChange={(value) => setValue(`ticketTypes.${index}.ruleRefundRequestId`, value)}
+                            // value={watch(`ticketTypes.${index}.ruleRefundRequestId`) || ''}
                           >
                             <SelectTrigger className="bg-white">
                               <SelectValue placeholder="Chọn quy tắc hoàn tiền" />
@@ -1251,13 +1276,14 @@ const EditEventPage = () => {
                               ))}
                             </SelectContent>
                           </Select>
-                          {errors.ticketDetails?.[index]?.ruleRefundRequestId && <p className="text-red-500 text-xs mt-1">{errors.ticketDetails[index].ruleRefundRequestId.message}</p>}
+                          {errors.ticketTypes?.[index]?.ruleRefundRequestId && <p className="text-red-500 text-xs mt-1">{errors.ticketTypes[index].ruleRefundRequestId.message}</p>
+}
                           {selectedRules.length === 0 && (
                             <p className="text-xs text-orange-600 mt-1">
                               Vui lòng tạo và chọn quy tắc hoàn tiền ở phần trên
                             </p>
                           )}
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   ))}
@@ -1265,7 +1291,7 @@ const EditEventPage = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={addTicketDetail}
+                    onClick={addTicketType}
                     className="w-full"
                   >
                     <Plus className="h-4 w-4 mr-2" />

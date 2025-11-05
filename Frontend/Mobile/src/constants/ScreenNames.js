@@ -19,11 +19,11 @@ const ScreenNames = {
   SETTINGS_SCREEN: 'SettingsScreen',
   WALLET_SCREEN: 'WalletScreen',
   PAYMENT_SCREEN: 'PaymentScreen',
+  PAYMENT_INFORMATION_SCREEN: 'PaymentInformationScreen',
   CHANGE_PASSWORD_SCREEN: 'ChangePasswordScreen',
   TICKETS_SCREEN: 'TicketsScreen',
   LIKES_SCREEN: 'LikesScreen',
   FRIENDS_SCREEN: 'FriendsScreen',
-  HISTORY_SCREEN: 'HistoryScreen',
   
   // Timeline Screen
   TIMELINE_SCREEN: 'TimelineScreen',

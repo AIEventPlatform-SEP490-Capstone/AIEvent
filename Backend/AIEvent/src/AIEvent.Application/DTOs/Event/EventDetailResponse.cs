@@ -18,11 +18,11 @@ namespace AIEvent.Application.DTOs.Event
         public int TotalTickets { get; set; }
         public int SoldQuantity { get; set; } = 0;
         public int RemainingTickets { get; set; }
-        public TicketType TicketType { get; set; }
+        public TicketPricingType TicketPricingType { get; set; }
         public List<string>? ImgListEvent { get; set; }
-        public List<string>? ImgEventEvidences { get; set; }
-        public ConfirmStatus RequireApproval { get; set; }
-        public string? City { get; set; }
+        public List<string>? ImgListEvidences { get; set; }
+        public ConfirmEventStatus RequireApproval { get; set; }
+        public string? District { get; set; }
         public string? Address { get; set; }
         public float? Latitude { get; set; }
         public float? Longitude { get; set; }
@@ -31,6 +31,6 @@ namespace AIEvent.Application.DTOs.Event
         public OrganizerEventResponse OrganizerEvent { get; set; } = default!;
         public List<TagResponse> EventTags { get; set; } = new List<TagResponse>();
         public EventCategoryResponse EventCategory { get; set; } = default!;
-        public List<TicketDetailResponse> TicketDetails { get; set; } = new List<TicketDetailResponse>();
+        public List<TicketTypeResponse> TicketDetails { get; set; } = new List<TicketTypeResponse>();
     }
 }

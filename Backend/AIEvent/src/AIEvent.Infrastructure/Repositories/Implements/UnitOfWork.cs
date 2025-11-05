@@ -1,6 +1,7 @@
 using AIEvent.Domain.Entities;
 using AIEvent.Infrastructure.Context;
 using AIEvent.Infrastructure.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace AIEvent.Infrastructure.Repositories.Implements
@@ -19,9 +20,7 @@ namespace AIEvent.Infrastructure.Repositories.Implements
         public IGenericRepository<EventCategory> EventCategoryRepository => GetRepository<EventCategory>();
         public IGenericRepository<EventTag> EventTagRepository => GetRepository<EventTag>();
         public IGenericRepository<OrganizerProfile> OrganizerProfileRepository => GetRepository<OrganizerProfile>();
-        public IGenericRepository<TicketDetail> TicketDetailRepository => GetRepository<TicketDetail>();
-        public IGenericRepository<RefundRule> RefundRuleRepository => GetRepository<RefundRule>();
-        public IGenericRepository<RefundRuleDetail> RefundRuleDetailRepository => GetRepository<RefundRuleDetail>();
+        public IGenericRepository<TicketType> TicketTypeRepository => GetRepository<TicketType>(); 
         public IGenericRepository<FavoriteEvent> FavoriteEventRepository => GetRepository<FavoriteEvent>();
         public IGenericRepository<Booking> BookingRepository => GetRepository<Booking>();
         public IGenericRepository<Ticket> TicketRepository => GetRepository<Ticket>();
@@ -31,7 +30,8 @@ namespace AIEvent.Infrastructure.Repositories.Implements
         public IGenericRepository<PaymentTransaction> PaymentTransactionRepository => GetRepository<PaymentTransaction>();
         public IGenericRepository<WithdrawRequest> WithdrawRequestRepository => GetRepository<WithdrawRequest>();
         public IGenericRepository<PaymentInformation> PaymentInformationRepository => GetRepository<PaymentInformation>();
-        public IGenericRepository<EndEventRequest> EndRequestRepository => GetRepository<EndEventRequest>();
+        public IGenericRepository<EndEventRequest> EndEventRequestRepository => GetRepository<EndEventRequest>();
+        public IGenericRepository<RevenueReport> RevenueReportRepository => GetRepository<RevenueReport>();
         public void EnableSoftDelete() => _context.EnableSoftDelete = true;
         public void DisableSoftDelete() => _context.EnableSoftDelete = false;
 
@@ -79,6 +79,11 @@ namespace AIEvent.Infrastructure.Repositories.Implements
                 await _transaction.DisposeAsync();
                 _transaction = null;
             }
+        }
+
+        public async Task<int> ExecuteSqlRawAsync(string sql, params object[] parameters)
+        {
+            return await _context.Database.ExecuteSqlRawAsync(sql, parameters);
         }
 
         public void Dispose()

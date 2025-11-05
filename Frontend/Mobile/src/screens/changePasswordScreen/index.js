@@ -13,6 +13,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import styles from './styles';
 import CustomText from '../../components/common/customTextRN';
+import { LinearGradient } from 'expo-linear-gradient';
 import Images from '../../constants/Images';
 import Colors from '../../constants/Colors';
 import {
@@ -351,7 +352,12 @@ const ChangePasswordScreen = ({ navigation }) => {
         keyboardShouldPersistTaps="handled"
       >
         {/* Header */}
-        <View style={styles.header}>
+        <LinearGradient
+          colors={Colors.gradientHeaderTitle}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.header}
+        >
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
@@ -361,22 +367,22 @@ const ChangePasswordScreen = ({ navigation }) => {
           >
             <CustomText
               variant="h3"
-              color={isChangingPassword ? 'secondary' : 'primary'}
+              color="white"
               style={styles.backIcon}
             >
               ←
             </CustomText>
           </TouchableOpacity>
           <View style={styles.headerCenter}>
-            <CustomText variant="h2" color="primary" style={styles.headerTitle}>
+            <CustomText variant="h2" color="white" style={styles.headerTitle}>
               Đổi mật khẩu
             </CustomText>
-            <CustomText variant="caption" color="secondary" style={styles.headerSubtitle}>
+            <CustomText variant="caption" color="white" style={styles.headerSubtitle}>
               Bảo mật tài khoản của bạn
             </CustomText>
           </View>
           <View style={styles.placeholder} />
-        </View>
+        </LinearGradient>
 
         {/* Content */}
         <View style={styles.content}>

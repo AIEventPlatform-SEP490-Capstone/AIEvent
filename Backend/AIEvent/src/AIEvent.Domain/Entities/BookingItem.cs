@@ -16,7 +16,7 @@ namespace AIEvent.Domain.Entities
         public Guid TicketTypeId { get; set; }
 
         [ForeignKey("TicketTypeId")]
-        public virtual TicketDetail TicketType { get; set; } = default!;
+        public virtual TicketType TicketType { get; set; } = default!;
         public int Quantity { get; set; }
         [Column(TypeName = "decimal(18,2)")]
         public decimal UnitPrice { get; set; }

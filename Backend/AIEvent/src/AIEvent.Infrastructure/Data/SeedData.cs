@@ -28,8 +28,6 @@ namespace AIEvent.Infrastructure.Data
             SeedOrganizerProfile(modelBuilder);
             SeedEvent(modelBuilder);
             SeedEventTag(modelBuilder);
-            SeedRefundRule(modelBuilder);
-            SeedRefundRuleDetail(modelBuilder);
             SeedTicketDetail(modelBuilder);
             SeedWallet(modelBuilder);
         }
@@ -296,7 +294,7 @@ namespace AIEvent.Infrastructure.Data
                     CompanyName = "EventPro Vietnam Co., Ltd",
                     TaxCode = "0312345678",
                     CompanyDescription = "Công ty hàng đầu trong lĩnh vực tổ chức sự kiện chuyên nghiệp tại Việt Nam.",
-                    Status = ConfirmStatus.Approve,
+                    Status = ConfirmOrganizerProfileStatus.Approve,
                     ConfirmAt = DateTime.UtcNow,
                     ConfirmBy = "SystemSeeder",
                     CreatedAt = DateTime.UtcNow,
@@ -327,9 +325,9 @@ namespace AIEvent.Infrastructure.Data
                     TotalTickets = 200,
                     SoldQuantity = 99,
                     RemainingTickets = 101,
-                    TicketType = TicketType.Paid,
+                    TicketPricingType = TicketPricingType.Paid,
                     Publish = true,
-                    RequireApproval = ConfirmStatus.Approve,
+                    RequireApproval = ConfirmEventStatus.Approve,
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System",
                 },
@@ -342,13 +340,13 @@ namespace AIEvent.Infrastructure.Data
                     Description = "Chương trình nhạc Trịnh với nhiều nghệ sĩ nổi tiếng",
                     StartTime = DateTime.UtcNow.AddDays(14),
                     EndTime = DateTime.UtcNow.AddDays(14).AddHours(2),
-                    City = "Hồ Chí Minh",
+                    District = "Hồ Chí Minh",
                     Address = "Nhà hát Hòa Bình",
                     TotalTickets = 500,
                     RemainingTickets = 500,
-                    TicketType = TicketType.Paid,
+                    TicketPricingType = TicketPricingType.Paid,
                     Publish = true,
-                    RequireApproval = ConfirmStatus.Approve,
+                    RequireApproval = ConfirmEventStatus.Approve,
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System",
                     LocationName = "Hà Nội tòa 3"
@@ -362,13 +360,13 @@ namespace AIEvent.Infrastructure.Data
                     Description = "Chia sẻ kinh nghiệm khởi nghiệp thành công",
                     StartTime = DateTime.UtcNow.AddDays(21),
                     EndTime = DateTime.UtcNow.AddDays(21).AddHours(4),
-                    City = "Hà Nội",
+                    District = "Hà Nội",
                     Address = "Tòa nhà Innovation Hub",
                     TotalTickets = 100,
                     RemainingTickets = 100,
-                    TicketType = TicketType.Paid,
+                    TicketPricingType = TicketPricingType.Paid,
                     Publish = false, // chưa publish
-                    RequireApproval = ConfirmStatus.NeedConfirm,
+                    RequireApproval = ConfirmEventStatus.NeedConfirm,
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System",
                     LocationName = "Hà Nội tòa 2"
@@ -382,52 +380,16 @@ namespace AIEvent.Infrastructure.Data
                     Description = "Chia sẻ kinh nghiệm khởi nghiệp thành công 1111111",
                     StartTime = DateTime.UtcNow.AddDays(40),
                     EndTime = DateTime.UtcNow.AddDays(40).AddHours(4),
-                    City = "Hà Nội",
+                    District = "Hà Nội",
                     Address = "Tòa nhà Innovation Hub 1111111",
                     TotalTickets = 100,
                     RemainingTickets = 100,
-                    TicketType = TicketType.Free,
+                    TicketPricingType = TicketPricingType.Free,
                     Publish = true, 
-                    RequireApproval = ConfirmStatus.Approve,
+                    RequireApproval = ConfirmEventStatus.Approve,
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System",
                     LocationName = "Hà Nội tòa 1"
-                }
-            );
-        }
-
-        private static readonly Guid refundRuleId = Guid.NewGuid();
-        private static void SeedRefundRule(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<RefundRule>().HasData(
-                new RefundRule
-                {
-                    Id = refundRuleId,
-                    RuleName = "Hoan Ve", 
-                }
-            );
-        }
-
-        private static readonly Guid refundRuleDetailId1 = Guid.NewGuid();
-        private static readonly Guid refundRuleDetailId2 = Guid.NewGuid();
-        private static void SeedRefundRuleDetail(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<RefundRuleDetail>().HasData(
-                new RefundRuleDetail
-                {
-                    Id = refundRuleDetailId1,
-                    RefundRuleId = refundRuleId,
-                    MinDaysBeforeEvent = 3,
-                    MaxDaysBeforeEvent = 7,
-                    RefundPercent = 90,
-                },
-                new RefundRuleDetail
-                {
-                    Id = refundRuleDetailId2,
-                    RefundRuleId = refundRuleId,
-                    MinDaysBeforeEvent = 7,
-                    MaxDaysBeforeEvent = 14,
-                    RefundPercent = 80,
                 }
             );
         }
@@ -440,59 +402,54 @@ namespace AIEvent.Infrastructure.Data
         private static readonly Guid ticketDetailId6 = Guid.NewGuid();
         private static void SeedTicketDetail(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<TicketDetail>().HasData(
-                new TicketDetail
+            modelBuilder.Entity<TicketType>().HasData(
+                new TicketType
                 {
                     Id = ticketDetailId1,
                     EventId = eventId1,
                     TicketName = "Ve VipPro 1",
-                    RefundRuleId = refundRuleId,
                     TicketPrice = 100000,
                     TicketQuantity = 100,
                     RemainingQuantity = 1,
                     SoldQuantity = 99,
                 },
-                new TicketDetail
+                new TicketType
                 {
                     Id = ticketDetailId2,
                     EventId = eventId1,
                     TicketName = "Ve VipPro 2",
-                    RefundRuleId = refundRuleId,
                     TicketPrice = 150000,
                     TicketQuantity = 100,
                     RemainingQuantity = 100,
                 },
-                new TicketDetail
+                new TicketType
                 {
                     Id = ticketDetailId3,
                     EventId = eventId2,
                     TicketName = "Ve VipPro 3",
-                    RefundRuleId = refundRuleId,
                     TicketPrice = 150000,
                     TicketQuantity = 250,
                     RemainingQuantity = 250,
                 },
-                new TicketDetail
+                new TicketType
                 {
                     Id = ticketDetailId4,
                     EventId = eventId2,
                     TicketName = "Ve VipPro 5",
-                    RefundRuleId = refundRuleId,
                     TicketPrice = 200000,
                     TicketQuantity = 250,
                     RemainingQuantity = 250,
                 },
-                new TicketDetail
+                new TicketType
                 {
                     Id = ticketDetailId5,
                     EventId = eventId3,
                     TicketName = "Ve VipPro 4",
-                    RefundRuleId = refundRuleId,
                     TicketPrice = 50000,
                     TicketQuantity = 100,
                     RemainingQuantity = 100,
                 },
-                new TicketDetail
+                new TicketType
                 {
                     Id = ticketDetailId6,
                     EventId = eventId4,

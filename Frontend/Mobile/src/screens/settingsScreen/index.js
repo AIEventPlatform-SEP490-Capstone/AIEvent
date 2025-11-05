@@ -8,6 +8,7 @@ import {
 import { useDispatch } from 'react-redux';
 import { styles } from './styles';
 import CustomText from '../../components/common/customTextRN';
+import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
 import ScreenNames from '../../constants/ScreenNames';
@@ -46,6 +47,21 @@ const SettingsScreen = ({ navigation }) => {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
+        {/* Header with Gradient */}
+        <LinearGradient
+          colors={Colors.gradientHeaderTitle}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.headerGradient}
+        >
+          <CustomText variant="h2" color="white" style={styles.headerTitle}>
+            Cài đặt
+          </CustomText>
+          <CustomText variant="body" color="white" style={styles.headerSubtitle}>
+            Quản lý tài khoản và cài đặt ứng dụng
+          </CustomText>
+        </LinearGradient>
+
         {/* Account Settings Section */}
         <View style={styles.settingsSection}>
           <View style={styles.sectionHeader}>

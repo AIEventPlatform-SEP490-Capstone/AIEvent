@@ -30,7 +30,7 @@ namespace AIEvent.Application.Services.Implements
             _ticketSignatureService = ticketSignatureService;
             _hangfireJobService = hangfireJobService;
         }
-                                
+
         public async Task<Result> CreateBookingAsync(Guid userId, CreateBookingRequest request)
         {
             var user = await _unitOfWork.UserRepository.Query()
@@ -44,7 +44,7 @@ namespace AIEvent.Application.Services.Implements
                 .Query()
                 .Include(u => u.OrganizerProfile)
                 .FirstOrDefaultAsync(e => e.Id == request.EventId && !e.IsDeleted
-                                          && e.RequireApproval == ConfirmStatus.Approve && e.Publish == true);
+                                          && e.RequireApproval == ConfirmEventStatus.Approve && e.Publish == true);
             if (eventEntity == null)
                 return ErrorResponse.FailureResult("Event not found", ErrorCodes.NotFound);
 
@@ -55,7 +55,7 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("Ticket sales period has passed or not yet come", ErrorCodes.InvalidInput);
 
             var ticketTypeIds = request.TicketTypeRequests.Select(x => x.TicketTypeId).Distinct().ToList();
-            var ticketTypes = await _unitOfWork.TicketDetailRepository.Query()
+            var ticketTypes = await _unitOfWork.TicketTypeRepository.Query()
                 .Where(t => ticketTypeIds.Contains(t.Id))
                 .ToDictionaryAsync(x => x.Id);
             if (ticketTypes.Count != ticketTypeIds.Count)
@@ -63,7 +63,6 @@ namespace AIEvent.Application.Services.Implements
 
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-                // Create Booking 
                 var booking = new Booking
                 {
                     UserId = userId,
@@ -76,19 +75,35 @@ namespace AIEvent.Application.Services.Implements
                 await _unitOfWork.BookingRepository.AddAsync(booking);
 
                 decimal totalAmount = 0m;
+                int totalTicketsCount = 0;
                 var bookingItems = new List<BookingItem>();
                 var tickets = new List<Ticket>();
-                var ticketTypesToUpdate = new List<TicketDetail>();
 
                 foreach (var item in request.TicketTypeRequests)
                 {
                     if (!ticketTypes.TryGetValue(item.TicketTypeId, out var ticketType))
                         return ErrorResponse.FailureResult("Invalid ticket type", ErrorCodes.InvalidInput);
 
-                    if (ticketType.RemainingQuantity < item.Quantity)
+                    if (item.Quantity <= 0)
+                        return ErrorResponse.FailureResult("Quantity must be greater than 0", ErrorCodes.InvalidInput);
+
+                    var rows = await _unitOfWork.ExecuteSqlRawAsync(
+                    @"UPDATE TicketTypes
+                      SET RemainingQuantity = RemainingQuantity - {0},
+                          SoldQuantity = SoldQuantity + {0},
+                          UpdatedAt = GETUTCDATE(),
+                          UpdatedBy = {2}
+                      WHERE Id = {1} AND RemainingQuantity >= {0}",
+                    item.Quantity, item.TicketTypeId, userId.ToString());
+
+                    if (rows == 0)
+                    {
                         return ErrorResponse.FailureResult($"Not enough tickets for type {ticketType.TicketName}", ErrorCodes.InvalidInput);
+                    }
 
                     var itemTotal = ticketType.TicketPrice * item.Quantity;
+                    totalAmount += itemTotal;
+                    totalTicketsCount += item.Quantity;
 
                     var bookingItem = new BookingItem
                     {
@@ -100,9 +115,6 @@ namespace AIEvent.Application.Services.Implements
                     };
                     bookingItems.Add(bookingItem);
 
-                    totalAmount += itemTotal;
-
-                    // Batch create tickets
                     tickets.AddRange(Enumerable.Range(0, item.Quantity).Select(i => new Ticket
                     {
                         UserId = userId,
@@ -117,23 +129,25 @@ namespace AIEvent.Application.Services.Implements
                         Price = bookingItem.UnitPrice,
                         QrCodeUrl = string.Empty,
                     }));
-
-                    ticketType.RemainingQuantity -= item.Quantity;
-                    ticketType.SoldQuantity += item.Quantity;
-                    ticketType.SetUpdated(userId.ToString());
-                    ticketTypesToUpdate.Add(ticketType);
                 }
 
-                // Update event quantities once
-                eventEntity.RemainingTickets -= tickets.Count;
-                eventEntity.SoldQuantity += tickets.Count;
+                var eventRows = await _unitOfWork.ExecuteSqlRawAsync(
+                @"UPDATE Events
+                  SET RemainingTickets = RemainingTickets - {0},
+                      SoldQuantity = SoldQuantity + {0},
+                      TotalAmount = TotalAmount + {1},
+                      UpdatedAt = GETUTCDATE(),
+                      UpdatedBy = {3}
+                  WHERE Id = {2} AND RemainingTickets >= {0}",
+                totalTicketsCount, totalAmount, eventEntity.Id, userId.ToString());
 
-                // Batch updates
-                await _unitOfWork.TicketDetailRepository.UpdateRangeAsync(ticketTypesToUpdate);
-                await _unitOfWork.EventRepository.UpdateAsync(eventEntity);
+                if (eventRows == 0)
+                {
+                    return ErrorResponse.FailureResult("Not enough tickets for the event", ErrorCodes.InvalidInput);
+                }
+
                 await _unitOfWork.BookingItemRepository.AddRangeAsync(bookingItems);
 
-                // Generate QR contents and bytes
                 var qrContents = tickets.Select(t =>
                 {
                     var signature = _ticketSignatureService.CreateSignature(t.TicketCode);
@@ -141,32 +155,23 @@ namespace AIEvent.Application.Services.Implements
                 }).ToList();
                 var qrResult = await _qrCodeService.GenerateQrBytesAndUrlsAsync(qrContents);
 
-                // Update tickets with QrCodeUrl
                 for (int i = 0; i < tickets.Count; i++)
                 {
                     tickets[i].QrCodeUrl = qrResult.Urls[qrContents[i]];
                 }
                 await _unitOfWork.TicketRepository.AddRangeAsync(tickets);
 
+                booking.TotalAmount = totalAmount;
+
                 await _unitOfWork.SaveChangesAsync();
 
-                // Payment handling 
                 if (totalAmount > 0)
                 {
-                    var walletUserIds = new[] { userId, eventEntity.OrganizerProfile!.UserId };
-                    var wallets = await _unitOfWork.WalletRepository.Query()
-                        .Where(w => walletUserIds.Contains(w.UserId) && !w.IsDeleted)
-                        .ToListAsync();
-
-                    var walletUser = wallets.FirstOrDefault(w => w.UserId == userId);
-                    var walletOrg = wallets.FirstOrDefault(w => w.UserId == eventEntity.OrganizerProfile!.UserId);
-
+                    var walletUser = await _unitOfWork.WalletRepository.Query()
+                        .FirstOrDefaultAsync(w => w.UserId == userId && !w.IsDeleted);
 
                     if (walletUser == null)
                         return ErrorResponse.FailureResult("Wallet user not found", ErrorCodes.NotFound);
-
-                    if (walletOrg == null)
-                        return ErrorResponse.FailureResult("Wallet organizer not found", ErrorCodes.NotFound);
 
                     if (walletUser.Balance < totalAmount)
                         return ErrorResponse.FailureResult("Not enough money in wallet", ErrorCodes.InvalidInput);
@@ -184,67 +189,51 @@ namespace AIEvent.Application.Services.Implements
                     };
                     await _unitOfWork.PaymentTransactionRepository.AddAsync(payment);
 
-                    var walletTrans = new List<WalletTransaction>
+                    WalletTransaction walletTransaction = new()
                     {
-                        new()
-                        {
-                            WalletId = walletUser.Id,
-                            Amount = totalAmount,
-                            BalanceBefore = walletUser.Balance,
-                            BalanceAfter = walletUser.Balance - totalAmount,
-                            Type = TransactionType.Payment,
-                            Direction = TransactionDirection.Out,
-                            ReferenceId = payment.Id,
-                            ReferenceType = ReferenceType.Booking,
-                            Status = TransactionStatus.Success,
-                            Description = $"Thanh toán vé sự kiện '{eventEntity.Title}'"
-                        },
-                        new()
-                        {
-                            WalletId = walletOrg.Id,
-                            Amount = totalAmount,
-                            BalanceBefore = walletOrg.Balance,
-                            BalanceAfter = walletOrg.Balance + totalAmount,
-                            Type = TransactionType.Payment,
-                            Direction = TransactionDirection.In,
-                            ReferenceId = payment.Id,
-                            ReferenceType = ReferenceType.Booking,
-                            Status = TransactionStatus.Success,
-                            Description = $"{user.FullName} thanh toán vé sự kiện '{eventEntity.Title}'",
-                        }
+                        WalletId = walletUser.Id,
+                        Amount = totalAmount,
+                        BalanceBefore = walletUser.Balance,
+                        BalanceAfter = walletUser.Balance - totalAmount,
+                        Type = TransactionType.Payment,
+                        Direction = TransactionDirection.Out,
+                        ReferenceId = payment.Id,
+                        ReferenceType = ReferenceType.Booking,
+                        Status = TransactionStatus.Success,
+                        Description = $"Thanh toán vé sự kiện '{eventEntity.Title}'"
                     };
-                    await _unitOfWork.WalletTransactionRepository.AddRangeAsync(walletTrans);
+
+                    await _unitOfWork.WalletTransactionRepository.AddAsync(walletTransaction);
 
                     walletUser.Balance -= totalAmount;
-                    walletOrg.Balance += totalAmount;
-                    await _unitOfWork.WalletRepository.UpdateRangeAsync(new[] { walletUser, walletOrg });
+                    await _unitOfWork.WalletRepository.UpdateAsync(walletUser);
+
+                    booking.PaymentStatus = PaymentStatus.Paid;
                 }
                 else
                 {
                     booking.PaymentStatus = PaymentStatus.Paid;
                 }
 
-                // Update booking
                 booking.TotalAmount = totalAmount;
-                booking.PaymentStatus = PaymentStatus.Paid;
+                booking.Status = BookingStatus.Completed;
+                booking.PaymentMethod = PaymentMethod.Wallet;
                 await _unitOfWork.BookingRepository.UpdateAsync(booking);
 
-                // Prepare ticket data for PDF/email
-                var ticketData = tickets.Select(t => new TicketForPdf
+                var ticketData = tickets.Select((t, idx) => new TicketForPdf
                 {
                     TicketCode = t.TicketCode,
                     EventName = t.EventName,
                     CustomerName = user.FullName!,
                     TicketType = ticketTypes[t.TicketTypeId].TicketName,
                     Price = t.Price,
-                    QrUrl = t.QrCodeUrl, 
+                    QrUrl = t.QrCodeUrl,
                     StartTime = t.StartTime,
                     EndTime = t.EndTime,
                     Address = t.Address!,
-                    QrBytes = qrResult.Bytes[qrContents[tickets.IndexOf(t)]] 
+                    QrBytes = qrResult.Bytes[qrContents[idx]]
                 }).ToList();
 
-                // Generate PDF with bytes
                 await _hangfireJobService.EnqueueSendTicketEmailJobAsync(
                     user.Email!,
                     user.FullName!,
@@ -255,6 +244,7 @@ namespace AIEvent.Application.Services.Implements
                 return Result.Success();
             });
         }
+
 
         public async Task<Result<BasePaginated<ListEventOfUser>>> GetListEventOfUser(
             int pageNumber,
@@ -421,7 +411,7 @@ namespace AIEvent.Application.Services.Implements
             var qrCodeUrl = await _unitOfWork.TicketRepository
                 .Query()
                 .AsNoTracking()
-                .Where(t => t.Id == ticketId && t.UserId == userId && !t.IsDeleted)
+                .Where(t => t.Id == ticketId && t.UserId == userId && !t.IsDeleted && t.Status == TicketStatus.Valid)
                 .Select(t => t.QrCodeUrl)
                 .FirstOrDefaultAsync();
 
@@ -431,126 +421,6 @@ namespace AIEvent.Application.Services.Implements
             }
 
             return Result<QrResponse>.Success(new QrResponse { QrCode = qrCodeUrl });
-        }
-
-        public async Task<Result> RefundTicketAsync(Guid userId, string id)
-        {
-            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
-            {
-                if (!Guid.TryParse(id, out var ticketId))
-                    return ErrorResponse.FailureResult("Invalid ticket ID format", ErrorCodes.InvalidInput);
-
-                var ticketData = await _unitOfWork.TicketRepository.Query()
-                    .Include(t => t.User)
-                    .Include(t => t.TicketType)
-                        .ThenInclude(tt => tt.RefundRule!)
-                            .ThenInclude(r => r.RefundRuleDetails)
-                    .Include(t => t.TicketType.Event)
-                        .ThenInclude(e => e.OrganizerProfile)
-                    .Include(t => t.BookingItem)
-                    .AsTracking()
-                    .FirstOrDefaultAsync(t =>
-                        t.Id == ticketId &&
-                        t.UserId == userId &&
-                        !t.IsDeleted &&
-                        !t.TicketType.Event.IsDeleted);
-
-                if (ticketData == null)
-                    return ErrorResponse.FailureResult("Ticket not found", ErrorCodes.NotFound);
-                if (ticketData.Status == TicketStatus.Refunded)
-                    return ErrorResponse.FailureResult("Ticket has already been refunded", ErrorCodes.InvalidInput);
-
-                var ticket = ticketData;
-                var ticketType = ticket.TicketType;
-                var eventEntity = ticketType.Event;
-                var refundRule = ticketType.RefundRule;
-                var now = DateTime.UtcNow;
-
-                if (eventEntity.StartTime <= now)
-                    return ErrorResponse.FailureResult("Cannot refund after event has started", ErrorCodes.InternalServerError);
-
-                decimal refundPrice = 0;
-                decimal refundPercent = 0;
-                if (refundRule != null && refundRule.RefundRuleDetails?.Any() == true && eventEntity.TicketType != TicketType.Free)
-                {
-                    var refundDetail = refundRule.RefundRuleDetails
-                        .FirstOrDefault(d =>
-                            now >= eventEntity.StartTime.AddDays(-d.MaxDaysBeforeEvent!.Value) &&
-                            now < eventEntity.StartTime.AddDays(-d.MinDaysBeforeEvent!.Value));
-
-                    if (refundDetail == null)
-                        return ErrorResponse.FailureResult("Refund rule not applicable for this time", ErrorCodes.InvalidInput);
-
-                    refundPercent = refundDetail.RefundPercent ?? 0;
-                    refundPrice = ticket.Price * refundPercent / 100;
-
-                    var wallets = await _unitOfWork.WalletRepository.Query()
-                        .Where(w =>
-                            (w.UserId == userId || w.UserId == eventEntity.OrganizerProfile!.UserId)
-                            && !w.IsDeleted)
-                        .ToListAsync();
-
-                    var userWallet = wallets.FirstOrDefault(w => w.UserId == userId);
-                    var organizerWallet = wallets.FirstOrDefault(w => w.UserId == eventEntity.OrganizerProfile!.UserId);
-
-                    if (userWallet == null || organizerWallet == null)
-                        return ErrorResponse.FailureResult("Wallet not found", ErrorCodes.NotFound);
-
-                    var paymentTransaction = new PaymentTransaction
-                    {
-                        UserId = userId,
-                        BookingId = ticket.BookingItem.BookingId,
-                        Amount = refundPrice,
-                        PaymentMethod = PaymentMethod.Wallet,
-                        Description = $"Hoàn {refundPercent}% tiền vé sự kiện '{eventEntity.Title}'",
-                        CompletedAt = now,
-                        TransactionType = TransactionType.Refund,
-                        Status = TransactionStatus.Success,
-                    };
-
-                    var walletTransactionUser = new WalletTransaction
-                    {
-                        WalletId = userWallet.Id,
-                        Type = TransactionType.Refund,
-                        Amount = refundPrice,
-                        BalanceBefore = userWallet.Balance,
-                        BalanceAfter = userWallet.Balance + refundPrice,
-                        Status = TransactionStatus.Success,
-                        Description = $"Hoàn {refundPercent}% tiền vé '{eventEntity.Title}'",
-                        ReferenceId = paymentTransaction.Id,
-                        ReferenceType = ReferenceType.Refund,
-                        Direction = TransactionDirection.In,
-                    };
-
-                    var walletTransactionOrg = new WalletTransaction
-                    {
-                        WalletId = organizerWallet.Id,
-                        Type = TransactionType.Refund,
-                        Amount = refundPrice,
-                        BalanceBefore = organizerWallet.Balance,
-                        BalanceAfter = organizerWallet.Balance - refundPrice,
-                        Status = TransactionStatus.Success,
-                        Description = $"Hoàn {refundPercent}% tiền vé '{eventEntity.Title}' cho {ticket.User!.FullName}",
-                        ReferenceId = paymentTransaction.Id,
-                        ReferenceType = ReferenceType.Refund,
-                        Direction = TransactionDirection.Out,
-                    };
-
-                    userWallet.Balance += refundPrice;
-                    organizerWallet.Balance -= refundPrice;
-
-                    await _unitOfWork.PaymentTransactionRepository.AddAsync(paymentTransaction);
-                    await _unitOfWork.WalletTransactionRepository.AddRangeAsync(new[] { walletTransactionUser, walletTransactionOrg });
-                }
-
-                ticketType.RemainingQuantity++;
-                ticketType.SoldQuantity--;
-                eventEntity.RemainingTickets++;
-                eventEntity.SoldQuantity--;
-                ticket.Status = TicketStatus.Refunded;
-
-                return Result.Success();
-            });
         }
 
         public async Task<Result<CheckInResponse>> CheckInTicketAsync(string qrContent)
@@ -579,7 +449,7 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("Ticket not found", ErrorCodes.NotFound);
 
             if (ticket.Status != TicketStatus.Valid)
-                return ErrorResponse.FailureResult("Ticket already checked in or refunded or cancelled", ErrorCodes.InvalidInput);
+                return ErrorResponse.FailureResult("Ticket already checked in", ErrorCodes.InvalidInput);
 
             if (ticket.EndTime < DateTime.UtcNow)
                 return ErrorResponse.FailureResult("Event already ended", ErrorCodes.InvalidInput);

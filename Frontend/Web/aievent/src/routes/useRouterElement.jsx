@@ -18,8 +18,7 @@ import EventDetailGuestPage from "../pages/Event/EventDetailGuestPage";
 import ManagerDashboard from "../pages/Manager/ManagerDashboard";
 import ManagerEventsPage from "../pages/Manager/ManagerEventsPage";
 import ManagerEventDetailPage from "../pages/Manager/ManagerEventDetailPage";
-import ManagerEditEventPage from "../pages/Manager/ManagerEditEventPage";
-import RefundRulesPage from "../pages/RefundRule/RefundRulesPage";
+import ManagerProfile from "../pages/Manager/ManagerProfile";
 import AdminProfile from "../pages/Admin/AdminProfile";
 import UserManagement from "../pages/Admin/UserManagement";
 import EventCategory from "../pages/Event Category/EventCategory";
@@ -33,6 +32,10 @@ import OrganizerProfilePage from "../pages/Organizer/OrganizerProfilePage";
 import WalletDashboard from "../pages/Wallet/WalletDashboard";
 import BookingFlow from "../pages/User/BookingFlow";
 import MyTickets from "../pages/User/MyTickets";
+import SearchPage from "../pages/Search/SearchPage";
+import FavoriteEventsPage from "../pages/User/FavoriteEventsPage";
+import OrganizerApprovalListPage from "../pages/Admin/OrganizerApprovalListPage";
+import OrganizerApprovalDetailPage from "../pages/Admin/OrganizerApprovalDetailPage";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -41,7 +44,7 @@ export default function useRouterElement() {
       element: <MainLayout />,
       children: [
         { index: true, element: <HomePage /> },
-        { path: "search", element: <div>Search Page</div> },
+        { path: "search", element: <SearchPage /> },
         { path: "nearby", element: <div>Nearby Events Page</div> },
         { path: "timeline", element: <TimelinePage /> },
         { path: "friends", element: <div>Friends Page</div> },
@@ -50,7 +53,7 @@ export default function useRouterElement() {
           path: "favorites",
           element: (
             <ProtectedRoute>
-              <div>Favorites Page</div>
+              <FavoriteEventsPage />
             </ProtectedRoute>
           ),
         },
@@ -211,14 +214,10 @@ export default function useRouterElement() {
         { index: true, element: <ManagerDashboard /> },
         { path: "events", element: <ManagerEventsPage /> },
         { path: "event/:eventId", element: <ManagerEventDetailPage /> },
-        { path: "event/:eventId/edit", element: <ManagerEditEventPage /> },
         { path: "events/category", element: <EventCategory /> },
         { path: "tags", element: <TagManagementPage userRole="manager" /> },
-        {
-          path: "refund-rules",
-          element: <RefundRulesPage userRole="manager" />,
-        },
-        { path: "profile", element: <div>Manager Profile Page</div> },
+
+        { path: "profile", element: <ManagerProfile /> },
         { path: "settings", element: <div>Manager Settings Page</div> },
         { path: "support", element: <div>Manager Support Page</div> },
       ],
@@ -234,8 +233,9 @@ export default function useRouterElement() {
         { index: true, element: <AdminDashboard /> },
         { path: "events", element: <div>Admin Events Page</div> },
         { path: "users", element: <UserManagement /> },
-        { path: "refund-rules", element: <RefundRulesPage userRole="admin" /> },
-        { path: "organizers", element: <div>Admin Organizers Page</div> },
+
+        { path: "organizers", element: <OrganizerApprovalListPage /> },
+        { path: "organizers/:id", element: <OrganizerApprovalDetailPage /> },
         { path: "profile", element: <AdminProfile /> },
         { path: "settings", element: <div>Admin Settings Page</div> },
         {

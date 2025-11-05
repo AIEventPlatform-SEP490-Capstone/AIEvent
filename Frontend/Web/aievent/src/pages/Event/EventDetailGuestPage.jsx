@@ -153,7 +153,7 @@ const EventDetailGuestPage = ({ previewData }) => {
       }
     }
     // Fallback to ticketType if no price info
-    return event.ticketType === 1 ? 'Miễn phí' : 'Có phí';
+    return event.ticketType === 1 || event.ticketType === "free" ? 'Miễn phí' : 'Có phí';
   };
 
   // Format ticket price for individual tickets
@@ -612,7 +612,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                               ` ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(relatedEvent.minTicketPrice)} - ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(relatedEvent.maxTicketPrice)}`
                             )
                           ) : (
-                            relatedEvent.ticketType === 1 ? " Miễn phí" : " Có phí"
+                            relatedEvent.ticketType === 1 || relatedEvent.ticketType === "free" ? " Miễn phí" : " Có phí"
                           )}
                         </p>
                       </div>

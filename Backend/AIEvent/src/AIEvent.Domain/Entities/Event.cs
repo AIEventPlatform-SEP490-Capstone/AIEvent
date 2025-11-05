@@ -1,5 +1,6 @@
 ﻿using AIEvent.Domain.Base;
 using AIEvent.Domain.Enums;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AIEvent.Domain.Entities
 {
@@ -16,17 +17,23 @@ namespace AIEvent.Domain.Entities
         public int TotalTickets { get; set; }
         public int SoldQuantity { get; set; } = 0;
         public int RemainingTickets { get; set; }
-        public TicketType TicketType { get; set; }
+        public TicketPricingType TicketPricingType { get; set; }
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal TotalAmount { get; set; } = 0;
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? PayoutAmount { get; set; } = 0;
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? PlatformFee { get; set; } = 0;
         public string? ImgListEvent { get; set; }
         public bool? Publish { get; set; } = false;
-        public ConfirmStatus? RequireApproval { get; set; }
+        public ConfirmEventStatus? RequireApproval { get; set; }
         public DateTime? RequireApprovalAt { get; set; }
         public Guid? RequireApprovalBy { get; set; }
         public string? ReasonReject { get; set; }
         public string? ReasonCancel { get; set; } 
         public string? LinkRef { get; set; }
-        public string? City { get; set; }
-        public string? Evidences { get; set; }
+        public string? District { get; set; }
+        public string? ImgListEvidences { get; set; }
         public string? Address { get; set; }
         public float? Latitude { get; set; }
         public float? Longitude { get; set; }
@@ -34,10 +41,11 @@ namespace AIEvent.Domain.Entities
         public DateTime? SaleEndTime { get; set; }
         public EventCategory EventCategory { get; set; } = default!;
         public virtual OrganizerProfile? OrganizerProfile { get; set; }
-        public virtual EndEventRequest? EndRequest { get; set; }
-        public virtual ICollection<TicketDetail> TicketDetails { get; set; } = new List<TicketDetail>();
+        public virtual EndEventRequest? EndEventRequest { get; set; }
+        public virtual ICollection<TicketType> TicketTypes { get; set; } = new List<TicketType>();
         public virtual ICollection<EventTag> EventTags { get; set; } = new List<EventTag>();
         public ICollection<FavoriteEvent> FavoriteEvents { get; set; } = new List<FavoriteEvent>();
         public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
+        public virtual RevenueReport? RevenueReport { get; set; }
     }
 }
