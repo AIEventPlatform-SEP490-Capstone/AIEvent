@@ -1,6 +1,5 @@
 ﻿using AIEvent.Application.DTOs.Ticket;
 using AIEvent.Domain.Enums;
-using Microsoft.AspNetCore.Http;
 
 namespace AIEvent.Application.DTOs.Event
 {

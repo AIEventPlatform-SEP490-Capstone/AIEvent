@@ -26,7 +26,7 @@ namespace AIEvent.Domain.Entities
         public decimal? PlatformFee { get; set; } = 0;
         public string? ImgListEvent { get; set; }
         public bool? Publish { get; set; } = false;
-        public ConfirmEventStatus? RequireApproval { get; set; }
+        public EventStatus? Status { get; set; }
         public DateTime? RequireApprovalAt { get; set; }
         public Guid? RequireApprovalBy { get; set; }
         public string? ReasonReject { get; set; }

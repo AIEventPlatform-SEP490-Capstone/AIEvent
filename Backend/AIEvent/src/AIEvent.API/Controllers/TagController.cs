@@ -83,7 +83,7 @@ namespace AIEvent.API.Controllers
 
             return Ok(SuccessResponse<object>.SuccessResult(
                 new {id},
-                SuccessCodes.Success,
+                SuccessCodes.Deleted,
                 "Delete Tag successfully"));
         }
 
@@ -115,7 +115,7 @@ namespace AIEvent.API.Controllers
 
             return Ok(SuccessResponse<TagResponse>.SuccessResult(
                 result.Value!,
-                SuccessCodes.Success,
+                SuccessCodes.Updated,
                 "Update Tag successfully"));
         }
     }

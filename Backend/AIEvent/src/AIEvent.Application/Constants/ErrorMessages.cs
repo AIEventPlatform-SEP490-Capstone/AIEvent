@@ -9,7 +9,6 @@
         public const string Unauthorized = "You are not authorized to perform this action";
         public const string Forbidden = "Access to this resource is forbidden";
         public const string Conflict = "The request conflicts with the current state of the resource";
-        public const string ValidationFailed = "Validation failed for the provided data";
         public const string InternalServerError = "An internal server error occurred";
     }
 }

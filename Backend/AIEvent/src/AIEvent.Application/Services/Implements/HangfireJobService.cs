@@ -3,6 +3,7 @@ using AIEvent.Application.DTOs.RevenueReport;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
+using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
@@ -172,6 +173,124 @@ namespace AIEvent.Application.Services.Implements
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error processing payout for Organizer {OrganizerId} (Event {EventId})", request.OrganizerProfileId, request.EventId);
+                throw;
+            }
+        }
+        public async Task EnqueueCancelEventJobAsync(Guid eventId, string reasonCancel)
+        {
+            BackgroundJob.Enqueue(() => ProcessCancelEventJobAsync(eventId, reasonCancel));
+            await Task.CompletedTask;
+        }
+
+
+        [AutomaticRetry(Attempts = 3)]
+        public async Task ProcessCancelEventJobAsync(Guid eventId, string reasonCancel)
+        {
+            try
+            {
+                _logger.LogInformation("Starting cancellation job for event {EventId}", eventId);
+
+                var existingEvent = await _unitOfWork.EventRepository
+                    .Query()
+                    .Include(e => e.Bookings)
+                        .ThenInclude(b => b.User)
+                        .ThenInclude(u => u.Wallet)
+                    .FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
+
+                if (existingEvent == null)
+                {
+                    _logger.LogWarning("Event not found: {EventId}", eventId);
+                    return;
+                }
+
+                var hasBookings = existingEvent.Bookings
+                    .Where(b => b.Status == BookingStatus.Completed || b.Status == BookingStatus.Pending)
+                    .ToList();
+
+                await _transactionHelper.ExecuteInTransactionAsync(async () =>
+                {
+                    if (!hasBookings.Any())
+                    {
+                        await _unitOfWork.EventRepository.DeleteAsync(existingEvent);
+                        await _unitOfWork.SaveChangesAsync();
+                        _logger.LogInformation("Deleted event {EventId} without bookings.", eventId);
+                        return Result.Success();
+                    }
+
+                    var walletTransactions = new List<WalletTransaction>();
+                    var paymentTransactions = new List<PaymentTransaction>();
+                    var bookingsToUpdate = new List<Booking>();
+                    var walletsToUpdate = new List<Wallet>();
+
+                    foreach (var booking in hasBookings)
+                    {
+                        if (booking.TotalAmount <= 0)
+                        {
+                            booking.Status = BookingStatus.Cancelled;
+                            bookingsToUpdate.Add(booking);
+                            continue;
+                        }
+
+                        var userWallet = booking.User.Wallet;
+                        if (userWallet == null)
+                            throw new Exception($"Wallet not found for user {booking.User.FullName}");
+
+                        if (existingEvent.TotalAmount < booking.TotalAmount)
+                            throw new Exception($"Event wallet has insufficient balance to refund {booking.TotalAmount}");
+
+                        paymentTransactions.Add(new PaymentTransaction
+                        {
+                            BookingId = booking.Id,
+                            UserId = booking.UserId,
+                            Amount = booking.TotalAmount,
+                            PaymentMethod = PaymentMethod.Wallet,
+                            Status = TransactionStatus.Success,
+                            Description = $"Hoàn tiền do hủy sự kiện '{existingEvent.Title}'. Lý do: {reasonCancel} cho người dùng {booking.User.FullName ?? booking.User.Email}",
+                            TransactionType = TransactionType.Refund,
+                            CompletedAt = DateTime.UtcNow
+                        });
+
+                        walletTransactions.Add(new WalletTransaction
+                        {
+                            WalletId = userWallet.Id,
+                            Amount = booking.TotalAmount,
+                            BalanceBefore = userWallet.Balance,
+                            BalanceAfter = userWallet.Balance + booking.TotalAmount,
+                            Type = TransactionType.Refund,
+                            Direction = TransactionDirection.In,
+                            ReferenceId = booking.Id,
+                            ReferenceType = ReferenceType.Refund,
+                            Status = TransactionStatus.Success,
+                            Description = $"Hoàn tiền do hủy sự kiện '{existingEvent.Title}'. Lý do: {reasonCancel}"
+                        });
+
+                        userWallet.Balance += booking.TotalAmount;
+                        existingEvent.TotalAmount -= booking.TotalAmount;
+
+                        if (!walletsToUpdate.Any(w => w.Id == userWallet.Id))
+                            walletsToUpdate.Add(userWallet);
+
+                        booking.Status = BookingStatus.Cancelled;
+                        bookingsToUpdate.Add(booking);
+                    }
+
+                    await _unitOfWork.PaymentTransactionRepository.AddRangeAsync(paymentTransactions);
+                    await _unitOfWork.WalletTransactionRepository.AddRangeAsync(walletTransactions);
+                    await _unitOfWork.WalletRepository.UpdateRangeAsync(walletsToUpdate);
+                    await _unitOfWork.BookingRepository.UpdateRangeAsync(bookingsToUpdate);
+
+                    existingEvent.ReasonCancel = reasonCancel;
+                    existingEvent.Status = EventStatus.Cancelled;
+                    existingEvent.Publish = false;
+                    await _unitOfWork.EventRepository.UpdateAsync(existingEvent);
+                    _logger.LogInformation("Refunds and cancellations processed for event {EventId}", eventId);
+                    return Result.Success();
+                });
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing cancel event {EventId}", eventId);
                 throw;
             }
         }
