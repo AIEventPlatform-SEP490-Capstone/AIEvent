@@ -83,7 +83,6 @@ const HomePage = () => {
 
           <div className="space-y-6">
             {/* AI Recommendation Widget */}
-
             <AIRecommendationWidget />
 
             {/* Smart Notifications */}

@@ -44,7 +44,7 @@ namespace AIEvent.Application.Services.Implements
                 .Query()
                 .Include(u => u.OrganizerProfile)
                 .FirstOrDefaultAsync(e => e.Id == request.EventId && !e.IsDeleted
-                                          && e.RequireApproval == ConfirmStatus.Approve && e.Publish == true);
+                                          && e.Status == EventStatus.Approved && e.Publish == true);
             if (eventEntity == null)
                 return ErrorResponse.FailureResult("Event not found", ErrorCodes.NotFound);
 

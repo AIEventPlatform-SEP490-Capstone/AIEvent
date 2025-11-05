@@ -145,6 +145,7 @@ namespace AIEvent.API.Controllers
 
             return Ok(SuccessResponse<object>.SuccessResult(
                 null!,
+                SuccessCodes.Deleted,
                 message: "Token revoked successfully"));
         }
 

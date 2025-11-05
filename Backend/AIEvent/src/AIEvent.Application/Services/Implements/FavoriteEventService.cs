@@ -34,7 +34,7 @@ namespace AIEvent.Application.Services.Implements
                     return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
                 }
                 var eventDetail = await _unitOfWork.EventRepository.GetByIdAsync(eventId, true);
-                if (eventDetail == null || eventDetail.RequireApproval == ConfirmStatus.Reject)
+                if (eventDetail == null || eventDetail.Status == EventStatus.Rejected)
                 {
                     return ErrorResponse.FailureResult("Event not found or inactive", ErrorCodes.NotFound);
                 }
@@ -62,7 +62,7 @@ namespace AIEvent.Application.Services.Implements
                                                 .AsNoTracking()
                                                 .Where(e => e.FavoriteEvents.Any(x => x.UserId == userId) &&
                                                        !e.DeletedAt.HasValue && 
-                                                       e.RequireApproval == ConfirmStatus.Approve);
+                                                       e.Status == EventStatus.Approved);
 
             if (!string.IsNullOrEmpty(search))
             {

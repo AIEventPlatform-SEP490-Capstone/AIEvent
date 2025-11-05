@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -307,33 +305,35 @@ export default function OrganizerApprovalDetailPage() {
             </div>
           </section>
 
-          {/* Xác nhận duyệt / từ chối */}
-          <section>
-            <h3 className="text-lg font-semibold mb-3 border-b pb-2">
-              ✅ Xác nhận duyệt hồ sơ
-            </h3>
-            <Textarea
-              placeholder="Nhập lý do từ chối (nếu có)..."
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              rows={3}
-            />
-            <div className="flex justify-end gap-3 mt-4">
-              <Button
-                variant="destructive"
-                disabled={isSubmitting}
-                onClick={() => handleConfirm("Reject")}
-              >
-                <XCircle className="w-4 h-4 mr-1" /> Từ chối
-              </Button>
-              <Button
-                disabled={isSubmitting}
-                onClick={() => handleConfirm("Approve")}
-              >
-                <CheckCircle className="w-4 h-4 mr-1" /> Duyệt hồ sơ
-              </Button>
-            </div>
-          </section>
+          {/* Xác nhận duyệt / từ chối — chỉ hiện khi trạng thái là NeedConfirm */}
+          {o.status === "NeedConfirm" && (
+            <section>
+              <h3 className="text-lg font-semibold mb-3 border-b pb-2">
+                ✅ Xác nhận duyệt hồ sơ
+              </h3>
+              <Textarea
+                placeholder="Nhập lý do từ chối (nếu có)..."
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                rows={3}
+              />
+              <div className="flex justify-end gap-3 mt-4">
+                <Button
+                  variant="destructive"
+                  disabled={isSubmitting}
+                  onClick={() => handleConfirm("Reject")}
+                >
+                  <XCircle className="w-4 h-4 mr-1" /> Từ chối
+                </Button>
+                <Button
+                  disabled={isSubmitting}
+                  onClick={() => handleConfirm("Approve")}
+                >
+                  <CheckCircle className="w-4 h-4 mr-1" /> Duyệt hồ sơ
+                </Button>
+              </div>
+            </section>
+          )}
         </CardContent>
       </Card>
 

@@ -56,7 +56,7 @@ namespace AIEvent.Application.Test.Services
                 EndTime = DateTime.Now.AddDays(1).AddHours(2),
                 TotalTickets = 100,
                 TicketPricingType = TicketPricingType.Free,
-                RequireApproval = ConfirmStatus.Approve,
+                Status = EventStatus.Approved,
                 EventCategoryId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
             };
 

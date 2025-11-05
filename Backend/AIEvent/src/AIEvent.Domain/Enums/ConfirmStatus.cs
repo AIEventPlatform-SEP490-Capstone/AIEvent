@@ -2,10 +2,7 @@
 {
     public enum ConfirmStatus
     {
-        Approve,
-        Reject,
-        NeedConfirm,
-        Ended,
-        Pending
+        Approved,
+        Rejected,
     }
 }

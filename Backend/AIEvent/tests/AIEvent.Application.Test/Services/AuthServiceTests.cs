@@ -766,7 +766,7 @@ namespace AIEvent.Application.Test.Services
                     ContactEmail = "john@example.com",
                     ContactPhone = "+1234567890",
                     Address = "123 Main St",
-                    Status = ConfirmStatus.NeedConfirm
+                    Status = OrganizerProfileStatus.Pending
                 }
             };
             var tokenEntity = new RefreshToken
@@ -846,7 +846,7 @@ namespace AIEvent.Application.Test.Services
                     ContactEmail = "john@example.com",
                     ContactPhone = "+1234567890",
                     Address = "123 Main St",
-                    Status = ConfirmStatus.NeedConfirm
+                    Status = OrganizerProfileStatus.Pending
                 }
             };
             var tokenEntity = new RefreshToken
@@ -914,7 +914,7 @@ namespace AIEvent.Application.Test.Services
                     ContactEmail = "john@example.com",
                     ContactPhone = "+1234567890",
                     Address = "123 Main St",
-                    Status = ConfirmStatus.NeedConfirm
+                    Status = OrganizerProfileStatus.Pending
                 }
             };
             var tokenEntity = new RefreshToken
@@ -1087,7 +1087,7 @@ namespace AIEvent.Application.Test.Services
                     ContactEmail = "john@example.com",
                     ContactPhone = "+1234567890",
                     Address = "123 Main St",
-                    Status = ConfirmStatus.NeedConfirm
+                    Status = OrganizerProfileStatus.Pending
                 }
             };
             var accessToken = "accessToken";
@@ -1199,7 +1199,7 @@ namespace AIEvent.Application.Test.Services
                     ContactEmail = "john@example.com",
                     ContactPhone = "+1234567890",
                     Address = "123 Main St",
-                    Status = ConfirmStatus.NeedConfirm
+                    Status = OrganizerProfileStatus.Pending
                 }
             };
             _mockCacheService.Setup(x => x.GetAsync<string>($"Register {request.Email}")).ReturnsAsync((string)null!);
@@ -1229,7 +1229,7 @@ namespace AIEvent.Application.Test.Services
                 Email = request.Email,
                 IsActive = false,
                 Role = new Role { Id = Guid.NewGuid(), Name = "User" },
-                OrganizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.NonProfit, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Small, OrganizerType = OrganizerType.Individual, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "John Doe", ContactEmail = "john@example.com", ContactPhone = "+1234567890", Address = "123 Main St", Status = ConfirmStatus.NeedConfirm }
+                OrganizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.NonProfit, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Small, OrganizerType = OrganizerType.Individual, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "John Doe", ContactEmail = "john@example.com", ContactPhone = "+1234567890", Address = "123 Main St", Status = OrganizerProfileStatus.Pending }
             };
 
             _mockCacheService.Setup(x => x.GetAsync<string>($"Register {request.Email}")).ReturnsAsync("123456");
