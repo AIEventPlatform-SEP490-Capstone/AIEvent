@@ -6,7 +6,7 @@ namespace AIEvent.Application.DTOs.Event
     public class EndEventReview
     {
         public Guid EndEventRequestId { get; set; }
-        public ConfirmEventStatus Status { get; set; }
+        public EndEventStatus Status { get; set; }
         public string? Summary { get; set; }
         public string? AdminNote { get; set; }
         public List<string> EvidenceImages { get; set; } = new();

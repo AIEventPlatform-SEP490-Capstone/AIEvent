@@ -5,5 +5,6 @@ namespace AIEvent.Application.Services.Interfaces
     public interface IHangfireJobService
     {
         Task EnqueueSendTicketEmailJobAsync(string userEmail, string userFullName, string eventTitle, List<TicketForPdf> tickets);
+        Task EnqueueCancelEventJobAsync(Guid eventId, string reasonCancel);
     }
 }
