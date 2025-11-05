@@ -213,14 +213,14 @@ namespace AIEvent.Infrastructure.Data
                 new EventCategory
                 {
                     Id = eventCategoryId3,
-                    CategoryName = "Sports",
+                    CategoryName = "Education",
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System"
                 },
                 new EventCategory
                 {
                     Id = Guid.NewGuid(),
-                    CategoryName = "Education",
+                    CategoryName = "Sports",
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System"
                 }
@@ -314,9 +314,8 @@ namespace AIEvent.Infrastructure.Data
                 new Event
                 {
                     Id = eventId1,
-                    
                     OrganizerProfileId = organizerProfileId, 
-                    EventCategoryId = eventCategoryId1, 
+                    EventCategoryId = eventCategoryId2, 
                     Title = "Hội Thảo Công Nghệ AI 2025",
                     Description = "Sự kiện chia sẻ xu hướng AI mới nhất",
                     StartTime = DateTime.UtcNow.AddDays(7),
@@ -335,7 +334,7 @@ namespace AIEvent.Infrastructure.Data
                 {
                     Id = eventId2,
                     OrganizerProfileId = organizerProfileId,
-                    EventCategoryId = eventCategoryId2,
+                    EventCategoryId = eventCategoryId1,
                     Title = "Đêm Nhạc Trịnh Công Sơn",
                     Description = "Chương trình nhạc Trịnh với nhiều nghệ sĩ nổi tiếng",
                     StartTime = DateTime.UtcNow.AddDays(14),
