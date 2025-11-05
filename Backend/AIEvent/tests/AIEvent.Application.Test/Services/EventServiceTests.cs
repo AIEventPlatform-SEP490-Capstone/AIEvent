@@ -2183,7 +2183,7 @@ namespace AIEvent.Application.Test.Services
             var expectedPlatformFee = ev.TotalAmount * 0.066m + 45000m;
             var expectedNet = ev.TotalAmount - expectedPlatformFee;
             _mockUnitOfWork.Verify(x => x.EndEventRequestRepository.UpdateAsync(It.Is<EndEventRequest>(r => 
-                r.Status == EndEventStatus.WaitingForPayout && 
+                r.Status == EndEventStatus.Approved && 
                 r.ReviewedAt.HasValue &&
                 r.Event != null &&
                 r.Event.PlatformFee == expectedPlatformFee && 

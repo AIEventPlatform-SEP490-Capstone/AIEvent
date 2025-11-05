@@ -1374,8 +1374,8 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID06_GetOrganizerAsync_Boundary_Page1Size1_ShouldReturnFirstItem()
         {
             // Arrange
-            var p1 = CreateProfileWith(createdAtOffsetDays: 2);
-            var p2 = CreateProfileWith(createdAtOffsetDays: 1);
+            var p1 = CreateProfileWith(createdAtOffsetDays: 1);
+            var p2 = CreateProfileWith(createdAtOffsetDays: 2);
             var profiles = new List<OrganizerProfile> { p2, p1 } // unordered input
                 .AsQueryable().BuildMockDbSet();
 
@@ -1405,8 +1405,8 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID07_GetOrganizerAsync_Boundary_Page2Size1_ShouldReturnSecondItem()
         {
             // Arrange
-            var p1 = CreateProfileWith(createdAtOffsetDays: 1);
-            var p2 = CreateProfileWith(createdAtOffsetDays: 2);
+            var p1 = CreateProfileWith(createdAtOffsetDays: 2);
+            var p2 = CreateProfileWith(createdAtOffsetDays: 1);
             var profiles = new List<OrganizerProfile> { p1, p2 }.AsQueryable().BuildMockDbSet();
 
             _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
@@ -1567,8 +1567,8 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID12_GetOrganizerAsync_ShouldOrderByCreatedAtAscending()
         {
             // Arrange
-            var p1 = CreateProfileWith(status: OrganizerProfileStatus.Pending, createdAtOffsetDays: 3);
-            var p2 = CreateProfileWith(status: OrganizerProfileStatus.Pending, createdAtOffsetDays: 1);
+            var p1 = CreateProfileWith(status: OrganizerProfileStatus.Pending, createdAtOffsetDays: 1);
+            var p2 = CreateProfileWith(status: OrganizerProfileStatus.Pending, createdAtOffsetDays: 3);
             var p3 = CreateProfileWith(status: OrganizerProfileStatus.Pending, createdAtOffsetDays: 2);
             var profiles = new List<OrganizerProfile> { p1, p2, p3 }.AsQueryable().BuildMockDbSet();
 

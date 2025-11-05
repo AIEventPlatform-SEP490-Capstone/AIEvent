@@ -4,8 +4,6 @@
     {
         PendingApprovalEnd,
         Approved,
-        Rejected,
-        WaitingForPayout,
-        Completed
+        Rejected
     }
 }
