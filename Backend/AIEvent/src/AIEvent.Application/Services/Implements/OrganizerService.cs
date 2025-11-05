@@ -127,7 +127,7 @@ namespace AIEvent.Application.Services.Implements
             var totalCount = await query.CountAsync();
 
             var result = await query
-                .OrderBy(p => p.CreatedAt)
+                .OrderByDescending(p => p.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ProjectTo<OrganizerResponse>(_mapper.ConfigurationProvider)
