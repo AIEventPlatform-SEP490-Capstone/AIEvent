@@ -45,7 +45,7 @@ namespace AIEvent.Application.Services.Implements
         }
 
         [AutomaticRetry(Attempts = 3)]
-        public async Task GenerateAndSendTicketEmailAsync(string userEmail, string userFullName, string eventTitle, List<TicketForPdf> tickets)
+        private async Task GenerateAndSendTicketEmailAsync(string userEmail, string userFullName, string eventTitle, List<TicketForPdf> tickets)
         {
             try
             {
@@ -87,7 +87,7 @@ namespace AIEvent.Application.Services.Implements
         }
 
         [AutomaticRetry(Attempts = 3)]
-        public async Task ProcessOrganizerPayoutAsync(RevenueReportRequest request)
+        private async Task ProcessOrganizerPayoutAsync(RevenueReportRequest request)
         {
             try
             {
@@ -184,7 +184,7 @@ namespace AIEvent.Application.Services.Implements
 
 
         [AutomaticRetry(Attempts = 3)]
-        public async Task ProcessCancelEventJobAsync(Guid eventId, string reasonCancel)
+        private async Task ProcessCancelEventJobAsync(Guid eventId, string reasonCancel)
         {
             try
             {
