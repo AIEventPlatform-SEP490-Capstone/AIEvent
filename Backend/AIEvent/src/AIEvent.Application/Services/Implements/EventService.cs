@@ -168,6 +168,8 @@ namespace AIEvent.Application.Services.Implements
                     SoldQuantity = e.SoldQuantity,
                     LocationName = e.LocationName,
                     Publish = e.Publish,
+                    AverageRating = e.AverageRating,
+                    TotalRatings = e.TotalRatings,
                     Status = e.Status,
                     Tags = e.EventTags.Select(t => new TagResponse
                     {
@@ -704,6 +706,8 @@ namespace AIEvent.Application.Services.Implements
                     EventId = e.Id,
                     Title = e.Title,
                     StartTime = e.StartTime,
+                    AverageRating = e.AverageRating,
+                    TotalRatings = e.TotalRatings,
                     EndTime = e.EndTime,
                     MinTicketPrice = e.TicketTypes.Any()
                         ? e.TicketTypes.Min(t => t.TicketPrice)

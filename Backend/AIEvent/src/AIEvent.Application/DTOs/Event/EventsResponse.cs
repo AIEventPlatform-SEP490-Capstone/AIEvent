@@ -21,5 +21,7 @@ namespace AIEvent.Application.DTOs.Event
         public List<string>? ImgListEvent { get; set; }
         public bool? IsFavorite { get; set; }
         public TicketPricingType TicketPricingType { get; set; }
+        public double? AverageRating { get; set; }
+        public int TotalRatings { get; set; }
     }
 }

@@ -33,6 +33,7 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<WithdrawRequest> WithdrawRequests { get; set; }
         public DbSet<PaymentInformation> PaymentInformations { get; set; }
+        public DbSet<Rating> Ratings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -380,6 +381,27 @@ namespace AIEvent.Infrastructure.Context
 
                 entity.HasIndex(pi => pi.UserId)
                       .HasDatabaseName("IX_PaymentInfo_UserId");
+            });
+
+            // ----------------- Rating -----------------
+            builder.Entity<Rating>(entity =>
+            {
+                entity.HasIndex(r => new { r.EventId, r.UserId })
+                      .IsUnique()
+                      .HasDatabaseName("IX_Rating_Event_User");
+
+                entity.HasIndex(r => r.EventId)
+                      .HasDatabaseName("IX_Rating_EventId");
+
+                entity.HasOne(r => r.Event)
+                      .WithMany(e => e.Ratings)
+                      .HasForeignKey(r => r.EventId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(r => r.User)
+                      .WithMany(u => u.Ratings)
+                      .HasForeignKey(r => r.UserId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
 
             builder.Seed();
