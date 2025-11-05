@@ -960,7 +960,7 @@ namespace AIEvent.Application.Services.Implements
 
                     endEventRequest.Event.PlatformFee = platformFee;
                     endEventRequest.Event.PayoutAmount = netRevenue;
-                    endEventRequest.Status = EndEventStatus.WaitingForPayout;
+                    endEventRequest.Status = EndEventStatus.Approved;
                     endEventRequest.ReviewedAt = DateTime.UtcNow;
 
                     endEventRequest.Event.Status = EventStatus.WaitingForPayout;
