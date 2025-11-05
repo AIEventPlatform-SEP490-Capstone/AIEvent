@@ -7,6 +7,7 @@ export const organizerAPI = {
     if (params.search) queryParams.append("search", params.search);
     if (params.pageNumber) queryParams.append("pageNumber", params.pageNumber);
     if (params.pageSize) queryParams.append("pageSize", params.pageSize);
+    if (params.status) queryParams.append("status", params.status);
 
     const response = await fetcher.get(`/organizer?${queryParams.toString()}`);
     return response.data?.data || response.data;
@@ -74,14 +75,13 @@ export const organizerAPI = {
 
   // Xác nhận / từ chối Organizer (PATCH:/api/organizer/confirm/{id})
   confirmOrganizer: async (id, confirmData) => {
-    const formData = new FormData();
-    formData.append("status", confirmData.status);
-    if (confirmData.reason) {
-      formData.append("reason", confirmData.reason);
-    }
+    const payload = {
+      status: confirmData.status,
+      reason: confirmData.reason || null,
+    };
 
-    const response = await fetcher.patch(`/organizer/confirm/${id}`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
+    const response = await fetcher.patch(`/organizer/confirm/${id}`, payload, {
+      headers: { "Content-Type": "application/json" },
     });
 
     return response.data?.data || response.data;

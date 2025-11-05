@@ -44,6 +44,9 @@ import { ConfirmStatus } from '../../constants/eventConstants';
 // Import Cloudinary utility
 import { uploadImagesToCloudinary } from '../../utils/cloudinary';
 
+// Import predefined cities
+import { PredefinedCities } from '../../constants/userConstants';
+
 // Validation schema (updated to match CreateEventPage)
 const editEventSchema = z.object({
   title: z.string().min(1, 'Tiêu đề sự kiện là bắt buộc').max(200, 'Tiêu đề không được vượt quá 200 ký tự'),
@@ -940,11 +943,18 @@ const EditEventPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="district">Quận/Huyện *</Label>
-                    <Input
-                      id="district"
-                      placeholder="Nhập quận/huyện"
-                      {...register('district')}
-                    />
+                    <Select onValueChange={(value) => setValue('district', value)} value={watch('district')}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn quận/huyện" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PredefinedCities.map((city) => (
+                          <SelectItem key={city} value={city}>
+                            {city}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     {errors.district && <p className="text-red-500 text-sm mt-1">{errors.district.message}</p>}
                   </div>
 

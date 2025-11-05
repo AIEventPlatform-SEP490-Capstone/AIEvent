@@ -6,6 +6,7 @@ import {
   clearAuth,
   verifyOtp,
   changePassword,
+  resendOtp,
 } from "../store/slices/authSlice";
 
 export const useAuth = () => {
@@ -26,7 +27,9 @@ export const useAuth = () => {
   const logoutUser = async () => dispatch(logout());
   const clearAuthError = () => dispatch(clearAuth());
   const verifyOtpAction = async (payload) => dispatch(verifyOtp(payload));
-  const changePasswordAction = async (passwordData) => dispatch(changePassword(passwordData));
+  const changePasswordAction = async (passwordData) =>
+    dispatch(changePassword(passwordData));
+  const resendOtpAction = async (payload) => dispatch(resendOtp(payload));
   return {
     user,
     isLoading,
@@ -42,5 +45,6 @@ export const useAuth = () => {
     clearError: clearAuthError,
     verifyOtp: verifyOtpAction,
     changePassword: changePasswordAction,
+    resendOtp: resendOtpAction,
   };
 };
