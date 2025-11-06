@@ -45,7 +45,7 @@ namespace AIEvent.Application.Services.Implements
         }
 
         [AutomaticRetry(Attempts = 3)]
-        private async Task GenerateAndSendTicketEmailAsync(string userEmail, string userFullName, string eventTitle, List<TicketForPdf> tickets)
+        public async Task GenerateAndSendTicketEmailAsync(string userEmail, string userFullName, string eventTitle, List<TicketForPdf> tickets)
         {
             try
             {
@@ -87,7 +87,7 @@ namespace AIEvent.Application.Services.Implements
         }
 
         [AutomaticRetry(Attempts = 3)]
-        private async Task ProcessOrganizerPayoutAsync(RevenueReportRequest request)
+        public async Task ProcessOrganizerPayoutAsync(RevenueReportRequest request)
         {
             try
             {
@@ -184,7 +184,7 @@ namespace AIEvent.Application.Services.Implements
 
 
         [AutomaticRetry(Attempts = 3)]
-        private async Task ProcessCancelEventJobAsync(Guid eventId, string reasonCancel)
+        public async Task ProcessCancelEventJobAsync(Guid eventId, string reasonCancel)
         {
             try
             {
@@ -195,6 +195,10 @@ namespace AIEvent.Application.Services.Implements
                     .Include(e => e.Bookings)
                         .ThenInclude(b => b.User)
                         .ThenInclude(u => u.Wallet)
+                    .Include(e => e.Bookings)
+                        .ThenInclude(b => b.BookingItems)
+                        .ThenInclude(bi => bi.Tickets)
+                        .ThenInclude(bi => bi.TicketType)
                     .FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
 
                 if (existingEvent == null)
@@ -204,7 +208,7 @@ namespace AIEvent.Application.Services.Implements
                 }
 
                 var hasBookings = existingEvent.Bookings
-                    .Where(b => b.Status == BookingStatus.Completed || b.Status == BookingStatus.Pending)
+                    .Where(b => b.Status == BookingStatus.Completed)
                     .ToList();
 
                 await _transactionHelper.ExecuteInTransactionAsync(async () =>
@@ -221,9 +225,30 @@ namespace AIEvent.Application.Services.Implements
                     var paymentTransactions = new List<PaymentTransaction>();
                     var bookingsToUpdate = new List<Booking>();
                     var walletsToUpdate = new List<Wallet>();
+                    var ticketsToUpdate = new List<Ticket>();
+                    var ticketTypeQuantityMap = new Dictionary<Guid, int>(); 
+                    int totalTicketsToRevert = 0;
 
                     foreach (var booking in hasBookings)
                     {
+                        foreach (var bookingItem in booking.BookingItems)
+                        {
+                            foreach (var ticket in bookingItem.Tickets)
+                            {
+                                if (ticket.Status != TicketStatus.Cancelled && ticket.Status != TicketStatus.Used)
+                                {
+                                    ticket.Status = TicketStatus.Cancelled;
+                                    ticketsToUpdate.Add(ticket);
+                                }
+                            }
+
+                            if (!ticketTypeQuantityMap.ContainsKey(bookingItem.TicketTypeId))
+                                ticketTypeQuantityMap[bookingItem.TicketTypeId] = 0;
+                            
+                            ticketTypeQuantityMap[bookingItem.TicketTypeId] += bookingItem.Quantity;
+                            totalTicketsToRevert += bookingItem.Quantity;
+                        }
+
                         if (booking.TotalAmount <= 0)
                         {
                             booking.Status = BookingStatus.Cancelled;
@@ -273,17 +298,60 @@ namespace AIEvent.Application.Services.Implements
                         booking.Status = BookingStatus.Cancelled;
                         bookingsToUpdate.Add(booking);
                     }
+                     
+                    var ticketTypeIds = ticketTypeQuantityMap.Keys.ToList();
+                    var ticketTypesToUpdate = await _unitOfWork.TicketTypeRepository
+                        .Query()
+                        .Where(tt => ticketTypeIds.Contains(tt.Id))
+                        .ToListAsync();
+
+                    var ticketTypesUpdated = new List<TicketType>();
+
+                    foreach (var ticketType in ticketTypesToUpdate)
+                    {
+                        if (ticketTypeQuantityMap.TryGetValue(ticketType.Id, out var quantity))
+                        {
+                            if (ticketType.SoldQuantity >= quantity)
+                            {
+                                ticketType.RemainingQuantity += quantity;
+                                ticketType.SoldQuantity -= quantity;
+                                ticketType.SetUpdated(null);
+                                ticketTypesUpdated.Add(ticketType);
+                            }
+                            else
+                                _logger.LogWarning("Cannot revert ticket quantities for TicketType {TicketTypeId}: SoldQuantity ({SoldQty}) < quantity to revert ({Quantity})",
+                                        ticketType.Id, ticketType.SoldQuantity, quantity);
+                        }
+                    }
+
+                    if (ticketTypesUpdated.Any())
+                        await _unitOfWork.TicketTypeRepository.UpdateRangeAsync(ticketTypesUpdated);
+
+                    if (totalTicketsToRevert > 0)
+                    {
+                        if (existingEvent.SoldQuantity >= totalTicketsToRevert)
+                        {
+                            existingEvent.RemainingTickets += totalTicketsToRevert;
+                            existingEvent.SoldQuantity -= totalTicketsToRevert;
+                        }
+                        else
+                            _logger.LogWarning("Cannot revert ticket quantities for Event {EventId}: SoldQuantity ({SoldQty}) < quantity to revert ({Quantity})",
+                                    eventId, existingEvent.SoldQuantity, totalTicketsToRevert);
+                    }
 
                     await _unitOfWork.PaymentTransactionRepository.AddRangeAsync(paymentTransactions);
                     await _unitOfWork.WalletTransactionRepository.AddRangeAsync(walletTransactions);
                     await _unitOfWork.WalletRepository.UpdateRangeAsync(walletsToUpdate);
                     await _unitOfWork.BookingRepository.UpdateRangeAsync(bookingsToUpdate);
+                    if (ticketsToUpdate.Any())
+                        await _unitOfWork.TicketRepository.UpdateRangeAsync(ticketsToUpdate);
 
                     existingEvent.ReasonCancel = reasonCancel;
                     existingEvent.Status = EventStatus.Cancelled;
                     existingEvent.Publish = false;
                     await _unitOfWork.EventRepository.UpdateAsync(existingEvent);
-                    _logger.LogInformation("Refunds and cancellations processed for event {EventId}", eventId);
+                    _logger.LogInformation("Refunds, ticket cancellations, and quantity reversions processed for event {EventId}. Cancelled {TicketCount} tickets, reverted {TotalTickets} ticket quantities", 
+                        eventId, ticketsToUpdate.Count, totalTicketsToRevert);
                     return Result.Success();
                 });
 
