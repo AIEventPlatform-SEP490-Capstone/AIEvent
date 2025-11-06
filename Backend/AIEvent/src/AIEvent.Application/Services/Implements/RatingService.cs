@@ -24,6 +24,13 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result> CreateRatingAsync(Guid userId, Guid eventId, RatingRequest request)
         {
+            if(userId == Guid.Empty || eventId == Guid.Empty)
+                return ErrorResponse.FailureResult("Invalid Id", ErrorCodes.InvalidInput);
+
+            var validationResult = ValidationHelper.ValidateModel(request);
+            if (!validationResult.IsSuccess)
+                return validationResult;
+
             var hasAttended = await _unitOfWork.BookingRepository
                                             .Query()
                                             .AnyAsync(b => b.UserId == userId 
@@ -63,6 +70,9 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result> DeleteRatingAsync(Guid userId, Guid ratingId)
         {
+            if (ratingId == Guid.Empty)
+                return ErrorResponse.FailureResult("Invalid Id", ErrorCodes.InvalidInput);
+
             var rating = await _unitOfWork.RatingRepository.GetByIdAsync(ratingId, true);
             if (rating == null || rating.UserId != userId)
                 return ErrorResponse.FailureResult("Not found or you do not have permission.", ErrorCodes.Unauthorized);
@@ -105,6 +115,13 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result> UpdateRatingAsync(Guid userId, Guid ratingId, RatingRequest request)
         {
+            if (ratingId == Guid.Empty)
+                return ErrorResponse.FailureResult("Invalid Id", ErrorCodes.InvalidInput);
+
+            var validationResult = ValidationHelper.ValidateModel(request);
+            if (!validationResult.IsSuccess)
+                return validationResult;
+
             var rating = await _unitOfWork.RatingRepository.GetByIdAsync(ratingId, true);
             if (rating == null || rating.UserId != userId)
                 return ErrorResponse.FailureResult("Not found or you do not have permission.", ErrorCodes.Unauthorized);
