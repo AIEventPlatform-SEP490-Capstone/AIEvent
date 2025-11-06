@@ -33,6 +33,10 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<WithdrawRequest> WithdrawRequests { get; set; }
         public DbSet<PaymentInformation> PaymentInformations { get; set; }
+        //public DbSet<Friendship> Friendships { get; set; }
+        public DbSet<Wallet> Wallets { get; set; }
+        public DbSet<WalletTransaction> WalletTransactions { get; set; }
+        public DbSet<RevenueReport> RevenueReports { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -380,6 +384,27 @@ namespace AIEvent.Infrastructure.Context
 
                 entity.HasIndex(pi => pi.UserId)
                       .HasDatabaseName("IX_PaymentInfo_UserId");
+            });
+
+            //-----------------Friend--------------------
+            builder.Entity<Friendship>(entity =>
+            {
+                entity.HasOne(f => f.Sender)
+                    .WithMany(u => u.FriendshipsSent)
+                    .HasForeignKey(f => f.SenderId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(f => f.Receiver)
+                    .WithMany(u => u.FriendshipsReceived)
+                    .HasForeignKey(f => f.ReceiverId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(f => f.SenderId).HasDatabaseName("IX_Friendship_SenderId");
+                entity.HasIndex(f => f.ReceiverId).HasDatabaseName("IX_Friendship_ReceiverId");
+                entity.HasIndex(f => new { f.SenderId, f.ReceiverId })
+                    .IsUnique()
+                    .HasDatabaseName("IX_Friendship_Sender_Receiver");
+                entity.HasIndex(f => f.Status).HasDatabaseName("IX_Friendship_Status");
             });
 
             builder.Seed();

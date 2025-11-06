@@ -45,14 +45,14 @@ namespace AIEvent.Application.Services.Implements
         }
 
         [AutomaticRetry(Attempts = 3)]
-        private async Task GenerateAndSendTicketEmailAsync(string userEmail, string userFullName, string eventTitle, List<TicketForPdf> tickets)
+        public async Task GenerateAndSendTicketEmailAsync(string userEmail, string userFullName, string eventTitle, List<TicketForPdf> tickets)
         {
             try
             {
-                // 1️⃣ Sinh file PDF
+                // Sinh file PDF
                 var pdfBytes = await _pdfService.GenerateTicketsPdfAsync(tickets, eventTitle, userFullName, userEmail);
 
-                // 2️⃣ Gửi email
+                // Gửi email
                 await _emailService.SendTicketsEmailAsync(
                     userEmail,
                     $"Your Tickets from AIEvent - {eventTitle}",
@@ -67,7 +67,7 @@ namespace AIEvent.Application.Services.Implements
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error sending ticket email for {UserEmail} ({EventTitle})", userEmail, eventTitle);
-                throw; // để Hangfire tự retry
+                throw;
             }
         }
 
@@ -87,7 +87,7 @@ namespace AIEvent.Application.Services.Implements
         }
 
         [AutomaticRetry(Attempts = 3)]
-        private async Task ProcessOrganizerPayoutAsync(RevenueReportRequest request)
+        public async Task ProcessOrganizerPayoutAsync(RevenueReportRequest request)
         {
             try
             {
@@ -184,7 +184,7 @@ namespace AIEvent.Application.Services.Implements
 
 
         [AutomaticRetry(Attempts = 3)]
-        private async Task ProcessCancelEventJobAsync(Guid eventId, string reasonCancel)
+        public async Task ProcessCancelEventJobAsync(Guid eventId, string reasonCancel)
         {
             try
             {
