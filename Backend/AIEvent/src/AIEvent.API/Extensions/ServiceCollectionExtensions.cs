@@ -46,6 +46,7 @@ namespace AIEvent.API.Extensions
                     .AddScoped<IEventRecommendationService, EventRecommendationService>()
                     .AddScoped<IEventEmbeddingService, EventEmbeddingService>()
                     .AddScoped<IOpenRouterLLMService, OpenRouterLLMService>()
+                    .AddScoped<IContentModerationService, ContentModerationService>()
                     .AddScoped<IPineconeVectorService, PineconeVectorService>()
                     .AddScoped<IVoyageEmbeddingService, VoyageEmbeddingService>();
             return services;

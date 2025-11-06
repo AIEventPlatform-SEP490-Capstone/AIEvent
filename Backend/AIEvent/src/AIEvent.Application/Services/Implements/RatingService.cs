@@ -8,15 +8,18 @@ using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace AIEvent.Application.Services.Implements
 {
     public class RatingService : IRatingService
     {
         private readonly IUnitOfWork _unitOfWork;
-        public RatingService(IUnitOfWork unitOfWork)
+        private readonly IContentModerationService _contentModerationService;
+        public RatingService(IUnitOfWork unitOfWork, IContentModerationService contentModerationService)
         {
             _unitOfWork = unitOfWork;
+            _contentModerationService = contentModerationService;
         }
 
         public async Task<Result> CreateRatingAsync(Guid userId, Guid eventId, RatingRequest request)
@@ -39,9 +42,9 @@ namespace AIEvent.Application.Services.Implements
 
             if (!string.IsNullOrWhiteSpace(request.Comment))
             {
-                //var isSafe = await _aiModerationService.IsCommentSafeAsync(dto.Comment);
-                //if (!isSafe)
-                //    return ErrorResponse.FailureResult("Comment content is inappropriate and not allowed to be posted.", ErrorCodes.InvalidInput);
+                var isSafe = await _contentModerationService.ProfanityChecker(JsonSerializer.Serialize(request));
+                if (!isSafe.IsSuccess)
+                    return ErrorResponse.FailureResult(isSafe.Error!.Message, isSafe.Error.StatusCode);
             }
 
             var rating = new Rating
@@ -54,7 +57,7 @@ namespace AIEvent.Application.Services.Implements
 
             await _unitOfWork.RatingRepository.AddAsync(rating);
             await _unitOfWork.SaveChangesAsync();
-
+            await RecalculateEventStatsAsync(eventId);
             return Result.Success();
         }
 
@@ -67,6 +70,7 @@ namespace AIEvent.Application.Services.Implements
             await _unitOfWork.RatingRepository.DeleteAsync(rating);
             await _unitOfWork.SaveChangesAsync();
             _unitOfWork.EnableSoftDelete();
+            await RecalculateEventStatsAsync(rating.EventId);
             return Result.Success();
         }
 
@@ -81,21 +85,21 @@ namespace AIEvent.Application.Services.Implements
                                                         && r.EventId == eventId);
 
             int totalCount = await ratings.CountAsync();
-            var orderedQuery = ratings
-                                .OrderBy(r => r.UserId == userId ? 0 : 1) 
-                                .ThenByDescending(r => r.CreatedAt);
+
             var result = await ratings
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
+                .OrderBy(r => r.UserId == userId ? 0 : 1)
+                   .ThenByDescending(r => r.CreatedAt)
                 .Select(r => new RatingResponse
                 {
+                    RatingId = r.Id,
                     UserName = r.User.FullName ?? r.User.Email,
                     Comment = r.Comment,
                     CreateAt = r.CreatedAt,
                     RatingScore = r.RatingScore
                 })
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
-            await RecalculateEventStatsAsync(eventId);
             return new BasePaginated<RatingResponse>(result, totalCount, pageNumber, pageSize);
         }
 
@@ -107,15 +111,16 @@ namespace AIEvent.Application.Services.Implements
 
             if (!string.IsNullOrWhiteSpace(request.Comment))
             {
-                //var isSafe = await _aiModerationService.IsCommentSafeAsync(dto.Comment);
-                //if (!isSafe)
-                //    return ErrorResponse.FailureResult("Inappropriate comment content.", ErrorCodes.InvalidInput);
+                var isSafe = await _contentModerationService.ProfanityChecker(JsonSerializer.Serialize(request));
+                if (!isSafe.IsSuccess)
+                    return ErrorResponse.FailureResult(isSafe.Error!.Message, isSafe.Error.StatusCode);
             }
 
             rating.RatingScore = request.RatingScore;
             rating.Comment = request.Comment;
             await _unitOfWork.RatingRepository.UpdateAsync(rating);
             await _unitOfWork.SaveChangesAsync();
+            await RecalculateEventStatsAsync(rating.EventId);
             return Result.Success();
         }
 

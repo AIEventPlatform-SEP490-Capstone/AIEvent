@@ -34,5 +34,6 @@ namespace AIEvent.Application.DTOs.Event
         public List<TicketTypeResponse> TicketDetails { get; set; } = new List<TicketTypeResponse>();
         public double? AverageRating { get; set; }
         public int TotalRatings { get; set; }
+        public bool Publish { get; set; }
     }
 }
