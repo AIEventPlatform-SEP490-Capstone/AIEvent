@@ -18,7 +18,7 @@ class EventService {
   }
 
   /**
-   * Get all events with pagination support
+   * Get all events with pagination support and filtering
    */
   static async getEvents(params = {}) {
     try {
@@ -125,6 +125,7 @@ class EventService {
    */
   static async searchEvents(query) {
     try {
+      // Use the main events endpoint with search parameter
       const response = await BaseApiService.get(`${EndUrls.EVENTS}?search=${encodeURIComponent(query)}`);
       // Extract data from the paginated response
       let data = response;

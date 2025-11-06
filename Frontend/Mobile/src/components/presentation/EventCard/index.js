@@ -41,6 +41,13 @@ const EventCard = ({ event, onPress }) => {
           {event.title}
         </CustomText>
         
+        {/* Display category name */}
+        {event.category && (
+          <CustomText variant="caption" color="primary" style={styles.eventCategory}>
+            {event.category}
+          </CustomText>
+        )}
+        
         <View style={styles.eventDetails}>
           <View style={styles.eventDetailRow}>
             <View style={styles.iconBadgeCalendar}>

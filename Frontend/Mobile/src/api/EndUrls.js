@@ -19,6 +19,10 @@ const EndUrls = {
   SHARE_EVENT: (id) => `${BASE_URL}/event/${id}/share`,
   EVENT_ATTENDEES: (id) => `${BASE_URL}/event/${id}/attendees`,
   
+  // Event Categories
+  EVENT_CATEGORIES: `${BASE_URL}/event-category`,
+  EVENT_CATEGORY_DETAIL: (id) => `${BASE_URL}/event-category/${id}`,
+  
   // User
   PROFILE: `${BASE_URL}/user/profile`,
   UPDATE_PROFILE: `${BASE_URL}/user/profile`,

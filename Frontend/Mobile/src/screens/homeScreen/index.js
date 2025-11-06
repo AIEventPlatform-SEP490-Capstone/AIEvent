@@ -22,6 +22,7 @@ import Fonts from '../../constants/Fonts';
 import Strings from '../../constants/Strings';
 import ScreenNames from '../../constants/ScreenNames';
 import EventService from '../../api/services/EventService';
+import CategoryService from '../../api/services/CategoryService';
 
 const { width } = Dimensions.get('window');
 
@@ -31,18 +32,21 @@ const HomeScreen = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filteredEvents, setFilteredEvents] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   useEffect(() => {
     loadEvents();
+    loadCategories();
   }, []);
 
   useEffect(() => {
-    if (searchText.trim() === '') {
+    if (searchText.trim() === '' && !selectedCategory) {
       setFilteredEvents(events);
     } else {
-      handleSearch(searchText);
+      filterEvents();
     }
-  }, [searchText, events]);
+  }, [searchText, events, selectedCategory]);
 
   const loadEvents = async () => {
     try {
@@ -74,6 +78,7 @@ const HomeScreen = () => {
             { uri: event.imgListEvent[0] } : 
             'card1', // Use actual image if available
           category: event.eventCategoryName || event.EventCategoryName || 'Chưa phân loại',
+          categoryId: event.eventCategoryId || event.EventCategoryId || null,
           isFavorite: event.isFavorite || false,
           totalTickets: event.totalTickets || event.TotalTickets || 0,
           tags: event.tags || event.Tags || []
@@ -90,6 +95,24 @@ const HomeScreen = () => {
       Alert.alert('Error', 'Failed to load events: ' + error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      console.log('Loading categories...');
+      const response = await CategoryService.getCategories({
+        pageNumber: 1,
+        pageSize: 50
+      });
+      console.log('Categories response:', response);
+      if (response.success) {
+        setCategories(response.data);
+      } else {
+        console.error('Failed to load categories:', response.message);
+      }
+    } catch (error) {
+      console.error('Error loading categories:', error);
     }
   };
 
@@ -124,6 +147,28 @@ const HomeScreen = () => {
     return 'Miễn phí';
   };
 
+  const filterEvents = () => {
+    let result = events;
+    
+    // Filter by search text
+    if (searchText.trim() !== '') {
+      result = result.filter(event => 
+        event.title.toLowerCase().includes(searchText.toLowerCase()) ||
+        event.description.toLowerCase().includes(searchText.toLowerCase())
+      );
+    }
+    
+    // Filter by category
+    if (selectedCategory) {
+      result = result.filter(event => 
+        event.categoryId === selectedCategory.eventCategoryId ||
+        event.category === selectedCategory.eventCategoryName
+      );
+    }
+    
+    setFilteredEvents(result);
+  };
+
   const handleSearch = async (query) => {
     try {
       const response = await EventService.searchEvents(query);
@@ -149,6 +194,7 @@ const HomeScreen = () => {
             { uri: event.imgListEvent[0] } : 
             'card1', // Use actual image if available
           category: event.eventCategoryName || event.EventCategoryName || 'Chưa phân loại',
+          categoryId: event.eventCategoryId || event.EventCategoryId || null,
           isFavorite: event.isFavorite || false,
           totalTickets: event.totalTickets || event.TotalTickets || 0,
           tags: event.tags || event.Tags || []
@@ -179,6 +225,14 @@ const HomeScreen = () => {
     navigation.navigate(ScreenNames.EVENT_DETAIL_SCREEN, { 
       eventId: event.id,
      });
+  };
+
+  const handleCategoryPress = (category) => {
+    if (selectedCategory && selectedCategory.eventCategoryId === category.eventCategoryId) {
+      setSelectedCategory(null); // Deselect if same category is pressed
+    } else {
+      setSelectedCategory(category);
+    }
   };
 
   const renderEventCard = ({ item }) => (
@@ -213,6 +267,54 @@ const HomeScreen = () => {
           value={searchText}
           onChangeText={setSearchText}
         />
+      </View>
+
+      {/* Category Chips */}
+      <View style={styles.categorySection}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.categoryContainer}
+        >
+          <TouchableOpacity
+            style={[
+              styles.categoryChip,
+              !selectedCategory && styles.categoryChipSelected
+            ]}
+            onPress={() => setSelectedCategory(null)}
+          >
+            <CustomText 
+              variant="caption" 
+              style={[
+                styles.categoryText,
+                !selectedCategory && styles.categoryTextSelected
+              ]}
+            >
+              Tất cả
+            </CustomText>
+          </TouchableOpacity>
+          
+          {categories.map((category) => (
+            <TouchableOpacity
+              key={category.eventCategoryId}
+              style={[
+                styles.categoryChip,
+                selectedCategory && selectedCategory.eventCategoryId === category.eventCategoryId && styles.categoryChipSelected
+              ]}
+              onPress={() => handleCategoryPress(category)}
+            >
+              <CustomText 
+                variant="caption" 
+                style={[
+                  styles.categoryText,
+                  selectedCategory && selectedCategory.eventCategoryId === category.eventCategoryId && styles.categoryTextSelected
+                ]}
+              >
+                {category.eventCategoryName}
+              </CustomText>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
       {/* Main Content */}
