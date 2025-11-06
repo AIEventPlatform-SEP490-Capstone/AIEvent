@@ -1655,6 +1655,10 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<EndEventRequest>().AsQueryable().BuildMockDbSet().Object);
 
+            var paymentInfo = new PaymentInformation { Id = request.PaymentInformationId, UserId = userId, IsDeleted = false, AccountHolderName = "Test", AccountNumber = "123456", BankName = "Test Bank", BankBin = "123456" };
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMockDbSet().Object);
+
             _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
             _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.AddAsync(It.IsAny<EndEventRequest>()));
 
@@ -1689,6 +1693,10 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<EndEventRequest> { old1, old2 }.AsQueryable().BuildMockDbSet().Object);
 
+            var paymentInfo = new PaymentInformation { Id = request.PaymentInformationId, UserId = userId, IsDeleted = false, AccountHolderName = "Test", AccountNumber = "123456", BankName = "Test Bank", BankBin = "123456" };
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMockDbSet().Object);
+
             _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
             _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.AddAsync(It.IsAny<EndEventRequest>()));
 
@@ -1719,6 +1727,10 @@ namespace AIEvent.Application.Test.Services
                 .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
             _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<EndEventRequest>().AsQueryable().BuildMockDbSet().Object);
+
+            var paymentInfo = new PaymentInformation { Id = request.PaymentInformationId, UserId = userId, IsDeleted = false, AccountHolderName = "Test", AccountNumber = "123456", BankName = "Test Bank", BankBin = "123456" };
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMockDbSet().Object);
 
             _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
             _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.AddAsync(It.IsAny<EndEventRequest>()));
