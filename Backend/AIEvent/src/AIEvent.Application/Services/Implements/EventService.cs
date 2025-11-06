@@ -885,8 +885,7 @@ namespace AIEvent.Application.Services.Implements
             if (eventEntity == null)
                 return ErrorResponse.FailureResult("Event not found", ErrorCodes.NotFound);
 
-            if (eventEntity.Status != EventStatus.PendingApprovalEnd
-                                && eventEntity.Status != EventStatus.RejectEnded)
+            if (eventEntity.Status != EventStatus.Approved && eventEntity.Status != EventStatus.RejectEnded)
                 return ErrorResponse.FailureResult("Event cannot be requested to end in its current state", ErrorCodes.InvalidInput);
 
             if (eventEntity.OrganizerProfile == null || eventEntity.OrganizerProfile.UserId != userId)
@@ -894,6 +893,12 @@ namespace AIEvent.Application.Services.Implements
 
             if (eventEntity.EndTime > DateTime.UtcNow)
                 return ErrorResponse.FailureResult("Event is not over yet", ErrorCodes.InvalidInput);
+
+            var paymenInfo = await _unitOfWork.PaymentInformationRepository.Query()
+                                        .FirstOrDefaultAsync(p => p.Id == request.PaymentInformationId &&
+                                                             p.UserId == userId && !p.IsDeleted);
+            if(paymenInfo == null)
+                return ErrorResponse.FailureResult("Payment information not found", ErrorCodes.InvalidInput);
 
             var existingPendingRequest = await _unitOfWork.EndEventRequestRepository
                 .Query()
@@ -982,10 +987,11 @@ namespace AIEvent.Application.Services.Implements
                 }
 
                 await _unitOfWork.EndEventRequestRepository.UpdateAsync(endEventRequest);
+
                 RevenueReportRequest reportR = new RevenueReportRequest()
                 {
                     EventName = endEventRequest.Event.Title,
-                    EventId = endEventRequest.Event.Id,
+                    EventId = endEventRequest.EventId,
                     OrganizerProfileId = endEventRequest.OrganizerProfileId,
                     PaymentInforId = endEventRequest.PaymentInformationId,
                     TotalAmount = endEventRequest.Event.TotalAmount,

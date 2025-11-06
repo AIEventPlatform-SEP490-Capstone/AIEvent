@@ -25,14 +25,13 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<TicketType> TicketTypes { get; set; }
         public DbSet<Tag> Tags { get; set; }
         public DbSet<EventTag> EventTags { get; set; }
-        public DbSet<UserAction> UserActions { get; set; }
-        public DbSet<UserActionFilter> UserActionFilters { get; set; }
         public DbSet<FavoriteEvent> FavoriteEvents { get; set; }
         public DbSet<Booking> Bookings { get; set; }
         public DbSet<BookingItem> BookingItems { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<WithdrawRequest> WithdrawRequests { get; set; }
         public DbSet<PaymentInformation> PaymentInformations { get; set; }
+        public DbSet<EndEventRequest> EndEventRequests { get; set; }
         public DbSet<Friendship> Friendships { get; set; }
         public DbSet<Wallet> Wallets { get; set; }
         public DbSet<WalletTransaction> WalletTransactions { get; set; }
@@ -153,19 +152,14 @@ namespace AIEvent.Infrastructure.Context
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(e => e.Event)
-                    .WithOne(o => o.EndEventRequest)
-                    .HasForeignKey<EndEventRequest>(o => o.EventId)
+                    .WithMany(o => o.EndEventRequests)
+                    .HasForeignKey(o => o.EventId)
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(e => e.PaymentInformation)
                     .WithMany(p => p.EndEventRequests)
                     .HasForeignKey(e => e.PaymentInformationId)
                     .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasIndex(e => e.EventId).HasDatabaseName("IX_EndEventRequests_EventId");
-                entity.HasIndex(e => e.OrganizerProfileId).HasDatabaseName("IX_EndEventRequests_OrganizerProfileId");
-                entity.HasIndex(e => e.Status).HasDatabaseName("IX_EndEventRequests_Status");
-                entity.HasIndex(e => new { e.OrganizerProfileId, e.Status }).HasDatabaseName("IX_EndEventRequests_OrganizerProfile_Status");
             });
 
             //-----------------RevenueReport-------------
@@ -321,25 +315,6 @@ namespace AIEvent.Infrastructure.Context
                 entity.Property(td => td.TicketPrice).HasPrecision(18, 2);
 
                 entity.HasIndex(td => new { td.EventId, td.TicketName }).IsUnique();
-            });
-
-            // ----------------- UserAction -----------------
-            builder.Entity<UserAction>(entity =>
-            {
-                entity.HasOne(td => td.AppUser)
-                      .WithMany(e => e.UserActions)
-                      .HasForeignKey(td => td.UserId);
-
-                entity.HasIndex(td => new { td.UserId, td.ActionType }).HasDatabaseName("IX_UserActions_User_ActionType");
-            });
-
-            // ----------------- UserActionFilter -----------------
-            builder.Entity<UserActionFilter>(entity =>
-            {
-                entity.HasOne(td => td.UserAction)
-                      .WithMany(e => e.Filters)
-                      .HasForeignKey(td => td.UserActionId)
-                      .OnDelete(DeleteBehavior.Cascade);
             });
 
             // ----------------- FavoriteEvent -----------------

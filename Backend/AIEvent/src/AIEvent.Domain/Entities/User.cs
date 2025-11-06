@@ -47,7 +47,6 @@ namespace AIEvent.Domain.Entities
         public OrganizerProfile? OrganizerProfile { get; set; }
         public Wallet Wallet { get; set; } = default!;
         public Role Role { get; set; } = default!;
-        public ICollection<UserAction> UserActions { get; set; } = new List<UserAction>();
         public ICollection<FavoriteEvent> FavoriteEvents { get; set; } = new List<FavoriteEvent>();
         public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
         public ICollection<PaymentTransaction> PaymentTransactions { get; set; } = new List<PaymentTransaction>();
