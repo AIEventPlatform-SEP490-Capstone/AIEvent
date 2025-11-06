@@ -53,6 +53,8 @@ namespace AIEvent.Domain.Entities
         public ICollection<PaymentTransaction> PaymentTransactions { get; set; } = new List<PaymentTransaction>();
         public ICollection<PaymentInformation> PaymentInformations { get; set; } = new List<PaymentInformation>();
         public ICollection<WithdrawRequest> WithdrawRequests { get; set; } = new List<WithdrawRequest>();
+        public ICollection<Friendship> FriendshipsSent { get; set; } = new List<Friendship>();
+        public ICollection<Friendship> FriendshipsReceived { get; set; } = new List<Friendship>();
         public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
     }
 }
