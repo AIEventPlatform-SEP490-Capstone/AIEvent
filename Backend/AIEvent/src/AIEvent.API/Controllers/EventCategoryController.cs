@@ -49,7 +49,7 @@ namespace AIEvent.API.Controllers
 
             return Ok(SuccessResponse<object>.SuccessResult(
                 new { id },
-                SuccessCodes.Success,
+                SuccessCodes.Deleted,
                 "Delete EventCategory successfully"));
         }
 

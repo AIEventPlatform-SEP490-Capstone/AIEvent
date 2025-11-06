@@ -9,7 +9,6 @@ using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PayOS.Models.V1.Payouts;
@@ -196,16 +195,25 @@ namespace AIEvent.Application.Services.Implements
             if (user == null || user.IsDeleted)
                 return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
 
-            var paymentInfor = _mapper.Map<PaymentInformation>(request);
-            
-            if (paymentInfor == null)
-                return ErrorResponse.FailureResult("Failed to map payment information", ErrorCodes.InternalServerError);
+            var existingActive = await _unitOfWork.PaymentInformationRepository
+                                            .Query()
+                                            .FirstOrDefaultAsync(pi => pi.AccountNumber == request.AccountNumber
+                                                                    && pi.UserId == userId
+                                                                    && !pi.IsDeleted);
 
-            paymentInfor.UserId = userId;
+            if (existingActive != null)
+                return ErrorResponse.FailureResult("This account is currently in use", ErrorCodes.InvalidInput);
+
+            var paymentInfo = _mapper.Map<PaymentInformation>(request);
+            
+            if (paymentInfo == null)
+                return ErrorResponse.FailureResult("Account number already exists", ErrorCodes.InternalServerError);
+
+            paymentInfo.UserId = userId;
 
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-                await _unitOfWork.PaymentInformationRepository.AddAsync(paymentInfor);
+                await _unitOfWork.PaymentInformationRepository.AddAsync(paymentInfo);
                 return Result.Success();
             });
         }
@@ -320,8 +328,10 @@ namespace AIEvent.Application.Services.Implements
                         BalanceAfter = wallet.Balance,
                         Type = TransactionType.Withdraw,
                         Direction = TransactionDirection.Out,
-                        Status = TransactionStatus.Success, 
-                        Description = $"{request.Description ?? "Rút tiền"} | Số tài khoản nhận: {paymentInfo.Id}",
+                        Status = TransactionStatus.Success,
+                        Description = $"{request.Description?.Trim() ?? "Rút tiền"}<br>" +
+                          $"Tên tài khoản nhận: {paymentInfo.AccountHolderName?.Trim() ?? "Không xác định"}<br>" +
+                          $"Số tài khoản nhận: {paymentInfo.AccountNumber?.Trim() ?? "Không xác định"}",
                         ReferenceId = userId,
                         ReferenceType = ReferenceType.WithdrawRequest,
                     };

@@ -105,7 +105,7 @@ namespace AIEvent.API.Controllers
 
             return Ok(SuccessResponse<object>.SuccessResult(
                 new { },
-                SuccessCodes.Updated,
+                SuccessCodes.Deleted,
                 "Ban user successfully"));
         }
     }

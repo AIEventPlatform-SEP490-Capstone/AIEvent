@@ -10,5 +10,7 @@
         public decimal MinTicketPrice { get; set; }
         public decimal MaxTicketPrice { get; set; }
         public List<string>? ImgListEvent { get; set; }
+        public double? AverageRating { get; set; }
+        public int TotalRatings { get; set; }
     }
 }

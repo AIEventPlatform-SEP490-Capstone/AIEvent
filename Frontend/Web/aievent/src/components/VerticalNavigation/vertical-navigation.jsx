@@ -108,12 +108,7 @@ export function VerticalNavigation() {
           icon: Users,
           isActive: pathname === "/admin/users",
         },
-        {
-          title: "Quy tắc hoàn tiền",
-          url: "/admin/refund-rules",
-          icon: Receipt,
-          isActive: pathname === "/admin/refund-rules",
-        },
+
         {
           title: "Quản lý Organizer",
           url: "/admin/organizers",
@@ -196,12 +191,7 @@ export function VerticalNavigation() {
           icon: BookmarkMinus,
           isActive: pathname === "/manager/events/category",
         },
-        {
-          title: "Quy tắc hoàn tiền",
-          url: "/manager/refund-rules",
-          icon: Receipt,
-          isActive: pathname === "/manager/refund-rules",
-        },
+
         {
           title: "Quản lý Tags",
           url: "/manager/tags",

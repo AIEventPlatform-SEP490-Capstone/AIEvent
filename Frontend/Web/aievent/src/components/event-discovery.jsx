@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader } from "./ui/card";
@@ -24,6 +24,8 @@ import {
   Star,
   Loader2,
 } from "lucide-react";
+import { useFavoriteEvents } from "../hooks/useFavoriteEvents";
+import { useSelector } from "react-redux";
 
 const categories = [
   { id: "all", name: "Tất cả", icon: Sparkles },
@@ -63,15 +65,68 @@ export function EventDiscovery({
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [likedEvents, setLikedEvents] = useState(new Set([2, 4]));
+  const { getFavoriteEvents, addFavoriteEvent, removeFavoriteEvent } = useFavoriteEvents();
+  const { isAuthenticated } = useSelector((state) => state.auth);
 
-  const toggleLike = (eventId) => {
-    const newLikedEvents = new Set(likedEvents);
-    if (newLikedEvents.has(eventId)) {
-      newLikedEvents.delete(eventId);
-    } else {
-      newLikedEvents.add(eventId);
+  // Load favorite events only when user is authenticated
+  useEffect(() => {
+    const loadFavoriteEvents = async () => {
+      // Only load favorite events if user is authenticated
+      if (isAuthenticated) {
+        try {
+          const favorites = await getFavoriteEvents();
+          const favoriteIds = new Set(favorites.map(event => event.eventId));
+          setLikedEvents(favoriteIds);
+        } catch (err) {
+          console.error("Error loading favorite events:", err);
+        }
+      } else {
+        // Clear favorite events if user is not authenticated
+        setLikedEvents(new Set());
+      }
+    };
+    
+    loadFavoriteEvents();
+  }, [isAuthenticated]);
+
+  const toggleLike = async (eventId) => {
+    // Only allow toggling favorites if user is authenticated
+    if (!isAuthenticated) {
+      // Optionally redirect to login or show a message
+      console.log("User must be logged in to favorite events");
+      return;
     }
-    setLikedEvents(newLikedEvents);
+    
+    try {
+      const isCurrentlyLiked = likedEvents.has(eventId);
+      
+      // Update UI immediately for better UX
+      const newLikedEvents = new Set(likedEvents);
+      if (isCurrentlyLiked) {
+        newLikedEvents.delete(eventId);
+      } else {
+        newLikedEvents.add(eventId);
+      }
+      setLikedEvents(newLikedEvents);
+      
+      // Call API to update server
+      if (isCurrentlyLiked) {
+        await removeFavoriteEvent(eventId);
+      } else {
+        await addFavoriteEvent(eventId);
+      }
+    } catch (err) {
+      // Revert UI change if API call fails
+      const newLikedEvents = new Set(likedEvents);
+      if (likedEvents.has(eventId)) {
+        newLikedEvents.delete(eventId);
+      } else {
+        newLikedEvents.add(eventId);
+      }
+      setLikedEvents(newLikedEvents);
+      
+      console.error("Error toggling favorite:", err);
+    }
   };
 
   const handleViewDetail = (eventId) => {
@@ -258,7 +313,7 @@ export function EventDiscovery({
                   </div>
 
                   <div className="absolute bottom-4 left-4">
-                    <span className="bg-white/95 backdrop-blur-sm text-gray-900 font-bold px-3 py-1.5 shadow-lg border border-white/20">
+                    <span className="bg-white/95 backdrop-blur-sm text-gray-900 font-bold px-3 py-1.5 shadow-lg border border-white/20 ">
                       {formatPrice(event, event.ticketType === 1)}
                     </span>
                   </div>

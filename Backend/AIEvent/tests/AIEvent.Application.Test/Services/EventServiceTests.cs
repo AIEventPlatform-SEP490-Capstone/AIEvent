@@ -1,4 +1,4 @@
-﻿using AIEvent.Application.Constants;
+using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Event;
 using AIEvent.Application.DTOs.EventField;
 using AIEvent.Application.DTOs.Organizer;
@@ -15,7 +15,6 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using MockQueryable.Moq;
 using Moq;
-using System.Text.Json;
 
 namespace AIEvent.Application.Test.Services
 {
@@ -24,7 +23,7 @@ namespace AIEvent.Application.Test.Services
        private readonly Mock<IUnitOfWork> _mockUnitOfWork;
        private readonly Mock<ITransactionHelper> _mockTransactionHelper;
        private readonly Mock<IMapper> _mockMapper;
-       private readonly Mock<ICloudinaryService> _mockCloudinaryService;
+       private readonly Mock<IHangfireJobService> _mockHangfireJobService;
        private readonly IEventService _eventService;
 
        public EventServiceTests()
@@ -32,13 +31,13 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork = new Mock<IUnitOfWork>();
            _mockTransactionHelper = new Mock<ITransactionHelper>();
            _mockMapper = new Mock<IMapper>();
-           _mockCloudinaryService = new Mock<ICloudinaryService>();
+           _mockHangfireJobService = new Mock<IHangfireJobService>();
 
            _eventService = new EventService(
                _mockUnitOfWork.Object,
                _mockTransactionHelper.Object,
                _mockMapper.Object,
-               _mockCloudinaryService.Object);
+               _mockHangfireJobService.Object);
        }
 
 
@@ -71,7 +70,7 @@ namespace AIEvent.Application.Test.Services
                Address = "Test Address",
                TotalTickets = 100,
                TicketPricingType = TicketPricingType.Free,
-               RequireApproval = ConfirmStatus.NeedConfirm,
+               Status = EventStatus.PendingApproval,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                TicketTypes = new List<TicketTypeRequest>
@@ -88,7 +87,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.Approve,
+               Status = OrganizerProfileStatus.Approved,
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -156,7 +155,7 @@ namespace AIEvent.Application.Test.Services
 
            // Assert
            result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Be("Invalid input");
+           result.Error!.Message.Should().Be("Invalid OrganizerId");
            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
            _mockUnitOfWork.Verify(x => x.OrganizerProfileRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never);
        }
@@ -255,6 +254,7 @@ namespace AIEvent.Application.Test.Services
                TicketPricingType = TicketPricingType.Paid,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
+               ImgListEvidences = new List<string> { "https://cloudinary.com/test.jpg" },
                TicketTypes = new List<TicketTypeRequest>
                {
                    new TicketTypeRequest
@@ -296,6 +296,7 @@ namespace AIEvent.Application.Test.Services
                TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
+               ImgListEvidences = new List<string> { "https://cloudinary.com/test.jpg" },
                TicketTypes = new List<TicketTypeRequest>
            {
                new TicketTypeRequest
@@ -337,6 +338,7 @@ namespace AIEvent.Application.Test.Services
                TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
+               ImgListEvidences = new List<string> { "https://cloudinary.com/test.jpg" },
                TicketTypes = new List<TicketTypeRequest>
            {
                new TicketTypeRequest
@@ -378,6 +380,7 @@ namespace AIEvent.Application.Test.Services
                TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
+               ImgListEvidences = new List<string> { "https://cloudinary.com/test.jpg" },
                TicketTypes = new List<TicketTypeRequest>
            {
                new TicketTypeRequest
@@ -419,6 +422,7 @@ namespace AIEvent.Application.Test.Services
                TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
+               ImgListEvidences = new List<string> { "https://cloudinary.com/test.jpg" },
                TicketTypes = new List<TicketTypeRequest>
            {
                new TicketTypeRequest
@@ -464,6 +468,7 @@ namespace AIEvent.Application.Test.Services
                TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
+               ImgListEvidences = new List<string> { "https://cloudinary.com/test.jpg" },
                TicketTypes = new List<TicketTypeRequest>
            {
                new TicketTypeRequest
@@ -478,7 +483,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.Reject, // Rejected
+               Status = OrganizerProfileStatus.Rejected, // Rejected
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -503,7 +508,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Verify(x => x.OrganizerProfileRepository.GetByIdAsync(organizerId, true), Times.Once);
        }
 
-       // UTCID12: Organizer status is NeedConfirm - Failure
+       // UTCID12: Organizer status is PendingApproval - Failure
        [Fact]
        public async Task UTCID12_CreateEventAsync_WithPendingOrganizer_ShouldReturnFailure()
        {
@@ -524,6 +529,7 @@ namespace AIEvent.Application.Test.Services
                TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
+               ImgListEvidences = new List<string> { "https://cloudinary.com/test.jpg" },
                TicketTypes = new List<TicketTypeRequest>
            {
                new TicketTypeRequest
@@ -538,7 +544,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.NeedConfirm, // Pending
+               Status = OrganizerProfileStatus.Pending, // Pending
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -583,6 +589,7 @@ namespace AIEvent.Application.Test.Services
                TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
+               ImgListEvidences = new List<string> { "https://cloudinary.com/test.jpg" },
                TicketTypes = new List<TicketTypeRequest>
            {
                new TicketTypeRequest
@@ -597,7 +604,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.Approve,
+               Status = OrganizerProfileStatus.Approved,
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -647,6 +654,7 @@ namespace AIEvent.Application.Test.Services
                TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test1.jpg", "https://cloudinary.com/test2.jpg" },
+               ImgListEvidences = new List<string> { "https://cloudinary.com/test.jpg" },
                TicketTypes = new List<TicketTypeRequest>
            {
                new TicketTypeRequest
@@ -661,7 +669,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.Approve,
+               Status = OrganizerProfileStatus.Approved,
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -721,6 +729,7 @@ namespace AIEvent.Application.Test.Services
                TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
+               ImgListEvidences = new List<string> { "https://cloudinary.com/test.jpg" },
                TicketTypes = new List<TicketTypeRequest>
            {
                new TicketTypeRequest
@@ -735,7 +744,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.Approve,
+               Status = OrganizerProfileStatus.Approved,
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -812,7 +821,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.Approve,
+               Status = OrganizerProfileStatus.Approved,
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -966,7 +975,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.Approve,
+               Status = OrganizerProfileStatus.Approved,
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -1069,7 +1078,7 @@ namespace AIEvent.Application.Test.Services
 
            // Assert
            result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Contain("Ticket is required");
+           result.Error!.Message.Should().Contain("TicketTypes is required");
            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
        }
 
@@ -1111,7 +1120,7 @@ namespace AIEvent.Application.Test.Services
 
            // Assert
            result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Be("District is required for offline events");
+           result.Error!.Message.Should().Be("District is required");
            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
        }
 
@@ -1153,7 +1162,7 @@ namespace AIEvent.Application.Test.Services
 
            // Assert
            result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Be("Address is required for offline events");
+           result.Error!.Message.Should().Be("Address is required");
            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
        }
 
@@ -1283,7 +1292,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.Approve,
+               Status = OrganizerProfileStatus.Approved,
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -1319,11 +1328,10 @@ namespace AIEvent.Application.Test.Services
            result.IsSuccess.Should().BeTrue();
            _mockUnitOfWork.Verify(x => x.EventRepository.AddAsync(It.IsAny<Event>()), Times.Once);
        }
-
-
+        
        // UTCID28: Publish = false should not require evidence - Success
        [Fact]
-       public async Task UTCID28_CreateEventAsync_WithPublishFalseNoEvidence_ShouldReturnSuccess()
+       public async Task UTCID27_CreateEventAsync_WithPublishFalseNoEvidence_ShouldReturnSuccess()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -1359,7 +1367,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.Approve,
+               Status = OrganizerProfileStatus.Approved,
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -1397,7 +1405,7 @@ namespace AIEvent.Application.Test.Services
 
        // UTCID29: Boundary - SaleEndTime equals StartTime - Success
        [Fact]
-       public async Task UTCID29_CreateEventAsync_WithSaleEndTimeEqualsStartTime_ShouldReturnSuccess()
+       public async Task UTCID28_CreateEventAsync_WithSaleEndTimeEqualsStartTime_ShouldReturnSuccess()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -1432,7 +1440,7 @@ namespace AIEvent.Application.Test.Services
            var organizer = new OrganizerProfile
            {
                Id = organizerId,
-               Status = ConfirmStatus.Approve,
+               Status = OrganizerProfileStatus.Approved,
                OrganizationType = OrganizationType.PrivateCompany,
                EventFrequency = EventFrequency.Monthly,
                EventSize = EventSize.Medium,
@@ -1467,8 +1475,804 @@ namespace AIEvent.Application.Test.Services
            // Assert
            result.IsSuccess.Should().BeTrue();
        }
-
        #endregion
+
+       #region RequestEndEvent
+
+        [Fact]
+        public async Task UTCID01_RequestEndEventAsync_WithEmptyUserId_ShouldReturnInvalidInput()
+        {
+            // Act
+            var result = await _eventService.RequestEndEventAsync(Guid.Empty, new CompleteEventRequest());
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid userId");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID02_RequestEndEventAsync_WithNullRequest_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, null!);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Invalid input");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID03_RequestEndEventAsync_InvalidModel_NoEvidenceImages_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new CompleteEventRequest
+            {
+                EventId = Guid.NewGuid(),
+                PaymentInformationId = Guid.NewGuid(),
+                EvidenceImages = new List<string>() // empty
+            };
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("At least one image must be provided.");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID04_RequestEndEventAsync_EventNotFound_ShouldReturnNotFound()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new CompleteEventRequest
+            {
+                EventId = Guid.NewGuid(),
+                PaymentInformationId = Guid.NewGuid(),
+                EvidenceImages = new List<string> { "img1" }
+            };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event>().AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Event not found");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        [Fact]
+        public async Task UTCID05_RequestEndEventAsync_Unauthorized_WhenNotOwner_ShouldReturnUnauthorized()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" }; // different user
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.PendingApprovalEnd };
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = Guid.NewGuid(),
+                EvidenceImages = new List<string> { "img1" }
+            };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("You can only request to end your own events");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
+        }
+
+        [Fact]
+        public async Task UTCID06_RequestEndEventAsync_EventNotOverYet_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow, OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddHours(1), Publish = true, Status = EventStatus.PendingApprovalEnd };
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = Guid.NewGuid(),
+                EvidenceImages = new List<string> { "img1" }
+            };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Event is not over yet");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID07_RequestEndEventAsync_ExistingPendingRequest_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.PendingApprovalEnd };
+            var pending = new EndEventRequest { Id = Guid.NewGuid(), EventId = ev.Id, Status = EndEventStatus.PendingApprovalEnd, IsLatest = true, IsDeleted = false };
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = Guid.NewGuid(),
+                EvidenceImages = new List<string> { "img1" }
+            };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<EndEventRequest> { pending }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("There is already a pending end event request for this event");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID08_RequestEndEventAsync_Success_ShouldUpdateEventAndCreateEndRequest()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-5), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.PendingApprovalEnd };
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = Guid.NewGuid(),
+                EvidenceImages = new List<string> { "img1" },
+                Summary = "summary"
+            };
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<EndEventRequest>().AsQueryable().BuildMockDbSet().Object);
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.AddAsync(It.IsAny<EndEventRequest>()));
+
+            _mockMapper.Setup(x => x.Map<EndEventRequest>(It.IsAny<CompleteEventRequest>()))
+                .Returns<CompleteEventRequest>(r => new EndEventRequest { EventId = r.EventId, EvidenceImages = string.Join(", ", r.EvidenceImages), Summary = r.Summary });
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.Is<Event>(e => e.Id == ev.Id && e.Status == EventStatus.PendingApprovalEnd)), Times.Once());
+            _mockUnitOfWork.Verify(x => x.EndEventRequestRepository.AddAsync(It.Is<EndEventRequest>(er => er.EventId == ev.Id && er.IsLatest && er.Status == EndEventStatus.PendingApprovalEnd && er.OrganizerProfileId == organizerProfile.Id)), Times.Once());
+        }
+
+        [Fact]
+        public async Task UTCID09_RequestEndEventAsync_WithOldLatestRequests_ShouldCreateNewAndKeepOldUnchangedExternally()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.PendingApprovalEnd };
+            var old1 = new EndEventRequest { Id = Guid.NewGuid(), EventId = ev.Id, IsLatest = true, IsDeleted = false, Status = EndEventStatus.Approved };
+            var old2 = new EndEventRequest { Id = Guid.NewGuid(), EventId = ev.Id, IsLatest = true, IsDeleted = false, Status = EndEventStatus.Rejected };
+            var request = new CompleteEventRequest { EventId = ev.Id, PaymentInformationId = Guid.NewGuid(), EvidenceImages = new List<string> { "img1" } };
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<EndEventRequest> { old1, old2 }.AsQueryable().BuildMockDbSet().Object);
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.AddAsync(It.IsAny<EndEventRequest>()));
+
+            _mockMapper.Setup(x => x.Map<EndEventRequest>(It.IsAny<CompleteEventRequest>()))
+                .Returns<CompleteEventRequest>(r => new EndEventRequest { EventId = r.EventId, EvidenceImages = string.Join(", ", r.EvidenceImages) });
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.EndEventRequestRepository.AddAsync(It.Is<EndEventRequest>(er => er.EventId == ev.Id && er.IsLatest)), Times.Once());
+        }
+
+        [Fact]
+        public async Task UTCID10_RequestEndEventAsync_Boundary_EndTimeEqualsNow_ShouldSucceed()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-2), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow, Publish = true, Status = EventStatus.PendingApprovalEnd };
+            var request = new CompleteEventRequest { EventId = ev.Id, PaymentInformationId = Guid.NewGuid(), EvidenceImages = new List<string> { "img1" } };
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<EndEventRequest>().AsQueryable().BuildMockDbSet().Object);
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.AddAsync(It.IsAny<EndEventRequest>()));
+
+            _mockMapper.Setup(x => x.Map<EndEventRequest>(It.IsAny<CompleteEventRequest>()))
+                .Returns(new EndEventRequest());
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+        }
+        #endregion
+
+       #region GetEndEventRequestById
+
+        [Fact]
+        public async Task UTCID01_GetEndEventRequestByIdAsync_WithEmptyId_ShouldReturnInvalidInput()
+        {
+            // Act
+            var result = await _eventService.GetEndEventRequestByIdAsync(Guid.Empty);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid EndEventRequestId");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID02_GetEndEventRequestByIdAsync_NotFound_ShouldReturnNotFound()
+        {
+            // Arrange
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<EndEventRequest>().AsQueryable().BuildMockDbSet().Object);
+
+            var mapperConfig = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<EndEventRequest, EndEventReview>()
+                   .ForMember(d => d.EndEventRequestId, o => o.MapFrom(s => s.Id))
+                   .ForMember(d => d.EventId, o => o.MapFrom(s => s.EventId))
+                   .ForMember(d => d.EvidenceImages, o => o.MapFrom(s => string.IsNullOrEmpty(s.EvidenceImages) ? new List<string>() : s.EvidenceImages!.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()))
+                   .ForMember(d => d.EventTitle, o => o.MapFrom(s => s.Event.Title))
+                   .ForMember(d => d.StartTime, o => o.MapFrom(s => s.Event.StartTime))
+                   .ForMember(d => d.EndTime, o => o.MapFrom(s => s.Event.EndTime))
+                   .ForMember(d => d.TotalAmount, o => o.MapFrom(s => s.Event.TotalAmount))
+                   .ForMember(d => d.PlatformFee, o => o.MapFrom(s => s.Event.PlatformFee))
+                   .ForMember(d => d.PayoutAmount, o => o.MapFrom(s => s.Event.PayoutAmount))
+                   .ForMember(d => d.OrganizerName, o => o.MapFrom(s => s.OrganizerProfile.ContactName ?? s.OrganizerProfile.ContactEmail))
+                   .ForMember(d => d.ContactEmail, o => o.MapFrom(s => s.OrganizerProfile.ContactEmail))
+                   .ForMember(d => d.ContactPhone, o => o.MapFrom(s => s.OrganizerProfile.ContactPhone))
+                   .ForMember(d => d.BankName, o => o.MapFrom(s => s.PaymentInformation.BankName))
+                   .ForMember(d => d.AccountHolderName, o => o.MapFrom(s => s.PaymentInformation.AccountHolderName))
+                   .ForMember(d => d.AccountNumber, o => o.MapFrom(s => s.PaymentInformation.AccountNumber));
+            });
+            _mockMapper.SetupGet(m => m.ConfigurationProvider).Returns(mapperConfig);
+
+            // Act
+            var result = await _eventService.GetEndEventRequestByIdAsync(Guid.NewGuid());
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("End event request not found");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        [Fact]
+        public async Task UTCID03_GetEndEventRequestByIdAsync_Found_ShouldReturnMappedReview()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var organizer = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Org", ContactEmail = "org@ex.com", ContactPhone = "0123", Address = "addr" };
+            var payment = new PaymentInformation { Id = Guid.NewGuid(), UserId = organizer.UserId, AccountHolderName = "Holder", AccountNumber = "123", BankName = "Bank", BankBin = "001" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "Event", Description = "Desc", StartTime = DateTime.UtcNow.AddDays(-3), EndTime = DateTime.UtcNow.AddDays(-1), TotalAmount = 100, PlatformFee = 10, PayoutAmount = 90 };
+            var entity = new EndEventRequest { Id = id, EventId = ev.Id, OrganizerProfileId = organizer.Id, PaymentInformationId = payment.Id, Status = EndEventStatus.PendingApprovalEnd, Summary = "sum", AdminNote = "note", EvidenceImages = "a, b", Event = ev, OrganizerProfile = organizer, PaymentInformation = payment, CreatedAt = DateTimeOffset.UtcNow };
+
+            var list = new List<EndEventRequest> { entity }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>())).Returns(list.Object);
+
+            var mapperConfig = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<EndEventRequest, EndEventReview>()
+                   .ForMember(d => d.EndEventRequestId, o => o.MapFrom(s => s.Id))
+                   .ForMember(d => d.EventId, o => o.MapFrom(s => s.EventId))
+                   .ForMember(d => d.EvidenceImages, o => o.MapFrom(s => string.IsNullOrEmpty(s.EvidenceImages) ? new List<string>() : s.EvidenceImages!.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()))
+                   .ForMember(d => d.EventTitle, o => o.MapFrom(s => s.Event.Title))
+                   .ForMember(d => d.StartTime, o => o.MapFrom(s => s.Event.StartTime))
+                   .ForMember(d => d.EndTime, o => o.MapFrom(s => s.Event.EndTime))
+                   .ForMember(d => d.TotalAmount, o => o.MapFrom(s => s.Event.TotalAmount))
+                   .ForMember(d => d.PlatformFee, o => o.MapFrom(s => s.Event.PlatformFee))
+                   .ForMember(d => d.PayoutAmount, o => o.MapFrom(s => s.Event.PayoutAmount))
+                   .ForMember(d => d.OrganizerName, o => o.MapFrom(s => s.OrganizerProfile.ContactName ?? s.OrganizerProfile.ContactEmail))
+                   .ForMember(d => d.ContactEmail, o => o.MapFrom(s => s.OrganizerProfile.ContactEmail))
+                   .ForMember(d => d.ContactPhone, o => o.MapFrom(s => s.OrganizerProfile.ContactPhone))
+                   .ForMember(d => d.BankName, o => o.MapFrom(s => s.PaymentInformation.BankName))
+                   .ForMember(d => d.AccountHolderName, o => o.MapFrom(s => s.PaymentInformation.AccountHolderName))
+                   .ForMember(d => d.AccountNumber, o => o.MapFrom(s => s.PaymentInformation.AccountNumber));
+            });
+            _mockMapper.SetupGet(m => m.ConfigurationProvider).Returns(mapperConfig);
+
+            // Act
+            var result = await _eventService.GetEndEventRequestByIdAsync(id);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value!.EndEventRequestId.Should().Be(id);
+            result.Value!.EvidenceImages.Should().BeEquivalentTo(new[] { "a", "b" });
+            result.Value!.EventTitle.Should().Be("Event");
+            result.Value!.OrganizerName.Should().Be("Org");
+            result.Value!.BankName.Should().Be("Bank");
+        }
+
+        [Fact]
+        public async Task UTCID04_GetEndEventRequestByIdAsync_Boundary_EvidenceImagesNull_ShouldReturnEmptyList()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var organizer = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = null!, ContactEmail = "org@ex.com", ContactPhone = "0123", Address = "addr" };
+            var payment = new PaymentInformation { Id = Guid.NewGuid(), UserId = organizer.UserId, AccountHolderName = "Holder", AccountNumber = "123", BankName = "Bank", BankBin = "001" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "Event", Description = "Desc", StartTime = DateTime.UtcNow.AddDays(-3), EndTime = DateTime.UtcNow.AddDays(-1), TotalAmount = 100 };
+            var entity = new EndEventRequest { Id = id, EventId = ev.Id, OrganizerProfileId = organizer.Id, PaymentInformationId = payment.Id, Status = EndEventStatus.PendingApprovalEnd, EvidenceImages = null, Event = ev, OrganizerProfile = organizer, PaymentInformation = payment, CreatedAt = DateTimeOffset.UtcNow };
+
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<EndEventRequest> { entity }.AsQueryable().BuildMockDbSet().Object);
+
+            var mapperConfig = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<EndEventRequest, EndEventReview>()
+                   .ForMember(d => d.EndEventRequestId, o => o.MapFrom(s => s.Id))
+                   .ForMember(d => d.EventId, o => o.MapFrom(s => s.EventId))
+                   .ForMember(d => d.EvidenceImages, o => o.MapFrom(s => string.IsNullOrEmpty(s.EvidenceImages) ? new List<string>() : s.EvidenceImages!.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()))
+                   .ForMember(d => d.EventTitle, o => o.MapFrom(s => s.Event.Title))
+                   .ForMember(d => d.StartTime, o => o.MapFrom(s => s.Event.StartTime))
+                   .ForMember(d => d.EndTime, o => o.MapFrom(s => s.Event.EndTime))
+                   .ForMember(d => d.TotalAmount, o => o.MapFrom(s => s.Event.TotalAmount))
+                   .ForMember(d => d.OrganizerName, o => o.MapFrom(s => s.OrganizerProfile.ContactName ?? s.OrganizerProfile.ContactEmail))
+                   .ForMember(d => d.ContactEmail, o => o.MapFrom(s => s.OrganizerProfile.ContactEmail))
+                   .ForMember(d => d.ContactPhone, o => o.MapFrom(s => s.OrganizerProfile.ContactPhone))
+                   .ForMember(d => d.BankName, o => o.MapFrom(s => s.PaymentInformation.BankName))
+                   .ForMember(d => d.AccountHolderName, o => o.MapFrom(s => s.PaymentInformation.AccountHolderName))
+                   .ForMember(d => d.AccountNumber, o => o.MapFrom(s => s.PaymentInformation.AccountNumber));
+            });
+            _mockMapper.SetupGet(m => m.ConfigurationProvider).Returns(mapperConfig);
+
+            // Act
+            var result = await _eventService.GetEndEventRequestByIdAsync(id);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value!.EvidenceImages.Should().NotBeNull();
+            result.Value!.EvidenceImages.Should().HaveCount(0);
+            result.Value!.OrganizerName.Should().Be("org@ex.com");
+        }
+
+        #endregion
+
+       #region GetEndEventRequests
+
+        [Fact]
+        public async Task UTCID01_GetEndEventRequestsAsync_StatusNull_ShouldReturnAllNonDeletedPaged()
+        {
+            // Arrange
+            var org = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Org A", ContactEmail = "orga@ex.com", ContactPhone = "1", Address = "addr" };
+            var ev1 = new Event { Id = Guid.NewGuid(), Title = "E1", Description = "D", StartTime = DateTime.UtcNow.AddDays(-3), EndTime = DateTime.UtcNow.AddDays(-2), TotalAmount = 10, PlatformFee = 1, PayoutAmount = 9 };
+            var ev2 = new Event { Id = Guid.NewGuid(), Title = "E2", Description = "D", StartTime = DateTime.UtcNow.AddDays(-2), EndTime = DateTime.UtcNow.AddDays(-1), TotalAmount = 20, PlatformFee = 2, PayoutAmount = 18 };
+            var r1 = new EndEventRequest { Id = Guid.NewGuid(), OrganizerProfileId = org.Id, EventId = ev1.Id, Status = EndEventStatus.PendingApprovalEnd, EvidenceImages = "a, b", CreatedAt = DateTimeOffset.UtcNow.AddDays(-2), OrganizerProfile = org, Event = ev1 };
+            var r2 = new EndEventRequest { Id = Guid.NewGuid(), OrganizerProfileId = org.Id, EventId = ev2.Id, Status = EndEventStatus.Approved, EvidenceImages = null, CreatedAt = DateTimeOffset.UtcNow.AddDays(-1), OrganizerProfile = org, Event = ev2 };
+            var set = new List<EndEventRequest> { r1, r2 }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>())).Returns(set.Object);
+
+            // Act
+            var result = await _eventService.GetEndEventRequestsAsync(null, null, null, 1, 10);
+
+            // Assert
+            result.Value!.Items.Should().HaveCount(2);
+            result.Value.TotalItems.Should().Be(2);
+            result.Value.Items.Any(i => i.EvidenceImages.Count == 2).Should().BeTrue();
+            result.Value.Items.Any(i => i.EvidenceImages.Count == 0).Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task UTCID02_GetEndEventRequestsAsync_FilterByOrganizer_ShouldReturnOnlyOrganizerItems()
+        {
+            // Arrange
+            var org1 = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Org1", ContactEmail = "o1@ex.com", ContactPhone = "1", Address = "addr" };
+            var org2 = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Org2", ContactEmail = "o2@ex.com", ContactPhone = "2", Address = "addr" };
+            var ev1 = new Event { Id = Guid.NewGuid(), Title = "E1", Description = "D", StartTime = DateTime.UtcNow, EndTime = DateTime.UtcNow, TotalAmount = 0 };
+            var ev2 = new Event { Id = Guid.NewGuid(), Title = "E2", Description = "D", StartTime = DateTime.UtcNow, EndTime = DateTime.UtcNow, TotalAmount = 0 };
+            var r1 = new EndEventRequest { Id = Guid.NewGuid(), OrganizerProfileId = org1.Id, EventId = ev1.Id, Status = EndEventStatus.PendingApprovalEnd, OrganizerProfile = org1, Event = ev1 };
+            var r2 = new EndEventRequest { Id = Guid.NewGuid(), OrganizerProfileId = org2.Id, EventId = ev2.Id, Status = EndEventStatus.PendingApprovalEnd, OrganizerProfile = org2, Event = ev2 };
+            var set = new List<EndEventRequest> { r1, r2 }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>())).Returns(set.Object);
+
+            // Act
+            var result = await _eventService.GetEndEventRequestsAsync(org1.Id, null, null, 1, 10);
+
+            // Assert
+            result.Value!.Items.Should().HaveCount(1);
+            result.Value.Items.First().OrganizerName.Should().Be("Org1");
+        }
+
+        [Fact]
+        public async Task UTCID03_GetEndEventRequestsAsync_FilterByEmptyOrganizer_ShouldNotFilterByOrganizer()
+        {
+            // Arrange
+            var org = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Org", ContactEmail = "o@ex.com", ContactPhone = "1", Address = "addr" };
+            var ev1 = new Event { Id = Guid.NewGuid(), Title = "E1", Description = "D", StartTime = DateTime.UtcNow, EndTime = DateTime.UtcNow, TotalAmount = 0 };
+            var ev2 = new Event { Id = Guid.NewGuid(), Title = "E2", Description = "D", StartTime = DateTime.UtcNow, EndTime = DateTime.UtcNow, TotalAmount = 0 };
+            var r1 = new EndEventRequest { Id = Guid.NewGuid(), OrganizerProfileId = org.Id, EventId = ev1.Id, Status = EndEventStatus.PendingApprovalEnd, OrganizerProfile = org, Event = ev1 };
+            var r2 = new EndEventRequest { Id = Guid.NewGuid(), OrganizerProfileId = org.Id, EventId = ev2.Id, Status = EndEventStatus.Approved, OrganizerProfile = org, Event = ev2 };
+            var set = new List<EndEventRequest> { r1, r2 }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>())).Returns(set.Object);
+
+            // Act
+            var result = await _eventService.GetEndEventRequestsAsync(Guid.Empty, null, EndEventStatus.Approved, 1, 10);
+
+            // Assert
+            result.Value!.Items.Should().HaveCount(1);
+            result.Value.TotalItems.Should().Be(1);
+            result.Value.Items.First().Status.Should().Be(EndEventStatus.Approved);
+        }
+
+        [Fact]
+        public async Task UTCID04_GetEndEventRequestsAsync_FilterByStatus_ShouldReturnMatching()
+        {
+            // Arrange
+            var org = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Org", ContactEmail = "o@ex.com", ContactPhone = "1", Address = "addr" };
+            var ev1 = new Event { Id = Guid.NewGuid(), Title = "E1", Description = "D", StartTime = DateTime.UtcNow, EndTime = DateTime.UtcNow, TotalAmount = 0 };
+            var ev2 = new Event { Id = Guid.NewGuid(), Title = "E2", Description = "D", StartTime = DateTime.UtcNow, EndTime = DateTime.UtcNow, TotalAmount = 0 };
+            var r1 = new EndEventRequest { Id = Guid.NewGuid(), OrganizerProfileId = org.Id, EventId = ev1.Id, Status = EndEventStatus.PendingApprovalEnd, OrganizerProfile = org, Event = ev1 };
+            var r2 = new EndEventRequest { Id = Guid.NewGuid(), OrganizerProfileId = org.Id, EventId = ev2.Id, Status = EndEventStatus.Rejected, OrganizerProfile = org, Event = ev2 };
+            var set = new List<EndEventRequest> { r1, r2 }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>())).Returns(set.Object);
+
+            // Act
+            var result = await _eventService.GetEndEventRequestsAsync(null, null, EndEventStatus.Rejected, 1, 10);
+
+            // Assert
+            result.Value!.Items.Should().HaveCount(1);
+            result.Value.Items.First().Status.Should().Be(EndEventStatus.Rejected);
+        }
+
+        [Fact]
+        public async Task UTCID05_GetEndEventRequestsAsync_ExcludeDeleted_ShouldNotIncludeDeleted()
+        {
+            // Arrange
+            var org = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Org", ContactEmail = "o@ex.com", ContactPhone = "1", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "E", Description = "D", StartTime = DateTime.UtcNow, EndTime = DateTime.UtcNow, TotalAmount = 0 };
+            var r1 = new EndEventRequest { Id = Guid.NewGuid(), OrganizerProfileId = org.Id, EventId = ev.Id, Status = EndEventStatus.PendingApprovalEnd, OrganizerProfile = org, Event = ev, IsDeleted = true };
+            var r2 = new EndEventRequest { Id = Guid.NewGuid(), OrganizerProfileId = org.Id, EventId = ev.Id, Status = EndEventStatus.PendingApprovalEnd, OrganizerProfile = org, Event = ev };
+            var set = new List<EndEventRequest> { r1, r2 }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>())).Returns(set.Object);
+
+            // Act
+            var result = await _eventService.GetEndEventRequestsAsync(null, null, null, 1, 10);
+
+            // Assert
+            result.Value!.Items.Should().HaveCount(1);
+            result.Value.TotalItems.Should().Be(1);
+        }
+
+        [Fact]
+        public async Task UTCID06_GetEndEventRequestsAsync_OrderAndPaging_Page1Size1_ShouldReturnFirstByCreatedAt()
+        {
+            // Arrange
+            var org = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Org", ContactEmail = "o@ex.com", ContactPhone = "1", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "E", Description = "D", StartTime = DateTime.UtcNow, EndTime = DateTime.UtcNow, TotalAmount = 0 };
+            var ev2 = new Event { Id = Guid.NewGuid(), Title = "E", Description = "D", StartTime = DateTime.UtcNow, EndTime = DateTime.UtcNow, TotalAmount = 0 };
+            var older = new EndEventRequest { Id = Guid.NewGuid(), OrganizerProfileId = org.Id, EventId = ev.Id, Status = EndEventStatus.PendingApprovalEnd, CreatedAt = DateTimeOffset.UtcNow.AddDays(-2), OrganizerProfile = org, Event = ev };
+            var newer = new EndEventRequest { Id = Guid.NewGuid(), OrganizerProfileId = org.Id, EventId = ev.Id, Status = EndEventStatus.PendingApprovalEnd, CreatedAt = DateTimeOffset.UtcNow.AddDays(-1), OrganizerProfile = org, Event = ev2 };
+            var set = new List<EndEventRequest> { newer, older }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>())).Returns(set.Object);
+
+            // Act
+            var result = await _eventService.GetEndEventRequestsAsync(null, null, null, 1, 1);
+
+            // Assert
+            result.Value!.Items.Should().HaveCount(1);
+            result.Value.TotalItems.Should().Be(2);
+            result.Value.Items.First().EndEventRequestId.Should().Be(older.Id);
+        }
+
+        [Fact]
+        public async Task UTCID07_GetEndEventRequestsAsync_PageNumberExceedsTotal_ShouldReturnEmpty()
+        {
+            // Arrange
+            var org = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Org", ContactEmail = "o@ex.com", ContactPhone = "1", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "E", Description = "D", StartTime = DateTime.UtcNow, EndTime = DateTime.UtcNow, TotalAmount = 0 };
+            var r = new EndEventRequest { Id = Guid.NewGuid(), OrganizerProfileId = org.Id, EventId = ev.Id, Status = EndEventStatus.PendingApprovalEnd, CreatedAt = DateTimeOffset.UtcNow, OrganizerProfile = org, Event = ev };
+            var set = new List<EndEventRequest> { r }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>())).Returns(set.Object);
+
+            // Act
+            var result = await _eventService.GetEndEventRequestsAsync(null, null, null, 10, 10);
+
+            // Assert
+            result.Value!.Items.Should().HaveCount(0);
+            result.Value.TotalItems.Should().Be(1);
+            result.Value.CurrentPage.Should().Be(10);
+            result.Value.PageSize.Should().Be(10);
+        }
+
+        [Fact]
+        public async Task UTCID08_GetEndEventRequestsAsync_FilterByEventId_ShouldReturnOnlyMatchingEvent()
+        {
+            // Arrange
+            var org = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Org", ContactEmail = "o@ex.com", ContactPhone = "1", Address = "addr" };
+            var ev1 = new Event { Id = Guid.NewGuid(), Title = "E1", Description = "D", StartTime = DateTime.UtcNow, EndTime = DateTime.UtcNow, TotalAmount = 0 };
+            var ev2 = new Event { Id = Guid.NewGuid(), Title = "E2", Description = "D", StartTime = DateTime.UtcNow, EndTime = DateTime.UtcNow, TotalAmount = 0 };
+            var r1 = new EndEventRequest { Id = Guid.NewGuid(), OrganizerProfileId = org.Id, EventId = ev1.Id, Status = EndEventStatus.PendingApprovalEnd, OrganizerProfile = org, Event = ev1 };
+            var r2 = new EndEventRequest { Id = Guid.NewGuid(), OrganizerProfileId = org.Id, EventId = ev2.Id, Status = EndEventStatus.PendingApprovalEnd, OrganizerProfile = org, Event = ev2 };
+            var set = new List<EndEventRequest> { r1, r2 }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>())).Returns(set.Object);
+
+            // Act
+            var result = await _eventService.GetEndEventRequestsAsync(null, ev1.Id, null, 1, 10);
+
+            // Assert
+            result.Value!.Items.Should().HaveCount(1);
+            result.Value.TotalItems.Should().Be(1);
+            result.Value.Items.First().EventId.Should().Be(ev1.Id);
+            result.Value.Items.First().EventTitle.Should().Be("E1");
+        }
+
+        [Fact]
+        public async Task UTCID09_GetEndEventRequestsAsync_FilterByEmptyEventId_ShouldNotFilterByEventId()
+        {
+            // Arrange
+            var org = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Org", ContactEmail = "o@ex.com", ContactPhone = "1", Address = "addr" };
+            var ev1 = new Event { Id = Guid.NewGuid(), Title = "E1", Description = "D", StartTime = DateTime.UtcNow, EndTime = DateTime.UtcNow, TotalAmount = 0 };
+            var ev2 = new Event { Id = Guid.NewGuid(), Title = "E2", Description = "D", StartTime = DateTime.UtcNow, EndTime = DateTime.UtcNow, TotalAmount = 0 };
+            var r1 = new EndEventRequest { Id = Guid.NewGuid(), OrganizerProfileId = org.Id, EventId = ev1.Id, Status = EndEventStatus.PendingApprovalEnd, OrganizerProfile = org, Event = ev1 };
+            var r2 = new EndEventRequest { Id = Guid.NewGuid(), OrganizerProfileId = org.Id, EventId = ev2.Id, Status = EndEventStatus.Approved, OrganizerProfile = org, Event = ev2 };
+            var set = new List<EndEventRequest> { r1, r2 }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>())).Returns(set.Object);
+
+            // Act
+            var result = await _eventService.GetEndEventRequestsAsync(null, Guid.Empty, null, 1, 10);
+
+            // Assert
+            result.Value!.Items.Should().HaveCount(2);
+            result.Value.TotalItems.Should().Be(2);
+        }
+
+        #endregion
+
+       #region ConfirmEndEvent
+
+        [Fact]
+        public async Task UTCID01_ConfirmEndEventAsync_NullRequest_ShouldReturnInvalidInput()
+        {
+            // Act
+            var result = await _eventService.ConfirmEndEventAsync(null!);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Invalid input");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID02_ConfirmEndEventAsync_EndEventRequestNotFound_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var req = new ApproveEndEventRequest { EndEventRequestId = Guid.NewGuid(), Status = ConfirmStatus.Approved };
+
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<EndEventRequest>().AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.ConfirmEndEventAsync(req);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("EndEventRequest not found or already processed");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID03_ConfirmEndEventAsync_EventNotFoundOrProcessed_ShouldReturnNotFound()
+        {
+            // Arrange
+            var endReq = new EndEventRequest { Id = Guid.NewGuid(), EventId = Guid.NewGuid(), Status = EndEventStatus.PendingApprovalEnd, IsLatest = true, IsDeleted = false };
+            var req = new ApproveEndEventRequest { EndEventRequestId = endReq.Id, Status = ConfirmStatus.Approved };
+
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<EndEventRequest> { endReq }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event>().AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.ConfirmEndEventAsync(req);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Event not found or already processed");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        [Fact]
+        public async Task UTCID04_ConfirmEndEventAsync_EventNotOverYet_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-1), EndTime = DateTime.UtcNow.AddHours(1), Publish = true, Status = EventStatus.PendingApprovalEnd };
+            var endReq = new EndEventRequest { Id = Guid.NewGuid(), EventId = ev.Id, Status = EndEventStatus.PendingApprovalEnd, IsLatest = true, IsDeleted = false, Event = ev };
+            var req = new ApproveEndEventRequest { EndEventRequestId = endReq.Id, Status = ConfirmStatus.Approved };
+
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<EndEventRequest> { endReq }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.ConfirmEndEventAsync(req);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Event is not over yet");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID05_ConfirmEndEventAsync_EventNotPublished_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-2), EndTime = DateTime.UtcNow.AddHours(-1), Publish = false, Status = EventStatus.PendingApprovalEnd };
+            var endReq = new EndEventRequest { Id = Guid.NewGuid(), EventId = ev.Id, Status = EndEventStatus.PendingApprovalEnd, IsLatest = true, IsDeleted = false, Event = ev };
+            var req = new ApproveEndEventRequest { EndEventRequestId = endReq.Id, Status = ConfirmStatus.Approved };
+
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<EndEventRequest> { endReq }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.ConfirmEndEventAsync(req);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Can only confirm end event request for published events");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID06_ConfirmEndEventAsync_Approve_Success_ComputesFeesAndUpdatesStatuses()
+        {
+            // Arrange
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.PendingApprovalEnd, TotalAmount = 1_000_000m };
+            var endReq = new EndEventRequest { Id = Guid.NewGuid(), EventId = ev.Id, Status = EndEventStatus.PendingApprovalEnd, IsLatest = true, IsDeleted = false, Event = ev };
+            var req = new ApproveEndEventRequest { EndEventRequestId = endReq.Id, Status = ConfirmStatus.Approved };
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<EndEventRequest> { endReq }.AsQueryable().BuildMockDbSet().Object);
+
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.UpdateAsync(It.IsAny<EndEventRequest>()));
+            _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+            // Act
+            var result = await _eventService.ConfirmEndEventAsync(req);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            var expectedPlatformFee = ev.TotalAmount * 0.066m + 45000m;
+            var expectedNet = ev.TotalAmount - expectedPlatformFee;
+            _mockUnitOfWork.Verify(x => x.EndEventRequestRepository.UpdateAsync(It.Is<EndEventRequest>(r => 
+                r.Status == EndEventStatus.Approved && 
+                r.ReviewedAt.HasValue &&
+                r.Event != null &&
+                r.Event.PlatformFee == expectedPlatformFee && 
+                r.Event.PayoutAmount == expectedNet && 
+                r.Event.Status == EventStatus.WaitingForPayout)), Times.Once());
+        }
+
+        [Fact]
+        public async Task UTCID07_ConfirmEndEventAsync_Reject_WithoutAdminNote_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.PendingApprovalEnd };
+            var endReq = new EndEventRequest { Id = Guid.NewGuid(), EventId = ev.Id, Status = EndEventStatus.PendingApprovalEnd, IsLatest = true, IsDeleted = false, Event = ev };
+            var req = new ApproveEndEventRequest { EndEventRequestId = endReq.Id, Status = ConfirmStatus.Rejected, AdminNote = null };
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<EndEventRequest> { endReq }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.ConfirmEndEventAsync(req);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Admin note is required when rejecting request");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID08_ConfirmEndEventAsync_Reject_Success_UpdatesStatusesAndNoteTrimmed()
+        {
+            // Arrange
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.PendingApprovalEnd };
+            var endReq = new EndEventRequest { Id = Guid.NewGuid(), EventId = ev.Id, Status = EndEventStatus.PendingApprovalEnd, IsLatest = true, IsDeleted = false, Event = ev };
+            var req = new ApproveEndEventRequest { EndEventRequestId = endReq.Id, Status = ConfirmStatus.Rejected, AdminNote = "  need more info  " };
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<EndEventRequest> { endReq }.AsQueryable().BuildMockDbSet().Object);
+
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.UpdateAsync(It.IsAny<EndEventRequest>()));
+            _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+            // Act
+            var result = await _eventService.ConfirmEndEventAsync(req);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.EndEventRequestRepository.UpdateAsync(It.Is<EndEventRequest>(r => 
+                r.Status == EndEventStatus.Rejected && 
+                r.AdminNote == "need more info" && 
+                r.ReviewedAt.HasValue &&
+                r.Event != null &&
+                r.Event.Status == EventStatus.RejectEnded)), Times.Once());
+        }
+
+        [Fact]
+        public async Task UTCID09_ConfirmEndEventAsync_Boundary_EndTimeEqualsNow_ShouldPassConstraints()
+        {
+            // Arrange
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-2), EndTime = DateTime.UtcNow, Publish = true, Status = EventStatus.PendingApprovalEnd, TotalAmount = 0m };
+            var endReq = new EndEventRequest { Id = Guid.NewGuid(), EventId = ev.Id, Status = EndEventStatus.PendingApprovalEnd, IsLatest = true, IsDeleted = false, Event = ev };
+            var req = new ApproveEndEventRequest { EndEventRequestId = endReq.Id, Status = ConfirmStatus.Approved };
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<EndEventRequest> { endReq }.AsQueryable().BuildMockDbSet().Object);
+
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.UpdateAsync(It.IsAny<EndEventRequest>()));
+            _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+
+            // Act
+            var result = await _eventService.ConfirmEndEventAsync(req);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.EndEventRequestRepository.UpdateAsync(It.Is<EndEventRequest>(r => 
+                r.Event != null &&
+                r.Event.PlatformFee == 45000m && 
+                r.Event.PayoutAmount == -45000m)), Times.Once());
+        }
+
+        #endregion
 
        #region GetEventAsync Tests
 
@@ -1487,7 +2291,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1542,7 +2346,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1592,7 +2396,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1638,7 +2442,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1659,7 +2463,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1705,7 +2509,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = categoryId1,
                    EventCategory = eventCategory1,
@@ -1726,7 +2530,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = categoryId2,
                    EventCategory = eventCategory2,
@@ -1773,7 +2577,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1797,7 +2601,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1851,7 +2655,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1875,7 +2679,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1899,7 +2703,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 3",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1950,7 +2754,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -1971,7 +2775,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2014,7 +2818,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2035,7 +2839,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2078,7 +2882,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2100,7 +2904,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2145,7 +2949,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = DateTime.Now.AddHours(1),
                    EndTime = DateTime.Now.AddHours(3),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2166,7 +2970,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = tomorrow.AddHours(10),
                    EndTime = tomorrow.AddHours(12),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2210,7 +3014,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = today.AddHours(20),
                    EndTime = today.AddHours(22),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2231,7 +3035,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = tomorrow.AddHours(10),
                    EndTime = tomorrow.AddHours(12),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2281,7 +3085,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = eventInWeek,
                    EndTime = eventInWeek.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2302,7 +3106,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = eventOutsideWeek,
                    EndTime = eventOutsideWeek.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2347,7 +3151,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = thisMonth.AddHours(14),
                    EndTime = thisMonth.AddHours(16),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2368,7 +3172,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = nextMonth.AddHours(10),
                    EndTime = nextMonth.AddHours(12),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2412,7 +3216,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = pastDate,
                    EndTime = pastDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2433,7 +3237,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2476,7 +3280,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = DateTime.Now.AddDays(-1), // Deleted
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2518,7 +3322,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.NeedConfirm, // Not approved
+                   Status = EventStatus.PendingApproval, // Not approved
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2539,7 +3343,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Reject, // Rejected
+                   Status = EventStatus.Rejected, // Rejected
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2560,7 +3364,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 3",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2606,7 +3410,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = categoryId,
                    EventCategory = eventCategory,
@@ -2628,7 +3432,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = categoryId,
                    EventCategory = eventCategory,
@@ -2674,7 +3478,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 1",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2695,7 +3499,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description 2",
                    StartTime = futureDate.AddDays(1),
                    EndTime = futureDate.AddDays(1).AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2741,7 +3545,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2785,7 +3589,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2829,7 +3633,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Description",
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -2877,7 +3681,7 @@ namespace AIEvent.Application.Test.Services
                    Description = "Test Description",
                    StartTime = DateTime.Now.AddDays(5),
                    EndTime = DateTime.Now.AddDays(5).AddHours(3),
-                   RequireApproval = ConfirmStatus.Approve,
+                   Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
@@ -3205,8 +4009,7 @@ namespace AIEvent.Application.Test.Services
            result.Error!.Message.Should().Be("You don't have permission to update this event");
            result.Error!.StatusCode.Should().Be(ErrorCodes.Unauthorized);
        }
-
-
+ 
        // UTCID07: Publish validation - Missing title - Failure
        [Fact]
        public async Task UTCID07_UpdateEventAsync_WithPublishAndMissingTitle_ShouldReturnFailure()
@@ -3352,9 +4155,9 @@ namespace AIEvent.Application.Test.Services
        }
 
 
-       // UTCID11: Publish validation - Missing evidence - Failure
+       // UTCID10: Publish validation - Missing evidence - Failure
        [Fact]
-       public async Task UTCID11_UpdateEventAsync_WithPublishAndMissingEvidence_ShouldReturnFailure()
+       public async Task UTCID10_UpdateEventAsync_WithPublishAndMissingEvidence_ShouldReturnFailure()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -3407,9 +4210,9 @@ namespace AIEvent.Application.Test.Services
            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
        }
 
-       // UTCID12: Publish validation - Missing images - Failure
-       [Fact]
-       public async Task UTCID12_UpdateEventAsync_WithPublishAndNoImages_ShouldReturnFailure()
+        // UTCID11: Publish validation - Missing images - Failure
+        [Fact]
+       public async Task UTCID11_UpdateEventAsync_WithPublishAndNoImages_ShouldReturnFailure()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -3462,9 +4265,9 @@ namespace AIEvent.Application.Test.Services
            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
        }
 
-       // UTCID13: Publish validation - No ticket details - Failure
+       // UTCID12: Publish validation - No ticket details - Failure
        [Fact]
-       public async Task UTCID13_UpdateEventAsync_WithPublishAndNoTicketTypes_ShouldReturnFailure()
+       public async Task UTCID12_UpdateEventAsync_WithPublishAndNoTicketTypes_ShouldReturnFailure()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -3515,9 +4318,9 @@ namespace AIEvent.Application.Test.Services
        }
 
 
-       // UTCID14: Publish validation - Valid data with Publish=true - Success
+       // UTCID13: Publish validation - Valid data with Publish=true - Success
        [Fact]
-       public async Task UTCID14_UpdateEventAsync_WithValidPublishData_ShouldSetPublishAndRequireApproval()
+       public async Task UTCID13_UpdateEventAsync_WithValidPublishData_ShouldSetPublishAndStatus()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -3560,7 +4363,10 @@ namespace AIEvent.Application.Test.Services
 
            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns((UpdateEventRequest req, Event ev) => {
+               ev.Publish = req.Publish ?? ev.Publish;
+               return ev;
+           });
 
            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                .Returns<Func<Task<Result>>>(func => func());
@@ -3573,13 +4379,13 @@ namespace AIEvent.Application.Test.Services
            // Assert
            result.IsSuccess.Should().BeTrue();
            existingEvent.Publish.Should().BeTrue();
-           existingEvent.RequireApproval.Should().Be(ConfirmStatus.NeedConfirm);
+           existingEvent.Status.Should().Be(EventStatus.PendingApproval);
            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
        }
 
-       // UTCID15: Add new images - Success
+       // UTCID14: Add new images - Success
        [Fact]
-       public async Task UTCID15_UpdateEventAsync_WithAddImages_ShouldUploadAndAddImages()
+       public async Task UTCID14_UpdateEventAsync_WithAddImages_ShouldUploadAndAddImages()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -3615,9 +4421,6 @@ namespace AIEvent.Application.Test.Services
            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
            _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockCloudinaryService.Setup(x => x.UploadImageAsync(It.IsAny<IFormFile>()))
-               .ReturnsAsync("new-uploaded-image.jpg");
-
            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                .Returns<Func<Task<Result>>>(func => func());
 
@@ -3628,13 +4431,12 @@ namespace AIEvent.Application.Test.Services
 
            // Assert
            result.IsSuccess.Should().BeTrue();
-           _mockCloudinaryService.Verify(x => x.UploadImageAsync(It.IsAny<IFormFile>()), Times.Once());
            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
        }
 
-       // UTCID16: Remove images - Success
+       // UTCID15: Remove images - Success
        [Fact]
-       public async Task UTCID16_UpdateEventAsync_WithRemoveImages_ShouldDeleteImages()
+       public async Task UTCID15_UpdateEventAsync_WithRemoveImages_ShouldDeleteImages()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -3670,9 +4472,6 @@ namespace AIEvent.Application.Test.Services
            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
            _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
-               .Returns(Task.CompletedTask);
-
            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                .Returns<Func<Task<Result>>>(func => func());
 
@@ -3683,13 +4482,12 @@ namespace AIEvent.Application.Test.Services
 
            // Assert
            result.IsSuccess.Should().BeTrue();
-           _mockCloudinaryService.Verify(x => x.DeleteImageAsync(imageToRemove), Times.Once());
            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
        }
 
-       // UTCID17: Add new ticket detail - Success
+       // UTCID16: Add new ticket detail - Success
        [Fact]
-       public async Task UTCID17_UpdateEventAsync_WithAddNewTicketType_ShouldAddTicket()
+       public async Task UTCID16_UpdateEventAsync_WithAddNewTicketType_ShouldAddTicket()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -3754,9 +4552,9 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
        }
 
-       // UTCID18: Update existing ticket detail - Success
+       // UTCID17: Update existing ticket detail - Success
        [Fact]
-       public async Task UTCID18_UpdateEventAsync_WithUpdateExistingTicketType_ShouldUpdateTicket()
+       public async Task UTCID17_UpdateEventAsync_WithUpdateExistingTicketType_ShouldUpdateTicket()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -3821,54 +4619,71 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
        }
 
-       // UTCID19: Remove all ticket details without adding new ones - Failure
-       [Fact]
-       public async Task UTCID19_UpdateEventAsync_WithRemoveAllTicketTypesAndNoNewOnes_ShouldReturnFailure()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var ticketId = Guid.NewGuid();
+        // UTCID18: Remove ticket with no sold quantity - Success
+        [Fact]
+        public async Task UTCID18_UpdateEventAsync_WithRemoveTicketNoSoldQuantity_ShouldRemoveTicket()
+        {
+            // Arrange
+            var organizerId = Guid.NewGuid();
+            var eventId = Guid.NewGuid();
+            var ticketToRemoveId = Guid.NewGuid();
 
-           var updateRequest = new UpdateEventRequest
-           {
-               RemoveTicketTypeIds = new List<Guid> { ticketId }
-           };
+            var updateRequest = new UpdateEventRequest
+            {
+                RemoveTicketTypeIds = new List<Guid> { ticketToRemoveId }
+            };
 
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               TicketTypes = new List<TicketType>
+            var ticketToRemove = new TicketType
+            {
+                Id = ticketToRemoveId,
+                TicketName = "Ticket to Remove",
+                TicketQuantity = 50,
+                SoldQuantity = 0 // No sold tickets
+            };
+
+            var existingEvent = new Event
+            {
+                Id = eventId,
+                OrganizerProfileId = organizerId,
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = DateTime.Now.AddDays(5),
+                EndTime = DateTime.Now.AddDays(5).AddHours(2),
+                Publish = false,
+                IsDeleted = false,
+                ImgListEvent = "image1.jpg",
+                TicketTypes = new List<TicketType>
                {
-                   new TicketType { Id = ticketId, TicketName = "Only ticket", TicketQuantity = 100, SoldQuantity = 0 }
+                   ticketToRemove,
+                   new TicketType { Id = Guid.NewGuid(), TicketName = "Keep Ticket", TicketQuantity = 100 }
                },
-               EventTags = new List<EventTag>
+                EventTags = new List<EventTag>
                {
                    new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
                }
-           };
+            };
 
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(eventQueryable); // For checking sold quantity
+            _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+            _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
 
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
+            // Act
+            var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
 
-           // Act & Assert
-           await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-               await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest));
-       }
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            existingEvent.TicketTypes.Should().HaveCount(1); // Should remove the ticket
+            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
+        }
 
-       // UTCID20: Add new tag - Success
-       [Fact]
-       public async Task UTCID20_UpdateEventAsync_WithAddNewTag_ShouldAddTag()
+        // UTCID19: Add new tag - Success
+        [Fact]
+       public async Task UTCID19_UpdateEventAsync_WithAddNewTag_ShouldAddTag()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -3917,9 +4732,9 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
        }
 
-       // UTCID21: Remove tag - Success
+       // UTCID20: Remove tag - Success
        [Fact]
-       public async Task UTCID21_UpdateEventAsync_WithRemoveTag_ShouldRemoveTag()
+       public async Task UTCID20_UpdateEventAsync_WithRemoveTag_ShouldRemoveTag()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -3969,10 +4784,8 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
        }
 
-
-       // UTCID22: Publish validation - with
        [Fact]
-       public async Task UTCID22_UpdateEventAsync_WithPublishAndZeroTotalTickets_ShouldReturnFailure()
+       public async Task UTCID21_UpdateEventAsync_WithPublishAndZeroTotalTickets_ShouldReturnFailure()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -4026,9 +4839,9 @@ namespace AIEvent.Application.Test.Services
            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
        }
 
-       // UTCID23: Publish validation - Missing EventCategoryId
+       // UTCID22: Publish validation - Missing EventCategoryId
        [Fact]
-       public async Task UTCID23_UpdateEventAsync_WithPublishAndMissingEventCategoryId_ShouldReturnFailure()
+       public async Task UTCID22_UpdateEventAsync_WithPublishAndMissingEventCategoryId_ShouldReturnFailure()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -4082,9 +4895,9 @@ namespace AIEvent.Application.Test.Services
            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
        }
 
-       // UTCID24: Add evidence images - Success
+       // UTCID23: Add evidence images - Success
        [Fact]
-       public async Task UTCID24_UpdateEventAsync_WithAddEvidence_ShouldUploadAndAddEvidence()
+       public async Task UTCID23_UpdateEventAsync_WithAddEvidence_ShouldUploadAndAddEvidence()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -4121,8 +4934,6 @@ namespace AIEvent.Application.Test.Services
            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
            _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockCloudinaryService.Setup(x => x.UploadImageAsync(It.IsAny<IFormFile>()))
-               .ReturnsAsync("uploaded-evidence.jpg");
 
            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                .Returns<Func<Task<Result>>>(func => func());
@@ -4134,13 +4945,12 @@ namespace AIEvent.Application.Test.Services
 
            // Assert
            result.IsSuccess.Should().BeTrue();
-           _mockCloudinaryService.Verify(x => x.UploadImageAsync(It.IsAny<IFormFile>()), Times.Once());
            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
        }
 
-       // UTCID25: Published event with active bookings (Pending) - Failure
+       // UTCID24: Published event with active bookings (Pending) - Failure
        [Fact]
-       public async Task UTCID25_UpdateEventAsync_WithPublishedEventAndPendingBookings_ShouldReturnFailure()
+       public async Task UTCID24_UpdateEventAsync_WithPublishedEventAndPendingBookings_ShouldReturnFailure()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -4184,9 +4994,9 @@ namespace AIEvent.Application.Test.Services
            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
        }
 
-       // UTCID27: Published event without active bookings (Cancelled only) - Success
+       // UTCID25: Published event without active bookings (Cancelled only) - Success
        [Fact]
-       public async Task UTCID27_UpdateEventAsync_WithPublishedEventAndOnlyCancelledBookings_ShouldReturnSuccess()
+       public async Task UTCID25_UpdateEventAsync_WithPublishedEventAndOnlyCancelledBookings_ShouldReturnSuccess()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -4226,9 +5036,9 @@ namespace AIEvent.Application.Test.Services
            result.IsSuccess.Should().BeTrue();
        }
 
-       // UTCID28: Published event without any bookings - Success
+       // UTCID26: Published event without any bookings - Success
        [Fact]
-       public async Task UTCID28_UpdateEventAsync_WithPublishedEventAndNoBookings_ShouldReturnSuccess()
+       public async Task UTCID26_UpdateEventAsync_WithPublishedEventAndNoBookings_ShouldReturnSuccess()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -4267,9 +5077,9 @@ namespace AIEvent.Application.Test.Services
            result.IsSuccess.Should().BeTrue();
        }
 
-       // UTCID29: Publish validation - Missing Description
+       // UTCID27: Publish validation - Missing Description
        [Fact]
-       public async Task UTCID29_UpdateEventAsync_WithPublishAndMissingDescription_ShouldReturnFailure()
+       public async Task UTCID27_UpdateEventAsync_WithPublishAndMissingDescription_ShouldReturnFailure()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -4310,9 +5120,9 @@ namespace AIEvent.Application.Test.Services
        }
 
 
-       // UTCID31: Publish validation - TotalTickets boundary value = 1
+       // UTCID28: Publish validation - TotalTickets boundary value = 1
        [Fact]
-       public async Task UTCID31_UpdateEventAsync_WithPublishAndTotalTicketsEqualOne_ShouldReturnSuccess()
+       public async Task UTCID28_UpdateEventAsync_WithPublishAndTotalTicketsEqualOne_ShouldReturnSuccess()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -4355,308 +5165,9 @@ namespace AIEvent.Application.Test.Services
            result.IsSuccess.Should().BeTrue();
        }
 
-       // UTCID32: Remove all images without adding new ones - Failure
+       // UTCID29: Update with add and remove images simultaneously - Success
        [Fact]
-       public async Task UTCID32_UpdateEventAsync_WithRemoveAllImagesAndNoNewOnes_ShouldThrowException()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var imageToRemove = "image1.jpg";
-
-           var updateRequest = new UpdateEventRequest
-           {
-               RemoveImageUrls = new List<string> { imageToRemove }
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               ImgListEvent = imageToRemove,
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
-               .Returns(Task.CompletedTask);
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           // Act & Assert
-           await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-               await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest));
-       }
-
-       // UTCID33: Remove all images but add new ones - Success
-       [Fact]
-       public async Task UTCID33_UpdateEventAsync_WithRemoveAllImagesAndAddNewOnes_ShouldReplaceImages()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var imageToRemove = "image1.jpg";
-
-           var updateRequest = new UpdateEventRequest
-           {
-               RemoveImageUrls = new List<string> { imageToRemove },
-               ImgListEvent = new List<string> { "new-image.jpg" }
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               ImgListEvent = imageToRemove,
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
-               .Returns(Task.CompletedTask);
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           _mockCloudinaryService.Verify(x => x.DeleteImageAsync(imageToRemove), Times.Once());
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
-       }
-
-       // UTCID34: Remove all evidence without adding new ones - Failure
-       [Fact]
-       public async Task UTCID34_UpdateEventAsync_WithRemoveAllEvidenceAndNoNewOnes_ShouldThrowException()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var evidenceToRemove = "evidence1.jpg";
-
-           var updateRequest = new UpdateEventRequest
-           {
-               RemoveImageEvidenceUrls = new List<string> { evidenceToRemove }
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               ImgListEvent = "image1.jpg",
-               ImgListEvidences = evidenceToRemove,
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
-               .Returns(Task.CompletedTask);
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           // Act & Assert
-           await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-               await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest));
-       }
-
-       // UTCID35: Remove all evidence but add new ones - Success
-       [Fact]
-       public async Task UTCID35_UpdateEventAsync_WithRemoveAllEvidenceAndAddNewOnes_ShouldReplaceEvidence()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var evidenceToRemove = "evidence1.jpg";
-
-           var updateRequest = new UpdateEventRequest
-           {
-               RemoveImageEvidenceUrls = new List<string> { evidenceToRemove },
-               ImgListEvidences = new List<string> { "new-evidence.jpg" }
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               ImgListEvent = "image1.jpg",
-               ImgListEvidences = evidenceToRemove,
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
-               .Returns(Task.CompletedTask);
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           _mockCloudinaryService.Verify(x => x.DeleteImageAsync(evidenceToRemove), Times.Once());
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
-       }
-
-       // UTCID36: Update with SoldQuantity preserved when mapped to zero - Success
-       [Fact]
-       public async Task UTCID36_UpdateEventAsync_WithSoldQuantityPreserved_ShouldKeepOriginalSoldQuantity()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var originalSoldQuantity = 50;
-
-           var updateRequest = new UpdateEventRequest
-           {
-               TotalTickets = 200, // This would normally reset SoldQuantity to 0
-               Title = "Updated Title"
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Original Title",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               SoldQuantity = originalSoldQuantity,
-               TotalTickets = 100,
-               ImgListEvent = "image1.jpg",
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var updatedEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Updated Title",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               SoldQuantity = 0, // This would be set by mapper
-               TotalTickets = 200,
-               ImgListEvent = "image1.jpg",
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           
-           // Mock mapper to return event with SoldQuantity = 0
-           _mockMapper.Setup(x => x.Map(updateRequest, It.IsAny<Event>()))
-               .Callback<UpdateEventRequest, Event>((request, evt) => 
-               {
-                   evt.SoldQuantity = 0; // Simulate mapper behavior
-                   evt.TotalTickets = request.TotalTickets ?? evt.TotalTickets;
-                   evt.Title = request.Title ?? evt.Title;
-               })
-               .Returns(updatedEvent);
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.Is<Event>(e => e.SoldQuantity == originalSoldQuantity)), Times.Once());
-       }
-
-       // UTCID37: Update with add and remove images simultaneously - Success
-       [Fact]
-       public async Task UTCID37_UpdateEventAsync_WithAddAndRemoveImagesSimultaneously_ShouldUpdateImages()
+       public async Task UTCID29_UpdateEventAsync_WithAddAndRemoveImagesSimultaneously_ShouldUpdateImages()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -4692,8 +5203,6 @@ namespace AIEvent.Application.Test.Services
            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
            _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
-               .Returns(Task.CompletedTask);
 
            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                .Returns<Func<Task<Result>>>(func => func());
@@ -4705,69 +5214,12 @@ namespace AIEvent.Application.Test.Services
 
            // Assert
            result.IsSuccess.Should().BeTrue();
-           _mockCloudinaryService.Verify(x => x.DeleteImageAsync("old-image.jpg"), Times.Once());
            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
        }
 
-       // UTCID38: Update with add and remove evidence simultaneously - Success
-       [Fact]
-       public async Task UTCID38_UpdateEventAsync_WithAddAndRemoveEvidenceSimultaneously_ShouldUpdateEvidence()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-
-           var updateRequest = new UpdateEventRequest
-           {
-               RemoveImageEvidenceUrls = new List<string> { "old-evidence.jpg" },
-               ImgListEvidences = new List<string> { "new-evidence.jpg" }
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               ImgListEvent = "image1.jpg",
-               ImgListEvidences = "old-evidence.jpg, keep-evidence.jpg",
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockCloudinaryService.Setup(x => x.DeleteImageAsync(It.IsAny<string>()))
-               .Returns(Task.CompletedTask);
-
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           _mockCloudinaryService.Verify(x => x.DeleteImageAsync("old-evidence.jpg"), Times.Once());
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
-       }
-
-       // UTCID39: Update without Publish - Success
-       [Fact]
-       public async Task UTCID39_UpdateEventAsync_WithoutPublish_ShouldReturnSuccess()
+        // UTCID30: Update without Publish - Success
+        [Fact]
+       public async Task UTCID30_UpdateEventAsync_WithoutPublish_ShouldReturnSuccess()
        {
            // Arrange
            var organizerId = Guid.NewGuid();
@@ -4815,221 +5267,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
        }
 
-       // UTCID40: AddTagIds with existing tag - Success (should not duplicate)
-       [Fact]
-       public async Task UTCID40_UpdateEventAsync_WithAddExistingTag_ShouldNotDuplicateTag()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var existingTagId = Guid.NewGuid();
-
-           var updateRequest = new UpdateEventRequest
-           {
-               AddTagIds = new List<Guid> { existingTagId }
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               ImgListEvent = "image1.jpg",
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = existingTagId } // Tag already exists
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           existingEvent.EventTags.Should().HaveCount(1); // Should not add duplicate
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
-       }
-
-
-       // UTCID42: RemoveImageUrls with URL not in existing images - Success
-       [Fact]
-       public async Task UTCID42_UpdateEventAsync_WithRemoveNonExistentImage_ShouldIgnoreRemoval()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-
-           var updateRequest = new UpdateEventRequest
-           {
-               RemoveImageUrls = new List<string> { "non-existent-image.jpg" }
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               ImgListEvent = "image1.jpg, image2.jpg", // Different images
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           _mockCloudinaryService.Verify(x => x.DeleteImageAsync(It.IsAny<string>()), Times.Never); // Should not delete non-existent image
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
-       }
-
-       // UTCID43: Add images that already exist - Success (should not duplicate)
-       [Fact]
-       public async Task UTCID43_UpdateEventAsync_WithAddExistingImages_ShouldNotDuplicate()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var existingImage = "image1.jpg";
-
-           var updateRequest = new UpdateEventRequest
-           {
-               ImgListEvent = new List<string> { existingImage, "new-image.jpg" }
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               ImgListEvent = existingImage, // Image already exists
-               TicketTypes = new List<TicketType>
-               {
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
-       }
-
-       // UTCID44: Remove ticket with no sold quantity - Success
-       [Fact]
-       public async Task UTCID44_UpdateEventAsync_WithRemoveTicketNoSoldQuantity_ShouldRemoveTicket()
-       {
-           // Arrange
-           var organizerId = Guid.NewGuid();
-           var eventId = Guid.NewGuid();
-           var ticketToRemoveId = Guid.NewGuid();
-
-           var updateRequest = new UpdateEventRequest
-           {
-               RemoveTicketTypeIds = new List<Guid> { ticketToRemoveId }
-           };
-
-           var ticketToRemove = new TicketType
-           {
-               Id = ticketToRemoveId,
-               TicketName = "Ticket to Remove",
-               TicketQuantity = 50,
-               SoldQuantity = 0 // No sold tickets
-           };
-
-           var existingEvent = new Event
-           {
-               Id = eventId,
-               OrganizerProfileId = organizerId,
-               Title = "Test Event",
-               Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               Publish = false,
-               IsDeleted = false,
-               ImgListEvent = "image1.jpg",
-               TicketTypes = new List<TicketType>
-               {
-                   ticketToRemove,
-                   new TicketType { Id = Guid.NewGuid(), TicketName = "Keep Ticket", TicketQuantity = 100 }
-               },
-               EventTags = new List<EventTag>
-               {
-                   new EventTag { EventId = eventId, TagId = Guid.NewGuid() }
-               }
-           };
-
-           var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
-           _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
-               .Returns(eventQueryable); // For checking sold quantity
-           _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
-           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
-               .Returns<Func<Task<Result>>>(func => func());
-           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
-
-           // Act
-           var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
-
-           // Assert
-           result.IsSuccess.Should().BeTrue();
-           existingEvent.TicketTypes.Should().HaveCount(1); // Should remove the ticket
-           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Once());
-       }
        #endregion
-
 
        #region DeleteEventAsync Tests
 
@@ -5368,16 +5606,7 @@ namespace AIEvent.Application.Test.Services
            var mockWalletQueryable = new List<Wallet> { organizerWallet }.AsQueryable().BuildMock();
            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(false)).Returns(mockWalletQueryable);
 
-           _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.AddRangeAsync(It.IsAny<IEnumerable<WalletTransaction>>()))
-               .Returns(Task.CompletedTask);
-
-           _mockUnitOfWork.Setup(x => x.WalletRepository.UpdateRangeAsync(It.IsAny<IEnumerable<Wallet>>()))
-               .Returns(Task.CompletedTask);
-
-           _mockUnitOfWork.Setup(x => x.BookingRepository.UpdateRangeAsync(It.IsAny<IEnumerable<Booking>>()))
-               .Returns(Task.CompletedTask);
-
-           _mockUnitOfWork.Setup(x => x.EventRepository.DeleteAsync(It.IsAny<Event>()))
+           _mockHangfireJobService.Setup(x => x.EnqueueCancelEventJobAsync(eventId, reasonCancel))
                .Returns(Task.CompletedTask);
 
            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
@@ -5390,22 +5619,8 @@ namespace AIEvent.Application.Test.Services
            result.Should().NotBeNull();
            result.IsSuccess.Should().BeTrue();
 
-           // Verify wallet balances updated
-           userWallet.Balance.Should().Be(600); // 500 + 100 refund
-           organizerWallet.Balance.Should().Be(900); // 1000 - 100 refund
-
-           // Verify booking status updated
-           existingEvent.Bookings.First().Status.Should().Be(BookingStatus.Cancelled);
-
-           // Verify reason cancel set
-           existingEvent.ReasonCancel.Should().Be(reasonCancel);
-
-           // Verify repository calls
-           _mockUnitOfWork.Verify(x => x.WalletTransactionRepository.AddRangeAsync(It.Is<IEnumerable<WalletTransaction>>(
-               wt => wt.Count() == 2)), Times.Once);
-           _mockUnitOfWork.Verify(x => x.WalletRepository.UpdateRangeAsync(It.IsAny<IEnumerable<Wallet>>()), Times.Once);
-           _mockUnitOfWork.Verify(x => x.BookingRepository.UpdateRangeAsync(It.IsAny<IEnumerable<Booking>>()), Times.Once);
-           _mockUnitOfWork.Verify(x => x.EventRepository.DeleteAsync(It.IsAny<Event>()), Times.Once);
+           // Verify job is enqueued
+           _mockHangfireJobService.Verify(x => x.EnqueueCancelEventJobAsync(eventId, reasonCancel), Times.Once);
        }
 
        [Fact]
@@ -5490,8 +5705,8 @@ namespace AIEvent.Application.Test.Services
            var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
 
-           var mockWalletQueryable = new List<Wallet> { organizerWallet }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.WalletRepository.Query(false)).Returns(mockWalletQueryable);
+           _mockHangfireJobService.Setup(x => x.EnqueueCancelEventJobAsync(eventId, reasonCancel))
+               .Returns(Task.CompletedTask);
 
            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                .Returns<Func<Task<Result>>>(async func => await func());
@@ -5501,9 +5716,8 @@ namespace AIEvent.Application.Test.Services
 
            // Assert
            result.Should().NotBeNull();
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Contain("Organizer wallet has insufficient balance to refund");
-           result.Error!.StatusCode.Should().Contain(ErrorCodes.InvalidInput);
+           result.IsSuccess.Should().BeTrue();
+           _mockHangfireJobService.Verify(x => x.EnqueueCancelEventJobAsync(eventId, reasonCancel), Times.Once);
        }
 
        [Fact]
@@ -5577,19 +5791,7 @@ namespace AIEvent.Application.Test.Services
                IsDeleted = false
            };
 
-           var mockWalletQueryable = new List<Wallet> { organizerWallet }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.WalletRepository.Query(false)).Returns(mockWalletQueryable);
-
-           _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.AddRangeAsync(It.IsAny<IEnumerable<WalletTransaction>>()))
-               .Returns(Task.CompletedTask);
-
-           _mockUnitOfWork.Setup(x => x.WalletRepository.UpdateRangeAsync(It.IsAny<IEnumerable<Wallet>>()))
-               .Returns(Task.CompletedTask);
-
-           _mockUnitOfWork.Setup(x => x.BookingRepository.UpdateRangeAsync(It.IsAny<IEnumerable<Booking>>()))
-               .Returns(Task.CompletedTask);
-
-           _mockUnitOfWork.Setup(x => x.EventRepository.DeleteAsync(It.IsAny<Event>()))
+           _mockHangfireJobService.Setup(x => x.EnqueueCancelEventJobAsync(eventId, reasonCancel))
                .Returns(Task.CompletedTask);
 
            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
@@ -5601,17 +5803,7 @@ namespace AIEvent.Application.Test.Services
            // Assert
            result.Should().NotBeNull();
            result.IsSuccess.Should().BeTrue();
-
-           // Verify booking cancelled
-           existingEvent.Bookings.First().Status.Should().Be(BookingStatus.Cancelled);
-
-           // Verify wallet transactions called with empty list for free bookings
-           _mockUnitOfWork.Verify(x => x.WalletTransactionRepository.AddRangeAsync(It.Is<IEnumerable<WalletTransaction>>(
-               wt => wt.Count() == 0)), Times.Once);
-
-           // Verify booking updated
-           _mockUnitOfWork.Verify(x => x.BookingRepository.UpdateRangeAsync(It.IsAny<IEnumerable<Booking>>()), Times.Once);
-           _mockUnitOfWork.Verify(x => x.EventRepository.DeleteAsync(It.IsAny<Event>()), Times.Once);
+           _mockHangfireJobService.Verify(x => x.EnqueueCancelEventJobAsync(eventId, reasonCancel), Times.Once);
        }
 
        [Fact]
@@ -5684,9 +5876,8 @@ namespace AIEvent.Application.Test.Services
            var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
 
-           // No organizer wallet found
-           var mockWalletQueryable = new List<Wallet>().AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.WalletRepository.Query(false)).Returns(mockWalletQueryable);
+           _mockHangfireJobService.Setup(x => x.EnqueueCancelEventJobAsync(eventId, reasonCancel))
+               .Returns(Task.CompletedTask);
 
            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                .Returns<Func<Task<Result>>>(async func => await func());
@@ -5696,9 +5887,8 @@ namespace AIEvent.Application.Test.Services
 
            // Assert
            result.Should().NotBeNull();
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Contain("Organizer wallet not found");
-           result.Error!.StatusCode.Should().Contain(ErrorCodes.NotFound);
+           result.IsSuccess.Should().BeTrue();
+           _mockHangfireJobService.Verify(x => x.EnqueueCancelEventJobAsync(eventId, reasonCancel), Times.Once);
        }
 
        [Fact]
@@ -5773,8 +5963,8 @@ namespace AIEvent.Application.Test.Services
                IsDeleted = false
            };
 
-           var mockWalletQueryable = new List<Wallet> { organizerWallet }.AsQueryable().BuildMock();
-           _mockUnitOfWork.Setup(x => x.WalletRepository.Query(false)).Returns(mockWalletQueryable);
+           _mockHangfireJobService.Setup(x => x.EnqueueCancelEventJobAsync(eventId, reasonCancel))
+               .Returns(Task.CompletedTask);
 
            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                .Returns<Func<Task<Result>>>(async func => await func());
@@ -5784,9 +5974,8 @@ namespace AIEvent.Application.Test.Services
 
            // Assert
            result.Should().NotBeNull();
-           result.IsSuccess.Should().BeFalse();
-           result.Error!.Message.Should().Contain("Wallet not found for user Test User");
-           result.Error!.StatusCode.Should().Contain(ErrorCodes.NotFound);
+           result.IsSuccess.Should().BeTrue();
+           _mockHangfireJobService.Verify(x => x.EnqueueCancelEventJobAsync(eventId, reasonCancel), Times.Once);
        }
 
        [Fact]
@@ -5957,9 +6146,9 @@ namespace AIEvent.Application.Test.Services
            result.Error!.StatusCode.Should().Contain(ErrorCodes.InvalidInput);
        }
 
-       // UTCID17: DeleteEventAsync with Publish=true and no bookings - Should succeed
+       // UTCID15: DeleteEventAsync with Publish=true and no bookings - Should succeed
        [Fact]
-       public async Task UTCID17_DeleteEventAsync_WithPublishedEventAndNoBookings_ShouldSucceed()
+       public async Task UTCID15_DeleteEventAsync_WithPublishedEventAndNoBookings_ShouldSucceed()
        {
            // Arrange
            var eventId = Guid.NewGuid();
@@ -6039,7 +6228,7 @@ namespace AIEvent.Application.Test.Services
                EventCategoryId = categoryId,
                EventCategory = eventCategory,
                 District = "Quận 1",
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -6062,7 +6251,7 @@ namespace AIEvent.Application.Test.Services
                EventCategoryId = categoryId,
                EventCategory = eventCategory,
                District = "Quận 7",
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Paid,
@@ -6112,7 +6301,7 @@ namespace AIEvent.Application.Test.Services
                EndTime = futureDate.AddHours(2),
                EventCategoryId = Guid.NewGuid(),
                District = "Quận 1",
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -6137,7 +6326,7 @@ namespace AIEvent.Application.Test.Services
                EndTime = futureDate.AddDays(1).AddHours(2),
                EventCategoryId = Guid.NewGuid(),
                 District = "Quận 7",
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Paid,
@@ -6188,7 +6377,7 @@ namespace AIEvent.Application.Test.Services
                EndTime = futureDate.AddHours(2),
                EventCategoryId = Guid.NewGuid(),
                District = "Quận 1",
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -6210,7 +6399,7 @@ namespace AIEvent.Application.Test.Services
                EndTime = futureDate.AddDays(1).AddHours(2),
                EventCategoryId = Guid.NewGuid(),
                District = "Quận 1", // Same District
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Paid,
@@ -6258,7 +6447,7 @@ namespace AIEvent.Application.Test.Services
                EndTime = futureDate.AddHours(2),
                EventCategoryId = Guid.NewGuid(),
                 District = "Quận 1",
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -6280,7 +6469,7 @@ namespace AIEvent.Application.Test.Services
                EndTime = futureDate.AddDays(1).AddHours(2),
                EventCategoryId = Guid.NewGuid(), // Different category
                 District = "Quận 7", // Different District
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Paid,
@@ -6322,7 +6511,7 @@ namespace AIEvent.Application.Test.Services
                StartTime = futureDate,
                EndTime = futureDate.AddHours(2),
                EventCategoryId = Guid.NewGuid(),
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -6343,7 +6532,7 @@ namespace AIEvent.Application.Test.Services
                StartTime = futureDate.AddDays(1),
                EndTime = futureDate.AddDays(1).AddHours(2),
                EventCategoryId = Guid.NewGuid(),
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Paid,
@@ -6386,7 +6575,7 @@ namespace AIEvent.Application.Test.Services
                StartTime = futureDate,
                EndTime = futureDate.AddHours(2),
                EventCategoryId = Guid.NewGuid(),
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -6406,7 +6595,7 @@ namespace AIEvent.Application.Test.Services
                StartTime = pastDate, // Past event
                EndTime = pastDate.AddHours(2),
                EventCategoryId = Guid.NewGuid(),
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -6447,7 +6636,7 @@ namespace AIEvent.Application.Test.Services
                StartTime = futureDate,
                EndTime = futureDate.AddHours(2),
                EventCategoryId = Guid.NewGuid(),
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -6467,7 +6656,7 @@ namespace AIEvent.Application.Test.Services
                StartTime = futureDate.AddDays(1),
                EndTime = futureDate.AddDays(1).AddHours(2),
                EventCategoryId = Guid.NewGuid(),
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                DeletedAt = DateTime.Now, // Deleted
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -6508,7 +6697,7 @@ namespace AIEvent.Application.Test.Services
                StartTime = futureDate,
                EndTime = futureDate.AddHours(2),
                EventCategoryId = Guid.NewGuid(),
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -6528,7 +6717,7 @@ namespace AIEvent.Application.Test.Services
                StartTime = futureDate.AddDays(1),
                EndTime = futureDate.AddDays(1).AddHours(2),
                EventCategoryId = Guid.NewGuid(),
-               RequireApproval = ConfirmStatus.NeedConfirm, // Not approved
+               Status = EventStatus.PendingApproval, // Not approved
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -6594,7 +6783,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = OrganizerProfileStatus.Approved
            };
 
            var draftEvent1 = new Event
@@ -6723,7 +6912,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = OrganizerProfileStatus.Approved
            };
 
            var draftEvent = new Event
@@ -6803,7 +6992,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = OrganizerProfileStatus.Approved
            };
 
            var draftEvent = new Event
@@ -6884,7 +7073,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = OrganizerProfileStatus.Approved
            };
 
            var organizerProfile2 = new OrganizerProfile
@@ -6901,7 +7090,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = OrganizerProfileStatus.Approved
            };
 
            var draftEventOrganizer1 = new Event
@@ -6965,7 +7154,7 @@ namespace AIEvent.Application.Test.Services
        #region GetAllEventStatusAsync Tests
 
        [Fact]
-       public async Task UTCID01_GetAllEventStatusAsync_WithDefaultNeedConfirmStatus_ShouldReturnNeedConfirmEvents()
+       public async Task UTCID01_GetAllEventStatusAsync_WithDefaultPendingApprovalStatus_ShouldReturnPendingApprovalEvents()
        {
            // Arrange
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
@@ -6985,7 +7174,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = OrganizerProfileStatus.Approved
            };
 
            var organizerProfile2 = new OrganizerProfile
@@ -7002,10 +7191,10 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = OrganizerProfileStatus.Approved
            };
 
-           var needConfirmEvent = new Event
+           var PendingApprovalEvent = new Event
            {
                Id = Guid.NewGuid(),
                Title = "Need Confirm Event",
@@ -7018,7 +7207,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile1,
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.NeedConfirm,
+               Status = EventStatus.PendingApproval,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -7040,7 +7229,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile2,
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve, // Should be excluded
+               Status = EventStatus.Approved, // Should be excluded
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -7049,12 +7238,12 @@ namespace AIEvent.Application.Test.Services
                TicketTypes = null!
            };
 
-           var events = new List<Event> { needConfirmEvent, approvedEvent }.AsQueryable().BuildMock();
+           var events = new List<Event> { PendingApprovalEvent, approvedEvent }.AsQueryable().BuildMock();
 
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmStatus.NeedConfirm, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.PendingApproval, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -7084,7 +7273,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = OrganizerProfileStatus.Approved
            };
 
            var organizerProfile2 = new OrganizerProfile
@@ -7101,7 +7290,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = OrganizerProfileStatus.Approved
            };
 
            var approvedEvent = new Event
@@ -7117,7 +7306,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile1,
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -7126,7 +7315,7 @@ namespace AIEvent.Application.Test.Services
                TicketTypes = null!
            };
 
-           var needConfirmEvent = new Event
+           var PendingApprovalEvent = new Event
            {
                Id = Guid.NewGuid(),
                Title = "Need Confirm Event",
@@ -7139,7 +7328,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile2,
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.NeedConfirm, // Should be excluded
+               Status = EventStatus.PendingApproval, // Should be excluded
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -7148,12 +7337,12 @@ namespace AIEvent.Application.Test.Services
                TicketTypes = null!
            };
 
-           var events = new List<Event> { approvedEvent, needConfirmEvent }.AsQueryable().BuildMock();
+           var events = new List<Event> { approvedEvent, PendingApprovalEvent }.AsQueryable().BuildMock();
 
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.Approved, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -7183,7 +7372,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = OrganizerProfileStatus.Approved
            };
 
            var organizerProfile2 = new OrganizerProfile
@@ -7200,7 +7389,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = OrganizerProfileStatus.Approved
            };
 
            var rejectedEvent = new Event
@@ -7216,7 +7405,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile1,
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Reject,
+               Status = EventStatus.Rejected,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -7238,7 +7427,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile2,
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve, // Should be excluded
+               Status = EventStatus.Approved, // Should be excluded
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -7252,7 +7441,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmStatus.Reject, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.Rejected, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -7283,7 +7472,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = OrganizerProfileStatus.Approved
            };
 
            var organizerProfile2 = new OrganizerProfile
@@ -7300,7 +7489,7 @@ namespace AIEvent.Application.Test.Services
                EventSize = EventSize.Medium,
                OrganizerType = OrganizerType.Individual,
                EventExperienceLevel = EventExperienceLevel.Intermediate,
-               Status = ConfirmStatus.Approve
+               Status = OrganizerProfileStatus.Approved
            };
 
            var organizerEvent = new Event
@@ -7316,7 +7505,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile1,
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -7338,7 +7527,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile2,
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -7352,7 +7541,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(organizerId, null, ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(organizerId, null, EventStatus.Approved, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -7379,7 +7568,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -7399,7 +7588,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -7412,7 +7601,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.Approved, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -7438,7 +7627,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -7458,7 +7647,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -7471,7 +7660,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "rock", ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "rock", EventStatus.Approved, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -7499,7 +7688,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -7520,7 +7709,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -7533,7 +7722,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "minh", ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "minh", EventStatus.Approved, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -7560,7 +7749,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -7580,7 +7769,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -7593,7 +7782,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "music", ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "music", EventStatus.Approved, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -7620,7 +7809,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -7640,7 +7829,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -7653,7 +7842,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "", ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "", EventStatus.Approved, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -7679,7 +7868,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -7699,7 +7888,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = false, // Unpublished - should be excluded
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -7712,7 +7901,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.Approved, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -7739,7 +7928,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -7759,7 +7948,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = true, // Deleted - should be excluded
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -7772,7 +7961,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.Approved, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -7800,7 +7989,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -7820,7 +8009,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(), // Different organizer
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -7840,7 +8029,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve, // Same organizer but different title
+               Status = EventStatus.Approved, // Same organizer but different title
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 75,
                SoldQuantity = 0,
@@ -7853,7 +8042,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(organizerId, "rock", ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(organizerId, "rock", EventStatus.Approved, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -7880,7 +8069,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -7900,7 +8089,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Reject,
+               Status = EventStatus.Rejected,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -7908,7 +8097,7 @@ namespace AIEvent.Application.Test.Services
                CreatedAt = DateTime.Now.AddDays(-1)
            };
 
-           var needConfirmEvent = new Event
+           var PendingApprovalEvent = new Event
            {
                Id = Guid.NewGuid(),
                Title = "Need Confirm Event",
@@ -7920,7 +8109,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.NeedConfirm,
+               Status = EventStatus.PendingApproval,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 75,
                SoldQuantity = 0,
@@ -7928,7 +8117,7 @@ namespace AIEvent.Application.Test.Services
                CreatedAt = DateTime.Now.AddDays(-2)
            };
 
-           var events = new List<Event> { approvedEvent, rejectedEvent, needConfirmEvent }.AsQueryable().BuildMock();
+           var events = new List<Event> { approvedEvent, rejectedEvent, PendingApprovalEvent }.AsQueryable().BuildMock();
 
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
@@ -7964,7 +8153,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
@@ -7984,7 +8173,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
-               RequireApproval = ConfirmStatus.Approve,
+               Status = EventStatus.Approved,
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
@@ -7997,7 +8186,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(null, null, ConfirmStatus.Approve, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(null, null, EventStatus.Approved, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -8008,7 +8197,7 @@ namespace AIEvent.Application.Test.Services
        #endregion
 
        #region ConfirmEventAsync
-       private static Event CreateEventNeedConfirm(Guid id)
+       private static Event CreateEventPendingApproval(Guid id)
        {
            return new Event
            {
@@ -8022,15 +8211,15 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 10,
                RemainingTickets = 10,
                TicketPricingType = TicketPricingType.Free,
-               RequireApproval = ConfirmStatus.NeedConfirm,
+               Status = EventStatus.PendingApproval,
                IsDeleted = false
            };
        }
 
-       private static Event CreateEventProcessed(Guid id, ConfirmStatus? status)
+       private static Event CreateEventProcessed(Guid id, EventStatus? status)
        {
-           var e = CreateEventNeedConfirm(id);
-           e.RequireApproval = status; // Approve/Reject/null represent already processed partition
+           var e = CreateEventPendingApproval(id);
+           e.Status = status;
            return e;
        }
 
@@ -8038,7 +8227,7 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID01_ConfirmEventAsync_WithEmptyUserId_ShouldReturnInvalidInput()
        {
            // Act
-           var result = await _eventService.ConfirmEventAsync(Guid.Empty, Guid.NewGuid(), new ConfirmRequest { Status = ConfirmStatus.Approve });
+           var result = await _eventService.ConfirmEventAsync(Guid.Empty, Guid.NewGuid(), new ConfirmEventRequest { Status = ConfirmStatus.Approved });
 
            // Assert
            result.IsSuccess.Should().BeFalse();
@@ -8050,7 +8239,7 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID02_ConfirmEventAsync_WithEmptyEventId_ShouldReturnInvalidInput()
        {
            // Act
-           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), Guid.Empty, new ConfirmRequest { Status = ConfirmStatus.Approve });
+           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), Guid.Empty, new ConfirmEventRequest { Status = ConfirmStatus.Approved });
 
            // Assert
            result.IsSuccess.Should().BeFalse();
@@ -8078,7 +8267,7 @@ namespace AIEvent.Application.Test.Services
                .Returns(new List<Event>().AsQueryable().BuildMock());
 
            // Act
-           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), Guid.NewGuid(), new ConfirmRequest { Status = ConfirmStatus.Approve });
+           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), Guid.NewGuid(), new ConfirmEventRequest { Status = ConfirmStatus.Approved });
 
            // Assert
            result.IsSuccess.Should().BeFalse();
@@ -8089,13 +8278,13 @@ namespace AIEvent.Application.Test.Services
        [Fact]
        public async Task UTCID05_ConfirmEventAsync_AlreadyProcessed_ShouldReturnInvalidInput()
        {
-           // Arrange: RequireApproval != NeedConfirm (Approve here)
-           var evt = CreateEventProcessed(Guid.NewGuid(), ConfirmStatus.Approve);
+           // Arrange: Status != PendingApproval (Approve here)
+           var evt = CreateEventProcessed(Guid.NewGuid(), EventStatus.Approved);
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
                .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
 
            // Act
-           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmRequest { Status = ConfirmStatus.Approve });
+           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmEventRequest { Status = ConfirmStatus.Approved });
 
            // Assert
            result.IsSuccess.Should().BeFalse();
@@ -8106,13 +8295,13 @@ namespace AIEvent.Application.Test.Services
        [Fact]
        public async Task UTCID06_ConfirmEventAsync_RejectWithoutReason_ShouldReturnInvalidInput()
        {
-           // Arrange: entity in NeedConfirm
-           var evt = CreateEventNeedConfirm(Guid.NewGuid());
+           // Arrange: entity in PendingApproval
+           var evt = CreateEventPendingApproval(Guid.NewGuid());
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
                .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
 
            // Act
-           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmRequest { Status = ConfirmStatus.Reject, Reason = "   " });
+           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmEventRequest { Status = ConfirmStatus.Rejected, Reason = "   " });
 
            // Assert
            result.IsSuccess.Should().BeFalse();
@@ -8124,7 +8313,7 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID07_ConfirmEventAsync_RejectWithReason_ShouldUpdateAndReturnSuccess()
        {
            // Arrange
-           var evt = CreateEventNeedConfirm(Guid.NewGuid());
+           var evt = CreateEventPendingApproval(Guid.NewGuid());
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
                .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
            _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()))
@@ -8132,7 +8321,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 
            var userId = Guid.NewGuid();
-           var request = new ConfirmRequest { Status = ConfirmStatus.Reject, Reason = " invalid info  " };
+           var request = new ConfirmEventRequest { Status = ConfirmStatus.Rejected, Reason = " invalid info  " };
 
            // Act
            var result = await _eventService.ConfirmEventAsync(userId, evt.Id, request);
@@ -8141,7 +8330,7 @@ namespace AIEvent.Application.Test.Services
            result.IsSuccess.Should().BeTrue();
            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.Is<Event>(e =>
                e.Id == evt.Id &&
-               e.RequireApproval == ConfirmStatus.Reject &&
+               e.Status == EventStatus.Rejected &&
                e.ReasonReject == "invalid info" &&
                e.RequireApprovalBy == userId &&
                e.RequireApprovalAt.HasValue
@@ -8153,7 +8342,7 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID08_ConfirmEventAsync_Approve_ShouldUpdateAndReturnSuccess()
        {
            // Arrange
-           var evt = CreateEventNeedConfirm(Guid.NewGuid());
+           var evt = CreateEventPendingApproval(Guid.NewGuid());
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
                .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
            _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()))
@@ -8161,7 +8350,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
 
            var userId = Guid.NewGuid();
-           var request = new ConfirmRequest { Status = ConfirmStatus.Approve };
+           var request = new ConfirmEventRequest { Status = ConfirmStatus.Approved };
 
            // Act
            var result = await _eventService.ConfirmEventAsync(userId, evt.Id, request);
@@ -8170,7 +8359,7 @@ namespace AIEvent.Application.Test.Services
            result.IsSuccess.Should().BeTrue();
            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.Is<Event>(e =>
                e.Id == evt.Id &&
-               e.RequireApproval == ConfirmStatus.Approve &&
+               e.Status == EventStatus.Approved &&
                e.RequireApprovalBy == userId &&
                e.RequireApprovalAt.HasValue
            )), Times.Once());
@@ -8181,13 +8370,13 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID09_ConfirmEventAsync_DeletedEvent_ShouldReturnNotFound()
        {
            // Arrange
-           var evt = CreateEventNeedConfirm(Guid.NewGuid());
+           var evt = CreateEventPendingApproval(Guid.NewGuid());
            evt.IsDeleted = true;
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
                .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
 
            // Act
-           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmRequest { Status = ConfirmStatus.Approve });
+           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmEventRequest { Status = ConfirmStatus.Approved });
 
            // Assert
            result.IsSuccess.Should().BeFalse();
@@ -8201,12 +8390,12 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID10_ConfirmEventAsync_AlreadyProcessedReject_ShouldReturnInvalidInput()
        {
            // Arrange
-           var evt = CreateEventProcessed(Guid.NewGuid(), ConfirmStatus.Reject);
+           var evt = CreateEventProcessed(Guid.NewGuid(), EventStatus.Rejected);
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
                .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
 
            // Act
-           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmRequest { Status = ConfirmStatus.Approve });
+           var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmEventRequest { Status = ConfirmStatus.Approved });
 
            // Assert
            result.IsSuccess.Should().BeFalse();

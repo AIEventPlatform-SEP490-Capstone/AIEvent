@@ -1,4 +1,5 @@
 ﻿using AIEvent.Domain.Base;
+using System.Collections.ObjectModel;
 
 namespace AIEvent.Domain.Entities
 {
@@ -13,5 +14,7 @@ namespace AIEvent.Domain.Entities
         public string? BankLogo { get; set; }
         public string? BranchName { get; set; }
         public User User { get; set; } = default!;
+        public virtual ICollection<EndEventRequest> EndEventRequests { get; set; } = new Collection<EndEventRequest>();
+
     }
 }

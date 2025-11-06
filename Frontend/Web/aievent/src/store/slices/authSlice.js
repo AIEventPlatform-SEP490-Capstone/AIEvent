@@ -167,6 +167,20 @@ export const changePassword = createAsyncThunk(
   }
 );
 
+export const resendOtp = createAsyncThunk(
+  "auth/resendOtp",
+  async (email, { rejectWithValue }) => {
+    try {
+      const response = await authAPI.resendOtp(email);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response ? error.response.data : { message: error.message }
+      );
+    }
+  }
+);
+
 export const logout = createAsyncThunk(
   "auth/logout",
   async (_, { rejectWithValue }) => {
@@ -311,6 +325,20 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = payload;
         state.isAuthenticated = false;
+      })
+
+      // resendOtp
+      .addCase(resendOtp.pending, (state) => {
+        state.verifyingOtp = true;
+        state.verifyOtpError = null;
+      })
+      .addCase(resendOtp.fulfilled, (state) => {
+        state.verifyingOtp = false;
+        state.verifyOtpError = null;
+      })
+      .addCase(resendOtp.rejected, (state, { payload }) => {
+        state.verifyingOtp = false;
+        state.verifyOtpError = payload || { message: "Resend OTP failed" };
       })
 
       // logout

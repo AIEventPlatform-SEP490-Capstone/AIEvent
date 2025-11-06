@@ -4,6 +4,7 @@ using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Organizer;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
+using AIEvent.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,9 +24,9 @@ namespace AIEvent.API.Controllers
         [Authorize(Roles = "Admin, Manager")]
         public async Task<ActionResult<SuccessResponse<BasePaginated<OrganizerResponse>>>> GetOrganizer([FromQuery] int pageNumber = 1, 
                                                                                                         [FromQuery] int pageSize = 10, 
-                                                                                                        [FromQuery] bool? needApprove = false)
+                                                                                                        [FromQuery] OrganizerProfileStatus? status = null)
         {
-            var result = await _organizerService.GetOrganizerAsync(pageNumber, pageSize, false);
+            var result = await _organizerService.GetOrganizerAsync(pageNumber, pageSize, status);
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
@@ -72,7 +73,7 @@ namespace AIEvent.API.Controllers
 
         [HttpPatch("confirm/{id}")]
         [Authorize(Roles = "Admin,Manager")]
-        public async Task<ActionResult<SuccessResponse<object>>> ConfirmBecomeOrganizer(Guid id, [FromBody] ConfirmRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> ConfirmBecomeOrganizer(Guid id, [FromBody] ConfirmOrganizerRequest request)
         {
             var userId = User.GetRequiredUserId();
             var result = await _organizerService.ConfirmBecomeOrganizerAsync(userId, id, request);
@@ -83,7 +84,7 @@ namespace AIEvent.API.Controllers
 
             return Ok(SuccessResponse<object>.SuccessResult(
                 new { },
-                SuccessCodes.Updated,
+                SuccessCodes.Success,
                 "Confirm become Organizer successfully"));
         }
 

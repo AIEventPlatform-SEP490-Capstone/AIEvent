@@ -1,6 +1,7 @@
 using AIEvent.Domain.Entities;
 using AIEvent.Infrastructure.Context;
 using AIEvent.Infrastructure.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace AIEvent.Infrastructure.Repositories.Implements
@@ -29,7 +30,10 @@ namespace AIEvent.Infrastructure.Repositories.Implements
         public IGenericRepository<PaymentTransaction> PaymentTransactionRepository => GetRepository<PaymentTransaction>();
         public IGenericRepository<WithdrawRequest> WithdrawRequestRepository => GetRepository<WithdrawRequest>();
         public IGenericRepository<PaymentInformation> PaymentInformationRepository => GetRepository<PaymentInformation>();
-        public IGenericRepository<EndEventRequest> EndRequestRepository => GetRepository<EndEventRequest>();
+        public IGenericRepository<EndEventRequest> EndEventRequestRepository => GetRepository<EndEventRequest>();
+        public IGenericRepository<RevenueReport> RevenueReportRepository => GetRepository<RevenueReport>();
+        public IGenericRepository<Rating> RatingRepository => GetRepository<Rating>();
+
         public void EnableSoftDelete() => _context.EnableSoftDelete = true;
         public void DisableSoftDelete() => _context.EnableSoftDelete = false;
 
@@ -77,6 +81,11 @@ namespace AIEvent.Infrastructure.Repositories.Implements
                 await _transaction.DisposeAsync();
                 _transaction = null;
             }
+        }
+
+        public async Task<int> ExecuteSqlRawAsync(string sql, params object[] parameters)
+        {
+            return await _context.Database.ExecuteSqlRawAsync(sql, parameters);
         }
 
         public void Dispose()

@@ -2,28 +2,30 @@ import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./slices/authSlice";
 import categoriesReducer from "./slices/categoriesSlice";
 import tagsReducer from "./slices/tagsSlice";
-import refundRulesReducer from "./slices/refundRulesSlice";
 import appReducer from "./slices/appSlice";
 import interestsReducer from "./slices/interestsSlice";
 import eventsReducer from "./slices/eventsSlice";
 import userProfileReducer from "./slices/userProfileSlice";
 import walletReducer from "./slices/walletSlice";
 import bookingReducer from "./slices/bookingSlice";
+import organizersReducer from "./slices/organizersSlice";
 import userManagementReducer from "./slices/userManagementSlice";
+import favoriteEventsReducer from "./slices/favoriteEventsSlice";
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     categories: categoriesReducer,
     tags: tagsReducer,
-    refundRules: refundRulesReducer,
     app: appReducer,
     interests: interestsReducer,
     events: eventsReducer,
     userProfile: userProfileReducer,
     wallet: walletReducer,
     booking: bookingReducer,
+    organizers: organizersReducer,
     userManagement: userManagementReducer,
+    favoriteEvents: favoriteEventsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
