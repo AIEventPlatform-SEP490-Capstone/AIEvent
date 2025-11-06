@@ -148,8 +148,8 @@ namespace AIEvent.Infrastructure.Context
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(e => e.Event)
-                    .WithMany(o => o.EndEventRequest)
-                    .HasForeignKey(e => e.EventId)
+                    .WithMany(o => o.EndEventRequests)
+                    .HasForeignKey(o => o.EventId)
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(e => e.PaymentInformation)

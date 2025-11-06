@@ -991,7 +991,7 @@ namespace AIEvent.Application.Services.Implements
                 RevenueReportRequest reportR = new RevenueReportRequest()
                 {
                     EventName = endEventRequest.Event.Title,
-                    EventId = endEventRequest.Event.Id,
+                    EventId = endEventRequest.EventId,
                     OrganizerProfileId = endEventRequest.OrganizerProfileId,
                     PaymentInforId = endEventRequest.PaymentInformationId,
                     TotalAmount = endEventRequest.Event.TotalAmount,

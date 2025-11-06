@@ -1557,7 +1557,7 @@ namespace AIEvent.Application.Test.Services
             // Arrange
             var userId = Guid.NewGuid();
             var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = Guid.NewGuid(), OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" }; // different user
-            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.PendingApprovalEnd };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.Approved };
             var request = new CompleteEventRequest
             {
                 EventId = ev.Id,
@@ -1583,7 +1583,7 @@ namespace AIEvent.Application.Test.Services
             // Arrange
             var userId = Guid.NewGuid();
             var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
-            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow, OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddHours(1), Publish = true, Status = EventStatus.PendingApprovalEnd };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow, OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddHours(1), Publish = true, Status = EventStatus.Approved };
             var request = new CompleteEventRequest
             {
                 EventId = ev.Id,
@@ -1609,19 +1609,23 @@ namespace AIEvent.Application.Test.Services
             // Arrange
             var userId = Guid.NewGuid();
             var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
-            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.PendingApprovalEnd };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.Approved };
             var pending = new EndEventRequest { Id = Guid.NewGuid(), EventId = ev.Id, Status = EndEventStatus.PendingApprovalEnd, IsLatest = true, IsDeleted = false };
+            var paymentInfoId = Guid.NewGuid();
             var request = new CompleteEventRequest
             {
                 EventId = ev.Id,
-                PaymentInformationId = Guid.NewGuid(),
+                PaymentInformationId = paymentInfoId,
                 EvidenceImages = new List<string> { "img1" }
             };
+            var paymentInfo = new PaymentInformation { Id = paymentInfoId, UserId = userId, IsDeleted = false, AccountHolderName = "Test", AccountNumber = "123456", BankName = "Test Bank", BankBin = "123456" };
 
             _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
             _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<EndEventRequest> { pending }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMockDbSet().Object);
 
             // Act
             var result = await _eventService.RequestEndEventAsync(userId, request);
@@ -1638,14 +1642,16 @@ namespace AIEvent.Application.Test.Services
             // Arrange
             var userId = Guid.NewGuid();
             var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
-            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-5), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.PendingApprovalEnd };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-5), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.Approved };
+            var paymentInfoId = Guid.NewGuid();
             var request = new CompleteEventRequest
             {
                 EventId = ev.Id,
-                PaymentInformationId = Guid.NewGuid(),
+                PaymentInformationId = paymentInfoId,
                 EvidenceImages = new List<string> { "img1" },
                 Summary = "summary"
             };
+            var paymentInfo = new PaymentInformation { Id = paymentInfoId, UserId = userId, IsDeleted = false, AccountHolderName = "Test", AccountNumber = "123456", BankName = "Test Bank", BankBin = "123456" };
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(func => func());
@@ -1654,8 +1660,6 @@ namespace AIEvent.Application.Test.Services
                 .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
             _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<EndEventRequest>().AsQueryable().BuildMockDbSet().Object);
-
-            var paymentInfo = new PaymentInformation { Id = request.PaymentInformationId, UserId = userId, IsDeleted = false, AccountHolderName = "Test", AccountNumber = "123456", BankName = "Test Bank", BankBin = "123456" };
             _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMockDbSet().Object);
 
@@ -1680,10 +1684,12 @@ namespace AIEvent.Application.Test.Services
             // Arrange
             var userId = Guid.NewGuid();
             var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
-            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.PendingApprovalEnd };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.Approved };
             var old1 = new EndEventRequest { Id = Guid.NewGuid(), EventId = ev.Id, IsLatest = true, IsDeleted = false, Status = EndEventStatus.Approved };
             var old2 = new EndEventRequest { Id = Guid.NewGuid(), EventId = ev.Id, IsLatest = true, IsDeleted = false, Status = EndEventStatus.Rejected };
-            var request = new CompleteEventRequest { EventId = ev.Id, PaymentInformationId = Guid.NewGuid(), EvidenceImages = new List<string> { "img1" } };
+            var paymentInfoId = Guid.NewGuid();
+            var request = new CompleteEventRequest { EventId = ev.Id, PaymentInformationId = paymentInfoId, EvidenceImages = new List<string> { "img1" } };
+            var paymentInfo = new PaymentInformation { Id = paymentInfoId, UserId = userId, IsDeleted = false, AccountHolderName = "Test", AccountNumber = "123456", BankName = "Test Bank", BankBin = "123456" };
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(func => func());
@@ -1692,8 +1698,6 @@ namespace AIEvent.Application.Test.Services
                 .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
             _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<EndEventRequest> { old1, old2 }.AsQueryable().BuildMockDbSet().Object);
-
-            var paymentInfo = new PaymentInformation { Id = request.PaymentInformationId, UserId = userId, IsDeleted = false, AccountHolderName = "Test", AccountNumber = "123456", BankName = "Test Bank", BankBin = "123456" };
             _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMockDbSet().Object);
 
@@ -1717,8 +1721,10 @@ namespace AIEvent.Application.Test.Services
             // Arrange
             var userId = Guid.NewGuid();
             var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
-            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-2), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow, Publish = true, Status = EventStatus.PendingApprovalEnd };
-            var request = new CompleteEventRequest { EventId = ev.Id, PaymentInformationId = Guid.NewGuid(), EvidenceImages = new List<string> { "img1" } };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-2), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddSeconds(-1), Publish = true, Status = EventStatus.Approved };
+            var paymentInfoId = Guid.NewGuid();
+            var request = new CompleteEventRequest { EventId = ev.Id, PaymentInformationId = paymentInfoId, EvidenceImages = new List<string> { "img1" } };
+            var paymentInfo = new PaymentInformation { Id = paymentInfoId, UserId = userId, IsDeleted = false, AccountHolderName = "Test", AccountNumber = "123456", BankName = "Test Bank", BankBin = "123456" };
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(func => func());
@@ -1727,8 +1733,6 @@ namespace AIEvent.Application.Test.Services
                 .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
             _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<EndEventRequest>().AsQueryable().BuildMockDbSet().Object);
-
-            var paymentInfo = new PaymentInformation { Id = request.PaymentInformationId, UserId = userId, IsDeleted = false, AccountHolderName = "Test", AccountNumber = "123456", BankName = "Test Bank", BankBin = "123456" };
             _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMockDbSet().Object);
 
