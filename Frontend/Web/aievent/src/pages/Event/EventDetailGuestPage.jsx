@@ -131,7 +131,25 @@ const EventDetailGuestPage = ({ previewData }) => {
       minute: '2-digit'
     });
   };
+  const getDisplayTicketPrice = (event) => {
+    if (!event?.ticketDetails || event.ticketDetails.length === 0) {
+      return "Miễn phí";
+    }
+    const prices = event.ticketDetails.map((t) => t.ticketPrice || 0);
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
 
+    if (min === 0 && max === 0) return "Miễn phí";
+    const formatVND = (price) =>
+      new Intl.NumberFormat("vi-VN", {
+        style: "currency",
+        currency: "VND",
+        maximumFractionDigits: 0,
+      }).format(price);
+    if (min === max) return formatVND(min);
+    return `${formatVND(min)} - ${formatVND(max)}`;
+  };
+  
   const formatPrice = (event) => {
     // Check if event has ticket details with prices
     if (event.minTicketPrice !== undefined && event.maxTicketPrice !== undefined) {
@@ -353,9 +371,24 @@ const EventDetailGuestPage = ({ previewData }) => {
                     <p className="font-medium">
                       {formatTime(event.startTime)} - {formatTime(event.endTime)}
                     </p>
-                    <p className="text-sm text-muted-foreground">Thời lượng: {Math.floor((new Date(event.endTime) - new Date(event.startTime)) / (1000 * 60 * 60))} giờ</p>
+
+                    {(() => {
+                      const start = new Date(event.startTime);
+                      const end = new Date(event.endTime);
+                      const diffMs = end - start;
+
+                      const hours = Math.floor(diffMs / (1000 * 60 * 60));
+                      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+                      return (
+                        <p className="text-sm text-muted-foreground">
+                          Thời lượng: {hours} giờ {minutes > 0 ? `${minutes} phút` : ''}
+                        </p>
+                      );
+                    })()}
                   </div>
                 </div>
+
               </div>
 
               {/* Ticket Information Section */}
@@ -510,7 +543,7 @@ const EventDetailGuestPage = ({ previewData }) => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-primary mb-1">{formatPrice(event)}</div>
+                  <div className="text-3xl font-bold text-primary mb-1"> {getDisplayTicketPrice(event)}</div>
                   <p className="text-sm text-muted-foreground">
                     {event.ticketDetails && event.ticketDetails.length > 0 
                       ? "Giá từ các loại vé khác nhau" 

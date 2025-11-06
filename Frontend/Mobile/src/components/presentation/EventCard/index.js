@@ -8,14 +8,25 @@ import Fonts from '../../../constants/Fonts';
 
 const EventCard = ({ event, onPress }) => {
   const getEventImage = () => {
-    const imageMap = {
-      card1: Images.event1,
-      card2: Images.event2,
-      card3: Images.event3,
-      card4: Images.event4,
-      card5: Images.event5,
-    };
-    return imageMap[event.image] || Images.event1;
+    // If event has an image URI, use it
+    if (event.image && typeof event.image === 'object' && event.image.uri) {
+      return { uri: event.image.uri };
+    }
+    
+    // If event.image is a string identifier, use the image map
+    if (typeof event.image === 'string') {
+      const imageMap = {
+        card1: Images.event1,
+        card2: Images.event2,
+        card3: Images.event3,
+        card4: Images.event4,
+        card5: Images.event5,
+      };
+      return imageMap[event.image] || Images.event1;
+    }
+    
+    // Default fallback
+    return Images.event1;
   };
 
   return (
@@ -29,6 +40,13 @@ const EventCard = ({ event, onPress }) => {
         <CustomText variant="h3" style={styles.eventTitle}>
           {event.title}
         </CustomText>
+        
+        {/* Display category name */}
+        {event.category && (
+          <CustomText variant="caption" color="primary" style={styles.eventCategory}>
+            {event.category}
+          </CustomText>
+        )}
         
         <View style={styles.eventDetails}>
           <View style={styles.eventDetailRow}>

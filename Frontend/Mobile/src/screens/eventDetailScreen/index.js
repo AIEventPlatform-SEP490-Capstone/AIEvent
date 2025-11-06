@@ -9,6 +9,7 @@ import {
   Linking,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
 import { styles } from './styles';
 import CustomText from '../../components/common/customTextRN';
 import CustomButton from '../../components/common/customButtonRN';
@@ -16,42 +17,159 @@ import Images from '../../constants/Images';
 import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
 import Strings from '../../constants/Strings';
-import { EventService } from '../../api/services';
+import { useEvents } from '../../hooks/useEvents';
+import { selectCurrentEvent, selectEventsLoading, selectEventsError } from '../../redux/slices/eventsSlice';
+import EventService from '../../api/services/EventService';
 
 const EventDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { eventId } = route.params;
+  const dispatch = useDispatch();
   
-  const [event, setEvent] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Check if eventId is properly passed in route params
+  const { eventId } = route.params || {};
+  
+  // Use Redux selectors
+  const currentEvent = useSelector(selectCurrentEvent);
+  const loading = useSelector(selectEventsLoading);
+  const error = useSelector(selectEventsError);
+  
+  // Use custom hooks
+  const { getEventById } = useEvents();
+  
   const [joining, setJoining] = useState(false);
   const [isJoined, setIsJoined] = useState(false);
+  const [event, setEvent] = useState(null);
 
   useEffect(() => {
-    loadEventDetail();
+    // Only load event detail if we have a valid eventId
+    if (eventId && typeof eventId === 'string' && eventId.trim() !== '') {
+      loadEventDetail();
+    } else {
+      console.warn('No valid eventId provided in route params:', eventId);
+      Alert.alert('Error', 'No valid event ID provided');
+      // Delay navigation back to avoid immediate navigation issues
+      setTimeout(() => {
+        navigation.goBack();
+      }, 1000);
+    }
   }, [eventId]);
+
+  useEffect(() => {
+    // If we have a current event from Redux and it matches the eventId, use it
+    if (currentEvent && eventId && currentEvent.eventId === eventId) {
+      setEvent(transformEventData(currentEvent));
+    }
+  }, [currentEvent, eventId]);
 
   const loadEventDetail = async () => {
     try {
-      setLoading(true);
-      const response = await EventService.getEventById(eventId);
-      if (response.success) {
-        setEvent(response.data);
-      } else {
+      console.log('Loading event detail for ID:', eventId);
+      // Only proceed if we have a valid eventId
+      if (!eventId || typeof eventId !== 'string' || eventId.trim() === '') {
+        throw new Error('No valid event ID provided');
+      }
+      
+      const response = await getEventById(eventId);
+      console.log('Event detail response:', response);
+      if (response && response.success) {
+        const transformedEvent = transformEventData(response.data);
+        setEvent(transformedEvent);
+      } else if (response && response.message) {
         Alert.alert('Error', response.message);
-        navigation.goBack();
+        // Delay navigation back to allow user to see the error message
+        setTimeout(() => {
+          navigation.goBack();
+        }, 2000);
       }
     } catch (error) {
-      // Error loading event detail
-      Alert.alert('Error', 'Failed to load event details');
-    } finally {
-      setLoading(false);
+      console.error('Error loading event detail:', error);
+      Alert.alert('Error', 'Failed to load event details: ' + (error.message || 'Unknown error'));
+      // Delay navigation back to allow user to see the error message
+      setTimeout(() => {
+        navigation.goBack();
+      }, 2000);
     }
+  };
+
+  const transformEventData = (eventData) => {
+    // Ensure we have a valid ID
+    const eventId = eventData.eventId || eventData.EventId || eventData.id || 'unknown';
+    
+    return {
+      id: eventId,
+      title: eventData.title || eventData.Title || 'Chưa có tiêu đề',
+      description: eventData.description || eventData.Description || 'Chưa có mô tả',
+      detailedDescription: eventData.detailedDescription || eventData.DetailedDescription || '',
+      date: eventData.startTime || eventData.StartTime ? 
+        new Date(eventData.startTime || eventData.StartTime).toLocaleDateString('vi-VN') : 
+        'Chưa xác định',
+      time: eventData.startTime || eventData.StartTime ? 
+        new Date(eventData.startTime || eventData.StartTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 
+        'Chưa xác định',
+      endTime: eventData.endTime || eventData.EndTime ? 
+        new Date(eventData.endTime || eventData.EndTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 
+        'Chưa xác định',
+      location: eventData.locationName || eventData.LocationName || 'Chưa xác định',
+      address: eventData.address || eventData.Address || '',
+      rating: eventData.averageRating || 4.5, // Use actual rating if available, otherwise mock
+      attendees: eventData.soldQuantity || eventData.SoldQuantity || 0,
+      totalTickets: eventData.totalTickets || eventData.TotalTickets || 0,
+      // Fix the price calculation logic
+      price: calculateDisplayPrice(eventData),
+      image: eventData.imgListEvent && eventData.imgListEvent.length > 0 ? 
+        { uri: eventData.imgListEvent[0] } : 
+        'card1', // Use actual image if available
+      category: eventData.eventCategoryName || eventData.EventCategoryName || 
+        (eventData.eventCategory ? eventData.eventCategory.eventCategoryName : '') || 'Chưa phân loại',
+      organizer: eventData.organizerEvent ? 
+        (eventData.organizerEvent.companyName || eventData.organizerEvent.CompanyName || 'Nhà tổ chức') : 
+        'Chưa xác định',
+      isFavorite: eventData.isFavorite || false,
+      tags: eventData.tags || eventData.Tags || eventData.eventTags || [],
+      ticketDetails: eventData.ticketDetails || eventData.TicketDetails || []
+    };
+  };
+
+  // Calculate display price based on ticket details
+  const calculateDisplayPrice = (eventData) => {
+    // If we have ticket details, calculate from them
+    if (eventData.ticketDetails && eventData.ticketDetails.length > 0) {
+      const prices = eventData.ticketDetails.map(ticket => ticket.ticketPrice || 0);
+      const minPrice = Math.min(...prices);
+      const maxPrice = Math.max(...prices);
+      
+      if (minPrice === 0 && maxPrice === 0) {
+        return 'Miễn phí';
+      } else if (minPrice === maxPrice) {
+        return `${minPrice.toLocaleString('vi-VN')}đ`;
+      } else {
+        return `${minPrice.toLocaleString('vi-VN')}đ - ${maxPrice.toLocaleString('vi-VN')}đ`;
+      }
+    }
+    
+    // Fallback to direct ticketPrice property
+    if (eventData.ticketPrice !== undefined && eventData.ticketPrice > 0) {
+      return `${eventData.ticketPrice.toLocaleString('vi-VN')}đ`;
+    }
+    
+    // Check ticketPricingType
+    if (eventData.ticketPricingType === 'Free' || eventData.ticketPricingType === 'free') {
+      return 'Miễn phí';
+    }
+    
+    // Default to Miễn phí if no price information
+    return 'Miễn phí';
   };
 
   const handleJoinEvent = async () => {
     try {
+      // Check if we have a valid eventId
+      if (!eventId || typeof eventId !== 'string' || eventId.trim() === '') {
+        Alert.alert('Error', 'No valid event ID provided');
+        return;
+      }
+      
       setJoining(true);
       const response = await EventService.joinEvent(eventId);
       if (response.success) {
@@ -61,7 +179,7 @@ const EventDetailScreen = () => {
         Alert.alert('Error', Strings.JOIN_ERROR);
       }
     } catch (error) {
-      // Error joining event
+      console.error('Error joining event:', error);
       Alert.alert('Error', Strings.JOIN_ERROR);
     } finally {
       setJoining(false);
@@ -70,37 +188,73 @@ const EventDetailScreen = () => {
 
   const handleShareEvent = async () => {
     try {
+      // Check if we have a valid eventId
+      if (!eventId || typeof eventId !== 'string' || eventId.trim() === '') {
+        Alert.alert('Error', 'No valid event ID provided');
+        return;
+      }
+      
       const response = await EventService.shareEvent(eventId);
       if (response.success) {
         await Share.share({
-          message: `Check out this event: ${event.title}\n${response.data.shareUrl}`,
-          title: event.title,
+          message: `Check out this event: ${event?.title || 'Event'}\n${response.data.shareUrl}`,
+          title: event?.title || 'Event',
         });
         Alert.alert('Success', Strings.SHARE_SUCCESS);
       }
     } catch (error) {
-      // Error sharing event
+      console.error('Error sharing event:', error);
+      Alert.alert('Error', 'Failed to share event');
     }
   };
 
   const handleViewMap = () => {
     // Open map with event location
-    const mapUrl = `https://maps.google.com/?q=${encodeURIComponent(event.location)}`;
-    Linking.openURL(mapUrl);
+    if (event && event.location) {
+      const mapUrl = `https://maps.google.com/?q=${encodeURIComponent(event.location)}`;
+      Linking.openURL(mapUrl);
+    } else {
+      Alert.alert('Error', 'No location information available');
+    }
   };
 
   const getEventImage = () => {
-    const imageMap = {
-      card1: Images.event1,
-      card2: Images.event2,
-      card3: Images.event3,
-      card4: Images.event4,
-      card5: Images.event5,
-    };
-    return imageMap[event?.image] || Images.event1;
+    // If event has an image URI, use it
+    if (event && event.image && typeof event.image === 'object' && event.image.uri) {
+      return { uri: event.image.uri };
+    }
+    
+    // If event.image is a string identifier, use the image map
+    if (event && typeof event.image === 'string') {
+      const imageMap = {
+        card1: Images.event1,
+        card2: Images.event2,
+        card3: Images.event3,
+        card4: Images.event4,
+        card5: Images.event5,
+      };
+      return imageMap[event.image] || Images.event1;
+    }
+    
+    // Default fallback
+    return Images.event1;
   };
 
-  if (loading) {
+  // Use Redux loading state or local loading state
+  const isLoading = loading;
+
+  // Show loading state only if we have a valid eventId
+  if (!eventId || typeof eventId !== 'string' || eventId.trim() === '') {
+    return (
+      <View style={styles.loadingContainer}>
+        <CustomText variant="body" color="secondary" align="center">
+          Invalid Event ID
+        </CustomText>
+      </View>
+    );
+  }
+
+  if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
         <CustomText variant="body" color="secondary" align="center">
@@ -124,6 +278,9 @@ const EventDetailScreen = () => {
       </View>
     );
   }
+
+  // Calculate available tickets
+  const totalAvailableTickets = event.totalTickets - (event.attendees || 0);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -190,7 +347,7 @@ const EventDetailScreen = () => {
                 {Strings.EVENT_TIME}
               </CustomText>
               <CustomText variant="body" color="primary" style={{ fontSize: Fonts.md, fontWeight: '600', fontFamily: Fonts.semiBold }}>
-                {event.time}
+                {event.time} - {event.endTime}
               </CustomText>
             </View>
           </View>
@@ -204,6 +361,11 @@ const EventDetailScreen = () => {
               <CustomText variant="body" color="primary" style={{ fontSize: Fonts.md, fontWeight: '600', fontFamily: Fonts.semiBold }}>
                 {event.location}
               </CustomText>
+              {event.address ? (
+                <CustomText variant="caption" color="secondary" style={{ fontSize: Fonts.sm, marginTop: 2 }}>
+                  {event.address}
+                </CustomText>
+              ) : null}
             </View>
           </View>
 
@@ -235,6 +397,53 @@ const EventDetailScreen = () => {
             </View>
           )}
         </View>
+
+        {/* Ticket Information Section */}
+        {event.ticketDetails && event.ticketDetails.length > 0 && (
+          <View style={styles.detailsSection}>
+            <CustomText variant="h3" color="primary" style={styles.sectionTitle}>
+              Loại vé có sẵn
+            </CustomText>
+            {event.ticketDetails.map((ticket, index) => {
+              const availableTickets = ticket.ticketQuantity - (ticket.soldQuantity || 0);
+              const isAvailable = availableTickets > 0;
+
+              return (
+                <View
+                  key={index}
+                  style={[
+                    styles.ticketRow,
+                    !isAvailable && styles.ticketRowUnavailable
+                  ]}
+                >
+                  <View style={styles.ticketInfo}>
+                    <CustomText variant="body" color="primary" style={styles.ticketName}>
+                      {ticket.ticketName}
+                    </CustomText>
+                    {ticket.ticketDescription ? (
+                      <CustomText variant="caption" color="secondary" style={styles.ticketDescription}>
+                        {ticket.ticketDescription}
+                      </CustomText>
+                    ) : null}
+                    <View style={styles.ticketStats}>
+                      <CustomText variant="caption" color="secondary" style={styles.ticketStat}>
+                        Đã bán: {ticket.soldQuantity || 0}/{ticket.ticketQuantity}
+                      </CustomText>
+                      <CustomText variant="caption" color="secondary" style={styles.ticketStat}>
+                        Còn lại: {availableTickets} vé
+                      </CustomText>
+                    </View>
+                  </View>
+                  <View style={styles.ticketPriceContainer}>
+                    <CustomText variant="body" color="primary" style={styles.ticketPrice}>
+                      {ticket.ticketPrice === 0 ? "Miễn phí" : `${ticket.ticketPrice.toLocaleString('vi-VN')}đ`}
+                    </CustomText>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
 
         {/* Premium Description */}
         <View style={styles.descriptionSection}>

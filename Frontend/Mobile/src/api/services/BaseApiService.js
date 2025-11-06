@@ -15,8 +15,21 @@ class BaseApiService {
   }
 
   static async handleApiResponse(response, retryCallback) {
+    console.log('API Response Status:', response.status);
+    console.log('API Response Headers:', response.headers);
+    
     if (response.ok) {
-      return await response.json();
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const jsonData = await response.json();
+        console.log('API Response Data:', jsonData);
+        return jsonData;
+      } else {
+        // Handle non-JSON responses
+        const textData = await response.text();
+        console.log('API Response Text:', textData);
+        return { data: textData, message: 'Success' };
+      }
     }
 
     if (response.status === 401) {
@@ -42,7 +55,9 @@ class BaseApiService {
 
   static async get(url) {
     try {
+      console.log('Making GET request to:', url);
       const headers = await this.getAuthHeaders();
+      console.log('Request Headers:', headers);
       
       const response = await fetch(url, {
         method: 'GET',
@@ -58,12 +73,15 @@ class BaseApiService {
         return await this.handleApiResponse(retryResponse, null);
       });
     } catch (error) {
+      console.error('Error in GET request:', error);
       throw error;
     }
   }
 
   static async post(url, data) {
     try {
+      console.log('Making POST request to:', url);
+      console.log('Request Data:', data);
       const headers = await this.getAuthHeaders();
       
       const response = await fetch(url, {
@@ -82,12 +100,14 @@ class BaseApiService {
         return await this.handleApiResponse(retryResponse, null);
       });
     } catch (error) {
+      console.error('Error in POST request:', error);
       throw error;
     }
   }
 
   static async patch(url, formData) {
     try {
+      console.log('Making PATCH request to:', url);
       const accessToken = await AuthService.getAccessToken();
       
       if (!accessToken) {
@@ -114,12 +134,14 @@ class BaseApiService {
         return await this.handleApiResponse(retryResponse, null);
       });
     } catch (error) {
+      console.error('Error in PATCH request:', error);
       throw error;
     }
   }
 
   static async delete(url) {
     try {
+      console.log('Making DELETE request to:', url);
       const headers = await this.getAuthHeaders();
       
       const response = await fetch(url, {
@@ -136,6 +158,7 @@ class BaseApiService {
         return await this.handleApiResponse(retryResponse, null);
       });
     } catch (error) {
+      console.error('Error in DELETE request:', error);
       throw error;
     }
   }
