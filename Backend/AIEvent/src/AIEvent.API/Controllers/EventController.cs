@@ -220,7 +220,7 @@ namespace AIEvent.API.Controllers
                 "Request end event successfully"));
         }
 
-        [HttpPatch("end-event/{id}")]
+        [HttpPatch("confirm-end-event")]
         [Authorize(Roles = "Admin,Manager")]
         public async Task<ActionResult<SuccessResponse<object>>> ConfirmEndEvent(ApproveEndEventRequest request)
         {
