@@ -25,8 +25,6 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<TicketType> TicketTypes { get; set; }
         public DbSet<Tag> Tags { get; set; }
         public DbSet<EventTag> EventTags { get; set; }
-        public DbSet<UserAction> UserActions { get; set; }
-        public DbSet<UserActionFilter> UserActionFilters { get; set; }
         public DbSet<FavoriteEvent> FavoriteEvents { get; set; }
         public DbSet<Booking> Bookings { get; set; }
         public DbSet<BookingItem> BookingItems { get; set; }
@@ -150,8 +148,8 @@ namespace AIEvent.Infrastructure.Context
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(e => e.Event)
-                    .WithOne(o => o.EndEventRequest)
-                    .HasForeignKey<EndEventRequest>(o => o.EventId)
+                    .WithMany(o => o.EndEventRequest)
+                    .HasForeignKey(e => e.EventId)
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(e => e.PaymentInformation)
@@ -313,25 +311,6 @@ namespace AIEvent.Infrastructure.Context
                 entity.Property(td => td.TicketPrice).HasPrecision(18, 2);
 
                 entity.HasIndex(td => new { td.EventId, td.TicketName }).IsUnique();
-            });
-
-            // ----------------- UserAction -----------------
-            builder.Entity<UserAction>(entity =>
-            {
-                entity.HasOne(td => td.AppUser)
-                      .WithMany(e => e.UserActions)
-                      .HasForeignKey(td => td.UserId);
-
-                entity.HasIndex(td => new { td.UserId, td.ActionType }).HasDatabaseName("IX_UserActions_User_ActionType");
-            });
-
-            // ----------------- UserActionFilter -----------------
-            builder.Entity<UserActionFilter>(entity =>
-            {
-                entity.HasOne(td => td.UserAction)
-                      .WithMany(e => e.Filters)
-                      .HasForeignKey(td => td.UserActionId)
-                      .OnDelete(DeleteBehavior.Cascade);
             });
 
             // ----------------- FavoriteEvent -----------------
