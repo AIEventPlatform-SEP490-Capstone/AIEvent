@@ -72,9 +72,9 @@ namespace AIEvent.Application.Services.Implements
         }
 
         // payout for organizer
-        public async Task EnqueueOrganizerPayoutJobAsync(RevenueReportRequest request, string eventName)
+        public async Task EnqueueOrganizerPayoutJobAsync(RevenueReportRequest request)
         {
-            BackgroundJob.Schedule(() => ProcessOrganizerPayoutAsync(request), TimeSpan.FromDays(10));
+            BackgroundJob.Schedule(() => ProcessOrganizerPayoutAsync(request), TimeSpan.FromMilliseconds(1));
             await Task.CompletedTask;
         }
 
@@ -139,7 +139,7 @@ namespace AIEvent.Application.Services.Implements
                     };
 
                     var payoutResponse = await _payOSService.CreatePayoutAsync(payoutRequest);
-
+                    Console.WriteLine($"Response:   {payoutResponse}");
                     // create report
                     var payoutDate = request.ConfirmDate.AddDays(10);
                     RevenueReport revenueReport = new()
@@ -216,7 +216,6 @@ namespace AIEvent.Application.Services.Implements
                     if (!hasBookings.Any())
                     {
                         await _unitOfWork.EventRepository.DeleteAsync(existingEvent);
-                        await _unitOfWork.SaveChangesAsync();
                         _logger.LogInformation("Deleted event {EventId} without bookings.", eventId);
                         return Result.Success();
                     }

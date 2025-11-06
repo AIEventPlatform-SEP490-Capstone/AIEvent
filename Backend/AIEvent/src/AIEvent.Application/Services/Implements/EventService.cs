@@ -1,6 +1,7 @@
 ﻿using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
+using AIEvent.Application.DTOs.RevenueReport;
 using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
@@ -981,6 +982,17 @@ namespace AIEvent.Application.Services.Implements
                 }
 
                 await _unitOfWork.EndEventRequestRepository.UpdateAsync(endEventRequest);
+                RevenueReportRequest reportR = new RevenueReportRequest()
+                {
+                    EventName = endEventRequest.Event.Title,
+                    EventId = endEventRequest.Event.Id,
+                    OrganizerProfileId = endEventRequest.OrganizerProfileId,
+                    PaymentInforId = endEventRequest.PaymentInformationId,
+                    TotalAmount = endEventRequest.Event.TotalAmount,
+                    ConfirmDate = DateTime.Now
+                };
+
+                await _hangfireJobService.EnqueueOrganizerPayoutJobAsync(reportR);
                 return Result.Success();
             });
         }
