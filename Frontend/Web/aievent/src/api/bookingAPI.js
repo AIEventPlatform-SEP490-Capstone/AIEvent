@@ -1,5 +1,3 @@
-
-
 import fetcher from "./fetcher";
 
 export const bookingAPI = {
@@ -12,12 +10,6 @@ export const bookingAPI = {
   // GET: Danh sách sự kiện
   getEvents: async () => {
     const response = await fetcher.get("/booking/event");
-    return response.data?.data;
-  },
-
-  // GET: Lấy danh sách vé theo từng sự kiện
-  getEventTickets: async (eventId) => {
-    const response = await fetcher.get(`/booking/event/${eventId}/ticket`);
     return response.data?.data;
   },
 
@@ -43,14 +35,21 @@ export const bookingAPI = {
   },
 
   //  Get tickets of a booked event by eventId
-  getEventTickets: async (eventId, params = {}) => {
-    const query = new URLSearchParams();
-    if (params.pageNumber) query.append("pageNumber", params.pageNumber);
-    if (params.pageSize) query.append("pageSize", params.pageSize);
-    const response = await fetcher.get(
-      `/booking/event/${eventId}/ticket?${query.toString()}`
-    );
-    return response.data?.data || response.data;
+
+  getEventTickets: async (eventId) => {
+    const response = await fetcher.get(`/booking/event/${eventId}/ticket`);
+    const data = response.data?.data;
+    const flatTickets = Array.isArray(data?.items)
+      ? data.items.flatMap((t) =>
+          t.tickets.map((tk) => ({
+            ...tk,
+            ticketTypeName: t.ticketTypeName,
+            price: t.price,
+            quantity: t.quantity,
+          }))
+        )
+      : [];
+    return { ...data, tickets: flatTickets };
   },
 };
 

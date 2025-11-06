@@ -1,57 +1,49 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import bookingAPI from "../../api/bookingAPI";
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "../../components/ui/card";
-import { Button } from "../../components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "../../components/ui/dialog";
-import { Calendar, MapPin, Clock, QrCode, RotateCcw } from "lucide-react";
-import { Separator } from "../../components/ui/separator";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "../../components/ui/alert-dialog";
-import { toast } from "react-hot-toast";
+  Calendar,
+  MapPin,
+  Clock,
+  QrCode,
+  Ticket,
+  X,
+  Search,
+  Download,
+  Users,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { motion } from "framer-motion";
 
-function MyTickets() {
-  const [events, setEvents] = useState([]); // Danh sách sự kiện đã mua vé
-  const [selectedEvent, setSelectedEvent] = useState(null); // Sự kiện đang chọn
-  const [tickets, setTickets] = useState([]); // Vé của sự kiện được chọn
+const PAGE_SIZE = 6;
 
+export default function MyTickets() {
+  const [events, setEvents] = useState([]);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [ticketLoading, setTicketLoading] = useState(false);
   const [qrLoading, setQrLoading] = useState(false);
-
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [qrCode, setQrCode] = useState(null);
+  const navigate = useNavigate();
 
-  const [refundDialog, setRefundDialog] = useState(false);
-  const [refundTarget, setRefundTarget] = useState(null);
-  const [refundLoading, setRefundLoading] = useState(false);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [onlyUpcoming, setOnlyUpcoming] = useState(true);
+  const [page, setPage] = useState(1);
 
-  //  Lấy danh sách sự kiện có vé đã mua
   useEffect(() => {
     const fetchEvents = async () => {
       try {
         setLoading(true);
         const res = await bookingAPI.getEvents();
-        setEvents(res.items || []);
+        const items = res.items || [];
+        setEvents(items);
+        if (items.length > 0) handleSelectEvent(items[0], { silent: true });
       } catch (err) {
-        console.error("Không thể tải danh sách sự kiện:", err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -59,324 +51,632 @@ function MyTickets() {
     fetchEvents();
   }, []);
 
-  //  Khi chọn 1 sự kiện → gọi API lấy danh sách vé của sự kiện đó
-  const handleSelectEvent = async (event) => {
+  const handleSelectEvent = async (event, { silent } = {}) => {
     setSelectedEvent(event);
     setTickets([]);
     try {
-      setTicketLoading(true);
+      if (!silent) setTicketLoading(true);
       const res = await bookingAPI.getEventTickets(event.eventId);
-      setTickets(res?.items?.[0]?.tickets || []);
+      setTickets(res.tickets || []);
+      setPage(1);
     } catch (err) {
-      console.error("Không thể tải danh sách vé:", err);
-      toast.error("Không thể tải vé của sự kiện này.");
+      console.error(err);
     } finally {
       setTicketLoading(false);
     }
   };
 
-  //  Xem mã QR của vé
   const handleViewQR = async (ticket) => {
     try {
       setSelectedTicket(ticket);
       setQrLoading(true);
       const res = await bookingAPI.getTicketQR(ticket.ticketId);
       setQrCode(res?.qrCode);
-    } catch {
+    } catch (err) {
       setQrCode(null);
     } finally {
       setQrLoading(false);
     }
   };
 
-  //  Mở hộp thoại hoàn vé
-  const confirmRefund = (ticket) => {
-    setRefundTarget(ticket);
-    setRefundDialog(true);
-  };
+  const now = useMemo(() => new Date(), []);
+  const enhancedTickets = useMemo(() => {
+    return tickets.map((t) => {
+      const evStart = new Date(selectedEvent?.startTime || now);
+      const isUpcoming = evStart >= now;
+      return { ...t, _isUpcoming: isUpcoming };
+    });
+  }, [tickets, selectedEvent, now]);
 
-  //  Gọi API hoàn vé
-  const handleRefund = async () => {
-    try {
-      setRefundLoading(true);
-      await bookingAPI.refundTicket(refundTarget.ticketId);
-      toast.success("Hoàn vé thành công!");
-      // Cập nhật trạng thái vé trên UI
-      setTickets((prev) =>
-        prev.map((t) =>
-          t.ticketId === refundTarget.ticketId
-            ? { ...t, status: "Refunded" }
-            : t
-        )
-      );
-    } catch {
-      toast.error("Không thể hoàn vé, vui lòng thử lại!");
-    } finally {
-      setRefundDialog(false);
-      setRefundLoading(false);
+  const filtered = enhancedTickets.filter((t) => {
+    if (statusFilter !== "all") {
+      const statusKey =
+        statusFilter === "valid"
+          ? "Valid"
+          : statusFilter === "used"
+          ? "Used"
+          : statusFilter === "expired"
+          ? "Expired"
+          : null;
+      if (statusKey && t.status !== statusKey) return false;
     }
+    if (onlyUpcoming && !t._isUpcoming) return false;
+    if (query.trim()) {
+      const q = query.trim().toLowerCase();
+      if (
+        !(
+          t.ticketCode?.toLowerCase().includes(q) ||
+          (t.ticketTypeName || "").toLowerCase().includes(q) ||
+          (selectedEvent?.title || "").toLowerCase().includes(q)
+        )
+      ) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  const upcomingTickets = filtered.filter((t) => t._isUpcoming);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(
+      (onlyUpcoming ? upcomingTickets.length : filtered.length) / PAGE_SIZE
+    )
+  );
+
+  const pageItems = (items) => {
+    const start = (page - 1) * PAGE_SIZE;
+    return items.slice(start, start + PAGE_SIZE);
   };
-
-  //  Loading khi chưa có dữ liệu sự kiện
-  if (loading) {
-    return (
-      <div className="p-10 text-center text-muted-foreground">
-        Đang tải sự kiện của bạn...
-      </div>
-    );
-  }
-
-  //  Không có sự kiện nào
-  if (events.length === 0) {
-    return (
-      <div className="p-10 text-center text-muted-foreground">
-        Bạn chưa có sự kiện nào đã mua vé.
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-background py-12">
-      <div className="container mx-auto px-4 max-w-6xl">
-        <h1 className="text-3xl font-bold mb-8 text-center">🎫 Vé của tôi</h1>
+    <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-sky-50 to-white">
+      {/* HEADER */}
+      <motion.header
+        initial={{ opacity: 0, y: -30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="bg-gradient-to-r from-indigo-600 via-sky-500 to-cyan-400 text-white py-12 shadow-lg"
+      >
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-white/20 rounded-full shadow-inner">
+                <Ticket className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-extrabold tracking-tight">
+                  Vé của tôi
+                </h1>
+                <p className="text-sm text-white/90">
+                  Quản lý vé, xem mã QR và thao tác nhanh.
+                </p>
+              </div>
+            </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-          {/*  Danh sách sự kiện đã mua vé */}
-          <div className="lg:col-span-1">
-            <Card className="shadow-lg h-fit sticky top-6">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">
-                  Sự kiện đã mua vé
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {events.map((event) => (
+            <div className="hidden md:flex items-center gap-4">
+              <div className="bg-white/20 px-3 py-2 rounded-lg text-sm">
+                Tổng sự kiện: <strong>{events.length}</strong>
+              </div>
+              <div className="bg-white/20 px-3 py-2 rounded-lg text-sm">
+                Tổng vé:{" "}
+                <strong>
+                  {events.reduce(
+                    (sum, ev) => sum + (ev.totalTickets || 0),
+                    0
+                  ) || tickets.length}
+                </strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.header>
+
+      {/* MAIN */}
+      <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-4 gap-8">
+        {/* SIDEBAR */}
+        <aside className="lg:col-span-1 space-y-6">
+          <div className="rounded-2xl bg-white/70 backdrop-blur-md p-5 border border-white/30 shadow-lg">
+            <h3 className="font-semibold mb-3">Sự kiện đã mua vé</h3>
+            {loading ? (
+              <div className="space-y-3">
+                {[...Array(4)].map((_, i) => (
                   <div
-                    key={event.eventId}
-                    onClick={() => handleSelectEvent(event)}
-                    className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                      selectedEvent?.eventId === event.eventId
-                        ? "border-primary bg-primary/10"
-                        : "hover:border-primary/40"
+                    key={i}
+                    className="h-12 bg-gray-100 rounded-md animate-pulse"
+                  />
+                ))}
+              </div>
+            ) : events.length === 0 ? (
+              <div className="text-sm text-gray-500">
+                Bạn chưa có sự kiện nào.
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[56vh] overflow-auto pr-1">
+                {events.map((ev) => (
+                  <button
+                    key={ev.eventId}
+                    onClick={() => handleSelectEvent(ev)}
+                    className={`w-full text-left p-3 rounded-xl transition-all duration-150 flex items-start gap-3 ${
+                      selectedEvent?.eventId === ev.eventId
+                        ? "bg-gradient-to-r from-sky-100 to-indigo-50 border border-sky-300 shadow"
+                        : "hover:bg-sky-50"
                     }`}
                   >
-                    <p className="font-semibold">{event.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(event.startTime).toLocaleDateString("vi-VN")}
-                    </p>
-                  </div>
+                    <div className="w-12 h-10 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
+                      {ev.image ? (
+                        <img
+                          src={ev.image}
+                          alt={ev.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Calendar className="w-5 h-5 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-sm truncate">
+                        {ev.title}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {new Date(ev.startTime).toLocaleDateString("vi-VN")}
+                      </div>
+                    </div>
+                  </button>
                 ))}
-              </CardContent>
-            </Card>
+              </div>
+            )}
           </div>
 
-          {/*  Danh sách vé của sự kiện được chọn */}
-          <div className="lg:col-span-2">
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">
-                  {selectedEvent
-                    ? `Vé đã đặt cho: ${selectedEvent.title}`
-                    : "Chọn một sự kiện để xem vé"}
-                </CardTitle>
-              </CardHeader>
+          {/* Search + Filters */}
+          <div className="rounded-2xl bg-white/70 backdrop-blur-md p-4 border border-white/30 shadow-lg">
+            <div className="flex items-center gap-2">
+              <Search className="w-4 h-4 opacity-70" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Tìm mã vé, loại vé, sự kiện..."
+                className="flex-1 bg-transparent outline-none text-sm"
+              />
+            </div>
+            <div className="mt-3 text-sm flex items-center justify-between">
+              <label className="text-xs text-gray-600">
+                Chỉ hiển thị sắp tới
+              </label>
+              <button
+                onClick={() => setOnlyUpcoming((s) => !s)}
+                className={`px-3 py-1 rounded-full text-xs border ${
+                  onlyUpcoming
+                    ? "bg-sky-100 border-sky-300"
+                    : "bg-white border-gray-200"
+                }`}
+              >
+                {onlyUpcoming ? "On" : "Off"}
+              </button>
+            </div>
+            <div>
+              <label className="text-xs text-gray-600">Trạng thái</label>
+              <div className="mt-2 flex gap-2">
+                {["all", "valid", "used", "expired"].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setStatusFilter(s)}
+                    className={`text-xs px-2 py-1 rounded-md border ${
+                      statusFilter === s
+                        ? "bg-sky-100 border-sky-300"
+                        : "bg-white border-gray-200"
+                    }`}
+                  >
+                    {s === "all"
+                      ? "Tất cả"
+                      : s === "valid"
+                      ? "Còn hiệu lực"
+                      : s === "used"
+                      ? "Đã dùng"
+                      : "Hết hạn"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </aside>
 
-              <CardContent>
-                {!selectedEvent && (
-                  <p className="text-muted-foreground text-center py-10">
-                    Vui lòng chọn sự kiện bên trái để xem vé của bạn.
-                  </p>
-                )}
+        {/* MAIN CONTENT */}
+        <main className="lg:col-span-3 space-y-6">
+          {/* Event Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl bg-white/80 p-6 border border-gray-100 shadow"
+          >
+            {selectedEvent ? (
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-24 h-20 rounded-lg overflow-hidden bg-gray-100">
+                    {selectedEvent.image ? (
+                      <img
+                        src={selectedEvent.image}
+                        alt={selectedEvent.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Calendar className="w-6 h-6 text-gray-400 mx-auto mt-6" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold">
+                      {selectedEvent.title}
+                    </div>
+                    <div className="text-sm text-gray-600 flex items-center gap-3 mt-1">
+                      <Calendar className="w-4 h-4" />
+                      {new Date(selectedEvent.startTime).toLocaleDateString(
+                        "vi-VN"
+                      )}
+                      <span className="flex items-center gap-1 ml-3">
+                        <MapPin className="w-4 h-4" />{" "}
+                        <span className="truncate max-w-full md:max-w-[16rem]">
+                          {selectedEvent.address ||
+                            selectedEvent.locationName ||
+                            "Địa điểm không xác định"}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-gray-500">
+                Chọn một sự kiện ở cột trái để xem vé
+              </div>
+            )}
+          </motion.div>
 
-                {ticketLoading && (
-                  <p className="text-center text-muted-foreground py-10">
-                    Đang tải vé của sự kiện...
-                  </p>
-                )}
+          {/* Tickets */}
+          <div className="rounded-2xl bg-white/80 p-6 border border-gray-100 shadow">
+            {ticketLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[...Array(4)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="p-6 border rounded-xl bg-gray-50 animate-pulse h-40"
+                  />
+                ))}
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="py-12 text-center text-gray-500">
+                Không tìm thấy vé nào.
+              </div>
+            ) : (
+              <>
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="text-sm text-gray-600">
+                    Hiển thị{" "}
+                    <strong>
+                      {onlyUpcoming ? upcomingTickets.length : filtered.length}
+                    </strong>{" "}
+                    vé
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      className="p-2 rounded-md border"
+                      disabled={page === 1}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() =>
+                        setPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      className="p-2 rounded-md border"
+                      disabled={page === totalPages}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
 
-                {!ticketLoading && selectedEvent && tickets.length === 0 && (
-                  <p className="text-center text-muted-foreground py-10">
-                    Bạn chưa đặt vé cho sự kiện này.
-                  </p>
-                )}
-
-                {!ticketLoading && tickets.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {tickets.map((ticket) => (
-                      <Card
-                        key={ticket.ticketId}
-                        className="overflow-hidden shadow border hover:shadow-lg transition-all"
-                      >
-                        <CardHeader>
-                          <CardTitle className="text-base font-semibold flex justify-between">
-                            <span>{ticket.ticketCode}</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {(onlyUpcoming
+                    ? pageItems(upcomingTickets)
+                    : pageItems(filtered)
+                  ).map((ticket, idx) => (
+                    <motion.article
+                      key={ticket.ticketId}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                      className="relative rounded-2xl overflow-hidden border border-gray-100 shadow hover:shadow-2xl transition bg-white flex flex-col justify-between"
+                    >
+                      <div className="p-5 bg-gradient-to-br from-white to-sky-50">
+                        {/* Header của vé */}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div
+                              className="text-md font-semibold text-gray-800 truncate"
+                              title={ticket.ticketCode}
+                            >
+                              {ticket.ticketCode}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              Loại: {ticket.ticketTypeName || "Tiêu chuẩn"}
+                            </div>
+                          </div>
+                          {/* Trạng thái vé  */}
+                          <div className="flex items-center">
                             <span
-                              className={`px-2 py-1 text-xs rounded-full ${
+                              className={`px-3 py-[2px] text-xs rounded-full font-medium whitespace-nowrap ${
                                 ticket.status === "Valid"
-                                  ? "bg-green-100 text-green-700"
-                                  : ticket.status === "Refunded"
-                                  ? "bg-yellow-100 text-yellow-700"
+                                  ? "bg-emerald-100 text-emerald-700"
+                                  : ticket.status === "Used"
+                                  ? "bg-gray-200 text-gray-700"
                                   : "bg-gray-100 text-gray-600"
                               }`}
                             >
-                              {/* {ticket.status} */}
                               {ticket.status === "Valid"
-                                ? "Vé có hiệu lực"
-                                : ticket.status === "Refunded"
-                                ? "Đã hoàn vé"
-                                : ticket.status}
+                                ? "Còn hiệu lực"
+                                : ticket.status === "Used"
+                                ? "Đã dùng"
+                                : "Hết hạn"}
                             </span>
-                          </CardTitle>
-                        </CardHeader>
-
-                        <CardContent className="space-y-2 text-sm text-muted-foreground">
-                          <p>
-                            <Calendar className="inline w-4 h-4 mr-1" />
-                            {new Date(
-                              selectedEvent.startTime
-                            ).toLocaleDateString("vi-VN")}
-                          </p>
-                          <p>
-                            <Clock className="inline w-4 h-4 mr-1" />
-                            {new Date(
-                              selectedEvent.startTime
-                            ).toLocaleTimeString("vi-VN", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
-                          <p>
-                            <MapPin className="inline w-4 h-4 mr-1" />
-                            {selectedEvent.address ||
-                              selectedEvent.locationName}
-                          </p>
-                          <Separator />
-
-                          <div className="flex justify-between items-center mt-2">
-                            <span
-                              className={`text-sm font-medium ${
-                                ticket.status === "Valid"
-                                  ? "text-green-600"
-                                  : ticket.status === "Refunded"
-                                  ? "text-yellow-600"
-                                  : "text-gray-500"
-                              }`}
-                            >
-                              {ticket.status === "Valid"
-                                ? "Vé có hiệu lực"
-                                : ticket.status === "Refunded"
-                                ? "Đã hoàn vé"
-                                : ticket.status}
-                            </span>
-
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant={
-                                  ticket.status === "Refunded"
-                                    ? "outline"
-                                    : "default"
-                                }
-                                onClick={() => {
-                                  if (ticket.status === "Refunded") {
-                                    setSelectedTicket({
-                                      ...ticket,
-                                      isRefunded: true,
-                                    });
-                                    setQrCode(null);
-                                  } else {
-                                    handleViewQR(ticket);
-                                  }
-                                }}
-                              >
-                                <QrCode className="w-4 h-4 mr-1" /> QR
-                              </Button>
-
-                              {ticket.status === "Valid" && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => confirmRefund(ticket)}
-                                >
-                                  <RotateCcw className="w-4 h-4 mr-1" /> Hoàn vé
-                                </Button>
-                              )}
-                            </div>
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+                        </div>
 
-        {/*  Dialog QR */}
+                        {/* Thông tin vé */}
+                        <div className="mt-4 text-sm text-gray-600 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 opacity-70" />
+                            <span>
+                              {new Date(
+                                selectedEvent?.startTime || now
+                              ).toLocaleTimeString("vi-VN", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
 
-        <Dialog
-          open={!!selectedTicket}
-          onOpenChange={() => setSelectedTicket(null)}
-        >
-          <DialogContent className="max-w-sm text-center">
-            <DialogHeader>
-              <DialogTitle>
-                {selectedTicket?.isRefunded
-                  ? "Vé đã hoàn tiền"
-                  : "Mã QR Check-in"}
-              </DialogTitle>
-            </DialogHeader>
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4 opacity-70" />
+                            <span className="truncate max-w-full md:max-w-[16rem]">
+                              {selectedEvent?.address ||
+                                selectedEvent?.locationName ||
+                                "Địa điểm không xác định"}
+                            </span>
+                          </div>
 
-            {/* Trường hợp vé đã hoàn */}
-            {selectedTicket?.isRefunded ? (
-              <p className="text-muted-foreground py-8">
-                Vé này đã được hoàn tiền và không còn mã QR hợp lệ.
-              </p>
-            ) : qrLoading ? (
-              <p className="text-muted-foreground py-8">Đang tải mã QR...</p>
-            ) : qrCode ? (
-              <>
-                <img
-                  src={qrCode}
-                  alt="QR Code"
-                  className="w-56 h-56 mx-auto mt-4"
-                />
-                <p className="text-sm text-green-600 mt-3">Vé có hiệu lực</p>
-                <p className="text-xs text-muted-foreground">
-                  Quét mã này để check-in sự kiện
-                </p>
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 opacity-70" />
+                            <span className="text-xs text-gray-500">
+                              Ghế: {ticket.seatNumber || "Tự do"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Giá và nút QR */}
+                        <div className="mt-6 flex items-center justify-between">
+                          <div className="text-base font-medium text-gray-700">
+                            {ticket.price
+                              ? new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(ticket.price)
+                              : "-"}
+                          </div>
+                          <button
+                            onClick={() => handleViewQR(ticket)}
+                            className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-gradient-to-r from-sky-500 to-indigo-500 text-white text-sm hover:opacity-90"
+                          >
+                            <QrCode className="w-4 h-4" /> Xem mã QR
+                          </button>
+                        </div>
+                      </div>
+                    </motion.article>
+                  ))}
+                </div>
               </>
-            ) : (
-              <p className="text-muted-foreground py-8">Không thể tải mã QR</p>
             )}
-          </DialogContent>
-        </Dialog>
+          </div>
 
-        {/*  Dialog hoàn vé */}
-        <AlertDialog open={refundDialog} onOpenChange={setRefundDialog}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Xác nhận hoàn vé</AlertDialogTitle>
-              <AlertDialogDescription>
-                Bạn có chắc chắn muốn hoàn vé <b>{refundTarget?.ticketCode}</b>{" "}
-                không? Hành động này không thể hoàn tác.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Hủy</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleRefund}
-                disabled={refundLoading}
-              >
-                {refundLoading ? "Đang xử lý..." : "Xác nhận"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          {/*  Tổng quan  */}
+          <div className="rounded-2xl bg-white/80 p-4 border border-gray-100 shadow">
+            <div className="text-sm text-gray-600">Tổng quan</div>
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-3 rounded-lg border">
+                <div className="text-xs text-gray-500">Vé sắp tới</div>
+                <div className="text-lg font-bold">
+                  {upcomingTickets.length}
+                </div>
+              </div>
+              <div className="p-3 rounded-lg border">
+                <div className="text-xs text-gray-500">Vé đã qua</div>
+                <div className="text-lg font-bold">
+                  {filtered.filter((t) => !t._isUpcoming).length}
+                </div>
+              </div>
+              <div className="p-3 rounded-lg border">
+                <div className="text-xs text-gray-500">Tổng giá vé</div>
+                <div className="text-lg font-bold">
+                  {tickets.reduce((s, t) => s + (t.price || 0), 0) === 0
+                    ? "-"
+                    : new Intl.NumberFormat("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                      }).format(
+                        tickets.reduce((s, t) => s + (t.price || 0), 0)
+                      )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
       </div>
+      {/* MODAL QR */}
+      {selectedTicket && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-50 flex items-center justify-center"
+        >
+          {/* Lớp nền mờ */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => {
+              setSelectedTicket(null);
+              setQrCode(null);
+            }}
+          />
+
+          {/* nội dung */}
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="relative max-w-3xl w-full rounded-2xl bg-white p-8 shadow-2xl border border-gray-100"
+          >
+            {/* Nút đóng */}
+            <button
+              className="absolute right-4 top-4 p-2 rounded-full bg-gray-100 hover:bg-gray-200"
+              onClick={() => {
+                setSelectedTicket(null);
+                setQrCode(null);
+              }}
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex flex-col md:flex-row gap-8">
+              {/* Hình ảnh sự kiện */}
+              <div className="w-full md:w-1/2">
+                <div className="h-60 rounded-xl overflow-hidden shadow-md bg-gray-50 flex items-center justify-center">
+                  {selectedEvent?.image ? (
+                    <img
+                      src={selectedEvent.image}
+                      alt={selectedEvent.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Calendar className="w-10 h-10 text-gray-400" />
+                  )}
+                </div>
+
+                {/* Thông tin vé ngắn gọn */}
+                <div className="mt-5 space-y-2 text-sm">
+                  <div>
+                    <span className="text-gray-500">Mã vé:</span>{" "}
+                    <span className="font-semibold break-all">
+                      {selectedTicket.ticketCode}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Loại:</span>{" "}
+                    <span>{selectedTicket.ticketTypeName || "Tiêu chuẩn"}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Ghế:</span>{" "}
+                    <span>{selectedTicket.seatNumber || "Tự do"}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Giá:</span>{" "}
+                    <span className="font-medium">
+                      {selectedTicket.price
+                        ? new Intl.NumberFormat("vi-VN", {
+                            style: "currency",
+                            currency: "VND",
+                          }).format(selectedTicket.price)
+                        : "-"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Thông tin chi tiết + QR */}
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800 leading-snug">
+                    {selectedEvent?.title}
+                  </h2>
+                  <div className="flex items-center text-gray-600 text-sm mt-2">
+                    <Calendar className="w-4 h-4 mr-1" />
+                    {new Date(selectedEvent?.startTime || now).toLocaleString()}
+                  </div>
+                  <div className="flex items-center text-gray-600 text-sm mt-1">
+                    <MapPin className="w-4 h-4 mr-1" />
+                    <span className="truncate max-w-full md:max-w-[20rem]">
+                      {selectedEvent?.address ||
+                        selectedEvent?.locationName ||
+                        "Địa điểm không xác định"}
+                    </span>
+                  </div>
+
+                  {/* Trạng thái vé */}
+                  <div className="mt-4">
+                    <span className="text-sm text-gray-500">Trạng thái:</span>{" "}
+                    <span
+                      className={`px-3 py-[2px] rounded-full text-xs font-medium whitespace-nowrap ${
+                        selectedTicket.status === "Valid"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : selectedTicket.status === "Used"
+                          ? "bg-gray-200 text-gray-700"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {selectedTicket.status === "Valid"
+                        ? "Còn hiệu lực"
+                        : selectedTicket.status === "Used"
+                        ? "Đã dùng"
+                        : "Hết hạn"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* QR code hiển thị */}
+                <div className="mt-6">
+                  {qrLoading ? (
+                    <div className="py-8 text-center text-gray-500">
+                      Đang tải mã QR...
+                    </div>
+                  ) : qrCode ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <img
+                        src={qrCode}
+                        alt="QR"
+                        className="w-44 h-44 object-contain"
+                      />
+                      <div className="text-sm text-green-600">
+                        Quét mã để check-in
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-500 text-center">
+                      Chưa có mã QR — nhấn "Xem mã QR" để tải.
+                    </div>
+                  )}
+                </div>
+
+                {/* Nút hành động */}
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <button
+                    className="px-4 py-2 rounded-md bg-gradient-to-r from-sky-500 to-indigo-500 text-white hover:opacity-90"
+                    onClick={() => handleViewQR(selectedTicket)}
+                  >
+                    {qrLoading ? "Đang tải..." : "Mã QR"}
+                  </button>
+
+                  {/*  Nút xem chi tiết sự kiện */}
+                  <button
+                    onClick={() => {
+                      navigate(`/event/${selectedEvent.eventId}`);
+                    }}
+                    className="px-4 py-2 rounded-md border border-sky-300 text-sky-600 hover:bg-sky-50"
+                  >
+                    Xem chi tiết sự kiện
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 }
-
-export default MyTickets;
