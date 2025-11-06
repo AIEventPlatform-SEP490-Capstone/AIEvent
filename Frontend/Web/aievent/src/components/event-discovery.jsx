@@ -313,7 +313,7 @@ export function EventDiscovery({
                   </div>
 
                   <div className="absolute bottom-4 left-4">
-                    <span className="bg-white/95 backdrop-blur-sm text-gray-900 font-bold px-3 py-1.5 shadow-lg border border-white/20">
+                    <span className="bg-white/95 backdrop-blur-sm text-gray-900 font-bold px-3 py-1.5 shadow-lg border border-white/20 ">
                       {formatPrice(event, event.ticketType === 1)}
                     </span>
                   </div>
