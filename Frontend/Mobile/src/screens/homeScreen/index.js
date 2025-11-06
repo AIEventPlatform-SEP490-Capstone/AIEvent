@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
 import { styles } from './styles';
 import CustomText from '../../components/common/customTextRN';
 import CustomButton from '../../components/common/customButtonRN';
@@ -21,72 +22,69 @@ import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
 import Strings from '../../constants/Strings';
 import ScreenNames from '../../constants/ScreenNames';
-import EventService from '../../api/services/EventService';
-import CategoryService from '../../api/services/CategoryService';
+import { useEvents } from '../../hooks/useEvents';
+import { useCategories } from '../../hooks/useCategories';
+import { selectEvents, selectEventsLoading, selectEventsError } from '../../redux/slices/eventsSlice';
+import { selectCategories, selectCategoriesLoading } from '../../redux/slices/categoriesSlice';
 
 const { width } = Dimensions.get('window');
 
 const HomeScreen = () => {
   const navigation = useNavigation();
+  const dispatch = useDispatch();
+  
+  // Use Redux selectors
+  const events = useSelector(selectEvents);
+  const eventsLoading = useSelector(selectEventsLoading);
+  const eventsError = useSelector(selectEventsError);
+  const categories = useSelector(selectCategories);
+  const categoriesLoading = useSelector(selectCategoriesLoading);
+  
+  // Use custom hooks
+  const { getEvents, searchEvents } = useEvents();
+  const { refreshCategories } = useCategories();
+  
   const [searchText, setSearchText] = useState('');
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [filteredEvents, setFilteredEvents] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadEvents();
-    loadCategories();
+    refreshCategories();
   }, []);
 
   useEffect(() => {
     if (searchText.trim() === '' && !selectedCategory) {
+      // When no filter is applied, use the events from Redux
+      // The events are already transformed in the Redux slice
       setFilteredEvents(events);
     } else {
       filterEvents();
     }
   }, [searchText, events, selectedCategory]);
 
+  useEffect(() => {
+    // Update loading state based on Redux loading states
+    setLoading(eventsLoading || categoriesLoading);
+  }, [eventsLoading, categoriesLoading]);
+
   const loadEvents = async () => {
     try {
       setLoading(true);
       console.log('Loading events...');
-      const response = await EventService.getEvents({
+      const response = await getEvents({
         pageNumber: 1,
         pageSize: 20
       });
       console.log('Events response:', response);
-      if (response.success) {
-        // Transform events to match the mobile UI structure
-        const transformedEvents = response.data.map(event => ({
-          id: event.eventId || event.EventId || event.id || 'unknown',
-          title: event.title || event.Title || 'Chưa có tiêu đề',
-          description: event.description || event.Description || 'Chưa có mô tả',
-          date: event.startTime || event.StartTime ? 
-            new Date(event.startTime || event.StartTime).toLocaleDateString('vi-VN') : 
-            'Chưa xác định',
-          time: event.startTime || event.StartTime ? 
-            new Date(event.startTime || event.StartTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 
-            'Chưa xác định',
-          location: event.locationName || event.LocationName || 'Chưa xác định',
-          rating: event.averageRating || 4.5, // Use actual rating if available, otherwise mock
-          attendees: event.soldQuantity || event.SoldQuantity || 0,
-          // Fix the price calculation logic
-          price: calculateDisplayPrice(event),
-          image: event.imgListEvent && event.imgListEvent.length > 0 ? 
-            { uri: event.imgListEvent[0] } : 
-            'card1', // Use actual image if available
-          category: event.eventCategoryName || event.EventCategoryName || 'Chưa phân loại',
-          categoryId: event.eventCategoryId || event.EventCategoryId || null,
-          isFavorite: event.isFavorite || false,
-          totalTickets: event.totalTickets || event.TotalTickets || 0,
-          tags: event.tags || event.Tags || []
-        }));
-        console.log('Transformed events:', transformedEvents);
-        setEvents(transformedEvents);
-        setFilteredEvents(transformedEvents);
-      } else {
+      // The data transformation is now handled in the Redux slice
+      // We just need to check if the call was successful
+      if (response && response.success) {
+        // The events are already transformed in the Redux store
+        // The useEffect will handle updating filteredEvents
+        console.log('Events loaded successfully');
+      } else if (response && response.message) {
         console.error('Failed to load events:', response.message);
         Alert.alert('Error', response.message);
       }
@@ -95,24 +93,6 @@ const HomeScreen = () => {
       Alert.alert('Error', 'Failed to load events: ' + error.message);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadCategories = async () => {
-    try {
-      console.log('Loading categories...');
-      const response = await CategoryService.getCategories({
-        pageNumber: 1,
-        pageSize: 50
-      });
-      console.log('Categories response:', response);
-      if (response.success) {
-        setCategories(response.data);
-      } else {
-        console.error('Failed to load categories:', response.message);
-      }
-    } catch (error) {
-      console.error('Error loading categories:', error);
     }
   };
 
@@ -153,16 +133,16 @@ const HomeScreen = () => {
     // Filter by search text
     if (searchText.trim() !== '') {
       result = result.filter(event => 
-        event.title.toLowerCase().includes(searchText.toLowerCase()) ||
-        event.description.toLowerCase().includes(searchText.toLowerCase())
+        (event.title && event.title.toLowerCase().includes(searchText.toLowerCase())) ||
+        (event.description && event.description.toLowerCase().includes(searchText.toLowerCase()))
       );
     }
     
     // Filter by category
     if (selectedCategory) {
       result = result.filter(event => 
-        event.categoryId === selectedCategory.eventCategoryId ||
-        event.category === selectedCategory.eventCategoryName
+        (event.categoryId && event.categoryId === selectedCategory.eventCategoryId) ||
+        (event.category && event.category === selectedCategory.eventCategoryName)
       );
     }
     
@@ -171,35 +151,14 @@ const HomeScreen = () => {
 
   const handleSearch = async (query) => {
     try {
-      const response = await EventService.searchEvents(query);
+      const response = await searchEvents(query);
       console.log('Search response:', response);
-      if (response.success) {
-        // Transform events to match the mobile UI structure
-        const transformedEvents = response.data.map(event => ({
-          id: event.eventId || event.EventId || event.id || 'unknown',
-          title: event.title || event.Title || 'Chưa có tiêu đề',
-          description: event.description || event.Description || 'Chưa có mô tả',
-          date: event.startTime || event.StartTime ? 
-            new Date(event.startTime || event.StartTime).toLocaleDateString('vi-VN') : 
-            'Chưa xác định',
-          time: event.startTime || event.StartTime ? 
-            new Date(event.startTime || event.StartTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 
-            'Chưa xác định',
-          location: event.locationName || event.LocationName || 'Chưa xác định',
-          rating: event.averageRating || 4.5, // Use actual rating if available, otherwise mock
-          attendees: event.soldQuantity || event.SoldQuantity || 0,
-          // Fix the price calculation logic
-          price: calculateDisplayPrice(event),
-          image: event.imgListEvent && event.imgListEvent.length > 0 ? 
-            { uri: event.imgListEvent[0] } : 
-            'card1', // Use actual image if available
-          category: event.eventCategoryName || event.EventCategoryName || 'Chưa phân loại',
-          categoryId: event.eventCategoryId || event.EventCategoryId || null,
-          isFavorite: event.isFavorite || false,
-          totalTickets: event.totalTickets || event.TotalTickets || 0,
-          tags: event.tags || event.Tags || []
-        }));
-        setFilteredEvents(transformedEvents);
+      // The data transformation is now handled in the Redux slice
+      // We just need to check if the call was successful
+      if (response && response.success) {
+        // The events are already transformed in the Redux store
+        // The useEffect will handle updating filteredEvents
+        console.log('Search completed successfully');
       }
     } catch (error) {
       console.error('Error searching events:', error);
@@ -207,24 +166,19 @@ const HomeScreen = () => {
     }
   };
 
-  // Test API connection
-  const testApiConnection = async () => {
-    try {
-      const result = await EventService.testConnection();
-      if (result.success) {
-        Alert.alert('Success', 'API connection successful!');
-      } else {
-        Alert.alert('Error', 'API connection failed: ' + result.error);
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to test API connection: ' + error.message);
-    }
-  };
-
   const handleEventPress = (event) => {
-    navigation.navigate(ScreenNames.EVENT_DETAIL_SCREEN, { 
-      eventId: event.id,
-     });
+    // Use the correct ID property - events have eventId, not id
+    const eventId = event.eventId || event.EventId || event.id;
+    
+    // Only navigate if we have a valid eventId
+    if (eventId) {
+      navigation.navigate(ScreenNames.EVENT_DETAIL_SCREEN, { 
+        eventId: eventId,
+      });
+    } else {
+      console.warn('No valid eventId found for event:', event);
+      Alert.alert('Error', 'Unable to open event details');
+    }
   };
 
   const handleCategoryPress = (category) => {
@@ -233,6 +187,13 @@ const HomeScreen = () => {
     } else {
       setSelectedCategory(category);
     }
+  };
+
+  // Robust keyExtractor that handles undefined IDs
+  const keyExtractor = (item, index) => {
+    // Try multiple possible ID properties
+    const id = item.id || item.eventId || item.EventId || index.toString();
+    return id ? id.toString() : Math.random().toString();
   };
 
   const renderEventCard = ({ item }) => (
@@ -296,7 +257,7 @@ const HomeScreen = () => {
           
           {categories.map((category) => (
             <TouchableOpacity
-              key={category.eventCategoryId}
+              key={category.eventCategoryId || category.id || Math.random().toString()}
               style={[
                 styles.categoryChip,
                 selectedCategory && selectedCategory.eventCategoryId === category.eventCategoryId && styles.categoryChipSelected
@@ -352,7 +313,7 @@ const HomeScreen = () => {
             <FlatList
               data={filteredEvents}
               renderItem={renderEventCard}
-              keyExtractor={(item) => item.id.toString()}
+              keyExtractor={keyExtractor}
               showsVerticalScrollIndicator={false}
               scrollEnabled={false}
             />
