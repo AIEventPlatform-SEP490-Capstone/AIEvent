@@ -161,6 +161,64 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   
+  // Ticket information styles
+  ticketRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F0F3F7',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  ticketRowUnavailable: {
+    backgroundColor: '#F8F9FA',
+    opacity: 0.7,
+  },
+  ticketInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  ticketName: {
+    fontSize: 16,
+    fontFamily: Fonts.semiBold,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    marginBottom: 4,
+  },
+  ticketDescription: {
+    fontSize: 14,
+    fontFamily: Fonts.regular,
+    color: Colors.textSecondary,
+    marginBottom: 8,
+  },
+  ticketStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  ticketStat: {
+    fontSize: 12,
+    fontFamily: Fonts.medium,
+    color: Colors.textSecondary,
+  },
+  ticketPriceContainer: {
+    alignItems: 'flex-end',
+  },
+  ticketPrice: {
+    fontSize: 18,
+    fontFamily: Fonts.bold,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  
   // Description section
   descriptionSection: {
     marginBottom: 32,

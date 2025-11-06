@@ -16,7 +16,7 @@ import Images from '../../constants/Images';
 import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
 import Strings from '../../constants/Strings';
-import { EventService } from '../../api/services';
+import EventService from '../../api/services/EventService';
 
 const EventDetailScreen = () => {
   const navigation = useNavigation();
@@ -36,18 +36,84 @@ const EventDetailScreen = () => {
     try {
       setLoading(true);
       const response = await EventService.getEventById(eventId);
+      console.log('Event detail response:', response);
       if (response.success) {
-        setEvent(response.data);
+        // Transform the event data to match the UI structure
+        const transformedEvent = {
+          id: response.data.eventId || response.data.EventId || response.data.id || eventId,
+          title: response.data.title || response.data.Title || 'Chưa có tiêu đề',
+          description: response.data.description || response.data.Description || 'Chưa có mô tả',
+          detailedDescription: response.data.detailedDescription || response.data.DetailedDescription || '',
+          date: response.data.startTime || response.data.StartTime ? 
+            new Date(response.data.startTime || response.data.StartTime).toLocaleDateString('vi-VN') : 
+            'Chưa xác định',
+          time: response.data.startTime || response.data.StartTime ? 
+            new Date(response.data.startTime || response.data.StartTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 
+            'Chưa xác định',
+          endTime: response.data.endTime || response.data.EndTime ? 
+            new Date(response.data.endTime || response.data.EndTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 
+            'Chưa xác định',
+          location: response.data.locationName || response.data.LocationName || 'Chưa xác định',
+          address: response.data.address || response.data.Address || '',
+          rating: response.data.averageRating || 4.5, // Use actual rating if available, otherwise mock
+          attendees: response.data.soldQuantity || response.data.SoldQuantity || 0,
+          totalTickets: response.data.totalTickets || response.data.TotalTickets || 0,
+          // Fix the price calculation logic
+          price: calculateDisplayPrice(response.data),
+          image: response.data.imgListEvent && response.data.imgListEvent.length > 0 ? 
+            { uri: response.data.imgListEvent[0] } : 
+            'card1', // Use actual image if available
+          category: response.data.eventCategoryName || response.data.EventCategoryName || 
+            (response.data.eventCategory ? response.data.eventCategory.eventCategoryName : '') || 'Chưa phân loại',
+          organizer: response.data.organizerEvent ? 
+            (response.data.organizerEvent.companyName || response.data.organizerEvent.CompanyName || 'Nhà tổ chức') : 
+            'Chưa xác định',
+          isFavorite: response.data.isFavorite || false,
+          tags: response.data.tags || response.data.Tags || response.data.eventTags || [],
+          ticketDetails: response.data.ticketDetails || response.data.TicketDetails || []
+        };
+        setEvent(transformedEvent);
       } else {
         Alert.alert('Error', response.message);
         navigation.goBack();
       }
     } catch (error) {
-      // Error loading event detail
+      console.error('Error loading event detail:', error);
       Alert.alert('Error', 'Failed to load event details');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Calculate display price based on ticket details
+  const calculateDisplayPrice = (eventData) => {
+    // If we have ticket details, calculate from them
+    if (eventData.ticketDetails && eventData.ticketDetails.length > 0) {
+      const prices = eventData.ticketDetails.map(ticket => ticket.ticketPrice || 0);
+      const minPrice = Math.min(...prices);
+      const maxPrice = Math.max(...prices);
+      
+      if (minPrice === 0 && maxPrice === 0) {
+        return 'Miễn phí';
+      } else if (minPrice === maxPrice) {
+        return `${minPrice.toLocaleString('vi-VN')}đ`;
+      } else {
+        return `${minPrice.toLocaleString('vi-VN')}đ - ${maxPrice.toLocaleString('vi-VN')}đ`;
+      }
+    }
+    
+    // Fallback to direct ticketPrice property
+    if (eventData.ticketPrice !== undefined && eventData.ticketPrice > 0) {
+      return `${eventData.ticketPrice.toLocaleString('vi-VN')}đ`;
+    }
+    
+    // Check ticketPricingType
+    if (eventData.ticketPricingType === 'Free' || eventData.ticketPricingType === 'free') {
+      return 'Miễn phí';
+    }
+    
+    // Default to Miễn phí if no price information
+    return 'Miễn phí';
   };
 
   const handleJoinEvent = async () => {
@@ -61,7 +127,7 @@ const EventDetailScreen = () => {
         Alert.alert('Error', Strings.JOIN_ERROR);
       }
     } catch (error) {
-      // Error joining event
+      console.error('Error joining event:', error);
       Alert.alert('Error', Strings.JOIN_ERROR);
     } finally {
       setJoining(false);
@@ -79,7 +145,7 @@ const EventDetailScreen = () => {
         Alert.alert('Success', Strings.SHARE_SUCCESS);
       }
     } catch (error) {
-      // Error sharing event
+      console.error('Error sharing event:', error);
     }
   };
 
@@ -90,14 +156,25 @@ const EventDetailScreen = () => {
   };
 
   const getEventImage = () => {
-    const imageMap = {
-      card1: Images.event1,
-      card2: Images.event2,
-      card3: Images.event3,
-      card4: Images.event4,
-      card5: Images.event5,
-    };
-    return imageMap[event?.image] || Images.event1;
+    // If event has an image URI, use it
+    if (event.image && typeof event.image === 'object' && event.image.uri) {
+      return { uri: event.image.uri };
+    }
+    
+    // If event.image is a string identifier, use the image map
+    if (typeof event.image === 'string') {
+      const imageMap = {
+        card1: Images.event1,
+        card2: Images.event2,
+        card3: Images.event3,
+        card4: Images.event4,
+        card5: Images.event5,
+      };
+      return imageMap[event.image] || Images.event1;
+    }
+    
+    // Default fallback
+    return Images.event1;
   };
 
   if (loading) {
@@ -124,6 +201,9 @@ const EventDetailScreen = () => {
       </View>
     );
   }
+
+  // Calculate available tickets
+  const totalAvailableTickets = event.totalTickets - (event.attendees || 0);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -190,7 +270,7 @@ const EventDetailScreen = () => {
                 {Strings.EVENT_TIME}
               </CustomText>
               <CustomText variant="body" color="primary" style={{ fontSize: Fonts.md, fontWeight: '600', fontFamily: Fonts.semiBold }}>
-                {event.time}
+                {event.time} - {event.endTime}
               </CustomText>
             </View>
           </View>
@@ -204,6 +284,11 @@ const EventDetailScreen = () => {
               <CustomText variant="body" color="primary" style={{ fontSize: Fonts.md, fontWeight: '600', fontFamily: Fonts.semiBold }}>
                 {event.location}
               </CustomText>
+              {event.address ? (
+                <CustomText variant="caption" color="secondary" style={{ fontSize: Fonts.sm, marginTop: 2 }}>
+                  {event.address}
+                </CustomText>
+              ) : null}
             </View>
           </View>
 
@@ -235,6 +320,53 @@ const EventDetailScreen = () => {
             </View>
           )}
         </View>
+
+        {/* Ticket Information Section */}
+        {event.ticketDetails && event.ticketDetails.length > 0 && (
+          <View style={styles.detailsSection}>
+            <CustomText variant="h3" color="primary" style={styles.sectionTitle}>
+              Loại vé có sẵn
+            </CustomText>
+            {event.ticketDetails.map((ticket, index) => {
+              const availableTickets = ticket.ticketQuantity - (ticket.soldQuantity || 0);
+              const isAvailable = availableTickets > 0;
+
+              return (
+                <View
+                  key={index}
+                  style={[
+                    styles.ticketRow,
+                    !isAvailable && styles.ticketRowUnavailable
+                  ]}
+                >
+                  <View style={styles.ticketInfo}>
+                    <CustomText variant="body" color="primary" style={styles.ticketName}>
+                      {ticket.ticketName}
+                    </CustomText>
+                    {ticket.ticketDescription ? (
+                      <CustomText variant="caption" color="secondary" style={styles.ticketDescription}>
+                        {ticket.ticketDescription}
+                      </CustomText>
+                    ) : null}
+                    <View style={styles.ticketStats}>
+                      <CustomText variant="caption" color="secondary" style={styles.ticketStat}>
+                        Đã bán: {ticket.soldQuantity || 0}/{ticket.ticketQuantity}
+                      </CustomText>
+                      <CustomText variant="caption" color="secondary" style={styles.ticketStat}>
+                        Còn lại: {availableTickets} vé
+                      </CustomText>
+                    </View>
+                  </View>
+                  <View style={styles.ticketPriceContainer}>
+                    <CustomText variant="body" color="primary" style={styles.ticketPrice}>
+                      {ticket.ticketPrice === 0 ? "Miễn phí" : `${ticket.ticketPrice.toLocaleString('vi-VN')}đ`}
+                    </CustomText>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
 
         {/* Premium Description */}
         <View style={styles.descriptionSection}>

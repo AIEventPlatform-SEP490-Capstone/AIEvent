@@ -1,6 +1,7 @@
 import { getBaseUrl } from '../config/NetworkConfig';
 
 const BASE_URL = getBaseUrl();
+console.log('Base URL:', BASE_URL);
 
 const EndUrls = {
   // Auth
@@ -10,13 +11,13 @@ const EndUrls = {
   CHANGE_PASSWORD: `${BASE_URL}/auth/change-password`,
   
   // Events
-  EVENTS: `${BASE_URL}/events`,
-  EVENT_DETAIL: (id) => `${BASE_URL}/events/${id}`,
-  MY_EVENTS: `${BASE_URL}/events/my-events`,
-  JOIN_EVENT: (id) => `${BASE_URL}/events/${id}/join`,
-  LEAVE_EVENT: (id) => `${BASE_URL}/events/${id}/leave`,
-  SHARE_EVENT: (id) => `${BASE_URL}/events/${id}/share`,
-  EVENT_ATTENDEES: (id) => `${BASE_URL}/events/${id}/attendees`,
+  EVENTS: `${BASE_URL}/event`,
+  EVENT_DETAIL: (id) => `${BASE_URL}/event/${id}`,
+  MY_EVENTS: `${BASE_URL}/event/my-events`,
+  JOIN_EVENT: (id) => `${BASE_URL}/event/${id}/join`,
+  LEAVE_EVENT: (id) => `${BASE_URL}/event/${id}/leave`,
+  SHARE_EVENT: (id) => `${BASE_URL}/event/${id}/share`,
+  EVENT_ATTENDEES: (id) => `${BASE_URL}/event/${id}/attendees`,
   
   // User
   PROFILE: `${BASE_URL}/user/profile`,
@@ -32,14 +33,8 @@ const EndUrls = {
   PAYMENT_INFORMATION: `${BASE_URL}/payment/information`,
   PAYMENT_INFORMATION_DELETE: (id) => `${BASE_URL}/payment/information/${id}`,
   PAYMENT_WITHDRAW: `${BASE_URL}/payment/withdraw`,
-  
-  // Search
-  SEARCH_EVENTS: `${BASE_URL}/events/search`,
-  
-  // Booking
-  BOOKED_EVENTS: `${BASE_URL}/booking/event`,
-  EVENT_TICKETS: (eventId) => `${BASE_URL}/booking/event/${eventId}/ticket`,
-  TICKET_QR: (ticketId) => `${BASE_URL}/booking/ticket/qr/${ticketId}`,
 };
+
+console.log('EndUrls:', EndUrls);
 
 export default EndUrls;
