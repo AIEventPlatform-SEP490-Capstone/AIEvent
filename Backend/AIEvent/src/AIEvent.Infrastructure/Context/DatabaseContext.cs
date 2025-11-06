@@ -33,6 +33,7 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<WithdrawRequest> WithdrawRequests { get; set; }
         public DbSet<PaymentInformation> PaymentInformations { get; set; }
+        public DbSet<EndEventRequest> EndEventRequests { get; set; }
         public DbSet<Rating> Ratings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -157,11 +158,6 @@ namespace AIEvent.Infrastructure.Context
                     .WithMany(p => p.EndEventRequests)
                     .HasForeignKey(e => e.PaymentInformationId)
                     .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasIndex(e => e.EventId).HasDatabaseName("IX_EndEventRequests_EventId");
-                entity.HasIndex(e => e.OrganizerProfileId).HasDatabaseName("IX_EndEventRequests_OrganizerProfileId");
-                entity.HasIndex(e => e.Status).HasDatabaseName("IX_EndEventRequests_Status");
-                entity.HasIndex(e => new { e.OrganizerProfileId, e.Status }).HasDatabaseName("IX_EndEventRequests_OrganizerProfile_Status");
             });
 
             //-----------------RevenueReport-------------
