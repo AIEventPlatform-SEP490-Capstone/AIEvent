@@ -905,85 +905,214 @@ Nhấn OK để xác nhận xóa.`;
           </DialogHeader>
           {selectedEndEventRequest && (
             <div className="py-4 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">Trạng thái</p>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getEndEventStatusBadgeClass(selectedEndEventRequest.status)}`}>
-                    {EndEventStatusDisplay[selectedEndEventRequest.status]}
-                  </span>
+              {/* Status and Basic Info - Horizontal Rectangles */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Trạng thái</p>
+                  </div>
+                  <div className="mt-2">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getEndEventStatusBadgeClass(selectedEndEventRequest.status)}`}>
+                      {EndEventStatusDisplay[selectedEndEventRequest.status]}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">Ngày tạo</p>
-                  <p className="font-medium">
-                    {new Date(selectedEndEventRequest.createdAt).toLocaleDateString('vi-VN')}{' '}
-                    {new Date(selectedEndEventRequest.createdAt).toLocaleTimeString('vi-VN')}
-                  </p>
+                
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Ngày tạo</p>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-sm font-medium text-gray-900">
+                      {new Date(selectedEndEventRequest.createdAt).toLocaleDateString('vi-VN')}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(selectedEndEventRequest.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+                
+                {selectedEndEventRequest.reviewedAt && (
+                  <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Ngày duyệt</p>
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-sm font-medium text-gray-900">
+                        {new Date(selectedEndEventRequest.reviewedAt).toLocaleDateString('vi-VN')}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(selectedEndEventRequest.reviewedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Tên sự kiện</p>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-sm font-medium text-gray-900 truncate" title={selectedEndEventRequest.eventTitle}>
+                      {selectedEndEventRequest.eventTitle}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {selectedEndEventRequest.summary && (
-                <div>
-                  <p className="text-sm text-gray-500">Tóm tắt</p>
-                  <p className="font-medium">{selectedEndEventRequest.summary}</p>
-                </div>
-              )}
-
+              {/* Event Time and Summary - Horizontal Rectangles */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">Tổng tiền</p>
-                  <p className="font-medium">
-                    {selectedEndEventRequest.totalAmount?.toLocaleString('vi-VN')} VNĐ
-                  </p>
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Thời gian sự kiện</p>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-sm font-medium text-gray-900">
+                      {new Date(selectedEndEventRequest.startTime).toLocaleDateString('vi-VN')}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">đến</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {new Date(selectedEndEventRequest.endTime).toLocaleDateString('vi-VN')}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">Phí nền tảng</p>
-                  <p className="font-medium">
-                    {selectedEndEventRequest.platformFee?.toLocaleString('vi-VN')} VNĐ
-                  </p>
+                
+                {selectedEndEventRequest.summary && (
+                  <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow md:col-span-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Tóm tắt</p>
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-900">{selectedEndEventRequest.summary}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Financial Information - Horizontal Rectangles */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">Tổng tiền</p>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-lg font-bold text-blue-800">
+                      {selectedEndEventRequest.totalAmount?.toLocaleString('vi-VN')} <span className="text-sm">VNĐ</span>
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">Số tiền nhận</p>
-                  <p className="font-medium">
-                    {selectedEndEventRequest.payoutAmount?.toLocaleString('vi-VN')} VNĐ
-                  </p>
+                
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-orange-600 uppercase tracking-wide">Phí nền tảng</p>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-lg font-bold text-orange-800">
+                      {selectedEndEventRequest.platformFee?.toLocaleString('vi-VN')} <span className="text-sm">VNĐ</span>
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-green-600 uppercase tracking-wide">Số tiền nhận</p>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-lg font-bold text-green-800">
+                      {selectedEndEventRequest.payoutAmount?.toLocaleString('vi-VN')} <span className="text-sm">VNĐ</span>
+                    </p>
+                  </div>
                 </div>
               </div>
 
+              {/* Organizer Information - Horizontal Rectangle */}
+              <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Thông tin tổ chức</p>
+                </div>
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="border-l-4 border-blue-500 pl-3 py-1">
+                    <p className="text-xs text-gray-500">Tên tổ chức</p>
+                    <p className="text-sm font-medium text-gray-900 mt-1">{selectedEndEventRequest.organizerName}</p>
+                  </div>
+                  <div className="border-l-4 border-green-500 pl-3 py-1">
+                    <p className="text-xs text-gray-500">Email liên hệ</p>
+                    <p className="text-sm font-medium text-gray-900 mt-1">{selectedEndEventRequest.contactEmail}</p>
+                  </div>
+                  <div className="border-l-4 border-purple-500 pl-3 py-1">
+                    <p className="text-xs text-gray-500">Số điện thoại</p>
+                    <p className="text-sm font-medium text-gray-900 mt-1">{selectedEndEventRequest.contactPhone}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Information - Horizontal Rectangle */}
+              <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Thông tin thanh toán</p>
+                </div>
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="border-l-4 border-indigo-500 pl-3 py-1">
+                    <p className="text-xs text-gray-500">Tên ngân hàng</p>
+                    <p className="text-sm font-medium text-gray-900 mt-1">{selectedEndEventRequest.bankName}</p>
+                  </div>
+                  <div className="border-l-4 border-teal-500 pl-3 py-1">
+                    <p className="text-xs text-gray-500">Chủ tài khoản</p>
+                    <p className="text-sm font-medium text-gray-900 mt-1">{selectedEndEventRequest.accountHolderName}</p>
+                  </div>
+                  <div className="border-l-4 border-amber-500 pl-3 py-1">
+                    <p className="text-xs text-gray-500">Số tài khoản</p>
+                    <p className="text-sm font-medium text-gray-900 mt-1">{selectedEndEventRequest.accountNumber}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Admin Note - Horizontal Rectangle */}
               {selectedEndEventRequest.adminNote && (
-                <div>
-                  <p className="text-sm text-gray-500">Ghi chú từ quản trị viên</p>
-                  <p className="font-medium bg-gray-50 p-2 rounded">{selectedEndEventRequest.adminNote}</p>
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Ghi chú từ quản trị viên</p>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg">{selectedEndEventRequest.adminNote}</p>
+                  </div>
                 </div>
               )}
 
+              {/* Evidence Images - Horizontal Rectangle */}
               {selectedEndEventRequest.evidenceImages && selectedEndEventRequest.evidenceImages.length > 0 && (
-                <div>
-                  <p className="text-sm text-gray-500">Hình ảnh bằng chứng</p>
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    {selectedEndEventRequest.evidenceImages.map((image, index) => (
-                      <img
-                        key={index}
-                        src={image}
-                        alt={`Evidence ${index + 1}`}
-                        className="h-32 w-full object-cover rounded-md border cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={() => {
-                          setSelectedImage(image);
-                          setIsImageModalOpen(true);
-                        }}
-                      />
-                    ))}
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Hình ảnh bằng chứng</p>
+                  </div>
+                  <div className="mt-3">
+                    <div className="grid grid-cols-8 gap-2">
+                      {selectedEndEventRequest.evidenceImages.map((image, index) => (
+                        <div key={index} className="aspect-square overflow-hidden rounded-lg border border-gray-200">
+                          <img
+                            src={image}
+                            alt={`Evidence ${index + 1}`}
+                            className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => {
+                              setSelectedImage(image);
+                              setIsImageModalOpen(true);
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
 
               {/* Approval Actions for pending requests */}
               {selectedEndEventRequest.status === EndEventStatus.PendingApprovalEnd && (
-                <div className="pt-4 border-t border-gray-200">
-                  <p className="text-sm text-gray-500 mb-2">Hành động phê duyệt</p>
-                  <div className="flex gap-2">
+                <div className="border-t border-gray-200 pt-6 mt-4">
+                  <p className="text-sm font-medium text-gray-900 mb-3">Hành động phê duyệt</p>
+                  <div className="flex gap-3">
                     <Button
                       variant="destructive"
-                      size="sm"
+                      className="px-4 py-2 text-sm font-medium rounded-lg"
                       onClick={async () => {
                         const reason = prompt('Vui lòng nhập lý do từ chối:');
                         if (reason !== null) {
@@ -1009,7 +1138,7 @@ Nhấn OK để xác nhận xóa.`;
                     </Button>
                     <Button
                       variant="default"
-                      size="sm"
+                      className="px-4 py-2 text-sm font-medium rounded-lg"
                       onClick={async () => {
                         try {
                           await confirmEndEvent({
