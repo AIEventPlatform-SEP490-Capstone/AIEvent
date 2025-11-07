@@ -28,7 +28,8 @@ import {
   Mail,
   Phone,
   Image as ImageIcon,
-  Shield
+  Shield,
+  X
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
@@ -64,6 +65,10 @@ const ManagerEventDetailPage = () => {
   const [selectedEndEventRequest, setSelectedEndEventRequest] = useState(null);
   const [isEndEventDetailOpen, setIsEndEventDetailOpen] = useState(false);
   const { getEndEventRequests, getEndEventRequestById, confirmEndEvent } = useEndEventRequests();
+  
+  // Add state for image lightbox
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState('');
 
   useEffect(() => {
     if (eventId) {
@@ -960,7 +965,11 @@ Nhấn OK để xác nhận xóa.`;
                         key={index}
                         src={image}
                         alt={`Evidence ${index + 1}`}
-                        className="h-32 w-full object-cover rounded-md border"
+                        className="h-32 w-full object-cover rounded-md border cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => {
+                          setSelectedImage(image);
+                          setIsImageModalOpen(true);
+                        }}
                       />
                     ))}
                   </div>
@@ -1026,6 +1035,25 @@ Nhấn OK để xác nhận xóa.`;
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Lightbox Modal */}
+      <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
+          <div className="relative">
+            <img 
+              src={selectedImage} 
+              alt="Enlarged evidence" 
+              className="w-full h-full object-contain max-h-[80vh]"
+            />
+            <button
+              onClick={() => setIsImageModalOpen(false)}
+              className="absolute top-2 right-2 bg-black bg-opacity-50 text-white rounded-full p-2 hover:bg-opacity-75 transition-all"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
