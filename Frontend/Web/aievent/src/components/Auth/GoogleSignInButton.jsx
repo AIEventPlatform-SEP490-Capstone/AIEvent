@@ -58,6 +58,7 @@ const GoogleSignInButton = ({ onLoadingChange }) => {
               text: 'signin_with',
               shape: 'rectangular',
             });
+            setIsGoogleLoaded(true);
             setIsInitialized(true);
           }
         }
@@ -80,8 +81,13 @@ const GoogleSignInButton = ({ onLoadingChange }) => {
           // console.error('Failed to load Google Identity Services');
         };
         document.head.appendChild(script);
-      } else if (window.google && !isInitialized) {
-        initializeGoogleSignIn();
+      } else if (window.google) {
+        if (!isGoogleLoaded) {
+          setIsGoogleLoaded(true);
+        }
+        if (!isInitialized) {
+          initializeGoogleSignIn();
+        }
       }
     };
 

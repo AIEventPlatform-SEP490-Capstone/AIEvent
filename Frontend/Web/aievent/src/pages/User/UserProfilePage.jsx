@@ -692,7 +692,7 @@ const UserProfilePage = () => {
       {/* Add Payment Information Modal */}
       <Dialog open={isAddPaymentModalOpen} onOpenChange={setIsAddPaymentModalOpen}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden p-0">
-          <div className="p-6">
+          <div className="p-6 max-h-[90vh] overflow-y-auto">
             <AddPaymentModal
               onClose={() => setIsAddPaymentModalOpen(false)}
               onSuccess={() => {
@@ -1684,9 +1684,9 @@ const AddPaymentModal = ({ onClose, onSuccess }) => {
         <p className="text-gray-600 text-sm">Thêm thông tin tài khoản ngân hàng của bạn để sử dụng</p>
       </DialogHeader>
 
-      <div className="flex gap-6 flex-1 min-h-0">
+      <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0 overflow-hidden">
         {/* Left Side - Form */}
-        <div className="w-80 flex-shrink-0 space-y-6 overflow-y-auto pr-2">
+        <div className="w-full lg:w-[28rem] xl:w-[30rem] flex-shrink-0 space-y-6 pr-1 lg:pr-3 pb-6 lg:pb-0 lg:max-h-[70vh] lg:overflow-y-auto">
           {/* Bank Selection */}
           <div>
             <Label className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
@@ -1754,7 +1754,7 @@ const AddPaymentModal = ({ onClose, onSuccess }) => {
 
                 {/* Bank List */}
                 {!formData.bankName && (
-                  <div className="border-2 border-gray-200 rounded-xl max-h-64 overflow-y-auto shadow-inner bg-gray-50">
+                  <div className="border-2 border-gray-200 rounded-xl max-h-60 sm:max-h-64 lg:max-h-72 overflow-y-auto shadow-inner bg-gray-50">
                     {filteredBanks.length === 0 ? (
                       <div className="text-center py-8">
                         <Search className="w-12 h-12 text-gray-300 mx-auto mb-3" />
@@ -1878,8 +1878,8 @@ const AddPaymentModal = ({ onClose, onSuccess }) => {
         </div>
 
         {/* Right Side - Card Preview */}
-        <div className="flex-1 min-w-0">
-          <div className="sticky top-0">
+        <div className="flex-1 min-w-0 w-full">
+          <div className="lg:sticky lg:top-0">
             {formData.bankName ? (
               <div className="group relative overflow-hidden bg-gradient-to-br from-[#F8F8F8] to-[#E8E8E8] rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 border border-[#D1D5DB]">
                 {/* Decorative Pattern */}
@@ -1959,7 +1959,7 @@ const AddPaymentModal = ({ onClose, onSuccess }) => {
                 </div>
               </div>
             ) : (
-              <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-2 border-dashed border-blue-200 rounded-2xl p-12 text-center min-h-[400px] flex flex-col justify-center">
+              <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-2 border-dashed border-blue-200 rounded-2xl p-10 sm:p-12 text-center min-h-[320px] sm:min-h-[400px] flex flex-col justify-center">
                 <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl border-4 border-blue-100 transform hover:scale-110 transition-transform duration-300">
                   <CreditCard className="w-16 h-16 text-blue-600" />
                 </div>
@@ -1976,20 +1976,20 @@ const AddPaymentModal = ({ onClose, onSuccess }) => {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
-        <div className="flex space-x-3">
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center mt-8 pt-6 border-t border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:space-x-3 gap-3 sm:gap-0 w-full sm:w-auto">
           <Button
             variant="outline"
             onClick={onClose}
             disabled={isSubmitting}
-            className="border-gray-300 hover:border-gray-400 px-6"
+            className="border-gray-300 hover:border-gray-400 px-6 w-full sm:w-auto"
           >
             Hủy
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 px-8"
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 px-8 w-full sm:w-auto"
           >
             {isSubmitting ? 'Đang thêm...' : 'Thêm thẻ'}
           </Button>
