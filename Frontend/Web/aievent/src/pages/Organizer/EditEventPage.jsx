@@ -38,8 +38,8 @@ import { useCategories } from '../../hooks/useCategories';
 import { useTags } from '../../hooks/useTags';
 import { useApp } from '../../hooks/useApp';
 
-// Import ConfirmStatus enum
-import { ConfirmStatus } from '../../constants/eventConstants';
+// Import EventStatus enum
+import { EventStatus } from '../../constants/eventConstants';
 
 // Import Cloudinary utility
 import { uploadImagesToCloudinary } from '../../utils/cloudinary';

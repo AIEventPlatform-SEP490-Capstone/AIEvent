@@ -1,5 +1,5 @@
 import fetcher from './fetcher';
-import { ConfirmStatus } from '../constants/eventConstants';
+import { EventStatus } from '../constants/eventConstants';
 
 export const eventAPI = {
   // Get all events with filters
@@ -53,7 +53,7 @@ export const eventAPI = {
     formData.append('EndTime', eventData.endTime);
     formData.append('TotalTickets', eventData.totalTickets);
     formData.append('TicketPricingType', eventData.ticketPricingType);
-    formData.append('RequireApproval', eventData.requireApproval || ConfirmStatus.NeedConfirm);
+    formData.append('RequireApproval', eventData.requireApproval || EventStatus.PendingApproval);
     formData.append('Publish', eventData.publish || false);
     
     // Optional fields

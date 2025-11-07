@@ -1,15 +1,25 @@
 // Event-related constants
 
-export const ConfirmStatus = {
-  Approve: 'Approve',
-  Reject: 'Reject',
-  NeedConfirm: 'NeedConfirm'
+export const EventStatus = {
+  PendingApproval: 'PendingApproval',
+  Approved: 'Approved',
+  Rejected: 'Rejected',
+  Cancelled: 'Cancelled',
+  PendingApprovalEnd: 'PendingApprovalEnd',
+  RejectEnded: 'RejectEnded',
+  WaitingForPayout: 'WaitingForPayout',
+  Ended: 'Ended'
 };
 
-export const ConfirmStatusDisplay = {
-  [ConfirmStatus.Approve]: 'Đã phê duyệt',
-  [ConfirmStatus.Reject]: 'Bị từ chối',
-  [ConfirmStatus.NeedConfirm]: 'Chờ phê duyệt'
+export const EventStatusDisplay = {
+  [EventStatus.PendingApproval]: 'Chờ phê duyệt',
+  [EventStatus.Approved]: 'Đã phê duyệt',
+  [EventStatus.Rejected]: 'Bị từ chối',
+  [EventStatus.Cancelled]: 'Đã hủy',
+  [EventStatus.PendingApprovalEnd]: 'Chờ kết thúc',
+  [EventStatus.RejectEnded]: 'Từ chối kết thúc',
+  [EventStatus.WaitingForPayout]: 'Chờ thanh toán',
+  [EventStatus.Ended]: 'Đã kết thúc'
 };
 
 export const TicketType = {

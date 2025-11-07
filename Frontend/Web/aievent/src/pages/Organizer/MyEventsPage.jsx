@@ -30,8 +30,8 @@ import { Label } from '../../components/ui/label';
 import { useEvents } from '../../hooks/useEvents';
 import { PATH } from '../../routes/path';
 
-// Import ConfirmStatus constants
-import { ConfirmStatus, ConfirmStatusDisplay } from '../../constants/eventConstants';
+// Import EventStatus constants
+import { EventStatus, EventStatusDisplay } from '../../constants/eventConstants';
 
 const MyEventsPage = () => {
   const navigate = useNavigate();
@@ -131,9 +131,19 @@ const MyEventsPage = () => {
     }
 
     // Apply status filter - but only for time-based filters, not approval status tabs
-    // Approval status tabs (NeedConfirm, Approve, Reject) are handled by the API call
+    // Approval status tabs (PendingApproval, Approved, Rejected, etc.) are handled by the API call
     // Draft tab is also handled by the API call
-    const isSpecialTab = ['draft', ConfirmStatus.NeedConfirm, ConfirmStatus.Approve, ConfirmStatus.Reject].includes(activeTab);
+    const isSpecialTab = [
+      'draft', 
+      EventStatus.PendingApproval, 
+      EventStatus.Approved, 
+      EventStatus.Rejected,
+      EventStatus.Cancelled,
+      EventStatus.PendingApprovalEnd,
+      EventStatus.RejectEnded,
+      EventStatus.WaitingForPayout,
+      EventStatus.Ended
+    ].includes(activeTab);
     
     if (filterStatus && filterStatus !== 'all' && !isSpecialTab) {
       filtered = filtered.filter(event => {
@@ -141,6 +151,15 @@ const MyEventsPage = () => {
         return status === filterStatus;
       });
       console.log('After status filter:', filtered.length);
+    }
+    
+    // If filterStatus is one of the EventStatus values, apply it regardless of activeTab
+    if (filterStatus && filterStatus !== 'all' && Object.values(EventStatus).includes(filterStatus)) {
+      filtered = filtered.filter(event => {
+        const eventStatus = 'status' in event ? event.status : null;
+        return eventStatus === filterStatus;
+      });
+      console.log('After EventStatus filter:', filtered.length);
     }
 
     // Apply sorting
@@ -305,9 +324,14 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
     switch (tab) {
       case 'all': return 'Tất cả sự kiện';
       case 'draft': return 'Bản nháp';
-      case ConfirmStatus.NeedConfirm: return 'Chờ phê duyệt';
-      case ConfirmStatus.Approve: return 'Đã phê duyệt';
-      case ConfirmStatus.Reject: return 'Bị từ chối';
+      case EventStatus.PendingApproval: return 'Chờ phê duyệt';
+      case EventStatus.Approved: return 'Đã phê duyệt';
+      case EventStatus.Rejected: return 'Bị từ chối';
+      case EventStatus.Cancelled: return 'Đã hủy';
+      case EventStatus.PendingApprovalEnd: return 'Chờ kết thúc';
+      case EventStatus.RejectEnded: return 'Từ chối kết thúc';
+      case EventStatus.WaitingForPayout: return 'Chờ thanh toán';
+      case EventStatus.Ended: return 'Đã kết thúc';
       default: return tab;
     }
   };
@@ -337,7 +361,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       };
     }
     
-    if (activeTab === ConfirmStatus.NeedConfirm) {
+    if (activeTab === EventStatus.PendingApproval) {
       // Count events needing approval
       return {
         total: allEvents.length,
@@ -348,7 +372,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       };
     }
     
-    if (activeTab === ConfirmStatus.Approve) {
+    if (activeTab === EventStatus.Approved) {
       // Count approved events
       return {
         total: allEvents.length,
@@ -359,8 +383,63 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       };
     }
     
-    if (activeTab === ConfirmStatus.Reject) {
+    if (activeTab === EventStatus.Rejected) {
       // Count rejected events
+      return {
+        total: allEvents.length,
+        upcoming: 0,
+        ongoing: 0,
+        completed: 0,
+        drafts: 0
+      };
+    }
+    
+    if (activeTab === EventStatus.Cancelled) {
+      // Count cancelled events
+      return {
+        total: allEvents.length,
+        upcoming: 0,
+        ongoing: 0,
+        completed: 0,
+        drafts: 0
+      };
+    }
+    
+    if (activeTab === EventStatus.PendingApprovalEnd) {
+      // Count pending approval end events
+      return {
+        total: allEvents.length,
+        upcoming: 0,
+        ongoing: 0,
+        completed: 0,
+        drafts: 0
+      };
+    }
+    
+    if (activeTab === EventStatus.RejectEnded) {
+      // Count reject ended events
+      return {
+        total: allEvents.length,
+        upcoming: 0,
+        ongoing: 0,
+        completed: 0,
+        drafts: 0
+      };
+    }
+    
+    if (activeTab === EventStatus.WaitingForPayout) {
+      // Count waiting for payout events
+      return {
+        total: allEvents.length,
+        upcoming: 0,
+        ongoing: 0,
+        completed: 0,
+        drafts: 0
+      };
+    }
+    
+    if (activeTab === EventStatus.Ended) {
+      // Count ended events
       return {
         total: allEvents.length,
         upcoming: 0,
@@ -544,6 +623,14 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
             <SelectItem value="upcoming">Sắp diễn ra</SelectItem>
             <SelectItem value="ongoing">Đang diễn ra</SelectItem>
             <SelectItem value="completed">Đã hoàn thành</SelectItem>
+            <SelectItem value={EventStatus.PendingApproval}>Chờ phê duyệt</SelectItem>
+            <SelectItem value={EventStatus.Approved}>Đã phê duyệt</SelectItem>
+            <SelectItem value={EventStatus.Rejected}>Bị từ chối</SelectItem>
+            <SelectItem value={EventStatus.Cancelled}>Đã hủy</SelectItem>
+            <SelectItem value={EventStatus.PendingApprovalEnd}>Chờ kết thúc</SelectItem>
+            <SelectItem value={EventStatus.RejectEnded}>Từ chối kết thúc</SelectItem>
+            <SelectItem value={EventStatus.WaitingForPayout}>Chờ thanh toán</SelectItem>
+            <SelectItem value={EventStatus.Ended}>Đã kết thúc</SelectItem>
           </SelectContent>
         </Select>
 
@@ -589,9 +676,9 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
             Bản nháp ({stats.drafts})
           </button>
           <button
-            onClick={() => setActiveTab(ConfirmStatus.NeedConfirm)}
+            onClick={() => setActiveTab(EventStatus.PendingApproval)}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === ConfirmStatus.NeedConfirm
+              activeTab === EventStatus.PendingApproval
                 ? 'bg-white text-blue-600 shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
@@ -599,9 +686,9 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
             Chờ phê duyệt
           </button>
           <button
-            onClick={() => setActiveTab(ConfirmStatus.Approve)}
+            onClick={() => setActiveTab(EventStatus.Approved)}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === ConfirmStatus.Approve
+              activeTab === EventStatus.Approved
                 ? 'bg-white text-blue-600 shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
@@ -609,14 +696,64 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
             Đã phê duyệt
           </button>
           <button
-            onClick={() => setActiveTab(ConfirmStatus.Reject)}
+            onClick={() => setActiveTab(EventStatus.Rejected)}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === ConfirmStatus.Reject
+              activeTab === EventStatus.Rejected
                 ? 'bg-white text-blue-600 shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             Bị từ chối
+          </button>
+          <button
+            onClick={() => setActiveTab(EventStatus.Cancelled)}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              activeTab === EventStatus.Cancelled
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Đã hủy
+          </button>
+          <button
+            onClick={() => setActiveTab(EventStatus.PendingApprovalEnd)}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              activeTab === EventStatus.PendingApprovalEnd
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Chờ kết thúc
+          </button>
+          <button
+            onClick={() => setActiveTab(EventStatus.RejectEnded)}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              activeTab === EventStatus.RejectEnded
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Từ chối kết thúc
+          </button>
+          <button
+            onClick={() => setActiveTab(EventStatus.WaitingForPayout)}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              activeTab === EventStatus.WaitingForPayout
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Chờ thanh toán
+          </button>
+          <button
+            onClick={() => setActiveTab(EventStatus.Ended)}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              activeTab === EventStatus.Ended
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Đã kết thúc
           </button>
         </div>
       </div>
@@ -692,17 +829,32 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                               <Badge 
                                 variant="outline" 
                                 className={
-                                  eventStatus === ConfirmStatus.Approve 
+                                  eventStatus === EventStatus.Approved 
                                     ? 'text-green-600 border-green-200 bg-green-50' 
-                                    : eventStatus === ConfirmStatus.Reject 
+                                    : eventStatus === EventStatus.Rejected 
                                       ? 'text-red-600 border-red-200 bg-red-50' 
-                                      : 'text-orange-600 border-orange-200 bg-orange-50'
+                                      : eventStatus === EventStatus.Cancelled
+                                        ? 'text-gray-600 border-gray-200 bg-gray-50'
+                                        : eventStatus === EventStatus.PendingApprovalEnd
+                                          ? 'text-yellow-600 border-yellow-200 bg-yellow-50'
+                                          : eventStatus === EventStatus.RejectEnded
+                                            ? 'text-purple-600 border-purple-200 bg-purple-50'
+                                            : eventStatus === EventStatus.WaitingForPayout
+                                              ? 'text-indigo-600 border-indigo-200 bg-indigo-50'
+                                              : eventStatus === EventStatus.Ended
+                                                ? 'text-blue-600 border-blue-200 bg-blue-50'
+                                                : 'text-orange-600 border-orange-200 bg-orange-50'
                                 }
                               >
-                                {eventStatus === ConfirmStatus.Approve && <CheckCircle className="w-3 h-3 mr-1" />}
-                                {eventStatus === ConfirmStatus.Reject && <XCircle className="w-3 h-3 mr-1" />}
-                                {eventStatus === ConfirmStatus.NeedConfirm && <Clock className="w-3 h-3 mr-1" />}
-                                {ConfirmStatusDisplay[eventStatus] || eventStatus}
+                                {eventStatus === EventStatus.Approved && <CheckCircle className="w-3 h-3 mr-1" />}
+                                {eventStatus === EventStatus.Rejected && <XCircle className="w-3 h-3 mr-1" />}
+                                {eventStatus === EventStatus.Cancelled && <XCircle className="w-3 h-3 mr-1" />}
+                                {eventStatus === EventStatus.PendingApprovalEnd && <Clock className="w-3 h-3 mr-1" />}
+                                {eventStatus === EventStatus.RejectEnded && <XCircle className="w-3 h-3 mr-1" />}
+                                {eventStatus === EventStatus.WaitingForPayout && <Clock className="w-3 h-3 mr-1" />}
+                                {eventStatus === EventStatus.Ended && <CheckCircle className="w-3 h-3 mr-1" />}
+                                {eventStatus === EventStatus.PendingApproval && <Clock className="w-3 h-3 mr-1" />}
+                                {EventStatusDisplay[eventStatus] || eventStatus}
                               </Badge>
                             )}
                           </div>

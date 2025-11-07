@@ -42,8 +42,8 @@ import { PATH } from '../../routes/path';
 // Import the EventDetailGuestPage for preview
 import EventDetailGuestPage from '../Event/EventDetailGuestPage';
 
-// Import ConfirmStatus constants
-import { ConfirmStatus, ConfirmStatusDisplay } from '../../constants/eventConstants';
+// Import EventStatus constants
+import { EventStatus, EventStatusDisplay } from '../../constants/eventConstants';
 
 const ManagerEventDetailPage = () => {
   const { eventId } = useParams();
@@ -342,12 +342,12 @@ Nhấn OK để xác nhận xóa.`;
                   <Badge 
                     variant="outline" 
                     className={
-                      event.requireApproval === ConfirmStatus.Approve ? 'bg-green-100 text-green-800 border-green-200' :
-                      event.requireApproval === ConfirmStatus.Reject ? 'bg-red-100 text-red-800 border-red-200' :
+                      event.requireApproval === EventStatus.Approved ? 'bg-green-100 text-green-800 border-green-200' :
+                      event.requireApproval === EventStatus.Rejected ? 'bg-red-100 text-red-800 border-red-200' :
                       'bg-yellow-100 text-yellow-800 border-yellow-200'
                     }
                   >
-                    {ConfirmStatusDisplay[event.requireApproval] || event.requireApproval}
+                    {EventStatusDisplay[event.requireApproval] || event.requireApproval}
                   </Badge>
                 )}
               </div>

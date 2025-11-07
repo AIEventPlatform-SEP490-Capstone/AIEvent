@@ -40,8 +40,8 @@ import { useApp } from '../../hooks/useApp';
 // Import the EventDetailGuestPage component for preview
 import EventDetailGuestPage from '../Event/EventDetailGuestPage';
 
-// Import ConfirmStatus enum
-import { ConfirmStatus } from '../../constants/eventConstants';
+// Import EventStatus enum
+import { EventStatus } from '../../constants/eventConstants';
 
 // Import Cloudinary utility
 import { uploadImagesToCloudinary } from '../../utils/cloudinary';
@@ -62,7 +62,7 @@ const createEventSchema = z.object({
   linkRef: z.string().optional(),
   eventCategoryId: z.string().optional(),
   ticketPricingType: z.string().min(1, 'Loại vé là bắt buộc'),
-  requireApproval: z.nativeEnum(ConfirmStatus).default(ConfirmStatus.NeedConfirm),
+  requireApproval: z.nativeEnum(EventStatus).default(EventStatus.PendingApproval),
   publish: z.boolean().default(false),
   saleStartTime: z.string().min(1, 'Thời gian bắt đầu bán vé là bắt buộc'),
   saleEndTime: z.string().min(1, 'Thời gian kết thúc bán vé là bắt buộc'),
@@ -154,7 +154,7 @@ const CreateEventPage = () => {
       district: '',
       linkRef: '',
       eventCategoryId: '',
-      requireApproval: ConfirmStatus.NeedConfirm,
+      requireApproval: EventStatus.PendingApproval,
       publish: false,
       saleStartTime: '',
       saleEndTime: '',
