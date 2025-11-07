@@ -41,6 +41,7 @@ const TimelinePage = () => {
   const [dayViewLimit, setDayViewLimit] = useState(20); // Giới hạn số lượng events hiển thị trong Day View
   const [activeTab, setActiveTab] = useState("info"); // Tab state: "info", "tickets", "actions"
   const [isMapModalOpen, setIsMapModalOpen] = useState(false); // State for map modal
+  const responsiveScaleClasses = "transform-gpu origin-top scale-100 sm:scale-95 lg:scale-90";
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -166,7 +167,7 @@ const TimelinePage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Hero Header with Animated Background */}
-      <div className="container mx-auto px-4 pt-6 max-w-7xl">
+      <div className={`container mx-auto px-4 pt-6 max-w-7xl ${responsiveScaleClasses} transition-transform duration-300`}>
         <div className="relative text-white overflow-hidden rounded-3xl shadow-2xl" style={{ background: 'linear-gradient(to right, rgb(30 41 59) 0%, rgb(55 65 81) 30%, rgb(75 85 99) 50%, rgb(29 78 216) 100%)' }}>
           {/* Animated Background Patterns */}
           <div className="absolute inset-0 overflow-hidden rounded-3xl">
@@ -179,7 +180,7 @@ const TimelinePage = () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
               <div className="space-y-2 animate-fade-in">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-6 h-6 animate-pulse" />
+                  <CalendarIcon className="w-6 h-6 animate-pulse" />
                   <h1 className="text-4xl font-bold tracking-tight">Timeline Sự Kiện</h1>
                 </div>
                 <p className="text-blue-100 text-lg">Khám phá và quản lý các sự kiện của bạn một cách dễ dàng</p>
@@ -229,7 +230,7 @@ const TimelinePage = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className={`container mx-auto px-4 py-8 max-w-7xl ${responsiveScaleClasses} transition-transform duration-300`}>
         {/* Enhanced Search Bar with Glassmorphism */}
         <div className="mb-8 space-y-4 animate-slide-up">
           <div className="relative backdrop-blur-xl bg-white/80 border border-white/20 shadow-2xl rounded-2xl overflow-hidden">
@@ -798,7 +799,7 @@ const TimelinePage = () => {
             setIsMapModalOpen(false); // Reset map modal when ticket dialog closes
           }
         }}>
-          <DialogContent className="max-w-7xl max-h-[90vh] p-0 rounded-xl overflow-hidden border-2">
+        <DialogContent className={`max-w-7xl max-h-[90vh] p-0 rounded-xl overflow-hidden border-2 ${responsiveScaleClasses} transition-transform duration-300`}>
             {/* Header với Gradient và Overlay Image */}
             <div className="relative h-36 overflow-hidden">
               {/* Background Image với Overlay */}
@@ -1300,7 +1301,7 @@ const TimelinePage = () => {
                                 Xem bản đồ & chỉ đường chi tiết
                               </Button>
                             </DialogTrigger>
-                            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                            <DialogContent className={`max-w-4xl max-h-[80vh] overflow-y-auto ${responsiveScaleClasses} transition-transform duration-300`}>
                               <DialogHeader>
                                 <DialogTitle>Bản đồ & Chỉ đường</DialogTitle>
                               </DialogHeader>

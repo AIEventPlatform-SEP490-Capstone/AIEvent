@@ -32,7 +32,7 @@ namespace AIEvent.Domain.Entities
         public string? TaxCode { get; set; }
         public string? CompanyDescription { get; set; }
 
-        public ConfirmOrganizerProfileStatus Status { get; set; } = ConfirmOrganizerProfileStatus.Pending;
+        public OrganizerProfileStatus Status { get; set; } = OrganizerProfileStatus.Pending;
         public DateTime? ConfirmAt { get; set; }
         public string? ConfirmBy { get; set; }
 

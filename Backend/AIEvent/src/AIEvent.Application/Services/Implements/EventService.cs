@@ -1,6 +1,7 @@
 ﻿using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
+using AIEvent.Application.DTOs.RevenueReport;
 using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
@@ -19,11 +20,13 @@ namespace AIEvent.Application.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly ITransactionHelper _transactionHelper;
         private readonly IMapper _mapper;
-        public EventService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper, IMapper mapper)
+        private readonly IHangfireJobService _hangfireJobService;
+        public EventService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper, IMapper mapper, IHangfireJobService hangfireJobService)
         {
             _unitOfWork = unitOfWork;
             _transactionHelper = transactionHelper;
             _mapper = mapper;
+            _hangfireJobService = hangfireJobService;
         }
 
         public async Task<Result> CreateEventAsync(Guid organizerId, CreateEventRequest request)
@@ -52,10 +55,11 @@ namespace AIEvent.Application.Services.Implements
             {
                 if (request.ImgListEvidences == null || !request.ImgListEvidences.Any())
                     return ErrorResponse.FailureResult("Evidence images are required when publishing the event", ErrorCodes.InvalidInput);
+                request.Status = EventStatus.PendingApproval;
             }
 
             var organizer = await _unitOfWork.OrganizerProfileRepository.GetByIdAsync(organizerId, true);
-            if (organizer?.Status != ConfirmOrganizerProfileStatus.Approve)
+            if (organizer?.Status != OrganizerProfileStatus.Approved)
                 return ErrorResponse.FailureResult("Organizer not found or inactive", ErrorCodes.Unauthorized);
 
             var events = _mapper.Map<Event>(request);
@@ -84,7 +88,10 @@ namespace AIEvent.Application.Services.Implements
             IQueryable<Event> events = _unitOfWork.EventRepository
                                                 .Query()
                                                 .AsNoTracking()
-                                                .Where(e => e.StartTime > DateTime.Now && !e.DeletedAt.HasValue && e.RequireApproval == ConfirmEventStatus.Approve);
+                                                .Where(e => e.StartTime > DateTime.UtcNow 
+                                                    && !e.DeletedAt.HasValue 
+                                                    && e.Status == EventStatus.Approved 
+                                                    && e.Publish == true);
 
             if (!string.IsNullOrEmpty(search))
                 events = events
@@ -111,7 +118,7 @@ namespace AIEvent.Application.Services.Implements
 
             if (timeLine.HasValue)
             {
-                var now = DateTime.Now;
+                var now = DateTime.UtcNow;
                 var today = now.Date;
                 var tomorrow = today.AddDays(1);
                 var endOfToday = today.AddDays(1).AddTicks(-1); 
@@ -162,7 +169,9 @@ namespace AIEvent.Application.Services.Implements
                     SoldQuantity = e.SoldQuantity,
                     LocationName = e.LocationName,
                     Publish = e.Publish,
-                    RequireApproval = e.RequireApproval,
+                    AverageRating = e.AverageRating,
+                    TotalRatings = e.TotalRatings,
+                    Status = e.Status,
                     Tags = e.EventTags.Select(t => new TagResponse
                     {
                         TagId = t.TagId.ToString(),
@@ -263,11 +272,8 @@ namespace AIEvent.Application.Services.Implements
                     return handleTagsResult;
 
                 if (request.Publish == true)
-                {
-                    eventQuery.Publish = true;
-                    eventQuery.RequireApproval = ConfirmEventStatus.NeedConfirm;
-                }
-                
+                    eventQuery.Status = EventStatus.PendingApproval;
+
                 await _unitOfWork.EventRepository.UpdateAsync(eventQuery);
 
                 return Result.Success();
@@ -615,20 +621,20 @@ namespace AIEvent.Application.Services.Implements
 
             var existingEvent = await _unitOfWork.EventRepository
                 .Query()
-                .Include(e => e.OrganizerProfile)
                 .Include(e => e.Bookings)
-                    .ThenInclude(b => b.User)
-                    .ThenInclude(u => u.Wallet)
                 .FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
 
             if (existingEvent == null || existingEvent.DeletedAt.HasValue)
                 return ErrorResponse.FailureResult("Event not found or inactive", ErrorCodes.InvalidInput);
 
-            if(existingEvent.OrganizerProfileId != organizerId)
+            if (existingEvent.Status == EventStatus.Cancelled)
+                return ErrorResponse.FailureResult("Event cancelled cannot delete", ErrorCodes.InvalidInput);
+
+            if (existingEvent.OrganizerProfileId != organizerId)
                 return ErrorResponse.FailureResult("Cannot delete other people's events", ErrorCodes.Unauthorized);
 
             var hasBookings = existingEvent.Bookings
-                .Where(b => b.Status == BookingStatus.Completed || b.Status == BookingStatus.Pending)
+                .Where(b => b.Status == BookingStatus.Completed)
                 .ToList();
 
             if (existingEvent.Publish == true && hasBookings.Any())
@@ -638,88 +644,10 @@ namespace AIEvent.Application.Services.Implements
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             { 
                 if (hasBookings.Any() && !string.IsNullOrEmpty(reasonCancel))
-                { 
-                    var organizerWallet = await _unitOfWork.WalletRepository
-                        .Query()
-                        .FirstOrDefaultAsync(w => w.UserId == existingEvent.OrganizerProfile!.UserId && !w.IsDeleted);
-
-                    if (organizerWallet == null)
-                        return ErrorResponse.FailureResult("Organizer wallet not found", ErrorCodes.NotFound);
-
-                    var walletTransactions = new List<WalletTransaction>();
-                    var bookingsToUpdate = new List<Booking>();
-                    var walletsToUpdate = new List<Wallet>();
-
-                    foreach (var booking in hasBookings)
-                    { 
-                        if (booking.TotalAmount <= 0)
-                        {
-                            booking.Status = BookingStatus.Cancelled;
-                            bookingsToUpdate.Add(booking);
-                            continue;
-                        }
-
-                        var userWallet = booking.User.Wallet;
-                        if (userWallet == null)
-                            return ErrorResponse.FailureResult($"Wallet not found for user {booking.User.FullName}", ErrorCodes.NotFound);
-
-                        if (organizerWallet.Balance < booking.TotalAmount)
-                            return ErrorResponse.FailureResult(
-                                    $"Organizer wallet has insufficient balance to refund. Required: {booking.TotalAmount}, Available: {organizerWallet.Balance}",
-                                    ErrorCodes.InvalidInput);
-
-                        var userRefundTransaction = new WalletTransaction
-                        {
-                            WalletId = userWallet.Id,
-                            Amount = booking.TotalAmount,
-                            BalanceBefore = userWallet.Balance,
-                            BalanceAfter = userWallet.Balance + booking.TotalAmount,
-                            Type = TransactionType.Refund,
-                            Direction = TransactionDirection.In,
-                            ReferenceId = booking.Id,
-                            ReferenceType = ReferenceType.Refund,
-                            Status = TransactionStatus.Success,
-                            Description = $"Hoàn tiền do hủy sự kiện '{existingEvent.Title}'. Lý do: {reasonCancel}"
-                        };
-                         
-                        var organizerRefundTransaction = new WalletTransaction
-                        {
-                            WalletId = organizerWallet.Id,
-                            Amount = booking.TotalAmount,
-                            BalanceBefore = organizerWallet.Balance,
-                            BalanceAfter = organizerWallet.Balance - booking.TotalAmount,
-                            Type = TransactionType.Refund,
-                            Direction = TransactionDirection.Out,
-                            ReferenceId = booking.Id,
-                            ReferenceType = ReferenceType.Refund,
-                            Status = TransactionStatus.Success,
-                            Description = $"Hoàn tiền cho {booking.User.FullName} do hủy sự kiện '{existingEvent.Title}'. Lý do: {reasonCancel}"
-                        };
-
-                        walletTransactions.Add(userRefundTransaction);
-                        walletTransactions.Add(organizerRefundTransaction);
-                         
-                        userWallet.Balance += booking.TotalAmount;
-                        organizerWallet.Balance -= booking.TotalAmount;
-                         
-                        if (!walletsToUpdate.Any(w => w.Id == userWallet.Id))
-                            walletsToUpdate.Add(userWallet);
-                         
-                        booking.Status = BookingStatus.Cancelled;
-                        bookingsToUpdate.Add(booking);
-                    }
-                     
-                    if (!walletsToUpdate.Any(w => w.Id == organizerWallet.Id))
-                        walletsToUpdate.Add(organizerWallet);
-                     
-                    await _unitOfWork.WalletTransactionRepository.AddRangeAsync(walletTransactions);
-                     
-                    await _unitOfWork.WalletRepository.UpdateRangeAsync(walletsToUpdate);
-                     
-                    await _unitOfWork.BookingRepository.UpdateRangeAsync(bookingsToUpdate);
-                     
-                    existingEvent.ReasonCancel = reasonCancel;
-                } 
+                {
+                    await _hangfireJobService.EnqueueCancelEventJobAsync(eventId, reasonCancel);
+                    return Result.Success();
+                }
                 await _unitOfWork.EventRepository.DeleteAsync(existingEvent!);
                 return Result.Success();
             });
@@ -735,9 +663,9 @@ namespace AIEvent.Application.Services.Implements
             IQueryable<Event> events = _unitOfWork.EventRepository
                                                 .Query()
                                                 .AsNoTracking()
-                                                .Where(e => e.StartTime > DateTime.Now 
+                                                .Where(e => e.StartTime > DateTime.UtcNow 
                                                         && !e.DeletedAt.HasValue 
-                                                        && e.RequireApproval == ConfirmEventStatus.Approve
+                                                        && e.Status == EventStatus.Approved
                                                         && e.Id != eventId);
 
             var eventDetail = await _unitOfWork.EventRepository
@@ -780,6 +708,8 @@ namespace AIEvent.Application.Services.Implements
                     EventId = e.Id,
                     Title = e.Title,
                     StartTime = e.StartTime,
+                    //AverageRating = e.AverageRating,
+                    //TotalRatings = e.TotalRatings,
                     EndTime = e.EndTime,
                     MinTicketPrice = e.TicketTypes.Any()
                         ? e.TicketTypes.Min(t => t.TicketPrice)
@@ -823,7 +753,7 @@ namespace AIEvent.Application.Services.Implements
                     EndTime = e.EndTime,
                     PayoutAmount = e.PayoutAmount,
                     PlatformFee = e.PlatformFee,
-                    Status = e.RequireApproval,
+                    Status = e.Status,
                     Description = e.Description,
                     TicketPricingType = e.TicketPricingType,
                     LocationName = e.LocationName,
@@ -845,7 +775,7 @@ namespace AIEvent.Application.Services.Implements
             return new BasePaginated<EventsRawResponse>(result, totalCount, pageNumber, pageSize);
         }
 
-        public async Task<Result<BasePaginated<EventsRawResponse>>> GetAllEventStatusAsync(Guid? organizerId, string? search, ConfirmEventStatus? status = null, int pageNumber = 1, int pageSize = 10)
+        public async Task<Result<BasePaginated<EventsRawResponse>>> GetAllEventStatusAsync(Guid? organizerId, string? search, EventStatus? status = null, int pageNumber = 1, int pageSize = 10)
         {
 
             IQueryable<Event> events = _unitOfWork.EventRepository
@@ -861,12 +791,12 @@ namespace AIEvent.Application.Services.Implements
                                           (e.Address != null && e.Address.ToLower().Contains(search.ToLower())) ||
                                           e.Description.ToLower().Contains(search.ToLower()));
             if (status != null)
-                events = events.Where(e => e.RequireApproval == status);
+                events = events.Where(e => e.Status == status);
 
             int totalCount = await events.CountAsync();
 
             var result = await events
-                .OrderBy(p => p.CreatedAt)
+                .OrderByDescending(p => p.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(e => new EventsRawResponse
@@ -878,7 +808,7 @@ namespace AIEvent.Application.Services.Implements
                     EndTime = e.EndTime,
                     PayoutAmount = e.PayoutAmount,
                     PlatformFee = e.PlatformFee,
-                    Status = e.RequireApproval,
+                    Status = e.Status,
                     Description = e.Description,
                     TicketPricingType = e.TicketPricingType,
                     LocationName = e.LocationName,
@@ -914,18 +844,21 @@ namespace AIEvent.Application.Services.Implements
             if(entity == null)
                 return ErrorResponse.FailureResult("Event can not found or is deleted", ErrorCodes.NotFound);
 
-            if (entity.RequireApproval != ConfirmEventStatus.NeedConfirm)
+            if (entity.Status != EventStatus.PendingApproval)
                 return ErrorResponse.FailureResult("Event has already been processed", ErrorCodes.InvalidInput);
 
-            if (request.Status == ConfirmEventStatus.Reject)
+
+            if (request.Status == ConfirmStatus.Approved)
+                entity.Status = EventStatus.Approved;
+            else
             {
                 if (string.IsNullOrWhiteSpace(request.Reason))
                     return ErrorResponse.FailureResult("Reason is required when rejecting", ErrorCodes.InvalidInput);
 
                 entity.ReasonReject = request.Reason.Trim();
+                entity.Status = EventStatus.Rejected;
             }
 
-            entity.RequireApproval = request.Status;
             entity.RequireApprovalAt = DateTime.UtcNow;
             entity.RequireApprovalBy = userId;
             await _unitOfWork.EventRepository.UpdateAsync(entity);
@@ -945,10 +878,15 @@ namespace AIEvent.Application.Services.Implements
 
             var eventEntity = await _unitOfWork.EventRepository.Query()
                 .Include(e => e.OrganizerProfile)
-                .FirstOrDefaultAsync(e => e.Id == request.EventId && !e.IsDeleted);
-
+                .FirstOrDefaultAsync(e => e.Id == request.EventId 
+                                                && !e.IsDeleted 
+                                                && e.Publish == true);
+            
             if (eventEntity == null)
                 return ErrorResponse.FailureResult("Event not found", ErrorCodes.NotFound);
+
+            if (eventEntity.Status != EventStatus.Approved && eventEntity.Status != EventStatus.RejectEnded)
+                return ErrorResponse.FailureResult("Event cannot be requested to end in its current state", ErrorCodes.InvalidInput);
 
             if (eventEntity.OrganizerProfile == null || eventEntity.OrganizerProfile.UserId != userId)
                 return ErrorResponse.FailureResult("You can only request to end your own events", ErrorCodes.Unauthorized);
@@ -956,10 +894,16 @@ namespace AIEvent.Application.Services.Implements
             if (eventEntity.EndTime > DateTime.UtcNow)
                 return ErrorResponse.FailureResult("Event is not over yet", ErrorCodes.InvalidInput);
 
+            var paymenInfo = await _unitOfWork.PaymentInformationRepository.Query()
+                                        .FirstOrDefaultAsync(p => p.Id == request.PaymentInformationId &&
+                                                             p.UserId == userId && !p.IsDeleted);
+            if(paymenInfo == null)
+                return ErrorResponse.FailureResult("Payment information not found", ErrorCodes.InvalidInput);
+
             var existingPendingRequest = await _unitOfWork.EndEventRequestRepository
                 .Query()
                 .FirstOrDefaultAsync(x => x.EventId == eventEntity.Id 
-                    && x.Status == ConfirmEventStatus.PendingApproval 
+                    && x.Status == EndEventStatus.PendingApprovalEnd
                     && x.IsLatest 
                     && !x.IsDeleted);
 
@@ -976,11 +920,11 @@ namespace AIEvent.Application.Services.Implements
                 foreach (var old in oldRequests)
                     old.IsLatest = false;
 
-                eventEntity.RequireApproval = ConfirmEventStatus.PendingApproval;
+                eventEntity.Status = EventStatus.PendingApprovalEnd;
 
                 var endEventRequest = _mapper.Map<EndEventRequest>(request);
                 endEventRequest.IsLatest = true;
-                endEventRequest.Status = ConfirmEventStatus.PendingApproval;
+                endEventRequest.Status = EndEventStatus.PendingApprovalEnd;
                 endEventRequest.OrganizerProfileId = eventEntity.OrganizerProfileId;
 
                 await _unitOfWork.EventRepository.UpdateAsync(eventEntity);
@@ -997,56 +941,64 @@ namespace AIEvent.Application.Services.Implements
                 return validation;
 
             var endEventRequest = await _unitOfWork.EndEventRequestRepository.Query()
+                .Include(e => e.Event)
                 .FirstOrDefaultAsync(e => e.Id == request.EndEventRequestId 
-                    && e.Status == ConfirmEventStatus.PendingApproval 
+                    && e.Status == EndEventStatus.PendingApprovalEnd 
                     && e.IsLatest 
                     && !e.IsDeleted);
 
             if (endEventRequest == null)
                 return ErrorResponse.FailureResult("EndEventRequest not found or already processed", ErrorCodes.InvalidInput);
 
-            var eventEntity = await _unitOfWork.EventRepository.Query()
-                .FirstOrDefaultAsync(e => e.Id == endEventRequest.EventId 
-                    && !e.IsDeleted 
-                    && e.RequireApproval == ConfirmEventStatus.PendingApproval);
-
-            if (eventEntity == null)
+         
+            if (endEventRequest.Event == null)
                 return ErrorResponse.FailureResult("Event not found or already processed", ErrorCodes.NotFound);
 
-            if (eventEntity.EndTime > DateTime.UtcNow)
+            if (endEventRequest.Event.EndTime > DateTime.UtcNow)
                 return ErrorResponse.FailureResult("Event is not over yet", ErrorCodes.InvalidInput);
 
-            if (eventEntity.Publish != true)
+            if (endEventRequest.Event.Publish != true || endEventRequest.Event.Status != EventStatus.PendingApprovalEnd)
                 return ErrorResponse.FailureResult("Can only confirm end event request for published events", ErrorCodes.InvalidInput);
 
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-                if(request.Status == ConfirmEventStatus.Approve)
+                if(request.Status == ConfirmStatus.Approved)
                 {
-                    var totalRevenue = eventEntity.TotalAmount;
+                    var totalRevenue = endEventRequest.Event.TotalAmount;
 
                     var platformFee = totalRevenue * 0.066m + 45000m;
                     var netRevenue = totalRevenue - platformFee;
 
-                    eventEntity.PlatformFee = platformFee;
-                    eventEntity.PayoutAmount = netRevenue;
-                    endEventRequest.Status = ConfirmEventStatus.WaitingForPayout;
+                    endEventRequest.Event.PlatformFee = platformFee;
+                    endEventRequest.Event.PayoutAmount = netRevenue;
+                    endEventRequest.Status = EndEventStatus.Approved;
                     endEventRequest.ReviewedAt = DateTime.UtcNow;
 
-                    eventEntity.RequireApproval = ConfirmEventStatus.WaitingForPayout;
+                    endEventRequest.Event.Status = EventStatus.WaitingForPayout;
                 }
                 else
                 {
                     if(string.IsNullOrWhiteSpace(request.AdminNote))
                         return ErrorResponse.FailureResult("Admin note is required when rejecting request", ErrorCodes.InvalidInput);
                     endEventRequest.AdminNote = request.AdminNote.Trim();
-                    endEventRequest.Status = ConfirmEventStatus.NeedMoreEvidence;
+                    endEventRequest.Status = EndEventStatus.Rejected;
                     endEventRequest.ReviewedAt = DateTime.UtcNow;
-                    eventEntity.RequireApproval = ConfirmEventStatus.NeedMoreEvidence;
+                    endEventRequest.Event.Status = EventStatus.RejectEnded;
                 }
 
                 await _unitOfWork.EndEventRequestRepository.UpdateAsync(endEventRequest);
-                await _unitOfWork.EventRepository.UpdateAsync(eventEntity);
+
+                RevenueReportRequest reportR = new RevenueReportRequest()
+                {
+                    EventName = endEventRequest.Event.Title,
+                    EventId = endEventRequest.EventId,
+                    OrganizerProfileId = endEventRequest.OrganizerProfileId,
+                    PaymentInforId = endEventRequest.PaymentInformationId,
+                    TotalAmount = endEventRequest.Event.TotalAmount,
+                    ConfirmDate = DateTime.UtcNow
+                };
+
+                await _hangfireJobService.EnqueueOrganizerPayoutJobAsync(reportR);
                 return Result.Success();
             });
         }
@@ -1058,7 +1010,7 @@ namespace AIEvent.Application.Services.Implements
 
             var endEventRequest = await _unitOfWork.EndEventRequestRepository
                 .Query()
-                .Where(e => e.Id == endEventRequestId && !e.IsDeleted)
+                .Where(e => e.Id == endEventRequestId)
                 .ProjectTo<EndEventReview>(_mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync();
 
@@ -1068,7 +1020,7 @@ namespace AIEvent.Application.Services.Implements
             return Result<EndEventReview>.Success(endEventRequest);
         }
 
-        public async Task<Result<BasePaginated<EndEventReviews>>> GetEndEventRequestsAsync(Guid? organizerId, Guid? eventId, ConfirmEventStatus? status = null, int pageNumber = 1, int pageSize = 10)
+        public async Task<Result<BasePaginated<EndEventReviews>>> GetEndEventRequestsAsync(Guid? organizerId, Guid? eventId, EndEventStatus? status = null, int pageNumber = 1, int pageSize = 10)
         {
             IQueryable<EndEventRequest> endEventRequest = _unitOfWork.EndEventRequestRepository
                                                 .Query()

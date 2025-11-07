@@ -11,7 +11,7 @@ namespace AIEvent.Domain.Entities
         public string? Summary { get; set; }
         public string? AdminNote { get; set; }
         public string? EvidenceImages { get; set; }
-        public ConfirmEventStatus Status { get; set; }
+        public EndEventStatus Status { get; set; }
         public DateTime? ReviewedAt { get; set; }
         public bool IsLatest { get; set; }
         public virtual OrganizerProfile OrganizerProfile { get; set; } = default!;

@@ -56,6 +56,7 @@ export const PATH = {
   MANAGER_PROFILE: "/manager/profile",
   MANAGER_SETTINGS: "/manager/settings",
   MANAGER_SUPPORT: "/manager/support",
+  // MANAGER_END_EVENT_REQUESTS: "/manager/end-event-requests", // Đã tích hợp vào ManagerEventDetailPage
 
   // ADMIN
   ADMIN: "/admin",

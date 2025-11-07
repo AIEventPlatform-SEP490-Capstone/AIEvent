@@ -2,7 +2,6 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
-using AIEvent.Application.DTOs.Organizer;
 using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
@@ -126,7 +125,7 @@ namespace AIEvent.API.Controllers
 
         [HttpDelete("{id}")]
         [Authorize(Roles = "Organizer")]
-        public async Task<ActionResult<SuccessResponse<object>>> DeleteEvent(Guid id, [FromQuery] string? reasonCancel)
+        public async Task<ActionResult<SuccessResponse<object>>> DeleteEvent(Guid id, [FromBody] string? reasonCancel)
         {
             var organizerId = User.GetRequiredOrganizerId();
             var result = await _eventService.DeleteEventAsync(id, organizerId, reasonCancel);
@@ -137,7 +136,7 @@ namespace AIEvent.API.Controllers
 
             return Ok(SuccessResponse<object>.SuccessResult(
                 new { },
-                SuccessCodes.Success,
+                SuccessCodes.Deleted,
                 "Delete Event successfully"));
         }
 
@@ -164,7 +163,7 @@ namespace AIEvent.API.Controllers
         [HttpGet("status")]
         [Authorize(Roles = "Admin, Manager, Organizer")]
         public async Task<ActionResult<SuccessResponse<BasePaginated<EventsRawResponse>>>> GetEventStatus([FromQuery] string? search,
-                                                                                                          [FromQuery] ConfirmEventStatus? status = null,
+                                                                                                          [FromQuery] EventStatus? status = null,
                                                                                                           [FromQuery] int pageNumber = 1,
                                                                                                           [FromQuery] int pageSize = 10)
         {
@@ -200,7 +199,7 @@ namespace AIEvent.API.Controllers
 
             return Ok(SuccessResponse<object>.SuccessResult(
                 new { },
-                SuccessCodes.Updated,
+                SuccessCodes.Success,
                 "Confirm event successfully"));
         }
 
@@ -221,7 +220,7 @@ namespace AIEvent.API.Controllers
                 "Request end event successfully"));
         }
 
-        [HttpPatch("end-event/{id}")]
+        [HttpPatch("confirm-end-event")]
         [Authorize(Roles = "Admin,Manager")]
         public async Task<ActionResult<SuccessResponse<object>>> ConfirmEndEvent(ApproveEndEventRequest request)
         {
@@ -238,7 +237,7 @@ namespace AIEvent.API.Controllers
         }
 
         [HttpGet("request-end/{endEventRequestId}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Admin,Manager,Organizer")]
         public async Task<ActionResult<SuccessResponse<EndEventReview>>> GetEndEventRequestById(Guid endEventRequestId)
         {
             var result = await _eventService.GetEndEventRequestByIdAsync(endEventRequestId);
@@ -256,7 +255,7 @@ namespace AIEvent.API.Controllers
         [HttpGet("request-end")]
         [Authorize(Roles = "Admin,Manager,Organizer")]
         public async Task<ActionResult<SuccessResponse<BasePaginated<EndEventReviews>>>> GetEndEventRequest([FromQuery] Guid? eventId,
-                                                                                                            [FromQuery] ConfirmEventStatus? status = null,
+                                                                                                            [FromQuery] EndEventStatus? status = null,
                                                                                                             [FromQuery] int pageNumber = 1,
                                                                                                             [FromQuery] int pageSize = 10)
         {

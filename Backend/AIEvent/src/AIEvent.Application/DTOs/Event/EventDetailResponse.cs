@@ -21,7 +21,7 @@ namespace AIEvent.Application.DTOs.Event
         public TicketPricingType TicketPricingType { get; set; }
         public List<string>? ImgListEvent { get; set; }
         public List<string>? ImgListEvidences { get; set; }
-        public ConfirmEventStatus RequireApproval { get; set; }
+        public EventStatus Status { get; set; }
         public string? District { get; set; }
         public string? Address { get; set; }
         public float? Latitude { get; set; }
@@ -32,5 +32,8 @@ namespace AIEvent.Application.DTOs.Event
         public List<TagResponse> EventTags { get; set; } = new List<TagResponse>();
         public EventCategoryResponse EventCategory { get; set; } = default!;
         public List<TicketTypeResponse> TicketDetails { get; set; } = new List<TicketTypeResponse>();
+        public double? AverageRating { get; set; }
+        public int TotalRatings { get; set; }
+        public bool Publish { get; set; }
     }
 }

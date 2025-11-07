@@ -16,10 +16,12 @@ namespace AIEvent.Application.DTOs.Event
         public int SoldQuantity { get; set; }
         public decimal TicketPrice { get; set; }
         public bool? Publish { get; set; }
-        public ConfirmEventStatus? RequireApproval { get; set; }
+        public EventStatus? Status { get; set; }
         public List<TagResponse>? Tags { get; set; }
         public List<string>? ImgListEvent { get; set; }
         public bool? IsFavorite { get; set; }
         public TicketPricingType TicketPricingType { get; set; }
+        public double? AverageRating { get; set; }
+        public int TotalRatings { get; set; }
     }
 }

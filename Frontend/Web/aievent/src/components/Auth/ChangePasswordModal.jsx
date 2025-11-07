@@ -7,6 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Eye, EyeOff, Lock, CheckCircle, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+const responsiveScaleClasses = "transform-gpu origin-center scale-100 sm:scale-95 lg:scale-90";
+
 const getErrorMessage = (error) => {
   if (!error) return 'Có lỗi xảy ra khi đổi mật khẩu';
   
@@ -295,7 +297,7 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md mx-auto">
+      <DialogContent className={`max-w-md mx-auto ${responsiveScaleClasses} transition-transform duration-300`}>
         <DialogHeader className="text-center pb-6">
           <div className="flex items-center justify-center mb-4">
             <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
@@ -310,7 +312,7 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
           </p>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 mt-4">
           <PasswordInput
             field="currentPassword"
             label="Mật khẩu hiện tại"

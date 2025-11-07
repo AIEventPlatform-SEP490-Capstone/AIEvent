@@ -58,9 +58,15 @@ namespace AIEvent.Application.Services.Implements
                     return ErrorResponse.FailureResult("Tax code already exists.", ErrorCodes.InvalidInput);
             }
 
+            var existingEmail = await _unitOfWork.OrganizerProfileRepository
+                                                .Query()
+                                                .FirstOrDefaultAsync(u => u.ContactEmail == request.ContactEmail && !u.IsDeleted);
+            if(existingEmail != null)
+                return ErrorResponse.FailureResult("The organizer has already registered email", ErrorCodes.InvalidInput);
+
             var organizer = _mapper.Map<OrganizerProfile>(request);
             organizer.UserId = userId;
-            organizer.Status = ConfirmOrganizerProfileStatus.Pending;
+            organizer.Status = OrganizerProfileStatus.Pending;
             if (organizer == null)
                 return ErrorResponse.FailureResult("Failed to map organizer profile", ErrorCodes.InternalServerError);
 
@@ -108,7 +114,7 @@ namespace AIEvent.Application.Services.Implements
             return Result<OrganizerDetailResponse>.Success(organizers);
         }
 
-        public async Task<Result<BasePaginated<OrganizerResponse>>> GetOrganizerAsync(int pageNumber = 1, int pageSize = 10, ConfirmOrganizerProfileStatus? status = null)
+        public async Task<Result<BasePaginated<OrganizerResponse>>> GetOrganizerAsync(int pageNumber = 1, int pageSize = 10, OrganizerProfileStatus? status = null)
         {
             IQueryable<OrganizerProfile> query = _unitOfWork.OrganizerProfileRepository
                 .Query()
@@ -121,7 +127,7 @@ namespace AIEvent.Application.Services.Implements
             var totalCount = await query.CountAsync();
 
             var result = await query
-                .OrderBy(p => p.CreatedAt)
+                .OrderByDescending(p => p.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ProjectTo<OrganizerResponse>(_mapper.ConfigurationProvider)
@@ -143,7 +149,7 @@ namespace AIEvent.Application.Services.Implements
             if (profile == null || profile.ContactEmail == null || profile.ContactName == null || profile.ContactPhone == null)
                 return ErrorResponse.FailureResult("Organizer profile not found", ErrorCodes.NotFound);
 
-            if (profile.Status != ConfirmOrganizerProfileStatus.Pending)
+            if (profile.Status != OrganizerProfileStatus.Pending)
                 return ErrorResponse.FailureResult("Profile already confirmed", ErrorCodes.InvalidInput);
 
             var userRegister = await _unitOfWork.UserRepository
@@ -153,12 +159,7 @@ namespace AIEvent.Application.Services.Implements
             MimeMessage msg = new MimeMessage();
             var result = await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
-                profile.Status = request.Status;
-                profile.ConfirmAt = DateTime.UtcNow;
-                profile.ConfirmBy = userId.ToString();
-                await _unitOfWork.OrganizerProfileRepository.UpdateAsync(profile);
-
-                if (request.Status == ConfirmOrganizerProfileStatus.Approve)
+                if (request.Status == ConfirmStatus.Approved)
                 {
                     var role = await _unitOfWork.RoleRepository
                                     .Query()
@@ -222,6 +223,9 @@ namespace AIEvent.Application.Services.Implements
                             Body = new TextPart("html") { Text = sb.ToString() }
                         };
                     }
+                    profile.Status = OrganizerProfileStatus.Approved;
+                    profile.ConfirmAt = DateTime.UtcNow;
+                    profile.ConfirmBy = userId.ToString();
                 }
                 else
                 {
@@ -240,8 +244,9 @@ namespace AIEvent.Application.Services.Implements
                         Subject = "Hồ sơ đăng ký tổ chức của bạn đã bị từ chối",
                         Body = new TextPart("html") { Text = sb.ToString() }
                     };
-
+                    profile.Status = OrganizerProfileStatus.Rejected;
                 }
+                await _unitOfWork.OrganizerProfileRepository.UpdateAsync(profile);
                 return Result.Success();
             });
             var emailResult = await _emailService.SendEmailAsync(profile.ContactEmail, msg);
@@ -273,7 +278,7 @@ namespace AIEvent.Application.Services.Implements
                 .Query()
                 .AsNoTracking()
                 .Include(o => o.User)
-                .FirstOrDefaultAsync(o => o.UserId == userId && !o.IsDeleted && o.Status == ConfirmOrganizerProfileStatus.Approve);
+                .FirstOrDefaultAsync(o => o.UserId == userId && !o.IsDeleted && o.Status == OrganizerProfileStatus.Approved);
 
             if (organizer == null)
                 return ErrorResponse.FailureResult("Organizer not found or not approved yet", ErrorCodes.NotFound);
@@ -293,7 +298,7 @@ namespace AIEvent.Application.Services.Implements
             var profile = await _unitOfWork.OrganizerProfileRepository
                 .Query()
                 .Include(o => o.User)
-                .FirstOrDefaultAsync(x => x.UserId == userId && !x.IsDeleted && x.Status == ConfirmOrganizerProfileStatus.Approve);
+                .FirstOrDefaultAsync(x => x.UserId == userId && !x.IsDeleted && x.Status == OrganizerProfileStatus.Approved);
 
             if (profile == null)
                 return ErrorResponse.FailureResult("Organizer not found or not approved yet", ErrorCodes.NotFound);

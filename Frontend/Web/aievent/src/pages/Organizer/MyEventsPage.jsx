@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
@@ -30,8 +30,11 @@ import { Label } from '../../components/ui/label';
 import { useEvents } from '../../hooks/useEvents';
 import { PATH } from '../../routes/path';
 
-// Import ConfirmStatus constants
-import { ConfirmStatus, ConfirmStatusDisplay } from '../../constants/eventConstants';
+// Import EndEventRequestButton
+import EndEventRequestButton from '../../components/Organizer/EndEventRequestButton';
+
+// Import EventStatus constants
+import { EventStatus, EventStatusDisplay } from '../../constants/eventConstants';
 
 const MyEventsPage = () => {
   const navigate = useNavigate();
@@ -46,7 +49,64 @@ const MyEventsPage = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [activeTab, setActiveTab] = useState('all'); // For switching between event statuses
+  const [showInitiationDropdown, setShowInitiationDropdown] = useState(false);
+  const [showCompletionDropdown, setShowCompletionDropdown] = useState(false);
+  const [initiationDropdownLabel, setInitiationDropdownLabel] = useState('Khởi tạo sự kiện');
+  const [completionDropdownLabel, setCompletionDropdownLabel] = useState('Kết thúc sự kiện');
+  const initiationDropdownRef = useRef(null);
+  const completionDropdownRef = useRef(null);
   const pageSize = 12;
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (initiationDropdownRef.current && !initiationDropdownRef.current.contains(event.target)) {
+        setShowInitiationDropdown(false);
+      }
+      if (completionDropdownRef.current && !completionDropdownRef.current.contains(event.target)) {
+        setShowCompletionDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Update dropdown labels when activeTab changes
+  useEffect(() => {
+    // Update initiation dropdown label
+    if (activeTab === EventStatus.PendingApproval) {
+      setInitiationDropdownLabel('Chờ phê duyệt');
+    } else if (activeTab === EventStatus.Approved) {
+      setInitiationDropdownLabel('Đã phê duyệt');
+    } else if (activeTab === EventStatus.Rejected) {
+      setInitiationDropdownLabel('Bị từ chối');
+    } 
+    // Reset initiation dropdown to default when selecting completion statuses or other main tabs
+    else if ([EventStatus.PendingApprovalEnd, EventStatus.RejectEnded, 
+              EventStatus.WaitingForPayout, EventStatus.Ended, 
+              'all', 'draft', EventStatus.Cancelled].includes(activeTab)) {
+      setInitiationDropdownLabel('Khởi tạo sự kiện');
+    }
+
+    // Update completion dropdown label
+    if (activeTab === EventStatus.PendingApprovalEnd) {
+      setCompletionDropdownLabel('Chờ kết thúc');
+    } else if (activeTab === EventStatus.RejectEnded) {
+      setCompletionDropdownLabel('Từ chối kết thúc');
+    } else if (activeTab === EventStatus.WaitingForPayout) {
+      setCompletionDropdownLabel('Chờ thanh toán');
+    } else if (activeTab === EventStatus.Ended) {
+      setCompletionDropdownLabel('Đã kết thúc');
+    }
+    // Reset completion dropdown to default when selecting initiation statuses or other main tabs
+    else if ([EventStatus.PendingApproval, EventStatus.Approved, 
+              EventStatus.Rejected, 'all', 'draft', EventStatus.Cancelled].includes(activeTab)) {
+      setCompletionDropdownLabel('Kết thúc sự kiện');
+    }
+  }, [activeTab]);
 
   // Load events initially and when tab changes
   useEffect(() => {
@@ -131,9 +191,19 @@ const MyEventsPage = () => {
     }
 
     // Apply status filter - but only for time-based filters, not approval status tabs
-    // Approval status tabs (NeedConfirm, Approve, Reject) are handled by the API call
+    // Approval status tabs (PendingApproval, Approved, Rejected, etc.) are handled by the API call
     // Draft tab is also handled by the API call
-    const isSpecialTab = ['draft', ConfirmStatus.NeedConfirm, ConfirmStatus.Approve, ConfirmStatus.Reject].includes(activeTab);
+    const isSpecialTab = [
+      'draft', 
+      EventStatus.PendingApproval, 
+      EventStatus.Approved, 
+      EventStatus.Rejected,
+      EventStatus.Cancelled,
+      EventStatus.PendingApprovalEnd,
+      EventStatus.RejectEnded,
+      EventStatus.WaitingForPayout,
+      EventStatus.Ended
+    ].includes(activeTab);
     
     if (filterStatus && filterStatus !== 'all' && !isSpecialTab) {
       filtered = filtered.filter(event => {
@@ -141,6 +211,15 @@ const MyEventsPage = () => {
         return status === filterStatus;
       });
       console.log('After status filter:', filtered.length);
+    }
+    
+    // If filterStatus is one of the EventStatus values, apply it regardless of activeTab
+    if (filterStatus && filterStatus !== 'all' && Object.values(EventStatus).includes(filterStatus)) {
+      filtered = filtered.filter(event => {
+        const eventStatus = 'status' in event ? event.status : null;
+        return eventStatus === filterStatus;
+      });
+      console.log('After EventStatus filter:', filtered.length);
     }
 
     // Apply sorting
@@ -305,9 +384,14 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
     switch (tab) {
       case 'all': return 'Tất cả sự kiện';
       case 'draft': return 'Bản nháp';
-      case ConfirmStatus.NeedConfirm: return 'Chờ phê duyệt';
-      case ConfirmStatus.Approve: return 'Đã phê duyệt';
-      case ConfirmStatus.Reject: return 'Bị từ chối';
+      case EventStatus.PendingApproval: return 'Chờ phê duyệt';
+      case EventStatus.Approved: return 'Đã phê duyệt';
+      case EventStatus.Rejected: return 'Bị từ chối';
+      case EventStatus.Cancelled: return 'Đã hủy';
+      case EventStatus.PendingApprovalEnd: return 'Chờ kết thúc';
+      case EventStatus.RejectEnded: return 'Từ chối kết thúc';
+      case EventStatus.WaitingForPayout: return 'Chờ thanh toán';
+      case EventStatus.Ended: return 'Đã kết thúc';
       default: return tab;
     }
   };
@@ -337,7 +421,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       };
     }
     
-    if (activeTab === ConfirmStatus.NeedConfirm) {
+    if (activeTab === EventStatus.PendingApproval) {
       // Count events needing approval
       return {
         total: allEvents.length,
@@ -348,7 +432,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       };
     }
     
-    if (activeTab === ConfirmStatus.Approve) {
+    if (activeTab === EventStatus.Approved) {
       // Count approved events
       return {
         total: allEvents.length,
@@ -359,8 +443,63 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       };
     }
     
-    if (activeTab === ConfirmStatus.Reject) {
+    if (activeTab === EventStatus.Rejected) {
       // Count rejected events
+      return {
+        total: allEvents.length,
+        upcoming: 0,
+        ongoing: 0,
+        completed: 0,
+        drafts: 0
+      };
+    }
+    
+    if (activeTab === EventStatus.Cancelled) {
+      // Count cancelled events
+      return {
+        total: allEvents.length,
+        upcoming: 0,
+        ongoing: 0,
+        completed: 0,
+        drafts: 0
+      };
+    }
+    
+    if (activeTab === EventStatus.PendingApprovalEnd) {
+      // Count pending approval end events
+      return {
+        total: allEvents.length,
+        upcoming: 0,
+        ongoing: 0,
+        completed: 0,
+        drafts: 0
+      };
+    }
+    
+    if (activeTab === EventStatus.RejectEnded) {
+      // Count reject ended events
+      return {
+        total: allEvents.length,
+        upcoming: 0,
+        ongoing: 0,
+        completed: 0,
+        drafts: 0
+      };
+    }
+    
+    if (activeTab === EventStatus.WaitingForPayout) {
+      // Count waiting for payout events
+      return {
+        total: allEvents.length,
+        upcoming: 0,
+        ongoing: 0,
+        completed: 0,
+        drafts: 0
+      };
+    }
+    
+    if (activeTab === EventStatus.Ended) {
+      // Count ended events
       return {
         total: allEvents.length,
         upcoming: 0,
@@ -544,6 +683,14 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
             <SelectItem value="upcoming">Sắp diễn ra</SelectItem>
             <SelectItem value="ongoing">Đang diễn ra</SelectItem>
             <SelectItem value="completed">Đã hoàn thành</SelectItem>
+            <SelectItem value={EventStatus.PendingApproval}>Chờ phê duyệt</SelectItem>
+            <SelectItem value={EventStatus.Approved}>Đã phê duyệt</SelectItem>
+            <SelectItem value={EventStatus.Rejected}>Bị từ chối</SelectItem>
+            <SelectItem value={EventStatus.Cancelled}>Đã hủy</SelectItem>
+            <SelectItem value={EventStatus.PendingApprovalEnd}>Chờ kết thúc</SelectItem>
+            <SelectItem value={EventStatus.RejectEnded}>Từ chối kết thúc</SelectItem>
+            <SelectItem value={EventStatus.WaitingForPayout}>Chờ thanh toán</SelectItem>
+            <SelectItem value={EventStatus.Ended}>Đã kết thúc</SelectItem>
           </SelectContent>
         </Select>
 
@@ -569,7 +716,11 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       <div className="mb-6">
         <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
           <button
-            onClick={() => setActiveTab('all')}
+            onClick={() => {
+              setActiveTab('all');
+              setShowInitiationDropdown(false);
+              setShowCompletionDropdown(false);
+            }}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
               activeTab === 'all'
                 ? 'bg-white text-blue-600 shadow-sm'
@@ -579,7 +730,11 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
             Tất cả sự kiện
           </button>
           <button
-            onClick={() => setActiveTab('draft')}
+            onClick={() => {
+              setActiveTab('draft');
+              setShowInitiationDropdown(false);
+              setShowCompletionDropdown(false);
+            }}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
               activeTab === 'draft'
                 ? 'bg-white text-blue-600 shadow-sm'
@@ -588,35 +743,161 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
           >
             Bản nháp ({stats.drafts})
           </button>
+          
+          {/* Event Initiation Dropdown */}
+          <div className="relative" ref={initiationDropdownRef}>
+            <button
+              onClick={() => {
+                setShowInitiationDropdown(!showInitiationDropdown);
+                setShowCompletionDropdown(false);
+              }}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${
+                [EventStatus.PendingApproval, EventStatus.Approved, EventStatus.Rejected].includes(activeTab)
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {initiationDropdownLabel}
+              <svg className={`ml-1 w-4 h-4 transition-transform ${showInitiationDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {showInitiationDropdown && (
+              <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10">
+                <button
+                  onClick={() => {
+                    setActiveTab(EventStatus.PendingApproval);
+                    setShowInitiationDropdown(false);
+                  }}
+                  className={`block w-full text-left px-4 py-2 text-sm ${
+                    activeTab === EventStatus.PendingApproval
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Chờ phê duyệt
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab(EventStatus.Approved);
+                    setShowInitiationDropdown(false);
+                  }}
+                  className={`block w-full text-left px-4 py-2 text-sm ${
+                    activeTab === EventStatus.Approved
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Đã phê duyệt
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab(EventStatus.Rejected);
+                    setShowInitiationDropdown(false);
+                  }}
+                  className={`block w-full text-left px-4 py-2 text-sm ${
+                    activeTab === EventStatus.Rejected
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Bị từ chối
+                </button>
+              </div>
+            )}
+          </div>
+          
+          {/* Event Completion Dropdown */}
+          <div className="relative" ref={completionDropdownRef}>
+            <button
+              onClick={() => {
+                setShowCompletionDropdown(!showCompletionDropdown);
+                setShowInitiationDropdown(false);
+              }}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${
+                [EventStatus.PendingApprovalEnd, EventStatus.RejectEnded, EventStatus.WaitingForPayout, EventStatus.Ended].includes(activeTab)
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {completionDropdownLabel}
+              <svg className={`ml-1 w-4 h-4 transition-transform ${showCompletionDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {showCompletionDropdown && (
+              <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10">
+                <button
+                  onClick={() => {
+                    setActiveTab(EventStatus.PendingApprovalEnd);
+                    setShowCompletionDropdown(false);
+                  }}
+                  className={`block w-full text-left px-4 py-2 text-sm ${
+                    activeTab === EventStatus.PendingApprovalEnd
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Chờ kết thúc
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab(EventStatus.RejectEnded);
+                    setShowCompletionDropdown(false);
+                  }}
+                  className={`block w-full text-left px-4 py-2 text-sm ${
+                    activeTab === EventStatus.RejectEnded
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Từ chối kết thúc
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab(EventStatus.WaitingForPayout);
+                    setShowCompletionDropdown(false);
+                  }}
+                  className={`block w-full text-left px-4 py-2 text-sm ${
+                    activeTab === EventStatus.WaitingForPayout
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Chờ thanh toán
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab(EventStatus.Ended);
+                    setShowCompletionDropdown(false);
+                  }}
+                  className={`block w-full text-left px-4 py-2 text-sm ${
+                    activeTab === EventStatus.Ended
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Đã kết thúc
+                </button>
+              </div>
+            )}
+          </div>
+          
           <button
-            onClick={() => setActiveTab(ConfirmStatus.NeedConfirm)}
+            onClick={() => {
+              setActiveTab(EventStatus.Cancelled);
+              setShowInitiationDropdown(false);
+              setShowCompletionDropdown(false);
+            }}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === ConfirmStatus.NeedConfirm
+              activeTab === EventStatus.Cancelled
                 ? 'bg-white text-blue-600 shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Chờ phê duyệt
-          </button>
-          <button
-            onClick={() => setActiveTab(ConfirmStatus.Approve)}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === ConfirmStatus.Approve
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Đã phê duyệt
-          </button>
-          <button
-            onClick={() => setActiveTab(ConfirmStatus.Reject)}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === ConfirmStatus.Reject
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Bị từ chối
+            Đã hủy
           </button>
         </div>
       </div>
@@ -692,17 +973,32 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                               <Badge 
                                 variant="outline" 
                                 className={
-                                  eventStatus === ConfirmStatus.Approve 
+                                  eventStatus === EventStatus.Approved 
                                     ? 'text-green-600 border-green-200 bg-green-50' 
-                                    : eventStatus === ConfirmStatus.Reject 
+                                    : eventStatus === EventStatus.Rejected 
                                       ? 'text-red-600 border-red-200 bg-red-50' 
-                                      : 'text-orange-600 border-orange-200 bg-orange-50'
+                                      : eventStatus === EventStatus.Cancelled
+                                        ? 'text-gray-600 border-gray-200 bg-gray-50'
+                                        : eventStatus === EventStatus.PendingApprovalEnd
+                                          ? 'text-yellow-600 border-yellow-200 bg-yellow-50'
+                                          : eventStatus === EventStatus.RejectEnded
+                                            ? 'text-purple-600 border-purple-200 bg-purple-50'
+                                            : eventStatus === EventStatus.WaitingForPayout
+                                              ? 'text-indigo-600 border-indigo-200 bg-indigo-50'
+                                              : eventStatus === EventStatus.Ended
+                                                ? 'text-blue-600 border-blue-200 bg-blue-50'
+                                                : 'text-orange-600 border-orange-200 bg-orange-50'
                                 }
                               >
-                                {eventStatus === ConfirmStatus.Approve && <CheckCircle className="w-3 h-3 mr-1" />}
-                                {eventStatus === ConfirmStatus.Reject && <XCircle className="w-3 h-3 mr-1" />}
-                                {eventStatus === ConfirmStatus.NeedConfirm && <Clock className="w-3 h-3 mr-1" />}
-                                {ConfirmStatusDisplay[eventStatus] || eventStatus}
+                                {eventStatus === EventStatus.Approved && <CheckCircle className="w-3 h-3 mr-1" />}
+                                {eventStatus === EventStatus.Rejected && <XCircle className="w-3 h-3 mr-1" />}
+                                {eventStatus === EventStatus.Cancelled && <XCircle className="w-3 h-3 mr-1" />}
+                                {eventStatus === EventStatus.PendingApprovalEnd && <Clock className="w-3 h-3 mr-1" />}
+                                {eventStatus === EventStatus.RejectEnded && <XCircle className="w-3 h-3 mr-1" />}
+                                {eventStatus === EventStatus.WaitingForPayout && <Clock className="w-3 h-3 mr-1" />}
+                                {eventStatus === EventStatus.Ended && <CheckCircle className="w-3 h-3 mr-1" />}
+                                {eventStatus === EventStatus.PendingApproval && <Clock className="w-3 h-3 mr-1" />}
+                                {EventStatusDisplay[eventStatus] || eventStatus}
                               </Badge>
                             )}
                           </div>
@@ -754,31 +1050,37 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                         <div className="flex flex-col items-center p-2 bg-gray-50 rounded">
                           <span className="text-xs text-muted-foreground">Đăng ký</span>
                           <span className="font-semibold">
-                            {('totalPersonJoin' in event) ? event.totalPersonJoin : (event.soldQuantity || 0)}
+                            {event.totalPersonJoin || event.soldQuantity || 0}
                           </span>
                         </div>
                         <div className="flex flex-col items-center p-2 bg-gray-50 rounded">
                           <span className="text-xs text-muted-foreground">Doanh thu</span>
                           <span className="font-semibold">
-                            {event.revenue ? `${event.revenue.toLocaleString()}đ` : '0đ'}
+                            {event.totalAmount ? `${event.totalAmount.toLocaleString()}đ` : '0đ'}
                           </span>
                         </div>
                         <div className="flex flex-col items-center p-2 bg-gray-50 rounded">
-                          <span className="text-xs text-muted-foreground">Hoàn tiền</span>
+                          <span className="text-xs text-muted-foreground">Thanh toán</span>
                           <span className="font-semibold">
-                            {event.refundCount || 0}
+                            {event.payoutAmount ? `${event.payoutAmount.toLocaleString()}đ` : '0đ'}
                           </span>
                         </div>
                         <div className="flex flex-col items-center p-2 bg-gray-50 rounded">
                           <span className="text-xs text-muted-foreground">Đánh giá</span>
                           <span className="font-semibold">
-                            {event.rating ? `${event.rating.toFixed(1)}/5` : 'Chưa có'}
+                            {event.averageRating ? `${event.averageRating.toFixed(1)}/5` : 'Chưa có'}
                           </span>
                         </div>
                       </div>
 
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
+                          {(eventStatus === EventStatus.Approved || eventStatus === EventStatus.RejectEnded) && event.endTime && (
+                            <EndEventRequestButton 
+                              event={event} 
+                              onEndEventRequested={() => loadEvents()} // Reload events after request
+                            />
+                          )}
                         </div>
 
                         <div className="flex items-center gap-2">

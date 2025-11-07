@@ -11,6 +11,7 @@ namespace AIEvent.Application.DTOs.Organizer
         public required string ContactPhone { get; set; }
         public required string Address { get; set; }
         public string? ImgCompany { get; set; }
-        public ConfirmOrganizerProfileStatus? Status { get; set; }
+        public DateTimeOffset? CreatedAt { get; set; }
+        public OrganizerProfileStatus? Status { get; set; }
     }
 }

@@ -9,7 +9,7 @@ namespace AIEvent.Application.DTOs.Event
         public Guid EndEventRequestId { get; set; }
 
         [Required(ErrorMessage = "Status is required.")]
-        public ConfirmEventStatus Status { get; set; } 
+        public ConfirmStatus Status { get; set; } 
         public string? AdminNote { get; set; }
     }
 }

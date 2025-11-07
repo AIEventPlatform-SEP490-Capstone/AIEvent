@@ -71,7 +71,7 @@ namespace AIEvent.API.Controllers
 
             return Ok(SuccessResponse<object>.SuccessResult(
                 new { },
-                SuccessCodes.Success,
+                SuccessCodes.Deleted,
                 "Remove Favorite Event successfully"));
         }
 

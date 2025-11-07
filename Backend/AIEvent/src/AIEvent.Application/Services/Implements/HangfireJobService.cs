@@ -3,6 +3,7 @@ using AIEvent.Application.DTOs.RevenueReport;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
+using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
@@ -48,10 +49,10 @@ namespace AIEvent.Application.Services.Implements
         {
             try
             {
-                // 1️⃣ Sinh file PDF
+                // Sinh file PDF
                 var pdfBytes = await _pdfService.GenerateTicketsPdfAsync(tickets, eventTitle, userFullName, userEmail);
 
-                // 2️⃣ Gửi email
+                // Gửi email
                 await _emailService.SendTicketsEmailAsync(
                     userEmail,
                     $"Your Tickets from AIEvent - {eventTitle}",
@@ -66,14 +67,14 @@ namespace AIEvent.Application.Services.Implements
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error sending ticket email for {UserEmail} ({EventTitle})", userEmail, eventTitle);
-                throw; // để Hangfire tự retry
+                throw;
             }
         }
 
         // payout for organizer
-        public async Task EnqueueOrganizerPayoutJobAsync(RevenueReportRequest request, string eventName)
+        public async Task EnqueueOrganizerPayoutJobAsync(RevenueReportRequest request)
         {
-            BackgroundJob.Schedule(() => ProcessOrganizerPayoutAsync(request), TimeSpan.FromDays(10));
+            BackgroundJob.Schedule(() => ProcessOrganizerPayoutAsync(request), TimeSpan.FromMilliseconds(1));
             await Task.CompletedTask;
         }
 
@@ -138,7 +139,7 @@ namespace AIEvent.Application.Services.Implements
                     };
 
                     var payoutResponse = await _payOSService.CreatePayoutAsync(payoutRequest);
-
+                    Console.WriteLine($"Response:   {payoutResponse}");
                     // create report
                     var payoutDate = request.ConfirmDate.AddDays(10);
                     RevenueReport revenueReport = new()
@@ -172,6 +173,191 @@ namespace AIEvent.Application.Services.Implements
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error processing payout for Organizer {OrganizerId} (Event {EventId})", request.OrganizerProfileId, request.EventId);
+                throw;
+            }
+        }
+        public async Task EnqueueCancelEventJobAsync(Guid eventId, string reasonCancel)
+        {
+            BackgroundJob.Enqueue(() => ProcessCancelEventJobAsync(eventId, reasonCancel));
+            await Task.CompletedTask;
+        }
+
+
+        [AutomaticRetry(Attempts = 3)]
+        public async Task ProcessCancelEventJobAsync(Guid eventId, string reasonCancel)
+        {
+            try
+            {
+                _logger.LogInformation("Starting cancellation job for event {EventId}", eventId);
+
+                var existingEvent = await _unitOfWork.EventRepository
+                    .Query()
+                    .Include(e => e.Bookings)
+                        .ThenInclude(b => b.User)
+                        .ThenInclude(u => u.Wallet)
+                    .Include(e => e.Bookings)
+                        .ThenInclude(b => b.BookingItems)
+                        .ThenInclude(bi => bi.Tickets)
+                        .ThenInclude(bi => bi.TicketType)
+                    .FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
+
+                if (existingEvent == null)
+                {
+                    _logger.LogWarning("Event not found: {EventId}", eventId);
+                    return;
+                }
+
+                var hasBookings = existingEvent.Bookings
+                    .Where(b => b.Status == BookingStatus.Completed)
+                    .ToList();
+
+                await _transactionHelper.ExecuteInTransactionAsync(async () =>
+                {
+                    if (!hasBookings.Any())
+                    {
+                        await _unitOfWork.EventRepository.DeleteAsync(existingEvent);
+                        _logger.LogInformation("Deleted event {EventId} without bookings.", eventId);
+                        return Result.Success();
+                    }
+
+                    var walletTransactions = new List<WalletTransaction>();
+                    var paymentTransactions = new List<PaymentTransaction>();
+                    var bookingsToUpdate = new List<Booking>();
+                    var walletsToUpdate = new List<Wallet>();
+                    var ticketsToUpdate = new List<Ticket>();
+                    var ticketTypeQuantityMap = new Dictionary<Guid, int>(); 
+                    int totalTicketsToRevert = 0;
+
+                    foreach (var booking in hasBookings)
+                    {
+                        foreach (var bookingItem in booking.BookingItems)
+                        {
+                            foreach (var ticket in bookingItem.Tickets)
+                            {
+                                if (ticket.Status != TicketStatus.Cancelled && ticket.Status != TicketStatus.Used)
+                                {
+                                    ticket.Status = TicketStatus.Cancelled;
+                                    ticketsToUpdate.Add(ticket);
+                                }
+                            }
+
+                            if (!ticketTypeQuantityMap.ContainsKey(bookingItem.TicketTypeId))
+                                ticketTypeQuantityMap[bookingItem.TicketTypeId] = 0;
+                            
+                            ticketTypeQuantityMap[bookingItem.TicketTypeId] += bookingItem.Quantity;
+                            totalTicketsToRevert += bookingItem.Quantity;
+                        }
+
+                        if (booking.TotalAmount <= 0)
+                        {
+                            booking.Status = BookingStatus.Cancelled;
+                            bookingsToUpdate.Add(booking);
+                            continue;
+                        }
+
+                        var userWallet = booking.User.Wallet;
+                        if (userWallet == null)
+                            throw new Exception($"Wallet not found for user {booking.User.FullName}");
+
+                        if (existingEvent.TotalAmount < booking.TotalAmount)
+                            throw new Exception($"Event wallet has insufficient balance to refund {booking.TotalAmount}");
+
+                        paymentTransactions.Add(new PaymentTransaction
+                        {
+                            BookingId = booking.Id,
+                            UserId = booking.UserId,
+                            Amount = booking.TotalAmount,
+                            PaymentMethod = PaymentMethod.Wallet,
+                            Status = TransactionStatus.Success,
+                            Description = $"Hoàn tiền do hủy sự kiện '{existingEvent.Title}'. Lý do: {reasonCancel} cho người dùng {booking.User.FullName ?? booking.User.Email}",
+                            TransactionType = TransactionType.Refund,
+                            CompletedAt = DateTime.UtcNow
+                        });
+
+                        walletTransactions.Add(new WalletTransaction
+                        {
+                            WalletId = userWallet.Id,
+                            Amount = booking.TotalAmount,
+                            BalanceBefore = userWallet.Balance,
+                            BalanceAfter = userWallet.Balance + booking.TotalAmount,
+                            Type = TransactionType.Refund,
+                            Direction = TransactionDirection.In,
+                            ReferenceId = booking.Id,
+                            ReferenceType = ReferenceType.Refund,
+                            Status = TransactionStatus.Success,
+                            Description = $"Hoàn tiền do hủy sự kiện '{existingEvent.Title}'. Lý do: {reasonCancel}"
+                        });
+
+                        userWallet.Balance += booking.TotalAmount;
+                        existingEvent.TotalAmount -= booking.TotalAmount;
+
+                        if (!walletsToUpdate.Any(w => w.Id == userWallet.Id))
+                            walletsToUpdate.Add(userWallet);
+
+                        booking.Status = BookingStatus.Cancelled;
+                        bookingsToUpdate.Add(booking);
+                    }
+                     
+                    var ticketTypeIds = ticketTypeQuantityMap.Keys.ToList();
+                    var ticketTypesToUpdate = await _unitOfWork.TicketTypeRepository
+                        .Query()
+                        .Where(tt => ticketTypeIds.Contains(tt.Id))
+                        .ToListAsync();
+
+                    var ticketTypesUpdated = new List<TicketType>();
+
+                    foreach (var ticketType in ticketTypesToUpdate)
+                    {
+                        if (ticketTypeQuantityMap.TryGetValue(ticketType.Id, out var quantity))
+                        {
+                            if (ticketType.SoldQuantity >= quantity)
+                            {
+                                ticketType.RemainingQuantity += quantity;
+                                ticketType.SoldQuantity -= quantity;
+                                ticketType.SetUpdated(null);
+                                ticketTypesUpdated.Add(ticketType);
+                            }
+                            else
+                                _logger.LogWarning("Cannot revert ticket quantities for TicketType {TicketTypeId}: SoldQuantity ({SoldQty}) < quantity to revert ({Quantity})",
+                                        ticketType.Id, ticketType.SoldQuantity, quantity);
+                        }
+                    }
+
+                    if (ticketTypesUpdated.Any())
+                        await _unitOfWork.TicketTypeRepository.UpdateRangeAsync(ticketTypesUpdated);
+
+                    if (totalTicketsToRevert > 0)
+                    {
+                        if (existingEvent.SoldQuantity >= totalTicketsToRevert)
+                        {
+                            existingEvent.RemainingTickets += totalTicketsToRevert;
+                            existingEvent.SoldQuantity -= totalTicketsToRevert;
+                        }
+                        else
+                            _logger.LogWarning("Cannot revert ticket quantities for Event {EventId}: SoldQuantity ({SoldQty}) < quantity to revert ({Quantity})",
+                                    eventId, existingEvent.SoldQuantity, totalTicketsToRevert);
+                    }
+
+                    await _unitOfWork.PaymentTransactionRepository.AddRangeAsync(paymentTransactions);
+                    await _unitOfWork.WalletTransactionRepository.AddRangeAsync(walletTransactions);
+                    await _unitOfWork.WalletRepository.UpdateRangeAsync(walletsToUpdate);
+                    await _unitOfWork.BookingRepository.UpdateRangeAsync(bookingsToUpdate);
+                    if (ticketsToUpdate.Any())
+                        await _unitOfWork.TicketRepository.UpdateRangeAsync(ticketsToUpdate);
+
+                    existingEvent.ReasonCancel = reasonCancel;
+                    existingEvent.Status = EventStatus.Cancelled;
+                    existingEvent.Publish = false;
+                    await _unitOfWork.EventRepository.UpdateAsync(existingEvent);
+                    _logger.LogInformation("Refunds, ticket cancellations, and quantity reversions processed for event {EventId}. Cancelled {TicketCount} tickets, reverted {TotalTickets} ticket quantities", 
+                        eventId, ticketsToUpdate.Count, totalTicketsToRevert);
+                    return Result.Success();
+                });
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing cancel event {EventId}", eventId);
                 throw;
             }
         }

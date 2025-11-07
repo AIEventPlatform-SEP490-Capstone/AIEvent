@@ -1,4 +1,5 @@
 ﻿using AIEvent.Application.DTOs.Common;
+using AIEvent.Application.DTOs.Friend;
 using AIEvent.Application.DTOs.User;
 using AIEvent.Domain.Entities;
 using AutoMapper;
@@ -67,6 +68,8 @@ namespace AIEvent.Application.Mappings
                         src.Languages != null
                             ? JsonConvert.SerializeObject(src.Languages)
                             : null));
+
+            CreateMap<User, FriendProfileResponse>();
         }
     }
 }

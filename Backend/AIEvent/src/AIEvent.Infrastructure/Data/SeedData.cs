@@ -213,14 +213,14 @@ namespace AIEvent.Infrastructure.Data
                 new EventCategory
                 {
                     Id = eventCategoryId3,
-                    CategoryName = "Sports",
+                    CategoryName = "Education",
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System"
                 },
                 new EventCategory
                 {
                     Id = Guid.NewGuid(),
-                    CategoryName = "Education",
+                    CategoryName = "Sports",
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System"
                 }
@@ -294,7 +294,7 @@ namespace AIEvent.Infrastructure.Data
                     CompanyName = "EventPro Vietnam Co., Ltd",
                     TaxCode = "0312345678",
                     CompanyDescription = "Công ty hàng đầu trong lĩnh vực tổ chức sự kiện chuyên nghiệp tại Việt Nam.",
-                    Status = ConfirmOrganizerProfileStatus.Approve,
+                    Status = OrganizerProfileStatus.Approved,
                     ConfirmAt = DateTime.UtcNow,
                     ConfirmBy = "SystemSeeder",
                     CreatedAt = DateTime.UtcNow,
@@ -314,9 +314,8 @@ namespace AIEvent.Infrastructure.Data
                 new Event
                 {
                     Id = eventId1,
-                    
                     OrganizerProfileId = organizerProfileId, 
-                    EventCategoryId = eventCategoryId1, 
+                    EventCategoryId = eventCategoryId2, 
                     Title = "Hội Thảo Công Nghệ AI 2025",
                     Description = "Sự kiện chia sẻ xu hướng AI mới nhất",
                     StartTime = DateTime.UtcNow.AddDays(7),
@@ -327,7 +326,7 @@ namespace AIEvent.Infrastructure.Data
                     RemainingTickets = 101,
                     TicketPricingType = TicketPricingType.Paid,
                     Publish = true,
-                    RequireApproval = ConfirmEventStatus.Approve,
+                    Status = EventStatus.Approved,
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System",
                 },
@@ -335,7 +334,7 @@ namespace AIEvent.Infrastructure.Data
                 {
                     Id = eventId2,
                     OrganizerProfileId = organizerProfileId,
-                    EventCategoryId = eventCategoryId2,
+                    EventCategoryId = eventCategoryId1,
                     Title = "Đêm Nhạc Trịnh Công Sơn",
                     Description = "Chương trình nhạc Trịnh với nhiều nghệ sĩ nổi tiếng",
                     StartTime = DateTime.UtcNow.AddDays(14),
@@ -346,7 +345,7 @@ namespace AIEvent.Infrastructure.Data
                     RemainingTickets = 500,
                     TicketPricingType = TicketPricingType.Paid,
                     Publish = true,
-                    RequireApproval = ConfirmEventStatus.Approve,
+                    Status = EventStatus.Approved,
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System",
                     LocationName = "Hà Nội tòa 3"
@@ -366,7 +365,7 @@ namespace AIEvent.Infrastructure.Data
                     RemainingTickets = 100,
                     TicketPricingType = TicketPricingType.Paid,
                     Publish = false, // chưa publish
-                    RequireApproval = ConfirmEventStatus.NeedConfirm,
+                    Status = EventStatus.PendingApproval,
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System",
                     LocationName = "Hà Nội tòa 2"
@@ -386,7 +385,7 @@ namespace AIEvent.Infrastructure.Data
                     RemainingTickets = 100,
                     TicketPricingType = TicketPricingType.Free,
                     Publish = true, 
-                    RequireApproval = ConfirmEventStatus.Approve,
+                    Status = EventStatus.Approved,
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = "System",
                     LocationName = "Hà Nội tòa 1"
@@ -408,7 +407,7 @@ namespace AIEvent.Infrastructure.Data
                     Id = ticketDetailId1,
                     EventId = eventId1,
                     TicketName = "Ve VipPro 1",
-                    TicketPrice = 100000,
+                    TicketPrice = 10000,
                     TicketQuantity = 100,
                     RemainingQuantity = 1,
                     SoldQuantity = 99,
@@ -418,7 +417,7 @@ namespace AIEvent.Infrastructure.Data
                     Id = ticketDetailId2,
                     EventId = eventId1,
                     TicketName = "Ve VipPro 2",
-                    TicketPrice = 150000,
+                    TicketPrice = 15000,
                     TicketQuantity = 100,
                     RemainingQuantity = 100,
                 },
@@ -427,7 +426,7 @@ namespace AIEvent.Infrastructure.Data
                     Id = ticketDetailId3,
                     EventId = eventId2,
                     TicketName = "Ve VipPro 3",
-                    TicketPrice = 150000,
+                    TicketPrice = 15000,
                     TicketQuantity = 250,
                     RemainingQuantity = 250,
                 },
@@ -436,7 +435,7 @@ namespace AIEvent.Infrastructure.Data
                     Id = ticketDetailId4,
                     EventId = eventId2,
                     TicketName = "Ve VipPro 5",
-                    TicketPrice = 200000,
+                    TicketPrice = 20000,
                     TicketQuantity = 250,
                     RemainingQuantity = 250,
                 },
@@ -445,7 +444,7 @@ namespace AIEvent.Infrastructure.Data
                     Id = ticketDetailId5,
                     EventId = eventId3,
                     TicketName = "Ve VipPro 4",
-                    TicketPrice = 50000,
+                    TicketPrice = 5000,
                     TicketQuantity = 100,
                     RemainingQuantity = 100,
                 },

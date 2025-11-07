@@ -34,7 +34,7 @@ namespace AIEvent.Application.Services.Implements
                     return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
                 }
                 var eventDetail = await _unitOfWork.EventRepository.GetByIdAsync(eventId, true);
-                if (eventDetail == null || eventDetail.RequireApproval == ConfirmEventStatus.Reject)
+                if (eventDetail == null || eventDetail.Status == EventStatus.Rejected || eventDetail.IsDeleted)
                 {
                     return ErrorResponse.FailureResult("Event not found or inactive", ErrorCodes.NotFound);
                 }
@@ -62,7 +62,7 @@ namespace AIEvent.Application.Services.Implements
                                                 .AsNoTracking()
                                                 .Where(e => e.FavoriteEvents.Any(x => x.UserId == userId) &&
                                                        !e.DeletedAt.HasValue && 
-                                                       e.RequireApproval == ConfirmEventStatus.Approve);
+                                                       e.Status == EventStatus.Approved);
 
             if (!string.IsNullOrEmpty(search))
             {
@@ -94,6 +94,13 @@ namespace AIEvent.Application.Services.Implements
                     TotalTickets = e.TotalTickets,
                     SoldQuantity = e.SoldQuantity,
                     LocationName = e.LocationName,
+                    AverageRating = e.AverageRating,
+                    TotalRatings = e.TotalRatings,
+                    TicketPrice = e.TicketTypes != null
+                        ? e.TicketTypes.Min(t => t.TicketPrice)
+                        : 0,
+                    Publish = e.Publish,
+                    Status = e.Status,
                     Tags = e.EventTags.Select(t => new TagResponse
                     {
                         TagId = t.TagId.ToString(),
