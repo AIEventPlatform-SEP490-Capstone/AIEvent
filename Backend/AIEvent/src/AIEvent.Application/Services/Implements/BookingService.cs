@@ -51,7 +51,7 @@ namespace AIEvent.Application.Services.Implements
             if (eventEntity.OrganizerProfile?.UserId == null)
                 return ErrorResponse.FailureResult("Organizer not found", ErrorCodes.NotFound);
 
-            if (DateTime.Now > eventEntity.SaleEndTime || DateTime.Now < eventEntity.SaleStartTime)
+            if (DateTime.UtcNow > eventEntity.SaleEndTime || DateTime.UtcNow < eventEntity.SaleStartTime)
                 return ErrorResponse.FailureResult("Ticket sales period has passed or not yet come", ErrorCodes.InvalidInput);
 
             var ticketTypeIds = request.TicketTypeRequests.Select(x => x.TicketTypeId).Distinct().ToList();
