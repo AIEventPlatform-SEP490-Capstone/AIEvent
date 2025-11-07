@@ -1663,7 +1663,6 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMockDbSet().Object);
 
-            var paymentInfo = new PaymentInformation { Id = request.PaymentInformationId, UserId = userId, IsDeleted = false, AccountHolderName = "Test", AccountNumber = "123456", BankName = "Test Bank", BankBin = "123456" };
             _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMockDbSet().Object);
 
@@ -1705,7 +1704,6 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMockDbSet().Object);
 
-            var paymentInfo = new PaymentInformation { Id = request.PaymentInformationId, UserId = userId, IsDeleted = false, AccountHolderName = "Test", AccountNumber = "123456", BankName = "Test Bank", BankBin = "123456" };
             _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMockDbSet().Object);
 
@@ -1744,7 +1742,6 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMockDbSet().Object);
 
-            var paymentInfo = new PaymentInformation { Id = request.PaymentInformationId, UserId = userId, IsDeleted = false, AccountHolderName = "Test", AccountNumber = "123456", BankName = "Test Bank", BankBin = "123456" };
             _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMockDbSet().Object);
 
