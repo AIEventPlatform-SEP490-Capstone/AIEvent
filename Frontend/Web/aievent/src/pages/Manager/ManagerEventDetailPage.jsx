@@ -626,21 +626,23 @@ Nhấn OK để xác nhận xóa.`;
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Approval Actions */}
-            <Card>
-              <CardHeader>
-                <h3 className="text-lg font-semibold">Phê duyệt sự kiện</h3>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button className="w-full" onClick={handleApproveEvent}>
-                  <Shield className="h-4 w-4 mr-2" />
-                  Phê duyệt sự kiện
-                </Button>
-                <Button variant="outline" className="w-full text-red-600 hover:text-red-700" onClick={handleRejectEvent}>
-                  <Shield className="h-4 w-4 mr-2" />
-                  Từ chối sự kiện
-                </Button>
-              </CardContent>
-            </Card>
+            {event && event.status === EventStatus.PendingApproval && (
+              <Card>
+                <CardHeader>
+                  <h3 className="text-lg font-semibold">Phê duyệt sự kiện</h3>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button className="w-full" onClick={handleApproveEvent}>
+                    <Shield className="h-4 w-4 mr-2" />
+                    Phê duyệt sự kiện
+                  </Button>
+                  <Button variant="outline" className="w-full text-red-600 hover:text-red-700" onClick={handleRejectEvent}>
+                    <Shield className="h-4 w-4 mr-2" />
+                    Từ chối sự kiện
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Quick Actions */}
             <Card>

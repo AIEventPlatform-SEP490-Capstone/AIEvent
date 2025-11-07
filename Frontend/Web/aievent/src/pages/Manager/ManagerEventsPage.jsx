@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
@@ -54,7 +54,64 @@ const ManagerEventsPage = () => {
   const [sortBy, setSortBy] = useState('newest');
   const [activeTab, setActiveTab] = useState('all'); // For switching between event statuses
   const [rejectionReason, setRejectionReason] = useState('');
+  const [showInitiationDropdown, setShowInitiationDropdown] = useState(false);
+  const [showCompletionDropdown, setShowCompletionDropdown] = useState(false);
+  const [initiationDropdownLabel, setInitiationDropdownLabel] = useState('Khởi tạo sự kiện');
+  const [completionDropdownLabel, setCompletionDropdownLabel] = useState('Kết thúc sự kiện');
+  const initiationDropdownRef = useRef(null);
+  const completionDropdownRef = useRef(null);
   const pageSize = 12;
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (initiationDropdownRef.current && !initiationDropdownRef.current.contains(event.target)) {
+        setShowInitiationDropdown(false);
+      }
+      if (completionDropdownRef.current && !completionDropdownRef.current.contains(event.target)) {
+        setShowCompletionDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Update dropdown labels when activeTab changes
+  useEffect(() => {
+    // Update initiation dropdown label
+    if (activeTab === EventStatus.PendingApproval) {
+      setInitiationDropdownLabel('Chờ phê duyệt');
+    } else if (activeTab === EventStatus.Approved) {
+      setInitiationDropdownLabel('Đã phê duyệt');
+    } else if (activeTab === EventStatus.Rejected) {
+      setInitiationDropdownLabel('Bị từ chối');
+    } 
+    // Reset initiation dropdown to default when selecting completion statuses or other main tabs
+    else if ([EventStatus.PendingApprovalEnd, EventStatus.RejectEnded, 
+              EventStatus.WaitingForPayout, EventStatus.Ended, 
+              'all', EventStatus.Cancelled].includes(activeTab)) {
+      setInitiationDropdownLabel('Khởi tạo sự kiện');
+    }
+
+    // Update completion dropdown label
+    if (activeTab === EventStatus.PendingApprovalEnd) {
+      setCompletionDropdownLabel('Chờ kết thúc');
+    } else if (activeTab === EventStatus.RejectEnded) {
+      setCompletionDropdownLabel('Từ chối kết thúc');
+    } else if (activeTab === EventStatus.WaitingForPayout) {
+      setCompletionDropdownLabel('Chờ thanh toán');
+    } else if (activeTab === EventStatus.Ended) {
+      setCompletionDropdownLabel('Đã kết thúc');
+    }
+    // Reset completion dropdown to default when selecting initiation statuses or other main tabs
+    else if ([EventStatus.PendingApproval, EventStatus.Approved, 
+              EventStatus.Rejected, 'all', EventStatus.Cancelled].includes(activeTab)) {
+      setCompletionDropdownLabel('Kết thúc sự kiện');
+    }
+  }, [activeTab]);
 
   // Load events initially and when tab changes
   useEffect(() => {
@@ -712,6 +769,8 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
           <button
             onClick={() => {
               setActiveTab('all');
+              setShowInitiationDropdown(false);
+              setShowCompletionDropdown(false);
               navigate(PATH.MANAGER_EVENTS);
             }}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
@@ -722,53 +781,165 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
           >
             Tất cả sự kiện
           </button>
-          <button
-            onClick={() => {
-              setActiveTab(EventStatus.PendingApproval);
-              navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.PendingApproval}`);
-            }}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${
-              activeTab === EventStatus.PendingApproval
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Chờ phê duyệt
-            {stats.pendingApprovals > 0 && (
-              <span className="ml-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {stats.pendingApprovals}
-              </span>
+          
+          {/* Event Initiation Dropdown */}
+          <div className="relative" ref={initiationDropdownRef}>
+            <button
+              onClick={() => {
+                setShowInitiationDropdown(!showInitiationDropdown);
+                setShowCompletionDropdown(false);
+              }}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${
+                [EventStatus.PendingApproval, EventStatus.Approved, EventStatus.Rejected].includes(activeTab)
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {initiationDropdownLabel}
+              <svg className={`ml-1 w-4 h-4 transition-transform ${showInitiationDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {showInitiationDropdown && (
+              <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10">
+                <button
+                  onClick={() => {
+                    setActiveTab(EventStatus.PendingApproval);
+                    setShowInitiationDropdown(false);
+                    navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.PendingApproval}`);
+                  }}
+                  className={`block w-full text-left px-4 py-2 text-sm ${
+                    activeTab === EventStatus.PendingApproval
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Chờ phê duyệt
+                  {stats.pendingApprovals > 0 && (
+                    <span className="ml-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 inline-flex items-center justify-center">
+                      {stats.pendingApprovals}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab(EventStatus.Approved);
+                    setShowInitiationDropdown(false);
+                    navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.Approved}`);
+                  }}
+                  className={`block w-full text-left px-4 py-2 text-sm ${
+                    activeTab === EventStatus.Approved
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Đã phê duyệt
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab(EventStatus.Rejected);
+                    setShowInitiationDropdown(false);
+                    navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.Rejected}`);
+                  }}
+                  className={`block w-full text-left px-4 py-2 text-sm ${
+                    activeTab === EventStatus.Rejected
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Bị từ chối
+                </button>
+              </div>
             )}
-          </button>
-          <button
-            onClick={() => {
-              setActiveTab(EventStatus.Approved);
-              navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.Approved}`);
-            }}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === EventStatus.Approved
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Đã phê duyệt
-          </button>
-          <button
-            onClick={() => {
-              setActiveTab(EventStatus.Rejected);
-              navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.Rejected}`);
-            }}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === EventStatus.Rejected
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Bị từ chối
-          </button>
+          </div>
+          
+          {/* Event Completion Dropdown */}
+          <div className="relative" ref={completionDropdownRef}>
+            <button
+              onClick={() => {
+                setShowCompletionDropdown(!showCompletionDropdown);
+                setShowInitiationDropdown(false);
+              }}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${
+                [EventStatus.PendingApprovalEnd, EventStatus.RejectEnded, EventStatus.WaitingForPayout, EventStatus.Ended].includes(activeTab)
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {completionDropdownLabel}
+              <svg className={`ml-1 w-4 h-4 transition-transform ${showCompletionDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {showCompletionDropdown && (
+              <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10">
+                <button
+                  onClick={() => {
+                    setActiveTab(EventStatus.PendingApprovalEnd);
+                    setShowCompletionDropdown(false);
+                    navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.PendingApprovalEnd}`);
+                  }}
+                  className={`block w-full text-left px-4 py-2 text-sm ${
+                    activeTab === EventStatus.PendingApprovalEnd
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Chờ kết thúc
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab(EventStatus.RejectEnded);
+                    setShowCompletionDropdown(false);
+                    navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.RejectEnded}`);
+                  }}
+                  className={`block w-full text-left px-4 py-2 text-sm ${
+                    activeTab === EventStatus.RejectEnded
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Từ chối kết thúc
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab(EventStatus.WaitingForPayout);
+                    setShowCompletionDropdown(false);
+                    navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.WaitingForPayout}`);
+                  }}
+                  className={`block w-full text-left px-4 py-2 text-sm ${
+                    activeTab === EventStatus.WaitingForPayout
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Chờ thanh toán
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab(EventStatus.Ended);
+                    setShowCompletionDropdown(false);
+                    navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.Ended}`);
+                  }}
+                  className={`block w-full text-left px-4 py-2 text-sm ${
+                    activeTab === EventStatus.Ended
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Đã kết thúc
+                </button>
+              </div>
+            )}
+          </div>
+          
           <button
             onClick={() => {
               setActiveTab(EventStatus.Cancelled);
+              setShowInitiationDropdown(false);
+              setShowCompletionDropdown(false);
               navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.Cancelled}`);
             }}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
@@ -778,58 +949,6 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
             }`}
           >
             Đã hủy
-          </button>
-          <button
-            onClick={() => {
-              setActiveTab(EventStatus.PendingApprovalEnd);
-              navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.PendingApprovalEnd}`);
-            }}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === EventStatus.PendingApprovalEnd
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Chờ kết thúc
-          </button>
-          <button
-            onClick={() => {
-              setActiveTab(EventStatus.RejectEnded);
-              navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.RejectEnded}`);
-            }}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === EventStatus.RejectEnded
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Từ chối kết thúc
-          </button>
-          <button
-            onClick={() => {
-              setActiveTab(EventStatus.WaitingForPayout);
-              navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.WaitingForPayout}`);
-            }}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === EventStatus.WaitingForPayout
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Chờ thanh toán
-          </button>
-          <button
-            onClick={() => {
-              setActiveTab(EventStatus.Ended);
-              navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.Ended}`);
-            }}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === EventStatus.Ended
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Đã kết thúc
           </button>
         </div>
       </div>
@@ -991,9 +1110,9 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                           </span>
                         </div>
                         <div className="flex flex-col items-center p-2 bg-gray-50 rounded">
-                          <span className="text-xs text-muted-foreground">Hoàn tiền</span>
+                          <span className="text-xs text-muted-foreground">Thanh toán</span>
                           <span className="font-semibold">
-                            {event.refundCount || 0}
+                            {event.payoutAmount ? `${event.payoutAmount.toLocaleString()}đ` : '0đ'}
                           </span>
                         </div>
                         <div className="flex flex-col items-center p-2 bg-gray-50 rounded">

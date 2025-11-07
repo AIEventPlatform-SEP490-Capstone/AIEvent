@@ -26,6 +26,19 @@ const processEventDatesForDisplay = (event) => {
     processedEvent.saleEndTime = convertUTCToUTC7ISOString(processedEvent.saleEndTime);
   }
   
+  // Map new API response fields to match expected frontend structure
+  if (processedEvent.totalPersonJoin !== undefined) {
+    processedEvent.soldQuantity = processedEvent.totalPersonJoin;
+  }
+  
+  if (processedEvent.totalAmount !== undefined) {
+    processedEvent.revenue = processedEvent.totalAmount;
+  }
+  
+  if (processedEvent.averageRating !== undefined) {
+    processedEvent.rating = processedEvent.averageRating;
+  }
+  
   return processedEvent;
 };
 
@@ -84,7 +97,7 @@ export const eventAPI = {
 
     const response = await fetcher.get(`/event?${queryParams.toString()}`);
     // Return the actual data from the paginated response
-    const data = response.data?.data || response.data;
+    let data = response.data?.data || response.data;
     
     // Process dates for all events in the response
     if (data) {
@@ -93,7 +106,7 @@ export const eventAPI = {
         data.items = processEventsArrayForDisplay(data.items);
       } else if (Array.isArray(data)) {
         // Array response
-        return processEventsArrayForDisplay(data);
+        data = processEventsArrayForDisplay(data);
       }
     }
     
@@ -384,7 +397,7 @@ export const eventAPI = {
 
     const response = await fetcher.get(`/event/draft?${queryParams.toString()}`);
     // Return the actual data from the paginated response
-    const data = response.data?.data || response.data;
+    let data = response.data?.data || response.data;
     
     // Process dates for all events in the response
     if (data) {
@@ -393,7 +406,7 @@ export const eventAPI = {
         data.items = processEventsArrayForDisplay(data.items);
       } else if (Array.isArray(data)) {
         // Array response
-        return processEventsArrayForDisplay(data);
+        data = processEventsArrayForDisplay(data);
       }
     }
     
@@ -411,7 +424,7 @@ export const eventAPI = {
 
     const response = await fetcher.get(`/event/status?${queryParams.toString()}`);
     // Return the actual data from the paginated response
-    const data = response.data?.data || response.data;
+    let data = response.data?.data || response.data;
     
     // Process dates for all events in the response
     if (data) {
@@ -420,7 +433,7 @@ export const eventAPI = {
         data.items = processEventsArrayForDisplay(data.items);
       } else if (Array.isArray(data)) {
         // Array response
-        return processEventsArrayForDisplay(data);
+        data = processEventsArrayForDisplay(data);
       }
     }
     
@@ -495,7 +508,7 @@ export const eventAPI = {
 
     const response = await fetcher.get(`/event/request-end?${queryParams.toString()}`);
     // Return the actual data from the paginated response
-    const data = response.data?.data || response.data;
+    let data = response.data?.data || response.data;
     
     // Process dates for all events in the response
     if (data) {
@@ -504,7 +517,7 @@ export const eventAPI = {
         data.items = processEventsArrayForDisplay(data.items);
       } else if (Array.isArray(data)) {
         // Array response
-        return processEventsArrayForDisplay(data);
+        data = processEventsArrayForDisplay(data);
       }
     }
     
