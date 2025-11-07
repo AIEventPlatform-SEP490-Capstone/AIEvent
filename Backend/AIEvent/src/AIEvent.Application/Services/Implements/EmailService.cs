@@ -333,11 +333,11 @@ namespace AIEvent.Application.Services.Implements
                             </div>
                             <div class='info-row'>
                                 <span class='info-label'>Ngày đặt: </span>
-                                <span class='info-value'>{DateTime.Now:dd/MM/yyyy}</span>
+                                <span class='info-value'>{DateTime.UtcNow:dd/MM/yyyy}</span>
                             </div>
                             <div class='info-row'>
                                 <span class='info-label'>Thời gian: </span>
-                                <span class='info-value'>{DateTime.Now:HH:mm}</span>
+                                <span class='info-value'>{DateTime.UtcNow:HH:mm}</span>
                             </div>
                         </div>
 
