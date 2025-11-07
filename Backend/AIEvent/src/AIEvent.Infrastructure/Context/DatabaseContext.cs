@@ -25,14 +25,18 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<TicketType> TicketTypes { get; set; }
         public DbSet<Tag> Tags { get; set; }
         public DbSet<EventTag> EventTags { get; set; }
-        public DbSet<UserAction> UserActions { get; set; }
-        public DbSet<UserActionFilter> UserActionFilters { get; set; }
         public DbSet<FavoriteEvent> FavoriteEvents { get; set; }
         public DbSet<Booking> Bookings { get; set; }
         public DbSet<BookingItem> BookingItems { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<WithdrawRequest> WithdrawRequests { get; set; }
         public DbSet<PaymentInformation> PaymentInformations { get; set; }
+        public DbSet<EndEventRequest> EndEventRequests { get; set; }
+        public DbSet<Friendship> Friendships { get; set; }
+        public DbSet<Wallet> Wallets { get; set; }
+        public DbSet<WalletTransaction> WalletTransactions { get; set; }
+        public DbSet<RevenueReport> RevenueReports { get; set; }
+        public DbSet<Rating> Ratings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -148,19 +152,14 @@ namespace AIEvent.Infrastructure.Context
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(e => e.Event)
-                    .WithOne(o => o.EndEventRequest)
-                    .HasForeignKey<EndEventRequest>(o => o.EventId)
+                    .WithMany(o => o.EndEventRequests)
+                    .HasForeignKey(o => o.EventId)
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(e => e.PaymentInformation)
                     .WithMany(p => p.EndEventRequests)
                     .HasForeignKey(e => e.PaymentInformationId)
                     .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasIndex(e => e.EventId).HasDatabaseName("IX_EndEventRequests_EventId");
-                entity.HasIndex(e => e.OrganizerProfileId).HasDatabaseName("IX_EndEventRequests_OrganizerProfileId");
-                entity.HasIndex(e => e.Status).HasDatabaseName("IX_EndEventRequests_Status");
-                entity.HasIndex(e => new { e.OrganizerProfileId, e.Status }).HasDatabaseName("IX_EndEventRequests_OrganizerProfile_Status");
             });
 
             //-----------------RevenueReport-------------
@@ -318,25 +317,6 @@ namespace AIEvent.Infrastructure.Context
                 entity.HasIndex(td => new { td.EventId, td.TicketName }).IsUnique();
             });
 
-            // ----------------- UserAction -----------------
-            builder.Entity<UserAction>(entity =>
-            {
-                entity.HasOne(td => td.AppUser)
-                      .WithMany(e => e.UserActions)
-                      .HasForeignKey(td => td.UserId);
-
-                entity.HasIndex(td => new { td.UserId, td.ActionType }).HasDatabaseName("IX_UserActions_User_ActionType");
-            });
-
-            // ----------------- UserActionFilter -----------------
-            builder.Entity<UserActionFilter>(entity =>
-            {
-                entity.HasOne(td => td.UserAction)
-                      .WithMany(e => e.Filters)
-                      .HasForeignKey(td => td.UserActionId)
-                      .OnDelete(DeleteBehavior.Cascade);
-            });
-
             // ----------------- FavoriteEvent -----------------
             builder.Entity<FavoriteEvent>(entity =>
             {
@@ -380,6 +360,48 @@ namespace AIEvent.Infrastructure.Context
 
                 entity.HasIndex(pi => pi.UserId)
                       .HasDatabaseName("IX_PaymentInfo_UserId");
+            });
+
+            //-----------------Friend--------------------
+            builder.Entity<Friendship>(entity =>
+            {
+                entity.HasOne(f => f.Sender)
+                    .WithMany(u => u.FriendshipsSent)
+                    .HasForeignKey(f => f.SenderId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(f => f.Receiver)
+                    .WithMany(u => u.FriendshipsReceived)
+                    .HasForeignKey(f => f.ReceiverId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(f => f.SenderId).HasDatabaseName("IX_Friendship_SenderId");
+                entity.HasIndex(f => f.ReceiverId).HasDatabaseName("IX_Friendship_ReceiverId");
+                entity.HasIndex(f => new { f.SenderId, f.ReceiverId })
+                    .IsUnique()
+                    .HasDatabaseName("IX_Friendship_Sender_Receiver");
+                entity.HasIndex(f => f.Status).HasDatabaseName("IX_Friendship_Status");
+            });
+
+            // ----------------- Rating -----------------
+            builder.Entity<Rating>(entity =>
+            {
+                entity.HasIndex(r => new { r.EventId, r.UserId })
+                      .IsUnique()
+                      .HasDatabaseName("IX_Rating_Event_User");
+
+                entity.HasIndex(r => r.EventId)
+                      .HasDatabaseName("IX_Rating_EventId");
+
+                entity.HasOne(r => r.Event)
+                      .WithMany(e => e.Ratings)
+                      .HasForeignKey(r => r.EventId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(r => r.User)
+                      .WithMany(u => u.Ratings)
+                      .HasForeignKey(r => r.UserId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
 
             builder.Seed();

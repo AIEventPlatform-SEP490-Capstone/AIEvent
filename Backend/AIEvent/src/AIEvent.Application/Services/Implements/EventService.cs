@@ -1,6 +1,7 @@
 ﻿using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
+using AIEvent.Application.DTOs.RevenueReport;
 using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
@@ -168,6 +169,8 @@ namespace AIEvent.Application.Services.Implements
                     SoldQuantity = e.SoldQuantity,
                     LocationName = e.LocationName,
                     Publish = e.Publish,
+                    AverageRating = e.AverageRating,
+                    TotalRatings = e.TotalRatings,
                     Status = e.Status,
                     Tags = e.EventTags.Select(t => new TagResponse
                     {
@@ -618,6 +621,7 @@ namespace AIEvent.Application.Services.Implements
 
             var existingEvent = await _unitOfWork.EventRepository
                 .Query()
+                .Include(e => e.Bookings)
                 .FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
 
             if (existingEvent == null || existingEvent.DeletedAt.HasValue)
@@ -630,7 +634,7 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("Cannot delete other people's events", ErrorCodes.Unauthorized);
 
             var hasBookings = existingEvent.Bookings
-                .Where(b => b.Status == BookingStatus.Completed || b.Status == BookingStatus.Pending)
+                .Where(b => b.Status == BookingStatus.Completed)
                 .ToList();
 
             if (existingEvent.Publish == true && hasBookings.Any())
@@ -704,6 +708,8 @@ namespace AIEvent.Application.Services.Implements
                     EventId = e.Id,
                     Title = e.Title,
                     StartTime = e.StartTime,
+                    //AverageRating = e.AverageRating,
+                    //TotalRatings = e.TotalRatings,
                     EndTime = e.EndTime,
                     MinTicketPrice = e.TicketTypes.Any()
                         ? e.TicketTypes.Min(t => t.TicketPrice)
@@ -790,7 +796,7 @@ namespace AIEvent.Application.Services.Implements
             int totalCount = await events.CountAsync();
 
             var result = await events
-                .OrderBy(p => p.CreatedAt)
+                .OrderByDescending(p => p.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(e => new EventsRawResponse
@@ -879,8 +885,7 @@ namespace AIEvent.Application.Services.Implements
             if (eventEntity == null)
                 return ErrorResponse.FailureResult("Event not found", ErrorCodes.NotFound);
 
-            if (eventEntity.Status != EventStatus.PendingApprovalEnd
-                                && eventEntity.Status != EventStatus.RejectEnded)
+            if (eventEntity.Status != EventStatus.Approved && eventEntity.Status != EventStatus.RejectEnded)
                 return ErrorResponse.FailureResult("Event cannot be requested to end in its current state", ErrorCodes.InvalidInput);
 
             if (eventEntity.OrganizerProfile == null || eventEntity.OrganizerProfile.UserId != userId)
@@ -888,6 +893,12 @@ namespace AIEvent.Application.Services.Implements
 
             if (eventEntity.EndTime > DateTime.UtcNow)
                 return ErrorResponse.FailureResult("Event is not over yet", ErrorCodes.InvalidInput);
+
+            var paymenInfo = await _unitOfWork.PaymentInformationRepository.Query()
+                                        .FirstOrDefaultAsync(p => p.Id == request.PaymentInformationId &&
+                                                             p.UserId == userId && !p.IsDeleted);
+            if(paymenInfo == null)
+                return ErrorResponse.FailureResult("Payment information not found", ErrorCodes.InvalidInput);
 
             var existingPendingRequest = await _unitOfWork.EndEventRequestRepository
                 .Query()
@@ -976,6 +987,18 @@ namespace AIEvent.Application.Services.Implements
                 }
 
                 await _unitOfWork.EndEventRequestRepository.UpdateAsync(endEventRequest);
+
+                RevenueReportRequest reportR = new RevenueReportRequest()
+                {
+                    EventName = endEventRequest.Event.Title,
+                    EventId = endEventRequest.EventId,
+                    OrganizerProfileId = endEventRequest.OrganizerProfileId,
+                    PaymentInforId = endEventRequest.PaymentInformationId,
+                    TotalAmount = endEventRequest.Event.TotalAmount,
+                    ConfirmDate = DateTime.Now
+                };
+
+                await _hangfireJobService.EnqueueOrganizerPayoutJobAsync(reportR);
                 return Result.Success();
             });
         }

@@ -41,12 +41,17 @@ namespace AIEvent.API.Extensions
                     .AddScoped<IPayOSService, PayOSService>()
                     .AddScoped<IWalletService, WalletService>()
                     .AddScoped<IPdfService, PdfService>()
+                    .AddScoped<IRatingService, RatingService>()
                     .AddScoped<IHangfireJobService, HangfireJobService>()
                     .AddScoped<IEventRecommendationService, EventRecommendationService>()
                     .AddScoped<IEventEmbeddingService, EventEmbeddingService>()
                     .AddScoped<IOpenRouterLLMService, OpenRouterLLMService>()
+                    .AddScoped<IContentModerationService, ContentModerationService>()
                     .AddScoped<IPineconeVectorService, PineconeVectorService>()
-                    .AddScoped<IVoyageEmbeddingService, VoyageEmbeddingService>();
+                    .AddScoped<IVoyageEmbeddingService, VoyageEmbeddingService>()
+                    .AddScoped<IRatingService, RatingService>()
+                    .AddScoped<IContentModerationService, ContentModerationService>()
+                    .AddScoped<IFriendService, FriendService>();
 
             return services;
         }

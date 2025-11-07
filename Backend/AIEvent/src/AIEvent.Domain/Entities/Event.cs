@@ -41,11 +41,14 @@ namespace AIEvent.Domain.Entities
         public DateTime? SaleEndTime { get; set; }
         public EventCategory EventCategory { get; set; } = default!;
         public virtual OrganizerProfile? OrganizerProfile { get; set; }
-        public virtual EndEventRequest? EndEventRequest { get; set; }
+        public virtual ICollection<EndEventRequest> EndEventRequests { get; set; } = new List<EndEventRequest>();
         public virtual ICollection<TicketType> TicketTypes { get; set; } = new List<TicketType>();
         public virtual ICollection<EventTag> EventTags { get; set; } = new List<EventTag>();
         public ICollection<FavoriteEvent> FavoriteEvents { get; set; } = new List<FavoriteEvent>();
         public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
         public virtual RevenueReport? RevenueReport { get; set; }
+        public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
+        public double? AverageRating { get; set; } = 0;
+        public int TotalRatings { get; set; } = 0;
     }
 }

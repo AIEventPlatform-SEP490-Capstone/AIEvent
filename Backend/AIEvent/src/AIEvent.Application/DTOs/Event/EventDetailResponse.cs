@@ -32,5 +32,8 @@ namespace AIEvent.Application.DTOs.Event
         public List<TagResponse> EventTags { get; set; } = new List<TagResponse>();
         public EventCategoryResponse EventCategory { get; set; } = default!;
         public List<TicketTypeResponse> TicketDetails { get; set; } = new List<TicketTypeResponse>();
+        public double? AverageRating { get; set; }
+        public int TotalRatings { get; set; }
+        public bool Publish { get; set; }
     }
 }
