@@ -49,10 +49,10 @@ namespace AIEvent.Application.Services.Implements
         {
             try
             {
-                // 1️⃣ Sinh file PDF
+                // Sinh file PDF
                 var pdfBytes = await _pdfService.GenerateTicketsPdfAsync(tickets, eventTitle, userFullName, userEmail);
 
-                // 2️⃣ Gửi email
+                // Gửi email
                 await _emailService.SendTicketsEmailAsync(
                     userEmail,
                     $"Your Tickets from AIEvent - {eventTitle}",
@@ -67,7 +67,7 @@ namespace AIEvent.Application.Services.Implements
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error sending ticket email for {UserEmail} ({EventTitle})", userEmail, eventTitle);
-                throw; // để Hangfire tự retry
+                throw;
             }
         }
 
