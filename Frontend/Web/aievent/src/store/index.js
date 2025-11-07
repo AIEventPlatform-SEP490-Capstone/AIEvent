@@ -11,6 +11,7 @@ import bookingReducer from "./slices/bookingSlice";
 import organizersReducer from "./slices/organizersSlice";
 import userManagementReducer from "./slices/userManagementSlice";
 import favoriteEventsReducer from "./slices/favoriteEventsSlice";
+import endEventRequestsReducer from "./slices/endEventRequestsSlice";
 
 export const store = configureStore({
   reducer: {
@@ -26,6 +27,7 @@ export const store = configureStore({
     organizers: organizersReducer,
     userManagement: userManagementReducer,
     favoriteEvents: favoriteEventsReducer,
+    endEventRequests: endEventRequestsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -186,6 +186,7 @@ export default function useRouterElement() {
         },
         { path: "events", element: <div>Organizer Events Page</div> },
         { path: "my-events", element: <MyEventsPage /> },
+        // { path: "end-event-requests", element: <OrganizerEndEventRequestsPage /> }, // Đã tích hợp vào EventDetailPage
         { path: "event/:eventId", element: <EventDetailPage /> },
         { path: "event/:eventId/edit", element: <EditEventPage /> },
         {
@@ -216,7 +217,7 @@ export default function useRouterElement() {
         { path: "event/:eventId", element: <ManagerEventDetailPage /> },
         { path: "events/category", element: <EventCategory /> },
         { path: "tags", element: <TagManagementPage userRole="manager" /> },
-
+        // { path: "end-event-requests", element: <ManagerEndEventRequestsPage /> }, // Đã tích hợp vào ManagerEventDetailPage
         { path: "profile", element: <ManagerProfile /> },
         { path: "settings", element: <div>Manager Settings Page</div> },
         { path: "support", element: <div>Manager Support Page</div> },

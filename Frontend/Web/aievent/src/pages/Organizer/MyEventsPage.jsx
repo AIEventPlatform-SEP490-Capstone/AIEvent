@@ -30,6 +30,9 @@ import { Label } from '../../components/ui/label';
 import { useEvents } from '../../hooks/useEvents';
 import { PATH } from '../../routes/path';
 
+// Import EndEventRequestButton
+import EndEventRequestButton from '../../components/Organizer/EndEventRequestButton';
+
 // Import EventStatus constants
 import { EventStatus, EventStatusDisplay } from '../../constants/eventConstants';
 
@@ -931,6 +934,12 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
 
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
+                          {eventStatus === EventStatus.Approved || eventStatus === EventStatus.RejectEnded && event.endTime && (
+                            <EndEventRequestButton 
+                              event={event} 
+                              onEndEventRequested={() => loadEvents()} // Reload events after request
+                            />
+                          )}
                         </div>
 
                         <div className="flex items-center gap-2">

@@ -45,6 +45,8 @@ import { EventStatus } from '../../constants/eventConstants';
 
 // Import Cloudinary utility
 import { uploadImagesToCloudinary } from '../../utils/cloudinary';
+// Import date utility
+import { convertUTC7ToUTC, convertUTCToUTC7 } from '../../utils/dateUtils';
 
 // Import predefined cities
 import { PredefinedCities } from '../../constants/userConstants';
@@ -220,14 +222,14 @@ const CreateEventPage = () => {
     
     // Format dates for datetime-local inputs
     if (cloneData.startTime) {
-      const startDate = new Date(cloneData.startTime);
+      const startDate = convertUTCToUTC7(cloneData.startTime);
       // Add one day to the start date for the clone
       startDate.setDate(startDate.getDate() + 1);
       setValue('startTime', startDate.toISOString().slice(0, 16));
     }
     
     if (cloneData.endTime) {
-      const endDate = new Date(cloneData.endTime);
+      const endDate = convertUTCToUTC7(cloneData.endTime);
       // Add one day to the end date for the clone
       endDate.setDate(endDate.getDate() + 1);
       setValue('endTime', endDate.toISOString().slice(0, 16));
@@ -235,13 +237,13 @@ const CreateEventPage = () => {
     
     // Set sale dates (add one day)
     if (cloneData.saleStartTime) {
-      const saleStartDate = new Date(cloneData.saleStartTime);
+      const saleStartDate = convertUTCToUTC7(cloneData.saleStartTime);
       saleStartDate.setDate(saleStartDate.getDate() + 1);
       setValue('saleStartTime', saleStartDate.toISOString().slice(0, 16));
     }
     
     if (cloneData.saleEndTime) {
-      const saleEndDate = new Date(cloneData.saleEndTime);
+      const saleEndDate = convertUTCToUTC7(cloneData.saleEndTime);
       saleEndDate.setDate(saleEndDate.getDate() + 1);
       setValue('saleEndTime', saleEndDate.toISOString().slice(0, 16));
     }
@@ -402,104 +404,26 @@ const CreateEventPage = () => {
 
   // Handle form submission
   const onSubmit = async (data) => {
-    // Check if user has organizer role
-    if (!user || !['Organizer', 'Admin', 'Manager'].includes(user.role)) {
-      toast.error('Bạn không có quyền tạo sự kiện');
-      return;
-    }
-
-    // Validate refund rules selection
-    // if (selectedRules.length === 0) {
-    //   toast.error('Vui lòng chọn ít nhất một quy tắc hoàn tiền');
-    //   return;
-    // }
-
-    // Validate refund rule selection for each ticket
-    // const hasEmptyRefundRule = data.ticketTypes.some(ticket => !ticket.ruleRefundRequestId);
-    // if (hasEmptyRefundRule) {
-    //   toast.error('Vui lòng chọn quy tắc hoàn tiền cho tất cả các loại vé');
-    //   return;
-    // }
-
-    // Validate category selection
-    if (!data.eventCategoryId) {
-      toast.error('Vui lòng chọn danh mục sự kiện');
-      return;
-    }
-
     try {
-      showLoading();
+      showLoading('Đang tạo sự kiện...');
       setIsSubmitting(true);
-      
-      // Upload images to Cloudinary and get URLs
-      let imageUrls = [];
-      if (selectedImages.length > 0) {
-        imageUrls = await uploadImagesToCloudinary(selectedImages);
-      }
-      
-      // Upload evidence images to Cloudinary and get URLs
-      let evidenceImageUrls = [];
-      if (selectedEvidenceImages.length > 0) {
-        evidenceImageUrls = await uploadImagesToCloudinary(selectedEvidenceImages);
-      }
-      
-      // Calculate total tickets from ticketTypes array
-      const totalTickets = data.ticketTypes.reduce((sum, ticket) => sum + parseInt(ticket.ticketQuantity), 0);
 
-      const eventData = {
-        title: data.title,
-        description: data.description,
-        detailedDescription: data.detailedDescription || '',
-        linkRef: data.linkRef || '',
-        startTime: new Date(data.startTime).toISOString(),
-        endTime: new Date(data.endTime).toISOString(),
-        saleStartTime: new Date(data.saleStartTime).toISOString(),
-        saleEndTime: new Date(data.saleEndTime).toISOString(),
-        locationName: data.locationName || '',
-        address: data.address || '',
-        district: data.district || '',
-        latitude: null,
-        longitude: null,
-        totalTickets: totalTickets,
-        ticketPricingType: data.ticketPricingType && !isNaN(parseInt(data.ticketPricingType)) ? parseInt(data.ticketPricingType) : 1,
-        requireApproval: data.requireApproval,
-        publish: data.publish || false, // This will be false for drafts
-        images: imageUrls, // Send Cloudinary URLs instead of File objects
-        evidenceImages: evidenceImageUrls, // Send Cloudinary URLs instead of File objects
-        eventCategoryId: data.eventCategoryId,
-        tags: reduxSelectedTags.map(tag => ({ tagId: tag.tagId })),
-        // refundRules: selectedRules.map(rule => ({ ruleRefundId: rule.ruleRefundId })),
-        ticketTypes: data.ticketTypes.map(ticket => ({
-          ticketName: ticket.ticketName,
-          ticketPrice: parseFloat(ticket.ticketPrice),
-          ticketQuantity: parseInt(ticket.ticketQuantity),
-          ticketDescription: ticket.ticketDescription || '',
-          // ruleRefundRequestId: ticket.ruleRefundRequestId,
-        })),
-      };
-
-      // Validate required fields (từ logic cũ)
-      const requiredFields = ['title', 'description', 'startTime', 'endTime', 'saleStartTime', 'saleEndTime', 'totalTickets', 'eventCategoryId'];
-      if (!eventData.isOnlineEvent) {
-        requiredFields.push('locationName', 'address');
-      }
-      
-      const missingFields = requiredFields.filter(field => !eventData[field]);
-      if (missingFields.length > 0) {
-        toast.error(`Thiếu thông tin bắt buộc: ${missingFields.join(', ')}`);
-        return;
-      }
-      
-      if (eventData.totalTickets <= 0) {
-        toast.error('Tổng số vé phải lớn hơn 0');
+      // Validate required fields
+      if (!data.title?.trim()) {
+        toast.error('Vui lòng nhập tiêu đề sự kiện');
+        hideLoading();
+        setIsSubmitting(false);
         return;
       }
 
-      // Validate dates (từ logic cũ)
-      const startDate = new Date(eventData.startTime);
-      const endDate = new Date(eventData.endTime);
-      const saleStartDate = new Date(eventData.saleStartTime);
-      const saleEndDate = new Date(eventData.saleEndTime);
+      // Convert datetime strings to Date objects for validation
+      const startDate = new Date(data.startTime);
+      const endDate = new Date(data.endTime);
+      const saleStartDate = new Date(data.saleStartTime);
+      const saleEndDate = new Date(data.saleEndTime);
+      
+      // Create now date in the same timezone as the input dates (UTC+7)
+      // Since datetime inputs are in local time (UTC+7), we need to compare with local time
       const now = new Date();
 
       if (startDate <= now) {
@@ -526,6 +450,71 @@ const CreateEventPage = () => {
         toast.error('Thời gian kết thúc bán vé phải trước thời gian bắt đầu sự kiện');
         return;
       }
+
+      // Upload images to Cloudinary and get URLs
+      let imageUrls = [];
+      if (selectedImages.length > 0) {
+        imageUrls = await uploadImagesToCloudinary(selectedImages);
+      }
+      
+      // Upload evidence images to Cloudinary and get URLs
+      let evidenceImageUrls = [];
+      if (selectedEvidenceImages.length > 0) {
+        evidenceImageUrls = await uploadImagesToCloudinary(selectedEvidenceImages);
+      }
+      
+      // Calculate total tickets from ticketTypes array
+      const totalTickets = data.ticketTypes.reduce((sum, ticket) => sum + parseInt(ticket.ticketQuantity), 0);
+
+      // Function to convert datetime-local string (local time) to UTC ISO string
+      // Fixed to properly convert local time to UTC
+      const convertToUTCISOString = (dateString) => {
+        if (!dateString) return '';
+        
+        // Parse the datetime string manually to avoid timezone issues
+        const [datePart, timePart] = dateString.split('T');
+        const [year, month, day] = datePart.split('-').map(Number);
+        const [hours, minutes] = timePart.split(':').map(Number);
+        
+        // Create a UTC date using the parsed components
+        // Since the user entered local time (UTC+7), we need to subtract 7 hours to get UTC
+        const utcDate = new Date(Date.UTC(year, month - 1, day, hours - 7, minutes));
+        
+        // Return proper UTC ISO string
+        return utcDate.toISOString();
+      };
+
+      const eventData = {
+        title: data.title,
+        description: data.description,
+        detailedDescription: data.detailedDescription || '',
+        linkRef: data.linkRef || '',
+        startTime: convertToUTCISOString(data.startTime),
+        endTime: convertToUTCISOString(data.endTime),
+        saleStartTime: convertToUTCISOString(data.saleStartTime),
+        saleEndTime: convertToUTCISOString(data.saleEndTime),
+        locationName: data.locationName || '',
+        address: data.address || '',
+        district: data.district || '',
+        latitude: null,
+        longitude: null,
+        totalTickets: totalTickets,
+        ticketPricingType: data.ticketPricingType && !isNaN(parseInt(data.ticketPricingType)) ? parseInt(data.ticketPricingType) : 1,
+        requireApproval: data.requireApproval,
+        publish: data.publish || false, // This will be false for drafts
+        images: imageUrls, // Send Cloudinary URLs instead of File objects
+        evidenceImages: evidenceImageUrls, // Send Cloudinary URLs instead of File objects
+        eventCategoryId: data.eventCategoryId,
+        tags: reduxSelectedTags.map(tag => ({ tagId: tag.tagId })),
+        // refundRules: selectedRules.map(rule => ({ ruleRefundId: rule.ruleRefundId })),
+        ticketTypes: data.ticketTypes.map(ticket => ({
+          ticketName: ticket.ticketName,
+          ticketPrice: parseFloat(ticket.ticketPrice),
+          ticketQuantity: parseInt(ticket.ticketQuantity),
+          ticketDescription: ticket.ticketDescription || '',
+          // ruleRefundRequestId: ticket.ruleRefundRequestId,
+        })),
+      };
 
       const response = await createEventAPI(eventData);
       
@@ -576,6 +565,8 @@ const CreateEventPage = () => {
       saleEndTime: ''
     };
     
+    // Create now date in the same timezone as the input dates (UTC+7)
+    // Since datetime inputs are in local time (UTC+7), we need to compare with local time
     const now = new Date();
     
     // Check if any datetime is in the past
@@ -659,6 +650,8 @@ const CreateEventPage = () => {
     if (!fieldValue) return;
     
     const fieldDate = new Date(fieldValue);
+    // Create now date in the same timezone as the input dates (UTC+7)
+    // Since datetime inputs are in local time (UTC+7), we need to compare with local time
     const now = new Date();
     
     // Clear field if it's in the past

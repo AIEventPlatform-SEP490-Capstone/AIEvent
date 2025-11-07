@@ -43,6 +43,8 @@ import { EventStatus } from '../../constants/eventConstants';
 
 // Import Cloudinary utility
 import { uploadImagesToCloudinary } from '../../utils/cloudinary';
+// Import date utility
+import { convertUTC7ToUTC, convertUTCToUTC7 } from '../../utils/dateUtils';
 
 // Import predefined cities
 import { PredefinedCities } from '../../constants/userConstants';
@@ -210,10 +212,15 @@ const EditEventPage = () => {
 
   // Handle field clearing when they lose focus and are invalid
   const handleDateTimeBlur = (fieldName) => {
+    // Prevent infinite loop by checking if we're already processing
+    if (isProcessingBlur.current) return;
+    
     const fieldValue = watch(fieldName);
     if (!fieldValue) return;
     
     const fieldDate = new Date(fieldValue);
+    // Create now date in the same timezone as the input dates (UTC+7)
+    // Since datetime inputs are in local time (UTC+7), we need to compare with local time
     const now = new Date();
     
     // Clear field if it's in the past
@@ -247,10 +254,10 @@ const EditEventPage = () => {
           description: event.description || '',
           detailedDescription: event.detailedDescription || '',
           linkRef: event.linkRef || '',
-          startTime: event.startTime ? new Date(event.startTime).toISOString().slice(0, 16) : '',
-          endTime: event.endTime ? new Date(event.endTime).toISOString().slice(0, 16) : '',
-          saleStartTime: event.saleStartTime ? new Date(event.saleStartTime).toISOString().slice(0, 16) : '',
-          saleEndTime: event.saleEndTime ? new Date(event.saleEndTime).toISOString().slice(0, 16) : '',
+          startTime: event.startTime ? convertUTCToUTC7(event.startTime).toISOString().slice(0, 16) : '',
+          endTime: event.endTime ? convertUTCToUTC7(event.endTime).toISOString().slice(0, 16) : '',
+          saleStartTime: event.saleStartTime ? convertUTCToUTC7(event.saleStartTime).toISOString().slice(0, 16) : '',
+          saleEndTime: event.saleEndTime ? convertUTCToUTC7(event.saleEndTime).toISOString().slice(0, 16) : '',
           locationName: event.locationName || '',
           address: event.address || '',
           district: event.district || '',
@@ -413,83 +420,59 @@ const EditEventPage = () => {
 
   // Handle form submission
   const onSubmit = async (formData) => {
-    // Check if user has organizer role
-    if (!user || !['Organizer', 'Admin', 'Manager'].includes(user.role)) {
-      toast.error('Bạn không có quyền chỉnh sửa sự kiện');
-      return;
-    }
-
-    // Validate refund rule selection for each ticket
-    // const hasEmptyRefundRule = formData.ticketTypes.some(ticket => !ticket.ruleRefundRequestId);
-    // if (hasEmptyRefundRule) {
-    //   toast.error('Vui lòng chọn quy tắc hoàn tiền cho tất cả các loại vé');
-    //   return;
-    // }
-
-    // Validate category selection
-    if (!formData.eventCategoryId) {
-      toast.error('Vui lòng chọn danh mục sự kiện');
+    if (!eventId) {
+      toast.error('Không tìm thấy ID sự kiện');
       return;
     }
 
     try {
       showLoading();
       setIsSaving(true);
-      
+
       // Upload new images to Cloudinary and get URLs
       let imageUrls = [];
       if (selectedImages.length > 0) {
         imageUrls = await uploadImagesToCloudinary(selectedImages);
       }
-      
+
       // Upload new evidence images to Cloudinary and get URLs
       let evidenceImageUrls = [];
       if (selectedEvidenceImages.length > 0) {
         evidenceImageUrls = await uploadImagesToCloudinary(selectedEvidenceImages);
       }
-      
+
       // Calculate total tickets from ticketTypes array
       const totalTickets = formData.ticketTypes.reduce((sum, ticket) => sum + parseInt(ticket.ticketQuantity), 0);
 
-      // Prepare tag operations
-      let addTagIds = [];
-      let removeTagIds = [];
-      
-      // If we have existing event data, calculate tag differences
-      if (eventData && eventData.eventTags) {
-        // Tags to add (in selected tags but not in existing tags)
-        addTagIds = reduxSelectedTags
-          .filter(selectedTag => 
-            !eventData.eventTags.some(existingTag => 
-              existingTag.tag?.tagId === selectedTag.tagId
-            )
-          )
-          .map(tag => tag.tagId);
+      // Function to convert datetime-local string (local time) to UTC ISO string
+      // Fixed to properly convert local time to UTC
+      const convertToUTCISOString = (dateString) => {
+        if (!dateString) return '';
         
-        // Tags to remove (in existing tags but not in selected tags)
-        removeTagIds = eventData.eventTags
-          .filter(existingTag => 
-            !reduxSelectedTags.some(selectedTag => 
-              selectedTag.tagId === existingTag.tag?.tagId
-            )
-          )
-          .map(et => et.tag?.tagId)
-          .filter(id => id); // Remove any undefined/null values
-      } else {
-        // If no existing event data, add all selected tags
-        addTagIds = reduxSelectedTags.map(tag => tag.tagId);
-      }
+        // Parse the datetime string manually to avoid timezone issues
+        const [datePart, timePart] = dateString.split('T');
+        const [year, month, day] = datePart.split('-').map(Number);
+        const [hours, minutes] = timePart.split(':').map(Number);
+        
+        // Create a UTC date using the parsed components
+        // Since the user entered local time (UTC+7), we need to subtract 7 hours to get UTC
+        const utcDate = new Date(Date.UTC(year, month - 1, day, hours - 7, minutes));
+        
+        // Return proper UTC ISO string
+        return utcDate.toISOString();
+      };
 
+      // Prepare data to send
       const eventDataToSend = {
         eventId: eventId,
         title: formData.title,
         description: formData.description,
         detailedDescription: formData.detailedDescription || '',
         linkRef: formData.linkRef || '',
-        startTime: new Date(formData.startTime).toISOString(),
-        endTime: new Date(formData.endTime).toISOString(),
-        saleStartTime: new Date(formData.saleStartTime).toISOString(),
-        saleEndTime: new Date(formData.saleEndTime).toISOString(),
+        startTime: convertToUTCISOString(formData.startTime),
+        endTime: convertToUTCISOString(formData.endTime),
+        saleStartTime: convertToUTCISOString(formData.saleStartTime),
+        saleEndTime: convertToUTCISOString(formData.saleEndTime),
         locationName: formData.locationName || '',
         address: formData.address || '',
         district: formData.district || '',
@@ -506,8 +489,7 @@ const EditEventPage = () => {
         removeEvidenceImageUrls: removedEvidenceImages,
         eventCategoryId: formData.eventCategoryId,
         // Handle tags correctly
-        addTagIds: addTagIds,
-        removeTagIds: removeTagIds,
+        tags: reduxSelectedTags.map(tag => ({ tagId: tag.tagId })),
         ticketTypes: formData.ticketTypes.map((ticket, index) => ({
           // Include the ID if it exists (for existing tickets)
           ...(eventData?.ticketDetails?.[index]?.ticketDetailId && { 
@@ -524,7 +506,7 @@ const EditEventPage = () => {
 
       // Validate required fields
       const requiredFields = ['title', 'description', 'startTime', 'endTime', 'saleStartTime', 'saleEndTime', 'totalTickets', 'eventCategoryId'];
-      if (!eventData.isOnlineEvent) {
+      if (!eventDataToSend.isOnlineEvent) {
         requiredFields.push('locationName', 'address');
       }
       
@@ -540,10 +522,13 @@ const EditEventPage = () => {
       }
 
       // Validate dates
-      const startDate = new Date(eventDataToSend.startTime);
-      const endDate = new Date(eventDataToSend.endTime);
-      const saleStartDate = new Date(eventDataToSend.saleStartTime);
-      const saleEndDate = new Date(eventDataToSend.saleEndTime);
+      const startDate = new Date(formData.startTime);
+      const endDate = new Date(formData.endTime);
+      const saleStartDate = new Date(formData.saleStartTime);
+      const saleEndDate = new Date(formData.saleEndTime);
+      
+      // Create now date in the same timezone as the input dates (UTC+7)
+      // Since datetime inputs are in local time (UTC+7), we need to compare with local time
       const now = new Date();
 
       if (startDate <= now) {
@@ -616,6 +601,8 @@ const EditEventPage = () => {
       saleEndTime: ''
     };
     
+    // Create now date in the same timezone as the input dates (UTC+7)
+    // Since datetime inputs are in local time (UTC+7), we need to compare with local time
     const now = new Date();
     
     // Check if any datetime is in the past

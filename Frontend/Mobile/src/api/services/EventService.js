@@ -1,6 +1,69 @@
 import BaseApiService from './BaseApiService';
 import EndUrls from '../EndUrls';
 
+// Helper function to convert UTC to UTC+7
+const convertUTCToUTC7 = (utcDate) => {
+  if (!utcDate) return null;
+  
+  // Create a new Date object from the UTC date
+  const date = new Date(utcDate);
+  
+  // Add 7 hours to convert from UTC to UTC+7
+  // Vietnam is UTC+7
+  date.setHours(date.getHours() + 7);
+  
+  return date;
+};
+
+// Helper function to convert UTC to UTC+7 as ISO string
+const convertUTCToUTC7ISOString = (utcDate) => {
+  if (!utcDate) return null;
+  
+  const date = convertUTCToUTC7(utcDate);
+  return date ? date.toISOString() : null;
+};
+
+// Helper function to process event dates
+const processEventDates = (event) => {
+  if (!event) return event;
+  
+  // Create a new event object to avoid mutating the original
+  const processedEvent = { ...event };
+  
+  // Convert all date fields from UTC to UTC+7
+  if (processedEvent.startTime || processedEvent.StartTime) {
+    const startTime = processedEvent.startTime || processedEvent.StartTime;
+    processedEvent.startTime = convertUTCToUTC7ISOString(startTime);
+    if (!processedEvent.StartTime) {
+      processedEvent.StartTime = processedEvent.startTime;
+    }
+  }
+  
+  if (processedEvent.endTime || processedEvent.EndTime) {
+    const endTime = processedEvent.endTime || processedEvent.EndTime;
+    processedEvent.endTime = convertUTCToUTC7ISOString(endTime);
+    if (!processedEvent.EndTime) {
+      processedEvent.EndTime = processedEvent.endTime;
+    }
+  }
+  
+  if (processedEvent.saleStartTime) {
+    processedEvent.saleStartTime = convertUTCToUTC7ISOString(processedEvent.saleStartTime);
+  }
+  
+  if (processedEvent.saleEndTime) {
+    processedEvent.saleEndTime = convertUTCToUTC7ISOString(processedEvent.saleEndTime);
+  }
+  
+  return processedEvent;
+};
+
+// Helper function to process events array
+const processEventsArray = (events) => {
+  if (!Array.isArray(events)) return events;
+  return events.map(processEventDates);
+};
+
 class EventService {
   /**
    * Test API connection
@@ -60,7 +123,10 @@ class EventService {
       }
       
       // Extract items from paginated response
-      const items = data.items || data.Items || [];
+      let items = data.items || data.Items || [];
+      
+      // Process dates for all events
+      items = processEventsArray(items);
       
       return {
         success: true,
@@ -104,6 +170,11 @@ class EventService {
         data = data.data;
       }
       
+      // Process dates for the event
+      if (data) {
+        data = processEventDates(data);
+      }
+      
       return {
         success: true,
         data: data,
@@ -141,7 +212,10 @@ class EventService {
       }
       
       // Extract items from paginated response
-      const items = data.items || data.Items || [];
+      let items = data.items || data.Items || [];
+      
+      // Process dates for all events
+      items = processEventsArray(items);
       
       return {
         success: true,

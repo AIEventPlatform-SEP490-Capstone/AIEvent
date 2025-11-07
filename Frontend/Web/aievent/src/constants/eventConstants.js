@@ -22,6 +22,18 @@ export const EventStatusDisplay = {
   [EventStatus.Ended]: 'Đã kết thúc'
 };
 
+export const EndEventStatus = {
+  PendingApprovalEnd: 'PendingApprovalEnd',
+  Approved: 'Approved',
+  Rejected: 'Rejected'
+};
+
+export const EndEventStatusDisplay = {
+  [EndEventStatus.PendingApprovalEnd]: 'Chờ phê duyệt kết thúc',
+  [EndEventStatus.Approved]: 'Đã phê duyệt kết thúc',
+  [EndEventStatus.Rejected]: 'Từ chối kết thúc'
+};
+
 export const TicketType = {
   Free: 1,
   Paid: 2

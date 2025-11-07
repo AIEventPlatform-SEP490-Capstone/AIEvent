@@ -45,6 +45,10 @@ import EventDetailGuestPage from '../Event/EventDetailGuestPage';
 // Import EventStatus constants
 import { EventStatus, EventStatusDisplay } from '../../constants/eventConstants';
 
+// Import EndEventStatus constants and hook
+import { EndEventStatus, EndEventStatusDisplay } from '../../constants/eventConstants';
+import { useEndEventRequests } from '../../hooks/useEndEventRequests';
+
 const ManagerEventDetailPage = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
@@ -53,6 +57,13 @@ const ManagerEventDetailPage = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const { getEventById, deleteEvent: deleteEventAPI, loading: eventLoading } = useEvents();
+  
+  // Add state for end event requests
+  const [endEventRequests, setEndEventRequests] = useState([]);
+  const [endEventRequestsLoading, setEndEventRequestsLoading] = useState(false);
+  const [selectedEndEventRequest, setSelectedEndEventRequest] = useState(null);
+  const [isEndEventDetailOpen, setIsEndEventDetailOpen] = useState(false);
+  const { getEndEventRequests, getEndEventRequestById, confirmEndEvent } = useEndEventRequests();
 
   useEffect(() => {
     if (eventId) {
@@ -67,6 +78,8 @@ const ManagerEventDetailPage = () => {
       
       if (eventData) {
         setEvent(eventData);
+        // Load end event requests for this event
+        await loadEndEventRequests(eventData.eventId);
       } else {
         toast.error('Không tìm thấy sự kiện');
         navigate(PATH.MANAGER_EVENTS || '/manager/events');
@@ -253,6 +266,45 @@ Nhấn OK để xác nhận xóa.`;
     const reason = prompt('Vui lòng nhập lý do từ chối sự kiện:');
     if (reason) {
       toast.success('Sự kiện đã bị từ chối!');
+    }
+  };
+
+  // Add function to load end event requests
+  const loadEndEventRequests = async (eventId) => {
+    try {
+      setEndEventRequestsLoading(true);
+      const params = {
+        eventId: eventId,
+        pageNumber: 1,
+        pageSize: 5 // Limit to 5 most recent requests
+      };
+      
+      const response = await getEndEventRequests(params);
+      if (response?.items) {
+        setEndEventRequests(response.items);
+      } else if (Array.isArray(response)) {
+        setEndEventRequests(response);
+      } else {
+        setEndEventRequests([]);
+      }
+    } catch (error) {
+      console.error('Error loading end event requests:', error);
+      setEndEventRequests([]);
+    } finally {
+      setEndEventRequestsLoading(false);
+    }
+  };
+
+  const getEndEventStatusBadgeClass = (status) => {
+    switch (status) {
+      case EndEventStatus.PendingApprovalEnd:
+        return 'bg-yellow-100 text-yellow-800';
+      case EndEventStatus.Approved:
+        return 'bg-green-100 text-green-800';
+      case EndEventStatus.Rejected:
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -738,6 +790,81 @@ Nhấn OK để xác nhận xóa.`;
                 </div>
               </CardContent>
             </Card>
+
+            {/* End Event Requests */}
+            <Card id="end-event-requests-section">
+              <CardHeader>
+                <h3 className="text-lg font-semibold">Yêu cầu kết thúc sự kiện</h3>
+              </CardHeader>
+              <CardContent>
+                {endEventRequestsLoading ? (
+                  <div className="flex justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : endEventRequests.length === 0 ? (
+                  <p className="text-gray-500 text-sm py-2">Chưa có yêu cầu kết thúc sự kiện.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {endEventRequests.slice(0, 3).map((request) => (
+                      <div 
+                        key={request.endEventRequestId} 
+                        className="border-b border-gray-100 pb-3 last:border-0 last:pb-0 cursor-pointer hover:bg-gray-50 p-2 rounded"
+                        onClick={async () => {
+                          // Load full details when clicking on the request
+                          const detailedRequest = await getEndEventRequestById(request.endEventRequestId);
+                          if (detailedRequest) {
+                            setSelectedEndEventRequest(detailedRequest);
+                            setIsEndEventDetailOpen(true);
+                          }
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getEndEventStatusBadgeClass(request.status)}`}>
+                            {EndEventStatusDisplay[request.status]}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(request.createdAt).toLocaleDateString('vi-VN')}
+                          </span>
+                        </div>
+                        {request.summary && (
+                          <p className="text-sm text-gray-600 mt-1 truncate">{request.summary}</p>
+                        )}
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-xs text-gray-500">
+                            {request.totalAmount?.toLocaleString('vi-VN')} VNĐ
+                          </span>
+                          {request.status === EndEventStatus.Approved && (
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {endEventRequests.length > 3 && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full mt-2"
+                        onClick={() => {
+                          // Thay vì chuyển hướng đến trang riêng, chúng ta có thể mở dialog chi tiết ngay trong trang này
+                          // Hoặc có thể làm nổi bật section yêu cầu kết thúc sự kiện trong trang
+                          const endEventSection = document.getElementById('end-event-requests-section');
+                          if (endEventSection) {
+                            endEventSection.scrollIntoView({ behavior: 'smooth' });
+                            // Có thể thêm hiệu ứng highlight
+                            endEventSection.classList.add('bg-yellow-50', 'border', 'border-yellow-200', 'rounded-lg');
+                            setTimeout(() => {
+                              endEventSection.classList.remove('bg-yellow-50', 'border', 'border-yellow-200', 'rounded-lg');
+                            }, 2000);
+                          }
+                        }}
+                      >
+                        Xem tất cả ({endEventRequests.length})
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
@@ -766,6 +893,149 @@ Nhấn OK để xác nhận xóa.`;
               <p>Bản đồ chỉ đường sẽ hiển thị ở đây</p>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* End Event Request Detail Dialog */}
+      <Dialog open={isEndEventDetailOpen} onOpenChange={(open) => {
+        setIsEndEventDetailOpen(open);
+        // Clear selected request when dialog is closed
+        if (!open) {
+          setSelectedEndEventRequest(null);
+        }
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Chi tiết yêu cầu kết thúc sự kiện</DialogTitle>
+          </DialogHeader>
+          {selectedEndEventRequest && (
+            <div className="py-4 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Trạng thái</p>
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getEndEventStatusBadgeClass(selectedEndEventRequest.status)}`}>
+                    {EndEventStatusDisplay[selectedEndEventRequest.status]}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Ngày tạo</p>
+                  <p className="font-medium">
+                    {new Date(selectedEndEventRequest.createdAt).toLocaleDateString('vi-VN')}{' '}
+                    {new Date(selectedEndEventRequest.createdAt).toLocaleTimeString('vi-VN')}
+                  </p>
+                </div>
+              </div>
+
+              {selectedEndEventRequest.summary && (
+                <div>
+                  <p className="text-sm text-gray-500">Tóm tắt</p>
+                  <p className="font-medium">{selectedEndEventRequest.summary}</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Tổng tiền</p>
+                  <p className="font-medium">
+                    {selectedEndEventRequest.totalAmount?.toLocaleString('vi-VN')} VNĐ
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Phí nền tảng</p>
+                  <p className="font-medium">
+                    {selectedEndEventRequest.platformFee?.toLocaleString('vi-VN')} VNĐ
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Số tiền nhận</p>
+                  <p className="font-medium">
+                    {selectedEndEventRequest.payoutAmount?.toLocaleString('vi-VN')} VNĐ
+                  </p>
+                </div>
+              </div>
+
+              {selectedEndEventRequest.adminNote && (
+                <div>
+                  <p className="text-sm text-gray-500">Ghi chú từ quản trị viên</p>
+                  <p className="font-medium bg-gray-50 p-2 rounded">{selectedEndEventRequest.adminNote}</p>
+                </div>
+              )}
+
+              {selectedEndEventRequest.evidenceImages && selectedEndEventRequest.evidenceImages.length > 0 && (
+                <div>
+                  <p className="text-sm text-gray-500">Hình ảnh bằng chứng</p>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    {selectedEndEventRequest.evidenceImages.map((image, index) => (
+                      <img
+                        key={index}
+                        src={image}
+                        alt={`Evidence ${index + 1}`}
+                        className="h-32 w-full object-cover rounded-md border"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Approval Actions for pending requests */}
+              {selectedEndEventRequest.status === EndEventStatus.PendingApprovalEnd && (
+                <div className="pt-4 border-t border-gray-200">
+                  <p className="text-sm text-gray-500 mb-2">Hành động phê duyệt</p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={async () => {
+                        const reason = prompt('Vui lòng nhập lý do từ chối:');
+                        if (reason !== null) {
+                          try {
+                            await confirmEndEvent({
+                              endEventRequestId: selectedEndEventRequest.endEventRequestId,
+                              status: 'Rejected',
+                              adminNote: reason
+                            });
+                            // Refresh the end event requests list
+                            await loadEndEventRequests(event.eventId);
+                            // Close the dialog
+                            setIsEndEventDetailOpen(false);
+                            setSelectedEndEventRequest(null);
+                            toast.success('Đã từ chối yêu cầu kết thúc sự kiện');
+                          } catch (error) {
+                            toast.error('Có lỗi xảy ra khi từ chối yêu cầu');
+                          }
+                        }
+                      }}
+                    >
+                      Từ chối
+                    </Button>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          await confirmEndEvent({
+                            endEventRequestId: selectedEndEventRequest.endEventRequestId,
+                            status: 'Approved',
+                            adminNote: 'Đã phê duyệt'
+                          });
+                          // Refresh the end event requests list
+                          await loadEndEventRequests(event.eventId);
+                          // Close the dialog
+                          setIsEndEventDetailOpen(false);
+                          setSelectedEndEventRequest(null);
+                          toast.success('Đã phê duyệt yêu cầu kết thúc sự kiện');
+                        } catch (error) {
+                          toast.error('Có lỗi xảy ra khi phê duyệt yêu cầu');
+                        }
+                      }}
+                    >
+                      Phê duyệt
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
