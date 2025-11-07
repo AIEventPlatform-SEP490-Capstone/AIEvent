@@ -51,7 +51,7 @@ namespace AIEvent.Application.Services.Implements
             if (eventEntity.OrganizerProfile?.UserId == null)
                 return ErrorResponse.FailureResult("Organizer not found", ErrorCodes.NotFound);
 
-            if (DateTime.UtcNow > eventEntity.SaleEndTime || DateTime.UtcNow < eventEntity.SaleStartTime)
+            if (DateTime.Now > eventEntity.SaleEndTime || DateTime.Now < eventEntity.SaleStartTime)
                 return ErrorResponse.FailureResult("Ticket sales period has passed or not yet come", ErrorCodes.InvalidInput);
 
             var ticketTypeIds = request.TicketTypeRequests.Select(x => x.TicketTypeId).Distinct().ToList();
@@ -185,7 +185,7 @@ namespace AIEvent.Application.Services.Implements
                         Status = TransactionStatus.Success,
                         Description = $"Thanh toán vé sự kiện '{eventEntity.Title}'",
                         TransactionType = TransactionType.Payment,
-                        CompletedAt = DateTime.UtcNow
+                        CompletedAt = DateTime.Now
                     };
                     await _unitOfWork.PaymentTransactionRepository.AddAsync(payment);
 
@@ -451,7 +451,7 @@ namespace AIEvent.Application.Services.Implements
             if (ticket.Status != TicketStatus.Valid)
                 return ErrorResponse.FailureResult("Ticket already checked in", ErrorCodes.InvalidInput);
 
-            if (ticket.EndTime < DateTime.UtcNow)
+            if (ticket.EndTime < DateTime.Now)
                 return ErrorResponse.FailureResult("Event already ended", ErrorCodes.InvalidInput);
 
             ticket.Status = TicketStatus.Used;
@@ -466,7 +466,7 @@ namespace AIEvent.Application.Services.Implements
                 EventName = ticket.EventName,
                 TicketTypeName = ticket.TicketType.TicketName,
                 Status = ticket.Status,
-                CheckInAt = DateTime.UtcNow,
+                CheckInAt = DateTime.Now,
             });
         }
 
