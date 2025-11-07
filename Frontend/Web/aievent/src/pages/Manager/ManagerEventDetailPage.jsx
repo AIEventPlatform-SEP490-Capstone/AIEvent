@@ -899,14 +899,14 @@ Nhấn OK để xác nhận xóa.`;
           setSelectedEndEventRequest(null);
         }
       }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Chi tiết yêu cầu kết thúc sự kiện</DialogTitle>
           </DialogHeader>
           {selectedEndEventRequest && (
-            <div className="py-4 space-y-4">
+            <div className="py-4 space-y-6">
               {/* Status and Basic Info - Horizontal Rectangles */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Trạng thái</p>
@@ -1086,7 +1086,7 @@ Nhấn OK để xác nhận xóa.`;
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Hình ảnh bằng chứng</p>
                   </div>
                   <div className="mt-3">
-                    <div className="grid grid-cols-8 gap-2">
+                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
                       {selectedEndEventRequest.evidenceImages.map((image, index) => (
                         <div key={index} className="aspect-square overflow-hidden rounded-lg border border-gray-200">
                           <img
