@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace AIEvent.Application.DTOs.Rating
+﻿namespace AIEvent.Application.DTOs.Rating
 {
     public class RatingResponse
     {
