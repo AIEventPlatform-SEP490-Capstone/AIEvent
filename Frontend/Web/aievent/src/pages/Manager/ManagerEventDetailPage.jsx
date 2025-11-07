@@ -599,37 +599,25 @@ Nhấn OK để xác nhận xóa.`;
                 </div>
               </div>
             )}
-
-            {/* Event Image Gallery */}
-            {event.imgListEvent && event.imgListEvent.length > 0 && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4">Hình ảnh sự kiện</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {event.imgListEvent.map((img, index) => (
-                    <img
-                      key={index}
-                      src={img}
-                      alt={`${event.title} - ${index + 1}`}
-                      className="w-full h-64 object-cover rounded-lg shadow-md"
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Evidence Image Gallery */}
-            {event.imgListEvidences && event.imgListEvidences.length > 0 && (
+            {event.imgListEvidences && event.imgListEvidences.length > 0 && event.imgListEvidences.some(img => 
+              img && typeof img === 'string' && img.trim() !== '' && !img.includes('System.Collections.Generic.List')
+            ) && (
               <div>
                 <h2 className="text-xl font-semibold mb-4">Hình ảnh bằng chứng tổ chức</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {event.imgListEvidences.map((img, index) => (
-                    <img
-                      key={index}
-                      src={img}
-                      alt={`${event.title} - Evidence ${index + 1}`}
-                      className="w-full h-64 object-cover rounded-lg shadow-md"
-                    />
-                  ))}
+                  {event.imgListEvidences
+                    .filter(img => 
+                      img && typeof img === 'string' && img.trim() !== '' && !img.includes('System.Collections.Generic.List')
+                    ) // Filter out null/undefined/empty string/non-string/malformed images
+                    .map((img, index) => (
+                      <img
+                        key={index}
+                        src={img}
+                        alt={`${event.title} - Evidence ${index + 1}`}
+                        className="w-full h-64 object-cover rounded-lg shadow-md"
+                      />
+                    ))}
                 </div>
               </div>
             )}
