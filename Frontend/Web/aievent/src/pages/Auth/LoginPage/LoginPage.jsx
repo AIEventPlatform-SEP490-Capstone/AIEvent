@@ -147,7 +147,7 @@ const LoginPage = () => {
   }
 
   return (
-    <div className="min-h-[100svh] w-full bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-100 relative overflow-hidden">
+    <div className="h-[100svh] w-full bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-100 relative overflow-hidden">
       {/* Background image */}
       <div
         className="absolute inset-0 bg-cover bg-center"
@@ -163,29 +163,29 @@ const LoginPage = () => {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000" />
       </div>
 
-      <div className="relative z-10 min-h-[100svh] flex">
+      <div className="relative z-10 h-full flex flex-col lg:flex-row">
         {/* Left side - Branding */}
-        <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-12 text-white relative">
+        <div className="hidden lg:flex lg:w-1/2 h-full flex-col justify-center items-center px-8 xl:px-12 py-10 text-white relative">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-2600 to-indigo-700 opacity-95" />
 
           <div className="relative z-10 max-w-lg">
-            <div className="mb-8">
+            <div className="mb-5 xl:mb-6">
               <Link to={PATH.HOME}>
                 <img
                   src={AIEventLogo}
                   alt="AIEvent logo"
-                  className="h-[420px] w-[420px] object-contain mb-12 drop-shadow-8xl hover:scale-105 transition-transform duration-300"
+                  className="h-40 w-40 lg:h-56 lg:w-56 xl:h-64 xl:w-64 2xl:h-[320px] 2xl:w-[320px] object-contain mb-4 xl:mb-7 drop-shadow-8xl hover:scale-[1.03] transition-transform duration-300"
                 />
               </Link>
-              <h1 className="text-5xl font-bold mb-4 drop-shadow-lg">
+              <h1 className="text-3xl xl:text-4xl font-bold mb-3 drop-shadow-lg">
                 Chào mừng đến với AIEvent
               </h1>
-              <p className="text-xl text-blue-100 leading-relaxed">
+              <p className="text-base xl:text-lg text-blue-100 leading-relaxed">
                 Nền tảng quản lý sự kiện thông minh với công nghệ AI tiên tiến
               </p>
             </div>
 
-            <div className="space-y-6 mt-12">
+            <div className="space-y-4 xl:space-y-5 mt-6 xl:mt-8">
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0 w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
                   <svg
@@ -268,15 +268,15 @@ const LoginPage = () => {
         </div>
 
         {/* Right side - Login form */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12">
-          <div className="w-full max-w-md">
+        <div className="w-full lg:w-1/2 h-full flex items-center justify-center px-5 sm:px-8 lg:px-10 xl:px-12 py-6 lg:py-8">
+          <div className="w-full max-w-md flex flex-col items-center justify-center gap-3">
             {/* Mobile logo */}
-            <div className="lg:hidden text-center mb-8">
+            <div className="lg:hidden text-center">
               <Link to={PATH.HOME}>
                 <img
                   src={AIEventLogo}
                   alt="AIEvent logo"
-                  className="h-[200px] w-[200px] mx-auto mb-4 object-contain drop-shadow-lg"
+                  className="h-28 w-28 sm:h-40 sm:w-40 mx-auto mb-3 object-contain drop-shadow-lg"
                 />
               </Link>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
@@ -285,9 +285,9 @@ const LoginPage = () => {
             </div>
 
             {/* Login card */}
-            <div className="bg-white rounded-2xl shadow-xl p-8 border border-blue-100">
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-7 lg:p-8 border border-blue-100 w-full">
+              <div className="mb-3">
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">
                   Đăng nhập
                 </h2>
                 <p className="text-gray-600">
@@ -295,7 +295,7 @@ const LoginPage = () => {
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label
                     htmlFor="email"
@@ -463,12 +463,12 @@ const LoginPage = () => {
                   )}
                 </Button>
 
-                <div className="relative my-6">
+                <div className="relative my-4 sm:my-5">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-300"></div>
                   </div>
                   <div className="relative flex justify-center text-sm">
-                    <span className="px-4 bg-white text-gray-500">
+                    <span className="px-3 bg-white text-gray-500">
                       Hoặc
                     </span>
                   </div>
@@ -486,7 +486,7 @@ const LoginPage = () => {
                 </div>
               </form>
 
-              <p className="text-center text-gray-600 mt-6 text-sm">
+              <p className="text-center text-gray-600 mt-5 text-sm">
                 Chưa có tài khoản?{" "}
                 <Link
                   to={PATH.REGISTER}
@@ -498,7 +498,7 @@ const LoginPage = () => {
             </div>
 
             {/* Footer */}
-            <p className="mt-6 text-center text-sm text-gray-600">
+            <p className="text-center text-xs sm:text-sm text-gray-600">
               Bằng việc tiếp tục, bạn đồng ý với{" "}
               <Link
                 to="/terms"
