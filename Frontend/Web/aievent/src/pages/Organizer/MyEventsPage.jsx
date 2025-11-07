@@ -1075,7 +1075,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
 
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          {eventStatus === EventStatus.Approved || eventStatus === EventStatus.RejectEnded && event.endTime && (
+                          {(eventStatus === EventStatus.Approved || eventStatus === EventStatus.RejectEnded) && event.endTime && (
                             <EndEventRequestButton 
                               event={event} 
                               onEndEventRequested={() => loadEvents()} // Reload events after request

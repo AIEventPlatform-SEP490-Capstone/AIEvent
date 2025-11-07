@@ -185,7 +185,7 @@ namespace AIEvent.Application.Services.Implements
                         Status = TransactionStatus.Success,
                         Description = $"Thanh toán vé sự kiện '{eventEntity.Title}'",
                         TransactionType = TransactionType.Payment,
-                        CompletedAt = DateTime.Now
+                        CompletedAt = DateTime.UtcNow
                     };
                     await _unitOfWork.PaymentTransactionRepository.AddAsync(payment);
 
@@ -451,7 +451,7 @@ namespace AIEvent.Application.Services.Implements
             if (ticket.Status != TicketStatus.Valid)
                 return ErrorResponse.FailureResult("Ticket already checked in", ErrorCodes.InvalidInput);
 
-            if (ticket.EndTime < DateTime.Now)
+            if (ticket.EndTime < DateTime.UtcNow)
                 return ErrorResponse.FailureResult("Event already ended", ErrorCodes.InvalidInput);
 
             ticket.Status = TicketStatus.Used;
@@ -466,7 +466,7 @@ namespace AIEvent.Application.Services.Implements
                 EventName = ticket.EventName,
                 TicketTypeName = ticket.TicketType.TicketName,
                 Status = ticket.Status,
-                CheckInAt = DateTime.Now,
+                CheckInAt = DateTime.UtcNow,
             });
         }
 

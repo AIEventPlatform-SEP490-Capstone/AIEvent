@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEndEventRequests } from '../../hooks/useEndEventRequests';
 import { useAuth } from '../../hooks/useAuth';
 import Modal from '../../components/common/Modal';
@@ -6,6 +6,9 @@ import { EndEventStatus } from '../../constants/eventConstants';
 
 // Import Cloudinary utility
 import { uploadImagesToCloudinary } from '../../utils/cloudinary';
+
+// Import wallet API
+import { walletAPI } from '../../api/walletAPI';
 
 const EndEventRequestButton = ({ event, onEndEventRequested }) => {
   const { user } = useAuth();
@@ -18,6 +21,8 @@ const EndEventRequestButton = ({ event, onEndEventRequested }) => {
     evidenceImages: []
   });
   const [errors, setErrors] = useState({});
+  const [paymentInformations, setPaymentInformations] = useState([]);
+  const [isLoadingPaymentInfo, setIsLoadingPaymentInfo] = useState(false);
 
   // Check if the event can be requested to end
   // The button should be active if the current date is 10 days after the event end date
@@ -36,6 +41,27 @@ const EndEventRequestButton = ({ event, onEndEventRequested }) => {
   };
 
   const isActive = canRequestEnd();
+
+  // Fetch payment informations when modal opens
+  useEffect(() => {
+    if (showModal) {
+      fetchPaymentInformations();
+    }
+  }, [showModal]);
+
+  const fetchPaymentInformations = async () => {
+    setIsLoadingPaymentInfo(true);
+    try {
+      const response = await walletAPI.getPaymentInformations({ pageNumber: 1, pageSize: 100 });
+      if (response.data) {
+        setPaymentInformations(response.data.items || []);
+      }
+    } catch (error) {
+      console.error('Error fetching payment informations:', error);
+    } finally {
+      setIsLoadingPaymentInfo(false);
+    }
+  };
 
   const handleOpenModal = () => {
     if (!isActive) return;
@@ -58,6 +84,7 @@ const EndEventRequestButton = ({ event, onEndEventRequested }) => {
       evidenceImages: []
     });
     setErrors({});
+    setPaymentInformations([]);
   };
 
   const handleChange = (e) => {
@@ -134,6 +161,12 @@ const EndEventRequestButton = ({ event, onEndEventRequested }) => {
     }
   };
 
+  // Format payment information display name
+  const formatPaymentInfoName = (paymentInfo) => {
+    if (!paymentInfo) return '';
+    return `${paymentInfo.bankName} - ${paymentInfo.accountHolderName} (${paymentInfo.accountNumber})`;
+  };
+
   return (
     <>
       <button
@@ -154,16 +187,34 @@ const EndEventRequestButton = ({ event, onEndEventRequested }) => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Thông tin thanh toán *
             </label>
-            <input
-              type="text"
-              name="paymentInformationId"
-              value={formData.paymentInformationId}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md ${
-                errors.paymentInformationId ? 'border-red-500' : 'border-gray-300'
-              }`}
-              placeholder="Nhập ID thông tin thanh toán"
-            />
+            {isLoadingPaymentInfo ? (
+              <div className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-500">
+                Đang tải thông tin thanh toán...
+              </div>
+            ) : paymentInformations.length > 0 ? (
+              <select
+                name="paymentInformationId"
+                value={formData.paymentInformationId}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 border rounded-md ${
+                  errors.paymentInformationId ? 'border-red-500' : 'border-gray-300'
+                }`}
+              >
+                <option value="">Chọn thông tin thanh toán</option>
+                {paymentInformations.map((paymentInfo) => (
+                  <option 
+                    key={paymentInfo.paymentInformationId} 
+                    value={paymentInfo.paymentInformationId}
+                  >
+                    {formatPaymentInfoName(paymentInfo)}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-500">
+                Không có thông tin thanh toán nào
+              </div>
+            )}
             {errors.paymentInformationId && (
               <p className="mt-1 text-sm text-red-600">{errors.paymentInformationId}</p>
             )}
