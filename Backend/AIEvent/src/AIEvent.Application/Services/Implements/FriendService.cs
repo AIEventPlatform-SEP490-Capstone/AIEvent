@@ -100,8 +100,15 @@ namespace AIEvent.Application.Services.Implements
                 if (friendship.Status != FriendshipStatus.Pending)
                     return ErrorResponse.FailureResult("This friend request has already been processed", ErrorCodes.InvalidInput);
 
-                friendship.Status = isAccepted ? FriendshipStatus.Accepted : FriendshipStatus.Rejected;
+                if (!isAccepted)
+                {
+                    await _unitOfWork.FriendshipRepository.DeleteAsync(friendship);
+                    await _unitOfWork.SaveChangesAsync();
 
+                    return Result.Success();
+                }
+
+                friendship.Status = FriendshipStatus.Accepted;
                 await _unitOfWork.FriendshipRepository.UpdateAsync(friendship);
                 await _unitOfWork.SaveChangesAsync();
 
