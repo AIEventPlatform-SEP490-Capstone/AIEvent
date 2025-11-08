@@ -10,6 +10,5 @@ namespace AIEvent.Application.Services.Interfaces
         Task<CreatePaymentLinkResponse> CreatePaymentLinkAsync(CreatePaymentLinkRequest data);
         Task<WebhookData> VerifyPaymentWebhookData(Webhook webhookBody);
         Task<Payout> CreatePayoutAsync(PayoutRequest request);
-        Task<Payout> CreateManyPayoutAsync(PayoutBatchRequest request);
     }
 }

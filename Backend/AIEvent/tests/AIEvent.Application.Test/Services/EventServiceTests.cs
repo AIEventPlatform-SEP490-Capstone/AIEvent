@@ -61,10 +61,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -137,10 +137,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -187,10 +187,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = null!,
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                TotalTickets = 100,
                TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid()
@@ -215,10 +215,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = null!,
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                TotalTickets = 100,
                TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid()
@@ -243,10 +243,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -285,10 +285,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(4), // Before StartTime
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(3),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(4), // Before StartTime
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(3),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -327,10 +327,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(3),
-               SaleEndTime = DateTime.Now.AddDays(2),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(3),
+               SaleEndTime = DateTime.UtcNow.AddDays(2),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -369,10 +369,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(6), // After StartTime
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(6), // After StartTime
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -411,10 +411,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -457,10 +457,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -518,10 +518,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -578,10 +578,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -643,10 +643,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -712,14 +712,14 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var organizerId = Guid.NewGuid();
-           var saleTime = DateTime.Now.AddDays(3);
+           var saleTime = DateTime.UtcNow.AddDays(3);
 
            var createEventRequest = new CreateEventRequest
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
                SaleStartTime = saleTime,
                SaleEndTime = saleTime, // Same as SaleStartTime (boundary)
                LocationName = "Test Location",
@@ -790,10 +790,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -871,10 +871,10 @@ namespace AIEvent.Application.Test.Services
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                TotalTickets = 100,
                TicketPricingType = TicketPricingType.Paid,
                EventCategoryId = Guid.NewGuid(),
@@ -909,10 +909,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                TotalTickets = 100,
                LocationName = "Test Location",
                District = "Test District",
@@ -950,10 +950,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -1021,10 +1021,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -1061,10 +1061,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                TotalTickets = 100,
                TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
@@ -1093,10 +1093,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = null, // Missing District
                Address = "Test Address",
@@ -1135,10 +1135,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "", // Missing Address
@@ -1177,10 +1177,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -1221,10 +1221,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -1265,10 +1265,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -1340,10 +1340,10 @@ namespace AIEvent.Application.Test.Services
            {
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -1409,7 +1409,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var organizerId = Guid.NewGuid();
-           var startTime = DateTime.Now.AddDays(5);
+           var startTime = DateTime.UtcNow.AddDays(5);
 
            var createEventRequest = new CreateEventRequest
            {
@@ -1417,7 +1417,7 @@ namespace AIEvent.Application.Test.Services
                Description = "Test Description",
                StartTime = startTime,
                EndTime = startTime.AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
                SaleEndTime = startTime, // Boundary: equals StartTime
                LocationName = "Test Location",
                District = "Test District",
@@ -1757,9 +1757,296 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.IsSuccess.Should().BeTrue();
         }
+
+        [Fact]
+        public async Task UTCID11_RequestEndEventAsync_EventStatusPendingApproval_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.PendingApproval };
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = Guid.NewGuid(),
+                EvidenceImages = new List<string> { "img1" }
+            };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Event cannot be requested to end in its current state");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID12_RequestEndEventAsync_EventStatusRejected_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.Rejected };
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = Guid.NewGuid(),
+                EvidenceImages = new List<string> { "img1" }
+            };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Event cannot be requested to end in its current state");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID13_RequestEndEventAsync_EventStatusCancelled_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.Cancelled };
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = Guid.NewGuid(),
+                EvidenceImages = new List<string> { "img1" }
+            };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Event cannot be requested to end in its current state");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID14_RequestEndEventAsync_EventStatusPendingApprovalEnd_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.PendingApprovalEnd };
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = Guid.NewGuid(),
+                EvidenceImages = new List<string> { "img1" }
+            };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Event cannot be requested to end in its current state");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID15_RequestEndEventAsync_EventStatusWaitingForPayout_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.WaitingForPayout };
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = Guid.NewGuid(),
+                EvidenceImages = new List<string> { "img1" }
+            };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Event cannot be requested to end in its current state");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID16_RequestEndEventAsync_EventStatusEnded_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.Ended };
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = Guid.NewGuid(),
+                EvidenceImages = new List<string> { "img1" }
+            };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Event cannot be requested to end in its current state");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID17_RequestEndEventAsync_EventStatusRejectEnded_ShouldSucceed()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-5), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.RejectEnded };
+            var paymentInfoId = Guid.NewGuid();
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = paymentInfoId,
+                EvidenceImages = new List<string> { "img1" },
+                Summary = "summary"
+            };
+            var paymentInfo = new PaymentInformation { Id = paymentInfoId, UserId = userId, IsDeleted = false, AccountHolderName = "Test", AccountNumber = "123456", BankName = "Test Bank", BankBin = "123456" };
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<EndEventRequest>().AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMockDbSet().Object);
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.AddAsync(It.IsAny<EndEventRequest>()));
+
+            _mockMapper.Setup(x => x.Map<EndEventRequest>(It.IsAny<CompleteEventRequest>()))
+                .Returns<CompleteEventRequest>(r => new EndEventRequest { EventId = r.EventId, EvidenceImages = string.Join(", ", r.EvidenceImages), Summary = r.Summary });
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.Is<Event>(e => e.Id == ev.Id && e.Status == EventStatus.PendingApprovalEnd)), Times.Once());
+            _mockUnitOfWork.Verify(x => x.EndEventRequestRepository.AddAsync(It.Is<EndEventRequest>(er => er.EventId == ev.Id && er.IsLatest && er.Status == EndEventStatus.PendingApprovalEnd && er.OrganizerProfileId == organizerProfile.Id)), Times.Once());
+        }
+
+        [Fact]
+        public async Task UTCID18_RequestEndEventAsync_PaymentInformationNotFound_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.Approved };
+            var paymentInfoId = Guid.NewGuid();
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = paymentInfoId,
+                EvidenceImages = new List<string> { "img1" }
+            };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<PaymentInformation>().AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Payment information not found");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID19_RequestEndEventAsync_PaymentInformationDeleted_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.Approved };
+            var paymentInfoId = Guid.NewGuid();
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = paymentInfoId,
+                EvidenceImages = new List<string> { "img1" }
+            };
+            var paymentInfo = new PaymentInformation { Id = paymentInfoId, UserId = userId, IsDeleted = true, AccountHolderName = "Test", AccountNumber = "123456", BankName = "Test Bank", BankBin = "123456" };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Payment information not found");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID20_RequestEndEventAsync_PaymentInformationDifferentUser_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.Approved };
+            var paymentInfoId = Guid.NewGuid();
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = paymentInfoId,
+                EvidenceImages = new List<string> { "img1" }
+            };
+            var paymentInfo = new PaymentInformation { Id = paymentInfoId, UserId = Guid.NewGuid(), IsDeleted = false, AccountHolderName = "Test", AccountNumber = "123456", BankName = "Test Bank", BankBin = "123456" };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Payment information not found");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
         #endregion
 
-       #region GetEndEventRequestById
+        #region GetEndEventRequestById
 
         [Fact]
         public async Task UTCID01_GetEndEventRequestByIdAsync_WithEmptyId_ShouldReturnInvalidInput()
@@ -2305,7 +2592,7 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID01_GetEventAsync_WithNoFilters_ShouldReturnPaginatedEvents()
        {
            // Arrange
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
            var events = new List<Event>
            {
@@ -2325,7 +2612,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 1",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    ImgListEvent = "image1.jpg, image2.jpg",
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
@@ -2358,7 +2645,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var userId = Guid.NewGuid();
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
            var eventId = Guid.NewGuid();
 
@@ -2380,7 +2667,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 1",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>
                    {
@@ -2409,7 +2696,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var userId = Guid.Empty;
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
 
            var events = new List<Event>
@@ -2430,7 +2717,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 1",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType>
@@ -2455,7 +2742,7 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID04_GetEventAsync_WithSearchTitleCaseInsensitive_ShouldReturnMatchingEvents()
        {
            // Arrange
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
 
            var events = new List<Event>
@@ -2476,7 +2763,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 1",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -2497,7 +2784,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 2",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -2519,7 +2806,7 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID05_GetEventAsync_WithEventCategoryId_ShouldReturnFilteredEvents()
        {
            // Arrange
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
            var categoryId1 = Guid.NewGuid();
            var categoryId2 = Guid.NewGuid();
            var eventCategory1 = new EventCategory { Id = categoryId1, CategoryName = "Music" };
@@ -2543,7 +2830,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 1",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -2564,7 +2851,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 2",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -2586,7 +2873,7 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID06_GetEventAsync_WithSingleTag_ShouldReturnFilteredEvents()
        {
            // Arrange
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
            var tagId1 = Guid.NewGuid();
            var tagId2 = Guid.NewGuid();
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
@@ -2611,7 +2898,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 1",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>
                    {
                        new EventTag { TagId = tagId1, Tag = tag1 }
@@ -2635,7 +2922,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 2",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>
                    {
                        new EventTag { TagId = tagId2, Tag = tag2 }
@@ -2662,7 +2949,7 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID07_GetEventAsync_WithMultipleTags_ShouldReturnFilteredEvents()
        {
            // Arrange
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
            var tagId1 = Guid.NewGuid();
            var tagId2 = Guid.NewGuid();
            var tagId3 = Guid.NewGuid();
@@ -2689,7 +2976,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 1",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>
                    {
                        new EventTag { TagId = tagId1, Tag = tag1 }
@@ -2713,7 +3000,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 2",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>
                    {
                        new EventTag { TagId = tagId2, Tag = tag2 }
@@ -2737,7 +3024,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 3",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>
                    {
                        new EventTag { TagId = tagId3, Tag = tag3 }
@@ -2767,7 +3054,7 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID08_GetEventAsync_WithTicketTypeFree_ShouldReturnFilteredEvents()
        {
            // Arrange
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
 
            var events = new List<Event>
@@ -2788,7 +3075,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 1",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -2809,7 +3096,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 2",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 100 } }
@@ -2831,7 +3118,7 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID09_GetEventAsync_WithTicketTypePaid_ShouldReturnFilteredEvents()
        {
            // Arrange
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
 
            var events = new List<Event>
@@ -2852,7 +3139,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 1",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -2873,7 +3160,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 2",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 100 } }
@@ -2895,7 +3182,7 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID10_GetEventAsync_WithDistrictFilterCaseInsensitive_ShouldReturnFilteredEvents()
        {
            // Arrange
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
 
            var events = new List<Event>
@@ -2917,7 +3204,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 1",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -2939,7 +3226,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 2",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -2972,8 +3259,8 @@ namespace AIEvent.Application.Test.Services
                    Id = Guid.NewGuid(),
                    Title = "Today Event",
                    Description = "Description 1",
-                   StartTime = DateTime.Now.AddHours(1),
-                   EndTime = DateTime.Now.AddHours(3),
+                   StartTime = DateTime.UtcNow.AddHours(1),
+                   EndTime = DateTime.UtcNow.AddHours(3),
                    Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
@@ -2983,7 +3270,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 1",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -3004,7 +3291,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 2",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -3048,7 +3335,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 1",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -3069,7 +3356,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 2",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -3091,7 +3378,7 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID13_GetEventAsync_WithTimeLineThisWeek_ShouldReturnThisWeekEvents()
        {
            // Arrange
-           var now = DateTime.Now;
+           var now = DateTime.UtcNow;
            var today = now.Date;
            var diff = (7 + (today.DayOfWeek - DayOfWeek.Monday)) % 7;
            var startOfWeek = today.AddDays(-diff);
@@ -3119,7 +3406,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 1",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -3140,7 +3427,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 2",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -3185,7 +3472,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 1",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -3206,7 +3493,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 2",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -3228,8 +3515,8 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID15_GetEventAsync_WithPastEvents_ShouldNotReturnPastEvents()
        {
            // Arrange
-           var pastDate = DateTime.Now.AddDays(-10);
-           var futureDate = DateTime.Now.AddDays(10);
+           var pastDate = DateTime.UtcNow.AddDays(-10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
 
            var events = new List<Event>
@@ -3250,7 +3537,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 1",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -3271,7 +3558,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 2",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -3293,7 +3580,7 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID16_GetEventAsync_WithDeletedEvents_ShouldNotReturnDeletedEvents()
        {
            // Arrange
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
 
            var events = new List<Event>
@@ -3306,7 +3593,7 @@ namespace AIEvent.Application.Test.Services
                    StartTime = futureDate,
                    EndTime = futureDate.AddHours(2),
                    Status = EventStatus.Approved,
-                   DeletedAt = DateTime.Now.AddDays(-1), // Deleted
+                   DeletedAt = DateTime.UtcNow.AddDays(-1), // Deleted
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
                    TicketPricingType = TicketPricingType.Free,
@@ -3314,7 +3601,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 1",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -3335,7 +3622,7 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID17_GetEventAsync_WithUnapprovedEvents_ShouldNotReturnUnapprovedEvents()
        {
            // Arrange
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
 
            var events = new List<Event>
@@ -3356,7 +3643,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 1",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -3377,7 +3664,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 2",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -3398,7 +3685,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 3",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -3420,7 +3707,7 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID18_GetEventAsync_WithMultipleFilters_ShouldReturnCorrectlyFilteredEvents()
        {
            // Arrange
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
            var categoryId = Guid.NewGuid();
            var tagId = Guid.NewGuid();
            var eventCategory = new EventCategory { Id = categoryId, CategoryName = "Music" };
@@ -3445,7 +3732,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 1",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag> { new EventTag { TagId = tagId, Tag = tag } },
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 100 } }
@@ -3467,7 +3754,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 2",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag> { new EventTag { TagId = tagId, Tag = tag } },
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 50 } }
@@ -3491,7 +3778,7 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID19_GetEventAsync_WithBoundaryPaginationPageSize1_ShouldReturn1Item()
        {
            // Arrange
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
 
            var events = new List<Event>
@@ -3512,7 +3799,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 1",
                    Publish = true,
-                   CreatedAt = DateTime.Now.AddMinutes(-2),
+                   CreatedAt = DateTime.UtcNow.AddMinutes(-2),
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -3533,7 +3820,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location 2",
                    Publish = true,
-                   CreatedAt = DateTime.Now.AddMinutes(-1),
+                   CreatedAt = DateTime.UtcNow.AddMinutes(-1),
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard Ticket", TicketQuantity = 100, TicketPrice = 0 } }
@@ -3558,7 +3845,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var userId = Guid.Empty;
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
 
            var events = new List<Event>
@@ -3579,7 +3866,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = new List<TicketType> { new TicketType { TicketName = "Standard", TicketQuantity = 100, TicketPrice = 0 } }
@@ -3602,7 +3889,7 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID21_GetEventAsync_WithNullTicketTypes_ShouldReturnZeroPrice()
        {
            // Arrange
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
 
            var events = new List<Event>
@@ -3623,7 +3910,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
                    TicketTypes = null! // Null TicketTypes
@@ -3646,7 +3933,7 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID22_GetEventAsync_WithEmptyImgListEvent_ShouldReturnEmptyImageList()
        {
            // Arrange
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
 
            var events = new List<Event>
@@ -3667,7 +3954,7 @@ namespace AIEvent.Application.Test.Services
                    SoldQuantity = 0,
                    LocationName = "Location",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    ImgListEvent = "", // Empty ImgListEvent
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
@@ -3704,8 +3991,8 @@ namespace AIEvent.Application.Test.Services
                    Id = eventId,
                    Title = "Test Event",
                    Description = "Test Description",
-                   StartTime = DateTime.Now.AddDays(5),
-                   EndTime = DateTime.Now.AddDays(5).AddHours(3),
+                   StartTime = DateTime.UtcNow.AddDays(5),
+                   EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                    Status = EventStatus.Approved,
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
@@ -3717,7 +4004,7 @@ namespace AIEvent.Application.Test.Services
                    LocationName = "Test Location",
                     District = "Quận 7",
                    Publish = true,
-                   CreatedAt = DateTime.Now,
+                   CreatedAt = DateTime.UtcNow,
                    ImgListEvent = "image1.jpg, image2.jpg",
                    EventTags = new List<EventTag>(),
                    FavoriteEvents = new List<FavoriteEvent>(),
@@ -3873,8 +4160,8 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                Title = "Original Title",
                Description = "Original Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -3983,8 +4270,8 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
                IsDeleted = true
            };
 
@@ -4016,8 +4303,8 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = differentOrganizerId,
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
                IsDeleted = false,
                TicketTypes = new List<TicketType>(),
                EventTags = new List<EventTag>()
@@ -4056,8 +4343,8 @@ namespace AIEvent.Application.Test.Services
                IsDeleted = false,
                Title = "",
                Description = "Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
                TicketTypes = new List<TicketType>
                {
                    new TicketType { Id = Guid.NewGuid(), TicketName = "Standard Ticket", TicketQuantity = 100 }
@@ -4087,8 +4374,8 @@ namespace AIEvent.Application.Test.Services
            // Arrange
            var organizerId = Guid.NewGuid();
            var eventId = Guid.NewGuid();
-           var startTime = DateTime.Now.AddDays(5);
-           var endTime = DateTime.Now.AddDays(3);
+           var startTime = DateTime.UtcNow.AddDays(5);
+           var endTime = DateTime.UtcNow.AddDays(3);
 
            var updateRequest = new UpdateEventRequest
            {
@@ -4136,8 +4423,8 @@ namespace AIEvent.Application.Test.Services
            // Arrange
            var organizerId = Guid.NewGuid();
            var eventId = Guid.NewGuid();
-           var startTime = DateTime.Now.AddDays(5);
-           var saleEndTime = DateTime.Now.AddDays(6);
+           var startTime = DateTime.UtcNow.AddDays(5);
+           var saleEndTime = DateTime.UtcNow.AddDays(6);
 
            var updateRequest = new UpdateEventRequest
            {
@@ -4155,7 +4442,7 @@ namespace AIEvent.Application.Test.Services
                Description = "Description",
                StartTime = startTime,
                EndTime = startTime.AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
                SaleEndTime = saleEndTime,
                TicketTypes = new List<TicketType>
                {
@@ -4201,10 +4488,10 @@ namespace AIEvent.Application.Test.Services
                IsDeleted = false,
                Title = "Title",
                Description = "Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -4256,10 +4543,10 @@ namespace AIEvent.Application.Test.Services
                IsDeleted = false,
                Title = "Title",
                Description = "Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -4311,10 +4598,10 @@ namespace AIEvent.Application.Test.Services
                IsDeleted = false,
                Title = "Title",
                Description = "Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -4364,10 +4651,10 @@ namespace AIEvent.Application.Test.Services
                IsDeleted = false,
                Title = "Title",
                Description = "Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -4428,8 +4715,8 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
                Publish = false,
                IsDeleted = false,
                ImgListEvent = "existing-image.jpg",
@@ -4479,8 +4766,8 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
                Publish = false,
                IsDeleted = false,
                ImgListEvent = $"{imageToRemove}, keep-image.jpg",
@@ -4538,8 +4825,8 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
                Publish = false,
                IsDeleted = false,
                TicketTypes = new List<TicketType>
@@ -4615,8 +4902,8 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
                Publish = false,
                IsDeleted = false,
                TicketTypes = new List<TicketType> { existingTicket },
@@ -4672,8 +4959,8 @@ namespace AIEvent.Application.Test.Services
                 OrganizerProfileId = organizerId,
                 Title = "Test Event",
                 Description = "Test Description",
-                StartTime = DateTime.Now.AddDays(5),
-                EndTime = DateTime.Now.AddDays(5).AddHours(2),
+                StartTime = DateTime.UtcNow.AddDays(5),
+                EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
                 Publish = false,
                 IsDeleted = false,
                 ImgListEvent = "image1.jpg",
@@ -4726,8 +5013,8 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
                Publish = false,
                IsDeleted = false,
                TicketTypes = new List<TicketType>
@@ -4777,8 +5064,8 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
                Publish = false,
                IsDeleted = false,
                TicketTypes = new List<TicketType>
@@ -4830,10 +5117,10 @@ namespace AIEvent.Application.Test.Services
                IsDeleted = false,
                Title = "Title",
                Description = "Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -4886,10 +5173,10 @@ namespace AIEvent.Application.Test.Services
                IsDeleted = false,
                Title = "Title",
                Description = "Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
@@ -4940,8 +5227,8 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
                Publish = false,
                IsDeleted = false,
                ImgListEvent = "image1.jpg",
@@ -4995,8 +5282,8 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
                Publish = true,
                IsDeleted = false,
                Bookings = new List<Booking> { booking },
@@ -5035,8 +5322,8 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                Title = "Test",
                Description = "Test",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
                Publish = true,
                IsDeleted = false,
                Bookings = new List<Booking> { booking },
@@ -5076,8 +5363,8 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                Title = "Test",
                Description = "Test",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
                Publish = true,
                IsDeleted = false,
                Bookings = new List<Booking>(),
@@ -5117,10 +5404,10 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                Title = "Test",
                Description = "",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Location",
                District = "District",
                Address = "Address",
@@ -5160,10 +5447,10 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                Title = "Test",
                Description = "Test",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
-               SaleStartTime = DateTime.Now.AddDays(1),
-               SaleEndTime = DateTime.Now.AddDays(4),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               SaleEndTime = DateTime.UtcNow.AddDays(4),
                LocationName = "Location",
                District = "District",
                Address = "Address",
@@ -5210,8 +5497,8 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
                Publish = false,
                IsDeleted = false,
                ImgListEvent = "old-image.jpg, keep-image.jpg",
@@ -5262,8 +5549,8 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                Title = "Original Title",
                Description = "Original Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(2),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(2),
                Publish = false,
                IsDeleted = false,
                ImgListEvent = "image1.jpg",
@@ -5309,8 +5596,8 @@ namespace AIEvent.Application.Test.Services
                Id = eventId,
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(3),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -5318,7 +5605,7 @@ namespace AIEvent.Application.Test.Services
                SoldQuantity = 0,
                DeletedAt = null,
                IsDeleted = false,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                Bookings = new List<Booking>(),
                OrganizerProfile = new OrganizerProfile
                {
@@ -5406,16 +5693,16 @@ namespace AIEvent.Application.Test.Services
                Id = eventId,
                Title = "Deleted Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(3),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
-               DeletedAt = DateTime.Now.AddDays(-1),
+               DeletedAt = DateTime.UtcNow.AddDays(-1),
                IsDeleted = true,
-               CreatedAt = DateTime.Now.AddDays(-10)
+               CreatedAt = DateTime.UtcNow.AddDays(-10)
            };
 
            var mockDeletedEventQueryable = new List<Event> { deletedEvent }.AsQueryable().BuildMock();
@@ -5447,8 +5734,8 @@ namespace AIEvent.Application.Test.Services
                Id = eventId,
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(3),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = actualOrganizerId,
                EventCategoryId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -5456,7 +5743,7 @@ namespace AIEvent.Application.Test.Services
                SoldQuantity = 0,
                DeletedAt = null,
                IsDeleted = false,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                Bookings = new List<Booking>()
            };
 
@@ -5487,8 +5774,8 @@ namespace AIEvent.Application.Test.Services
                Id = eventId,
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(3),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Paid,
@@ -5497,7 +5784,7 @@ namespace AIEvent.Application.Test.Services
                DeletedAt = null,
                IsDeleted = false,
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                OrganizerProfile = new OrganizerProfile
                {
                    Id = organizerId,
@@ -5579,8 +5866,8 @@ namespace AIEvent.Application.Test.Services
                Id = eventId,
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(3),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Paid,
@@ -5589,7 +5876,7 @@ namespace AIEvent.Application.Test.Services
                DeletedAt = null,
                IsDeleted = false,
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                OrganizerProfile = new OrganizerProfile
                {
                    Id = organizerId,
@@ -5681,8 +5968,8 @@ namespace AIEvent.Application.Test.Services
                Id = eventId,
                Title = "Test Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(3),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Paid,
@@ -5691,7 +5978,7 @@ namespace AIEvent.Application.Test.Services
                DeletedAt = null,
                IsDeleted = false,
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                OrganizerProfile = new OrganizerProfile
                {
                    Id = organizerId,
@@ -5760,8 +6047,8 @@ namespace AIEvent.Application.Test.Services
                Id = eventId,
                Title = "Free Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(3),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -5770,7 +6057,7 @@ namespace AIEvent.Application.Test.Services
                DeletedAt = null,
                IsDeleted = false,
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                OrganizerProfile = new OrganizerProfile
                {
                    Id = organizerId,
@@ -5846,8 +6133,8 @@ namespace AIEvent.Application.Test.Services
                Id = eventId,
                Title = "Paid Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(3),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Paid,
@@ -5856,7 +6143,7 @@ namespace AIEvent.Application.Test.Services
                DeletedAt = null,
                IsDeleted = false,
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                OrganizerProfile = new OrganizerProfile
                {
                    Id = organizerId,
@@ -5931,8 +6218,8 @@ namespace AIEvent.Application.Test.Services
                Id = eventId,
                Title = "Paid Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(3),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Paid,
@@ -5941,7 +6228,7 @@ namespace AIEvent.Application.Test.Services
                DeletedAt = null,
                IsDeleted = false,
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                OrganizerProfile = new OrganizerProfile
                {
                    Id = organizerId,
@@ -6016,8 +6303,8 @@ namespace AIEvent.Application.Test.Services
                Id = eventId,
                Title = "Unpublished Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(3),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -6026,7 +6313,7 @@ namespace AIEvent.Application.Test.Services
                DeletedAt = null,
                IsDeleted = false,
                Publish = false, // Unpublished event
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                OrganizerProfile = new OrganizerProfile
                {
                    Id = organizerId,
@@ -6092,8 +6379,8 @@ namespace AIEvent.Application.Test.Services
                Id = eventId,
                Title = "Event with Cancelled Bookings",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(3),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Paid,
@@ -6102,7 +6389,7 @@ namespace AIEvent.Application.Test.Services
                DeletedAt = null,
                IsDeleted = false,
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                OrganizerProfile = new OrganizerProfile
                {
                    Id = organizerId,
@@ -6184,8 +6471,8 @@ namespace AIEvent.Application.Test.Services
                Id = eventId,
                Title = "Published Event",
                Description = "Test Description",
-               StartTime = DateTime.Now.AddDays(5),
-               EndTime = DateTime.Now.AddDays(5).AddHours(3),
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
@@ -6194,7 +6481,7 @@ namespace AIEvent.Application.Test.Services
                DeletedAt = null,
                IsDeleted = false,
                Publish = true, // Published event
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                OrganizerProfile = new OrganizerProfile
                {
                    Id = organizerId,
@@ -6239,7 +6526,7 @@ namespace AIEvent.Application.Test.Services
            // Arrange
            var eventId = Guid.NewGuid();
            var categoryId = Guid.NewGuid();
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
            var eventCategory = new EventCategory { Id = categoryId, CategoryName = "Music" };
 
            // Target event
@@ -6261,7 +6548,7 @@ namespace AIEvent.Application.Test.Services
                SoldQuantity = 0,
                LocationName = "Location",
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                EventTags = new List<EventTag>()
            };
 
@@ -6284,7 +6571,7 @@ namespace AIEvent.Application.Test.Services
                SoldQuantity = 0,
                LocationName = "Location 2",
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                EventTags = new List<EventTag>(),
                TicketTypes = new List<TicketType>
                {
@@ -6313,7 +6600,7 @@ namespace AIEvent.Application.Test.Services
            // Arrange
            var eventId = Guid.NewGuid();
            var tagId = Guid.NewGuid();
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
            var tag = new Tag { Id = tagId, NameTag = "Rock" };
 
            // Target event with tag
@@ -6334,7 +6621,7 @@ namespace AIEvent.Application.Test.Services
                SoldQuantity = 0,
                LocationName = "Location",
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                EventTags = new List<EventTag>
                {
                    new EventTag { TagId = tagId, Tag = tag }
@@ -6359,7 +6646,7 @@ namespace AIEvent.Application.Test.Services
                SoldQuantity = 0,
                LocationName = "Location 2",
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                EventTags = new List<EventTag>
                {
                    new EventTag { TagId = tagId, Tag = tag }
@@ -6390,7 +6677,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var eventId = Guid.NewGuid();
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            // Target event
            var targetEvent = new Event
@@ -6410,7 +6697,7 @@ namespace AIEvent.Application.Test.Services
                SoldQuantity = 0,
                LocationName = "Location",
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                EventTags = new List<EventTag>()
            };
 
@@ -6432,7 +6719,7 @@ namespace AIEvent.Application.Test.Services
                SoldQuantity = 0,
                LocationName = "Location 2",
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                EventTags = new List<EventTag>(),
                TicketTypes = new List<TicketType>
                {
@@ -6460,7 +6747,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var eventId = Guid.NewGuid();
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            // Target event with specific attributes
            var targetEvent = new Event
@@ -6480,7 +6767,7 @@ namespace AIEvent.Application.Test.Services
                SoldQuantity = 0,
                LocationName = "Location",
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                EventTags = new List<EventTag>()
            };
 
@@ -6502,7 +6789,7 @@ namespace AIEvent.Application.Test.Services
                SoldQuantity = 0,
                LocationName = "Location 2",
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                EventTags = new List<EventTag>(), // No common tags
                TicketTypes = new List<TicketType>()
            };
@@ -6526,7 +6813,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var nonExistentEventId = Guid.NewGuid();
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            var event1 = new Event
            {
@@ -6544,7 +6831,7 @@ namespace AIEvent.Application.Test.Services
                SoldQuantity = 0,
                LocationName = "Location 1",
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                EventTags = new List<EventTag>(),
                TicketTypes = new List<TicketType>()
            };
@@ -6565,7 +6852,7 @@ namespace AIEvent.Application.Test.Services
                SoldQuantity = 0,
                LocationName = "Location 2",
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                EventTags = new List<EventTag>(),
                TicketTypes = new List<TicketType>()
            };
@@ -6589,8 +6876,8 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var eventId = Guid.NewGuid();
-           var futureDate = DateTime.Now.AddDays(10);
-           var pastDate = DateTime.Now.AddDays(-10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
+           var pastDate = DateTime.UtcNow.AddDays(-10);
 
            var targetEvent = new Event
            {
@@ -6608,7 +6895,7 @@ namespace AIEvent.Application.Test.Services
                SoldQuantity = 0,
                LocationName = "Location",
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                EventTags = new List<EventTag>()
            };
 
@@ -6628,7 +6915,7 @@ namespace AIEvent.Application.Test.Services
                SoldQuantity = 0,
                LocationName = "Location 2",
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                EventTags = new List<EventTag>(),
                TicketTypes = new List<TicketType>()
            };
@@ -6651,7 +6938,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var eventId = Guid.NewGuid();
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            var targetEvent = new Event
            {
@@ -6669,7 +6956,7 @@ namespace AIEvent.Application.Test.Services
                SoldQuantity = 0,
                LocationName = "Location",
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                EventTags = new List<EventTag>()
            };
 
@@ -6682,14 +6969,14 @@ namespace AIEvent.Application.Test.Services
                EndTime = futureDate.AddDays(1).AddHours(2),
                EventCategoryId = Guid.NewGuid(),
                Status = EventStatus.Approved,
-               DeletedAt = DateTime.Now, // Deleted
+               DeletedAt = DateTime.UtcNow, // Deleted
                OrganizerProfileId = Guid.NewGuid(),
                TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location 2",
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                EventTags = new List<EventTag>(),
                TicketTypes = new List<TicketType>()
            };
@@ -6712,7 +6999,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var eventId = Guid.NewGuid();
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            var targetEvent = new Event
            {
@@ -6730,7 +7017,7 @@ namespace AIEvent.Application.Test.Services
                SoldQuantity = 0,
                LocationName = "Location",
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                EventTags = new List<EventTag>()
            };
 
@@ -6750,7 +7037,7 @@ namespace AIEvent.Application.Test.Services
                SoldQuantity = 0,
                LocationName = "Location 2",
                Publish = true,
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                EventTags = new List<EventTag>(),
                TicketTypes = new List<TicketType>()
            };
@@ -6792,7 +7079,7 @@ namespace AIEvent.Application.Test.Services
            // Arrange
            var organizerId = Guid.NewGuid();
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            var organizerProfile = new OrganizerProfile
            {
@@ -6828,7 +7115,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location 1",
-               CreatedAt = DateTime.Now.AddDays(-2),
+               CreatedAt = DateTime.UtcNow.AddDays(-2),
                ImgListEvent = "image1.jpg",
                TicketTypes = null!
            };
@@ -6850,7 +7137,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
-               CreatedAt = DateTime.Now.AddDays(-1),
+               CreatedAt = DateTime.UtcNow.AddDays(-1),
                TicketTypes = new List<TicketType>
                {
                    new TicketType
@@ -6921,7 +7208,7 @@ namespace AIEvent.Application.Test.Services
            // Arrange
            var organizerId = Guid.NewGuid();
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            var organizerProfile = new OrganizerProfile
            {
@@ -6957,7 +7244,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                TicketTypes = null!
            };
 
@@ -6978,7 +7265,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
-               CreatedAt = DateTime.Now.AddDays(-1),
+               CreatedAt = DateTime.UtcNow.AddDays(-1),
                TicketTypes = null!
            };
 
@@ -7001,7 +7288,7 @@ namespace AIEvent.Application.Test.Services
            // Arrange
            var organizerId = Guid.NewGuid();
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            var organizerProfile = new OrganizerProfile
            {
@@ -7037,7 +7324,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                TicketTypes = null!
            };
 
@@ -7058,7 +7345,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
-               CreatedAt = DateTime.Now.AddDays(-1),
+               CreatedAt = DateTime.UtcNow.AddDays(-1),
                TicketTypes = null!
            };
 
@@ -7082,7 +7369,7 @@ namespace AIEvent.Application.Test.Services
            var organizerId1 = Guid.NewGuid();
            var organizerId2 = Guid.NewGuid();
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            var organizerProfile1 = new OrganizerProfile
            {
@@ -7135,7 +7422,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                TicketTypes = null!
            };
 
@@ -7156,7 +7443,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
-               CreatedAt = DateTime.Now.AddDays(-1),
+               CreatedAt = DateTime.UtcNow.AddDays(-1),
                TicketTypes = null!
            };
 
@@ -7183,7 +7470,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            var organizerProfile1 = new OrganizerProfile
            {
@@ -7237,7 +7524,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                TicketTypes = null!
            };
 
@@ -7259,7 +7546,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
-               CreatedAt = DateTime.Now.AddDays(-1),
+               CreatedAt = DateTime.UtcNow.AddDays(-1),
                TicketTypes = null!
            };
 
@@ -7282,7 +7569,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            var organizerProfile1 = new OrganizerProfile
            {
@@ -7336,7 +7623,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                TicketTypes = null!
            };
 
@@ -7358,7 +7645,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
-               CreatedAt = DateTime.Now.AddDays(-1),
+               CreatedAt = DateTime.UtcNow.AddDays(-1),
                TicketTypes = null!
            };
 
@@ -7381,7 +7668,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            var organizerProfile1 = new OrganizerProfile
            {
@@ -7435,7 +7722,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                TicketTypes = null!
            };
 
@@ -7457,7 +7744,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
-               CreatedAt = DateTime.Now.AddDays(-1),
+               CreatedAt = DateTime.UtcNow.AddDays(-1),
                TicketTypes = null!
            };
 
@@ -7481,7 +7768,7 @@ namespace AIEvent.Application.Test.Services
            // Arrange
            var organizerId = Guid.NewGuid();
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            var organizerProfile1 = new OrganizerProfile
            {
@@ -7535,7 +7822,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
-               CreatedAt = DateTime.Now,
+               CreatedAt = DateTime.UtcNow,
                TicketTypes = null!
            };
 
@@ -7557,7 +7844,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
-               CreatedAt = DateTime.Now.AddDays(-1),
+               CreatedAt = DateTime.UtcNow.AddDays(-1),
                TicketTypes = null!
            };
 
@@ -7579,7 +7866,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            var event1 = new Event
            {
@@ -7598,7 +7885,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
-               CreatedAt = DateTime.Now
+               CreatedAt = DateTime.UtcNow
            };
 
            var event2 = new Event
@@ -7618,7 +7905,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
-               CreatedAt = DateTime.Now.AddDays(-1)
+               CreatedAt = DateTime.UtcNow.AddDays(-1)
            };
 
            var events = new List<Event> { event1, event2 }.AsQueryable().BuildMock();
@@ -7638,7 +7925,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            var matchingEvent = new Event
            {
@@ -7657,7 +7944,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
-               CreatedAt = DateTime.Now
+               CreatedAt = DateTime.UtcNow
            };
 
            var nonMatchingEvent = new Event
@@ -7677,7 +7964,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
-               CreatedAt = DateTime.Now.AddDays(-1)
+               CreatedAt = DateTime.UtcNow.AddDays(-1)
            };
 
            var events = new List<Event> { matchingEvent, nonMatchingEvent }.AsQueryable().BuildMock();
@@ -7698,7 +7985,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            var matchingEvent = new Event
            {
@@ -7718,7 +8005,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
-               CreatedAt = DateTime.Now
+               CreatedAt = DateTime.UtcNow
            };
 
            var nonMatchingEvent = new Event
@@ -7739,7 +8026,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
-               CreatedAt = DateTime.Now.AddDays(-1)
+               CreatedAt = DateTime.UtcNow.AddDays(-1)
            };
 
            var events = new List<Event> { matchingEvent, nonMatchingEvent }.AsQueryable().BuildMock();
@@ -7760,7 +8047,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            var matchingEvent = new Event
            {
@@ -7779,7 +8066,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
-               CreatedAt = DateTime.Now
+               CreatedAt = DateTime.UtcNow
            };
 
            var nonMatchingEvent = new Event
@@ -7799,7 +8086,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
-               CreatedAt = DateTime.Now.AddDays(-1)
+               CreatedAt = DateTime.UtcNow.AddDays(-1)
            };
 
            var events = new List<Event> { matchingEvent, nonMatchingEvent }.AsQueryable().BuildMock();
@@ -7820,7 +8107,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            var event1 = new Event
            {
@@ -7839,7 +8126,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
-               CreatedAt = DateTime.Now
+               CreatedAt = DateTime.UtcNow
            };
 
            var event2 = new Event
@@ -7859,7 +8146,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
-               CreatedAt = DateTime.Now.AddDays(-1)
+               CreatedAt = DateTime.UtcNow.AddDays(-1)
            };
 
            var events = new List<Event> { event1, event2 }.AsQueryable().BuildMock();
@@ -7879,7 +8166,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            var publishedEvent = new Event
            {
@@ -7898,7 +8185,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
-               CreatedAt = DateTime.Now
+               CreatedAt = DateTime.UtcNow
            };
 
            var unpublishedEvent = new Event
@@ -7918,7 +8205,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
-               CreatedAt = DateTime.Now.AddDays(-1)
+               CreatedAt = DateTime.UtcNow.AddDays(-1)
            };
 
            var events = new List<Event> { publishedEvent, unpublishedEvent }.AsQueryable().BuildMock();
@@ -7939,7 +8226,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            var activeEvent = new Event
            {
@@ -7958,7 +8245,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
-               CreatedAt = DateTime.Now
+               CreatedAt = DateTime.UtcNow
            };
 
            var deletedEvent = new Event
@@ -7978,7 +8265,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
-               CreatedAt = DateTime.Now.AddDays(-1)
+               CreatedAt = DateTime.UtcNow.AddDays(-1)
            };
 
            var events = new List<Event> { activeEvent, deletedEvent }.AsQueryable().BuildMock();
@@ -8000,7 +8287,7 @@ namespace AIEvent.Application.Test.Services
            // Arrange
            var organizerId = Guid.NewGuid();
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            var matchingEvent = new Event
            {
@@ -8019,7 +8306,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
-               CreatedAt = DateTime.Now
+               CreatedAt = DateTime.UtcNow
            };
 
            var nonMatchingEvent1 = new Event
@@ -8039,7 +8326,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
-               CreatedAt = DateTime.Now.AddDays(-1)
+               CreatedAt = DateTime.UtcNow.AddDays(-1)
            };
 
            var nonMatchingEvent2 = new Event
@@ -8059,7 +8346,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 75,
                SoldQuantity = 0,
                LocationName = "Location 3",
-               CreatedAt = DateTime.Now.AddDays(-2)
+               CreatedAt = DateTime.UtcNow.AddDays(-2)
            };
 
            var events = new List<Event> { matchingEvent, nonMatchingEvent1, nonMatchingEvent2 }.AsQueryable().BuildMock();
@@ -8080,7 +8367,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            var approvedEvent = new Event
            {
@@ -8099,7 +8386,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
-               CreatedAt = DateTime.Now
+               CreatedAt = DateTime.UtcNow
            };
 
            var rejectedEvent = new Event
@@ -8119,7 +8406,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
-               CreatedAt = DateTime.Now.AddDays(-1)
+               CreatedAt = DateTime.UtcNow.AddDays(-1)
            };
 
            var PendingApprovalEvent = new Event
@@ -8139,7 +8426,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 75,
                SoldQuantity = 0,
                LocationName = "Location 3",
-               CreatedAt = DateTime.Now.AddDays(-2)
+               CreatedAt = DateTime.UtcNow.AddDays(-2)
            };
 
            var events = new List<Event> { approvedEvent, rejectedEvent, PendingApprovalEvent }.AsQueryable().BuildMock();
@@ -8164,7 +8451,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            var eventCategory = new EventCategory { Id = Guid.NewGuid(), CategoryName = "Music" };
-           var futureDate = DateTime.Now.AddDays(10);
+           var futureDate = DateTime.UtcNow.AddDays(10);
 
            var event1 = new Event
            {
@@ -8183,7 +8470,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
-               CreatedAt = DateTime.Now
+               CreatedAt = DateTime.UtcNow
            };
 
            var event2 = new Event
@@ -8203,7 +8490,7 @@ namespace AIEvent.Application.Test.Services
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
-               CreatedAt = DateTime.Now.AddDays(-1)
+               CreatedAt = DateTime.UtcNow.AddDays(-1)
            };
 
            var events = new List<Event> { event1, event2 }.AsQueryable().BuildMock();

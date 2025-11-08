@@ -2,8 +2,8 @@ import * as React from "react";
 import { cn } from "../../lib/utils";
 
 /**
- * Tabs Component — same style convention as shadcn/ui components
- * Compatible with Radix-free usage (pure React state)
+ * Tabs Component — Pure React (không Radix)
+ * Gồm: Tabs, TabsList, TabsTrigger, TabsContent
  */
 
 const TabsContext = React.createContext();
@@ -38,7 +38,7 @@ export const TabsTrigger = React.forwardRef(
         ref={ref}
         type="button"
         disabled={disabled}
-        onClick={() => ctx?.onValueChange(value)}
+        onClick={() => ctx?.onValueChange?.(value)}
         data-state={isActive ? "active" : "inactive"}
         className={cn(
           "inline-flex min-w-[80px] items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all",
@@ -56,3 +56,29 @@ export const TabsTrigger = React.forwardRef(
   }
 );
 TabsTrigger.displayName = "TabsTrigger";
+
+/**
+ * TabsContent — chỉ hiển thị nếu value của Tabs trùng với value prop
+ */
+export const TabsContent = React.forwardRef(
+  ({ className, value, children, ...props }, ref) => {
+    const ctx = React.useContext(TabsContext);
+    const isActive = ctx?.value === value;
+
+    if (!isActive) return null;
+
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          "mt-2 outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </div>
+    );
+  }
+);
+TabsContent.displayName = "TabsContent";
