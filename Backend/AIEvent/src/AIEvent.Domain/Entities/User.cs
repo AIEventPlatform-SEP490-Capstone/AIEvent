@@ -20,7 +20,7 @@ namespace AIEvent.Domain.Entities
         public bool? IsEmailNotificationEnabled { get; set; } = true;
         public bool? IsPushNotificationEnabled { get; set; } = true;
         public bool? IsSmsNotificationEnabled { get; set; } = true;
-        public string? InterestedCitiesJson { get; set; }
+        public string? InterestedDistrictsJson { get; set; }
         public string? AvatarImgUrl { get; set; }
         public string? UserInterestsJson { get; set; }
         public string? FavoriteEventTypesJson { get; set; }

@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using PayOS.Models.V2.PaymentRequests;
 using PayOS.Models.Webhooks;
 using PayOS.Models.V1.Payouts;
-using PayOS.Models.V1.Payouts.Batch;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -29,9 +28,6 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Payout> CreatePayoutAsync(PayoutRequest request)
             => await _payoutClient.Payouts.CreateAsync(request);
-
-        public async Task<Payout> CreateManyPayoutAsync(PayoutBatchRequest request)
-            => await _payoutClient.Payouts.Batch.CreateAsync(request);
 
     }
 }

@@ -217,7 +217,7 @@ namespace AIEvent.Application.Test.Services
                 IsPushNotificationEnabled = true,
                 IsSmsNotificationEnabled = true,
                 UserInterests = new List<UserInterest> { new UserInterest { InterestName = "Technology" } },
-                InterestedCities = new List<InterestedDistricts> { new InterestedDistricts { DistrictName = "Quận 1" } },
+                InterestedDistricts = new List<InterestedDistricts> { new InterestedDistricts { DistrictName = "Quận 1" } },
                 FavoriteEventTypes = new List<FavoriteEventTypes> { new FavoriteEventTypes { FavoriteEventTypeName = "Tech Conference" } },
                 ProfessionalSkills = new List<UserSkills> { new UserSkills { SkillsName = "C#" } },
                 Languages = new List<UserLanguages> { new UserLanguages { LanguagesName = "English" } }
@@ -552,7 +552,7 @@ namespace AIEvent.Application.Test.Services
                     new UserInterest { InterestName = "Technology" },
                     new UserInterest { InterestName = "Sports" }
                 },
-                InterestedCities = new List<InterestedDistricts> 
+                InterestedDistricts = new List<InterestedDistricts> 
                 {
                     new InterestedDistricts { DistrictName = "Quận 1"},
                     new InterestedDistricts { DistrictName = "Quận 7"}
