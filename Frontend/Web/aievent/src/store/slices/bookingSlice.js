@@ -2,6 +2,7 @@
 
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { bookingAPI } from "../../api/bookingAPI";
+import { logout } from "./authSlice";
 
 // Tạo booking mới
 export const createBooking = createAsyncThunk(
@@ -136,6 +137,27 @@ const bookingSlice = createSlice({
       .addCase(refundTicket.rejected, (state, action) => {
         state.refunding = false;
         state.error = action.payload;
+      })
+      // Reset booking data when user logs out
+      .addCase(logout.fulfilled, (state) => {
+        state.events = [];
+        state.eventTickets = {};
+        state.bookings = [];
+        state.qrCodes = {};
+        state.loading = false;
+        state.error = null;
+        state.creating = false;
+        state.refunding = false;
+      })
+      .addCase(logout.rejected, (state) => {
+        state.events = [];
+        state.eventTickets = {};
+        state.bookings = [];
+        state.qrCodes = {};
+        state.loading = false;
+        state.error = null;
+        state.creating = false;
+        state.refunding = false;
       });
   },
 });

@@ -103,7 +103,7 @@ export const transformFormDataToAPI = (formData, originalProfile = {}) => {
     // Array Fields - Always send current form data, even if empty (to allow deletion)
     userInterests: formData.interests ? formData.interests.map(interest => ({ interestName: interest.trim() })) : [],
     
-    interestedCities: formData.cities ? formData.cities.map(city => ({ cityName: city.trim() })) : [],
+    interestedDistricts: formData.cities ? formData.cities.map(city => ({ districtName: city.trim() })) : [],
     
     languages: formData.languages ? formData.languages.map(language => ({ languagesName: language.trim() })) : [],
     

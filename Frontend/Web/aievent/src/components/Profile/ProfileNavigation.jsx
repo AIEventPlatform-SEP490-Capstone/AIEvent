@@ -1,12 +1,10 @@
 import React from 'react';
-import { Ticket, Heart, Users, History, Settings, Wallet } from 'lucide-react';
+import { Heart, Users, Settings, Wallet } from 'lucide-react';
 
 const ProfileNavigation = ({ tabs, activeTab, onTabChange }) => {
   const tabIcons = {
-    tickets: Ticket,
     likes: Heart,
     friends: Users,
-    history: History,
     card: Wallet,
     settings: Settings
   };
@@ -30,7 +28,7 @@ const ProfileNavigation = ({ tabs, activeTab, onTabChange }) => {
                 onClick={() => onTabChange(tab.id)}
                 className={`relative flex items-center space-x-3 px-6 py-4 text-sm font-semibold rounded-t-xl transition-all duration-300 whitespace-nowrap group ${
                   isActive
-                    ? 'bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 text-white shadow-xl scale-105'
+                    ? 'bg-gradient-to-br from-blue-800 via-blue-900 to-blue-950 text-white shadow-xl scale-105'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-white hover:shadow-lg'
                 }`}
               >
@@ -47,11 +45,6 @@ const ProfileNavigation = ({ tabs, activeTab, onTabChange }) => {
                   </div>
                 )}
                 <span className="relative z-10">{tab.label}</span>
-                
-                {/* Active indicator bar */}
-                {isActive && (
-                  <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-300 rounded-t-full shadow-lg"></div>
-                )}
                 
                 {/* Hover glow effect */}
                 {!isActive && (

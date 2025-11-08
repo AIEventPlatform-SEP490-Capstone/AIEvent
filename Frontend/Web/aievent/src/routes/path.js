@@ -13,6 +13,7 @@ export const PATH = {
   TIMELINE: "/timeline",
   FRIENDS: "/friends",
   FRIENDS_SEARCH: "/friends/search",
+  FRIEND_DETAIL: "/friend/:friendId",
   FAVORITES: "/favorites",
   WALLET: "/wallet",
   MY_TICKETS: "/my-tickets",

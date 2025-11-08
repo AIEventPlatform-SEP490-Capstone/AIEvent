@@ -112,7 +112,7 @@ export default function RegisterPage() {
     agreeTerms: false,
     preferences: {
       userInterests: [],
-      interestedCities: [],
+      interestedDistricts: [],
       participationFrequency: "Weekly",
       budgetOption: "Flexible",
       notifications: {
@@ -191,7 +191,7 @@ export default function RegisterPage() {
   const isValidPreferences = () => {
     return (
       formData.preferences.userInterests.length >= 3 &&
-      formData.preferences.interestedCities.length > 0
+      formData.preferences.interestedDistricts.length > 0
     );
   };
 
@@ -285,14 +285,14 @@ export default function RegisterPage() {
   };
 
   const toggleCity = (city) => {
-    const interestedCities = formData.preferences.interestedCities;
-    if (interestedCities.includes(city)) {
+    const interestedDistricts = formData.preferences.interestedDistricts;
+    if (interestedDistricts.includes(city)) {
       handlePreferenceChange(
-        "interestedCities",
-        interestedCities.filter((c) => c !== city)
+        "interestedDistricts",
+        interestedDistricts.filter((c) => c !== city)
       );
     } else {
-      handlePreferenceChange("interestedCities", [...interestedCities, city]);
+      handlePreferenceChange("interestedDistricts", [...interestedDistricts, city]);
     }
   };
 
@@ -337,8 +337,8 @@ export default function RegisterPage() {
       if (formData.preferences.userInterests.length < 3) {
         newErrors.userInterests = "Vui lòng chọn ít nhất 3 sở thích.";
       }
-      if (formData.preferences.interestedCities.length === 0) {
-        newErrors.interestedCities = "Vui lòng chọn ít nhất một khu vực.";
+      if (formData.preferences.interestedDistricts.length === 0) {
+        newErrors.interestedDistricts = "Vui lòng chọn ít nhất một khu vực.";
       }
     }
 
@@ -365,8 +365,8 @@ export default function RegisterPage() {
       userInterests: formData.preferences.userInterests.map((name) => ({
         interestName: name,
       })),
-      interestedCities: formData.preferences.interestedCities.map((city) => ({
-        cityName: city,
+      interestedDistricts: formData.preferences.interestedDistricts.map((city) => ({
+        districtName: city,
       })),
       participationFrequency: formData.preferences.participationFrequency,
       budgetOption: formData.preferences.budgetOption,
@@ -982,7 +982,7 @@ export default function RegisterPage() {
                               <div
                                 key={city}
                                 className={`cursor-pointer px-3 py-1.5 text-xs font-medium transition-all duration-200 rounded-full ${
-                                  formData.preferences.interestedCities.includes(
+                                  formData.preferences.interestedDistricts.includes(
                                     city
                                   )
                                     ? "bg-blue-500 text-white hover:bg-blue-600 shadow-lg"
@@ -994,9 +994,9 @@ export default function RegisterPage() {
                               </div>
                             ))}
                           </div>
-                          {errors.interestedCities && (
+                          {errors.interestedDistricts && (
                             <p className="text-red-500 text-xs mt-2 text-center">
-                              {errors.interestedCities}
+                              {errors.interestedDistricts}
                             </p>
                           )}
                         </div>
@@ -1188,7 +1188,7 @@ export default function RegisterPage() {
                               Khu vực
                             </h4>
                             <p className="text-gray-600">
-                              {formData.preferences.interestedCities.join(", ")}
+                              {formData.preferences.interestedDistricts.join(", ")}
                             </p>
                           </div>
                           <div className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">

@@ -50,9 +50,9 @@ export const userAPI = {
             formData.append(`UserInterests[${index}].interestName`, interest.interestName || interest);
         });
 
-        const interestedCities = profileData.interestedCities || [];
-        interestedCities.forEach((city, index) => {
-            formData.append(`InterestedCities[${index}].cityName`, city.cityName || city);
+        const interestedDistricts = profileData.interestedDistricts || [];
+        interestedDistricts.forEach((district, index) => {
+            formData.append(`InterestedDistricts[${index}].districtName`, district.districtName || district);
         });
 
         const languages = profileData.languages || [];
