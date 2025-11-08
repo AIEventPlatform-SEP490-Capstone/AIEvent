@@ -4,6 +4,7 @@ import EventService from './EventService';
 import AuthService from './AuthService';
 import WalletService from './WalletService';
 import BookingService from './BookingService';
+import FriendService from './FriendService';
 
 export const walletAPI = {
   getUserWallet: async () => {
@@ -43,6 +44,7 @@ export {
   AuthService,
   WalletService,
   BookingService,
+  FriendService,
 };
 
 export default {
@@ -52,4 +54,5 @@ export default {
   AuthService,
   WalletService,
   BookingService,
+  FriendService,
 };
