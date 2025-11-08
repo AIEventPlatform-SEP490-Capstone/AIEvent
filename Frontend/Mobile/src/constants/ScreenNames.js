@@ -24,6 +24,7 @@ const ScreenNames = {
   TICKETS_SCREEN: 'TicketsScreen',
   LIKES_SCREEN: 'LikesScreen',
   FRIENDS_SCREEN: 'FriendsScreen',
+  FRIEND_DETAIL_SCREEN: 'FriendDetailScreen',
   
   // Timeline Screen
   TIMELINE_SCREEN: 'TimelineScreen',
