@@ -4,6 +4,7 @@ namespace AIEvent.Application.DTOs.Event
 {
     public class CompleteEventRequest
     {
+        [Required(ErrorMessage = "EventId is required.")]
         public Guid EventId { get; set; }
         [Required(ErrorMessage = "PaymentInformationId is required.")]
         public Guid PaymentInformationId { get; set; }

@@ -1757,9 +1757,296 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.IsSuccess.Should().BeTrue();
         }
+
+        [Fact]
+        public async Task UTCID11_RequestEndEventAsync_EventStatusPendingApproval_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.PendingApproval };
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = Guid.NewGuid(),
+                EvidenceImages = new List<string> { "img1" }
+            };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Event cannot be requested to end in its current state");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID12_RequestEndEventAsync_EventStatusRejected_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.Rejected };
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = Guid.NewGuid(),
+                EvidenceImages = new List<string> { "img1" }
+            };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Event cannot be requested to end in its current state");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID13_RequestEndEventAsync_EventStatusCancelled_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.Cancelled };
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = Guid.NewGuid(),
+                EvidenceImages = new List<string> { "img1" }
+            };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Event cannot be requested to end in its current state");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID14_RequestEndEventAsync_EventStatusPendingApprovalEnd_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.PendingApprovalEnd };
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = Guid.NewGuid(),
+                EvidenceImages = new List<string> { "img1" }
+            };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Event cannot be requested to end in its current state");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID15_RequestEndEventAsync_EventStatusWaitingForPayout_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.WaitingForPayout };
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = Guid.NewGuid(),
+                EvidenceImages = new List<string> { "img1" }
+            };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Event cannot be requested to end in its current state");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID16_RequestEndEventAsync_EventStatusEnded_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.Ended };
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = Guid.NewGuid(),
+                EvidenceImages = new List<string> { "img1" }
+            };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Event cannot be requested to end in its current state");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID17_RequestEndEventAsync_EventStatusRejectEnded_ShouldSucceed()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-5), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.RejectEnded };
+            var paymentInfoId = Guid.NewGuid();
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = paymentInfoId,
+                EvidenceImages = new List<string> { "img1" },
+                Summary = "summary"
+            };
+            var paymentInfo = new PaymentInformation { Id = paymentInfoId, UserId = userId, IsDeleted = false, AccountHolderName = "Test", AccountNumber = "123456", BankName = "Test Bank", BankBin = "123456" };
+
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<EndEventRequest>().AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMockDbSet().Object);
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+            _mockUnitOfWork.Setup(x => x.EndEventRequestRepository.AddAsync(It.IsAny<EndEventRequest>()));
+
+            _mockMapper.Setup(x => x.Map<EndEventRequest>(It.IsAny<CompleteEventRequest>()))
+                .Returns<CompleteEventRequest>(r => new EndEventRequest { EventId = r.EventId, EvidenceImages = string.Join(", ", r.EvidenceImages), Summary = r.Summary });
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.Is<Event>(e => e.Id == ev.Id && e.Status == EventStatus.PendingApprovalEnd)), Times.Once());
+            _mockUnitOfWork.Verify(x => x.EndEventRequestRepository.AddAsync(It.Is<EndEventRequest>(er => er.EventId == ev.Id && er.IsLatest && er.Status == EndEventStatus.PendingApprovalEnd && er.OrganizerProfileId == organizerProfile.Id)), Times.Once());
+        }
+
+        [Fact]
+        public async Task UTCID18_RequestEndEventAsync_PaymentInformationNotFound_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.Approved };
+            var paymentInfoId = Guid.NewGuid();
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = paymentInfoId,
+                EvidenceImages = new List<string> { "img1" }
+            };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<PaymentInformation>().AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Payment information not found");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID19_RequestEndEventAsync_PaymentInformationDeleted_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.Approved };
+            var paymentInfoId = Guid.NewGuid();
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = paymentInfoId,
+                EvidenceImages = new List<string> { "img1" }
+            };
+            var paymentInfo = new PaymentInformation { Id = paymentInfoId, UserId = userId, IsDeleted = true, AccountHolderName = "Test", AccountNumber = "123456", BankName = "Test Bank", BankBin = "123456" };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Payment information not found");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+        [Fact]
+        public async Task UTCID20_RequestEndEventAsync_PaymentInformationDifferentUser_ShouldReturnInvalidInput()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile { Id = Guid.NewGuid(), UserId = userId, OrganizationType = OrganizationType.PrivateCompany, EventFrequency = EventFrequency.Monthly, EventSize = EventSize.Medium, OrganizerType = OrganizerType.Business, EventExperienceLevel = EventExperienceLevel.Beginner, ContactName = "Name", ContactEmail = "email@ex.com", ContactPhone = "0123", Address = "addr" };
+            var ev = new Event { Id = Guid.NewGuid(), Title = "t", Description = "d", StartTime = DateTime.UtcNow.AddDays(-3), OrganizerProfileId = organizerProfile.Id, OrganizerProfile = organizerProfile, EndTime = DateTime.UtcNow.AddDays(-1), Publish = true, Status = EventStatus.Approved };
+            var paymentInfoId = Guid.NewGuid();
+            var request = new CompleteEventRequest
+            {
+                EventId = ev.Id,
+                PaymentInformationId = paymentInfoId,
+                EvidenceImages = new List<string> { "img1" }
+            };
+            var paymentInfo = new PaymentInformation { Id = paymentInfoId, UserId = Guid.NewGuid(), IsDeleted = false, AccountHolderName = "Test", AccountNumber = "123456", BankName = "Test Bank", BankBin = "123456" };
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<Event> { ev }.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Payment information not found");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
         #endregion
 
-       #region GetEndEventRequestById
+        #region GetEndEventRequestById
 
         [Fact]
         public async Task UTCID01_GetEndEventRequestByIdAsync_WithEmptyId_ShouldReturnInvalidInput()

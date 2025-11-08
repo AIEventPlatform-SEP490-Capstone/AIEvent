@@ -10,7 +10,7 @@ namespace AIEvent.Application.DTOs.User
         public string FullName { get; set; } = string.Empty;
         public string? PhoneNumber { get; set; }
         public List<UserInterest>? UserInterests { get; set; }
-        public List<InterestedDistricts>? InterestedCities { get; set; }
+        public List<InterestedDistricts>? InterestedDistricts { get; set; }
         public ParticipationFrequency ParticipationFrequency { get; set; }
         public BudgetOption BudgetOption { get; set; }
         public string? Address { get; set; }
