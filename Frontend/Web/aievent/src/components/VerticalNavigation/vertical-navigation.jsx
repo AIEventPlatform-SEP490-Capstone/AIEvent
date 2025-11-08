@@ -33,6 +33,7 @@ import {
   Receipt,
   BookmarkMinus,
   Tag,
+  LayoutDashboard,
 } from "lucide-react";
 import {
   Sidebar,
@@ -141,20 +142,20 @@ export function VerticalNavigation() {
         {
           title: "Dashboard",
           url: "/organizer",
-          icon: BarChart3,
+          icon: LayoutDashboard,
           isActive: pathname === "/organizer",
-        },
-        {
-          title: "Tạo sự kiện",
-          url: "/organizer/create",
-          icon: Plus,
-          isActive: pathname === "/organizer/create",
         },
         {
           title: "Sự kiện của tôi",
           url: "/organizer/my-events",
           icon: Calendar,
           isActive: pathname === "/organizer/my-events",
+        },
+        {
+          title: "Tạo sự kiện",
+          url: "/organizer/create",
+          icon: Plus,
+          isActive: pathname === "/organizer/create",
         },
         {
           title: "Quản lý sự kiện",
@@ -191,7 +192,6 @@ export function VerticalNavigation() {
           icon: BookmarkMinus,
           isActive: pathname === "/manager/events/category",
         },
-
         {
           title: "Quản lý Tags",
           url: "/manager/tags",

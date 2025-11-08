@@ -28,7 +28,8 @@ import {
   Mail,
   Phone,
   Image as ImageIcon,
-  Copy
+  Copy,
+  X
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
@@ -42,8 +43,12 @@ import { PATH } from '../../routes/path';
 // Import the EventDetailGuestPage for preview
 import EventDetailGuestPage from '../Event/EventDetailGuestPage';
 
-// Import ConfirmStatus constants
-import { ConfirmStatus, ConfirmStatusDisplay } from '../../constants/eventConstants';
+// Import EventStatus constants
+import { EventStatus, EventStatusDisplay } from '../../constants/eventConstants';
+
+// Import EndEventStatus constants and hook
+import { EndEventStatus, EndEventStatusDisplay } from '../../constants/eventConstants';
+import { useEndEventRequests } from '../../hooks/useEndEventRequests';
 
 const EventDetailPage = () => {
   const { eventId } = useParams();
@@ -53,6 +58,17 @@ const EventDetailPage = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const { getEventById, deleteEvent: deleteEventAPI, loading: eventLoading } = useEvents();
+  
+  // Add state for end event requests
+  const [endEventRequests, setEndEventRequests] = useState([]);
+  const [endEventRequestsLoading, setEndEventRequestsLoading] = useState(false);
+  const [selectedEndEventRequest, setSelectedEndEventRequest] = useState(null);
+  const [isEndEventDetailOpen, setIsEndEventDetailOpen] = useState(false);
+  const { getEndEventRequests, getEndEventRequestById } = useEndEventRequests();
+  
+  // Add state for image lightbox
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState('');
 
   useEffect(() => {
     if (eventId) {
@@ -67,6 +83,8 @@ const EventDetailPage = () => {
       
       if (eventData) {
         setEvent(eventData);
+        // Load end event requests for this event
+        await loadEndEventRequests(eventData.eventId);
       } else {
         toast.error('Không tìm thấy sự kiện');
         navigate(PATH.ORGANIZER_EVENTS || '/events');
@@ -269,6 +287,45 @@ Nhấn OK để xác nhận xóa.`;
     navigate(PATH.ORGANIZER_CREATE);
   };
 
+  // Add function to load end event requests
+  const loadEndEventRequests = async (eventId) => {
+    try {
+      setEndEventRequestsLoading(true);
+      const params = {
+        eventId: eventId,
+        pageNumber: 1,
+        pageSize: 5 // Limit to 5 most recent requests
+      };
+      
+      const response = await getEndEventRequests(params);
+      if (response?.items) {
+        setEndEventRequests(response.items);
+      } else if (Array.isArray(response)) {
+        setEndEventRequests(response);
+      } else {
+        setEndEventRequests([]);
+      }
+    } catch (error) {
+      console.error('Error loading end event requests:', error);
+      setEndEventRequests([]);
+    } finally {
+      setEndEventRequestsLoading(false);
+    }
+  };
+
+  const getEndEventStatusBadgeClass = (status) => {
+    switch (status) {
+      case EndEventStatus.PendingApprovalEnd:
+        return 'bg-yellow-100 text-yellow-800';
+      case EndEventStatus.Approved:
+        return 'bg-green-100 text-green-800';
+      case EndEventStatus.Rejected:
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -313,24 +370,6 @@ Nhấn OK để xác nhận xóa.`;
               <ArrowLeft className="w-4 h-4 mr-2" />
               Quay lại
             </Button>
-            <div className="flex space-x-2">
-              <Button variant="outline" size="sm" onClick={handleEditEvent}>
-                <Edit className="w-4 h-4 mr-2" />
-                Chỉnh sửa
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleViewPublicPage}>
-                <Eye className="w-4 h-4 mr-2" />
-                Xem công khai
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleCloneEvent}>
-                <Copy className="w-4 h-4 mr-2" />
-                Clone
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleShareEvent}>
-                <Share2 className="w-4 h-4 mr-2" />
-                Chia sẻ
-              </Button>
-            </div>
           </div>
         </div>
       </div>
@@ -367,12 +406,12 @@ Nhấn OK để xác nhận xóa.`;
                   <Badge 
                     variant="outline" 
                     className={
-                      event.requireApproval === ConfirmStatus.Approve ? 'bg-green-100 text-green-800 border-green-200' :
-                      event.requireApproval === ConfirmStatus.Reject ? 'bg-red-100 text-red-800 border-red-200' :
+                      event.requireApproval === EventStatus.Approved ? 'bg-green-100 text-green-800 border-green-200' :
+                      event.requireApproval === EventStatus.Rejected ? 'bg-red-100 text-red-800 border-red-200' :
                       'bg-yellow-100 text-yellow-800 border-yellow-200'
                     }
                   >
-                    {ConfirmStatusDisplay[event.requireApproval] || event.requireApproval}
+                    {EventStatusDisplay[event.requireApproval] || event.requireApproval}
                   </Badge>
                 )}
               </div>
@@ -573,36 +612,25 @@ Nhấn OK để xác nhận xóa.`;
               </div>
             )}
 
-            {/* Event Image Gallery */}
-            {event.imgListEvent && event.imgListEvent.length > 0 && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4">Hình ảnh sự kiện</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {event.imgListEvent.map((img, index) => (
-                    <img
-                      key={index}
-                      src={img}
-                      alt={`${event.title} - ${index + 1}`}
-                      className="w-full h-64 object-cover rounded-lg shadow-md"
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Evidence Image Gallery */}
-            {event.imgListEvidences && event.imgListEvidences.length > 0 && (
+            {event.imgListEvidences && event.imgListEvidences.length > 0 && event.imgListEvidences.some(img => 
+              img && typeof img === 'string' && img.trim() !== '' && !img.includes('System.Collections.Generic.List')
+            ) && (
               <div>
                 <h2 className="text-xl font-semibold mb-4">Hình ảnh bằng chứng tổ chức</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {event.imgListEvidences.map((img, index) => (
-                    <img
-                      key={index}
-                      src={img}
-                      alt={`${event.title} - Evidence ${index + 1}`}
-                      className="w-full h-64 object-cover rounded-lg shadow-md"
-                    />
-                  ))}
+                  {event.imgListEvidences
+                    .filter(img => 
+                      img && typeof img === 'string' && img.trim() !== '' && !img.includes('System.Collections.Generic.List')
+                    ) // Filter out null/undefined/empty string/non-string/malformed images
+                    .map((img, index) => (
+                      <img
+                        key={index}
+                        src={img}
+                        alt={`${event.title} - Evidence ${index + 1}`}
+                        className="w-full h-64 object-cover rounded-lg shadow-md"
+                      />
+                    ))}
                 </div>
               </div>
             )}
@@ -754,6 +782,81 @@ Nhấn OK để xác nhận xóa.`;
                 </div>
               </CardContent>
             </Card>
+
+            {/* End Event Requests */}
+            <Card id="end-event-requests-section">
+              <CardHeader>
+                <h3 className="text-lg font-semibold">Yêu cầu kết thúc sự kiện</h3>
+              </CardHeader>
+              <CardContent>
+                {endEventRequestsLoading ? (
+                  <div className="flex justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : endEventRequests.length === 0 ? (
+                  <p className="text-gray-500 text-sm py-2">Chưa có yêu cầu kết thúc sự kiện.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {endEventRequests.slice(0, 3).map((request) => (
+                      <div 
+                        key={request.endEventRequestId} 
+                        className="border-b border-gray-100 pb-3 last:border-0 last:pb-0 cursor-pointer hover:bg-gray-50 p-2 rounded"
+                        onClick={async () => {
+                          // Load full details when clicking on the request
+                          const detailedRequest = await getEndEventRequestById(request.endEventRequestId);
+                          if (detailedRequest) {
+                            setSelectedEndEventRequest(detailedRequest);
+                            setIsEndEventDetailOpen(true);
+                          }
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getEndEventStatusBadgeClass(request.status)}`}>
+                            {EndEventStatusDisplay[request.status]}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(request.createdAt).toLocaleDateString('vi-VN')}
+                          </span>
+                        </div>
+                        {request.summary && (
+                          <p className="text-sm text-gray-600 mt-1 truncate">{request.summary}</p>
+                        )}
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-xs text-gray-500">
+                            {request.totalAmount?.toLocaleString('vi-VN')} VNĐ
+                          </span>
+                          {request.status === EndEventStatus.Approved && (
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {endEventRequests.length > 3 && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full mt-2"
+                        onClick={() => {
+                          // Thay vì chuyển hướng đến trang riêng, chúng ta có thể mở dialog chi tiết ngay trong trang này
+                          // Hoặc có thể làm nổi bật section yêu cầu kết thúc sự kiện trong trang
+                          const endEventSection = document.getElementById('end-event-requests-section');
+                          if (endEventSection) {
+                            endEventSection.scrollIntoView({ behavior: 'smooth' });
+                            // Có thể thêm hiệu ứng highlight
+                            endEventSection.classList.add('bg-yellow-50', 'border', 'border-yellow-200', 'rounded-lg');
+                            setTimeout(() => {
+                              endEventSection.classList.remove('bg-yellow-50', 'border', 'border-yellow-200', 'rounded-lg');
+                            }, 2000);
+                          }
+                        }}
+                      >
+                        Xem tất cả ({endEventRequests.length})
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
@@ -781,6 +884,216 @@ Nhấn OK để xác nhận xóa.`;
             <div className="bg-gray-100 border-2 border-dashed rounded-xl h-96 flex items-center justify-center">
               <p>Bản đồ chỉ đường sẽ hiển thị ở đây</p>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* End Event Request Detail Dialog */}
+      <Dialog open={isEndEventDetailOpen} onOpenChange={setIsEndEventDetailOpen}>
+        <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Chi tiết yêu cầu kết thúc sự kiện</DialogTitle>
+          </DialogHeader>
+          {selectedEndEventRequest && (
+            <div className="py-4 space-y-6">
+              {/* Status and Basic Info - Horizontal Rectangles */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Trạng thái</p>
+                  </div>
+                  <div className="mt-2">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getEndEventStatusBadgeClass(selectedEndEventRequest.status)}`}>
+                      {EndEventStatusDisplay[selectedEndEventRequest.status]}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Ngày tạo</p>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-sm font-medium text-gray-900">
+                      {new Date(selectedEndEventRequest.createdAt).toLocaleDateString('vi-VN')}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(selectedEndEventRequest.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+                
+                {selectedEndEventRequest.reviewedAt && (
+                  <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Ngày duyệt</p>
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-sm font-medium text-gray-900">
+                        {new Date(selectedEndEventRequest.reviewedAt).toLocaleDateString('vi-VN')}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(selectedEndEventRequest.reviewedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Tên sự kiện</p>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-sm font-medium text-gray-900 truncate" title={selectedEndEventRequest.eventTitle}>
+                      {selectedEndEventRequest.eventTitle}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Event Time and Summary - Horizontal Rectangles */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Thời gian sự kiện</p>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-sm font-medium text-gray-900">
+                      {new Date(selectedEndEventRequest.startTime).toLocaleDateString('vi-VN')}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">đến</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {new Date(selectedEndEventRequest.endTime).toLocaleDateString('vi-VN')}
+                    </p>
+                  </div>
+                </div>
+                
+                {selectedEndEventRequest.summary && (
+                  <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow md:col-span-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Tóm tắt</p>
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-900">{selectedEndEventRequest.summary}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Financial Information - Horizontal Rectangles */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">Tổng tiền</p>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-lg font-bold text-blue-800">
+                      {selectedEndEventRequest.totalAmount?.toLocaleString('vi-VN')} <span className="text-sm">VNĐ</span>
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-orange-600 uppercase tracking-wide">Phí nền tảng</p>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-lg font-bold text-orange-800">
+                      {selectedEndEventRequest.platformFee?.toLocaleString('vi-VN')} <span className="text-sm">VNĐ</span>
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-green-600 uppercase tracking-wide">Số tiền nhận</p>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-lg font-bold text-green-800">
+                      {selectedEndEventRequest.payoutAmount?.toLocaleString('vi-VN')} <span className="text-sm">VNĐ</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Information - Horizontal Rectangle */}
+              <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Thông tin thanh toán</p>
+                </div>
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="border-l-4 border-indigo-500 pl-3 py-1">
+                    <p className="text-xs text-gray-500">Tên ngân hàng</p>
+                    <p className="text-sm font-medium text-gray-900 mt-1">{selectedEndEventRequest.bankName}</p>
+                  </div>
+                  <div className="border-l-4 border-teal-500 pl-3 py-1">
+                    <p className="text-xs text-gray-500">Chủ tài khoản</p>
+                    <p className="text-sm font-medium text-gray-900 mt-1">{selectedEndEventRequest.accountHolderName}</p>
+                  </div>
+                  <div className="border-l-4 border-amber-500 pl-3 py-1">
+                    <p className="text-xs text-gray-500">Số tài khoản</p>
+                    <p className="text-sm font-medium text-gray-900 mt-1">{selectedEndEventRequest.accountNumber}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Admin Note - Horizontal Rectangle */}
+              {selectedEndEventRequest.adminNote && (
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Ghi chú từ quản trị viên</p>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg">{selectedEndEventRequest.adminNote}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Evidence Images - Horizontal Rectangle */}
+              {selectedEndEventRequest.evidenceImages && selectedEndEventRequest.evidenceImages.length > 0 && (
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Hình ảnh bằng chứng</p>
+                  </div>
+                  <div className="mt-3">
+                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+                      {selectedEndEventRequest.evidenceImages.map((image, index) => (
+                        <div key={index} className="aspect-square overflow-hidden rounded-lg border border-gray-200">
+                          <img
+                            src={image}
+                            alt={`Evidence ${index + 1}`}
+                            className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => {
+                              setSelectedImage(image);
+                              setIsImageModalOpen(true);
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Lightbox Modal */}
+      <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
+          <div className="relative">
+            <img 
+              src={selectedImage} 
+              alt="Enlarged evidence" 
+              className="w-full h-full object-contain max-h-[80vh]"
+            />
+            <button
+              onClick={() => setIsImageModalOpen(false)}
+              className="absolute top-2 right-2 bg-black bg-opacity-50 text-white rounded-full p-2 hover:bg-opacity-75 transition-all"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
         </DialogContent>
       </Dialog>
