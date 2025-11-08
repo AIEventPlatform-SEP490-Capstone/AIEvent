@@ -108,5 +108,40 @@ namespace AIEvent.API.Controllers
                 SuccessCodes.Deleted,
                 "Ban user successfully"));
         }
+
+        [HttpPatch("unban/{id}")]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<ActionResult<SuccessResponse<object>>> UnBanUser(string id)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _userService.UnBanUserAsync(userId, id);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Deleted,
+                "UnBan user successfully"));
+        }
+
+        [HttpGet("banned")]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<UserResponse>>>> GetAllUsersBanned(string? email, string? name, string? role,
+                                                                                    [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            var result = await _userService.GetAllUsersBannedAsync(pageNumber, pageSize, email, name, role);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<UserResponse>>.SuccessResult(
+                result.Value!,
+                message: "Users retrieved successfully"));
+        }
     }
 }
