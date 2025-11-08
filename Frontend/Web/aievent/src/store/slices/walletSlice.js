@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { walletAPI } from "../../api/walletAPI";
+import { logout } from "./authSlice";
 
 export const fetchUserWallet = createAsyncThunk(
   "wallet/fetchUserWallet",
@@ -123,6 +124,45 @@ const walletSlice = createSlice({
       .addCase(createTopupPayment.rejected, (state, action) => {
         state.isTopupLoading = false;
         state.topupError = action.payload;
+      })
+      // Reset wallet when user logs out
+      .addCase(logout.fulfilled, (state) => {
+        state.wallet = null;
+        state.transactions = {
+          items: [],
+          totalItems: 0,
+          currentPage: 1,
+          totalPages: 1,
+          pageSize: 5,
+          hasPreviousPage: false,
+          hasNextPage: false,
+        };
+        state.topupPayment = null;
+        state.isLoading = false;
+        state.isTransactionsLoading = false;
+        state.isTopupLoading = false;
+        state.error = null;
+        state.transactionsError = null;
+        state.topupError = null;
+      })
+      .addCase(logout.rejected, (state) => {
+        state.wallet = null;
+        state.transactions = {
+          items: [],
+          totalItems: 0,
+          currentPage: 1,
+          totalPages: 1,
+          pageSize: 5,
+          hasPreviousPage: false,
+          hasNextPage: false,
+        };
+        state.topupPayment = null;
+        state.isLoading = false;
+        state.isTransactionsLoading = false;
+        state.isTopupLoading = false;
+        state.error = null;
+        state.transactionsError = null;
+        state.topupError = null;
       });
   },
 });

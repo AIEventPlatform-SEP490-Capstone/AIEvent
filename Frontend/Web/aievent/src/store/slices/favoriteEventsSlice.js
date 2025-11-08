@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { favoriteEventAPI } from '../../api/favoriteEventAPI';
+import { logout } from './authSlice';
 
 // Async thunks
 export const fetchFavoriteEvents = createAsyncThunk(
@@ -110,6 +111,17 @@ const favoriteEventsSlice = createSlice({
       .addCase(removeFavoriteEvent.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      // Reset favorite events when user logs out
+      .addCase(logout.fulfilled, (state) => {
+        state.items = [];
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(logout.rejected, (state) => {
+        state.items = [];
+        state.loading = false;
+        state.error = null;
       });
   },
 });

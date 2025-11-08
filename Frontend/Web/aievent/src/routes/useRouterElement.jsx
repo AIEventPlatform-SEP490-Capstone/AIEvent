@@ -36,6 +36,7 @@ import SearchPage from "../pages/Search/SearchPage";
 import FavoriteEventsPage from "../pages/User/FavoriteEventsPage";
 import OrganizerApprovalListPage from "../pages/Admin/OrganizerApprovalListPage";
 import OrganizerApprovalDetailPage from "../pages/Admin/OrganizerApprovalDetailPage";
+import FriendDetailPage from "../pages/User/FriendDetailPage";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -49,6 +50,14 @@ export default function useRouterElement() {
         { path: "timeline", element: <TimelinePage /> },
         { path: "friends", element: <div>Friends Page</div> },
         { path: "friends/search", element: <div>Friend Search Page</div> },
+        {
+          path: "friend/:friendId",
+          element: (
+            <ProtectedRoute>
+              <FriendDetailPage />
+            </ProtectedRoute>
+          ),
+        },
         {
           path: "favorites",
           element: (
