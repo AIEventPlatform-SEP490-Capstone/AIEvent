@@ -221,7 +221,7 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
@@ -270,7 +270,7 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
@@ -306,7 +306,7 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
@@ -343,7 +343,7 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
@@ -403,7 +403,7 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
@@ -436,7 +436,7 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
@@ -469,7 +469,7 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
@@ -502,7 +502,7 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
@@ -535,7 +535,7 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
@@ -568,7 +568,7 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
@@ -601,7 +601,7 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
@@ -648,7 +648,7 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 IsEmailNotificationEnabled = true,
@@ -681,7 +681,7 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 IsEmailNotificationEnabled = true,
@@ -714,7 +714,7 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,

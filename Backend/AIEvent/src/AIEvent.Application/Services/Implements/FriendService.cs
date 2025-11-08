@@ -35,13 +35,14 @@ namespace AIEvent.Application.Services.Implements
 
                 var existingFriendship = await _unitOfWork.FriendshipRepository.Query()
                     .Where(f =>
-                        (f.SenderId == id && f.ReceiverId == receiverId) ||
-                        (f.SenderId == receiverId && f.ReceiverId == id))
+                        ((f.SenderId == id && f.ReceiverId == receiverId) ||
+                        (f.SenderId == receiverId && f.ReceiverId == id)) && 
+                        !f.IsDeleted)
                     .AsNoTracking()
                     .Select(f => new { f.Status })
                     .FirstOrDefaultAsync();
 
-                if (existingFriendship != null)
+                if (existingFriendship != null && existingFriendship.Status != FriendshipStatus.Rejected)
                 {
                     return existingFriendship.Status switch
                     {
@@ -100,15 +101,8 @@ namespace AIEvent.Application.Services.Implements
                 if (friendship.Status != FriendshipStatus.Pending)
                     return ErrorResponse.FailureResult("This friend request has already been processed", ErrorCodes.InvalidInput);
 
-                if (!isAccepted)
-                {
-                    await _unitOfWork.FriendshipRepository.DeleteAsync(friendship);
-                    await _unitOfWork.SaveChangesAsync();
+                friendship.Status = isAccepted ? FriendshipStatus.Accepted : FriendshipStatus.Rejected;
 
-                    return Result.Success();
-                }
-
-                friendship.Status = FriendshipStatus.Accepted;
                 await _unitOfWork.FriendshipRepository.UpdateAsync(friendship);
                 await _unitOfWork.SaveChangesAsync();
 
@@ -151,8 +145,9 @@ namespace AIEvent.Application.Services.Implements
                 var baseQuery = _unitOfWork.FriendshipRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(f => f.Status == FriendshipStatus.Accepted &&
-                               (f.SenderId == userId || f.ReceiverId == userId));
+                    .Where(f => f.Status == FriendshipStatus.Accepted && 
+                               (f.SenderId == userId || f.ReceiverId == userId) &&
+                               !f.IsDeleted);
 
                 int totalCount = await baseQuery.CountAsync();
 
@@ -215,7 +210,7 @@ namespace AIEvent.Application.Services.Implements
                     .AsNoTracking()
                     .Where(f =>
                         (f.SenderId == userId || f.ReceiverId == userId) &&
-                        f.Status == FriendshipStatus.Accepted)
+                        f.Status == FriendshipStatus.Accepted && !f.IsDeleted)
                     .Select(f => f.SenderId == userId ? f.ReceiverId : f.SenderId)
                     .ToListAsync();
 
@@ -267,7 +262,7 @@ namespace AIEvent.Application.Services.Implements
                 .FirstOrDefaultAsync(f =>
                     ((f.SenderId == userId && f.ReceiverId == friendId) ||
                      (f.SenderId == friendId && f.ReceiverId == userId)) &&
-                    f.Status == FriendshipStatus.Accepted);
+                    f.Status == FriendshipStatus.Accepted && !f.IsDeleted);
 
             if (friendship == null)
             {

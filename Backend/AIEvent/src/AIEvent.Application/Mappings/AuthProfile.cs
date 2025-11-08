@@ -15,10 +15,10 @@ namespace AIEvent.Application.Mappings
             CreateMap<RegisterRequest, User>()
                 .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
                 .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true))
-                .ForMember(dest => dest.InterestedCitiesJson,
+                .ForMember(dest => dest.InterestedDistrictsJson,
                     opt => opt.MapFrom(src =>
-                        src.InterestedCities != null
-                            ? JsonConvert.SerializeObject(src.InterestedCities)
+                        src.InterestedDistricts != null
+                            ? JsonConvert.SerializeObject(src.InterestedDistricts)
                             : null))
                 .ForMember(dest => dest.UserInterestsJson,
                     opt => opt.MapFrom(src =>

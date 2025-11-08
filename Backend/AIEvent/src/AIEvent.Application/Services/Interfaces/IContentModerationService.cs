@@ -1,5 +1,4 @@
-﻿using AIEvent.Application.DTOs.AIRecommendation;
-using AIEvent.Application.Helpers;
+﻿using AIEvent.Application.Helpers;
 
 namespace AIEvent.Application.Services.Interfaces
 {

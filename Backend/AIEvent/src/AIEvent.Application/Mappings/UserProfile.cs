@@ -14,10 +14,10 @@ namespace AIEvent.Application.Mappings
             CreateMap<User, UserResponse>();
 
             CreateMap<User, UserDetailResponse>()
-                .ForMember(dest => dest.InterestedCities,
+                .ForMember(dest => dest.InterestedDistricts,
                     opt => opt.MapFrom(src =>
-                        !string.IsNullOrEmpty(src.InterestedCitiesJson)
-                            ? JsonConvert.DeserializeObject<List<InterestedDistricts>>(src.InterestedCitiesJson)
+                        !string.IsNullOrEmpty(src.InterestedDistrictsJson)
+                            ? JsonConvert.DeserializeObject<List<InterestedDistricts>>(src.InterestedDistrictsJson)
                             : new List<InterestedDistricts>()))
                 .ForMember(dest => dest.UserInterests,
                     opt => opt.MapFrom(src =>
@@ -43,10 +43,10 @@ namespace AIEvent.Application.Mappings
             CreateMap<UpdateUserRequest, User>()
                 .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true))
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
-                .ForMember(dest => dest.InterestedCitiesJson,
+                .ForMember(dest => dest.InterestedDistrictsJson,
                     opt => opt.MapFrom(src =>
-                        src.InterestedCities != null
-                            ? JsonConvert.SerializeObject(src.InterestedCities)
+                        src.InterestedDistricts != null
+                            ? JsonConvert.SerializeObject(src.InterestedDistricts)
                             : null))
                 .ForMember(dest => dest.UserInterestsJson,
                     opt => opt.MapFrom(src =>

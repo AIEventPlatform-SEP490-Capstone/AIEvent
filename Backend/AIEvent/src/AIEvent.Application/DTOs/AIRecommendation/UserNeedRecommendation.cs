@@ -8,7 +8,7 @@ namespace AIEvent.Application.DTOs.AIRecommendation
         public string? Latitude { get; set; }
         public string? Longitude { get; set; }
         public BudgetOption? BudgetOption { get; set; }
-        public string? InterestedCities { get; set; }
+        public string? InterestedDistricts { get; set; }
         public string? UserInterests { get; set; }
         public string? FavoriteEventTypes { get; set; }
         public string? Occupation { get; set; }
