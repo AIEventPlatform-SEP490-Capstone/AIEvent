@@ -299,7 +299,7 @@ namespace AIEvent.API.Controllers
 
         [HttpPut("invitations/{invitationId}/confirm")]
         [Authorize]
-        public async Task<IActionResult> ConfirmInvitation(Guid invitationId, [FromBody] ConfirmInvitationRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> ConfirmInvitation(Guid invitationId, [FromBody] ConfirmInvitationRequest request)
         {
             var userId = User.GetRequiredUserId();
 

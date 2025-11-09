@@ -818,7 +818,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Verify(x => x.OrganizerProfileRepository.UpdateAsync(It.Is<OrganizerProfile>(p => p.Id == profile.Id && p.Status == OrganizerProfileStatus.Approved && p.ConfirmBy == userId.ToString())), Times.Once());
             _mockUnitOfWork.Verify(x => x.RoleRepository.Query(It.IsAny<bool>()), Times.Once());
             _mockHasherHelper.Verify(x => x.Hash(It.IsAny<string>(), It.IsAny<int>()), Times.Once());
-            _mockUnitOfWork.Verify(x => x.UserRepository.AddAsync(It.Is<User>(u => u.Email == profile.ContactEmail && u.LinkedUserId == profile.UserId && u.RoleId == role.Id)), Times.Once());
+            _mockUnitOfWork.Verify(x => x.UserRepository.AddAsync(It.Is<User>(u => u.Email == profile.ContactEmail && u.RoleId == role.Id)), Times.Once());
             _mockEmailService.Verify(x => x.SendEmailAsync(profile.ContactEmail!, It.IsAny<MimeMessage>()), Times.Once());
         }
 

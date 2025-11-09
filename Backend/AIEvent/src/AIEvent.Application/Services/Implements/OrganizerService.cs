@@ -171,7 +171,6 @@ namespace AIEvent.Application.Services.Implements
                     if (userRegister != null && userRegister.Email?.ToLower() == profile.ContactEmail?.ToLower())
                     {
                         userRegister.RoleId = role.Id;
-                        userRegister.LinkedUserId = profile.UserId;
                         await _unitOfWork.UserRepository.UpdateAsync(userRegister);
                         var sb = new StringBuilder()
                             .AppendLine($"<p>Xin chào {profile.ContactName},</p>")
@@ -195,7 +194,6 @@ namespace AIEvent.Application.Services.Implements
                             RoleId = role.Id,
                             District = profile.Address,
                             IsActive = true,
-                            LinkedUserId = profile.UserId,
                             PhoneNumber = profile.ContactPhone,
                             Wallet = new Wallet
                             {
@@ -205,6 +203,8 @@ namespace AIEvent.Application.Services.Implements
                         var plainPassword = GenerateSecureRandomPassword();
                         newOrganizerUser.PasswordHash = _hasherHelper.Hash(plainPassword);
                         await _unitOfWork.UserRepository.AddAsync(newOrganizerUser);
+                        await _unitOfWork.SaveChangesAsync();
+                        profile.UserId = newOrganizerUser.Id;
 
                         var sb = new StringBuilder()
                             .AppendLine($"<p>Xin chào {profile.ContactName},</p>")

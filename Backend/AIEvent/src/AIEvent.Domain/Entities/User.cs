@@ -40,10 +40,6 @@ namespace AIEvent.Domain.Entities
         public string? LanguagesJson { get; set; }
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 
-        public Guid? LinkedUserId { get; set; }
-        public User? LinkedUser { get; set; }
-        public ICollection<User> CreatedOrganizerAccounts { get; set; } = new List<User>();
-
         public OrganizerProfile? OrganizerProfile { get; set; }
         public Wallet Wallet { get; set; } = default!;
         public Role Role { get; set; } = default!;
