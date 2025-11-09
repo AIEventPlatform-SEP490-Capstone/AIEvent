@@ -1,4 +1,5 @@
 ﻿using AIEvent.Application.DTOs.Common;
+using AIEvent.Application.DTOs.InviteFriend;
 using AIEvent.Application.DTOs.RevenueReport;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
@@ -8,7 +9,9 @@ using AIEvent.Infrastructure.Repositories.Interfaces;
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using MimeKit;
 using PayOS.Models.V1.Payouts;
+using System.Text;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -362,5 +365,65 @@ namespace AIEvent.Application.Services.Implements
             }
         }
 
+        public async Task EnqueueInviteEmail(InviteFriendEmail request)
+        {
+            BackgroundJob.Enqueue(() => ProcessInviteEmailAsync(request));
+            await Task.CompletedTask;
+        }
+
+        [AutomaticRetry(Attempts = 3)]
+        public async Task ProcessInviteEmailAsync(InviteFriendEmail request)
+        {
+            var sb = new StringBuilder();
+            if (!string.IsNullOrEmpty(request.EventFirstImage))
+                sb.AppendLine($"<img src='{request.EventFirstImage}' alt='Event' style='width:100%;max-width:600px;border-radius:8px;margin-bottom:20px;'/>");
+
+            sb.AppendLine($"<p>Xin chào {request.InvitedUserFullName},</p>")
+              .AppendLine($"<p>Bạn được <strong>{request.InviterFullName}</strong> mời tham gia sự kiện <b>{request.EventTitle}</b>.</p>")
+              .AppendLine($"<p><em>\"{request.Message}\"</em></p>")
+              .AppendLine("<p>Nhấn để xem chi tiết:</p>")
+              .AppendLine($"<p><a href=\"https/events/{request.EventId}\">Xem sự kiện</a></p>")
+              .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
+
+            var message = new MimeMessage
+            {
+                Subject = $"Mời tham gia: {request.EventTitle}",
+                Body = new TextPart("html") { Text = sb.ToString() }
+            };
+
+            await _emailService.SendEmailAsync(request.InvitedUserEmail!, message);
+        }
+
+        public async Task EnqueueConfirmEmail(ConfirmInvitationEmail request) 
+        {
+            BackgroundJob.Enqueue(() => ProcessConfirmEmailInvationAsync(request));
+            await Task.CompletedTask;
+        }
+
+        [AutomaticRetry(Attempts = 3)]
+        public async Task ProcessConfirmEmailInvationAsync(ConfirmInvitationEmail request)
+        {
+            var action = request.Status == ConfirmStatus.Approved ? "chấp nhận" : "từ chối";
+
+            var sb = new StringBuilder();
+
+            if (!string.IsNullOrEmpty(request.EventFirstImage))
+                sb.AppendLine($"<img src='{request.EventFirstImage}' alt='Event' style='width:100%;max-width:600px;border-radius:8px;margin-bottom:20px;'/>");
+
+            sb.AppendLine($"<p>Xin chào {request.InviterFullName},</p>")
+              .AppendLine($"<p><strong>{request.InvitedUserFullName}</strong> đã <strong>{action}</strong> lời mời tham gia sự kiện <b>{request.EventTitle}</b>.</p>")
+              .AppendLine($"<p><em>\"{request.Message}\"</em></p>")
+              .AppendLine($"<p><a href=\"https/events/{request.EventId}\">Xem sự kiện</a></p>")
+              .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
+
+            var message = new MimeMessage
+            {
+                Subject = $"[Cập nhật] {request.InvitedUserFullName} đã {action} lời mời",
+                Body = new TextPart("html") { Text = sb.ToString() }
+            };
+
+            await _emailService.SendEmailAsync(request.InviterEmail!, message);
+        }
+
     }
-}
+} 

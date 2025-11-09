@@ -19,13 +19,13 @@ namespace AIEvent.Infrastructure.Repositories.Interfaces
         IGenericRepository<Booking> BookingRepository { get; }
         IGenericRepository<Wallet> WalletRepository { get; }
         IGenericRepository<WalletTransaction> WalletTransactionRepository { get; }
-        IGenericRepository<PaymentTransaction> PaymentTransactionRepository { get; }
-        IGenericRepository<WithdrawRequest> WithdrawRequestRepository { get; }
+        IGenericRepository<PaymentTransaction> PaymentTransactionRepository { get; } 
         IGenericRepository<PaymentInformation> PaymentInformationRepository { get; }
         IGenericRepository<EndEventRequest> EndEventRequestRepository { get; }
         IGenericRepository<RevenueReport> RevenueReportRepository { get; }
         IGenericRepository<Friendship> FriendshipRepository { get; }
         IGenericRepository<Rating> RatingRepository { get; }
+        IGenericRepository<EventInvitation> EventInvitationRepository { get; }
         void EnableSoftDelete();
         void DisableSoftDelete();
         Task<int> SaveChangesAsync();
