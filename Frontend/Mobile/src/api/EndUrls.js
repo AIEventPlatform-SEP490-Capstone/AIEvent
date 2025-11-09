@@ -49,6 +49,8 @@ const EndUrls = {
   ADD_FRIEND: (userId) => `${BASE_URL}/friend/${userId}`,
   DELETE_FRIEND: (friendId) => `${BASE_URL}/friend/${friendId}`,
   FRIEND_PROFILE: (friendId) => `${BASE_URL}/friend/${friendId}`,
+  BLOCK_FRIEND: (friendId) => `${BASE_URL}/friend/${friendId}/block`,
+  UNBLOCK_FRIEND: (friendId) => `${BASE_URL}/friend/${friendId}/unblock`,
   
   // Booking (used in timeline screen)
   BOOKED_EVENTS: `${BASE_URL}/booking/event`,

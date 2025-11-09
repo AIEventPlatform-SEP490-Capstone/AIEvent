@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Calendar, ArrowLeft, MapPin, UserMinus, Briefcase, Target, Globe, Linkedin, Github, Twitter, Instagram, Facebook, Sparkles, Mail, UserCircle, Clock, MoreHorizontal } from 'lucide-react';
+import { Calendar, ArrowLeft, MapPin, UserMinus, Briefcase, Target, Globe, Linkedin, Github, Twitter, Instagram, Facebook, Sparkles, Mail, UserCircle, Clock, MoreHorizontal, Ban } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import ProfileHeader from '../../components/Profile/ProfileHeader';
@@ -29,6 +29,8 @@ const FriendDetailPage = () => {
   const [activeTab, setActiveTab] = useState('info');
   const [unfriendDialogOpen, setUnfriendDialogOpen] = useState(false);
   const [isUnfriending, setIsUnfriending] = useState(false);
+  const [blockDialogOpen, setBlockDialogOpen] = useState(false);
+  const [isBlocking, setIsBlocking] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -186,6 +188,12 @@ const FriendDetailPage = () => {
     setUnfriendDialogOpen(true);
   };
 
+  // Handle block
+  const handleBlock = () => {
+    setMenuOpen(false);
+    setBlockDialogOpen(true);
+  };
+
   // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -264,6 +272,68 @@ const FriendDetailPage = () => {
     }
   };
 
+  const confirmBlock = async () => {
+    if (!friendId) {
+      showError('Không tìm thấy ID của bạn bè. Vui lòng thử lại.');
+      setBlockDialogOpen(false);
+      return;
+    }
+
+    // Validate GUID format
+    if (!isValidGuid(friendId)) {
+      console.error('Invalid GUID format:', friendId);
+      showError('ID bạn bè không hợp lệ. Vui lòng làm mới trang và thử lại.');
+      setBlockDialogOpen(false);
+      return;
+    }
+
+    setIsBlocking(true);
+    try {
+      const response = await friendAPI.blockFriend(friendId);
+      
+      const statusCode = response?.statusCode;
+      const isSuccess = statusCode === "AIE20000" || 
+                       statusCode === "AIE20100" ||
+                       statusCode === "200" || 
+                       statusCode === 200;
+      
+      if (isSuccess) {
+        showSuccess(`Đã chặn ${profileData.name || 'người dùng này'}`);
+        // Navigate to profile page after successful block
+        setTimeout(() => {
+          navigate(PATH.PROFILE);
+        }, 1500);
+      } else {
+        const errorMessage = response?.message || 'Không thể chặn bạn bè. Vui lòng thử lại.';
+        if (statusCode === "AIE40001") {
+          showError('ID bạn bè không hợp lệ. Vui lòng làm mới trang và thử lại.');
+        } else {
+          showError(errorMessage);
+        }
+      }
+    } catch (error) {
+      console.error('Error blocking friend:', error);
+      const errorData = error.response?.data || {};
+      const errorStatusCode = errorData.statusCode;
+      const errorMessage = errorData.message || error.message || 'Đã xảy ra lỗi khi chặn bạn bè.';
+      
+      // Handle success responses that might be in error format
+      if (error.response?.status === 200 || errorStatusCode === "AIE20000" || errorStatusCode === "AIE20100") {
+        showSuccess(`Đã chặn ${profileData.name || 'người dùng này'}`);
+        setTimeout(() => {
+          navigate(PATH.PROFILE);
+        }, 500);
+      } else if (errorStatusCode === "AIE40001") {
+        showError('ID bạn bè không hợp lệ. Vui lòng làm mới trang và thử lại.');
+      } else {
+        showError(errorMessage);
+      }
+    } finally {
+      setIsBlocking(false);
+      setBlockDialogOpen(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 flex items-center justify-center">
@@ -317,6 +387,16 @@ const FriendDetailPage = () => {
 
               {menuOpen && (
                 <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50 py-1">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleBlock();
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors text-orange-600"
+                  >
+                    <Ban className="w-4 h-4" />
+                    <span>Chặn</span>
+                  </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -598,6 +678,31 @@ const FriendDetailPage = () => {
               className="bg-red-500 hover:bg-red-600 text-white border-2 border-red-500"
             >
               {isUnfriending ? 'Đang xử lý...' : 'Xác nhận hủy kết bạn'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Block Confirmation Dialog */}
+      <AlertDialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận chặn người dùng</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn chặn <strong>{profileData.name || 'người dùng này'}</strong>?
+              <br />
+              <br />
+              Khi chặn, bạn sẽ không thể nhìn thấy hoạt động của người này và họ cũng không thể nhìn thấy hoạt động của bạn.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBlocking}>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmBlock}
+              disabled={isBlocking}
+              className="bg-orange-500 hover:bg-orange-600 text-white border-2 border-orange-500"
+            >
+              {isBlocking ? 'Đang xử lý...' : 'Xác nhận chặn'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

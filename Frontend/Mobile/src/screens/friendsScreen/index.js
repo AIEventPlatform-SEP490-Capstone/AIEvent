@@ -26,6 +26,7 @@ const FriendsScreen = ({ navigation }) => {
   const [friends, setFriends] = useState([]);
   const [isLoadingFriends, setIsLoadingFriends] = useState(false);
   const [friendsError, setFriendsError] = useState(null);
+  const [friendsStatusFilter, setFriendsStatusFilter] = useState('Accepted'); // Mặc định là "Đã kết bạn"
   const [friendsPagination, setFriendsPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -60,6 +61,9 @@ const FriendsScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedFriendForMenu, setSelectedFriendForMenu] = useState(null);
   const [showActionMenu, setShowActionMenu] = useState(false);
+  const [showFilterPicker, setShowFilterPicker] = useState(false);
+  const [isBlocking, setIsBlocking] = useState(false);
+  const [isUnblocking, setIsUnblocking] = useState(false);
 
   // Fetch friends
   const fetchFriends = useCallback(async (pageNumber = 1) => {
@@ -67,7 +71,11 @@ const FriendsScreen = ({ navigation }) => {
     setFriendsError(null);
 
     try {
-      const result = await FriendService.getFriends({ pageNumber, pageSize: 10 });
+      const result = await FriendService.getFriends({ 
+        pageNumber, 
+        pageSize: 10,
+        status: friendsStatusFilter 
+      });
       if (result.success && result.data) {
         setFriends(result.data.items || []);
         setFriendsPagination({
@@ -85,7 +93,7 @@ const FriendsScreen = ({ navigation }) => {
     } finally {
       setIsLoadingFriends(false);
     }
-  }, []);
+  }, [friendsStatusFilter]);
 
   // Search friends
   const handleSearchFriends = useCallback(async (pageNumber = 1) => {
@@ -297,7 +305,7 @@ const FriendsScreen = ({ navigation }) => {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     if (activeTab === 'friends') {
-      await fetchFriends(1);
+      await fetchFriends(friendsPagination.currentPage);
     } else if (activeTab === 'search') {
       if (searchKeyword.trim()) {
         await handleSearchFriends(1);
@@ -306,7 +314,7 @@ const FriendsScreen = ({ navigation }) => {
       await fetchFriendRequests(1);
     }
     setRefreshing(false);
-  }, [activeTab, fetchFriends, handleSearchFriends, fetchFriendRequests, searchKeyword]);
+  }, [activeTab, fetchFriends, handleSearchFriends, fetchFriendRequests, searchKeyword, friendsPagination.currentPage]);
 
   // Initial load for friend requests to update badge immediately
   useEffect(() => {
@@ -322,6 +330,13 @@ const FriendsScreen = ({ navigation }) => {
     }
   }, [activeTab, fetchFriends, fetchFriendRequests]);
 
+  // Reload when filter changes
+  useEffect(() => {
+    if (activeTab === 'friends') {
+      fetchFriends(1);
+    }
+  }, [friendsStatusFilter]);
+
   // Handle menu actions
   const handleOpenMenu = (friend) => {
     setSelectedFriendForMenu(friend);
@@ -336,6 +351,12 @@ const FriendsScreen = ({ navigation }) => {
   const handleViewProfile = () => {
     if (selectedFriendForMenu) {
       const friendId = selectedFriendForMenu.id || selectedFriendForMenu.friendId;
+      // Không cho phép xem profile nếu đang filter theo Blocked
+      if (friendsStatusFilter === 'Blocked') {
+        Alert.alert('Thông báo', 'Không thể xem profile của người dùng đã bị chặn');
+        handleCloseMenu();
+        return;
+      }
       handleCloseMenu();
       navigation.navigate('FriendDetailScreen', { friendId });
     }
@@ -350,10 +371,96 @@ const FriendsScreen = ({ navigation }) => {
     }
   };
 
+  const handleBlock = () => {
+    if (selectedFriendForMenu) {
+      const friendId = selectedFriendForMenu.id || selectedFriendForMenu.friendId;
+      const friendName = selectedFriendForMenu.friendName || selectedFriendForMenu.fullName || 'Người dùng';
+      handleCloseMenu();
+      
+      Alert.alert(
+        'Xác nhận chặn người dùng',
+        `Bạn có chắc chắn muốn chặn ${friendName}?\n\nKhi chặn, bạn sẽ không thể nhìn thấy hoạt động của người này và họ cũng không thể nhìn thấy hoạt động của bạn.`,
+        [
+          { text: 'Hủy', style: 'cancel' },
+          {
+            text: 'Xác nhận chặn',
+            style: 'destructive',
+            onPress: async () => {
+              setIsBlocking(true);
+              try {
+                const result = await FriendService.blockFriend(friendId);
+                if (result.success) {
+                  Alert.alert('Thành công', `Đã chặn ${friendName}`);
+                  setFriends(prev => prev.filter(f => (f.id || f.friendId) !== friendId));
+                  setFriendsPagination(prev => ({
+                    ...prev,
+                    totalItems: Math.max(0, prev.totalItems - 1)
+                  }));
+                  if (friends.length === 1 && friendsPagination.currentPage > 1) {
+                    fetchFriends(friendsPagination.currentPage - 1);
+                  }
+                } else {
+                  Alert.alert('Lỗi', result.message || 'Không thể chặn bạn bè');
+                }
+              } catch (error) {
+                Alert.alert('Lỗi', 'Đã xảy ra lỗi khi chặn bạn bè');
+              } finally {
+                setIsBlocking(false);
+              }
+            }
+          }
+        ]
+      );
+    }
+  };
+
+  const handleUnblock = () => {
+    if (selectedFriendForMenu) {
+      const friendId = selectedFriendForMenu.id || selectedFriendForMenu.friendId;
+      const friendName = selectedFriendForMenu.friendName || selectedFriendForMenu.fullName || 'Người dùng';
+      handleCloseMenu();
+      
+      Alert.alert(
+        'Xác nhận gỡ chặn người dùng',
+        `Bạn có chắc chắn muốn gỡ chặn ${friendName}?\n\nSau khi gỡ chặn, bạn và người này có thể nhìn thấy hoạt động của nhau trở lại.`,
+        [
+          { text: 'Hủy', style: 'cancel' },
+          {
+            text: 'Xác nhận gỡ chặn',
+            onPress: async () => {
+              setIsUnblocking(true);
+              try {
+                const result = await FriendService.unblockFriend(friendId);
+                if (result.success) {
+                  Alert.alert('Thành công', `Đã gỡ chặn ${friendName}`);
+                  setFriends(prev => prev.filter(f => (f.id || f.friendId) !== friendId));
+                  setFriendsPagination(prev => ({
+                    ...prev,
+                    totalItems: Math.max(0, prev.totalItems - 1)
+                  }));
+                  if (friends.length === 1 && friendsPagination.currentPage > 1) {
+                    fetchFriends(friendsPagination.currentPage - 1);
+                  }
+                } else {
+                  Alert.alert('Lỗi', result.message || 'Không thể gỡ chặn bạn bè');
+                }
+              } catch (error) {
+                Alert.alert('Lỗi', 'Đã xảy ra lỗi khi gỡ chặn bạn bè');
+              } finally {
+                setIsUnblocking(false);
+              }
+            }
+          }
+        ]
+      );
+    }
+  };
+
   // Render friend card
   const renderFriendCard = (friend, isSearchResult = false) => {
     const friendData = friend;
     const isFriend = !isSearchResult;
+    const isBlocked = friendsStatusFilter === 'Blocked'; // Check if current filter is Blocked
     const friendId = friendData.id || friendData.friendId;
     const friendName = friendData.friendName || friendData.fullName || 'Người dùng';
     const friendImage = friendData.image || friendData.avatarImgUrl;
@@ -366,15 +473,27 @@ const FriendsScreen = ({ navigation }) => {
           <TouchableOpacity
             style={styles.friendAvatarContainer}
             onPress={() => {
-              if (isFriend) {
+              if (isFriend && !isBlocked) {
                 navigation.navigate('FriendDetailScreen', { friendId });
+              } else if (isBlocked) {
+                Alert.alert('Thông báo', 'Không thể xem profile của người dùng đã bị chặn');
               }
             }}
+            disabled={isBlocked}
           >
             {friendImage ? (
-              <Image source={{ uri: friendImage }} style={styles.friendAvatar} />
+              <Image 
+                source={{ uri: friendImage }} 
+                style={[
+                  styles.friendAvatar,
+                  isBlocked && { opacity: 0.6 }
+                ]} 
+              />
             ) : (
-              <View style={styles.friendAvatarPlaceholder}>
+              <View style={[
+                styles.friendAvatarPlaceholder,
+                isBlocked && { opacity: 0.6 }
+              ]}>
                 <CustomText variant="h3" color="white">👤</CustomText>
               </View>
             )}
@@ -384,12 +503,22 @@ const FriendsScreen = ({ navigation }) => {
           <TouchableOpacity
             style={styles.friendInfo}
             onPress={() => {
-              if (isFriend) {
+              if (isFriend && !isBlocked) {
                 navigation.navigate('FriendDetailScreen', { friendId });
+              } else if (isBlocked) {
+                Alert.alert('Thông báo', 'Không thể xem profile của người dùng đã bị chặn');
               }
             }}
+            disabled={isBlocked}
           >
-            <CustomText variant="h3" color="primary" style={styles.friendName}>
+            <CustomText 
+              variant="h3" 
+              color={isBlocked ? "secondary" : "primary"} 
+              style={[
+                styles.friendName,
+                isBlocked && { opacity: 0.6 }
+              ]}
+            >
               {friendName}
             </CustomText>
             {isFriend && (
@@ -614,6 +743,24 @@ const FriendsScreen = ({ navigation }) => {
         {/* Friends Tab */}
         {activeTab === 'friends' && (
           <View style={styles.content}>
+            {/* Status Filter */}
+            <View style={styles.filterContainer}>
+              <CustomText variant="body" color="primary" style={styles.filterLabel}>
+                Lọc theo trạng thái:
+              </CustomText>
+              <TouchableOpacity
+                style={styles.filterButton}
+                onPress={() => setShowFilterPicker(true)}
+              >
+                <CustomText variant="body" color="primary" style={styles.filterButtonText}>
+                  {friendsStatusFilter === 'Accepted' ? 'Đã kết bạn' :
+                   friendsStatusFilter === 'Blocked' ? 'Block' :
+                   friendsStatusFilter === 'Canceled' ? 'Cancel' : 'Đã kết bạn'}
+                </CustomText>
+                <CustomText variant="h3" color="secondary" style={styles.filterIcon}>▼</CustomText>
+              </TouchableOpacity>
+            </View>
+
             {isLoadingFriends ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={Colors.primary} />
@@ -926,21 +1073,117 @@ const FriendsScreen = ({ navigation }) => {
           onPress={handleCloseMenu}
         >
           <View style={styles.menuContainer} onStartShouldSetResponder={() => true}>
+            {friendsStatusFilter !== 'Blocked' && (
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={handleViewProfile}
+              >
+                <CustomText variant="body" color="primary" style={styles.menuItemText}>
+                  Hồ sơ
+                </CustomText>
+              </TouchableOpacity>
+            )}
+            {friendsStatusFilter === 'Blocked' ? (
+              <>
+                {friendsStatusFilter === 'Blocked' && (
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={handleUnblock}
+                    disabled={isUnblocking}
+                  >
+                    <CustomText variant="body" color="success" style={styles.menuItemText}>
+                      {isUnblocking ? 'Đang xử lý...' : '🔓 Gỡ chặn'}
+                    </CustomText>
+                  </TouchableOpacity>
+                )}
+              </>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={handleBlock}
+                  disabled={isBlocking}
+                >
+                  <CustomText variant="body" color="warning" style={styles.menuItemText}>
+                    {isBlocking ? 'Đang xử lý...' : '🚫 Chặn'}
+                  </CustomText>
+                </TouchableOpacity>
+                <View style={styles.menuDivider} />
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={handleUnfriend}
+                >
+                  <CustomText variant="body" color="error" style={styles.menuItemText}>
+                    Hủy kết bạn
+                  </CustomText>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Filter Picker Modal */}
+      <Modal
+        visible={showFilterPicker}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowFilterPicker(false)}
+      >
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={() => setShowFilterPicker(false)}
+        >
+          <View style={styles.menuContainer} onStartShouldSetResponder={() => true}>
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={handleViewProfile}
+              onPress={() => {
+                setFriendsStatusFilter('Accepted');
+                setShowFilterPicker(false);
+                setFriendsPagination(prev => ({ ...prev, currentPage: 1 }));
+              }}
             >
-              <CustomText variant="body" color="primary" style={styles.menuItemText}>
-                Hồ sơ
+              <CustomText 
+                variant="body" 
+                color={friendsStatusFilter === 'Accepted' ? 'primary' : 'secondary'} 
+                style={styles.menuItemText}
+              >
+                {friendsStatusFilter === 'Accepted' ? '✓ ' : ''}Đã kết bạn
               </CustomText>
             </TouchableOpacity>
             <View style={styles.menuDivider} />
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={handleUnfriend}
+              onPress={() => {
+                setFriendsStatusFilter('Blocked');
+                setShowFilterPicker(false);
+                setFriendsPagination(prev => ({ ...prev, currentPage: 1 }));
+              }}
             >
-              <CustomText variant="body" color="error" style={styles.menuItemText}>
-                Hủy kết bạn
+              <CustomText 
+                variant="body" 
+                color={friendsStatusFilter === 'Blocked' ? 'primary' : 'secondary'} 
+                style={styles.menuItemText}
+              >
+                {friendsStatusFilter === 'Blocked' ? '✓ ' : ''}Block
+              </CustomText>
+            </TouchableOpacity>
+            <View style={styles.menuDivider} />
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setFriendsStatusFilter('Canceled');
+                setShowFilterPicker(false);
+                setFriendsPagination(prev => ({ ...prev, currentPage: 1 }));
+              }}
+            >
+              <CustomText 
+                variant="body" 
+                color={friendsStatusFilter === 'Canceled' ? 'primary' : 'secondary'} 
+                style={styles.menuItemText}
+              >
+                {friendsStatusFilter === 'Canceled' ? '✓ ' : ''}Cancel
               </CustomText>
             </TouchableOpacity>
           </View>

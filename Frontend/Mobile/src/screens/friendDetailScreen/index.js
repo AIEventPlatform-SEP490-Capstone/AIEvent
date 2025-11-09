@@ -27,6 +27,7 @@ const FriendDetailScreen = ({ route, navigation }) => {
   const [unfriendDialogOpen, setUnfriendDialogOpen] = useState(false);
   const [isUnfriending, setIsUnfriending] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [isBlocking, setIsBlocking] = useState(false);
   
   // Common events pagination state
   const [commonEvents, setCommonEvents] = useState([]);
@@ -228,6 +229,53 @@ const FriendDetailScreen = ({ route, navigation }) => {
   const handleBlockFromMenu = () => {
     handleCloseMenu();
     handleBlock();
+  };
+
+  const handleBlock = () => {
+    Alert.alert(
+      'Xác nhận chặn người dùng',
+      `Bạn có chắc chắn muốn chặn ${profileData.name || 'người dùng này'}?\n\nKhi chặn, bạn sẽ không thể nhìn thấy hoạt động của người này và họ cũng không thể nhìn thấy hoạt động của bạn.`,
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Xác nhận chặn',
+          style: 'destructive',
+          onPress: confirmBlock
+        }
+      ]
+    );
+  };
+
+  const confirmBlock = async () => {
+    if (!friendId) {
+      Alert.alert('Lỗi', 'Không tìm thấy ID của bạn bè. Vui lòng thử lại.');
+      return;
+    }
+
+    setIsBlocking(true);
+    try {
+      const result = await FriendService.blockFriend(friendId);
+      
+      const statusCode = result?.statusCode || result?.data?.statusCode;
+      const isSuccess = statusCode === "AIE20000" || 
+                       statusCode === "AIE20100" ||
+                       statusCode === "200" || 
+                       statusCode === 200;
+      
+      if (isSuccess) {
+        Alert.alert('Thành công', `Đã chặn ${profileData.name || 'người dùng này'}`);
+        setTimeout(() => {
+          navigation.goBack();
+        }, 1500);
+      } else {
+        Alert.alert('Lỗi', result.message || 'Không thể chặn bạn bè. Vui lòng thử lại.');
+      }
+    } catch (error) {
+      console.error('Error blocking friend:', error);
+      Alert.alert('Lỗi', 'Đã xảy ra lỗi khi chặn bạn bè.');
+    } finally {
+      setIsBlocking(false);
+    }
   };
 
   const handleOpenMenu = () => {
@@ -693,10 +741,15 @@ const FriendDetailScreen = ({ route, navigation }) => {
             <TouchableOpacity
               style={styles.menuItem}
               onPress={handleBlockFromMenu}
+              disabled={isBlocking}
             >
-              <CustomText variant="body" color="error" style={styles.menuItemText}>
-                Chặn
-              </CustomText>
+              {isBlocking ? (
+                <ActivityIndicator size="small" color={Colors.warning} />
+              ) : (
+                <CustomText variant="body" color="warning" style={styles.menuItemText}>
+                  🚫 Chặn
+                </CustomText>
+              )}
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
