@@ -363,9 +363,6 @@ namespace AIEvent.Infrastructure.Context
 
                 entity.HasIndex(f => f.SenderId).HasDatabaseName("IX_Friendship_SenderId");
                 entity.HasIndex(f => f.ReceiverId).HasDatabaseName("IX_Friendship_ReceiverId");
-                entity.HasIndex(f => new { f.SenderId, f.ReceiverId })
-                    .IsUnique()
-                    .HasDatabaseName("IX_Friendship_Sender_Receiver");
                 entity.HasIndex(f => f.Status).HasDatabaseName("IX_Friendship_Status");
             });
 

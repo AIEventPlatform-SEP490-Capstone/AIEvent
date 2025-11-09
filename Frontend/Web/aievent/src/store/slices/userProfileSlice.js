@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { userAPI } from "../../api/userAPI";
+import { logout } from "./authSlice";
 
 export const fetchUserProfile = createAsyncThunk(
     "userProfile/fetchUserProfile",
@@ -103,6 +104,21 @@ const userProfileSlice = createSlice({
             .addCase(updateUserProfile.rejected, (state, action) => {
                 state.isUpdating = false;
                 state.updateError = action.payload;
+            })
+            // Reset profile when user logs out
+            .addCase(logout.fulfilled, (state) => {
+                state.profile = null;
+                state.isLoading = false;
+                state.isUpdating = false;
+                state.error = null;
+                state.updateError = null;
+            })
+            .addCase(logout.rejected, (state) => {
+                state.profile = null;
+                state.isLoading = false;
+                state.isUpdating = false;
+                state.error = null;
+                state.updateError = null;
             });
     },
 });

@@ -5,7 +5,7 @@ import Fonts from '../../constants/Fonts';
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FAFAFA',
   },
   scrollView: {
     flex: 1,
@@ -14,8 +14,8 @@ const styles = StyleSheet.create({
   headerGradient: {
     paddingHorizontal: 24,
     paddingTop: 50,
-    paddingBottom: 24,
-    marginBottom: 16,
+    paddingBottom: 28,
+    marginBottom: 24,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
     shadowColor: Colors.primary,
@@ -25,60 +25,49 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 32,
     fontFamily: Fonts.bold,
     fontWeight: '800',
-    marginBottom: 8,
+    marginBottom: 6,
     letterSpacing: 0.5,
   },
   headerSubtitle: {
     fontSize: 14,
     fontFamily: Fonts.regular,
     opacity: 0.9,
+    lineHeight: 20,
   },
   settingsSection: {
     marginBottom: 32,
-    paddingHorizontal: 16,
-    marginTop: 16,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  securityIconContainer: {
-    backgroundColor: '#FF6B35',
-  },
-  appIconContainer: {
-    backgroundColor: '#8E44AD',
+    paddingHorizontal: 20,
   },
   sectionTitle: {
     fontFamily: Fonts.bold,
-    fontSize: 18,
+    fontSize: 16,
     color: '#1A1A1A',
+    marginBottom: 16,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
   settingCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FFFFFF',
     padding: 18,
-    marginBottom: 12,
+    marginBottom: 10,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E9ECEF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 0.5,
+    borderColor: '#F0F0F0',
   },
   logoutCard: {
-    backgroundColor: '#FFF5F5',
-    borderColor: '#FEE2E2',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#FFE5E5',
+    borderWidth: 1,
   },
   settingLeft: {
     flexDirection: 'row',
@@ -87,36 +76,19 @@ const styles = StyleSheet.create({
   },
   settingRight: {
     alignItems: 'flex-end',
-  },
-  settingIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 14,
   },
-  notificationIcon: {
-    backgroundColor: '#E3F2FD',
+  settingIcon: {
+    fontSize: 28,
+    marginRight: 16,
+    width: 32,
+    textAlign: 'center',
   },
-  privacyIcon: {
-    backgroundColor: '#F3E5F5',
-  },
-  passwordIcon: {
-    backgroundColor: '#FFF9C4',
-  },
-  securityIcon: {
-    backgroundColor: '#E8F5E9',
-  },
-  logoutIconContainer: {
-    backgroundColor: '#FFEBEE',
-  },
-  infoIcon: {
-    backgroundColor: '#E3F2FD',
-  },
-  helpIcon: {
-    backgroundColor: '#F3E5F5',
+  logoutIcon: {
+    fontSize: 28,
+    marginRight: 16,
+    width: 32,
+    textAlign: 'center',
   },
   settingContent: {
     flex: 1,
@@ -126,6 +98,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 4,
     color: '#1A1A1A',
+    letterSpacing: 0.2,
   },
   settingDescription: {
     fontFamily: Fonts.regular,
@@ -137,7 +110,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#DEE2E6',
+    backgroundColor: '#E0E0E0',
     justifyContent: 'center',
     paddingHorizontal: 2,
   },
@@ -151,34 +124,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.25,
     shadowRadius: 3,
-    elevation: 3,
+    elevation: 4,
   },
   toggleThumbActive: {
     transform: [{ translateX: 22 }],
   },
-  chevronContainer: {
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   chevron: {
-    fontSize: 20,
+    fontSize: 24,
     color: '#ADB5BD',
     fontWeight: '300',
+    marginLeft: 8,
   },
   versionBadge: {
-    backgroundColor: '#E8F5E9',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: Colors.success,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 12,
   },
   versionText: {
     fontFamily: Fonts.semibold,
-    fontSize: 12,
-    color: '#2E7D32',
+    fontSize: 11,
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
 });
 

@@ -14,6 +14,7 @@ import SettingsScreen from '../screens/settingsScreen';
 import TicketsScreen from '../screens/ticketsScreen';
 import LikesScreen from '../screens/likesScreen';
 import FriendsScreen from '../screens/friendsScreen';
+import FriendDetailScreen from '../screens/friendDetailScreen';
 import TimelineScreen from '../screens/timelineScreen';
 import ScreenNames from '../constants/ScreenNames';
 import Images from '../constants/Images';
@@ -176,6 +177,33 @@ const ProfileStack = () => {
         component={FriendsScreen}
         options={{
           headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name={ScreenNames.FRIEND_DETAIL_SCREEN} 
+        component={FriendDetailScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name={ScreenNames.EVENT_DETAIL_SCREEN} 
+        component={EventDetailScreen}
+        options={{
+          headerShown: true,
+          title: 'Chi tiết sự kiện',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
         }}
       />
     </Stack.Navigator>

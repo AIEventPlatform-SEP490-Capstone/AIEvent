@@ -84,7 +84,7 @@ namespace AIEvent.Application.Services.Implements
         private static long GenerateOrderCode()
         {
             var random = new Random();
-            var timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             var randomPart = random.Next(100, 999);
             return long.Parse($"{timestamp}{randomPart}");
         }

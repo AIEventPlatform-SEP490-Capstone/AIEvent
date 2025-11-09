@@ -4,6 +4,7 @@ using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Friend;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
+using AIEvent.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -75,10 +76,10 @@ namespace AIEvent.API.Controllers
 
         [HttpGet]
         [Authorize(Roles = "User")]
-        public async Task<ActionResult<SuccessResponse<BasePaginated<ListFriendResponse>>>> GetListFriend(int pageNumber = 1, int pageSize = 10)
+        public async Task<ActionResult<SuccessResponse<BasePaginated<ListFriendResponse>>>> GetListFriend(FriendshipStatus status, int pageNumber = 1, int pageSize = 10)
         {
             var userId = User.GetRequiredUserId();
-            var result = await _friendService.GetListFriendAsync(userId, pageNumber, pageSize);
+            var result = await _friendService.GetListFriendAsync(userId, pageNumber, pageSize, status);
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
@@ -141,6 +142,42 @@ namespace AIEvent.API.Controllers
                 result.Value!,
                 SuccessCodes.Success,
                 "Get FriendProfile successfully"));
+        }
+
+        [HttpPatch("{id}/block")]
+        [Authorize(Roles = "User")]
+        public async Task<ActionResult<SuccessResponse<object>>> BlockFriend(string id)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _friendService.BlockFriendAsync(userId, id);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Success,
+                "Block Friend successfully"));
+        }
+
+        [HttpPatch("{id}/unblock")]
+        [Authorize(Roles = "User")]
+        public async Task<ActionResult<SuccessResponse<object>>> UnBlockFriend(string id)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _friendService.UnBlockFriendAsync(userId, id);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Success,
+                "UnBlock Friend successfully"));
         }
     }
 }

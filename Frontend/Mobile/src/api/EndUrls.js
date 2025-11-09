@@ -6,6 +6,9 @@ console.log('Base URL:', BASE_URL);
 const EndUrls = {
   // Auth
   LOGIN: `${BASE_URL}/auth/login`,
+  REGISTER: `${BASE_URL}/auth/register`,
+  VERIFY_OTP: `${BASE_URL}/auth/verify-otp`,
+  RESEND_OTP: `${BASE_URL}/auth/resend-otp`,
   REFRESH_TOKEN: `${BASE_URL}/auth/refresh-token`,
   REVOKE_TOKEN: `${BASE_URL}/auth/revoke-token`,
   CHANGE_PASSWORD: `${BASE_URL}/auth/change-password`,
@@ -37,6 +40,22 @@ const EndUrls = {
   PAYMENT_INFORMATION: `${BASE_URL}/payment/information`,
   PAYMENT_INFORMATION_DELETE: (id) => `${BASE_URL}/payment/information/${id}`,
   PAYMENT_WITHDRAW: `${BASE_URL}/payment/withdraw`,
+  
+  // Friends
+  FRIENDS: `${BASE_URL}/friend`,
+  FRIENDS_SEARCH: `${BASE_URL}/friend/search`,
+  FRIEND_REQUESTS: `${BASE_URL}/friend/request`,
+  FRIEND_REQUEST_RESPOND: (requestId) => `${BASE_URL}/friend/${requestId}`,
+  ADD_FRIEND: (userId) => `${BASE_URL}/friend/${userId}`,
+  DELETE_FRIEND: (friendId) => `${BASE_URL}/friend/${friendId}`,
+  FRIEND_PROFILE: (friendId) => `${BASE_URL}/friend/${friendId}`,
+  BLOCK_FRIEND: (friendId) => `${BASE_URL}/friend/${friendId}/block`,
+  UNBLOCK_FRIEND: (friendId) => `${BASE_URL}/friend/${friendId}/unblock`,
+  
+  // Booking (used in timeline screen)
+  BOOKED_EVENTS: `${BASE_URL}/booking/event`,
+  EVENT_TICKETS: (eventId) => `${BASE_URL}/booking/event/${eventId}/ticket`,
+  TICKET_QR: (ticketId) => `${BASE_URL}/booking/ticket/qr/${ticketId}`,
 };
 
 console.log('EndUrls:', EndUrls);

@@ -69,8 +69,8 @@ export default function OrganizerApprovalListPage() {
     const statusMap = {
       All: undefined,
       Pending: "Pending",
-      Approve: "Approve",
-      Reject: "Reject",
+      Approved: "Approved",
+      Rejected: "Rejected",
     };
 
     const data = await getOrganizers({
@@ -117,9 +117,11 @@ export default function OrganizerApprovalListPage() {
   //  Tính thống kê dựa trên allOrganizers (toàn bộ)
   const totalAll = allOrganizers.length;
   const totalApprove = allOrganizers.filter(
-    (o) => o.status === "Approve"
+    (o) => o.status === "Approved"
   ).length;
-  const totalReject = allOrganizers.filter((o) => o.status === "Reject").length;
+  const totalReject = allOrganizers.filter(
+    (o) => o.status === "Rejected"
+  ).length;
   const totalPending = allOrganizers.filter(
     (o) => o.status === "Pending"
   ).length;
@@ -179,8 +181,8 @@ export default function OrganizerApprovalListPage() {
           <TabsList>
             <TabsTrigger value="All">Tất cả</TabsTrigger>
             <TabsTrigger value="Pending">Chờ duyệt</TabsTrigger>
-            <TabsTrigger value="Approve">Đã duyệt</TabsTrigger>
-            <TabsTrigger value="Reject">Từ chối</TabsTrigger>
+            <TabsTrigger value="Approved">Đã duyệt</TabsTrigger>
+            <TabsTrigger value="Rejected">Từ chối</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -209,16 +211,16 @@ export default function OrganizerApprovalListPage() {
                     {org.companyName}
                     <span
                       className={`text-xs px-2 py-0.5 rounded-full ml-2 font-medium ${
-                        org.status === "Approve"
+                        org.status === "Approved"
                           ? "bg-green-100 text-green-700"
-                          : org.status === "Reject"
+                          : org.status === "Rejected"
                           ? "bg-red-100 text-red-700"
                           : "bg-yellow-100 text-yellow-700"
                       }`}
                     >
-                      {org.status === "Approve"
+                      {org.status === "Approved"
                         ? "Đã duyệt"
-                        : org.status === "Reject"
+                        : org.status === "Rejected"
                         ? "Từ chối"
                         : "Chờ duyệt"}
                     </span>
@@ -242,7 +244,11 @@ export default function OrganizerApprovalListPage() {
               <Button
                 size="sm"
                 variant="default"
-                onClick={() => navigate(`/admin/organizers/${org.id}`)}
+                onClick={() =>
+                  navigate(`/admin/organizers/${org.id}`, {
+                    state: { status: org.status },
+                  })
+                }
                 className="rounded-full"
               >
                 <Eye className="w-4 h-4 mr-1" /> Xem chi tiết

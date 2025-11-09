@@ -13,6 +13,7 @@ export const PATH = {
   TIMELINE: "/timeline",
   FRIENDS: "/friends",
   FRIENDS_SEARCH: "/friends/search",
+  FRIEND_DETAIL: "/friend/:friendId",
   FAVORITES: "/favorites",
   WALLET: "/wallet",
   MY_TICKETS: "/my-tickets",
@@ -56,6 +57,7 @@ export const PATH = {
   MANAGER_PROFILE: "/manager/profile",
   MANAGER_SETTINGS: "/manager/settings",
   MANAGER_SUPPORT: "/manager/support",
+  // MANAGER_END_EVENT_REQUESTS: "/manager/end-event-requests", // Đã tích hợp vào ManagerEventDetailPage
 
   // ADMIN
   ADMIN: "/admin",

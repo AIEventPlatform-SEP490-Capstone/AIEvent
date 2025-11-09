@@ -118,7 +118,7 @@ namespace AIEvent.Application.Services.Implements
 
             if (timeLine.HasValue)
             {
-                var now = DateTime.Now;
+                var now = DateTime.UtcNow;
                 var today = now.Date;
                 var tomorrow = today.AddDays(1);
                 var endOfToday = today.AddDays(1).AddTicks(-1); 
@@ -663,7 +663,7 @@ namespace AIEvent.Application.Services.Implements
             IQueryable<Event> events = _unitOfWork.EventRepository
                                                 .Query()
                                                 .AsNoTracking()
-                                                .Where(e => e.StartTime > DateTime.Now 
+                                                .Where(e => e.StartTime > DateTime.UtcNow 
                                                         && !e.DeletedAt.HasValue 
                                                         && e.Status == EventStatus.Approved
                                                         && e.Id != eventId);
@@ -995,7 +995,7 @@ namespace AIEvent.Application.Services.Implements
                     OrganizerProfileId = endEventRequest.OrganizerProfileId,
                     PaymentInforId = endEventRequest.PaymentInformationId,
                     TotalAmount = endEventRequest.Event.TotalAmount,
-                    ConfirmDate = DateTime.Now
+                    ConfirmDate = DateTime.UtcNow
                 };
 
                 await _hangfireJobService.EnqueueOrganizerPayoutJobAsync(reportR);

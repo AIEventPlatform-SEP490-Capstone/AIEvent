@@ -10,7 +10,12 @@ class BookingService {
       
       const url = `${EndUrls.BOOKED_EVENTS}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       const response = await BaseApiService.get(url);
-      const eventsArray = response?.data?.items || (Array.isArray(response?.data) ? response.data : []);
+      
+      // Handle different response structures: response.data?.data || response.data || response
+      let data = response?.data?.data || response?.data || response;
+      
+      // If data has items (paginated response), extract items
+      const eventsArray = data?.items || (Array.isArray(data) ? data : []);
       
       return {
         success: true,
@@ -18,6 +23,7 @@ class BookingService {
         message: 'Booked events fetched successfully',
       };
     } catch (error) {
+      console.error('Error in getBookedEvents:', error);
       return {
         success: false,
         data: null,
@@ -35,7 +41,13 @@ class BookingService {
       
       const url = `${EndUrls.EVENT_TICKETS(eventId)}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       const response = await BaseApiService.get(url);
-      const ticketsArray = response?.data?.items || (Array.isArray(response?.data) ? response.data : []);
+      
+      // Handle different response structures: response.data?.data || response.data || response
+      let data = response?.data?.data || response?.data || response;
+      
+      // If data has items (paginated response), extract items
+      // Otherwise, if it's an array, use it directly
+      const ticketsArray = data?.items || (Array.isArray(data) ? data : []);
       
       return {
         success: true,
@@ -43,6 +55,7 @@ class BookingService {
         message: 'Event tickets fetched successfully',
       };
     } catch (error) {
+      console.error('Error in getEventTickets:', error);
       return {
         success: false,
         data: null,
@@ -56,17 +69,20 @@ class BookingService {
     try {
       const response = await BaseApiService.get(EndUrls.TICKET_QR(ticketId));
       
+      // Handle different response structures: response.data?.data || response.data || response
+      let data = response?.data?.data || response?.data || response;
+      
       let qrCodeData = null;
 
-      if (response?.data) {
-        if (typeof response.data === 'object' && response.data.qrCode) {
-          qrCodeData = response.data.qrCode;
+      if (data) {
+        if (typeof data === 'object' && data.qrCode) {
+          qrCodeData = data.qrCode;
         }
-        else if (typeof response.data === 'string') {
-          qrCodeData = response.data;
+        else if (typeof data === 'string') {
+          qrCodeData = data;
         }
-        else if (typeof response.data === 'object') {
-          qrCodeData = response.data.qrCode || response.data;
+        else if (typeof data === 'object') {
+          qrCodeData = data.qrCode || data;
         }
       }
       
@@ -78,6 +94,7 @@ class BookingService {
         message: 'QR code fetched successfully',
       };
     } catch (error) {
+      console.error('Error in getTicketQR:', error);
       return {
         success: false,
         data: null,

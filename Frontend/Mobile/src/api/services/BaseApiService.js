@@ -105,32 +105,68 @@ class BaseApiService {
     }
   }
 
-  static async patch(url, formData) {
+  static async patch(url, body = null) {
     try {
       console.log('Making PATCH request to:', url);
+      console.log('Request Body:', body);
       const accessToken = await AuthService.getAccessToken();
       
       if (!accessToken) {
         throw new Error('User not authenticated. Please login again.');
       }
 
-      const response = await fetch(url, {
+      // Prepare headers
+      const headers = {
+        'Authorization': `Bearer ${accessToken}`,
+      };
+
+      // If body is FormData, let browser set Content-Type automatically
+      // Otherwise, set Content-Type to application/json
+      if (body && !(body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+      }
+
+      // Prepare fetch options
+      const fetchOptions = {
         method: 'PATCH',
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      });
+        headers,
+      };
+
+      // Only add body if it exists
+      if (body) {
+        if (body instanceof FormData) {
+          fetchOptions.body = body;
+        } else {
+          fetchOptions.body = JSON.stringify(body);
+        }
+      }
+
+      const response = await fetch(url, fetchOptions);
 
       return await this.handleApiResponse(response, async () => {
         const newToken = await AuthService.getAccessToken();
-        const retryResponse = await fetch(url, {
+        const retryHeaders = {
+          'Authorization': `Bearer ${newToken}`,
+        };
+        
+        if (body && !(body instanceof FormData)) {
+          retryHeaders['Content-Type'] = 'application/json';
+        }
+
+        const retryOptions = {
           method: 'PATCH',
-          body: formData,
-          headers: {
-            'Authorization': `Bearer ${newToken}`,
-          },
-        });
+          headers: retryHeaders,
+        };
+
+        if (body) {
+          if (body instanceof FormData) {
+            retryOptions.body = body;
+          } else {
+            retryOptions.body = JSON.stringify(body);
+          }
+        }
+
+        const retryResponse = await fetch(url, retryOptions);
         return await this.handleApiResponse(retryResponse, null);
       });
     } catch (error) {

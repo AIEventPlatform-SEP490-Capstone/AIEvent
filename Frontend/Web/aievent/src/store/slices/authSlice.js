@@ -6,6 +6,7 @@ import {
   getCookieOptions,
   clearRememberedEmail,
 } from "../../lib/rememberMeUtils";
+import { updateUserProfile, fetchUserProfile } from "./userProfileSlice";
 
 export const login = createAsyncThunk(
   "auth/login",
@@ -354,6 +355,8 @@ const authSlice = createSlice({
       })
       .addCase(logout.rejected, (state, { payload }) => {
         state.isLoading = false;
+        state.user = null;
+        state.isAuthenticated = false;
         state.error = payload;
       })
 
@@ -369,6 +372,56 @@ const authSlice = createSlice({
       .addCase(changePassword.rejected, (state, { payload }) => {
         state.changingPassword = false;
         state.changePasswordError = payload;
+      })
+      
+      // Update user info when profile is updated
+      .addCase(updateUserProfile.fulfilled, (state, { payload }) => {
+        if (payload && state.user) {
+          // Update avatar if provided
+          if (payload.avatarImgUrl !== undefined && payload.avatarImgUrl !== null) {
+            state.user.avatar = payload.avatarImgUrl;
+          }
+          // Update name if provided
+          if (payload.fullName !== undefined && payload.fullName !== null) {
+            state.user.name = payload.fullName;
+            // Also update unique_name if it exists
+            if (state.user.unique_name) {
+              state.user.unique_name = payload.fullName;
+            }
+          }
+          // Update email if provided
+          if (payload.email !== undefined && payload.email !== null) {
+            state.user.email = payload.email;
+          }
+          
+          // Update localStorage to persist changes
+          localStorage.setItem("currentUser", JSON.stringify(state.user));
+        }
+      })
+      
+      // Update user info when profile is fetched (after update, profile is refetched)
+      .addCase(fetchUserProfile.fulfilled, (state, { payload }) => {
+        if (payload && state.user) {
+          // Update avatar if provided
+          if (payload.avatarImgUrl !== undefined && payload.avatarImgUrl !== null) {
+            state.user.avatar = payload.avatarImgUrl;
+          }
+          // Update name if provided
+          if (payload.fullName !== undefined && payload.fullName !== null) {
+            state.user.name = payload.fullName;
+            // Also update unique_name if it exists
+            if (state.user.unique_name) {
+              state.user.unique_name = payload.fullName;
+            }
+          }
+          // Update email if provided
+          if (payload.email !== undefined && payload.email !== null) {
+            state.user.email = payload.email;
+          }
+          
+          // Update localStorage to persist changes
+          localStorage.setItem("currentUser", JSON.stringify(state.user));
+        }
       });
   },
 });

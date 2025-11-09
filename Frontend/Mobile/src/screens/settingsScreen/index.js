@@ -64,21 +64,16 @@ const SettingsScreen = ({ navigation }) => {
 
         {/* Account Settings Section */}
         <View style={styles.settingsSection}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionIconContainer}>
-              <CustomText variant="h4" color="white">👤</CustomText>
-            </View>
-            <CustomText variant="h4" color="primary" style={styles.sectionTitle}>
-              Tài khoản
-            </CustomText>
-          </View>
+          <CustomText variant="h4" color="primary" style={styles.sectionTitle}>
+            Tài khoản
+          </CustomText>
           
           {/* Notifications Setting */}
           <TouchableOpacity style={styles.settingCard} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
-              <View style={[styles.settingIconContainer, styles.notificationIcon]}>
-                <CustomText variant="h4" color="white">🔔</CustomText>
-              </View>
+              <CustomText variant="h3" style={styles.settingIcon}>
+                🔔
+              </CustomText>
               <View style={styles.settingContent}>
                 <CustomText variant="body" color="primary" style={styles.settingTitle}>
                   Thông báo
@@ -98,9 +93,9 @@ const SettingsScreen = ({ navigation }) => {
           {/* Privacy Setting */}
           <TouchableOpacity style={styles.settingCard} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
-              <View style={[styles.settingIconContainer, styles.privacyIcon]}>
-                <CustomText variant="h4" color="white">🔒</CustomText>
-              </View>
+              <CustomText variant="h3" style={styles.settingIcon}>
+                🔒
+              </CustomText>
               <View style={styles.settingContent}>
                 <CustomText variant="body" color="primary" style={styles.settingTitle}>
                   Quyền riêng tư
@@ -120,14 +115,9 @@ const SettingsScreen = ({ navigation }) => {
 
         {/* Security Section */}
         <View style={styles.settingsSection}>
-          <View style={styles.sectionHeader}>
-            <View style={[styles.sectionIconContainer, styles.securityIconContainer]}>
-              <CustomText variant="h4" color="white">🛡️</CustomText>
-            </View>
-            <CustomText variant="h4" color="primary" style={styles.sectionTitle}>
-              Bảo mật
-            </CustomText>
-          </View>
+          <CustomText variant="h4" color="primary" style={styles.sectionTitle}>
+            Bảo mật
+          </CustomText>
           
           {/* Change Password */}
           <TouchableOpacity 
@@ -136,9 +126,9 @@ const SettingsScreen = ({ navigation }) => {
             onPress={() => navigation.navigate(ScreenNames.CHANGE_PASSWORD_SCREEN)}
           >
             <View style={styles.settingLeft}>
-              <View style={[styles.settingIconContainer, styles.passwordIcon]}>
-                <CustomText variant="h4" color="white">🔑</CustomText>
-              </View>
+              <CustomText variant="h3" style={styles.settingIcon}>
+                🔑
+              </CustomText>
               <View style={styles.settingContent}>
                 <CustomText variant="body" color="primary" style={styles.settingTitle}>
                   Đổi mật khẩu
@@ -149,18 +139,18 @@ const SettingsScreen = ({ navigation }) => {
               </View>
             </View>
             <View style={styles.settingRight}>
-              <View style={styles.chevronContainer}>
-                <CustomText variant="body" color="secondary" style={styles.chevron}>›</CustomText>
-              </View>
+              <CustomText variant="body" color="secondary" style={styles.chevron}>
+                ›
+              </CustomText>
             </View>
           </TouchableOpacity>
 
           {/* Two-Factor Authentication */}
           <TouchableOpacity style={styles.settingCard} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
-              <View style={[styles.settingIconContainer, styles.securityIcon]}>
-                <CustomText variant="h4" color="white">🔐</CustomText>
-              </View>
+              <CustomText variant="h3" style={styles.settingIcon}>
+                🔐
+              </CustomText>
               <View style={styles.settingContent}>
                 <CustomText variant="body" color="primary" style={styles.settingTitle}>
                   Xác thực 2 bước
@@ -184,9 +174,9 @@ const SettingsScreen = ({ navigation }) => {
             activeOpacity={0.7}
           >
             <View style={styles.settingLeft}>
-              <View style={[styles.settingIconContainer, styles.logoutIconContainer]}>
-                <CustomText variant="h4" color="white">🚪</CustomText>
-              </View>
+              <CustomText variant="h3" style={styles.logoutIcon}>
+                🚪
+              </CustomText>
               <View style={styles.settingContent}>
                 <CustomText variant="body" color="error" style={styles.settingTitle}>
                   Đăng xuất
@@ -197,29 +187,24 @@ const SettingsScreen = ({ navigation }) => {
               </View>
             </View>
             <View style={styles.settingRight}>
-              <View style={styles.chevronContainer}>
-                <CustomText variant="body" color="error" style={styles.chevron}>›</CustomText>
-              </View>
+              <CustomText variant="body" color="error" style={styles.chevron}>
+                ›
+              </CustomText>
             </View>
           </TouchableOpacity>
         </View>
 
         {/* App Info Section */}
         <View style={styles.settingsSection}>
-          <View style={styles.sectionHeader}>
-            <View style={[styles.sectionIconContainer, styles.appIconContainer]}>
-              <CustomText variant="h4" color="white">📱</CustomText>
-            </View>
-            <CustomText variant="h4" color="primary" style={styles.sectionTitle}>
-              Ứng dụng
-            </CustomText>
-          </View>
+          <CustomText variant="h4" color="primary" style={styles.sectionTitle}>
+            Ứng dụng
+          </CustomText>
           
           <View style={styles.settingCard}>
             <View style={styles.settingLeft}>
-              <View style={[styles.settingIconContainer, styles.infoIcon]}>
-                <CustomText variant="h4" color="white">ℹ️</CustomText>
-              </View>
+              <CustomText variant="h3" style={styles.settingIcon}>
+                ℹ️
+              </CustomText>
               <View style={styles.settingContent}>
                 <CustomText variant="body" color="primary" style={styles.settingTitle}>
                   Phiên bản
@@ -240,9 +225,9 @@ const SettingsScreen = ({ navigation }) => {
 
           <TouchableOpacity style={styles.settingCard} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
-              <View style={[styles.settingIconContainer, styles.helpIcon]}>
-                <CustomText variant="h4" color="white">❓</CustomText>
-              </View>
+              <CustomText variant="h3" style={styles.settingIcon}>
+                ❓
+              </CustomText>
               <View style={styles.settingContent}>
                 <CustomText variant="body" color="primary" style={styles.settingTitle}>
                   Trợ giúp & Hỗ trợ
@@ -253,9 +238,9 @@ const SettingsScreen = ({ navigation }) => {
               </View>
             </View>
             <View style={styles.settingRight}>
-              <View style={styles.chevronContainer}>
-                <CustomText variant="body" color="secondary" style={styles.chevron}>›</CustomText>
-              </View>
+              <CustomText variant="body" color="secondary" style={styles.chevron}>
+                ›
+              </CustomText>
             </View>
           </TouchableOpacity>
         </View>
