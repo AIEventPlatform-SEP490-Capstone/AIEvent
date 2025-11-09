@@ -10,5 +10,7 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result> UpdateUserAsync(Guid userId, UpdateUserRequest request);
         Task<Result<BasePaginated<UserResponse>>> GetAllUsersAsync(int pageNumber, int pageSize, string? email, string? name, string? role);
         Task<Result> BanUserAsync(Guid userId, string id);
+        Task<Result> UnBanUserAsync(Guid userId, string id);
+        Task<Result<BasePaginated<UserResponse>>> GetAllUsersBannedAsync(int pageNumber, int pageSize, string? email, string? name, string? role);
     }
 }

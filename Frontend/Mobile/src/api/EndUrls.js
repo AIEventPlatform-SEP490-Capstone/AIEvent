@@ -6,6 +6,9 @@ console.log('Base URL:', BASE_URL);
 const EndUrls = {
   // Auth
   LOGIN: `${BASE_URL}/auth/login`,
+  REGISTER: `${BASE_URL}/auth/register`,
+  VERIFY_OTP: `${BASE_URL}/auth/verify-otp`,
+  RESEND_OTP: `${BASE_URL}/auth/resend-otp`,
   REFRESH_TOKEN: `${BASE_URL}/auth/refresh-token`,
   REVOKE_TOKEN: `${BASE_URL}/auth/revoke-token`,
   CHANGE_PASSWORD: `${BASE_URL}/auth/change-password`,

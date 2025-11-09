@@ -1,8 +1,8 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import {StyleSheet, Dimensions} from 'react-native';
 import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
 
-const { width, height } = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   backgroundImage: {
@@ -34,7 +34,7 @@ const styles = StyleSheet.create({
     paddingBottom: 25,
     borderRadius: 28,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
+    shadowOffset: {width: 0, height: 12},
     shadowOpacity: 0.25,
     shadowRadius: 20,
     elevation: 12,
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     textTransform: 'none',
     marginBottom: 2,
     textShadowColor: 'rgba(0,0,0,0.08)',
-    textShadowOffset: { width: 0, height: 2 },
+    textShadowOffset: {width: 0, height: 2},
     textShadowRadius: 4,
   },
   inputContainer: {
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     borderColor: '#E8ECF0',
     paddingHorizontal: 18,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
@@ -107,6 +107,30 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     color: Colors.textPrimary,
   },
+  passwordInput: {
+    paddingRight: 50, // Space for eye icon
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 15,
+    height: '100%',
+    justifyContent: 'center',
+  },
+  passwordRequirements: {
+    marginTop: 8,
+    marginBottom: 16,
+    paddingHorizontal: 10,
+  },
+  requirementText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+    fontFamily: Fonts.regular,
+  },
+  requirementMet: {
+    color: '#4CAF50',
+    fontWeight: 'bold',
+  },
   registerButton: {
     backgroundColor: Colors.primary,
     borderRadius: 18,
@@ -114,7 +138,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 15,
     shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: {width: 0, height: 6},
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 8,
@@ -178,7 +202,7 @@ const styles = StyleSheet.create({
     width: '48%',
     backgroundColor: '#FAFBFC',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 2,
@@ -193,6 +217,206 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: Fonts.semiBold,
   },
+  // Select button (dropdown)
+  selectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 18,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#E8ECF0',
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  selectButtonText: {
+    fontSize: 15,
+    fontFamily: Fonts.regular,
+    color: Colors.textPrimary,
+    flex: 1,
+  },
+  selectButtonArrow: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginLeft: 10,
+  },
+  // Dropdown
+  dropdownWrapper: {
+    position: 'relative',
+    marginBottom: 12,
+    zIndex: 10,
+  },
+  // Đảm bảo dropdown đầu tiên có z-index cao hơn để hiển thị trên cùng
+  dropdownWrapperFirst: {
+    position: 'relative',
+    marginBottom: 12,
+    zIndex: 20,
+  },
+  dropdownContainer: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.white,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: '#E8ECF0',
+    marginTop: 4,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 1000,
+    maxHeight: 200,
+  },
+  dropdownItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  dropdownItemSelected: {
+    backgroundColor: '#E3F2FD',
+  },
+  dropdownItemText: {
+    fontSize: 15,
+    fontFamily: Fonts.regular,
+    color: Colors.textPrimary,
+  },
+  dropdownItemTextSelected: {
+    fontFamily: Fonts.bold,
+    color: Colors.primary,
+  },
+  // Section title
+  sectionTitle: {
+    fontSize: 16,
+    fontFamily: Fonts.bold,
+    color: Colors.textPrimary,
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  // Notification settings
+  notificationContainer: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 18,
+    padding: 16,
+    marginTop: 8,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#E8ECF0',
+  },
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8ECF0',
+  },
+  switchLabel: {
+    fontSize: 15,
+    fontFamily: Fonts.regular,
+    color: Colors.textPrimary,
+    flex: 1,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8ECF0',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontFamily: Fonts.bold,
+    color: Colors.textPrimary,
+    flex: 1,
+  },
+  modalCloseButton: {
+    padding: 5,
+  },
+  modalCloseText: {
+    fontSize: 24,
+    color: Colors.textSecondary,
+    fontWeight: 'bold',
+  },
+  modalScrollView: {
+    maxHeight: 400,
+    padding: 16,
+  },
+  modalConfirmButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: 18,
+    paddingVertical: 16,
+    alignItems: 'center',
+    margin: 16,
+    shadowColor: Colors.primary,
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  modalConfirmText: {
+    color: Colors.white,
+    fontSize: 16,
+    fontFamily: Fonts.bold,
+  },
+  // Chips (multi-select)
+  chipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#F0F0F0',
+    borderWidth: 2,
+    borderColor: '#E8ECF0',
+    marginRight: 10,
+    marginBottom: 10,
+  },
+  chipSelected: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  chipText: {
+    fontSize: 14,
+    fontFamily: Fonts.regular,
+    color: Colors.textPrimary,
+  },
+  chipTextSelected: {
+    color: Colors.white,
+    fontFamily: Fonts.bold,
+  },
 });
 
-export { styles };
+export {styles};

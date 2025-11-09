@@ -138,16 +138,21 @@ namespace AIEvent.Application.Services.Implements
             return Result<BasePaginated<ListAddFriendRequest>>.Success(new BasePaginated<ListAddFriendRequest>(invitations, totalCount, pageNumber, pageSize)); 
         }
 
-        public async Task<Result<BasePaginated<ListFriendResponse>>> GetListFriendAsync(Guid userId, int pageNumber, int pageSize)
+        public async Task<Result<BasePaginated<ListFriendResponse>>> GetListFriendAsync(Guid userId, int pageNumber, int pageSize, FriendshipStatus status)
         {
             try
             {
                 var baseQuery = _unitOfWork.FriendshipRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(f => f.Status == FriendshipStatus.Accepted && 
+                    .Where(f => f.Status == status && 
                                (f.SenderId == userId || f.ReceiverId == userId) &&
                                !f.IsDeleted);
+
+                if (status == FriendshipStatus.Blocked)
+                {
+                    baseQuery = baseQuery.Where(f => f.UpdatedBy == userId.ToString());
+                }
 
                 int totalCount = await baseQuery.CountAsync();
 
@@ -262,7 +267,8 @@ namespace AIEvent.Application.Services.Implements
                 .FirstOrDefaultAsync(f =>
                     ((f.SenderId == userId && f.ReceiverId == friendId) ||
                      (f.SenderId == friendId && f.ReceiverId == userId)) &&
-                    f.Status == FriendshipStatus.Accepted && !f.IsDeleted);
+                    (f.Status == FriendshipStatus.Accepted && f.Status == FriendshipStatus.Blocked) 
+                    && !f.IsDeleted);
 
             if (friendship == null)
             {
@@ -353,6 +359,61 @@ namespace AIEvent.Application.Services.Implements
                 catch { }
             }
             return null;
+        }
+
+        public async Task<Result> BlockFriendAsync(Guid userId, string id)
+        {
+            if (!Guid.TryParse(id, out var friendId))
+                return ErrorResponse.FailureResult("Invalid Guid format.", ErrorCodes.InvalidInput);
+
+            var friendship = await _unitOfWork.FriendshipRepository
+                .Query()
+                .FirstOrDefaultAsync(f =>
+                    ((f.SenderId == userId && f.ReceiverId == friendId) ||
+                     (f.SenderId == friendId && f.ReceiverId == userId)) &&
+                    f.Status == FriendshipStatus.Accepted && !f.IsDeleted);
+
+            if (friendship == null)
+            {
+                return ErrorResponse.FailureResult("Friend not found", ErrorCodes.NotFound);
+            }
+
+            friendship.Status = FriendshipStatus.Blocked;
+
+            await _unitOfWork.FriendshipRepository.UpdateAsync(friendship);
+            await _unitOfWork.SaveChangesAsync();
+
+            return Result.Success();
+        }
+
+        public async Task<Result> UnBlockFriendAsync(Guid userId, string id)
+        {
+            if (!Guid.TryParse(id, out var friendId))
+                return ErrorResponse.FailureResult("Invalid Guid format.", ErrorCodes.InvalidInput);
+
+            var friendship = await _unitOfWork.FriendshipRepository
+                .Query()
+                .FirstOrDefaultAsync(f =>
+                    ((f.SenderId == userId && f.ReceiverId == friendId) ||
+                     (f.SenderId == friendId && f.ReceiverId == userId)) &&
+                    f.Status == FriendshipStatus.Blocked && !f.IsDeleted);
+
+            if (friendship == null)
+            {
+                return ErrorResponse.FailureResult("Friend not found", ErrorCodes.NotFound);
+            }
+
+            if (friendship.UpdatedBy != userId.ToString())
+            {
+                return ErrorResponse.FailureResult("No Permission", ErrorCodes.PermissionDenied);
+            }
+
+            friendship.Status = FriendshipStatus.Accepted;
+
+            await _unitOfWork.FriendshipRepository.UpdateAsync(friendship);
+            await _unitOfWork.SaveChangesAsync();
+
+            return Result.Success();
         }
 
     }
