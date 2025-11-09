@@ -49,11 +49,6 @@ namespace AIEvent.Infrastructure.Context
                       .WithMany(u => u.Users)
                       .HasForeignKey(e => e.RoleId);
 
-                entity.HasOne(u => u.LinkedUser)
-                      .WithMany(p => p.CreatedOrganizerAccounts)
-                      .HasForeignKey(u => u.LinkedUserId)
-                      .OnDelete(DeleteBehavior.Restrict);
-
                 entity.Property(e => e.Email).HasMaxLength(256).IsRequired();
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
                 entity.HasIndex(e => e.IsActive).HasDatabaseName("IX_User_IsActive");
