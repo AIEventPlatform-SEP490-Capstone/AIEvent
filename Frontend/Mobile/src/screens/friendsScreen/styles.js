@@ -494,6 +494,49 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   
+  // Filter
+  filterContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.white,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+  },
+  filterLabel: {
+    fontFamily: Fonts.semiBold,
+    fontSize: 14,
+    marginRight: 12,
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    minWidth: 150,
+    justifyContent: 'space-between',
+  },
+  filterButtonText: {
+    fontFamily: Fonts.regular,
+    fontSize: 14,
+  },
+  filterIcon: {
+    fontSize: 12,
+    marginLeft: 8,
+  },
+  
   // Action Menu Modal
   menuOverlay: {
     flex: 1,

@@ -15,7 +15,9 @@ import {
   MessageCircle,
   CheckCircle2,
   XCircle,
-  UserCheck
+  UserCheck,
+  Ban,
+  Unlock
 } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -31,6 +33,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../../components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
 import { friendAPI } from '../../api/friendAPI';
 import { showSuccess, showError } from '../../lib/toastUtils';
 
@@ -42,6 +51,7 @@ const FriendsTab = ({ user, initialFriendRequestsCount = 0, onFriendRequestsCoun
   const [friends, setFriends] = useState([]);
   const [isLoadingFriends, setIsLoadingFriends] = useState(false);
   const [friendsError, setFriendsError] = useState(null);
+  const [friendsStatusFilter, setFriendsStatusFilter] = useState('Accepted'); // Mặc định là "Đã kết bạn"
   const [friendsPagination, setFriendsPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -81,19 +91,26 @@ const FriendsTab = ({ user, initialFriendRequestsCount = 0, onFriendRequestsCoun
   const [unfriendDialogOpen, setUnfriendDialogOpen] = useState(false);
   const [friendToUnfriend, setFriendToUnfriend] = useState(null);
   const [isUnfriending, setIsUnfriending] = useState(false);
+  const [blockDialogOpen, setBlockDialogOpen] = useState(false);
+  const [friendToBlock, setFriendToBlock] = useState(null);
+  const [isBlocking, setIsBlocking] = useState(false);
+  const [unblockDialogOpen, setUnblockDialogOpen] = useState(false);
+  const [friendToUnblock, setFriendToUnblock] = useState(null);
+  const [isUnblocking, setIsUnblocking] = useState(false);
   const menuRefs = useRef({});
   const hoverCardRefs = useRef({});
   const friendsListRef = useRef(null);
 
   // Fetch friends when component mounts or user changes
-  const fetchFriends = useCallback(async (pageNumber = 1) => {
+  const fetchFriends = useCallback(async (pageNumber = 1, status = 'Accepted') => {
     if (!user) return;
 
     setIsLoadingFriends(true);
     setFriendsError(null);
 
     try {
-      const response = await friendAPI.getFriends({ pageNumber, pageSize: 10 });
+      const params = { pageNumber, pageSize: 10, status };
+      const response = await friendAPI.getFriends(params);
       if (response.statusCode === "AIE20000" && response.data) {
         setFriends(response.data.items || []);
         setFriendsPagination({
@@ -219,11 +236,11 @@ const FriendsTab = ({ user, initialFriendRequestsCount = 0, onFriendRequestsCoun
 
   useEffect(() => {
     if (user && activeTab === 'friends') {
-      fetchFriends(1);
+      fetchFriends(1, friendsStatusFilter);
     } else if (user && activeTab === 'requests') {
       fetchFriendRequests(1);
     }
-  }, [user, activeTab, fetchFriends, fetchFriendRequests]);
+  }, [user, activeTab, friendsStatusFilter, fetchFriends, fetchFriendRequests]);
 
   // Accept friend request
   const handleAcceptFriendRequest = async (requestId, senderName) => {
@@ -259,7 +276,7 @@ const FriendsTab = ({ user, initialFriendRequestsCount = 0, onFriendRequestsCoun
         });
         // Refresh friends list if on friends tab
         if (activeTab === 'friends') {
-          fetchFriends(friendsPagination.currentPage);
+          fetchFriends(friendsPagination.currentPage, friendsStatusFilter);
         }
       } else {
         showError('Không thể chấp nhận lời mời kết bạn. Vui lòng thử lại.');
@@ -405,6 +422,11 @@ const FriendsTab = ({ user, initialFriendRequestsCount = 0, onFriendRequestsCoun
   }, [openMenuId]);
 
   const handleViewProfile = (friendId) => {
+    // Không cho phép xem profile nếu đang filter theo Blocked
+    if (friendsStatusFilter === 'Blocked') {
+      showError('Không thể xem profile của người dùng đã bị chặn');
+      return;
+    }
     navigate(`/friend/${friendId}`);
     setOpenMenuId(null);
   };
@@ -413,6 +435,22 @@ const FriendsTab = ({ user, initialFriendRequestsCount = 0, onFriendRequestsCoun
     const friend = friends.find(f => f.id === friendId);
     setFriendToUnfriend(friend);
     setUnfriendDialogOpen(true);
+    setOpenMenuId(null);
+    setHoveredFriendId(null);
+  };
+
+  const handleBlockFriend = (friendId) => {
+    const friend = friends.find(f => f.id === friendId);
+    setFriendToBlock(friend);
+    setBlockDialogOpen(true);
+    setOpenMenuId(null);
+    setHoveredFriendId(null);
+  };
+
+  const handleUnblockFriend = (friendId) => {
+    const friend = friends.find(f => f.id === friendId);
+    setFriendToUnblock(friend);
+    setUnblockDialogOpen(true);
     setOpenMenuId(null);
     setHoveredFriendId(null);
   };
@@ -463,7 +501,7 @@ const FriendsTab = ({ user, initialFriendRequestsCount = 0, onFriendRequestsCoun
 
           if (remainingFriends.length === 0 && friendsPagination.currentPage > 1) {
             setTimeout(() => {
-              fetchFriends(friendsPagination.currentPage - 1);
+              fetchFriends(friendsPagination.currentPage - 1, friendsStatusFilter);
             }, 100);
           }
 
@@ -496,7 +534,7 @@ const FriendsTab = ({ user, initialFriendRequestsCount = 0, onFriendRequestsCoun
           const remainingFriends = prevFriends.filter(f => (f.id || f.friendId) !== friendId);
           if (remainingFriends.length === 0 && friendsPagination.currentPage > 1) {
             setTimeout(() => {
-              fetchFriends(friendsPagination.currentPage - 1);
+              fetchFriends(friendsPagination.currentPage - 1, friendsStatusFilter);
             }, 100);
           }
           return remainingFriends;
@@ -515,6 +553,192 @@ const FriendsTab = ({ user, initialFriendRequestsCount = 0, onFriendRequestsCoun
       setIsUnfriending(false);
       setUnfriendDialogOpen(false);
       setFriendToUnfriend(null);
+    }
+  };
+
+  const confirmBlock = async () => {
+    if (!friendToBlock) return;
+
+    // Validate friend ID
+    const friendId = friendToBlock.id || friendToBlock.friendId;
+    if (!friendId) {
+      showError('Không tìm thấy ID của bạn bè. Vui lòng thử lại.');
+      setBlockDialogOpen(false);
+      setFriendToBlock(null);
+      return;
+    }
+
+    // Validate GUID format
+    if (!isValidGuid(friendId)) {
+      console.error('Invalid GUID format:', friendId);
+      showError('ID bạn bè không hợp lệ. Vui lòng làm mới trang và thử lại.');
+      setBlockDialogOpen(false);
+      setFriendToBlock(null);
+      return;
+    }
+
+    setIsBlocking(true);
+    try {
+      const response = await friendAPI.blockFriend(friendId);
+
+      const statusCode = response?.statusCode;
+      const isSuccess = statusCode === "AIE20000" ||
+        statusCode === "AIE20100" ||
+        statusCode === "200" ||
+        statusCode === 200;
+
+      if (isSuccess) {
+        showSuccess(`Đã chặn ${friendToBlock.friendName || 'người dùng này'}`);
+
+        // Remove from current list
+        setFriends(prevFriends => {
+          const remainingFriends = prevFriends.filter(f => (f.id || f.friendId) !== friendId);
+
+          if (remainingFriends.length === 0 && friendsPagination.currentPage > 1) {
+            setTimeout(() => {
+              fetchFriends(friendsPagination.currentPage - 1, friendsStatusFilter);
+            }, 100);
+          }
+
+          return remainingFriends;
+        });
+
+        setFriendsPagination(prev => ({
+          ...prev,
+          totalItems: Math.max(0, prev.totalItems - 1)
+        }));
+      } else {
+        const errorMessage = response?.message || 'Không thể chặn bạn bè. Vui lòng thử lại.';
+        if (statusCode === "AIE40001") {
+          showError('ID bạn bè không hợp lệ. Vui lòng làm mới trang và thử lại.');
+        } else {
+          showError(errorMessage);
+        }
+      }
+    } catch (error) {
+      console.error('Error blocking friend:', error);
+      const errorData = error.response?.data || {};
+      const errorStatusCode = errorData.statusCode;
+      const errorMessage = errorData.message || error.message || 'Đã xảy ra lỗi khi chặn bạn bè.';
+
+      // Handle success responses that might be in error format
+      if (error.response?.status === 200 || errorStatusCode === "AIE20000" || errorStatusCode === "AIE20100") {
+        showSuccess(`Đã chặn ${friendToBlock.friendName || 'người dùng này'}`);
+        setFriends(prevFriends => {
+          const remainingFriends = prevFriends.filter(f => (f.id || f.friendId) !== friendId);
+          if (remainingFriends.length === 0 && friendsPagination.currentPage > 1) {
+            setTimeout(() => {
+              fetchFriends(friendsPagination.currentPage - 1, friendsStatusFilter);
+            }, 100);
+          }
+          return remainingFriends;
+        });
+        setFriendsPagination(prev => ({
+          ...prev,
+          totalItems: Math.max(0, prev.totalItems - 1)
+        }));
+      } else if (errorStatusCode === "AIE40001") {
+        showError('ID bạn bè không hợp lệ. Vui lòng làm mới trang và thử lại.');
+      } else {
+        showError(errorMessage);
+      }
+    } finally {
+      setIsBlocking(false);
+      setBlockDialogOpen(false);
+      setFriendToBlock(null);
+    }
+  };
+
+  const confirmUnblock = async () => {
+    if (!friendToUnblock) return;
+
+    // Validate friend ID
+    const friendId = friendToUnblock.id || friendToUnblock.friendId;
+    if (!friendId) {
+      showError('Không tìm thấy ID của bạn bè. Vui lòng thử lại.');
+      setUnblockDialogOpen(false);
+      setFriendToUnblock(null);
+      return;
+    }
+
+    // Validate GUID format
+    if (!isValidGuid(friendId)) {
+      console.error('Invalid GUID format:', friendId);
+      showError('ID bạn bè không hợp lệ. Vui lòng làm mới trang và thử lại.');
+      setUnblockDialogOpen(false);
+      setFriendToUnblock(null);
+      return;
+    }
+
+    setIsUnblocking(true);
+    try {
+      const response = await friendAPI.unblockFriend(friendId);
+
+      const statusCode = response?.statusCode;
+      const isSuccess = statusCode === "AIE20000" ||
+        statusCode === "AIE20100" ||
+        statusCode === "200" ||
+        statusCode === 200;
+
+      if (isSuccess) {
+        showSuccess(`Đã gỡ chặn ${friendToUnblock.friendName || 'người dùng này'}`);
+
+        // Remove from current list
+        setFriends(prevFriends => {
+          const remainingFriends = prevFriends.filter(f => (f.id || f.friendId) !== friendId);
+
+          if (remainingFriends.length === 0 && friendsPagination.currentPage > 1) {
+            setTimeout(() => {
+              fetchFriends(friendsPagination.currentPage - 1, friendsStatusFilter);
+            }, 100);
+          }
+
+          return remainingFriends;
+        });
+
+        setFriendsPagination(prev => ({
+          ...prev,
+          totalItems: Math.max(0, prev.totalItems - 1)
+        }));
+      } else {
+        const errorMessage = response?.message || 'Không thể gỡ chặn bạn bè. Vui lòng thử lại.';
+        if (statusCode === "AIE40001") {
+          showError('ID bạn bè không hợp lệ. Vui lòng làm mới trang và thử lại.');
+        } else {
+          showError(errorMessage);
+        }
+      }
+    } catch (error) {
+      console.error('Error unblocking friend:', error);
+      const errorData = error.response?.data || {};
+      const errorStatusCode = errorData.statusCode;
+      const errorMessage = errorData.message || error.message || 'Đã xảy ra lỗi khi gỡ chặn bạn bè.';
+
+      // Handle success responses that might be in error format
+      if (error.response?.status === 200 || errorStatusCode === "AIE20000" || errorStatusCode === "AIE20100") {
+        showSuccess(`Đã gỡ chặn ${friendToUnblock.friendName || 'người dùng này'}`);
+        setFriends(prevFriends => {
+          const remainingFriends = prevFriends.filter(f => (f.id || f.friendId) !== friendId);
+          if (remainingFriends.length === 0 && friendsPagination.currentPage > 1) {
+            setTimeout(() => {
+              fetchFriends(friendsPagination.currentPage - 1, friendsStatusFilter);
+            }, 100);
+          }
+          return remainingFriends;
+        });
+        setFriendsPagination(prev => ({
+          ...prev,
+          totalItems: Math.max(0, prev.totalItems - 1)
+        }));
+      } else if (errorStatusCode === "AIE40001") {
+        showError('ID bạn bè không hợp lệ. Vui lòng làm mới trang và thử lại.');
+      } else {
+        showError(errorMessage);
+      }
+    } finally {
+      setIsUnblocking(false);
+      setUnblockDialogOpen(false);
+      setFriendToUnblock(null);
     }
   };
 
@@ -620,7 +844,7 @@ const FriendsTab = ({ user, initialFriendRequestsCount = 0, onFriendRequestsCoun
   const handlePageChange = (newPage, type = 'friends') => {
     if (type === 'friends') {
       if (newPage >= 1 && newPage <= friendsPagination.totalPages) {
-        fetchFriends(newPage);
+        fetchFriends(newPage, friendsStatusFilter);
         setTimeout(() => {
           if (friendsListRef.current) {
             friendsListRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -648,6 +872,7 @@ const FriendsTab = ({ user, initialFriendRequestsCount = 0, onFriendRequestsCoun
   const renderFriendCard = (friend, isSearchResult = false) => {
     const friendData = friend;
     const isFriend = !isSearchResult; // If it's from search, they're not friends yet
+    const isBlocked = friendsStatusFilter === 'Blocked'; // Check if current filter is Blocked
 
     return (
       <Card
@@ -660,27 +885,27 @@ const FriendsTab = ({ user, initialFriendRequestsCount = 0, onFriendRequestsCoun
             <div
               className="flex-shrink-0 relative"
               ref={(el) => hoverCardRefs.current[friendData.id] = el}
-              onMouseEnter={() => setHoveredFriendId(friendData.id)}
+              onMouseEnter={() => !isBlocked && setHoveredFriendId(friendData.id)}
               onMouseLeave={() => setHoveredFriendId(null)}
             >
               {friendData.image ? (
                 <img
                   src={friendData.image}
                   alt={friendData.friendName}
-                  className="w-16 h-16 rounded-lg object-cover cursor-pointer"
-                  onClick={() => handleViewProfile(friendData.id)}
+                  className={`w-16 h-16 rounded-lg object-cover ${isBlocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+                  onClick={() => !isBlocked && handleViewProfile(friendData.id)}
                 />
               ) : (
                 <div
-                  className="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center cursor-pointer"
-                  onClick={() => handleViewProfile(friendData.id)}
+                  className={`w-16 h-16 rounded-lg bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center ${isBlocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+                  onClick={() => !isBlocked && handleViewProfile(friendData.id)}
                 >
                   <UserCircle className="w-10 h-10 text-white" />
                 </div>
               )}
 
               {/* Hovercard */}
-              {hoveredFriendId === friendData.id && (
+              {hoveredFriendId === friendData.id && !isBlocked && (
                 <div
                   className="fixed z-[100] bg-white rounded-lg shadow-xl border border-gray-200 p-4 w-80"
                   style={{
@@ -782,9 +1007,12 @@ const FriendsTab = ({ user, initialFriendRequestsCount = 0, onFriendRequestsCoun
                           size="sm"
                           className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                           onClick={() => {
-                            handleViewProfile(friendData.id);
+                            if (!isBlocked) {
+                              handleViewProfile(friendData.id);
+                            }
                             setHoveredFriendId(null);
                           }}
+                          disabled={isBlocked}
                         >
                           <UserCircle className="w-4 h-4 mr-2" />
                           Bạn bè
@@ -845,12 +1073,40 @@ const FriendsTab = ({ user, initialFriendRequestsCount = 0, onFriendRequestsCoun
                               setOpenMenuId(null);
                               setHoveredFriendId(null);
                             }}
-                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                            disabled={isBlocked}
+                            className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                             <UserCircle className="w-4 h-4 text-muted-foreground" />
                             <span>Hồ sơ</span>
                           </button>
                           {isFriend && (
+                            <>
+                              {friendsStatusFilter === 'Blocked' ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleUnblockFriend(friendData.id);
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors text-green-600"
+                                >
+                                  <Unlock className="w-4 h-4" />
+                                  <span>Gỡ chặn</span>
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleBlockFriend(friendData.id);
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors text-orange-600"
+                                >
+                                  <Ban className="w-4 h-4" />
+                                  <span>Chặn</span>
+                                </button>
+                              )}
+                            </>
+                          )}
+                          {isFriend && friendsStatusFilter !== 'Blocked' && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -873,8 +1129,8 @@ const FriendsTab = ({ user, initialFriendRequestsCount = 0, onFriendRequestsCoun
             {/* Name and Info */}
             <div className="flex-1 min-w-0">
               <h3
-                className="font-semibold text-base mb-1 cursor-pointer hover:text-primary"
-                onClick={() => handleViewProfile(friendData.id)}
+                className={`font-semibold text-base mb-1 ${isBlocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:text-primary'}`}
+                onClick={() => !isBlocked && handleViewProfile(friendData.id)}
               >
                 {friendData.friendName || "Người dùng"}
               </h3>
@@ -905,18 +1161,38 @@ const FriendsTab = ({ user, initialFriendRequestsCount = 0, onFriendRequestsCoun
                     >
                       <button
                         onClick={() => handleViewProfile(friendData.id)}
-                        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                        disabled={isBlocked}
+                        className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors ${isBlocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <UserCircle className="w-4 h-4 text-muted-foreground" />
                         <span>Hồ sơ</span>
                       </button>
-                      <button
-                        onClick={() => handleUnfriend(friendData.id)}
-                        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors text-red-600"
-                      >
-                        <UserMinus className="w-4 h-4" />
-                        <span>Hủy kết bạn</span>
-                      </button>
+                      {friendsStatusFilter === 'Blocked' ? (
+                        <button
+                          onClick={() => handleUnblockFriend(friendData.id)}
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors text-green-600"
+                        >
+                          <Unlock className="w-4 h-4" />
+                          <span>Gỡ chặn</span>
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleBlockFriend(friendData.id)}
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors text-orange-600"
+                          >
+                            <Ban className="w-4 h-4" />
+                            <span>Chặn</span>
+                          </button>
+                          <button
+                            onClick={() => handleUnfriend(friendData.id)}
+                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors text-red-600"
+                          >
+                            <UserMinus className="w-4 h-4" />
+                            <span>Hủy kết bạn</span>
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1353,6 +1629,31 @@ const FriendsTab = ({ user, initialFriendRequestsCount = 0, onFriendRequestsCoun
       {/* Friends List Tab */}
       {activeTab === 'friends' && (
         <>
+          {/* Status Filter */}
+          <div className="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">
+                Lọc theo trạng thái:
+              </label>
+              <Select
+                value={friendsStatusFilter}
+                onValueChange={(value) => {
+                  setFriendsStatusFilter(value);
+                  setFriendsPagination(prev => ({ ...prev, currentPage: 1 }));
+                }}
+              >
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Accepted">Đã kết bạn</SelectItem>
+                  <SelectItem value="Blocked">Block</SelectItem>
+                  <SelectItem value="Canceled">Cancel</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           {isLoadingFriends ? (
             <div className="text-center py-8">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -1371,7 +1672,7 @@ const FriendsTab = ({ user, initialFriendRequestsCount = 0, onFriendRequestsCoun
                 </div>
               </div>
               <Button
-                onClick={() => fetchFriends(1)}
+                onClick={() => fetchFriends(1, friendsStatusFilter)}
                 variant="outline"
                 size="sm"
                 className="mt-3"
@@ -1497,6 +1798,56 @@ const FriendsTab = ({ user, initialFriendRequestsCount = 0, onFriendRequestsCoun
               className="bg-red-600 hover:bg-red-700 text-white"
             >
               {isUnfriending ? 'Đang xử lý...' : 'Xác nhận hủy kết bạn'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Block Confirmation Dialog */}
+      <AlertDialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận chặn người dùng</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn chặn <strong>{friendToBlock?.friendName || 'người dùng này'}</strong>?
+              <br />
+              <br />
+              Khi chặn, bạn sẽ không thể nhìn thấy hoạt động của người này và họ cũng không thể nhìn thấy hoạt động của bạn.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBlocking}>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmBlock}
+              disabled={isBlocking}
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              {isBlocking ? 'Đang xử lý...' : 'Xác nhận chặn'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Unblock Confirmation Dialog */}
+      <AlertDialog open={unblockDialogOpen} onOpenChange={setUnblockDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận gỡ chặn người dùng</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn gỡ chặn <strong>{friendToUnblock?.friendName || 'người dùng này'}</strong>?
+              <br />
+              <br />
+              Sau khi gỡ chặn, bạn và người này có thể nhìn thấy hoạt động của nhau trở lại.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isUnblocking}>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmUnblock}
+              disabled={isUnblocking}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {isUnblocking ? 'Đang xử lý...' : 'Xác nhận gỡ chặn'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

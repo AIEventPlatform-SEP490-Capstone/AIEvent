@@ -55,6 +55,9 @@ const styles = StyleSheet.create({
   successText: {
     color: Colors.success,
   },
+  warningText: {
+    color: Colors.warning,
+  },
   errorText: {
     color: Colors.error,
   },

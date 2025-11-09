@@ -7,12 +7,16 @@ class FriendService {
    * @param {Object} params - Tham số phân trang
    * @param {number} params.pageNumber - Số trang (mặc định: 1)
    * @param {number} params.pageSize - Số lượng item mỗi trang (mặc định: 10)
+   * @param {string} params.status - Lọc theo trạng thái: Accepted, Blocked, Canceled (tùy chọn)
    * @returns {Promise} Response từ API
    */
   static async getFriends(params = {}) {
     try {
-      const { pageNumber = 1, pageSize = 10 } = params;
-      const url = `${EndUrls.FRIENDS}?pageNumber=${pageNumber}&pageSize=${pageSize}`;
+      const { pageNumber = 1, pageSize = 10, status } = params;
+      let url = `${EndUrls.FRIENDS}?pageNumber=${pageNumber}&pageSize=${pageSize}`;
+      if (status) {
+        url += `&status=${encodeURIComponent(status)}`;
+      }
       const data = await BaseApiService.get(url);
       
       if ((data.statusCode === "AIE20000" || data.statusCode === "AIE20001") && data.data) {
@@ -301,6 +305,86 @@ class FriendService {
         success: false,
         data: null,
         message: 'Failed to fetch friend profile',
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Chặn bạn bè
+   * @param {string} friendId - ID của bạn bè cần chặn
+   * @returns {Promise} Response từ API
+   */
+  static async blockFriend(friendId) {
+    try {
+      const url = EndUrls.BLOCK_FRIEND(friendId);
+      const data = await BaseApiService.patch(url);
+      
+      const statusCode = data?.statusCode;
+      const isSuccess = statusCode === "AIE20000" ||
+        statusCode === "AIE20001" ||
+        statusCode === "AIE20100" ||
+        statusCode === "200" ||
+        statusCode === 200;
+
+      if (isSuccess) {
+        return {
+          success: true,
+          data: data.data || {},
+          message: data.message || 'Friend blocked successfully',
+        };
+      } else {
+        return {
+          success: false,
+          data: null,
+          message: data.message || 'Failed to block friend',
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        data: null,
+        message: 'Failed to block friend',
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Gỡ chặn bạn bè
+   * @param {string} friendId - ID của bạn bè cần gỡ chặn
+   * @returns {Promise} Response từ API
+   */
+  static async unblockFriend(friendId) {
+    try {
+      const url = EndUrls.UNBLOCK_FRIEND(friendId);
+      const data = await BaseApiService.patch(url);
+      
+      const statusCode = data?.statusCode;
+      const isSuccess = statusCode === "AIE20000" ||
+        statusCode === "AIE20001" ||
+        statusCode === "AIE20100" ||
+        statusCode === "200" ||
+        statusCode === 200;
+
+      if (isSuccess) {
+        return {
+          success: true,
+          data: data.data || {},
+          message: data.message || 'Friend unblocked successfully',
+        };
+      } else {
+        return {
+          success: false,
+          data: null,
+          message: data.message || 'Failed to unblock friend',
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        data: null,
+        message: 'Failed to unblock friend',
         error: error.message,
       };
     }
