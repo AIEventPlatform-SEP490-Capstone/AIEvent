@@ -16,6 +16,7 @@ import LikesScreen from '../screens/likesScreen';
 import FriendsScreen from '../screens/friendsScreen';
 import FriendDetailScreen from '../screens/friendDetailScreen';
 import TimelineScreen from '../screens/timelineScreen';
+import QrScannerScreen from '../screens/qrScannerScreen';
 import ScreenNames from '../constants/ScreenNames';
 import Images from '../constants/Images';
 import Colors from '../constants/Colors';
@@ -55,6 +56,13 @@ const HomeStack = () => {
           },
         }}
       />
+      <Stack.Screen 
+        name={ScreenNames.QR_SCANNER_SCREEN} 
+        component={QrScannerScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack.Navigator>
   );
 };
@@ -91,6 +99,13 @@ const TimelineStack = () => {
           },
         }}
       />
+      <Stack.Screen 
+        name={ScreenNames.QR_SCANNER_SCREEN} 
+        component={QrScannerScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack.Navigator>
   );
 };
@@ -106,6 +121,33 @@ const MyEventsStack = () => {
       <Stack.Screen 
         name="MyEventsMain" 
         component={MyEventsScreen}
+      />
+      <Stack.Screen 
+        name={ScreenNames.EVENT_DETAIL_SCREEN} 
+        component={EventDetailScreen}
+        options={{
+          headerShown: true,
+          title: 'Chi tiết sự kiện',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
+        }}
+      />
+      <Stack.Screen 
+        name={ScreenNames.QR_SCANNER_SCREEN} 
+        component={QrScannerScreen}
+        options={{
+          headerShown: false,
+        }}
       />
     </Stack.Navigator>
   );
@@ -204,6 +246,13 @@ const ProfileStack = () => {
             fontSize: 18,
             fontWeight: '600',
           },
+        }}
+      />
+      <Stack.Screen 
+        name={ScreenNames.QR_SCANNER_SCREEN} 
+        component={QrScannerScreen}
+        options={{
+          headerShown: false,
         }}
       />
     </Stack.Navigator>

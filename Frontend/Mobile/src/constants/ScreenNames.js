@@ -30,6 +30,9 @@ const ScreenNames = {
   // Timeline Screen
   TIMELINE_SCREEN: 'TimelineScreen',
   
+  // QR Scanner Screen
+  QR_SCANNER_SCREEN: 'QrScannerScreen',
+  
   // Navigation
   TAB_NAVIGATOR: 'TabNavigator',
   AUTH_NAVIGATOR: 'AuthNavigator',

@@ -103,6 +103,29 @@ class BookingService {
       };
     }
   }
+
+  static async checkInTicket(qrContent) {
+    try {
+      const response = await BaseApiService.patch(EndUrls.CHECK_IN, { qrContent });
+      
+      // Handle different response structures: response.data?.data || response.data || response
+      let data = response?.data?.data || response?.data || response;
+      
+      return {
+        success: true,
+        data: data,
+        message: response?.data?.message || 'Check-in successful',
+      };
+    } catch (error) {
+      console.error('Error in checkInTicket:', error);
+      return {
+        success: false,
+        data: null,
+        message: `Failed to check in ticket: ${error.message}`,
+        error: error.message,
+      };
+    }
+  }
 }
 
 export default BookingService;

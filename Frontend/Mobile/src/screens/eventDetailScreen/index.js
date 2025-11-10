@@ -20,6 +20,8 @@ import Strings from '../../constants/Strings';
 import { useEvents } from '../../hooks/useEvents';
 import { selectCurrentEvent, selectEventsLoading, selectEventsError } from '../../redux/slices/eventsSlice';
 import EventService from '../../api/services/EventService';
+import AuthService from '../../api/services/AuthService';
+import { isStaffUser } from '../../utils/jwtUtils';
 
 const EventDetailScreen = () => {
   const navigation = useNavigation();
@@ -40,8 +42,12 @@ const EventDetailScreen = () => {
   const [joining, setJoining] = useState(false);
   const [isJoined, setIsJoined] = useState(false);
   const [event, setEvent] = useState(null);
+  const [isStaff, setIsStaff] = useState(false);
 
   useEffect(() => {
+    // Check if user is staff
+    checkUserRole();
+    
     // Only load event detail if we have a valid eventId
     if (eventId && typeof eventId === 'string' && eventId.trim() !== '') {
       loadEventDetail();
@@ -61,6 +67,17 @@ const EventDetailScreen = () => {
       setEvent(transformEventData(currentEvent));
     }
   }, [currentEvent, eventId]);
+
+  const checkUserRole = async () => {
+    try {
+      const token = await AuthService.getAccessToken();
+      const staffStatus = isStaffUser(token);
+      setIsStaff(staffStatus);
+    } catch (error) {
+      console.error('Error checking user role:', error);
+      setIsStaff(false);
+    }
+  };
 
   const loadEventDetail = async () => {
     try {
@@ -229,6 +246,11 @@ const EventDetailScreen = () => {
     }
   };
 
+  const handleScanQR = () => {
+    // Navigate to QR scanner screen
+    navigation.navigate('QrScannerScreen', { eventId });
+  };
+
   const getEventImage = () => {
     // If event has an image URI, use it
     if (event && event.image && typeof event.image === 'object' && event.image.uri) {
@@ -319,6 +341,17 @@ const EventDetailScreen = () => {
         >
           <Image source={Images.logout} style={styles.backIcon} />
         </TouchableOpacity>
+        
+        {/* QR Icon for Staff Users - Only visible for staff users */}
+        {isStaff && (
+          <TouchableOpacity 
+            style={styles.qrButton}
+            onPress={handleScanQR}
+            activeOpacity={0.8}
+          >
+            <Image source={Images.qrCode} style={styles.qrIcon} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Premium Event Info */}
@@ -664,14 +697,16 @@ const EventDetailScreen = () => {
 
         {/* Premium Action Buttons */}
         <View style={styles.actionsSection}>
-          <CustomButton
-            title={isJoined ? 'Đã tham gia ✓' : Strings.JOIN_EVENT}
+          <TouchableOpacity 
+            style={[styles.shareButton, { marginBottom: 16 }]}
             onPress={handleJoinEvent}
-            loading={joining}
             disabled={isJoined}
-            variant={isJoined ? 'secondary' : 'primary'}
-            style={styles.joinButton}
-          />
+            activeOpacity={0.8}
+          >
+            <CustomText variant="button" color="white" style={styles.shareButtonText}>
+              {isJoined ? 'Đã tham gia ✓' : Strings.JOIN_EVENT}
+            </CustomText>
+          </TouchableOpacity>
           
           <View style={styles.secondaryActions}>
             <CustomButton
