@@ -523,6 +523,30 @@ export const eventAPI = {
     
     return data;
   },
+
+  // Get AI recommended events
+  getAIRecommendedEvents: async (pageNumber = 1, pageSize = 5) => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('pageNumber', pageNumber);
+    queryParams.append('pageSize', pageSize);
+
+    const response = await fetcher.get(`/ai/event?${queryParams.toString()}`);
+    // Return the actual data from the paginated response
+    let data = response.data?.data || response.data;
+    
+    // Process dates for all events in the response
+    if (data) {
+      if (data.items) {
+        // Paginated response
+        data.items = processEventsArrayForDisplay(data.items);
+      } else if (Array.isArray(data)) {
+        // Array response
+        data = processEventsArrayForDisplay(data);
+      }
+    }
+    
+    return data;
+  },
 };
 
 export default eventAPI;
