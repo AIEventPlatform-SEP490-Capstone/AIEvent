@@ -1,22 +1,22 @@
-import { StyleSheet, Dimensions, Platform } from 'react-native';
+import {StyleSheet, Dimensions, Platform} from 'react-native';
 import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
 
-const { width, height } = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F7FA',
   },
-  
+
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F5F7FA',
   },
-  
+
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -24,13 +24,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F7FA',
     padding: 20,
   },
-  
+
   // Premium Image section
   imageContainer: {
     position: 'relative',
     height: height * 0.45,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: {width: 0, height: 8},
     shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 10,
@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 8,
@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
     height: 24,
     tintColor: Colors.primary,
   },
-  
+
   // Premium Content
   content: {
     padding: 24,
@@ -80,12 +80,12 @@ const styles = StyleSheet.create({
     marginTop: -32,
     minHeight: height * 0.65,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -8 },
+    shadowOffset: {width: 0, height: -8},
     shadowOpacity: 0.1,
     shadowRadius: 16,
     elevation: 10,
   },
-  
+
   // Title section
   titleSection: {
     marginBottom: 20,
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     tintColor: Colors.warning,
     marginRight: 8,
   },
-  
+
   // Premium Price badge
   priceBadge: {
     backgroundColor: Colors.primary,
@@ -118,12 +118,12 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginBottom: 24,
     shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: {width: 0, height: 6},
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 8,
   },
-  
+
   // Premium Details section
   detailsSection: {
     marginBottom: 28,
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   detailInfo: {
     flex: 1,
   },
-  
+
   // Ticket information styles
   ticketRow: {
     flexDirection: 'row',
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#F0F3F7',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.primary,
   },
-  
+
   // Description section
   descriptionSection: {
     marginBottom: 32,
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#F0F3F7',
   },
-  
+
   // Premium Actions section
   actionsSection: {
     marginBottom: 24,
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 18,
     shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: {width: 0, height: 6},
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 8,
@@ -257,4 +257,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export { styles };
+export default styles;
