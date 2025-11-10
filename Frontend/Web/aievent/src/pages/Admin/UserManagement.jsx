@@ -12,7 +12,8 @@ import {
   Users,
   TrendingUp,
   UserPlus,
-  Lock
+  Lock,
+  Unlock
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -24,19 +25,25 @@ const UserManagement = () => {
   
   const { 
     users, 
+    bannedUsers,
     selectedUser, 
     loading, 
     error, 
     pagination, 
+    bannedPagination,
     filters, 
+    activeTab,
     loadUsers, 
     loadUserById, 
     selectUser, 
     clearSelectedUserDetails, 
     banSelectedUser, 
+    unbanSelectedUser,
     updateUserFilters,
     refreshUsers,
-    clearUserManagementError
+    clearUserManagementError,
+    switchToActiveTab,
+    switchToBannedTab
   } = useUserManagement();
 
   const [searchTerm, setSearchTerm] = useState(filters.name || '');
@@ -180,6 +187,16 @@ const UserManagement = () => {
     }
   };
 
+  const handleUnbanUser = async (userId) => {
+    if (window.confirm('Are you sure you want to unban this user?')) {
+      try {
+        await unbanSelectedUser(userId);
+      } catch (err) {
+        console.error('Failed to unban user:', err);
+      }
+    }
+  };
+
   const getStatusBadge = (status) => {
     const statusConfig = {
       active: { color: 'bg-green-100 text-green-800', label: 'Hoạt động' },
@@ -250,7 +267,15 @@ const UserManagement = () => {
     );
   };
 
-  if (loading && users.length === 0) {
+  const getCurrentUsers = () => {
+    return activeTab === 'active' ? users : bannedUsers;
+  };
+
+  const getCurrentPagination = () => {
+    return activeTab === 'active' ? pagination : bannedPagination;
+  };
+
+  if (loading && getCurrentUsers().length === 0) {
     return <div className="flex justify-center items-center h-64">Loading...</div>;
   }
 
@@ -325,6 +350,22 @@ const UserManagement = () => {
         </Card>
       </div>
 
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 mb-6">
+        <button
+          className={`py-2 px-4 font-medium text-sm ${activeTab === 'active' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+          onClick={switchToActiveTab}
+        >
+          Người dùng hoạt động
+        </button>
+        <button
+          className={`py-2 px-4 font-medium text-sm ${activeTab === 'banned' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+          onClick={switchToBannedTab}
+        >
+          Người dùng bị cấm ({bannedPagination.totalItems || 0})
+        </button>
+      </div>
+
       {/* Filters and Search */}
       <Card className="mb-6">
         <CardContent className="p-6">
@@ -374,7 +415,9 @@ const UserManagement = () => {
       {/* Users List */}
       <Card>
         <CardHeader>
-          <CardTitle>Danh sách người dùng</CardTitle>
+          <CardTitle>
+            {activeTab === 'active' ? 'Danh sách người dùng' : 'Danh sách người dùng bị cấm'}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {error && (
@@ -384,7 +427,7 @@ const UserManagement = () => {
           )}
 
           <div className="space-y-4">
-            {users.map((user) => (
+            {getCurrentUsers().map((user) => (
               <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-muted rounded-full flex-shrink-0 flex items-center justify-center">
@@ -415,19 +458,34 @@ const UserManagement = () => {
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => handleViewUser(user.id)}>
-                    <Eye className="w-4 h-4 mr-1" />
-                    Xem
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => handleBanUser(user.id)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    title="Khóa người dùng"
-                  >
-                    <Lock className="w-4 h-4" />
-                  </Button>
+                  {activeTab === 'active' ? (
+                    <>
+                      <Button variant="outline" size="sm" onClick={() => handleViewUser(user.id)}>
+                        <Eye className="w-4 h-4 mr-1" />
+                        Xem
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleBanUser(user.id)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Khóa người dùng"
+                      >
+                        <Lock className="w-4 h-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleUnbanUser(user.id)}
+                      className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                      title="Mở khóa người dùng"
+                    >
+                      <Unlock className="w-4 h-4 mr-1" />
+                      Mở khóa
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm">
                     <MoreHorizontal className="w-4 h-4" />
                   </Button>
@@ -436,12 +494,16 @@ const UserManagement = () => {
             ))}
           </div>
 
-          {users.length === 0 && !loading && (
+          {getCurrentUsers().length === 0 && !loading && (
             <div className="text-center py-12">
               <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-2 text-sm font-medium">Không tìm thấy người dùng</h3>
+              <h3 className="mt-2 text-sm font-medium">
+                {activeTab === 'active' ? 'Không tìm thấy người dùng' : 'Không có người dùng bị cấm'}
+              </h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.
+                {activeTab === 'active' 
+                  ? 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.' 
+                  : 'Tất cả người dùng đều đang hoạt động bình thường.'}
               </p>
             </div>
           )}
@@ -449,18 +511,18 @@ const UserManagement = () => {
           {/* Pagination */}
           <div className="flex items-center justify-between mt-6">
             <div className="text-sm text-muted-foreground">
-              Hiển thị {(pagination.currentPage - 1) * pagination.pageSize + 1} đến {Math.min(pagination.currentPage * pagination.pageSize, pagination.totalItems)} trong tổng số {pagination.totalItems}
+              Hiển thị {(getCurrentPagination().currentPage - 1) * getCurrentPagination().pageSize + 1} đến {Math.min(getCurrentPagination().currentPage * getCurrentPagination().pageSize, getCurrentPagination().totalItems)} trong tổng số {getCurrentPagination().totalItems}
             </div>
             <div className="flex space-x-2">
               <Button
                 onClick={() => loadUsers(
-                  Math.max(pagination.currentPage - 1, 1),
-                  pagination.pageSize,
+                  Math.max(getCurrentPagination().currentPage - 1, 1),
+                  getCurrentPagination().pageSize,
                   filters.email,
                   filters.name,
                   filters.role
                 )}
-                disabled={pagination.currentPage === 1}
+                disabled={getCurrentPagination().currentPage === 1}
                 variant="outline"
                 size="sm"
               >
@@ -468,13 +530,13 @@ const UserManagement = () => {
               </Button>
               <Button
                 onClick={() => loadUsers(
-                  Math.min(pagination.currentPage + 1, pagination.totalPages),
-                  pagination.pageSize,
+                  Math.min(getCurrentPagination().currentPage + 1, getCurrentPagination().totalPages),
+                  getCurrentPagination().pageSize,
                   filters.email,
                   filters.name,
                   filters.role
                 )}
-                disabled={pagination.currentPage === pagination.totalPages}
+                disabled={getCurrentPagination().currentPage === getCurrentPagination().totalPages}
                 variant="outline"
                 size="sm"
               >
