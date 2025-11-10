@@ -106,7 +106,9 @@ class BookingService {
 
   static async checkInTicket(qrContent) {
     try {
+      console.log('Sending check-in request with QR content:', qrContent);
       const response = await BaseApiService.patch(EndUrls.CHECK_IN, { qrContent });
+      console.log('Check-in response:', response);
       
       // Handle different response structures: response.data?.data || response.data || response
       let data = response?.data?.data || response?.data || response;
@@ -117,11 +119,16 @@ class BookingService {
         message: response?.data?.message || 'Check-in successful',
       };
     } catch (error) {
-      console.error('Error in checkInTicket:', error);
+
+      let errorMessage = error.message;
+      if (error.message && (error.message.includes('Invalid data') || error.message.includes('Bad Request'))) {
+        errorMessage = 'Bad Request: Invalid data provided';
+      }
+      
       return {
         success: false,
         data: null,
-        message: `Failed to check in ticket: ${error.message}`,
+        message: errorMessage,
         error: error.message,
       };
     }

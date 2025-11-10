@@ -15,9 +15,6 @@ class BaseApiService {
   }
 
   static async handleApiResponse(response, retryCallback) {
-    console.log('API Response Status:', response.status);
-    console.log('API Response Headers:', response.headers);
-    
     if (response.ok) {
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
