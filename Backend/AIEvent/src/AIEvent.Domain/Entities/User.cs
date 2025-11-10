@@ -14,7 +14,7 @@ namespace AIEvent.Domain.Entities
         public string? District { get; set; }
         public string? Latitude { get; set; }
         public string? Longitude { get; set; }
-        public bool IsActive { get; set; } = true;
+        public bool IsActive { get; set; } = false;
         public ParticipationFrequency ParticipationFrequency { get; set; }
         public BudgetOption BudgetOption { get; set; }
         public bool? IsEmailNotificationEnabled { get; set; } = true;
@@ -40,20 +40,19 @@ namespace AIEvent.Domain.Entities
         public string? LanguagesJson { get; set; }
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 
-        public Guid? LinkedUserId { get; set; }
-        public User? LinkedUser { get; set; }
-        public ICollection<User> CreatedOrganizerAccounts { get; set; } = new List<User>();
-
         public OrganizerProfile? OrganizerProfile { get; set; }
+        public StaffProfile? StaffProfile { get; set; }
         public Wallet Wallet { get; set; } = default!;
         public Role Role { get; set; } = default!;
         public ICollection<FavoriteEvent> FavoriteEvents { get; set; } = new List<FavoriteEvent>();
         public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
         public ICollection<PaymentTransaction> PaymentTransactions { get; set; } = new List<PaymentTransaction>();
-        public ICollection<PaymentInformation> PaymentInformations { get; set; } = new List<PaymentInformation>();
-        public ICollection<WithdrawRequest> WithdrawRequests { get; set; } = new List<WithdrawRequest>();
+        public ICollection<PaymentInformation> PaymentInformations { get; set; } = new List<PaymentInformation>(); 
         public ICollection<Friendship> FriendshipsSent { get; set; } = new List<Friendship>();
         public ICollection<Friendship> FriendshipsReceived { get; set; } = new List<Friendship>();
         public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
+        public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+        public ICollection<EventInvitation> SentInvitations { get; set; } = new List<EventInvitation>();
+        public virtual ICollection<EventInvitation> ReceivedInvitations { get; set; } = new List<EventInvitation>();
     }
 }

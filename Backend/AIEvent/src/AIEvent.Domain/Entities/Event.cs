@@ -50,5 +50,7 @@ namespace AIEvent.Domain.Entities
         public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
         public double? AverageRating { get; set; } = 0;
         public int TotalRatings { get; set; } = 0;
+        public ICollection<EventInvitation> Invitations { get; set; } = new List<EventInvitation>();
+        public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     }
 }

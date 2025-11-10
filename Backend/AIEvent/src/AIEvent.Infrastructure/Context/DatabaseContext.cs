@@ -28,8 +28,7 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<FavoriteEvent> FavoriteEvents { get; set; }
         public DbSet<Booking> Bookings { get; set; }
         public DbSet<BookingItem> BookingItems { get; set; }
-        public DbSet<Ticket> Tickets { get; set; }
-        public DbSet<WithdrawRequest> WithdrawRequests { get; set; }
+        public DbSet<Ticket> Tickets { get; set; } 
         public DbSet<PaymentInformation> PaymentInformations { get; set; }
         public DbSet<EndEventRequest> EndEventRequests { get; set; }
         public DbSet<Friendship> Friendships { get; set; }
@@ -37,6 +36,9 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<WalletTransaction> WalletTransactions { get; set; }
         public DbSet<RevenueReport> RevenueReports { get; set; }
         public DbSet<Rating> Ratings { get; set; }
+        public DbSet<EventInvitation> EventInvitations { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<StaffProfile> StaffProfiles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -48,11 +50,6 @@ namespace AIEvent.Infrastructure.Context
                 entity.HasOne(e => e.Role)
                       .WithMany(u => u.Users)
                       .HasForeignKey(e => e.RoleId);
-
-                entity.HasOne(u => u.LinkedUser)
-                      .WithMany(p => p.CreatedOrganizerAccounts)
-                      .HasForeignKey(u => u.LinkedUserId)
-                      .OnDelete(DeleteBehavior.Restrict);
 
                 entity.Property(e => e.Email).HasMaxLength(256).IsRequired();
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
@@ -334,21 +331,7 @@ namespace AIEvent.Infrastructure.Context
 
                 entity.HasIndex(fe => new { fe.UserId, fe.EventId }).HasDatabaseName("IX_FavoriteEvent_User_Event");
 
-            });
-
-            // ----------------- WithdrawRequest -----------------
-            builder.Entity<WithdrawRequest>(entity =>
-            {
-                entity.HasOne(w => w.User)
-                    .WithMany(u => u.WithdrawRequests)
-                    .HasForeignKey(w => w.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.Property(w => w.BankName).IsRequired().HasMaxLength(500);
-                entity.Property(w => w.BankAccountNumber).IsRequired().HasMaxLength(100);
-                entity.Property(w => w.BankAccountName).IsRequired().HasMaxLength(500);
-                entity.Property(w => w.Amount).HasColumnType("decimal(18,2)");
-            });
+            }); 
 
             // ----------------- PaymentInformation -----------------
             builder.Entity<PaymentInformation>(entity =>
@@ -399,6 +382,55 @@ namespace AIEvent.Infrastructure.Context
                       .WithMany(u => u.Ratings)
                       .HasForeignKey(r => r.UserId)
                       .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // ----------------- EventInvitation -----------------
+            builder.Entity<EventInvitation>(entity =>
+            {
+                entity.HasOne(x => x.Event)
+                    .WithMany(e => e.Invitations)
+                    .HasForeignKey(x => x.EventId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.Inviter)
+                       .WithMany(u => u.SentInvitations)
+                       .HasForeignKey(x => x.InviterId)
+                       .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.InvitedUser)
+                      .WithMany(u => u.ReceivedInvitations)
+                      .HasForeignKey(e => e.InvitedUserId)
+                      .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // ----------------- Notification -----------------
+            builder.Entity<Notification>(entity =>
+            {
+                entity.HasOne(n => n.User)
+                      .WithMany(u => u.Notifications)
+                      .HasForeignKey(n => n.UserId);
+
+                entity.HasIndex(n => n.UserId).HasDatabaseName("IX_Notification_UserId");
+                entity.HasIndex(n => new { n.UserId, n.CreatedAt }).HasDatabaseName("IX_Notification_User_CreatedAt");
+                entity.HasIndex(n => new { n.UserId, n.IsRead }).HasDatabaseName("IX_Notification_User_IsRead");
+                entity.HasIndex(n => n.IsDeleted).HasDatabaseName("IX_Notification_IsDeleted");
+            });
+
+            //--------------StaffProfile-----------------
+            builder.Entity<StaffProfile>(entity =>
+            {
+                entity.HasOne(u => u.User)
+                    .WithOne(o => o.StaffProfile)
+                    .HasForeignKey<StaffProfile>(o => o.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(x => x.OrganizerProfile)
+                    .WithMany(e => e.StaffProfiles)
+                    .HasForeignKey(x => x.OrganizerProfileId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(x => x.OrganizerProfileId).HasDatabaseName("IX_StaffProfile_OrganizerProfileId");
+                entity.HasIndex(x => x.UserId).HasDatabaseName("IX_StaffProfile_UserId");
             });
 
             builder.Seed();

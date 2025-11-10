@@ -1,6 +1,7 @@
 ﻿using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.User;
+using AIEvent.Application.Helpers;
 using AIEvent.Application.Mappings;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
@@ -20,6 +21,8 @@ namespace AIEvent.Application.Test.Services
         private readonly Mock<IMapper> _mockMapper;
         private readonly Mock<IUnitOfWork> _mockUnitOfWork;
         private readonly Mock<ICloudinaryService> _mockCloudinaryService;
+        private readonly Mock<IEmailService> _mockEmailService;
+        private readonly Mock<IHasherHelper> _mockHasherHelperService;
         private readonly IUserService _userService;
 
         public UserServiceTests()
@@ -27,10 +30,13 @@ namespace AIEvent.Application.Test.Services
             _mockMapper = new Mock<IMapper>();
             _mockUnitOfWork = new Mock<IUnitOfWork>();
             _mockCloudinaryService = new Mock<ICloudinaryService>();
+            _mockEmailService = new Mock<IEmailService>();
+            _mockHasherHelperService = new Mock<IHasherHelper>();
             var config = new MapperConfiguration(cfg => cfg.AddProfile<UserProfile>());
             _mockMapper.Setup(m => m.ConfigurationProvider).Returns(config);
             _mockMapper.Setup(m => m.ConfigurationProvider).Returns(config);
-            _userService = new UserService(_mockUnitOfWork.Object, _mockMapper.Object, _mockCloudinaryService.Object);
+            _userService = new UserService(_mockUnitOfWork.Object, _mockMapper.Object, _mockCloudinaryService.Object, 
+                _mockHasherHelperService.Object, _mockEmailService.Object);
         }
 
         #region GetUserByIdAsync Tests
@@ -163,6 +169,11 @@ namespace AIEvent.Application.Test.Services
                 IsActive = true,
                 DeletedAt = DateTime.UtcNow
             };
+            _mockUnitOfWork.Setup(x => x.BookingRepository.Query(false))
+                .Returns(new List<Booking>().AsQueryable().BuildMockDbSet().Object);
+
+            _mockUnitOfWork.Setup(x => x.FavoriteEventRepository.Query(false))
+                .Returns(new List<FavoriteEvent>().AsQueryable().BuildMockDbSet().Object);
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
 

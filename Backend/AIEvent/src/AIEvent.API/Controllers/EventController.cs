@@ -2,12 +2,14 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
+using AIEvent.Application.DTOs.InviteFriend;
 using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PayOS.Models;
 
 namespace AIEvent.API.Controllers
 {
@@ -16,9 +18,11 @@ namespace AIEvent.API.Controllers
     public class EventController : ControllerBase
     {
         private readonly IEventService _eventService;
-        public EventController(IEventService eventService)
+        private readonly IEventInvitationService _invitationService;
+        public EventController(IEventService eventService, IEventInvitationService invitationService)
         {
             _eventService = eventService;
+            _invitationService = invitationService;
         }
 
         [HttpGet("{id}")]
@@ -274,6 +278,55 @@ namespace AIEvent.API.Controllers
                 result.Value!,
                 SuccessCodes.Success,
                 "Get list end event request successfully"));
+        }
+
+        [HttpPost("{eventId}/invite-friends")]
+        [Authorize]
+        public async Task<ActionResult<SuccessResponse<object>>> InviteFriends(Guid eventId, [FromBody] InviteFriendRequest request)
+        {
+            var userId = User.GetRequiredUserId();
+
+            var result = await _invitationService.InviteFriendsAsync(eventId, userId, request);
+
+            if (!result.IsSuccess)
+                return BadRequest(result.Error!);
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Success,
+                "Invite friends successfully"));
+        }
+
+        [HttpPut("invitations/{invitationId}/confirm")]
+        [Authorize]
+        public async Task<ActionResult<SuccessResponse<object>>> ConfirmInvitation(Guid invitationId, [FromBody] ConfirmInvitationRequest request)
+        {
+            var userId = User.GetRequiredUserId();
+
+            var result = await _invitationService.ConfirmInvitationAsync(invitationId, userId, request);
+
+            if (!result.IsSuccess)
+                return BadRequest(result.Error!);
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Success,
+                "Confirm invite successfully"));
+        }
+
+        [HttpGet("invitations-status")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<BasePaginated<InviteFriendResponse>>>> GetSentInvitations([FromQuery] InvitationStatus? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _invitationService.GetInviteFriendsByStatusAsync(userId, status, page, pageSize);
+            if (!result.IsSuccess)
+                return BadRequest(result.Error!);
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Get invitations infor successfully"));
         }
     }
 }

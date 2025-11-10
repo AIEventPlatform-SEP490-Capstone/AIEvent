@@ -50,8 +50,10 @@ namespace AIEvent.API.Extensions
                     .AddScoped<IPineconeVectorService, PineconeVectorService>()
                     .AddScoped<IVoyageEmbeddingService, VoyageEmbeddingService>()
                     .AddScoped<IRatingService, RatingService>()
+                    .AddScoped<IEventInvitationService, EventInvitationService>()
                     .AddScoped<IContentModerationService, ContentModerationService>()
-                    .AddScoped<IFriendService, FriendService>();
+                    .AddScoped<IFriendService, FriendService>()
+                    .AddScoped<INotificationService, NotificationService>();
 
             return services;
         }
