@@ -37,6 +37,7 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<RevenueReport> RevenueReports { get; set; }
         public DbSet<Rating> Ratings { get; set; }
         public DbSet<EventInvitation> EventInvitations { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
         public DbSet<StaffProfile> StaffProfiles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -49,11 +50,6 @@ namespace AIEvent.Infrastructure.Context
                 entity.HasOne(e => e.Role)
                       .WithMany(u => u.Users)
                       .HasForeignKey(e => e.RoleId);
-
-                entity.HasOne(u => u.LinkedUser)
-                      .WithMany(p => p.CreatedOrganizerAccounts)
-                      .HasForeignKey(u => u.LinkedUserId)
-                      .OnDelete(DeleteBehavior.Restrict);
 
                 entity.Property(e => e.Email).HasMaxLength(256).IsRequired();
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
@@ -405,6 +401,19 @@ namespace AIEvent.Infrastructure.Context
                       .WithMany(u => u.ReceivedInvitations)
                       .HasForeignKey(e => e.InvitedUserId)
                       .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // ----------------- Notification -----------------
+            builder.Entity<Notification>(entity =>
+            {
+                entity.HasOne(n => n.User)
+                      .WithMany(u => u.Notifications)
+                      .HasForeignKey(n => n.UserId);
+
+                entity.HasIndex(n => n.UserId).HasDatabaseName("IX_Notification_UserId");
+                entity.HasIndex(n => new { n.UserId, n.CreatedAt }).HasDatabaseName("IX_Notification_User_CreatedAt");
+                entity.HasIndex(n => new { n.UserId, n.IsRead }).HasDatabaseName("IX_Notification_User_IsRead");
+                entity.HasIndex(n => n.IsDeleted).HasDatabaseName("IX_Notification_IsDeleted");
             });
 
             //--------------StaffProfile-----------------

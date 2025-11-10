@@ -169,6 +169,11 @@ namespace AIEvent.Application.Test.Services
                 IsActive = true,
                 DeletedAt = DateTime.UtcNow
             };
+            _mockUnitOfWork.Setup(x => x.BookingRepository.Query(false))
+                .Returns(new List<Booking>().AsQueryable().BuildMockDbSet().Object);
+
+            _mockUnitOfWork.Setup(x => x.FavoriteEventRepository.Query(false))
+                .Returns(new List<FavoriteEvent>().AsQueryable().BuildMockDbSet().Object);
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
 

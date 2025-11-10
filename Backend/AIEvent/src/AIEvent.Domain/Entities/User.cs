@@ -40,10 +40,6 @@ namespace AIEvent.Domain.Entities
         public string? LanguagesJson { get; set; }
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 
-        public Guid? LinkedUserId { get; set; }
-        public User? LinkedUser { get; set; }
-        public ICollection<User> CreatedOrganizerAccounts { get; set; } = new List<User>();
-
         public OrganizerProfile? OrganizerProfile { get; set; }
         public StaffProfile? StaffProfile { get; set; }
         public Wallet Wallet { get; set; } = default!;
@@ -55,7 +51,7 @@ namespace AIEvent.Domain.Entities
         public ICollection<Friendship> FriendshipsSent { get; set; } = new List<Friendship>();
         public ICollection<Friendship> FriendshipsReceived { get; set; } = new List<Friendship>();
         public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
-
+        public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
         public ICollection<EventInvitation> SentInvitations { get; set; } = new List<EventInvitation>();
         public virtual ICollection<EventInvitation> ReceivedInvitations { get; set; } = new List<EventInvitation>();
     }

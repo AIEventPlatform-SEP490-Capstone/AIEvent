@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { toast } from 'react-hot-toast';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { toast } from "react-hot-toast";
 import {
   Calendar,
   Clock,
@@ -20,17 +20,24 @@ import {
   Ticket,
   Globe,
   Activity,
-  User
-} from 'lucide-react';
+  User,
+} from "lucide-react";
 
-import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
-import { Separator } from '../../components/ui/separator';
-import { useEvents } from '../../hooks/useEvents';
-import { PATH } from '../../routes/path';
-import MapDirection from '../../components/Event/MapDirection';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
+import { Button } from "../../components/ui/button";
+import { Card, CardContent, CardHeader } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
+import { Separator } from "../../components/ui/separator";
+import { useEvents } from "../../hooks/useEvents";
+import { PATH } from "../../routes/path";
+import MapDirection from "../../components/Event/MapDirection";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../../components/ui/dialog";
+import RatingSection from "../../components/Rating/RatingSection";
 
 const EventDetailGuestPage = ({ previewData }) => {
   const { id } = useParams();
@@ -59,16 +66,16 @@ const EventDetailGuestPage = ({ previewData }) => {
     try {
       setIsLoading(true);
       const eventData = await getEventById(id);
-      
+
       if (eventData) {
         setEvent(eventData);
       } else {
-        toast.error('Không tìm thấy sự kiện');
+        toast.error("Không tìm thấy sự kiện");
         navigate(PATH.HOME);
       }
     } catch (error) {
-      console.error('Error loading event detail:', error);
-      toast.error('Không thể tải thông tin sự kiện');
+      console.error("Error loading event detail:", error);
+      toast.error("Không thể tải thông tin sự kiện");
       navigate(PATH.HOME);
     } finally {
       setIsLoading(false);
@@ -80,7 +87,7 @@ const EventDetailGuestPage = ({ previewData }) => {
       // Only load related events if we have a valid event ID and not in preview mode
       if (id && !previewData) {
         const relatedData = await getRelatedEvents(id);
-        
+
         if (relatedData) {
           // Limit to 3 related events
           setRelatedEvents(relatedData.slice(0, 3));
@@ -89,7 +96,7 @@ const EventDetailGuestPage = ({ previewData }) => {
         }
       }
     } catch (error) {
-      console.error('Error loading related events:', error);
+      console.error("Error loading related events:", error);
       setRelatedEvents([]);
       // Don't show error toast for related events as it's secondary content
     }
@@ -100,35 +107,47 @@ const EventDetailGuestPage = ({ previewData }) => {
     const startTime = new Date(event.startTime);
     const endTime = new Date(event.endTime);
 
-    if (now < startTime) return 'upcoming';
-    if (now >= startTime && now <= endTime) return 'ongoing';
-    return 'completed';
+    if (now < startTime) return "upcoming";
+    if (now >= startTime && now <= endTime) return "ongoing";
+    return "completed";
   };
 
   const getStatusBadge = (status) => {
     const configs = {
-      upcoming: { label: 'Sắp diễn ra', color: 'bg-blue-100 text-blue-800', icon: Clock },
-      ongoing: { label: 'Đang diễn ra', color: 'bg-green-100 text-green-800', icon: Activity },
-      completed: { label: 'Đã kết thúc', color: 'bg-gray-100 text-gray-800', icon: CheckCircle }
+      upcoming: {
+        label: "Sắp diễn ra",
+        color: "bg-blue-100 text-blue-800",
+        icon: Clock,
+      },
+      ongoing: {
+        label: "Đang diễn ra",
+        color: "bg-green-100 text-green-800",
+        icon: Activity,
+      },
+      completed: {
+        label: "Đã kết thúc",
+        color: "bg-gray-100 text-gray-800",
+        icon: CheckCircle,
+      },
     };
     return configs[status] || configs.upcoming;
   };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
-      weekday: 'long',
-      day: '2-digit',
-      month: '2-digit', 
-      year: 'numeric'
+    return date.toLocaleDateString("vi-VN", {
+      weekday: "long",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
     });
   };
 
   const formatTime = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('vi-VN', {
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
   const getDisplayTicketPrice = (event) => {
@@ -149,39 +168,44 @@ const EventDetailGuestPage = ({ previewData }) => {
     if (min === max) return formatVND(min);
     return `${formatVND(min)} - ${formatVND(max)}`;
   };
-  
+
   const formatPrice = (event) => {
     // Check if event has ticket details with prices
-    if (event.minTicketPrice !== undefined && event.maxTicketPrice !== undefined) {
+    if (
+      event.minTicketPrice !== undefined &&
+      event.maxTicketPrice !== undefined
+    ) {
       if (event.minTicketPrice === 0 && event.maxTicketPrice === 0) {
-        return 'Miễn phí';
+        return "Miễn phí";
       } else if (event.minTicketPrice === event.maxTicketPrice) {
-        return new Intl.NumberFormat('vi-VN', {
-          style: 'currency',
-          currency: 'VND'
+        return new Intl.NumberFormat("vi-VN", {
+          style: "currency",
+          currency: "VND",
         }).format(event.minTicketPrice);
       } else {
-        return `${new Intl.NumberFormat('vi-VN', {
-          style: 'currency',
-          currency: 'VND'
-        }).format(event.minTicketPrice)} - ${new Intl.NumberFormat('vi-VN', {
-          style: 'currency',
-          currency: 'VND'
+        return `${new Intl.NumberFormat("vi-VN", {
+          style: "currency",
+          currency: "VND",
+        }).format(event.minTicketPrice)} - ${new Intl.NumberFormat("vi-VN", {
+          style: "currency",
+          currency: "VND",
         }).format(event.maxTicketPrice)}`;
       }
     }
     // Fallback to ticketType if no price info
-    return event.ticketType === 1 || event.ticketType === "free" ? 'Miễn phí' : 'Có phí';
+    return event.ticketType === 1 || event.ticketType === "free"
+      ? "Miễn phí"
+      : "Có phí";
   };
 
   // Format ticket price for individual tickets
   const formatTicketPrice = (ticket) => {
     if (ticket.ticketPrice === 0) {
-      return 'Miễn phí';
+      return "Miễn phí";
     }
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(ticket.ticketPrice);
   };
 
@@ -193,10 +217,10 @@ const EventDetailGuestPage = ({ previewData }) => {
   const handleRegister = () => {
     if (isAuthenticated) {
       // Redirect to booking page directly if user is authenticated
-      navigate(`${PATH.BOOKING.replace(':id', id)}`);
+      navigate(`${PATH.BOOKING.replace(":id", id)}`);
     } else {
       // Redirect to login page with return URL to booking page
-      navigate(`${PATH.LOGIN}?returnUrl=${PATH.BOOKING.replace(':id', id)}`);
+      navigate(`${PATH.LOGIN}?returnUrl=${PATH.BOOKING.replace(":id", id)}`);
     }
   };
 
@@ -209,7 +233,7 @@ const EventDetailGuestPage = ({ previewData }) => {
       });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      toast.success('Đã sao chép link sự kiện!');
+      toast.success("Đã sao chép link sự kiện!");
     }
   };
 
@@ -224,7 +248,7 @@ const EventDetailGuestPage = ({ previewData }) => {
       });
     } else {
       navigator.clipboard.writeText(message);
-      toast.success('Đã sao chép lời mời!');
+      toast.success("Đã sao chép lời mời!");
     }
   };
 
@@ -251,8 +275,12 @@ const EventDetailGuestPage = ({ previewData }) => {
         <Card className="text-center p-8">
           <CardContent>
             <AlertCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">Không tìm thấy sự kiện</h3>
-            <p className="text-gray-500 mb-6">Sự kiện có thể đã bị xóa hoặc không tồn tại.</p>
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">
+              Không tìm thấy sự kiện
+            </h3>
+            <p className="text-gray-500 mb-6">
+              Sự kiện có thể đã bị xóa hoặc không tồn tại.
+            </p>
             <Button onClick={() => navigate(PATH.HOME)}>
               Quay lại trang chủ
             </Button>
@@ -276,8 +304,16 @@ const EventDetailGuestPage = ({ previewData }) => {
               Quay lại
             </Button>
             <div className="flex space-x-2">
-              <Button variant="outline" size="sm" onClick={() => setIsLiked(!isLiked)}>
-                <Heart className={`w-4 h-4 mr-2 ${isLiked ? "fill-red-500 text-red-500" : ""}`} />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsLiked(!isLiked)}
+              >
+                <Heart
+                  className={`w-4 h-4 mr-2 ${
+                    isLiked ? "fill-red-500 text-red-500" : ""
+                  }`}
+                />
                 Yêu thích
               </Button>
               <Button variant="outline" size="sm" onClick={handleInviteFriends}>
@@ -311,11 +347,17 @@ const EventDetailGuestPage = ({ previewData }) => {
                 </div>
               )}
               <div className="absolute bottom-4 left-4 flex gap-2">
-                <Badge variant="secondary" className="bg-background/80 backdrop-blur">
+                <Badge
+                  variant="secondary"
+                  className="bg-background/80 backdrop-blur"
+                >
                   {formatPrice(event)}
                 </Badge>
                 {event.eventCategoryName && (
-                  <Badge variant="outline" className="bg-background/80 backdrop-blur">
+                  <Badge
+                    variant="outline"
+                    className="bg-background/80 backdrop-blur"
+                  >
                     <Tag className="w-3 h-3 mr-1" />
                     {event.eventCategoryName}
                   </Badge>
@@ -327,8 +369,12 @@ const EventDetailGuestPage = ({ previewData }) => {
             <div>
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h1 className="text-3xl font-bold text-balance mb-2">{event.title}</h1>
-                  <p className="text-muted-foreground text-pretty">{event.description}</p>
+                  <h1 className="text-3xl font-bold text-balance mb-2">
+                    {event.title}
+                  </h1>
+                  <p className="text-muted-foreground text-pretty">
+                    {event.description}
+                  </p>
                 </div>
               </div>
 
@@ -336,10 +382,10 @@ const EventDetailGuestPage = ({ previewData }) => {
                 <div className="flex items-center space-x-3">
                   <Calendar className="w-5 h-5 text-primary" />
                   <div>
-                    <p className="font-medium">
-                      {formatDate(event.startTime)}
+                    <p className="font-medium">{formatDate(event.startTime)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatTime(event.startTime)}
                     </p>
-                    <p className="text-sm text-muted-foreground">{formatTime(event.startTime)}</p>
                   </div>
                 </div>
 
@@ -347,10 +393,14 @@ const EventDetailGuestPage = ({ previewData }) => {
                   <MapPin className="w-5 h-5 text-primary" />
                   <div>
                     <p className="font-medium">
-                      {event.isOnlineEvent ? 'Sự kiện trực tuyến' : (event.locationName || 'Chưa xác định')}
+                      {event.isOnlineEvent
+                        ? "Sự kiện trực tuyến"
+                        : event.locationName || "Chưa xác định"}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {event.isOnlineEvent ? 'Trực tuyến' : (event.address || 'Chưa xác định')}
+                      {event.isOnlineEvent
+                        ? "Trực tuyến"
+                        : event.address || "Chưa xác định"}
                     </p>
                   </div>
                 </div>
@@ -358,7 +408,9 @@ const EventDetailGuestPage = ({ previewData }) => {
                 <div className="flex items-center space-x-3">
                   <Users className="w-5 h-5 text-primary" />
                   <div>
-                    <p className="font-medium">{event.soldQuantity || 0} người tham gia</p>
+                    <p className="font-medium">
+                      {event.soldQuantity || 0} người tham gia
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       Còn {totalAvailableTickets} chỗ
                     </p>
@@ -369,7 +421,8 @@ const EventDetailGuestPage = ({ previewData }) => {
                   <Clock className="w-5 h-5 text-primary" />
                   <div>
                     <p className="font-medium">
-                      {formatTime(event.startTime)} - {formatTime(event.endTime)}
+                      {formatTime(event.startTime)} -{" "}
+                      {formatTime(event.endTime)}
                     </p>
 
                     {(() => {
@@ -378,17 +431,19 @@ const EventDetailGuestPage = ({ previewData }) => {
                       const diffMs = end - start;
 
                       const hours = Math.floor(diffMs / (1000 * 60 * 60));
-                      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                      const minutes = Math.floor(
+                        (diffMs % (1000 * 60 * 60)) / (1000 * 60)
+                      );
 
                       return (
                         <p className="text-sm text-muted-foreground">
-                          Thời lượng: {hours} giờ {minutes > 0 ? `${minutes} phút` : ''}
+                          Thời lượng: {hours} giờ{" "}
+                          {minutes > 0 ? `${minutes} phút` : ""}
                         </p>
                       );
                     })()}
                   </div>
                 </div>
-
               </div>
 
               {/* Ticket Information Section */}
@@ -400,39 +455,52 @@ const EventDetailGuestPage = ({ previewData }) => {
                   </h3>
                   <div className="grid gap-3">
                     {event.ticketDetails.map((ticket, index) => {
-                      const availableTickets = ticket.ticketQuantity - (ticket.soldQuantity || 0);
+                      const availableTickets =
+                        ticket.ticketQuantity - (ticket.soldQuantity || 0);
                       const isAvailable = availableTickets > 0;
 
                       return (
                         <div
                           key={index}
                           className={`border rounded-lg p-4 ${
-                            isAvailable ? "border-border" : "border-border bg-muted/30"
+                            isAvailable
+                              ? "border-border"
+                              : "border-border bg-muted/30"
                           }`}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-medium">{ticket.ticketName}</h4>
+                                <h4 className="font-medium">
+                                  {ticket.ticketName}
+                                </h4>
                                 {!isAvailable && (
-                                  <Badge variant="destructive" className="text-xs">
+                                  <Badge
+                                    variant="destructive"
+                                    className="text-xs"
+                                  >
                                     Hết vé
                                   </Badge>
                                 )}
                               </div>
                               {ticket.ticketDescription && (
-                                <p className="text-sm text-muted-foreground mb-2">{ticket.ticketDescription}</p>
+                                <p className="text-sm text-muted-foreground mb-2">
+                                  {ticket.ticketDescription}
+                                </p>
                               )}
                               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                                 <span>
-                                  Đã bán: {ticket.soldQuantity || 0}/{ticket.ticketQuantity}
+                                  Đã bán: {ticket.soldQuantity || 0}/
+                                  {ticket.ticketQuantity}
                                 </span>
                                 <span>Còn lại: {availableTickets} vé</span>
                               </div>
                             </div>
                             <div className="text-right">
                               <p className="font-semibold text-lg">
-                                {ticket.ticketPrice === 0 ? "Miễn phí" : formatTicketPrice(ticket)}
+                                {ticket.ticketPrice === 0
+                                  ? "Miễn phí"
+                                  : formatTicketPrice(ticket)}
                               </p>
                             </div>
                           </div>
@@ -450,8 +518,9 @@ const EventDetailGuestPage = ({ previewData }) => {
               <h2 className="text-xl font-semibold mb-4">Về sự kiện</h2>
               <div className="prose prose-gray max-w-none text-pretty space-y-4">
                 <p>
-                  {event.title} là một sự kiện đặc biệt. 
-                  {event.description || 'Hãy tham gia để trải nghiệm những điều thú vị.'}
+                  {event.title} là một sự kiện đặc biệt.
+                  {event.description ||
+                    "Hãy tham gia để trải nghiệm những điều thú vị."}
                 </p>
 
                 <div className="bg-muted/50 rounded-lg p-4 my-4">
@@ -466,32 +535,50 @@ const EventDetailGuestPage = ({ previewData }) => {
                       </div>
                       <div>
                         <p className="font-medium">Bắt đầu sự kiện</p>
-                        <p className="text-sm text-muted-foreground">Khởi đầu chương trình</p>
+                        <p className="text-sm text-muted-foreground">
+                          Khởi đầu chương trình
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-start space-x-3">
                       <div className="bg-primary text-primary-foreground rounded px-2 py-1 text-xs font-medium min-w-fit">
-                        {new Date(new Date(event.startTime).getTime() + 60 * 60 * 1000).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(
+                          new Date(event.startTime).getTime() + 60 * 60 * 1000
+                        ).toLocaleTimeString("vi-VN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </div>
                       <div>
                         <p className="font-medium">Phiên chính</p>
-                        <p className="text-sm text-muted-foreground">Nội dung chính của sự kiện</p>
+                        <p className="text-sm text-muted-foreground">
+                          Nội dung chính của sự kiện
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-start space-x-3">
                       <div className="bg-primary text-primary-foreground rounded px-2 py-1 text-xs font-medium min-w-fit">
-                        {new Date(new Date(event.endTime).getTime() - 30 * 60 * 1000).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(
+                          new Date(event.endTime).getTime() - 30 * 60 * 1000
+                        ).toLocaleTimeString("vi-VN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </div>
                       <div>
                         <p className="font-medium">Kết thúc</p>
-                        <p className="text-sm text-muted-foreground">Tổng kết và networking</p>
+                        <p className="text-sm text-muted-foreground">
+                          Tổng kết và networking
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-blue-900 mb-2">Bạn sẽ nhận được:</h4>
+                  <h4 className="font-semibold text-blue-900 mb-2">
+                    Bạn sẽ nhận được:
+                  </h4>
                   <ul className="text-blue-800 space-y-1 text-sm">
                     <li>• Kiến thức và trải nghiệm quý báu</li>
                     <li>• Cơ hội kết nối với những người cùng chí hướng</li>
@@ -510,9 +597,9 @@ const EventDetailGuestPage = ({ previewData }) => {
                 <h2 className="text-xl font-semibold mb-4">Nhà tổ chức</h2>
                 <div className="flex items-center space-x-4">
                   {event.organizerEvent.imgCompany ? (
-                    <img 
-                      src={event.organizerEvent.imgCompany} 
-                      alt={event.organizerEvent.companyName || "Organizer"} 
+                    <img
+                      src={event.organizerEvent.imgCompany}
+                      alt={event.organizerEvent.companyName || "Organizer"}
                       className="w-12 h-12 rounded-full object-cover"
                     />
                   ) : (
@@ -521,9 +608,12 @@ const EventDetailGuestPage = ({ previewData }) => {
                     </div>
                   )}
                   <div className="flex-1">
-                    <h3 className="font-semibold">{event.organizerEvent.companyName || "Nhà tổ chức"}</h3>
+                    <h3 className="font-semibold">
+                      {event.organizerEvent.companyName || "Nhà tổ chức"}
+                    </h3>
                     <p className="text-sm text-muted-foreground">
-                      {event.organizerEvent.companyDescription || "Tổ chức sự kiện chuyên nghiệp"}
+                      {event.organizerEvent.companyDescription ||
+                        "Tổ chức sự kiện chuyên nghiệp"}
                     </p>
                   </div>
                   <Button variant="outline" size="sm">
@@ -532,6 +622,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                 </div>
               </div>
             )}
+            <RatingSection eventId={event.eventId || id} />
           </div>
 
           {/* Sidebar */}
@@ -543,10 +634,13 @@ const EventDetailGuestPage = ({ previewData }) => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-primary mb-1"> {getDisplayTicketPrice(event)}</div>
+                  <div className="text-3xl font-bold text-primary mb-1">
+                    {" "}
+                    {getDisplayTicketPrice(event)}
+                  </div>
                   <p className="text-sm text-muted-foreground">
-                    {event.ticketDetails && event.ticketDetails.length > 0 
-                      ? "Giá từ các loại vé khác nhau" 
+                    {event.ticketDetails && event.ticketDetails.length > 0
+                      ? "Giá từ các loại vé khác nhau"
                       : "Bao gồm coffee break & lunch"}
                   </p>
                 </div>
@@ -556,7 +650,11 @@ const EventDetailGuestPage = ({ previewData }) => {
                     <CreditCard className="w-4 h-4 mr-2" />
                     Đăng ký ngay
                   </Button>
-                  <Button variant="outline" className="w-full bg-transparent" onClick={handleInviteFriends}>
+                  <Button
+                    variant="outline"
+                    className="w-full bg-transparent"
+                    onClick={handleInviteFriends}
+                  >
                     <UserPlus className="w-4 h-4 mr-2" />
                     Mời bạn bè tham gia
                   </Button>
@@ -569,49 +667,60 @@ const EventDetailGuestPage = ({ previewData }) => {
             </Card>
 
             {/* Location Card */}
-            {(!event.isOnlineEvent || event.isOnlineEvent === false) && (event.locationName || event.address) && (
-              <Card>
-                <CardHeader>
-                  <h3 className="text-lg font-semibold">Địa điểm</h3>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div>
-                      <p className="font-medium">{event.locationName}</p>
-                      <p className="text-sm text-muted-foreground">{event.address}</p>
+            {(!event.isOnlineEvent || event.isOnlineEvent === false) &&
+              (event.locationName || event.address) && (
+                <Card>
+                  <CardHeader>
+                    <h3 className="text-lg font-semibold">Địa điểm</h3>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="font-medium">{event.locationName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {event.address}
+                        </p>
+                      </div>
+
+                      {/* Mini Map Preview */}
+                      {event.latitude && event.longitude ? (
+                        <div className="relative h-48 rounded-lg overflow-hidden border border-gray-200">
+                          <iframe
+                            src={`https://www.google.com/maps?q=${event.latitude},${event.longitude}&hl=vi&z=14&output=embed`}
+                            className="w-full h-full"
+                            frameBorder="0"
+                            allowFullScreen
+                            title="Event Location Map Preview"
+                          ></iframe>
+                        </div>
+                      ) : (
+                        <div className="relative h-48 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 flex items-center justify-center">
+                          <MapPin className="h-8 w-8 text-gray-400" />
+                          <span className="absolute bottom-2 text-xs text-gray-500">
+                            Bản đồ không khả dụng
+                          </span>
+                        </div>
+                      )}
+
+                      <Button
+                        variant="outline"
+                        className="w-full bg-transparent"
+                        onClick={() => setIsMapModalOpen(true)}
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Xem đường đi
+                      </Button>
                     </div>
-                    
-                    {/* Mini Map Preview */}
-                    {(event.latitude && event.longitude) ? (
-                      <div className="relative h-48 rounded-lg overflow-hidden border border-gray-200">
-                        <iframe
-                          src={`https://www.google.com/maps?q=${event.latitude},${event.longitude}&hl=vi&z=14&output=embed`}
-                          className="w-full h-full"
-                          frameBorder="0"
-                          allowFullScreen
-                          title="Event Location Map Preview"
-                        ></iframe>
-                      </div>
-                    ) : (
-                      <div className="relative h-48 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 flex items-center justify-center">
-                        <MapPin className="h-8 w-8 text-gray-400" />
-                        <span className="absolute bottom-2 text-xs text-gray-500">Bản đồ không khả dụng</span>
-                      </div>
-                    )}
-                    
-                    <Button variant="outline" className="w-full bg-transparent" onClick={() => setIsMapModalOpen(true)}>
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      Xem đường đi
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                  </CardContent>
+                </Card>
+              )}
 
             {/* Related Events */}
             <Card>
               <CardHeader>
-                <h3 className="text-lg font-semibold">Sự kiện có cùng thẻ hoặc danh mục</h3>
+                <h3 className="text-lg font-semibold">
+                  Sự kiện có cùng thẻ hoặc danh mục
+                </h3>
               </CardHeader>
               <CardContent className="space-y-3">
                 {relatedEvents.length > 0 ? (
@@ -629,24 +738,44 @@ const EventDetailGuestPage = ({ previewData }) => {
                         />
                       ) : (
                         <div className="w-15 h-15 rounded bg-gray-200 flex items-center justify-center">
-                          <span className="text-xs text-gray-500">No image</span>
+                          <span className="text-xs text-gray-500">
+                            No image
+                          </span>
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{relatedEvent.title}</p>
+                        <p className="font-medium text-sm truncate">
+                          {relatedEvent.title}
+                        </p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(relatedEvent.startTime).toLocaleDateString("vi-VN")} •
-                          {relatedEvent.minTicketPrice !== undefined && relatedEvent.maxTicketPrice !== undefined ? (
-                            relatedEvent.minTicketPrice === 0 && relatedEvent.maxTicketPrice === 0 ? (
-                              " Miễn phí"
-                            ) : relatedEvent.minTicketPrice === relatedEvent.maxTicketPrice ? (
-                              ` ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(relatedEvent.minTicketPrice)}`
-                            ) : (
-                              ` ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(relatedEvent.minTicketPrice)} - ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(relatedEvent.maxTicketPrice)}`
-                            )
-                          ) : (
-                            relatedEvent.ticketType === 1 || relatedEvent.ticketType === "free" ? " Miễn phí" : " Có phí"
-                          )}
+                          {new Date(relatedEvent.startTime).toLocaleDateString(
+                            "vi-VN"
+                          )}{" "}
+                          •
+                          {relatedEvent.minTicketPrice !== undefined &&
+                          relatedEvent.maxTicketPrice !== undefined
+                            ? relatedEvent.minTicketPrice === 0 &&
+                              relatedEvent.maxTicketPrice === 0
+                              ? " Miễn phí"
+                              : relatedEvent.minTicketPrice ===
+                                relatedEvent.maxTicketPrice
+                              ? ` ${new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(relatedEvent.minTicketPrice)}`
+                              : ` ${new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(
+                                  relatedEvent.minTicketPrice
+                                )} - ${new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                }).format(relatedEvent.maxTicketPrice)}`
+                            : relatedEvent.ticketType === 1 ||
+                              relatedEvent.ticketType === "free"
+                            ? " Miễn phí"
+                            : " Có phí"}
                         </p>
                       </div>
                     </div>
@@ -669,7 +798,9 @@ const EventDetailGuestPage = ({ previewData }) => {
             <DialogTitle>Bản đồ & Chỉ đường</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <MapDirection destinationAddress={event.address || event.locationName} />
+            <MapDirection
+              destinationAddress={event.address || event.locationName}
+            />
           </div>
         </DialogContent>
       </Dialog>
