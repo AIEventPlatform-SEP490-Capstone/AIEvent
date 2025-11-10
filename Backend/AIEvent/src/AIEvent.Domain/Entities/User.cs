@@ -50,7 +50,7 @@ namespace AIEvent.Domain.Entities
         public ICollection<Friendship> FriendshipsSent { get; set; } = new List<Friendship>();
         public ICollection<Friendship> FriendshipsReceived { get; set; } = new List<Friendship>();
         public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
-
+        public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
         public ICollection<EventInvitation> SentInvitations { get; set; } = new List<EventInvitation>();
         public virtual ICollection<EventInvitation> ReceivedInvitations { get; set; } = new List<EventInvitation>();
     }

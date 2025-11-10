@@ -1,5 +1,6 @@
 ﻿using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.InviteFriend;
+using AIEvent.Application.DTOs.Notification;
 using AIEvent.Application.DTOs.RevenueReport;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
@@ -23,6 +24,7 @@ namespace AIEvent.Application.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly IPayOSService _payOSService;
         private readonly ITransactionHelper _transactionHelper;
+        private readonly INotificationService _notificationService;
 
         public HangfireJobService(
         IPdfService pdfService,
@@ -30,7 +32,8 @@ namespace AIEvent.Application.Services.Implements
         ILogger<HangfireJobService> logger,
         IUnitOfWork unitOfWork,
         IPayOSService payService,
-        ITransactionHelper transactionHelper)
+        ITransactionHelper transactionHelper,
+        INotificationService notificationService)
         {
             _pdfService = pdfService;
             _emailService = emailService;
@@ -38,6 +41,7 @@ namespace AIEvent.Application.Services.Implements
             _unitOfWork = unitOfWork;
             _payOSService = payService;
             _transactionHelper = transactionHelper;
+            _notificationService = notificationService;
         }
 
         // send ticket to email
@@ -213,6 +217,9 @@ namespace AIEvent.Application.Services.Implements
                 var hasBookings = existingEvent.Bookings
                     .Where(b => b.Status == BookingStatus.Completed)
                     .ToList();
+ 
+                var eventTitle = existingEvent.Title;
+                var bookingsForNotification = hasBookings.Select(b => new { b.UserId, b.TotalAmount }).ToList();
 
                 await _transactionHelper.ExecuteInTransactionAsync(async () =>
                 {
@@ -356,6 +363,31 @@ namespace AIEvent.Application.Services.Implements
                         eventId, ticketsToUpdate.Count, totalTicketsToRevert);
                     return Result.Success();
                 });
+ 
+                if (bookingsForNotification.Any())
+                {
+                    var notificationTasks = new List<Task>();
+                    foreach (var bookingInfo in bookingsForNotification)
+                    {
+                        if (bookingInfo.UserId != Guid.Empty)
+                        {
+                            var notificationRequest = new CreateNotificationRequest
+                            {
+                                UserId = bookingInfo.UserId,
+                                Title = "Sự kiện đã bị hủy - Hoàn tiền",
+                                Message = $"Sự kiện <strong>{eventTitle}</strong> đã bị hủy.{(string.IsNullOrEmpty(reasonCancel) ? "" : $" Lý do: {reasonCancel}")} Số tiền <strong>{bookingInfo.TotalAmount:N0} VNĐ</strong> đã được hoàn vào ví của bạn.",
+                                Type = NotificationType.Refund,
+                                Channel = NotificationChannel.InApp,
+                                EventId = eventId
+                            };
+
+                            notificationTasks.Add(_notificationService.CreateNotificationAsync(notificationRequest));
+                        }
+                    }
+
+                    await Task.WhenAll(notificationTasks);
+                    _logger.LogInformation("Sent refund notifications to {UserCount} users for cancelled event {EventId}", bookingsForNotification.Count, eventId);
+                }
 
             }
             catch (Exception ex)

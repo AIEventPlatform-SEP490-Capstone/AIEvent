@@ -2,9 +2,11 @@
 using AIEvent.API.Middleware;
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
+using AIEvent.Infrastructure.Hubs;
 using Hangfire;
 using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.FileProviders;
 using StackExchange.Redis;
 using System.Text.Json;
@@ -60,6 +62,7 @@ namespace AIEvent.API
                                     return result;
                                 };
                             });
+            builder.Services.AddSignalR();
 
             builder.Configuration.AddEnvironmentVariables();
 
@@ -105,10 +108,9 @@ namespace AIEvent.API
                 app.UseHttpsRedirection();
             }
 
+            app.UseCors("AllowFrontend");
 
             app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
-
-            app.UseCors();
 
             app.UseAuthentication();
             app.UseAuthorization();
@@ -129,7 +131,7 @@ namespace AIEvent.API
             app.UseHangfireDashboard("/hangfire");
 
             app.MapControllers();
-
+            app.MapHub<NotificationHub>("/hubs/notification");
             app.Run();
         }
     }

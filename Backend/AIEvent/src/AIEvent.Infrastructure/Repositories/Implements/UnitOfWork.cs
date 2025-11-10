@@ -33,6 +33,7 @@ namespace AIEvent.Infrastructure.Repositories.Implements
         public IGenericRepository<RevenueReport> RevenueReportRepository => GetRepository<RevenueReport>();
         public IGenericRepository<Friendship> FriendshipRepository => GetRepository<Friendship>();
         public IGenericRepository<Rating> RatingRepository => GetRepository<Rating>();
+        public IGenericRepository<Notification> NotificationRepository => GetRepository<Notification>();
         public IGenericRepository<EventInvitation> EventInvitationRepository => GetRepository<EventInvitation>();
         public void EnableSoftDelete() => _context.EnableSoftDelete = true;
         public void DisableSoftDelete() => _context.EnableSoftDelete = false;
