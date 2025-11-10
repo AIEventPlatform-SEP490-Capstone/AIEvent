@@ -1,6 +1,7 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Event;
 using AIEvent.Application.DTOs.EventField;
+using AIEvent.Application.DTOs.Notification;
 using AIEvent.Application.DTOs.Organizer;
 using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.DTOs.Ticket;
@@ -24,6 +25,7 @@ namespace AIEvent.Application.Test.Services
        private readonly Mock<ITransactionHelper> _mockTransactionHelper;
        private readonly Mock<IMapper> _mockMapper;
        private readonly Mock<IHangfireJobService> _mockHangfireJobService;
+       private readonly Mock<INotificationService> _mockNotificationService;
        private readonly IEventService _eventService;
 
        public EventServiceTests()
@@ -32,12 +34,14 @@ namespace AIEvent.Application.Test.Services
            _mockTransactionHelper = new Mock<ITransactionHelper>();
            _mockMapper = new Mock<IMapper>();
            _mockHangfireJobService = new Mock<IHangfireJobService>();
+           _mockNotificationService = new Mock<INotificationService>();
 
            _eventService = new EventService(
                _mockUnitOfWork.Object,
                _mockTransactionHelper.Object,
                _mockMapper.Object,
-               _mockHangfireJobService.Object);
+               _mockHangfireJobService.Object,
+               _mockNotificationService.Object);
        }
 
 
@@ -1313,6 +1317,13 @@ namespace AIEvent.Application.Test.Services
                EndTime = createEventRequest.EndTime
            };
 
+           var managerRole = new Role
+           {
+               Id = Guid.NewGuid(),
+               Name = "Manager",
+               IsDeleted = false
+           };
+
            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.GetByIdAsync(organizerId, true))
                .ReturnsAsync(organizer);
            _mockMapper.Setup(x => x.Map<Event>(createEventRequest))
@@ -1320,6 +1331,10 @@ namespace AIEvent.Application.Test.Services
            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                .Returns<Func<Task<Result>>>(func => func());
            _mockUnitOfWork.Setup(x => x.EventRepository.AddAsync(It.IsAny<Event>()));
+           _mockUnitOfWork.Setup(x => x.RoleRepository.Query(It.IsAny<bool>()))
+               .Returns(new List<Role> { managerRole }.AsQueryable().BuildMockDbSet().Object);
+           _mockNotificationService.Setup(x => x.CreateNotificationToAllAsync(It.IsAny<CreateNotificationToAllRequest>()))
+               .ReturnsAsync(Result.Success());
 
            // Act
            var result = await _eventService.CreateEventAsync(organizerId, createEventRequest);
@@ -1327,6 +1342,12 @@ namespace AIEvent.Application.Test.Services
            // Assert
            result.IsSuccess.Should().BeTrue();
            _mockUnitOfWork.Verify(x => x.EventRepository.AddAsync(It.IsAny<Event>()), Times.Once);
+           _mockNotificationService.Verify(x => x.CreateNotificationToAllAsync(It.Is<CreateNotificationToAllRequest>(
+               req => req.Type == NotificationType.EventCreated &&
+                      req.Title == "Yêu cầu phê duyệt sự kiện" &&
+                      req.TargetRoles != null && req.TargetRoles.Any() &&
+                      req.EventId == eventEntity.Id &&
+                      req.ImageUrl == createEventRequest.ImgListEvent!.First())), Times.Once());
        }
         
        // UTCID28: Publish = false should not require evidence - Success
@@ -4683,7 +4704,18 @@ namespace AIEvent.Application.Test.Services
            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                .Returns<Func<Task<Result>>>(func => func());
 
+           var managerRole = new Role
+           {
+               Id = Guid.NewGuid(),
+               Name = "Manager",
+               IsDeleted = false
+           };
+
+           _mockUnitOfWork.Setup(x => x.RoleRepository.Query(It.IsAny<bool>()))
+               .Returns(new List<Role> { managerRole }.AsQueryable().BuildMockDbSet().Object);
            _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+           _mockNotificationService.Setup(x => x.CreateNotificationToAllAsync(It.IsAny<CreateNotificationToAllRequest>()))
+               .ReturnsAsync(Result.Success());
 
            // Act
            var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
@@ -5463,18 +5495,35 @@ namespace AIEvent.Application.Test.Services
                EventTags = new List<EventTag> { new EventTag { EventId = eventId, TagId = Guid.NewGuid() } }
            };
 
+           var managerRole = new Role
+           {
+               Id = Guid.NewGuid(),
+               Name = "Manager",
+               IsDeleted = false
+           };
+
            var eventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(eventQueryable);
            _mockMapper.Setup(x => x.Map(updateRequest, existingEvent)).Returns(existingEvent);
            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                .Returns<Func<Task<Result>>>(func => func());
            _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()));
+           _mockUnitOfWork.Setup(x => x.RoleRepository.Query(It.IsAny<bool>()))
+               .Returns(new List<Role> { managerRole }.AsQueryable().BuildMockDbSet().Object);
+           _mockNotificationService.Setup(x => x.CreateNotificationToAllAsync(It.IsAny<CreateNotificationToAllRequest>()))
+               .ReturnsAsync(Result.Success());
 
            // Act
            var result = await _eventService.UpdateEventAsync(organizerId, eventId, updateRequest);
 
            // Assert
            result.IsSuccess.Should().BeTrue();
+           _mockNotificationService.Verify(x => x.CreateNotificationToAllAsync(It.Is<CreateNotificationToAllRequest>(
+               req => req.Type == NotificationType.EventCreated &&
+                      req.Title == "Yêu cầu phê duyệt sự kiện" &&
+                      req.TargetRoles != null && req.TargetRoles.Any() &&
+                      req.EventId == eventId &&
+                      req.ImageUrl == "image.jpg")), Times.Once());
        }
 
        // UTCID29: Update with add and remove images simultaneously - Success
@@ -8509,7 +8558,7 @@ namespace AIEvent.Application.Test.Services
        #endregion
 
        #region ConfirmEventAsync
-       private static Event CreateEventPendingApproval(Guid id)
+       private static Event CreateEventPendingApproval(Guid id, Guid? organizerUserId = null)
        {
            return new Event
            {
@@ -8524,7 +8573,21 @@ namespace AIEvent.Application.Test.Services
                RemainingTickets = 10,
                TicketPricingType = TicketPricingType.Free,
                Status = EventStatus.PendingApproval,
-               IsDeleted = false
+               IsDeleted = false,
+               ImgListEvent = "image1.jpg, image2.jpg",
+               OrganizerProfile = organizerUserId.HasValue ? new OrganizerProfile
+               {
+                   UserId = organizerUserId.Value,
+                   OrganizationType = OrganizationType.PrivateCompany,
+                   EventFrequency = EventFrequency.Monthly,
+                   EventSize = EventSize.Medium,
+                   OrganizerType = OrganizerType.Individual,
+                   EventExperienceLevel = EventExperienceLevel.Intermediate,
+                   ContactName = "Test Contact",
+                   ContactEmail = "test@example.com",
+                   ContactPhone = "0123456789",
+                   Address = "Test Address"
+               } : null
            };
        }
 
@@ -8576,7 +8639,7 @@ namespace AIEvent.Application.Test.Services
        {
            // Arrange
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
-               .Returns(new List<Event>().AsQueryable().BuildMock());
+               .Returns(new List<Event>().AsQueryable().BuildMockDbSet().Object);
 
            // Act
            var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), Guid.NewGuid(), new ConfirmEventRequest { Status = ConfirmStatus.Approved });
@@ -8593,7 +8656,7 @@ namespace AIEvent.Application.Test.Services
            // Arrange: Status != PendingApproval (Approve here)
            var evt = CreateEventProcessed(Guid.NewGuid(), EventStatus.Approved);
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
-               .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
+               .Returns(new List<Event> { evt }.AsQueryable().BuildMockDbSet().Object);
 
            // Act
            var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmEventRequest { Status = ConfirmStatus.Approved });
@@ -8610,7 +8673,7 @@ namespace AIEvent.Application.Test.Services
            // Arrange: entity in PendingApproval
            var evt = CreateEventPendingApproval(Guid.NewGuid());
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
-               .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
+               .Returns(new List<Event> { evt }.AsQueryable().BuildMockDbSet().Object);
 
            // Act
            var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmEventRequest { Status = ConfirmStatus.Rejected, Reason = "   " });
@@ -8625,12 +8688,15 @@ namespace AIEvent.Application.Test.Services
        public async Task UTCID07_ConfirmEventAsync_RejectWithReason_ShouldUpdateAndReturnSuccess()
        {
            // Arrange
-           var evt = CreateEventPendingApproval(Guid.NewGuid());
+           var organizerUserId = Guid.NewGuid();
+           var evt = CreateEventPendingApproval(Guid.NewGuid(), organizerUserId);
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
-               .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
+               .Returns(new List<Event> { evt }.AsQueryable().BuildMockDbSet().Object);
            _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()))
                .ReturnsAsync((Event e) => e);
            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+           _mockNotificationService.Setup(x => x.CreateNotificationAsync(It.IsAny<CreateNotificationRequest>()))
+               .ReturnsAsync(Result.Success());
 
            var userId = Guid.NewGuid();
            var request = new ConfirmEventRequest { Status = ConfirmStatus.Rejected, Reason = " invalid info  " };
@@ -8648,18 +8714,27 @@ namespace AIEvent.Application.Test.Services
                e.RequireApprovalAt.HasValue
            )), Times.Once());
            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
+           _mockNotificationService.Verify(x => x.CreateNotificationAsync(It.Is<CreateNotificationRequest>(
+               req => req.UserId == organizerUserId &&
+                      req.Type == NotificationType.EventRejected &&
+                      req.Title == "Sự kiện đã bị từ chối" &&
+                      req.Message.Contains("invalid info") &&
+                      req.EventId == evt.Id)), Times.Once());
        }
 
        [Fact]
        public async Task UTCID08_ConfirmEventAsync_Approve_ShouldUpdateAndReturnSuccess()
        {
            // Arrange
-           var evt = CreateEventPendingApproval(Guid.NewGuid());
+           var organizerUserId = Guid.NewGuid();
+           var evt = CreateEventPendingApproval(Guid.NewGuid(), organizerUserId);
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
-               .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
+               .Returns(new List<Event> { evt }.AsQueryable().BuildMockDbSet().Object);
            _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()))
                .ReturnsAsync((Event e) => e);
            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+           _mockNotificationService.Setup(x => x.CreateNotificationAsync(It.IsAny<CreateNotificationRequest>()))
+               .ReturnsAsync(Result.Success());
 
            var userId = Guid.NewGuid();
            var request = new ConfirmEventRequest { Status = ConfirmStatus.Approved };
@@ -8676,6 +8751,12 @@ namespace AIEvent.Application.Test.Services
                e.RequireApprovalAt.HasValue
            )), Times.Once());
            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
+           _mockNotificationService.Verify(x => x.CreateNotificationAsync(It.Is<CreateNotificationRequest>(
+               req => req.UserId == organizerUserId &&
+                      req.Type == NotificationType.EventApproved &&
+                      req.Title == "Sự kiện đã được phê duyệt" &&
+                      req.EventId == evt.Id &&
+                      req.ImageUrl == "image1.jpg")), Times.Once());
        }
 
        [Fact]
@@ -8685,7 +8766,7 @@ namespace AIEvent.Application.Test.Services
            var evt = CreateEventPendingApproval(Guid.NewGuid());
            evt.IsDeleted = true;
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
-               .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
+               .Returns(new List<Event> { evt }.AsQueryable().BuildMockDbSet().Object);
 
            // Act
            var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmEventRequest { Status = ConfirmStatus.Approved });
@@ -8704,7 +8785,7 @@ namespace AIEvent.Application.Test.Services
            // Arrange
            var evt = CreateEventProcessed(Guid.NewGuid(), EventStatus.Rejected);
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
-               .Returns(new List<Event> { evt }.AsQueryable().BuildMock());
+               .Returns(new List<Event> { evt }.AsQueryable().BuildMockDbSet().Object);
 
            // Act
            var result = await _eventService.ConfirmEventAsync(Guid.NewGuid(), evt.Id, new ConfirmEventRequest { Status = ConfirmStatus.Approved });

@@ -1,5 +1,7 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.InviteFriend;
+using AIEvent.Application.DTOs.Notification;
+using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
@@ -17,6 +19,7 @@ namespace AIEvent.Application.Test.Services
     {
         private readonly Mock<IUnitOfWork> _mockUnitOfWork;
         private readonly Mock<IHangfireJobService> _mockHangfireJobService;
+        private readonly Mock<INotificationService> _mockNotificationService;
         private readonly IEventInvitationService _eventInvitationService;
 
         static EventInvitationServiceTests()
@@ -29,9 +32,11 @@ namespace AIEvent.Application.Test.Services
         {
             _mockUnitOfWork = new Mock<IUnitOfWork>();
             _mockHangfireJobService = new Mock<IHangfireJobService>();
+            _mockNotificationService = new Mock<INotificationService>();
             _eventInvitationService = new EventInvitationService(
                 _mockUnitOfWork.Object,
-                _mockHangfireJobService.Object);
+                _mockHangfireJobService.Object,
+                _mockNotificationService.Object);
         }
 
         private Event CreateEvent(Guid eventId, string title, string? imgListEvent = null, DateTime? startTime = null)
@@ -138,6 +143,8 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.EventInvitationRepository.AddRangeAsync(It.IsAny<IEnumerable<EventInvitation>>()));
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
             SetupHangfireMockForInviteEmail(2);
+            _mockNotificationService.Setup(x => x.CreateNotificationAsync(It.IsAny<CreateNotificationRequest>()))
+                .ReturnsAsync(Result.Success());
 
             // Act
             var result = await _eventInvitationService.InviteFriendsAsync(eventId, userId, request);
@@ -154,6 +161,16 @@ namespace AIEvent.Application.Test.Services
                 invitations.All(i => i.EventId == eventId && i.InviterId == userId && i.Status == InvitationStatus.Pending)
             )), Times.Once());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
+            _mockNotificationService.Verify(x => x.CreateNotificationAsync(It.Is<CreateNotificationRequest>(
+                req => req.UserId == friendId1 &&
+                       req.Type == NotificationType.EventInvitation &&
+                       req.Title == "Lời mời tham gia sự kiện" &&
+                       req.EventId == eventId)), Times.Once());
+            _mockNotificationService.Verify(x => x.CreateNotificationAsync(It.Is<CreateNotificationRequest>(
+                req => req.UserId == friendId2 &&
+                       req.Type == NotificationType.EventInvitation &&
+                       req.Title == "Lời mời tham gia sự kiện" &&
+                       req.EventId == eventId)), Times.Once());
         }
 
         // UTCID02: Null InvitedUserIds - Should return failure
@@ -681,6 +698,8 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.EventInvitationRepository.UpdateAsync(It.IsAny<EventInvitation>()));
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
             SetupHangfireMockForConfirmEmail();
+            _mockNotificationService.Setup(x => x.CreateNotificationAsync(It.IsAny<CreateNotificationRequest>()))
+                .ReturnsAsync(Result.Success());
 
             // Act
             var result = await _eventInvitationService.ConfirmInvitationAsync(invitationId, userId, request);
@@ -694,6 +713,11 @@ namespace AIEvent.Application.Test.Services
                 i.RespondedAt.HasValue
             )), Times.Once());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
+            _mockNotificationService.Verify(x => x.CreateNotificationAsync(It.Is<CreateNotificationRequest>(
+                req => req.UserId == inviterId &&
+                       req.Type == NotificationType.EventInvitationAccepted &&
+                       req.Title == "Lời mời đã được chấp nhận" &&
+                       req.EventId == eventId)), Times.Once());
         }
 
         // UTCID02: Valid request with Rejected status - Success
@@ -748,6 +772,8 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.EventInvitationRepository.Query(It.IsAny<bool>())).Returns(invitations.Object);
             _mockUnitOfWork.Setup(x => x.EventInvitationRepository.UpdateAsync(It.IsAny<EventInvitation>()));
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+            _mockNotificationService.Setup(x => x.CreateNotificationAsync(It.IsAny<CreateNotificationRequest>()))
+                .ReturnsAsync(Result.Success());
 
             // Act
             var result = await _eventInvitationService.ConfirmInvitationAsync(invitationId, userId, request);
@@ -760,6 +786,11 @@ namespace AIEvent.Application.Test.Services
                 i.RespondedAt.HasValue
             )), Times.Once());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
+            _mockNotificationService.Verify(x => x.CreateNotificationAsync(It.Is<CreateNotificationRequest>(
+                req => req.UserId == inviterId &&
+                       req.Type == NotificationType.EventInvitationRejected &&
+                       req.Title == "Lời mời đã bị từ chối" &&
+                       req.EventId == eventId)), Times.Once());
         }
 
         // UTCID03: User not found - Should return failure

@@ -1,6 +1,7 @@
 ﻿using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.InviteFriend;
+using AIEvent.Application.DTOs.Notification;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
@@ -16,11 +17,13 @@ namespace AIEvent.Application.Services.Implements
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IHangfireJobService _hangfireJobService;
+        private readonly INotificationService _notificationService;
 
-        public EventInvitationService(IUnitOfWork unitOfWork, IHangfireJobService hangfireJobService)
+        public EventInvitationService(IUnitOfWork unitOfWork, IHangfireJobService hangfireJobService, INotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
             _hangfireJobService = hangfireJobService;
+            _notificationService = notificationService;
         }
 
         public async Task<Result> InviteFriendsAsync(Guid eventId, Guid userId, InviteFriendRequest request)
@@ -74,7 +77,7 @@ namespace AIEvent.Application.Services.Implements
                 .ToList();
 
             var invitations = new List<EventInvitation>();
-            var firstImage = string.IsNullOrEmpty(eventEntity.ImgListEvent) ? eventEntity.ImgListEvent!.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() : string.Empty;
+            var firstImage = !string.IsNullOrEmpty(eventEntity.ImgListEvent) ? eventEntity.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() : string.Empty;
 
             foreach (var user in usersToInvite)
             {
@@ -103,6 +106,19 @@ namespace AIEvent.Application.Services.Implements
                     };
                     BackgroundJob.Enqueue(() => _hangfireJobService.EnqueueInviteEmail(dto));
                 }
+ 
+                var notificationRequest = new CreateNotificationRequest
+                {
+                    UserId = user.Id,
+                    Title = "Lời mời tham gia sự kiện",
+                    Message = $"<strong>{userInviter.FullName ?? "Người dùng"}</strong> đã mời bạn tham gia sự kiện <strong>{eventEntity.Title}</strong>.{(string.IsNullOrEmpty(request.Message) ? "" : $" \"{request.Message}\"")}",
+                    Type = NotificationType.EventInvitation,
+                    Channel = NotificationChannel.InApp,
+                    EventId = eventEntity.Id,
+                    ImageUrl = firstImage
+                };
+
+                await _notificationService.CreateNotificationAsync(notificationRequest);
             }
 
             await _unitOfWork.EventInvitationRepository.AddRangeAsync(invitations);
@@ -140,7 +156,7 @@ namespace AIEvent.Application.Services.Implements
 
             invitation.RespondedAt = DateTime.UtcNow;
 
-            var firstImage = string.IsNullOrEmpty(invitation.Event.ImgListEvent) ? invitation.Event.ImgListEvent!.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() : string.Empty;
+            var firstImage = !string.IsNullOrEmpty(invitation.Event.ImgListEvent) ? invitation.Event.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() : string.Empty;
 
             if (invitation.Inviter?.IsEmailNotificationEnabled == true &&
                 !string.IsNullOrWhiteSpace(invitation.Inviter?.Email))
@@ -159,6 +175,27 @@ namespace AIEvent.Application.Services.Implements
                     Status = request.Status
                 };
                 BackgroundJob.Enqueue(() => _hangfireJobService.EnqueueConfirmEmail(dto));
+            }
+
+            if (invitation.InviterId != Guid.Empty)
+            {
+                var action = request.Status == ConfirmStatus.Approved ? "chấp nhận" : "từ chối";
+                var notificationRequest = new CreateNotificationRequest
+                {
+                    UserId = invitation.InviterId,
+                    Title = request.Status == ConfirmStatus.Approved 
+                        ? "Lời mời đã được chấp nhận" 
+                        : "Lời mời đã bị từ chối",
+                    Message = $"<strong>{invitedUser.FullName ?? "Người dùng"}</strong> đã <strong>{action}</strong> lời mời tham gia sự kiện <strong>{invitation.Event.Title}</strong>.",
+                    Type = request.Status == ConfirmStatus.Approved 
+                        ? NotificationType.EventInvitationAccepted 
+                        : NotificationType.EventInvitationRejected,
+                    Channel = NotificationChannel.InApp,
+                    EventId = invitation.Event.Id,
+                    ImageUrl = firstImage
+                };
+
+                await _notificationService.CreateNotificationAsync(notificationRequest);
             }
 
             await _unitOfWork.EventInvitationRepository.UpdateAsync(invitation);
