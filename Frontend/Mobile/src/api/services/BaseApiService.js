@@ -22,7 +22,6 @@ class BaseApiService {
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         const jsonData = await response.json();
-        console.log('API Response Data:', jsonData);
         return jsonData;
       } else {
         // Handle non-JSON responses
@@ -55,9 +54,7 @@ class BaseApiService {
 
   static async get(url) {
     try {
-      console.log('Making GET request to:', url);
       const headers = await this.getAuthHeaders();
-      console.log('Request Headers:', headers);
       
       const response = await fetch(url, {
         method: 'GET',

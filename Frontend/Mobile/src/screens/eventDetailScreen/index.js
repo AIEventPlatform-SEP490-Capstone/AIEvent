@@ -96,6 +96,17 @@ const EventDetailScreen = () => {
     // Ensure we have a valid ID
     const eventId = eventData.eventId || eventData.EventId || eventData.id || 'unknown';
     
+    // Transform tags to ensure they are strings
+    const transformTags = (tags) => {
+      if (!tags || !Array.isArray(tags)) return [];
+      return tags.map(tag => {
+        if (typeof tag === 'object') {
+          return tag.tagName || tag.name || tag.tagId || 'Tag';
+        }
+        return tag;
+      });
+    };
+    
     return {
       id: eventId,
       title: eventData.title || eventData.Title || 'Chưa có tiêu đề',
@@ -126,7 +137,7 @@ const EventDetailScreen = () => {
         (eventData.organizerEvent.companyName || eventData.organizerEvent.CompanyName || 'Nhà tổ chức') : 
         'Chưa xác định',
       isFavorite: eventData.isFavorite || false,
-      tags: eventData.tags || eventData.Tags || eventData.eventTags || [],
+      tags: transformTags(eventData.tags || eventData.Tags || eventData.eventTags || []),
       ticketDetails: eventData.ticketDetails || eventData.TicketDetails || []
     };
   };
@@ -240,6 +251,19 @@ const EventDetailScreen = () => {
     return Images.event1;
   };
 
+  // Get organizer initials for avatar
+  const getOrganizerInitials = () => {
+    if (event && event.organizer) {
+      const words = event.organizer.split(' ');
+      if (words.length > 1) {
+        return `${words[0][0]}${words[1][0]}`.toUpperCase();
+      } else {
+        return words[0][0].toUpperCase();
+      }
+    }
+    return 'NT';
+  };
+
   // Use Redux loading state or local loading state
   const isLoading = loading;
 
@@ -322,6 +346,154 @@ const EventDetailScreen = () => {
           </CustomText>
         </View>
 
+        {/* Stats Section */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statBox}>
+            <CustomText variant="h3" color="primary" style={styles.statValue}>
+              {event.attendees || 0}
+            </CustomText>
+            <CustomText variant="body" color="secondary" style={styles.statLabel}>
+              Người tham gia
+            </CustomText>
+          </View>
+          <View style={styles.statBox}>
+            <CustomText variant="h3" color="primary" style={styles.statValue}>
+              {totalAvailableTickets}
+            </CustomText>
+            <CustomText variant="body" color="secondary" style={styles.statLabel}>
+              Vé còn lại
+            </CustomText>
+          </View>
+          <View style={styles.statBox}>
+            <CustomText variant="h3" color="primary" style={styles.statValue}>
+              {event.ticketDetails?.length || 0}
+            </CustomText>
+            <CustomText variant="body" color="secondary" style={styles.statLabel}>
+              Loại vé
+            </CustomText>
+          </View>
+        </View>
+
+        {/* Organizer Section */}
+        <View style={styles.organizerSection}>
+          <View style={styles.organizerAvatar}>
+            <CustomText variant="h3" color="white" style={styles.organizerAvatarText}>
+              {getOrganizerInitials()}
+            </CustomText>
+          </View>
+          <View style={styles.organizerInfo}>
+            <CustomText variant="h4" color="primary" style={styles.organizerName}>
+              {event.organizer}
+            </CustomText>
+            <CustomText variant="body" color="secondary" style={styles.organizerEvents}>
+              Nhà tổ chức sự kiện
+            </CustomText>
+          </View>
+        </View>
+
+        {/* Tags Section */}
+        {event.tags && event.tags.length > 0 && (
+          <View style={styles.tagsContainer}>
+            {event.tags.map((tag, index) => (
+              <View key={index} style={styles.tag}>
+                <CustomText variant="caption" color="primary" style={styles.tagText}>
+                  #{typeof tag === 'object' ? tag.tagName || tag.name || 'Tag' : tag}
+                </CustomText>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Program Schedule Section */}
+        <View style={styles.programSection}>
+          <CustomText variant="h3" color="primary" style={styles.sectionTitle}>
+            Lịch trình sự kiện
+          </CustomText>
+          
+          <View style={styles.programItem}>
+            <View style={styles.programTime}>
+              <CustomText variant="caption" color="white" style={styles.programTimeText}>
+                09:00
+              </CustomText>
+            </View>
+            <View style={styles.programContent}>
+              <CustomText variant="body" color="primary" style={styles.programTitle}>
+                Khai mạc và giới thiệu
+              </CustomText>
+              <CustomText variant="caption" color="secondary" style={styles.programDescription}>
+                Lễ khai mạc và giới thiệu chương trình sự kiện
+              </CustomText>
+            </View>
+          </View>
+          
+          <View style={styles.programItem}>
+            <View style={styles.programTime}>
+              <CustomText variant="caption" color="white" style={styles.programTimeText}>
+                10:30
+              </CustomText>
+            </View>
+            <View style={styles.programContent}>
+              <CustomText variant="body" color="primary" style={styles.programTitle}>
+                Buổi thuyết trình chính
+              </CustomText>
+              <CustomText variant="caption" color="secondary" style={styles.programDescription}>
+                Các bài thuyết trình quan trọng của sự kiện
+              </CustomText>
+            </View>
+          </View>
+          
+          <View style={styles.programItem}>
+            <View style={styles.programTime}>
+              <CustomText variant="caption" color="white" style={styles.programTimeText}>
+                12:00
+              </CustomText>
+            </View>
+            <View style={styles.programContent}>
+              <CustomText variant="body" color="primary" style={styles.programTitle}>
+                Nghỉ trưa và giao lưu
+              </CustomText>
+              <CustomText variant="caption" color="secondary" style={styles.programDescription}>
+                Thời gian nghỉ ngơi và giao lưu với các khách mời
+              </CustomText>
+            </View>
+          </View>
+        </View>
+
+        {/* Benefits Section */}
+        <View style={styles.benefitsSection}>
+          <CustomText variant="h3" color="primary" style={styles.benefitsTitle}>
+            Lợi ích khi tham gia
+          </CustomText>
+          
+          <View style={styles.benefitItem}>
+            <Image source={Images.check} style={styles.benefitIcon} />
+            <CustomText variant="body" color="primary" style={styles.benefitText}>
+              Kết nối với chuyên gia trong ngành
+            </CustomText>
+          </View>
+          
+          <View style={styles.benefitItem}>
+            <Image source={Images.check} style={styles.benefitIcon} />
+            <CustomText variant="body" color="primary" style={styles.benefitText}>
+              Học hỏi kiến thức mới và cập nhật
+            </CustomText>
+          </View>
+          
+          <View style={styles.benefitItem}>
+            <Image source={Images.check} style={styles.benefitIcon} />
+            <CustomText variant="body" color="primary" style={styles.benefitText}>
+              Cơ hội nghề nghiệp và việc làm
+            </CustomText>
+          </View>
+          
+          <View style={styles.benefitItem}>
+            <Image source={Images.check} style={styles.benefitIcon} />
+            <CustomText variant="body" color="primary" style={styles.benefitText}>
+              Nhận chứng chỉ tham dự sự kiện
+            </CustomText>
+          </View>
+        </View>
+
         {/* Premium Event Details */}
         <View style={styles.detailsSection}>
           <CustomText variant="h3" color="primary" style={styles.sectionTitle}>
@@ -368,20 +540,6 @@ const EventDetailScreen = () => {
               ) : null}
             </View>
           </View>
-
-          {event.organizer && (
-            <View style={styles.detailRow}>
-              <Image source={Images.profile} style={styles.detailIcon} />
-              <View style={styles.detailInfo}>
-                <CustomText variant="caption" color="secondary" style={{ fontSize: Fonts.xs, marginBottom: 4, fontFamily: Fonts.medium }}>
-                  {Strings.EVENT_ORGANIZER}
-                </CustomText>
-                <CustomText variant="body" color="primary" style={{ fontSize: Fonts.md, fontWeight: '600', fontFamily: Fonts.semiBold }}>
-                  {event.organizer}
-                </CustomText>
-              </View>
-            </View>
-          )}
 
           {event.category && (
             <View style={[styles.detailRow, { borderBottomWidth: 0, marginBottom: 0 }]}>
@@ -454,6 +612,55 @@ const EventDetailScreen = () => {
             {event.description || event.detailedDescription || 'Chưa có mô tả cho sự kiện này.'}
           </CustomText>
         </View>
+
+        {/* Related Events Section */}
+        <View style={styles.relatedEventsSection}>
+          <CustomText variant="h3" color="primary" style={styles.sectionTitle}>
+            Sự kiện liên quan
+          </CustomText>
+          
+          <View style={styles.relatedEventCard}>
+            <Image source={Images.event2} style={styles.relatedEventImage} />
+            <View style={styles.relatedEventInfo}>
+              <CustomText variant="body" color="primary" style={styles.relatedEventTitle} numberOfLines={1}>
+                Workshop Công nghệ mới 2023
+              </CustomText>
+              <CustomText variant="caption" color="secondary" style={styles.relatedEventDate}>
+                15 Tháng 12, 2023
+              </CustomText>
+              <CustomText variant="caption" color="primary" style={styles.relatedEventPrice}>
+                250.000đ
+              </CustomText>
+            </View>
+          </View>
+          
+          <View style={styles.relatedEventCard}>
+            <Image source={Images.event3} style={styles.relatedEventImage} />
+            <View style={styles.relatedEventInfo}>
+              <CustomText variant="body" color="primary" style={styles.relatedEventTitle} numberOfLines={1}>
+                Hội thảo AI và Tương lai
+              </CustomText>
+              <CustomText variant="caption" color="secondary" style={styles.relatedEventDate}>
+                20 Tháng 12, 2023
+              </CustomText>
+              <CustomText variant="caption" color="primary" style={styles.relatedEventPrice}>
+                Miễn phí
+              </CustomText>
+            </View>
+          </View>
+        </View>
+
+        {/* Share Button */}
+        <TouchableOpacity 
+          style={styles.shareButton}
+          onPress={handleShareEvent}
+          activeOpacity={0.8}
+        >
+          <Image source={Images.share} style={{ width: 24, height: 24, tintColor: Colors.white }} />
+          <CustomText variant="button" color="white" style={styles.shareButtonText}>
+            Chia sẻ sự kiện
+          </CustomText>
+        </TouchableOpacity>
 
         {/* Premium Action Buttons */}
         <View style={styles.actionsSection}>
