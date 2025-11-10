@@ -38,6 +38,7 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<Rating> Ratings { get; set; }
         public DbSet<EventInvitation> EventInvitations { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<StaffProfile> StaffProfiles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -413,6 +414,23 @@ namespace AIEvent.Infrastructure.Context
                 entity.HasIndex(n => new { n.UserId, n.CreatedAt }).HasDatabaseName("IX_Notification_User_CreatedAt");
                 entity.HasIndex(n => new { n.UserId, n.IsRead }).HasDatabaseName("IX_Notification_User_IsRead");
                 entity.HasIndex(n => n.IsDeleted).HasDatabaseName("IX_Notification_IsDeleted");
+            });
+
+            //--------------StaffProfile-----------------
+            builder.Entity<StaffProfile>(entity =>
+            {
+                entity.HasOne(u => u.User)
+                    .WithOne(o => o.StaffProfile)
+                    .HasForeignKey<StaffProfile>(o => o.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(x => x.OrganizerProfile)
+                    .WithMany(e => e.StaffProfiles)
+                    .HasForeignKey(x => x.OrganizerProfileId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(x => x.OrganizerProfileId).HasDatabaseName("IX_StaffProfile_OrganizerProfileId");
+                entity.HasIndex(x => x.UserId).HasDatabaseName("IX_StaffProfile_UserId");
             });
 
             builder.Seed();

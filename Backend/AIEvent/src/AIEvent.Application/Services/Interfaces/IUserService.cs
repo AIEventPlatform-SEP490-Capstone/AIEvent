@@ -12,5 +12,9 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result> BanUserAsync(Guid userId, string id);
         Task<Result> UnBanUserAsync(Guid userId, string id);
         Task<Result<BasePaginated<UserResponse>>> GetAllUsersBannedAsync(int pageNumber, int pageSize, string? email, string? name, string? role);
+        Task<Result> CreateManagerAccountAsync(CreateAccountRequest request);
+        Task<Result> CreateStaffAccountAsync(Guid userId, CreateAccountRequest request);
+        Task<Result<BasePaginated<AccountResponse>>> GetAllStaffAsync(int pageNumber, int pageSize, string? email, string? name, Guid userId);
+        Task<Result> BanStaffAsync(Guid userId, string id);
     }
 }

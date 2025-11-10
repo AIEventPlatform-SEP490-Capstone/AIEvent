@@ -14,7 +14,7 @@ namespace AIEvent.Domain.Entities
         public string? District { get; set; }
         public string? Latitude { get; set; }
         public string? Longitude { get; set; }
-        public bool IsActive { get; set; } = true;
+        public bool IsActive { get; set; } = false;
         public ParticipationFrequency ParticipationFrequency { get; set; }
         public BudgetOption BudgetOption { get; set; }
         public bool? IsEmailNotificationEnabled { get; set; } = true;
@@ -41,6 +41,7 @@ namespace AIEvent.Domain.Entities
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 
         public OrganizerProfile? OrganizerProfile { get; set; }
+        public StaffProfile? StaffProfile { get; set; }
         public Wallet Wallet { get; set; } = default!;
         public Role Role { get; set; } = default!;
         public ICollection<FavoriteEvent> FavoriteEvents { get; set; } = new List<FavoriteEvent>();

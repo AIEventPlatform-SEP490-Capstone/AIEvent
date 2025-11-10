@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using MimeKit;
 using PayOS.Models.V1.Payouts;
 using System.Text;
+using System.Text.Json;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -25,6 +26,8 @@ namespace AIEvent.Application.Services.Implements
         private readonly IPayOSService _payOSService;
         private readonly ITransactionHelper _transactionHelper;
         private readonly INotificationService _notificationService;
+        private readonly IVoyageEmbeddingService _voyageEmbeddingService;
+        private readonly IPineconeVectorService _pineconeVectorService;
 
         public HangfireJobService(
         IPdfService pdfService,
@@ -33,7 +36,9 @@ namespace AIEvent.Application.Services.Implements
         IUnitOfWork unitOfWork,
         IPayOSService payService,
         ITransactionHelper transactionHelper,
-        INotificationService notificationService)
+        INotificationService notificationService,
+        IVoyageEmbeddingService voyageEmbeddingService,
+        IPineconeVectorService pineconeVectorService)
         {
             _pdfService = pdfService;
             _emailService = emailService;
@@ -42,6 +47,8 @@ namespace AIEvent.Application.Services.Implements
             _payOSService = payService;
             _transactionHelper = transactionHelper;
             _notificationService = notificationService;
+            _pineconeVectorService = pineconeVectorService;
+            _voyageEmbeddingService = voyageEmbeddingService;
         }
 
         // send ticket to email
@@ -455,6 +462,99 @@ namespace AIEvent.Application.Services.Implements
             };
 
             await _emailService.SendEmailAsync(request.InviterEmail!, message);
+        }
+
+        //Embedding user
+        public async Task EnqueueUserEmbeddingJobAsync(Guid userId)
+        {
+            BackgroundJob.Enqueue(() => GenerateAndStoreUserEmbeddingAsync(userId));
+            await Task.CompletedTask;
+        }
+
+        [AutomaticRetry(Attempts = 3)]
+        public async Task GenerateAndStoreUserEmbeddingAsync(Guid userId)
+        {
+            try
+            {
+                var user = await _unitOfWork.UserRepository.Query()
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.Id == userId && !u.IsDeleted && u.IsActive);
+
+                if (user == null)
+                {
+                    _logger.LogWarning("UserEmbeddingJob: User {UserId} not found.", userId);
+                    return;
+                }
+
+                var description = BuildUserProfileText(user);
+
+                var embedding = await _voyageEmbeddingService.GetEmbeddingAsync(description);
+
+                var metadata = new Dictionary<string, object>
+                {
+                    ["UserId"] = user.Id.ToString(),
+                    ["FullName"] = user.FullName ?? "",
+                    ["Occupation"] = user.Occupation ?? "",
+                    ["JobTitle"] = user.JobTitle ?? "",
+                    ["CareerGoal"] = user.CareerGoal ?? "",
+                    ["District"] = user.District ?? "",
+                    ["BudgetOption"] = user.BudgetOption.ToString(),
+                    ["ParticipationFrequency"] = user.ParticipationFrequency.ToString(),
+                    ["ExperienceLevel"] = user.Experience?.ToString() ?? "",
+                    ["Interests"] = user.UserInterestsJson ?? "[]",
+                    ["FavoriteEventTypes"] = user.FavoriteEventTypesJson ?? "[]",
+                    ["Skills"] = user.ProfessionalSkillsJson ?? "[]",
+                    ["Languages"] = user.LanguagesJson ?? "[]",
+                    ["Introduction"] = user.Introduction ?? "",
+                };
+
+                await _pineconeVectorService.UpsertVectorAsync(user.Id.ToString(), embedding, metadata);
+
+                _logger.LogInformation("✅ Embedding stored successfully for user {UserId}", userId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error generating embedding for user {UserId}", userId);
+                throw;
+            }
+        }
+
+        private string BuildUserProfileText(User user)
+        {
+            var interests = ParseJsonList(user.UserInterestsJson);
+            var favoriteEvents = ParseJsonList(user.FavoriteEventTypesJson);
+            var skills = ParseJsonList(user.ProfessionalSkillsJson);
+
+            return $@"
+                User Profile:
+                - Name: {user.FullName}
+                - Occupation: {user.Occupation}
+                - Job Title: {user.JobTitle}
+                - Career Goal: {user.CareerGoal}
+                - Address: {user.Address}, {user.District}
+                - Budget Option: {user.BudgetOption}
+                - Participation Frequency: {user.ParticipationFrequency}
+                - Interests: {string.Join(", ", interests)}
+                - Favorite Event Types: {string.Join(", ", favoriteEvents)}
+                - Skills: {string.Join(", ", skills)}
+                - Introduction: {user.Introduction}
+                - Experience Level: {user.Experience}
+                ";
+        }
+
+        private static List<string> ParseJsonList(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return new List<string>();
+
+            try
+            {
+                return JsonSerializer.Deserialize<List<string>>(json) ?? new List<string>();
+            }
+            catch
+            {
+                return new List<string>();
+            }
         }
 
     }
