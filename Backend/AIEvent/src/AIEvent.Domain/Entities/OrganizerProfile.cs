@@ -40,5 +40,6 @@ namespace AIEvent.Domain.Entities
         public ICollection<Event>? Events { get; set; }
         public ICollection<EndEventRequest> EndEventRequests { get; set; } = new List<EndEventRequest>();
         public ICollection<RevenueReport>? RevenueReports { get; set; }
+        public ICollection<StaffProfile>? StaffProfiles { get; set; }
     }
 }

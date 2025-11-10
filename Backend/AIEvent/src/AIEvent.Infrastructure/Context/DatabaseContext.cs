@@ -37,6 +37,7 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<RevenueReport> RevenueReports { get; set; }
         public DbSet<Rating> Ratings { get; set; }
         public DbSet<EventInvitation> EventInvitations { get; set; }
+        public DbSet<StaffProfile> StaffProfiles { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -404,6 +405,23 @@ namespace AIEvent.Infrastructure.Context
                       .WithMany(u => u.ReceivedInvitations)
                       .HasForeignKey(e => e.InvitedUserId)
                       .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            //--------------StaffProfile-----------------
+            builder.Entity<StaffProfile>(entity =>
+            {
+                entity.HasOne(u => u.User)
+                    .WithOne(o => o.StaffProfile)
+                    .HasForeignKey<StaffProfile>(o => o.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(x => x.OrganizerProfile)
+                    .WithMany(e => e.StaffProfiles)
+                    .HasForeignKey(x => x.OrganizerProfileId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(x => x.OrganizerProfileId).HasDatabaseName("IX_StaffProfile_OrganizerProfileId");
+                entity.HasIndex(x => x.UserId).HasDatabaseName("IX_StaffProfile_UserId");
             });
 
             builder.Seed();
