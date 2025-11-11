@@ -58,6 +58,9 @@ const EndUrls = {
   EVENT_TICKETS: (eventId) => `${BASE_URL}/booking/event/${eventId}/ticket`,
   TICKET_QR: (ticketId) => `${BASE_URL}/booking/ticket/qr/${ticketId}`,
   CHECK_IN: `${BASE_URL}/booking/check-in`,
+  // Ratings
+  RATINGS_BY_EVENT: id => `${BASE_URL}/rating/${id}/event`,
+  RATING: id => `${BASE_URL}/rating/${id}`,
 };
 
 console.log('EndUrls:', EndUrls);
