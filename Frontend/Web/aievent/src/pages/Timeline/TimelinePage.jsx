@@ -35,7 +35,6 @@ const TimelinePage = () => {
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [currentDay, setCurrentDay] = useState(new Date());
   const [displayLimit, setDisplayLimit] = useState(20); // Giới hạn số lượng events hiển thị ban đầu
-  const [ticketDisplayLimit, setTicketDisplayLimit] = useState(10); // Giới hạn số lượng tickets hiển thị ban đầu cho mỗi ticket type
   const [dayEventLimits, setDayEventLimits] = useState({}); // Giới hạn số lượng events hiển thị cho mỗi ngày trong Month View
   const [weekDayEventLimits, setWeekDayEventLimits] = useState({}); // Giới hạn số lượng events hiển thị cho mỗi ngày trong Week View
   const [dayViewLimit, setDayViewLimit] = useState(20); // Giới hạn số lượng events hiển thị trong Day View
@@ -135,8 +134,6 @@ const TimelinePage = () => {
   const loadTickets = async (event) => {
     setSelectedEvent(event);
     setLoadingTickets(true);
-    setTicketDisplayLimit(10); // Reset limit khi load tickets mới
-    setActiveTab("info"); // Reset to info tab when opening dialog
     try {
       try {
         const detail = await eventAPI.getEventById(event.eventId);
@@ -917,19 +914,6 @@ const TimelinePage = () => {
                       Thông tin sự kiện
                     </Button>
                     <Button
-                      variant={activeTab === "tickets" ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => setActiveTab("tickets")}
-                      className={`rounded-t-md rounded-b-none border-b-2 transition-all duration-300 text-sm ${
-                        activeTab === "tickets"
-                          ? "border-blue-500 bg-blue-50 text-blue-700 font-semibold shadow-sm hover:text-blue-700"
-                          : "border-transparent hover:bg-gray-50 hover:text-gray-900 text-gray-700"
-                      }`}
-                    >
-                      <Ticket className="w-3.5 h-3.5 mr-1.5" />
-                      Vé của bạn ({tickets.reduce((sum, t) => sum + (t.quantity || 0), 0)})
-                    </Button>
-                    <Button
                       variant={activeTab === "actions" ? "default" : "ghost"}
                       size="sm"
                       onClick={() => setActiveTab("actions")}
@@ -1012,144 +996,7 @@ const TimelinePage = () => {
                           </CardContent>
                         </Card>
                       </div>
-                    )}
-
-                    {/* Tab Content: Vé của bạn */}
-                    {activeTab === "tickets" && (
-                      <Card className="rounded-lg border-2 shadow-lg overflow-hidden">
-                        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-2.5">
-                          <div className="flex items-center gap-2 text-white">
-                            <div className="w-6 h-6 rounded-md bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                              <Ticket className="w-3.5 h-3.5" />
-                            </div>
-                            <h3 className="text-base font-bold">Vé của bạn ({tickets.reduce((sum, t) => sum + (t.quantity || 0), 0)})</h3>
-                          </div>
-                        </div>
-                        <CardContent className="p-4">
-                          {loadingTickets ? (
-                            <div className="text-center py-6">
-                              <div className="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                              <p className="text-muted-foreground mt-2 text-sm">Đang tải vé...</p>
-                            </div>
-                          ) : tickets.length === 0 ? (
-                            <div className="text-center py-6">
-                              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-2">
-                                <Ticket className="w-6 h-6 text-gray-400" />
-                              </div>
-                              <p className="text-gray-600 font-medium text-sm">Bạn chưa có vé cho sự kiện này</p>
-                            </div>
-                          ) : (
-                            <div className="space-y-3">
-                              {tickets.map((t, idx) => {
-                                const ticketList = Array.isArray(t.tickets) ? t.tickets : [];
-                                const displayedTickets = ticketList.slice(0, ticketDisplayLimit);
-                                const remainingTickets = ticketList.length - displayedTickets.length;
-
-                                return (
-                                  <div key={idx} className="space-y-2">
-                                    {/* Ticket Type Header */}
-                                    <div className="flex items-center justify-between p-2.5 bg-gradient-to-r from-gray-50 to-gray-100 rounded-md border-2">
-                                      <div>
-                                        <div className="font-bold text-sm">{t.ticketTypeName}</div>
-                                        {t.price !== undefined && t.price !== null && (
-                                          <div className="text-blue-600 font-bold text-base mt-0.5">
-                                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(t.price)}
-                                          </div>
-                                        )}
-                                      </div>
-                                      <Badge className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-2.5 py-1 text-xs font-bold border-0">
-                                        {t.quantity} vé
-                                      </Badge>
-                                    </div>
-
-                                    {/* Individual Tickets */}
-                                    {ticketList.length > 0 && (
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pl-2">
-                                        {displayedTickets.map((tk) => (
-                                          <Card key={tk.ticketId} className="rounded-md border-2 hover:shadow-xl transition-all duration-300 overflow-hidden">
-                                            <CardContent className="p-3">
-                                              {/* Ticket Header */}
-                                              <div className="flex items-center justify-between mb-2 pb-2 border-b-2 border-dashed">
-                                                <div className="font-mono text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                                                  {tk.ticketCode}
-                                                </div>
-                                                <Badge
-                                                  className={`font-semibold text-xs ${tk.status === "Valid"
-                                                      ? "bg-emerald-100 text-emerald-700 border-emerald-300"
-                                                      : tk.status === "Refunded"
-                                                        ? "bg-amber-100 text-amber-700 border-amber-300"
-                                                        : "bg-gray-100 text-gray-600 border-gray-300"
-                                                    }`}
-                                                >
-                                                  {tk.status === "Valid" ? "✓ Hợp lệ" : tk.status}
-                                                </Badge>
-                                              </div>
-
-                                              {/* Ticket Info */}
-                                              <div className="text-xs text-gray-600 mb-2 flex items-center gap-1.5">
-                                                <Clock className="w-3 h-3" />
-                                                Tạo lúc {format(parseISO(tk.createdAt), "dd/MM/yyyy HH:mm")}
-                                              </div>
-
-                                              {/* QR Code Section */}
-                                              <div className="space-y-1.5">
-                                                <Button
-                                                  size="sm"
-                                                  onClick={() => viewQR(tk.ticketId)}
-                                                  disabled={qrLoadingId === tk.ticketId}
-                                                  className="w-full rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 shadow-lg text-xs"
-                                                >
-                                                  {qrLoadingId === tk.ticketId ? (
-                                                    <>
-                                                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1.5"></div>
-                                                      Đang tải QR...
-                                                    </>
-                                                  ) : (
-                                                    <>
-                                                      Hiển thị mã QR
-                                                    </>
-                                                  )}
-                                                </Button>
-
-                                                {qrByTicketId[tk.ticketId] && (
-                                                  <div className="bg-white p-2 rounded-md border-2 shadow-inner animate-fade-in">
-                                                    <img
-                                                      src={qrByTicketId[tk.ticketId]}
-                                                      alt="QR Code"
-                                                      className="w-full h-auto rounded-md"
-                                                    />
-                                                    <p className="text-center text-[10px] text-gray-500 mt-1">Quét mã để check-in</p>
-                                                  </div>
-                                                )}
-                                              </div>
-                                            </CardContent>
-                                          </Card>
-                                        ))}
-                                      </div>
-                                    )}
-
-                                    {/* Load More Button */}
-                                    {remainingTickets > 0 && (
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setTicketDisplayLimit(prev => prev + 10)}
-                                        className="w-full rounded-md border-2 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 ml-2 text-xs"
-                                      >
-                                        <ChevronDown className="w-3.5 h-3.5 mr-1.5" />
-                                        Xem thêm {remainingTickets} vé
-                                      </Button>
-                                    )}
-
-                                    {idx < tickets.length - 1 && <Separator className="my-3" />}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    )}
+                    )}       
 
                     {/* Tab Content: Thao tác nhanh */}
                     {activeTab === "actions" && (
