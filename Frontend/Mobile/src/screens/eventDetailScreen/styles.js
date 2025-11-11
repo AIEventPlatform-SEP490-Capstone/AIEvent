@@ -1,8 +1,8 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import {StyleSheet, Dimensions, Platform} from 'react-native';
 import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
 
-const { width, height } = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
 
 export const styles = StyleSheet.create({
   container: {
@@ -22,17 +22,18 @@ export const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     padding: 20,
   },
-  backButton: {
-    marginTop: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    backgroundColor: Colors.primary,
-    borderRadius: 8,
-  },
+
+  // Premium Image section
   imageContainer: {
     width: '100%',
     height: height * 0.4,
     position: 'relative',
+    height: height * 0.45,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 10,
   },
   eventImage: {
     width: '100%',
@@ -47,10 +48,17 @@ export const styles = StyleSheet.create({
     position: 'absolute',
     top: 50,
     left: 20,
-    zIndex: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 20,
-    padding: 10,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
   },
   backIcon: {
     width: 24,
@@ -71,14 +79,23 @@ export const styles = StyleSheet.create({
     height: 24,
     tintColor: Colors.white,
   },
+
+  // Premium Content
   content: {
-    padding: 20,
-    backgroundColor: Colors.background,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    marginTop: -30,
-    zIndex: 5,
+    padding: 24,
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    marginTop: -32,
+    minHeight: height * 0.65,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: -8},
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 10,
   },
+
+  // Title section
   titleSection: {
     marginBottom: 16,
   },
@@ -92,6 +109,8 @@ export const styles = StyleSheet.create({
     marginRight: 4,
     tintColor: Colors.warning,
   },
+
+  // Premium Price badge
   priceBadge: {
     alignSelf: 'flex-start',
     backgroundColor: Colors.primary,
@@ -173,6 +192,22 @@ export const styles = StyleSheet.create({
   },
   programSection: {
     marginBottom: 24,
+    marginBottom: 24,
+    shadowColor: Colors.primary,
+    shadowOffset: {width: 0, height: 6},
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+
+  // Premium Details section
+  detailsSection: {
+    marginBottom: 28,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#F0F3F7',
   },
   sectionTitle: {
     fontSize: Fonts.lg,
@@ -259,6 +294,8 @@ export const styles = StyleSheet.create({
   detailInfo: {
     flex: 1,
   },
+
+  // Ticket information styles
   ticketRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -268,6 +305,13 @@ export const styles = StyleSheet.create({
     backgroundColor: Colors.cardBackground,
     borderRadius: 12,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F0F3F7',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   ticketRowUnavailable: {
     opacity: 0.6,
@@ -360,11 +404,30 @@ export const styles = StyleSheet.create({
     fontFamily: Fonts.semiBold,
     marginLeft: 8,
   },
+
+  // Description section
+  descriptionSection: {
+    marginBottom: 32,
+    backgroundColor: '#FAFBFC',
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#F0F3F7',
+  },
+
+  // Premium Actions section
   actionsSection: {
     marginBottom: 24,
   },
   joinButton: {
     marginBottom: 16,
+    borderRadius: 20,
+    paddingVertical: 18,
+    shadowColor: Colors.primary,
+    shadowOffset: {width: 0, height: 6},
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
   secondaryActions: {
     flexDirection: 'row',
@@ -375,3 +438,5 @@ export const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
 });
+
+export default styles;

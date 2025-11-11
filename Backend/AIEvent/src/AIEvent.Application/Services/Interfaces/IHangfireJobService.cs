@@ -11,5 +11,6 @@ namespace AIEvent.Application.Services.Interfaces
         Task EnqueueOrganizerPayoutJobAsync(RevenueReportRequest request);
         Task EnqueueInviteEmail(InviteFriendEmail request);
         Task EnqueueConfirmEmail(ConfirmInvitationEmail request);
+        Task EnqueueUserEmbeddingJobAsync(Guid userId);
     }
 }

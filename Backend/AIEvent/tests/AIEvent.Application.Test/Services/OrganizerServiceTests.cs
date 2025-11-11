@@ -1,5 +1,6 @@
 ﻿using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
+using AIEvent.Application.DTOs.Notification;
 using AIEvent.Application.DTOs.Organizer;
 using AIEvent.Application.DTOs.User;
 using AIEvent.Application.Helpers;
@@ -26,6 +27,7 @@ namespace AIEvent.Application.Test.Services
         private readonly IOrganizerService _organizerService;
         private readonly Mock<IEmailService> _mockEmailService;
         private readonly Mock<IHasherHelper> _mockHasherHelper;
+        private readonly Mock<INotificationService> _mockNotificationService;
 
         private static readonly Guid UserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         private static readonly Guid OrganizerId = Guid.Parse("22222222-2222-2222-2222-222222222222");
@@ -38,13 +40,15 @@ namespace AIEvent.Application.Test.Services
             _mockTransactionHelper = new Mock<ITransactionHelper>();
             _mockEmailService = new Mock<IEmailService>();
             _mockHasherHelper = new Mock<IHasherHelper>();
+            _mockNotificationService = new Mock<INotificationService>();
 
             _organizerService = new OrganizerService(_mockUnitOfWork.Object,
                                                     _mockMapper.Object,
                                                     _mockTransactionHelper.Object,
                                                     _mockCloudinaryService.Object,
                                                     _mockEmailService.Object,
-                                                    _mockHasherHelper.Object);
+                                                    _mockHasherHelper.Object,
+                                                    _mockNotificationService.Object);
         }
 
         #region RegisterOrganizer
@@ -688,6 +692,19 @@ namespace AIEvent.Application.Test.Services
                 .Returns(mappedOrganizer);
 
             _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.AddAsync(It.IsAny<OrganizerProfile>()));
+ 
+            var managerRole = new Role
+            {
+                Id = Guid.NewGuid(),
+                Name = "Manager",
+                IsDeleted = false
+            };
+            var roles = new List<Role> { managerRole }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.RoleRepository.Query(false))
+                .Returns(roles.Object);
+
+            _mockNotificationService.Setup(x => x.CreateNotificationToAllAsync(It.IsAny<CreateNotificationToAllRequest>()))
+                .ReturnsAsync(Result.Success());
         }
 
         private void SetupCloudinaryMocks(string? url1, string? url2, string? url3, string? url4)
@@ -707,6 +724,10 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(mappedOrganizer.UserId, true), Times.Once());
             _mockMapper.Verify(x => x.Map<OrganizerProfile>(It.IsAny<RegisterOrganizerRequest>()), Times.Once());
             _mockUnitOfWork.Verify(x => x.OrganizerProfileRepository.AddAsync(It.IsAny<OrganizerProfile>()), Times.Once());
+            _mockNotificationService.Verify(x => x.CreateNotificationToAllAsync(It.Is<CreateNotificationToAllRequest>(
+                req => req.Type == NotificationType.OrganizerRegistrationPending &&
+                       req.Title == "Yêu cầu phê duyệt đăng ký Organizer" &&
+                       req.TargetRoles != null && req.TargetRoles.Any())), Times.Once());
         }
 
         private void VerifyCloudinaryUploads(int expectedCount)
@@ -784,7 +805,9 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
+            var createdByUserId = Guid.NewGuid();
             var profile = CreateOrganizerProfilePending();
+            profile.CreatedBy = createdByUserId.ToString();
             var role = new Role { Id = Guid.NewGuid(), Name = "Organizer" };
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
@@ -808,6 +831,9 @@ namespace AIEvent.Application.Test.Services
             _mockEmailService.Setup(x => x.SendEmailAsync(profile.ContactEmail!, It.IsAny<MimeMessage>()))
                 .ReturnsAsync(Result.Success());
 
+            _mockNotificationService.Setup(x => x.CreateNotificationAsync(It.IsAny<CreateNotificationRequest>()))
+                .ReturnsAsync(Result.Success());
+
             var request = new ConfirmOrganizerRequest { Status = ConfirmStatus.Approved , Reason = null };
 
             // Act
@@ -818,8 +844,12 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Verify(x => x.OrganizerProfileRepository.UpdateAsync(It.Is<OrganizerProfile>(p => p.Id == profile.Id && p.Status == OrganizerProfileStatus.Approved && p.ConfirmBy == userId.ToString())), Times.Once());
             _mockUnitOfWork.Verify(x => x.RoleRepository.Query(It.IsAny<bool>()), Times.Once());
             _mockHasherHelper.Verify(x => x.Hash(It.IsAny<string>(), It.IsAny<int>()), Times.Once());
-            _mockUnitOfWork.Verify(x => x.UserRepository.AddAsync(It.Is<User>(u => u.Email == profile.ContactEmail && u.LinkedUserId == profile.UserId && u.RoleId == role.Id)), Times.Once());
+            _mockUnitOfWork.Verify(x => x.UserRepository.AddAsync(It.Is<User>(u => u.Email == profile.ContactEmail && u.RoleId == role.Id)), Times.Once());
             _mockEmailService.Verify(x => x.SendEmailAsync(profile.ContactEmail!, It.IsAny<MimeMessage>()), Times.Once());
+            _mockNotificationService.Verify(x => x.CreateNotificationAsync(It.Is<CreateNotificationRequest>(
+                req => req.UserId == createdByUserId &&
+                       req.Type == NotificationType.OrganizerApproved &&
+                       req.Title == "Đăng ký Organizer đã được chấp thuận")), Times.Once());
         }
 
         [Fact]
@@ -958,7 +988,9 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
+            var createdByUserId = Guid.NewGuid();
             var profile = CreateOrganizerProfilePending();
+            profile.CreatedBy = createdByUserId.ToString();
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
                 .Returns<Func<Task<Result>>>(func => func());
@@ -972,6 +1004,27 @@ namespace AIEvent.Application.Test.Services
             _mockEmailService.Setup(x => x.SendEmailAsync(profile.ContactEmail!, It.IsAny<MimeMessage>()))
                 .ReturnsAsync(Result.Success());
 
+            _mockNotificationService.Setup(x => x.CreateNotificationAsync(It.IsAny<CreateNotificationRequest>()))
+                .ReturnsAsync(Result.Success());
+ 
+            var updatedProfile = new OrganizerProfile
+            {
+                Id = profile.Id,
+                CreatedBy = createdByUserId.ToString(),
+                CompanyName = profile.CompanyName,
+                ContactName = profile.ContactName,
+                OrganizationType = profile.OrganizationType,
+                EventFrequency = profile.EventFrequency,
+                EventSize = profile.EventSize,
+                OrganizerType = profile.OrganizerType,
+                EventExperienceLevel = profile.EventExperienceLevel,
+                ContactEmail = profile.ContactEmail,
+                ContactPhone = profile.ContactPhone,
+                Address = profile.Address
+            };
+            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<OrganizerProfile> { updatedProfile }.AsQueryable().BuildMockDbSet().Object);
+
             var request = new ConfirmOrganizerRequest { Status = ConfirmStatus.Rejected, Reason = "Thông tin không hợp lệ" };
 
             // Act
@@ -981,6 +1034,11 @@ namespace AIEvent.Application.Test.Services
             result.IsSuccess.Should().BeTrue();
             _mockUnitOfWork.Verify(x => x.OrganizerProfileRepository.UpdateAsync(It.Is<OrganizerProfile>(p => p.Id == profile.Id && p.Status == OrganizerProfileStatus.Rejected)), Times.Once());
             _mockEmailService.Verify(x => x.SendEmailAsync(profile.ContactEmail!, It.IsAny<MimeMessage>()), Times.Once());
+            _mockNotificationService.Verify(x => x.CreateNotificationAsync(It.Is<CreateNotificationRequest>(
+                req => req.UserId == createdByUserId &&
+                       req.Type == NotificationType.OrganizerRejected &&
+                       req.Title == "Đăng ký Organizer đã bị từ chối" &&
+                       req.Message.Contains("Thông tin không hợp lệ"))), Times.Once());
         }
 
         [Fact]

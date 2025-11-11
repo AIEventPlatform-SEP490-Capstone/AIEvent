@@ -1,5 +1,6 @@
 ﻿using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.InviteFriend;
+using AIEvent.Application.DTOs.Notification;
 using AIEvent.Application.DTOs.RevenueReport;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
@@ -12,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using MimeKit;
 using PayOS.Models.V1.Payouts;
 using System.Text;
+using System.Text.Json;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -23,6 +25,9 @@ namespace AIEvent.Application.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly IPayOSService _payOSService;
         private readonly ITransactionHelper _transactionHelper;
+        private readonly INotificationService _notificationService;
+        private readonly IVoyageEmbeddingService _voyageEmbeddingService;
+        private readonly IPineconeVectorService _pineconeVectorService;
 
         public HangfireJobService(
         IPdfService pdfService,
@@ -30,7 +35,10 @@ namespace AIEvent.Application.Services.Implements
         ILogger<HangfireJobService> logger,
         IUnitOfWork unitOfWork,
         IPayOSService payService,
-        ITransactionHelper transactionHelper)
+        ITransactionHelper transactionHelper,
+        INotificationService notificationService,
+        IVoyageEmbeddingService voyageEmbeddingService,
+        IPineconeVectorService pineconeVectorService)
         {
             _pdfService = pdfService;
             _emailService = emailService;
@@ -38,6 +46,9 @@ namespace AIEvent.Application.Services.Implements
             _unitOfWork = unitOfWork;
             _payOSService = payService;
             _transactionHelper = transactionHelper;
+            _notificationService = notificationService;
+            _pineconeVectorService = pineconeVectorService;
+            _voyageEmbeddingService = voyageEmbeddingService;
         }
 
         // send ticket to email
@@ -213,6 +224,9 @@ namespace AIEvent.Application.Services.Implements
                 var hasBookings = existingEvent.Bookings
                     .Where(b => b.Status == BookingStatus.Completed)
                     .ToList();
+ 
+                var eventTitle = existingEvent.Title;
+                var bookingsForNotification = hasBookings.Select(b => new { b.UserId, b.TotalAmount }).ToList();
 
                 await _transactionHelper.ExecuteInTransactionAsync(async () =>
                 {
@@ -356,6 +370,31 @@ namespace AIEvent.Application.Services.Implements
                         eventId, ticketsToUpdate.Count, totalTicketsToRevert);
                     return Result.Success();
                 });
+ 
+                if (bookingsForNotification.Any())
+                {
+                    var notificationTasks = new List<Task>();
+                    foreach (var bookingInfo in bookingsForNotification)
+                    {
+                        if (bookingInfo.UserId != Guid.Empty)
+                        {
+                            var notificationRequest = new CreateNotificationRequest
+                            {
+                                UserId = bookingInfo.UserId,
+                                Title = "Sự kiện đã bị hủy - Hoàn tiền",
+                                Message = $"Sự kiện <strong>{eventTitle}</strong> đã bị hủy.{(string.IsNullOrEmpty(reasonCancel) ? "" : $" Lý do: {reasonCancel}")} Số tiền <strong>{bookingInfo.TotalAmount:N0} VNĐ</strong> đã được hoàn vào ví của bạn.",
+                                Type = NotificationType.Refund,
+                                Channel = NotificationChannel.InApp,
+                                EventId = eventId
+                            };
+
+                            notificationTasks.Add(_notificationService.CreateNotificationAsync(notificationRequest));
+                        }
+                    }
+
+                    await Task.WhenAll(notificationTasks);
+                    _logger.LogInformation("Sent refund notifications to {UserCount} users for cancelled event {EventId}", bookingsForNotification.Count, eventId);
+                }
 
             }
             catch (Exception ex)
@@ -423,6 +462,99 @@ namespace AIEvent.Application.Services.Implements
             };
 
             await _emailService.SendEmailAsync(request.InviterEmail!, message);
+        }
+
+        //Embedding user
+        public async Task EnqueueUserEmbeddingJobAsync(Guid userId)
+        {
+            BackgroundJob.Enqueue(() => GenerateAndStoreUserEmbeddingAsync(userId));
+            await Task.CompletedTask;
+        }
+
+        [AutomaticRetry(Attempts = 3)]
+        public async Task GenerateAndStoreUserEmbeddingAsync(Guid userId)
+        {
+            try
+            {
+                var user = await _unitOfWork.UserRepository.Query()
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.Id == userId && !u.IsDeleted && u.IsActive);
+
+                if (user == null)
+                {
+                    _logger.LogWarning("UserEmbeddingJob: User {UserId} not found.", userId);
+                    return;
+                }
+
+                var description = BuildUserProfileText(user);
+
+                var embedding = await _voyageEmbeddingService.GetEmbeddingAsync(description);
+
+                var metadata = new Dictionary<string, object>
+                {
+                    ["UserId"] = user.Id.ToString(),
+                    ["FullName"] = user.FullName ?? "",
+                    ["Occupation"] = user.Occupation ?? "",
+                    ["JobTitle"] = user.JobTitle ?? "",
+                    ["CareerGoal"] = user.CareerGoal ?? "",
+                    ["District"] = user.District ?? "",
+                    ["BudgetOption"] = user.BudgetOption.ToString(),
+                    ["ParticipationFrequency"] = user.ParticipationFrequency.ToString(),
+                    ["ExperienceLevel"] = user.Experience?.ToString() ?? "",
+                    ["Interests"] = user.UserInterestsJson ?? "[]",
+                    ["FavoriteEventTypes"] = user.FavoriteEventTypesJson ?? "[]",
+                    ["Skills"] = user.ProfessionalSkillsJson ?? "[]",
+                    ["Languages"] = user.LanguagesJson ?? "[]",
+                    ["Introduction"] = user.Introduction ?? "",
+                };
+
+                await _pineconeVectorService.UpsertVectorAsync(user.Id.ToString(), embedding, metadata);
+
+                _logger.LogInformation("✅ Embedding stored successfully for user {UserId}", userId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error generating embedding for user {UserId}", userId);
+                throw;
+            }
+        }
+
+        private string BuildUserProfileText(User user)
+        {
+            var interests = ParseJsonList(user.UserInterestsJson);
+            var favoriteEvents = ParseJsonList(user.FavoriteEventTypesJson);
+            var skills = ParseJsonList(user.ProfessionalSkillsJson);
+
+            return $@"
+                User Profile:
+                - Name: {user.FullName}
+                - Occupation: {user.Occupation}
+                - Job Title: {user.JobTitle}
+                - Career Goal: {user.CareerGoal}
+                - Address: {user.Address}, {user.District}
+                - Budget Option: {user.BudgetOption}
+                - Participation Frequency: {user.ParticipationFrequency}
+                - Interests: {string.Join(", ", interests)}
+                - Favorite Event Types: {string.Join(", ", favoriteEvents)}
+                - Skills: {string.Join(", ", skills)}
+                - Introduction: {user.Introduction}
+                - Experience Level: {user.Experience}
+                ";
+        }
+
+        private static List<string> ParseJsonList(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return new List<string>();
+
+            try
+            {
+                return JsonSerializer.Deserialize<List<string>>(json) ?? new List<string>();
+            }
+            catch
+            {
+                return new List<string>();
+            }
         }
 
     }

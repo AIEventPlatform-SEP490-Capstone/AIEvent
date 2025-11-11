@@ -25,7 +25,9 @@ namespace AIEvent.Infrastructure.Repositories.Interfaces
         IGenericRepository<RevenueReport> RevenueReportRepository { get; }
         IGenericRepository<Friendship> FriendshipRepository { get; }
         IGenericRepository<Rating> RatingRepository { get; }
+        IGenericRepository<Notification> NotificationRepository { get; }
         IGenericRepository<EventInvitation> EventInvitationRepository { get; }
+        IGenericRepository<StaffProfile> StaffProfileRepository { get; }
         void EnableSoftDelete();
         void DisableSoftDelete();
         Task<int> SaveChangesAsync();

@@ -1,6 +1,7 @@
 ﻿using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
+using AIEvent.Application.DTOs.Notification;
 using AIEvent.Application.DTOs.RevenueReport;
 using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.Helpers;
@@ -21,12 +22,14 @@ namespace AIEvent.Application.Services.Implements
         private readonly ITransactionHelper _transactionHelper;
         private readonly IMapper _mapper;
         private readonly IHangfireJobService _hangfireJobService;
-        public EventService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper, IMapper mapper, IHangfireJobService hangfireJobService)
+        private readonly INotificationService _notificationService;
+        public EventService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper, IMapper mapper, IHangfireJobService hangfireJobService, INotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
             _transactionHelper = transactionHelper;
             _mapper = mapper;
             _hangfireJobService = hangfireJobService;
+            _notificationService = notificationService;
         }
 
         public async Task<Result> CreateEventAsync(Guid organizerId, CreateEventRequest request)
@@ -68,11 +71,40 @@ namespace AIEvent.Application.Services.Implements
             
             events.OrganizerProfileId = organizerId;
 
-            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+            var result = await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
                 await _unitOfWork.EventRepository.AddAsync(events);
                 return Result.Success();
             });
+
+            if (result.IsSuccess && request.Publish == true)
+            {
+                var managerRole = await _unitOfWork.RoleRepository
+                    .Query()
+                    .FirstOrDefaultAsync(r => r.Name == "Manager" && !r.IsDeleted);
+
+                if (managerRole != null)
+                {
+                    var firstImage = request.ImgListEvent != null && request.ImgListEvent.Any()
+                        ? request.ImgListEvent.First()
+                        : null;
+
+                    var notificationRequest = new CreateNotificationToAllRequest
+                    {
+                        Title = "Yêu cầu phê duyệt sự kiện",
+                        Message = $"Có một sự kiện mới <strong>{request.Title}</strong> cần được phê duyệt.",
+                        Type = NotificationType.EventCreated,
+                        Channel = NotificationChannel.InApp,
+                        TargetRoles = new List<Guid> { managerRole.Id },
+                        EventId = events.Id,
+                        ImageUrl = firstImage
+                    };
+
+                    await _notificationService.CreateNotificationToAllAsync(notificationRequest);
+                }
+            }
+
+            return result;
         }
 
         public async Task<Result<BasePaginated<EventsResponse>>> GetEventAsync(Guid? userId,
@@ -232,7 +264,7 @@ namespace AIEvent.Application.Services.Implements
                     return validationResult;
             }
 
-            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+            var result = await _transactionHelper.ExecuteInTransactionAsync(async () =>
             { 
                 var originalSoldQuantity = eventQuery.SoldQuantity;
 
@@ -278,6 +310,38 @@ namespace AIEvent.Application.Services.Implements
 
                 return Result.Success();
             });
+
+            if (result.IsSuccess && request.Publish == true)
+            {
+                var managerRole = await _unitOfWork.RoleRepository
+                    .Query()
+                    .FirstOrDefaultAsync(r => r.Name == "Manager" && !r.IsDeleted);
+
+                if (managerRole != null)
+                {
+                    var eventTitle = request.Title ?? eventQuery.Title;
+                    var firstImage = request.ImgListEvent != null && request.ImgListEvent.Any()
+                        ? request.ImgListEvent.First()
+                        : (!string.IsNullOrEmpty(eventQuery.ImgListEvent)
+                            ? eventQuery.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()
+                            : null);
+
+                    var notificationRequest = new CreateNotificationToAllRequest
+                    {
+                        Title = "Yêu cầu phê duyệt sự kiện",
+                        Message = $"Có một sự kiện mới <strong>{eventTitle}</strong> cần được phê duyệt.",
+                        Type = NotificationType.EventCreated,
+                        Channel = NotificationChannel.InApp,
+                        TargetRoles = new List<Guid> { managerRole.Id },
+                        EventId = eventId,
+                        ImageUrl = firstImage
+                    };
+
+                    await _notificationService.CreateNotificationToAllAsync(notificationRequest);
+                }
+            }
+
+            return result;
         }
 
         private Task<Result> UpdateEventImagesAsync(Event events, UpdateEventRequest request)
@@ -839,6 +903,7 @@ namespace AIEvent.Application.Services.Implements
 
             var entity = await _unitOfWork.EventRepository
                 .Query()
+                .Include(e => e.OrganizerProfile)
                 .FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
 
             if(entity == null)
@@ -847,6 +912,11 @@ namespace AIEvent.Application.Services.Implements
             if (entity.Status != EventStatus.PendingApproval)
                 return ErrorResponse.FailureResult("Event has already been processed", ErrorCodes.InvalidInput);
 
+            var eventTitle = entity.Title;
+            var organizerUserId = entity.OrganizerProfile?.UserId ?? Guid.Empty;
+            var firstImage = !string.IsNullOrEmpty(entity.ImgListEvent)
+                ? entity.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()
+                : null;
 
             if (request.Status == ConfirmStatus.Approved)
                 entity.Status = EventStatus.Approved;
@@ -863,6 +933,28 @@ namespace AIEvent.Application.Services.Implements
             entity.RequireApprovalBy = userId;
             await _unitOfWork.EventRepository.UpdateAsync(entity);
             await _unitOfWork.SaveChangesAsync();
+
+            if (organizerUserId != Guid.Empty)
+            {
+                var notificationRequest = new CreateNotificationRequest
+                {
+                    UserId = organizerUserId,
+                    Title = request.Status == ConfirmStatus.Approved
+                        ? "Sự kiện đã được phê duyệt"
+                        : "Sự kiện đã bị từ chối",
+                    Message = request.Status == ConfirmStatus.Approved
+                        ? $"Sự kiện <strong>{eventTitle}</strong> của bạn đã được <strong>phê duyệt</strong> và sẵn sàng để công khai."
+                        : $"Sự kiện <strong>{eventTitle}</strong> của bạn đã <strong>không được phê duyệt</strong>.{(string.IsNullOrEmpty(request.Reason) ? "" : $" Lý do: {request.Reason}")}",
+                    Type = request.Status == ConfirmStatus.Approved
+                        ? NotificationType.EventApproved
+                        : NotificationType.EventRejected,
+                    Channel = NotificationChannel.InApp,
+                    EventId = eventId,
+                    ImageUrl = firstImage
+                };
+
+                await _notificationService.CreateNotificationAsync(notificationRequest);
+            }
 
             return Result.Success();
         }
@@ -910,7 +1002,7 @@ namespace AIEvent.Application.Services.Implements
             if (existingPendingRequest != null)
                 return ErrorResponse.FailureResult("There is already a pending end event request for this event", ErrorCodes.InvalidInput);
 
-            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+            var result = await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
                 var oldRequests = await _unitOfWork.EndEventRequestRepository
                                             .Query()
@@ -932,6 +1024,35 @@ namespace AIEvent.Application.Services.Implements
                 
                 return Result.Success();
             });
+
+            if (result.IsSuccess)
+            {
+                var managerRole = await _unitOfWork.RoleRepository
+                    .Query()
+                    .FirstOrDefaultAsync(r => r.Name == "Manager" && !r.IsDeleted);
+
+                if (managerRole != null)
+                {
+                    var firstImage = !string.IsNullOrEmpty(eventEntity.ImgListEvent)
+                        ? eventEntity.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()
+                        : null;
+
+                    var notificationRequest = new CreateNotificationToAllRequest
+                    {
+                        Title = "Yêu cầu kết thúc sự kiện",
+                        Message = $"Có yêu cầu kết thúc sự kiện <strong>{eventEntity.Title}</strong> cần được phê duyệt.",
+                        Type = NotificationType.EventCreated,
+                        Channel = NotificationChannel.InApp,
+                        TargetRoles = new List<Guid> { managerRole.Id },
+                        EventId = eventEntity.Id,
+                        ImageUrl = firstImage
+                    };
+
+                    await _notificationService.CreateNotificationToAllAsync(notificationRequest);
+                }
+            }
+
+            return result;
         }
 
         public async Task<Result> ConfirmEndEventAsync(ApproveEndEventRequest request)
@@ -942,6 +1063,7 @@ namespace AIEvent.Application.Services.Implements
 
             var endEventRequest = await _unitOfWork.EndEventRequestRepository.Query()
                 .Include(e => e.Event)
+                .Include(e => e.OrganizerProfile)
                 .FirstOrDefaultAsync(e => e.Id == request.EndEventRequestId 
                     && e.Status == EndEventStatus.PendingApprovalEnd 
                     && e.IsLatest 
@@ -960,7 +1082,13 @@ namespace AIEvent.Application.Services.Implements
             if (endEventRequest.Event.Publish != true || endEventRequest.Event.Status != EventStatus.PendingApprovalEnd)
                 return ErrorResponse.FailureResult("Can only confirm end event request for published events", ErrorCodes.InvalidInput);
 
-            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+            var eventTitle = endEventRequest.Event.Title;
+            var organizerUserId = endEventRequest.OrganizerProfile?.UserId ?? Guid.Empty;
+            var firstImage = !string.IsNullOrEmpty(endEventRequest.Event.ImgListEvent)
+                ? endEventRequest.Event.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()
+                : null;
+
+            var result = await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
                 if(request.Status == ConfirmStatus.Approved)
                 {
@@ -1001,6 +1129,28 @@ namespace AIEvent.Application.Services.Implements
                 await _hangfireJobService.EnqueueOrganizerPayoutJobAsync(reportR);
                 return Result.Success();
             });
+
+            if (result.IsSuccess && organizerUserId != Guid.Empty)
+            {
+                var notificationRequest = new CreateNotificationRequest
+                {
+                    UserId = organizerUserId,
+                    Title = request.Status == ConfirmStatus.Approved
+                        ? "Yêu cầu kết thúc sự kiện đã được phê duyệt"
+                        : "Yêu cầu kết thúc sự kiện đã bị từ chối",
+                    Message = request.Status == ConfirmStatus.Approved
+                        ? $"Yêu cầu kết thúc sự kiện <strong>{eventTitle}</strong> của bạn đã được <strong>phê duyệt</strong>. Sự kiện đang chờ thanh toán."
+                        : $"Yêu cầu kết thúc sự kiện <strong>{eventTitle}</strong> của bạn đã <strong>không được phê duyệt</strong>.{(string.IsNullOrEmpty(request.AdminNote) ? "" : $" Lý do: {request.AdminNote}")}",
+                    Type = NotificationType.System,
+                    Channel = NotificationChannel.InApp,
+                    EventId = endEventRequest.EventId,
+                    ImageUrl = firstImage
+                };
+
+                await _notificationService.CreateNotificationAsync(notificationRequest);
+            }
+
+            return result;
         }
 
         public async Task<Result<EndEventReview>> GetEndEventRequestByIdAsync(Guid endEventRequestId)

@@ -215,6 +215,7 @@ namespace AIEvent.Application.Services.Implements
                     .AsNoTracking()
                     .Where(f =>
                         (f.SenderId == userId || f.ReceiverId == userId) &&
+                        f.Status == FriendshipStatus.Blocked &&
                         f.Status == FriendshipStatus.Accepted && !f.IsDeleted)
                     .Select(f => f.SenderId == userId ? f.ReceiverId : f.SenderId)
                     .ToListAsync();

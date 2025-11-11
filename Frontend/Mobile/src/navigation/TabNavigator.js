@@ -1,7 +1,7 @@
 import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createStackNavigator } from '@react-navigation/stack';
-import { Image, View } from 'react-native';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {createStackNavigator} from '@react-navigation/stack';
+import {Image, View} from 'react-native';
 import HomeScreen from '../screens/homeScreen';
 import EventDetailScreen from '../screens/eventDetailScreen';
 import MyEventsScreen from '../screens/myEventsScreen';
@@ -20,6 +20,7 @@ import QrScannerScreen from '../screens/qrScannerScreen';
 import ScreenNames from '../constants/ScreenNames';
 import Images from '../constants/Images';
 import Colors from '../constants/Colors';
+import BookingScreen from '../screens/bookingScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -30,14 +31,10 @@ const HomeStack = () => {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-      }}
-    >
-      <Stack.Screen 
-        name={ScreenNames.HOME_SCREEN} 
-        component={HomeScreen}
-      />
-      <Stack.Screen 
-        name={ScreenNames.EVENT_DETAIL_SCREEN} 
+      }}>
+      <Stack.Screen name={ScreenNames.HOME_SCREEN} component={HomeScreen} />
+      <Stack.Screen
+        name={ScreenNames.EVENT_DETAIL_SCREEN}
         component={EventDetailScreen}
         options={{
           headerShown: true,
@@ -63,6 +60,27 @@ const HomeStack = () => {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name={ScreenNames.BOOKING_SCREEN}
+        component={BookingScreen}
+        options={{
+          headerShown: true,
+          title: 'Đặt vé',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
+        }}
+      />
+
     </Stack.Navigator>
   );
 };
@@ -73,14 +91,13 @@ const TimelineStack = () => {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-      }}
-    >
-      <Stack.Screen 
-        name={ScreenNames.TIMELINE_SCREEN} 
+      }}>
+      <Stack.Screen
+        name={ScreenNames.TIMELINE_SCREEN}
         component={TimelineScreen}
       />
-      <Stack.Screen 
-        name={ScreenNames.EVENT_DETAIL_SCREEN} 
+      <Stack.Screen
+        name={ScreenNames.EVENT_DETAIL_SCREEN}
         component={EventDetailScreen}
         options={{
           headerShown: true,
@@ -116,11 +133,27 @@ const MyEventsStack = () => {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-      }}
-    >
-      <Stack.Screen 
-        name="MyEventsMain" 
-        component={MyEventsScreen}
+      }}>
+      <Stack.Screen name="MyEventsMain" component={MyEventsScreen} />
+      <Stack.Screen
+        name={ScreenNames.EVENT_DETAIL_SCREEN}
+        component={EventDetailScreen}
+        options={{
+          headerShown: true,
+          title: 'Chi tiết sự kiện',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
+        }}
       />
       <Stack.Screen 
         name={ScreenNames.EVENT_DETAIL_SCREEN} 
@@ -159,77 +192,73 @@ const ProfileStack = () => {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-      }}
-    >
-      <Stack.Screen 
-        name="ProfileMain" 
-        component={ProfileScreen}
-      />
-      <Stack.Screen 
-        name={ScreenNames.WALLET_SCREEN} 
+      }}>
+      <Stack.Screen name="ProfileMain" component={ProfileScreen} />
+      <Stack.Screen
+        name={ScreenNames.WALLET_SCREEN}
         component={WalletScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name={ScreenNames.PAYMENT_SCREEN} 
+      <Stack.Screen
+        name={ScreenNames.PAYMENT_SCREEN}
         component={PaymentScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name={ScreenNames.PAYMENT_INFORMATION_SCREEN} 
+      <Stack.Screen
+        name={ScreenNames.PAYMENT_INFORMATION_SCREEN}
         component={PaymentInformationScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name={ScreenNames.SETTINGS_SCREEN} 
+      <Stack.Screen
+        name={ScreenNames.SETTINGS_SCREEN}
         component={SettingsScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name={ScreenNames.CHANGE_PASSWORD_SCREEN} 
+      <Stack.Screen
+        name={ScreenNames.CHANGE_PASSWORD_SCREEN}
         component={ChangePasswordScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name={ScreenNames.TICKETS_SCREEN} 
+      <Stack.Screen
+        name={ScreenNames.TICKETS_SCREEN}
         component={TicketsScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name={ScreenNames.LIKES_SCREEN} 
+      <Stack.Screen
+        name={ScreenNames.LIKES_SCREEN}
         component={LikesScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name={ScreenNames.FRIENDS_SCREEN} 
+      <Stack.Screen
+        name={ScreenNames.FRIENDS_SCREEN}
         component={FriendsScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name={ScreenNames.FRIEND_DETAIL_SCREEN} 
+      <Stack.Screen
+        name={ScreenNames.FRIEND_DETAIL_SCREEN}
         component={FriendDetailScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name={ScreenNames.EVENT_DETAIL_SCREEN} 
+      <Stack.Screen
+        name={ScreenNames.EVENT_DETAIL_SCREEN}
         component={EventDetailScreen}
         options={{
           headerShown: true,
@@ -262,8 +291,8 @@ const ProfileStack = () => {
 const TabNavigator = () => {
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
+      screenOptions={({route}) => ({
+        tabBarIcon: ({focused, color, size}) => {
           let iconName;
 
           if (route.name === 'HomeTab') {
@@ -277,13 +306,13 @@ const TabNavigator = () => {
           }
 
           return (
-            <Image 
-              source={iconName} 
-              style={{ 
-                width: size, 
-                height: size, 
-                tintColor: color 
-              }} 
+            <Image
+              source={iconName}
+              style={{
+                width: size,
+                height: size,
+                tintColor: color,
+              }}
             />
           );
         },
@@ -294,31 +323,30 @@ const TabNavigator = () => {
           backgroundColor: Colors.white,
           borderTopColor: Colors.border,
         },
-      })}
-    >
-      <Tab.Screen 
-        name="HomeTab" 
+      })}>
+      <Tab.Screen
+        name="HomeTab"
         component={HomeStack}
         options={{
           title: 'Trang chủ',
         }}
       />
-      <Tab.Screen 
-        name="Timeline" 
+      <Tab.Screen
+        name="Timeline"
         component={TimelineStack}
         options={{
           title: 'Timeline',
         }}
       />
-      <Tab.Screen 
-        name="MyEvents" 
+      <Tab.Screen
+        name="MyEvents"
         component={MyEventsStack}
         options={{
           title: 'Sự kiện của tôi',
         }}
       />
-      <Tab.Screen 
-        name="Profile" 
+      <Tab.Screen
+        name="Profile"
         component={ProfileStack}
         options={{
           title: 'Hồ sơ',

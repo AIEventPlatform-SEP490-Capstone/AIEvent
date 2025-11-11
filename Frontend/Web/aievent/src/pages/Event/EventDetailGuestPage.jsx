@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { toast } from 'react-hot-toast';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { toast } from "react-hot-toast";
 import {
   Calendar,
   Clock,
@@ -21,18 +21,24 @@ import {
   Globe,
   Activity,
   User,
-  Sparkles
-} from 'lucide-react';
+} from "lucide-react";
 
-import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
-import { Separator } from '../../components/ui/separator';
-import { useEvents } from '../../hooks/useEvents';
+import { Button } from "../../components/ui/button";
+import { Card, CardContent, CardHeader } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
+import { Separator } from "../../components/ui/separator";
+import { useEvents } from "../../hooks/useEvents";
 import { useFavoriteEvents } from '../../hooks/useFavoriteEvents';
-import { PATH } from '../../routes/path';
-import MapDirection from '../../components/Event/MapDirection';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
+import { PATH } from "../../routes/path";
+import MapDirection from "../../components/Event/MapDirection";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../../components/ui/dialog";
+import RatingSection from "../../components/Rating/RatingSection";
 
 const EventDetailGuestPage = ({ previewData }) => {
   const { id } = useParams();
@@ -76,16 +82,16 @@ const EventDetailGuestPage = ({ previewData }) => {
     try {
       setIsLoading(true);
       const eventData = await getEventById(id);
-      
+
       if (eventData) {
         setEvent(eventData);
       } else {
-        toast.error('Không tìm thấy sự kiện');
+        toast.error("Không tìm thấy sự kiện");
         navigate(PATH.HOME);
       }
     } catch (error) {
-      console.error('Error loading event detail:', error);
-      toast.error('Không thể tải thông tin sự kiện');
+      console.error("Error loading event detail:", error);
+      toast.error("Không thể tải thông tin sự kiện");
       navigate(PATH.HOME);
     } finally {
       setIsLoading(false);
@@ -96,7 +102,7 @@ const EventDetailGuestPage = ({ previewData }) => {
     try {
       if (id && !previewData) {
         const relatedData = await getRelatedEvents(id);
-        
+
         if (relatedData) {
           setRelatedEvents(relatedData.slice(0, 3));
         } else {
@@ -104,7 +110,7 @@ const EventDetailGuestPage = ({ previewData }) => {
         }
       }
     } catch (error) {
-      console.error('Error loading related events:', error);
+      console.error("Error loading related events:", error);
       setRelatedEvents([]);
     }
   };
@@ -114,16 +120,28 @@ const EventDetailGuestPage = ({ previewData }) => {
     const startTime = new Date(event.startTime);
     const endTime = new Date(event.endTime);
 
-    if (now < startTime) return 'upcoming';
-    if (now >= startTime && now <= endTime) return 'ongoing';
-    return 'completed';
+    if (now < startTime) return "upcoming";
+    if (now >= startTime && now <= endTime) return "ongoing";
+    return "completed";
   };
 
   const getStatusBadge = (status) => {
     const configs = {
-      upcoming: { label: 'Sắp diễn ra', color: 'bg-blue-100 text-blue-800', icon: Clock },
-      ongoing: { label: 'Đang diễn ra', color: 'bg-green-100 text-green-800', icon: Activity },
-      completed: { label: 'Đã kết thúc', color: 'bg-gray-100 text-gray-800', icon: CheckCircle }
+      upcoming: {
+        label: "Sắp diễn ra",
+        color: "bg-blue-100 text-blue-800",
+        icon: Clock,
+      },
+      ongoing: {
+        label: "Đang diễn ra",
+        color: "bg-green-100 text-green-800",
+        icon: Activity,
+      },
+      completed: {
+        label: "Đã kết thúc",
+        color: "bg-gray-100 text-gray-800",
+        icon: CheckCircle,
+      },
     };
     return configs[status] || configs.upcoming;
   };
@@ -144,9 +162,9 @@ const EventDetailGuestPage = ({ previewData }) => {
 
   const formatTime = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('vi-VN', {
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -168,23 +186,23 @@ const EventDetailGuestPage = ({ previewData }) => {
     if (min === max) return formatVND(min);
     return `${formatVND(min)} - ${formatVND(max)}`;
   };
-  
+
   const formatPrice = (event) => {
     if (event.minTicketPrice !== undefined && event.maxTicketPrice !== undefined) {
       if (event.minTicketPrice === 0 && event.maxTicketPrice === 0) {
-        return 'Miễn phí';
+        return "Miễn phí";
       } else if (event.minTicketPrice === event.maxTicketPrice) {
-        return new Intl.NumberFormat('vi-VN', {
-          style: 'currency',
-          currency: 'VND'
+        return new Intl.NumberFormat("vi-VN", {
+          style: "currency",
+          currency: "VND",
         }).format(event.minTicketPrice);
       } else {
-        return `${new Intl.NumberFormat('vi-VN', {
-          style: 'currency',
-          currency: 'VND'
-        }).format(event.minTicketPrice)} - ${new Intl.NumberFormat('vi-VN', {
-          style: 'currency',
-          currency: 'VND'
+        return `${new Intl.NumberFormat("vi-VN", {
+          style: "currency",
+          currency: "VND",
+        }).format(event.minTicketPrice)} - ${new Intl.NumberFormat("vi-VN", {
+          style: "currency",
+          currency: "VND",
         }).format(event.maxTicketPrice)}`;
       }
     }
@@ -193,11 +211,11 @@ const EventDetailGuestPage = ({ previewData }) => {
 
   const formatTicketPrice = (ticket) => {
     if (ticket.ticketPrice === 0) {
-      return 'Miễn phí';
+      return "Miễn phí";
     }
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(ticket.ticketPrice);
   };
 
@@ -241,7 +259,7 @@ const EventDetailGuestPage = ({ previewData }) => {
       });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      toast.success('Đã sao chép link sự kiện!');
+      toast.success("Đã sao chép link sự kiện!");
     }
   };
 
@@ -255,7 +273,7 @@ const EventDetailGuestPage = ({ previewData }) => {
       });
     } else {
       navigator.clipboard.writeText(message);
-      toast.success('Đã sao chép lời mời!');
+      toast.success("Đã sao chép lời mời!");
     }
   };
 
@@ -446,7 +464,8 @@ const EventDetailGuestPage = ({ previewData }) => {
                   </h3>
                   <div className="space-y-3">
                     {event.ticketDetails.map((ticket, index) => {
-                      const availableTickets = ticket.ticketQuantity - (ticket.soldQuantity || 0);
+                      const availableTickets =
+                        ticket.ticketQuantity - (ticket.soldQuantity || 0);
                       const isAvailable = availableTickets > 0;
                       const soldPercentage = ((ticket.soldQuantity || 0) / ticket.ticketQuantity) * 100;
 
@@ -587,6 +606,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                 </div>
               </div>
             )}
+            <RatingSection eventId={event.eventId || id} />
           </div>
 
           {/* Sidebar - Enhanced */}
@@ -757,7 +777,9 @@ const EventDetailGuestPage = ({ previewData }) => {
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <MapDirection destinationAddress={event.address || event.locationName} />
+            <MapDirection
+              destinationAddress={event.address || event.locationName}
+            />
           </div>
         </DialogContent>
       </Dialog>
