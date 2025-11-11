@@ -7,7 +7,6 @@
         public string CustomerName { get; set; } = "";
         public string TicketType { get; set; } = "";
         public decimal Price { get; set; }
-        public string QrUrl { get; set; } = "";
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public string Address { get; set; } = "";
