@@ -416,6 +416,30 @@ const CreateEventPage = () => {
         return;
       }
 
+      // Validate category
+      if (!data.eventCategoryId) {
+        toast.error('Vui lòng chọn danh mục sự kiện');
+        hideLoading();
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Validate event images
+      if (selectedImages.length === 0) {
+        toast.error('Vui lòng tải lên ít nhất một hình ảnh sự kiện');
+        hideLoading();
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Validate evidence images
+      if (selectedEvidenceImages.length === 0) {
+        toast.error('Vui lòng tải lên ít nhất một hình ảnh bằng chứng');
+        hideLoading();
+        setIsSubmitting(false);
+        return;
+      }
+
       // Convert datetime strings to Date objects for validation
       const startDate = new Date(data.startTime);
       const endDate = new Date(data.endTime);
@@ -428,26 +452,36 @@ const CreateEventPage = () => {
 
       if (startDate <= now) {
         toast.error('Thời gian bắt đầu phải sau thời điểm hiện tại');
+        hideLoading();
+        setIsSubmitting(false);
         return;
       }
 
       if (endDate <= startDate) {
         toast.error('Thời gian kết thúc phải sau thời gian bắt đầu');
+        hideLoading();
+        setIsSubmitting(false);
         return;
       }
 
       if (saleStartDate >= startDate) {
         toast.error('Thời gian bắt đầu bán vé phải trước thời gian bắt đầu sự kiện');
+        hideLoading();
+        setIsSubmitting(false);
         return;
       }
 
       if (saleEndDate <= saleStartDate) {
         toast.error('Thời gian kết thúc bán vé phải sau thời gian bắt đầu bán vé');
+        hideLoading();
+        setIsSubmitting(false);
         return;
       }
 
       if (saleEndDate >= startDate) {
         toast.error('Thời gian kết thúc bán vé phải trước thời gian bắt đầu sự kiện');
+        hideLoading();
+        setIsSubmitting(false);
         return;
       }
 

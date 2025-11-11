@@ -1106,7 +1106,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                         <div className="flex flex-col items-center p-2 bg-gray-50 rounded">
                           <span className="text-xs text-muted-foreground">Doanh thu</span>
                           <span className="font-semibold">
-                            {event.revenue ? `${event.revenue.toLocaleString()}đ` : '0đ'}
+                            {event.totalAmount ? `${event.totalAmount.toLocaleString()}đ` : '0đ'}
                           </span>
                         </div>
                         <div className="flex flex-col items-center p-2 bg-gray-50 rounded">
@@ -1200,7 +1200,6 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                             variant="outline" 
                             size="sm" 
                             className="bg-transparent"
-                            onClick={() => handleDeleteEvent(event.eventId)}
                           >
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
