@@ -37,7 +37,9 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Separator } from '../../components/ui/separator';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
+import { Textarea } from '../../components/ui/textarea';
+import { Label } from '../../components/ui/label';
 import { useEvents } from '../../hooks/useEvents';
 import { PATH } from '../../routes/path';
 
@@ -58,7 +60,11 @@ const ManagerEventDetailPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
-  const { getEventById, deleteEvent: deleteEventAPI, loading: eventLoading } = useEvents();
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
+
+  const { getEventById, deleteEvent: deleteEventAPI, confirmEvent: confirmEventAPI, loading: eventLoading } = useEvents();
   
   // Add state for end event requests
   const [endEventRequests, setEndEventRequests] = useState([]);
@@ -67,10 +73,6 @@ const ManagerEventDetailPage = () => {
   const [isEndEventDetailOpen, setIsEndEventDetailOpen] = useState(false);
   const { getEndEventRequests, getEndEventRequestById, confirmEndEvent } = useEndEventRequests();
   
-  // Add state for image lightbox
-  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-  const [selectedImage, setSelectedImage] = useState('');
-
   useEffect(() => {
     if (eventId) {
       loadEventDetail();
@@ -264,43 +266,46 @@ Nhấn OK để xác nhận xóa.`;
     setIsPreviewOpen(true);
   };
 
-  const handleApproveEvent = async (eventId) => {
-      try {
-        const response = await confirmEventAPI(eventId, {
-          status: EventStatus.Approved
-        });
-        
-        if (response) {
-          toast.success('Sự kiện đã được phê duyệt thành công!');
-          loadEvents();
-        }
-      } catch (error) {
-        console.error('Error approving event:', error);
-        toast.error('Có lỗi xảy ra khi phê duyệt sự kiện');
-      }
-    };
-  const handleRejectEvent = async (eventId, reason) => {
-      if (!reason.trim()) {
-        toast.error('Vui lòng nhập lý do từ chối');
-        return;
-      }
+  const handleApproveEvent = async () => {
+    try {
+      const response = await confirmEventAPI(eventId, {
+        status: EventStatus.Approved
+      });
       
-      try {
-        const response = await confirmEventAPI(eventId, {
-          status: EventStatus.Rejected,
-          reason: reason
-        });
-        
-        if (response) {
-          toast.success('Sự kiện đã bị từ chối!');
-          setRejectionReason('');
-          loadEvents();
-        }
-      } catch (error) {
-        console.error('Error rejecting event:', error);
-        toast.error('Có lỗi xảy ra khi từ chối sự kiện');
+      if (response) {
+        toast.success('Sự kiện đã được phê duyệt thành công!');
+        // Reload the event details to reflect the new status
+        loadEventDetail();
       }
-    };
+    } catch (error) {
+      console.error('Error approving event:', error);
+      toast.error('Có lỗi xảy ra khi phê duyệt sự kiện');
+    }
+  };
+
+  const handleRejectEvent = async (reason) => {
+    if (!reason || !reason.trim()) {
+      toast.error('Vui lòng nhập lý do từ chối');
+      return;
+    }
+    
+    try {
+      const response = await confirmEventAPI(eventId, {
+        status: EventStatus.Rejected,
+        reason: reason
+      });
+      
+      if (response) {
+        toast.success('Sự kiện đã bị từ chối!');
+        setRejectionReason('');
+        // Reload the event details to reflect the new status
+        loadEventDetail();
+      }
+    } catch (error) {
+      console.error('Error rejecting event:', error);
+      toast.error('Có lỗi xảy ra khi từ chối sự kiện');
+    }
+  };
 
   // Add function to load end event requests
   const loadEndEventRequests = async (eventId) => {
@@ -725,14 +730,51 @@ Nhấn OK để xác nhận xóa.`;
                     <CheckCircle className="w-5 h-5 mr-2" />
                     Phê duyệt ngay
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full border-2 border-red-300 hover:bg-red-50 font-semibold transition-all duration-300 text-red-600 hover:text-red-700 hover:border-red-400 rounded-2xl py-6 text-base hover:shadow-lg" 
-                    onClick={handleRejectEvent}
-                  >
-                    <X className="w-5 h-5 mr-2" />
-                    Từ chối
-                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className="w-full border-2 border-red-300 hover:bg-red-50 font-semibold transition-all duration-300 text-red-600 hover:text-red-700 hover:border-red-400 rounded-2xl py-6 text-base hover:shadow-lg"
+                      >
+                        <X className="w-5 h-5 mr-2" />
+                        Từ chối
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Từ chối sự kiện: {event.title}</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="reason">Lý do từ chối</Label>
+                          <Textarea
+                            id="reason"
+                            placeholder="Nhập lý do từ chối sự kiện..."
+                            value={rejectionReason}
+                            onChange={(e) => setRejectionReason(e.target.value)}
+                            rows={4}
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            className="flex-1 bg-transparent"
+                            onClick={() => setRejectionReason('')}
+                          >
+                            Hủy
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            className="flex-1"
+                            onClick={() => handleRejectEvent(rejectionReason)}
+                            disabled={!rejectionReason.trim()}
+                          >
+                            Xác nhận từ chối
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </CardContent>
               </Card>
             )}
