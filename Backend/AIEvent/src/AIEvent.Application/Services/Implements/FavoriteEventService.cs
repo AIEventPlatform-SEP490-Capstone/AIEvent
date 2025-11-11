@@ -107,10 +107,10 @@ namespace AIEvent.Application.Services.Implements
                         TagName = t.Tag.NameTag
                     }).ToList(),
                     IsFavorite = true,
-                    ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
-                        ? new List<string>()
-                        : JsonSerializer.Deserialize<List<string>>(e.ImgListEvent, new JsonSerializerOptions())
-                })
+					ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
+	                    ? new List<string>()
+	                    : e.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()
+				})
                 .ToListAsync();
 
             return new BasePaginated<EventsResponse>(result, totalCount, pageNumber, pageSize);

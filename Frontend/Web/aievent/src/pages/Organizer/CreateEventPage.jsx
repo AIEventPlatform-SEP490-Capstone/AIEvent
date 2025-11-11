@@ -519,7 +519,6 @@ const CreateEventPage = () => {
       const response = await createEventAPI(eventData);
       
       if (response) {
-        toast.success(data.publish ? '✅ Tạo sự kiện thành công!' : '✅ Lưu nháp sự kiện thành công!');
         clearAllSelectedTags();
         // clearSelectedRefundRules();
         navigate(PATH.ORGANIZER_MY_EVENTS);

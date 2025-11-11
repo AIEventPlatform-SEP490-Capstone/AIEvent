@@ -196,13 +196,6 @@ const FavoriteEventsPage = () => {
                       handleRemoveFavorite(event.eventId);
                     }}
                   >
-                    <X className="w-4 h-4 text-red-500" />
-                  </Button>
-                  <Button 
-                    variant="secondary" 
-                    size="sm" 
-                    className="h-8 w-8 p-0 bg-white/90 backdrop-blur-sm border border-white/20"
-                  >
                     <Heart className="w-4 h-4 fill-red-500 text-red-500" />
                   </Button>
                 </div>

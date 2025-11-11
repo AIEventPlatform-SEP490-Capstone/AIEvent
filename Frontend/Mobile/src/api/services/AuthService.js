@@ -357,11 +357,6 @@ class AuthService {
         };
       }
 
-      // Log response for debugging
-      console.log('Register API Response Status:', response.status);
-      console.log('Register API Response OK:', response.ok);
-      console.log('Register API Response Data:', JSON.stringify(data, null, 2));
-
       // If error, try to get more details
       if (!response.ok && data.errors) {
         console.log('Validation Errors:', JSON.stringify(data.errors, null, 2));

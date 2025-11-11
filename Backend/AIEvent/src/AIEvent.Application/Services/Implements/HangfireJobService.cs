@@ -53,37 +53,95 @@ namespace AIEvent.Application.Services.Implements
         }
 
         // send ticket to email
-        public async Task EnqueueSendTicketEmailJobAsync(string userEmail, string userFullName, string eventTitle, List<TicketForPdf> tickets)
+        public async Task EnqueueSendTicketEmailJobAsync(string userEmail, string userFullName, string eventTitle, List<TicketForPdf> tickets, string? organizerName = null, string? organizerPhone = null, string? organizerEmail = null, DateTime? eventStartTime = null, DateTime? eventEndTime = null)
         {
-            BackgroundJob.Enqueue(() => GenerateAndSendTicketEmailAsync(userEmail, userFullName, eventTitle, tickets));
+            BackgroundJob.Enqueue(() => GenerateAndSendTicketEmailAsync(userEmail, userFullName, eventTitle, tickets, organizerName, organizerPhone, organizerEmail, eventStartTime, eventEndTime));
             await Task.CompletedTask;
         }
 
         [AutomaticRetry(Attempts = 3)]
-        public async Task GenerateAndSendTicketEmailAsync(string userEmail, string userFullName, string eventTitle, List<TicketForPdf> tickets)
+        public async Task GenerateAndSendTicketEmailAsync(string userEmail, string userFullName, string eventTitle, List<TicketForPdf> tickets, string? organizerName = null, string? organizerPhone = null, string? organizerEmail = null, DateTime? eventStartTime = null, DateTime? eventEndTime = null)
         {
             try
             {
+                _logger.LogInformation("Starting ticket email generation for {UserEmail} ({EventTitle}), {TicketCount} tickets", userEmail, eventTitle, tickets.Count);
+
+                // Tải ảnh event nếu có URL
+                byte[]? eventImageBytes = null;
+                var firstTicket = tickets.FirstOrDefault();
+                if (firstTicket != null && !string.IsNullOrEmpty(firstTicket.EventImageUrl))
+                {
+                    _logger.LogInformation("Downloading event image from {ImageUrl}", firstTicket.EventImageUrl);
+                    eventImageBytes = await DownloadImageAsync(firstTicket.EventImageUrl);
+                    
+                    if (eventImageBytes != null)
+                        _logger.LogInformation("Event image downloaded successfully, size: {Size} bytes", eventImageBytes.Length);
+                    else
+                        _logger.LogWarning("Failed to download event image, will proceed without image");
+                }
+                else
+                {
+                    _logger.LogWarning("No event image URL provided");
+                }
+
+                // Gán ảnh cho tất cả các vé
+                foreach (var ticket in tickets)
+                {
+                    ticket.EventImageBytes = eventImageBytes;
+                }
+
                 // Sinh file PDF
+                _logger.LogInformation("Generating PDF for {TicketCount} tickets", tickets.Count);
                 var pdfBytes = await _pdfService.GenerateTicketsPdfAsync(tickets, eventTitle, userFullName, userEmail);
+                _logger.LogInformation("PDF generated successfully, size: {Size} bytes", pdfBytes.Length);
 
                 // Gửi email
+                _logger.LogInformation("Sending email to {UserEmail}", userEmail);
                 await _emailService.SendTicketsEmailAsync(
                     userEmail,
                     $"Your Tickets from AIEvent - {eventTitle}",
                     null!,
                     pdfBytes,
                     $"{userFullName}-AIEvent",
-                    eventTitle
+                    eventTitle,
+                    userFullName,
+                    organizerName,
+                    organizerPhone,
+                    organizerEmail,
+                    eventStartTime,
+                    eventEndTime
                 );
 
-                _logger.LogInformation("Sent ticket email for {UserEmail} ({EventTitle})", userEmail, eventTitle);
+                _logger.LogInformation("Successfully sent ticket email to {UserEmail} for event '{EventTitle}'", userEmail, eventTitle);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending ticket email for {UserEmail} ({EventTitle})", userEmail, eventTitle);
+                _logger.LogError(ex, "Error sending ticket email for {UserEmail} ({EventTitle}). Error: {ErrorMessage}", userEmail, eventTitle, ex.Message);
                 throw;
             }
+        }
+
+        private async Task<byte[]?> DownloadImageAsync(string imageUrl)
+        {
+            try
+            {
+                using var httpClient = new HttpClient();
+                httpClient.Timeout = TimeSpan.FromSeconds(10);
+                var response = await httpClient.GetAsync(imageUrl);
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadAsByteArrayAsync();
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to download image from {ImageUrl}: Status {StatusCode}", imageUrl, response.StatusCode);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error downloading image from {ImageUrl}", imageUrl);
+            }
+            return null;
         }
 
         // payout for organizer

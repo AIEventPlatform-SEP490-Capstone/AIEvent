@@ -12,5 +12,8 @@
         public DateTime EndTime { get; set; }
         public string Address { get; set; } = "";
         public byte[]? QrBytes { get; set; }
+        public byte[]? EventImageBytes { get; set; }
+        public string EventImageUrl { get; set; } = "";
+        public string EventCategory { get; set; } = "";
     }
 }

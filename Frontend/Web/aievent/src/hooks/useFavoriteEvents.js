@@ -70,7 +70,7 @@ export const useFavoriteEvents = () => {
     
     try {
       await dispatch(removeFavoriteEvent(eventId)).unwrap();
-      toast.success('Đã xóa khỏi danh sách yêu thích');
+      toast.success('Bỏ yêu thích sự kiện thành công');
       return true;
     } catch (err) {
       toast.error('Không thể xóa sự kiện khỏi danh sách yêu thích');
