@@ -195,7 +195,6 @@ const ManagerEventsPage = () => {
         });
       }
 
-      console.log('Events response:', response);
 
       if (response) {
         const eventsData = response.items || response || [];
@@ -222,8 +221,6 @@ const ManagerEventsPage = () => {
 
     let filtered = [...dataToFilter];
 
-    console.log('Applying filters:', { searchTerm, filterStatus, sortBy, activeTab, eventsCount: filtered.length });
-
     // Apply search filter
     if (searchTerm && searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase().trim();
@@ -233,7 +230,6 @@ const ManagerEventsPage = () => {
         (event.locationName && event.locationName.toLowerCase().includes(searchLower)) ||
         (event.eventCategoryName && event.eventCategoryName.toLowerCase().includes(searchLower))
       );
-      console.log('After search filter:', filtered.length);
     }
 
     // Apply status filter - but only for time-based filters, not approval status tabs
@@ -254,7 +250,6 @@ const ManagerEventsPage = () => {
         const status = getEventStatus(event);
         return status === filterStatus;
       });
-      console.log('After status filter:', filtered.length);
     }
     
     // If filterStatus is one of the EventStatus values, apply it regardless of activeTab
@@ -263,7 +258,6 @@ const ManagerEventsPage = () => {
         const eventStatus = 'status' in event ? event.status : null;
         return eventStatus === filterStatus;
       });
-      console.log('After EventStatus filter:', filtered.length);
     }
 
     // Apply sorting
@@ -284,7 +278,6 @@ const ManagerEventsPage = () => {
       });
     }
 
-    console.log('Final filtered events:', filtered.length);
     setEvents(filtered);
     setTotalPages(Math.ceil(filtered.length / pageSize));
     setCurrentPage(1); // Reset to first page when filtering
@@ -607,25 +600,21 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
   // Handle search input change
   const handleSearchChange = (e) => {
     const value = e.target.value;
-    console.log('Search term changed:', value);
     setSearchTerm(value);
   };
 
   // Handle sort change
   const handleSortChange = (value) => {
-    console.log('Sort changed:', value);
     setSortBy(value);
   };
 
   // Handle status filter change
   const handleStatusFilter = (status) => {
-    console.log('Status filter changed:', status);
     setFilterStatus(status);
   };
 
   // Handle clear all filters
   const handleClearFilters = () => {
-    console.log('Clearing all filters');
     setSearchTerm('');
     setFilterStatus('all');
     setSortBy('newest');

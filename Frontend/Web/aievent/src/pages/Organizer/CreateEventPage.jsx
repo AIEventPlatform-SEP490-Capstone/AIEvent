@@ -560,7 +560,6 @@ const CreateEventPage = () => {
         evidenceImages: evidenceImageUrls, // Send Cloudinary URLs instead of File objects
         eventCategoryId: data.eventCategoryId,
         tags: reduxSelectedTags.map(tag => {
-          console.log('Mapping tag for submission:', tag);
           return { tagId: tag.tagId };
         }),
         // refundRules: selectedRules.map(rule => ({ ruleRefundId: rule.ruleRefundId })),
@@ -573,7 +572,6 @@ const CreateEventPage = () => {
         })),
       };
       
-      console.log('Event data to send:', eventData);
       const response = await createEventAPI(eventData);
       
       if (response) {

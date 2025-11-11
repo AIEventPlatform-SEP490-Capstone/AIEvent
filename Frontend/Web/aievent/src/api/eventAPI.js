@@ -144,7 +144,6 @@ export const eventAPI = {
 
   // Create new event (requires Organizer role)
   createEvent: async (eventData) => {
-    console.log('Creating FormData from:', eventData);
     const formData = new FormData();
     
     // Add basic event fields
@@ -223,7 +222,6 @@ export const eventAPI = {
     }
 
     // Debug FormData contents
-    console.log('FormData contents:');
     for (let [key, value] of formData.entries()) {
       console.log(`${key}:`, value);
     }
@@ -239,7 +237,6 @@ export const eventAPI = {
 
   // Update event (requires Organizer role)
   updateEvent: async (eventData) => {
-    console.log('Updating event with data:', eventData);
     const formData = new FormData();
     
     // Add event ID
@@ -355,7 +352,6 @@ export const eventAPI = {
     }
 
     // Debug FormData contents
-    console.log('Update FormData contents:');
     for (let [key, value] of formData.entries()) {
       console.log(`${key}:`, value);
     }

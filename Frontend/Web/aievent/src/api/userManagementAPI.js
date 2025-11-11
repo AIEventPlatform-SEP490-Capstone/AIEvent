@@ -13,7 +13,6 @@ export const userManagementAPI = {
       if (role) params.append('role', role);
 
       const response = await fetcher.get(`/user?${params.toString()}`);
-      console.log('API Response:', response);
       return response.data;
     } catch (error) {
       throw new Error(error.message || 'Failed to fetch users');

@@ -302,26 +302,19 @@ const EditEventPage = () => {
         }
 
         // Load existing tags if any
-        console.log('Loading tags for event:', event);
         if (event.eventTags && event.eventTags.length > 0) {
-          console.log('Found eventTags:', event.eventTags);
           event.eventTags.forEach(eventTag => {
-            console.log('Processing eventTag:', eventTag);
             if (eventTag.tag) {
-              console.log('Selecting tag from eventTag.tag:', eventTag.tag);
               selectTagForForm(eventTag.tag);
             } else if (eventTag.tagName || eventTag.nameTag) {
               // Handle case where eventTag is the tag itself
-              console.log('Selecting tag from eventTag directly:', eventTag);
               selectTagForForm(eventTag);
             }
           });
         } else if (event.tags && event.tags.length > 0) {
-          console.log('Found tags:', event.tags);
           // Alternative structure
           event.tags.forEach(tag => {
             // Ensure tag has the correct structure
-            console.log('Processing tag:', tag);
             if (tag && (tag.tagId || tag.id)) {
               const normalizedTag = {
                 tagId: tag.tagId || tag.id,
@@ -329,15 +322,11 @@ const EditEventPage = () => {
                 nameTag: tag.nameTag || tag.tagName || tag.name,
                 ...tag
               };
-              console.log('Selecting normalized tag:', normalizedTag);
               selectTagForForm(normalizedTag);
             }
           });
         } else {
-          console.log('No tags found in event data');
         }
-        console.log('Selected tags after loading:', reduxSelectedTags);
-
         // Load existing refund rule if any
         if (event.ticketDetails && event.ticketDetails.length > 0) {
           const firstTicket = event.ticketDetails[0];
@@ -516,7 +505,6 @@ const EditEventPage = () => {
         eventCategoryId: formData.eventCategoryId,
         // Handle tags correctly
         tags: reduxSelectedTags.map(tag => {
-          console.log('Mapping tag for submission:', tag);
           return { tagId: tag.tagId };
         }),
         ticketTypes: formData.ticketTypes.map((ticket, index) => ({
@@ -532,9 +520,6 @@ const EditEventPage = () => {
         })),
         removeTicketTypeIds: removedTickets,
       };
-      
-      console.log('Event data to send:', eventDataToSend);
-
       // Validate required fields
       const requiredFields = ['title', 'description', 'startTime', 'endTime', 'saleStartTime', 'saleEndTime', 'totalTickets', 'eventCategoryId'];
       if (!eventDataToSend.isOnlineEvent) {
