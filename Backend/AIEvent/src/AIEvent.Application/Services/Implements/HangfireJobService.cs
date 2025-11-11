@@ -1,4 +1,5 @@
-﻿using AIEvent.Application.DTOs.Common;
+﻿using AIEvent.Application.DTOs.AIRecommendation;
+using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.InviteFriend;
 using AIEvent.Application.DTOs.Notification;
 using AIEvent.Application.DTOs.RevenueReport;
@@ -510,11 +511,11 @@ namespace AIEvent.Application.Services.Implements
 
                 await _pineconeVectorService.UpsertVectorAsync(user.Id.ToString(), embedding, metadata);
 
-                _logger.LogInformation("✅ Embedding stored successfully for user {UserId}", userId);
+                _logger.LogInformation("Embedding stored successfully for user {UserId}", userId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ Error generating embedding for user {UserId}", userId);
+                _logger.LogError(ex, "Error generating embedding for user {UserId}", userId);
                 throw;
             }
         }
@@ -557,5 +558,77 @@ namespace AIEvent.Application.Services.Implements
             }
         }
 
+        // embedding new event
+        public async Task EnqueueEmbedNewEventJobAsync(Guid eventId)
+        {
+            BackgroundJob.Enqueue(() => EmbedNewEventAsync(eventId));
+            await Task.CompletedTask;
+        }
+
+        public async Task EmbedNewEventAsync(Guid eventId)
+        {
+            var eventEntity = await _unitOfWork.EventRepository
+                .Query()
+                .AsNoTracking()
+                .Include(e => e.EventCategory)
+                .Include(e => e.EventTags)
+                .Include(e => e.TicketTypes)
+                .FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted && e.Status == EventStatus.Approved);
+
+            if (eventEntity == null)
+            {
+                _logger.LogWarning("EventEmbeddingJob: Event {EventId} not found.", eventId);
+                return;
+            }
+
+            var categoryName = eventEntity.EventCategory?.CategoryName ?? "Không rõ";
+            var tagNames = eventEntity.EventTags?.Select(et => et.Tag?.NameTag).Where(n => !string.IsNullOrWhiteSpace(n)).ToList() ?? new();
+            var ticketInfos = eventEntity.TicketTypes?.Select(t => $"{t.TicketName}: {t.TicketPrice:N0} VND").ToList() ?? new();
+
+            var content = $@"
+                Sự kiện: {eventEntity.Title}
+                Mô tả: {eventEntity.Description}
+                Danh mục: {categoryName}
+                Thẻ: {(tagNames.Count > 0 ? string.Join(", ", tagNames) : "Không có")}
+                Địa điểm: {eventEntity.LocationName ?? eventEntity.Address ?? "Không rõ"}
+                Quận/Huyện: {eventEntity.District ?? "Không rõ"}
+                Thời gian bắt đầu: {eventEntity.StartTime:dd/MM/yyyy HH:mm}
+                Thời gian kết thúc: {eventEntity.EndTime:dd/MM/yyyy HH:mm}
+                Các loại vé:
+                {(ticketInfos.Count > 0 ? string.Join("\n", ticketInfos) : "Không có vé")}
+            ";
+
+            try
+            {
+                var embedding = await _voyageEmbeddingService.GetEmbeddingAsync(content);
+
+                var vector = new PineconeVector
+                {
+                    Id = eventEntity.Id.ToString(),
+                    Values = embedding,
+                    Metadata = new Dictionary<string, object>
+                    {
+                        ["Title"] = eventEntity.Title,
+                        ["Description"] = eventEntity.Description,
+                        ["CategoryName"] = categoryName,
+                        ["Tags"] = string.Join(", ", tagNames),
+                        ["LocationName"] = eventEntity.LocationName ?? "",
+                        ["District"] = eventEntity.District ?? "",
+                        ["Address"] = eventEntity.Address ?? "",
+                        ["StartTime"] = eventEntity.StartTime,
+                        ["EndTime"] = eventEntity.EndTime,
+                        ["Tickets"] = string.Join(", ", ticketInfos)
+                    }
+                };
+
+                await _pineconeVectorService.UpsertVectorAsync(new[] { vector });
+
+                _logger.LogInformation("Embedding stored successfully for Event {EventId}", eventEntity.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating embedding for event {EventId}", eventEntity.Id);
+            }
+        }
     }
 } 

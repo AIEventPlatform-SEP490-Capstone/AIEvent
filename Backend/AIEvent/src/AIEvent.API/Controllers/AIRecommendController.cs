@@ -39,7 +39,7 @@ namespace AIEvent.API.Controllers
             return Ok(response);
         }
 
-        [HttpGet]
+        [HttpGet("event")]
         [Authorize(Roles = "User")]
         public async Task<ActionResult<SuccessResponse<BasePaginated<EventsResponse>>>> GetEventAIRecommend([FromQuery] int pageNumber = 1,
                                                                                                             [FromQuery] int pageSize = 5)

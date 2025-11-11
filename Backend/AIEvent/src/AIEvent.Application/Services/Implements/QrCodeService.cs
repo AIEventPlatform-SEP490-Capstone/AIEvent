@@ -24,7 +24,6 @@ namespace AIEvent.Application.Services.Implements
                 using var generator = new QRCodeGenerator();
                 using var data = generator.CreateQrCode(content, QRCodeGenerator.ECCLevel.Q);
 
-                // ✅ Dùng ImageSharp renderer thay vì Bitmap
                 var qrCode = new PngByteQRCode(data);
                 var bytes = qrCode.GetGraphic(20);
 
