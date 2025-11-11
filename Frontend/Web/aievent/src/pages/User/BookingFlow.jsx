@@ -16,6 +16,7 @@ import {
   Globe,
   Wallet,
   CheckCircle,
+  CircleAlert,
 } from "lucide-react";
 import {
   createBooking,
@@ -138,23 +139,42 @@ function BookingFlow() {
     }));
 
   // --- handlers ---
-  const handleBooking = async () => {
+  const handleContinue = () => {
     setBookingError("");
-    //  Kiểm tra không chọn vé nào
+    // Kiểm tra không chọn vé nào
     if (ticketTypeRequests.length === 0) {
       setBookingError("Vui lòng chọn ít nhất một loại vé để đặt.");
       return;
     }
+    // Chỉ chuyển sang bước thanh toán, chưa tạo booking
+    setCurrentStep(2);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    getWallet(); // Refresh wallet balance
+  };
+
+  const handlePayment = async () => {
+    setBookingError("");
+    // Kiểm tra không chọn vé nào
+    if (ticketTypeRequests.length === 0) {
+      setBookingError("Vui lòng chọn ít nhất một loại vé để đặt.");
+      return;
+    }
+    
+    setIsProcessingPayment(true);
     try {
+      // Tạo booking và thanh toán khi bấm nút Thanh toán
       const payload = { eventId: event.eventId, ticketTypeRequests };
       const bookingResult = await dispatch(createBooking(payload)).unwrap();
-      // Lưu thông tin booking và chuyển sang bước thanh toán
+      
+      // Lưu thông tin booking sau khi tạo thành công
       setBookingData({
         bookingId: bookingResult?.bookingId,
         totalPrice: totalPrice,
         ticketTypeRequests: ticketTypeRequests,
       });
-      setCurrentStep(2); // Chuyển sang bước thanh toán
+      
+      // Chuyển sang step 3
+      setCurrentStep(3);
       window.scrollTo({ top: 0, behavior: "smooth" });
       await getWallet(); // Refresh wallet balance
     } catch (err) {
@@ -162,23 +182,6 @@ function BookingFlow() {
       setBookingError(
         "Đặt vé thất bại, vui lòng thử lại hoặc kiểm tra số dư ví."
       );
-    }
-  };
-
-  const handlePayment = async () => {
-    if (!bookingData) return;
-    
-    setIsProcessingPayment(true);
-    try {
-      // Giả sử thanh toán đã được xử lý tự động khi tạo booking
-      // Hoặc có thể gọi API thanh toán ở đây nếu cần
-      
-      // Chuyển sang step 3
-      setCurrentStep(3);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (err) {
-      console.error("Payment failed:", err);
-      setBookingError("Thanh toán thất bại, vui lòng thử lại.");
     } finally {
       setIsProcessingPayment(false);
     }
@@ -262,14 +265,16 @@ function BookingFlow() {
             <ChevronRight className="w-4 h-4 text-gray-400" />
             <button
               onClick={() => {
-                if (currentStep > 2 && bookingData) {
-                  setCurrentStep(2);
+                // Không cho phép quay lại step 2 từ step 3 (đã thanh toán thành công)
+                if (currentStep === 2) {
+                  // Có thể quay lại từ step 2 về step 1
+                  setCurrentStep(1);
                 }
               }}
               className={`flex items-center gap-2 ${
-                currentStep > 2 && bookingData ? "cursor-pointer hover:opacity-80" : ""
+                currentStep === 2 ? "cursor-pointer hover:opacity-80" : ""
               }`}
-              disabled={currentStep === 2 || !bookingData}
+              disabled={currentStep !== 2}
             >
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
                 currentStep === 2
@@ -380,6 +385,12 @@ function BookingFlow() {
                 Vé đã được gửi tới email của bạn. Vui lòng kiểm tra hoặc mở vé dưới
                 đây.
               </p>
+              <div className="mt-3 flex items-center gap-2 text-sm font-semibold text-yellow-600">
+                <CircleAlert className="h-5 w-5" />
+                <span>
+                  Vé điện tử của bạn sẽ được gửi tới email, vui lòng kiểm tra hộp thư, nếu không thấy xin vui lòng chờ trong ít phút và kiểm tra thư spam và thư rác.
+                </span>
+              </div>
             </div>
 
             {/* Two Column Layout */}
@@ -726,12 +737,11 @@ function BookingFlow() {
 
               {/* Continue Button */}
               <Button
-                onClick={handleBooking}
-                disabled={ticketTypeRequests.length === 0 || creating}
+                onClick={handleContinue}
+                disabled={ticketTypeRequests.length === 0}
                 className="w-full h-12 bg-sky-400 hover:bg-blue-400 text-white font-semibold rounded-lg shadow-md"
               >
-                {creating && <Loader2 className="w-5 h-5 mr-2 animate-spin" />}
-                {creating ? "Đang xử lý..." : "Tiếp tục"}
+                Tiếp tục
               </Button>
 
               {bookingError && (
@@ -747,18 +757,18 @@ function BookingFlow() {
                 <h3 className="font-semibold text-gray-800 mb-4">Thông tin thanh toán</h3>
                 
                 {/* Booking Summary */}
-                {bookingData && (
+                {ticketTypeRequests.length > 0 && (
                   <div className="space-y-3 mb-4">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Tổng tiền vé:</span>
                       <span className="font-semibold text-gray-800">
-                        {bookingData.totalPrice.toLocaleString("vi-VN")} VND
+                        {totalPrice.toLocaleString("vi-VN")} VND
                       </span>
                     </div>
                     <div className="border-t border-gray-200 pt-3 flex justify-between">
                       <span className="font-semibold text-gray-800">Tổng thanh toán:</span>
                       <span className="font-bold text-lg text-blue-600">
-                        {bookingData.totalPrice.toLocaleString("vi-VN")} VND
+                        {totalPrice.toLocaleString("vi-VN")} VND
                       </span>
                     </div>
                   </div>
@@ -775,7 +785,7 @@ function BookingFlow() {
                       {wallet?.balance ? wallet.balance.toLocaleString("vi-VN") : "0"} VND
                     </span>
                   </div>
-                  {wallet?.balance < (bookingData?.totalPrice || 0) && (
+                  {wallet?.balance < totalPrice && (
                     <div className="mt-2 text-xs text-red-600">
                       Số dư không đủ. Vui lòng nạp thêm tiền vào ví.
                     </div>
@@ -785,18 +795,18 @@ function BookingFlow() {
                 {/* Payment Button */}
                 <Button
                   onClick={handlePayment}
-                  disabled={!wallet || wallet.balance < (bookingData?.totalPrice || 0) || isProcessingPayment}
+                  disabled={!wallet || wallet.balance < totalPrice || isProcessingPayment}
                   className="w-full h-12 bg-sky-400 hover:bg-blue-400 text-white font-semibold rounded-lg shadow-md"
                 >
                   {isProcessingPayment && <Loader2 className="w-5 h-5 mr-2 animate-spin" />}
                   {isProcessingPayment 
                     ? "Đang xử lý..." 
-                    : wallet?.balance >= (bookingData?.totalPrice || 0) 
+                    : wallet?.balance >= totalPrice 
                     ? "Thanh toán" 
                     : "Nạp tiền vào ví"}
                 </Button>
 
-                {wallet?.balance < (bookingData?.totalPrice || 0) && (
+                {wallet?.balance < totalPrice && (
                   <Button
                     variant="outline"
                     onClick={() => navigate("/wallet")}
@@ -804,6 +814,12 @@ function BookingFlow() {
                   >
                     Đi đến ví điện tử
                   </Button>
+                )}
+
+                {bookingError && (
+                  <div className="text-red-600 text-sm text-center bg-red-50 border border-red-200 py-2 px-3 rounded-lg mt-4">
+                    {bookingError}
+                  </div>
                 )}
               </div>
             </div>
