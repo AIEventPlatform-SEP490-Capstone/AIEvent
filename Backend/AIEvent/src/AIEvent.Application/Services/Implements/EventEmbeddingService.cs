@@ -21,9 +21,6 @@ namespace AIEvent.Application.Services.Implements
             _voyageEmbeddingService = voyageEmbeddingService;
         }
 
-        /// <summary>
-        /// Embed tất cả sự kiện hiện có vào Pinecone một lần.
-        /// </summary>
         public async Task EmbedAllEventsAsync()
         {
             var events = await _unitOfWork.EventRepository
@@ -45,12 +42,12 @@ namespace AIEvent.Application.Services.Implements
 
             foreach (var e in events)
             {
-                // ✅ Lấy dữ liệu chính xác theo yêu cầu
+                // Lấy dữ liệu chính xác theo yêu cầu
                 var categoryName = e.EventCategory?.CategoryName ?? "Không rõ";
                 var tagNames = e.EventTags?.Select(et => et.Tag?.NameTag).Where(n => !string.IsNullOrWhiteSpace(n)).ToList() ?? [];
                 var ticketInfos = e.TicketTypes?.Select(t => $"{t.TicketName}: {t.TicketPrice:N0} VND").ToList() ?? new List<string>();
 
-                // 🔹 Ghép nội dung text mô tả để gửi cho Embedding
+                // Ghép nội dung text mô tả để gửi cho Embedding
                 var content = $@"
                     Sự kiện: {e.Title}
                     Mô tả: {e.Description}
@@ -66,10 +63,9 @@ namespace AIEvent.Application.Services.Implements
 
                 try
                 {
-                    // 🔹 Tạo embedding bằng Google Gemini
                     var embedding = await _voyageEmbeddingService.GetEmbeddingAsync(content);
 
-                    // 🔹 Đưa vào danh sách vector để upsert vào Pinecone
+                    //Đưa vào danh sách vector để upsert vào Pinecone
                     vectors.Add(new PineconeVector
                     {
                         Id = e.Id.ToString(),
@@ -95,7 +91,6 @@ namespace AIEvent.Application.Services.Implements
                 }
             }
 
-            // 🔹 Upsert toàn bộ vector vào Pinecone
             if (vectors.Any())
             {
                 await _pineconeService.UpsertVectorAsync(vectors);

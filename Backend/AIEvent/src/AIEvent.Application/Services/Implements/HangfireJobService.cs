@@ -1,4 +1,6 @@
-﻿using AIEvent.Application.DTOs.Common;
+﻿using AIEvent.Application.DTOs.AIRecommendation;
+using AIEvent.Application.DTOs.Booking;
+using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.InviteFriend;
 using AIEvent.Application.DTOs.Notification;
 using AIEvent.Application.DTOs.RevenueReport;
@@ -28,6 +30,8 @@ namespace AIEvent.Application.Services.Implements
         private readonly INotificationService _notificationService;
         private readonly IVoyageEmbeddingService _voyageEmbeddingService;
         private readonly IPineconeVectorService _pineconeVectorService;
+        private readonly IQrCodeService _qrCodeService;
+        private readonly ITicketSignatureService _ticketSignatureService;
 
         public HangfireJobService(
         IPdfService pdfService,
@@ -38,7 +42,9 @@ namespace AIEvent.Application.Services.Implements
         ITransactionHelper transactionHelper,
         INotificationService notificationService,
         IVoyageEmbeddingService voyageEmbeddingService,
-        IPineconeVectorService pineconeVectorService)
+        IPineconeVectorService pineconeVectorService,
+        IQrCodeService qrCodeService,
+        ITicketSignatureService ticketSignatureService)
         {
             _pdfService = pdfService;
             _emailService = emailService;
@@ -49,25 +55,28 @@ namespace AIEvent.Application.Services.Implements
             _notificationService = notificationService;
             _pineconeVectorService = pineconeVectorService;
             _voyageEmbeddingService = voyageEmbeddingService;
+            _qrCodeService = qrCodeService;
+            _ticketSignatureService = ticketSignatureService;
         }
 
         // send ticket to email
-        public async Task EnqueueSendTicketEmailJobAsync(string userEmail, string userFullName, string eventTitle, List<TicketForPdf> tickets, string? organizerName = null, string? organizerPhone = null, string? organizerEmail = null, DateTime? eventStartTime = null, DateTime? eventEndTime = null)
+        public async Task EnqueueSendTicketEmailJobAsync(SendEmailJobRequest request)
         {
-            BackgroundJob.Enqueue(() => GenerateAndSendTicketEmailAsync(userEmail, userFullName, eventTitle, tickets, organizerName, organizerPhone, organizerEmail, eventStartTime, eventEndTime));
+            BackgroundJob.Enqueue(() => GenerateAndSendTicketEmailAsync(request));
             await Task.CompletedTask;
         }
 
         [AutomaticRetry(Attempts = 3)]
-        public async Task GenerateAndSendTicketEmailAsync(string userEmail, string userFullName, string eventTitle, List<TicketForPdf> tickets, string? organizerName = null, string? organizerPhone = null, string? organizerEmail = null, DateTime? eventStartTime = null, DateTime? eventEndTime = null)
+        public async Task GenerateAndSendTicketEmailAsync(SendEmailJobRequest request)
         {
             try
             {
-                _logger.LogInformation("Starting ticket email generation for {UserEmail} ({EventTitle}), {TicketCount} tickets", userEmail, eventTitle, tickets.Count);
+                _logger.LogInformation("Starting ticket email generation for {UserEmail} ({EventTitle}), {TicketCount} tickets", 
+                    request.Email, request.EventTitle, request.Tickets.Count);
 
                 // Tải ảnh event nếu có URL
                 byte[]? eventImageBytes = null;
-                var firstTicket = tickets.FirstOrDefault();
+                var firstTicket = request.Tickets.FirstOrDefault();
                 if (firstTicket != null && !string.IsNullOrEmpty(firstTicket.EventImageUrl))
                 {
                     _logger.LogInformation("Downloading event image from {ImageUrl}", firstTicket.EventImageUrl);
@@ -83,39 +92,55 @@ namespace AIEvent.Application.Services.Implements
                     _logger.LogWarning("No event image URL provided");
                 }
 
-                // Gán ảnh cho tất cả các vé
-                foreach (var ticket in tickets)
+                var qrContents = new Dictionary<string, string>(request.Tickets.Count);
+                foreach (var ticket in request.Tickets)
+                {
+                    var signature = _ticketSignatureService.CreateSignature(ticket.TicketCode);
+                    qrContents[ticket.TicketCode] = $"{ticket.TicketCode}|{signature}";
+                }
+
+                var qrBytesDict = _qrCodeService.GenerateQrBytes(qrContents.Values.ToList());
+
+                foreach (var ticket in request.Tickets)
                 {
                     ticket.EventImageBytes = eventImageBytes;
+
+                    var contentKey = qrContents[ticket.TicketCode];
+                    if (qrBytesDict.TryGetValue(contentKey, out var qrBytes))
+                    {
+                        ticket.QrBytes = qrBytes;
+                    }
                 }
 
                 // Sinh file PDF
-                _logger.LogInformation("Generating PDF for {TicketCount} tickets", tickets.Count);
-                var pdfBytes = await _pdfService.GenerateTicketsPdfAsync(tickets, eventTitle, userFullName, userEmail);
+                _logger.LogInformation("Generating PDF for {TicketCount} tickets", request.Tickets.Count);
+                var pdfBytes = await _pdfService.GenerateTicketsPdfAsync(request.Tickets, request.EventTitle, request.FullName, request.Email);
                 _logger.LogInformation("PDF generated successfully, size: {Size} bytes", pdfBytes.Length);
 
                 // Gửi email
-                _logger.LogInformation("Sending email to {UserEmail}", userEmail);
+                _logger.LogInformation("Sending email to {UserEmail}", request.Email);
                 await _emailService.SendTicketsEmailAsync(
-                    userEmail,
-                    $"Your Tickets from AIEvent - {eventTitle}",
+                    request.Email,
+                    $"Your Tickets from AIEvent - {request.EventTitle}",
                     null!,
                     pdfBytes,
-                    $"{userFullName}-AIEvent",
-                    eventTitle,
-                    userFullName,
-                    organizerName,
-                    organizerPhone,
-                    organizerEmail,
-                    eventStartTime,
-                    eventEndTime
+                    $"{request.FullName}-AIEvent",
+                    request.EventTitle,
+                    request.FullName,
+                    request.OrganizerName,
+                    request.OrganizerPhone,
+                    request.OrganizerEmail,
+                    request.StartTime,
+                    request.EndTime
                 );
 
-                _logger.LogInformation("Successfully sent ticket email to {UserEmail} for event '{EventTitle}'", userEmail, eventTitle);
+                _logger.LogInformation("Successfully sent ticket email to {UserEmail} for event '{EventTitle}'", 
+                    request.Email, request.EventTitle);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending ticket email for {UserEmail} ({EventTitle}). Error: {ErrorMessage}", userEmail, eventTitle, ex.Message);
+                _logger.LogError(ex, "Error sending ticket email for {UserEmail} ({EventTitle}). Error: {ErrorMessage}", 
+                    request.Email, request.EventTitle, ex.Message);
                 throw;
             }
         }
@@ -568,11 +593,11 @@ namespace AIEvent.Application.Services.Implements
 
                 await _pineconeVectorService.UpsertVectorAsync(user.Id.ToString(), embedding, metadata);
 
-                _logger.LogInformation("✅ Embedding stored successfully for user {UserId}", userId);
+                _logger.LogInformation("Embedding stored successfully for user {UserId}", userId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ Error generating embedding for user {UserId}", userId);
+                _logger.LogError(ex, "Error generating embedding for user {UserId}", userId);
                 throw;
             }
         }
@@ -615,5 +640,77 @@ namespace AIEvent.Application.Services.Implements
             }
         }
 
+        // embedding new event
+        public async Task EnqueueEmbedNewEventJobAsync(Guid eventId)
+        {
+            BackgroundJob.Enqueue(() => EmbedNewEventAsync(eventId));
+            await Task.CompletedTask;
+        }
+
+        public async Task EmbedNewEventAsync(Guid eventId)
+        {
+            var eventEntity = await _unitOfWork.EventRepository
+                .Query()
+                .AsNoTracking()
+                .Include(e => e.EventCategory)
+                .Include(e => e.EventTags)
+                .Include(e => e.TicketTypes)
+                .FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted && e.Status == EventStatus.Approved);
+
+            if (eventEntity == null)
+            {
+                _logger.LogWarning("EventEmbeddingJob: Event {EventId} not found.", eventId);
+                return;
+            }
+
+            var categoryName = eventEntity.EventCategory?.CategoryName ?? "Không rõ";
+            var tagNames = eventEntity.EventTags?.Select(et => et.Tag?.NameTag).Where(n => !string.IsNullOrWhiteSpace(n)).ToList() ?? new();
+            var ticketInfos = eventEntity.TicketTypes?.Select(t => $"{t.TicketName}: {t.TicketPrice:N0} VND").ToList() ?? new();
+
+            var content = $@"
+                Sự kiện: {eventEntity.Title}
+                Mô tả: {eventEntity.Description}
+                Danh mục: {categoryName}
+                Thẻ: {(tagNames.Count > 0 ? string.Join(", ", tagNames) : "Không có")}
+                Địa điểm: {eventEntity.LocationName ?? eventEntity.Address ?? "Không rõ"}
+                Quận/Huyện: {eventEntity.District ?? "Không rõ"}
+                Thời gian bắt đầu: {eventEntity.StartTime:dd/MM/yyyy HH:mm}
+                Thời gian kết thúc: {eventEntity.EndTime:dd/MM/yyyy HH:mm}
+                Các loại vé:
+                {(ticketInfos.Count > 0 ? string.Join("\n", ticketInfos) : "Không có vé")}
+            ";
+
+            try
+            {
+                var embedding = await _voyageEmbeddingService.GetEmbeddingAsync(content);
+
+                var vector = new PineconeVector
+                {
+                    Id = eventEntity.Id.ToString(),
+                    Values = embedding,
+                    Metadata = new Dictionary<string, object>
+                    {
+                        ["Title"] = eventEntity.Title,
+                        ["Description"] = eventEntity.Description,
+                        ["CategoryName"] = categoryName,
+                        ["Tags"] = string.Join(", ", tagNames),
+                        ["LocationName"] = eventEntity.LocationName ?? "",
+                        ["District"] = eventEntity.District ?? "",
+                        ["Address"] = eventEntity.Address ?? "",
+                        ["StartTime"] = eventEntity.StartTime,
+                        ["EndTime"] = eventEntity.EndTime,
+                        ["Tickets"] = string.Join(", ", ticketInfos)
+                    }
+                };
+
+                await _pineconeVectorService.UpsertVectorAsync(new[] { vector });
+
+                _logger.LogInformation("Embedding stored successfully for Event {EventId}", eventEntity.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating embedding for event {EventId}", eventEntity.Id);
+            }
+        }
     }
 } 

@@ -246,7 +246,7 @@ namespace AIEvent.Application.Services.Implements
                     .Query()
                     .Where(e => e.Id == eventId)
                     .SelectMany(e => e.Bookings)
-                    .AnyAsync(b => b.Status == BookingStatus.Completed || b.Status == BookingStatus.Pending);
+                    .AnyAsync(b => b.Status == BookingStatus.Completed);
 
                 if (hasActiveBookings)
                 {
@@ -956,6 +956,11 @@ namespace AIEvent.Application.Services.Implements
                 await _notificationService.CreateNotificationAsync(notificationRequest);
             }
 
+            if (entity.Status == EventStatus.Approved)
+            {
+                await _hangfireJobService.EnqueueEmbedNewEventJobAsync(eventId);
+            }
+
             return Result.Success();
         }
 
@@ -964,7 +969,7 @@ namespace AIEvent.Application.Services.Implements
             if (userId == Guid.Empty)
                 return ErrorResponse.FailureResult("Invalid userId", ErrorCodes.InvalidInput);
 
-            var validation = ValidationHelper.ValidateModel(request);
+            var validation = ValidationHelper.ValidateModel(request);            
             if (!validation.IsSuccess)
                 return validation;
 
