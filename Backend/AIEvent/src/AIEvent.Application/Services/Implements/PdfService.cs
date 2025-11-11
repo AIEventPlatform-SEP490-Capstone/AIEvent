@@ -18,233 +18,209 @@ namespace AIEvent.Application.Services.Implements
             QuestPDF.Settings.License = LicenseType.Community;
 
             var qrImages = new ConcurrentDictionary<string, byte[]>();
-            await Task.WhenAll(tickets.Select(async ticket =>
+            foreach (var ticket in tickets)
             {
                 qrImages[ticket.TicketCode] = ticket.QrBytes ?? Array.Empty<byte>();
-            }));
+            }
+
+            await Task.CompletedTask;
 
             var pdf = Document.Create(container =>
             {
-                container.Page(page =>
+                // Tạo mỗi vé riêng lẻ
+                foreach (var ticket in tickets)
                 {
-                    page.Margin(0);
-                    page.Size(PageSizes.A4);
-                    page.PageColor(Colors.White);
-                    page.DefaultTextStyle(x => x.FontSize(11).FontColor(Color.FromHex("#3c3c3c")).FontFamily("Arial"));
-
-                    page.Content().Column(mainCol =>
+                    container.Page(page =>
                     {
-                        // Header
-                        mainCol.Item().Background(Colors.White).Padding(25).Row(headerRow =>
+                        page.Margin(0);
+                        page.Size(PageSizes.A4.Landscape().Width, 400);
+                        page.PageColor(Colors.White);
+                        page.DefaultTextStyle(x => x.FontSize(12).FontColor(Colors.Black).FontFamily("Arial"));
+
+                        page.Content().Row(mainRow =>
                         {
-                            headerRow.RelativeItem().Column(col =>
+                            // Phần BÊN TRÁI - Ảnh sự kiện (fill không gian)
+                            mainRow.RelativeItem(1).Background(Color.FromHex("#f5f5f5")).Column(leftCol =>
                             {
-                                col.Item().Text("Vé Sự Kiện").FontSize(28).Bold().FontColor(Color.FromHex("#3c3c3c"));
-                            });
-
-                            headerRow.ConstantItem(200).AlignRight().AlignMiddle().Element(logoContainer =>
-                            {
-                                logoContainer.Container()
-                                    .Background(Colors.White)
-                                    .Padding(10)
-                                    .AlignCenter()
-                                    .Text("AIEvent")
-                                    .FontSize(24)
-                                    .Bold()
-                                    .FontFamily("Helvetica")
-                                    .FontColor(Color.FromHex("#0194f3"));
-                            });
-                        });
-
-                        mainCol.Item().PaddingHorizontal(25).LineHorizontal(1).LineColor(Color.FromHex("#e0e0e0"));
-
-                        // Main content
-                        mainCol.Item().Padding(25).Column(contentCol =>
-                        {
-                            // Order info
-                            contentCol.Item().Column(orderCol =>
-                            {
-                                orderCol.Item().PaddingTop(12).Column(col =>
+                                if (ticket.EventImageBytes != null && ticket.EventImageBytes.Any())
                                 {
-                                    col.Item().Text("Đặt vé thành công bởi").FontSize(10).FontColor(Color.FromHex("#686868"));
-                                    col.Item().PaddingTop(3).Text("AIEvent").FontSize(12).SemiBold().FontColor(Color.FromHex("#3c3c3c"));
-                                });
-                            });
-
-                            // Event details
-                            contentCol.Item().PaddingTop(30).Column(eventCol =>
-                            {
-                                eventCol.Item().Row(r =>
+                                    // Image căn giữa với background màu xám nhạt
+                                    leftCol.Item().ExtendVertical().AlignCenter().AlignMiddle().Image(ticket.EventImageBytes).FitArea();
+                                }
+                                else
                                 {
-                                    r.RelativeItem().Text(eventName).FontSize(16).Bold().FontColor(Color.FromHex("#3c3c3c"));
-                                    r.ConstantItem(80).AlignRight().Text("⭐⭐").FontSize(12);
-                                });
-
-                                if (tickets.Any())
-                                {
-                                    var firstTicket = tickets.First();
-                                    eventCol.Item().PaddingTop(8).Text(firstTicket.Address)
-                                        .FontSize(11).FontColor(Color.FromHex("#686868"));
-
-                                    eventCol.Item().PaddingTop(12).Column(contactCol =>
+                                    // Placeholder nếu không có ảnh
+                                    leftCol.Item().ExtendVertical().AlignCenter().AlignMiddle().Column(col =>
                                     {
-                                        contactCol.Item().Row(r =>
-                                        {
-                                            r.ConstantItem(100).Text("Email:").FontSize(10).FontColor(Color.FromHex("#686868"));
-                                            r.RelativeItem().Text(email).FontSize(10).FontColor(Color.FromHex("#3c3c3c"));
-                                        });
-                                        contactCol.Item().PaddingTop(5).Row(r =>
-                                        {
-                                            r.ConstantItem(100).Text("Khách hàng:").FontSize(10).FontColor(Color.FromHex("#686868"));
-                                            r.RelativeItem().Text(buyer).FontSize(10).FontColor(Color.FromHex("#0194f3"));
-                                        });
+                                        col.Item().Text("EVENT").FontSize(36).Bold().FontColor(Colors.Grey.Medium);
+                                        col.Item().Text("IMAGE").FontSize(36).Bold().FontColor(Colors.Grey.Medium);
                                     });
                                 }
                             });
 
-                            // Warning banner
-                            contentCol.Item().PaddingTop(20).Background(Color.FromHex("#fffbeb"))
-                                .Border(1).BorderColor(Color.FromHex("#ffc107"))
-                                .Padding(12).Row(r =>
-                                {
-                                    r.ConstantItem(25).AlignMiddle().Text("⚠️").FontSize(16);
-                                    r.RelativeItem().PaddingLeft(8).AlignMiddle()
-                                        .Text("Vui lòng đảm bảo rằng bạn đã nắm rõ thời gian tổ chức sự kiện.")
-                                        .FontSize(10).FontColor(Color.FromHex("#856404"));
-                                });
+                            // Đường kẻ dọc ngăn cách
+                            mainRow.ConstantItem(3).Background(Color.FromHex("#e0e0e0"));
 
-                            // Event time
-                            if (tickets.Any())
+                            // Phần BÊN PHẢI - Thông tin vé
+                            mainRow.RelativeItem(2).PaddingVertical(8).PaddingHorizontal(35).Column(rightCol =>
                             {
-                                var firstTicket = tickets.First();
-                                contentCol.Item().PaddingTop(20).Row(timeRow =>
+                                // Category tag
+                                rightCol.Item().Row(tagRow =>
                                 {
-                                    timeRow.RelativeItem().Border(1).BorderColor(Color.FromHex("#0194f3"))
-                                        .Padding(15).Column(col =>
-                                        {
-                                            col.Item().Text("Thời gian bắt đầu").FontSize(10).Bold().FontColor(Color.FromHex("#3c3c3c"));
-                                            col.Item().PaddingTop(5).Text(firstTicket.StartTime.ToString("dd MMM yyyy"))
-                                                .FontSize(14).Bold().FontColor(Color.FromHex("#3c3c3c"));
-                                            col.Item().PaddingTop(3).Row(r =>
-                                            {
-                                                r.ConstantItem(20).Text("🕐").FontSize(12);
-                                                r.RelativeItem().PaddingLeft(5).Text(firstTicket.StartTime.ToString("HH:mm"))
-                                                    .FontSize(12).FontColor(Color.FromHex("#0194f3"));
-                                            });
-                                        });
+                                    tagRow.AutoItem().Background(Color.FromHex("#f0f0f0"))
+                                        .PaddingVertical(3)
+                                        .PaddingHorizontal(8)
+                                        .Text(ticket.EventCategory.ToUpper())
+                                        .FontSize(10)
+                                        .Bold()
+                                        .FontColor(Color.FromHex("#666666"))
+                                        .LetterSpacing(1);
 
-                                    timeRow.ConstantItem(30);
+                                    tagRow.RelativeItem();
 
-                                    timeRow.RelativeItem().Border(1).BorderColor(Color.FromHex("#0194f3"))
-                                        .Padding(15).Column(col =>
-                                        {
-                                            col.Item().Text("Thời gian kết thúc").FontSize(10).Bold().FontColor(Color.FromHex("#3c3c3c"));
-                                            col.Item().PaddingTop(5).Text(firstTicket.EndTime.ToString("dd MMM yyyy"))
-                                                .FontSize(14).Bold().FontColor(Color.FromHex("#3c3c3c"));
-                                            col.Item().PaddingTop(3).Row(r =>
-                                            {
-                                                r.ConstantItem(20).Text("🕐").FontSize(12);
-                                                r.RelativeItem().PaddingLeft(5).Text(firstTicket.EndTime.ToString("HH:mm"))
-                                                    .FontSize(12).FontColor(Color.FromHex("#0194f3"));
-                                            });
-                                        });
-                                });
-                            }
-
-                            // Table header
-                            contentCol.Item().PaddingTop(30).Background(Color.FromHex("#f5f5f5")).Padding(12)
-                                .Text("THÔNG TIN VÉ CHI TIẾT").FontSize(11).Bold().FontColor(Color.FromHex("#3c3c3c"));
-
-                            // Ticket details table
-                            foreach (var ticket in tickets)
-                            {
-                                contentCol.Item().Border(1).BorderColor(Color.FromHex("#e0e0e0")).Column(ticketCol =>
-                                {
-                                    ticketCol.Item().Background(Colors.White).Padding(15).Row(ticketRow =>
+                                    // Địa chỉ bên phải
+                                    tagRow.AutoItem().Column(locCol =>
                                     {
-                                        ticketRow.RelativeItem().Column(infoCol =>
+                                        locCol.Item().AlignRight().Text("📍 " + ticket.Address)
+                                            .FontSize(10)
+                                            .FontColor(Color.FromHex("#666666"));
+                                    });
+                                });
+
+                                // Tên sự kiện
+                                rightCol.Item().PaddingTop(8).Text(eventName)
+                                    .FontSize(36)
+                                    .Bold()
+                                    .FontColor(Colors.Black);
+
+                                // Các thông tin thời gian và giá vé trong các hộp
+                                rightCol.Item().PaddingTop(8).Row(infoRow =>
+                                {
+                                    // Ngày
+                                    infoRow.AutoItem().Border(2).BorderColor(Colors.Black)
+                                        .PaddingVertical(8)
+                                        .PaddingHorizontal(14)
+                                        .Text(ticket.StartTime.ToString("MMM dd").ToUpper())
+                                        .FontSize(14)
+                                        .Bold()
+                                        .FontColor(Colors.Black);
+
+                                    infoRow.ConstantItem(10);
+
+                                    // Giờ
+                                    infoRow.AutoItem().Border(2).BorderColor(Colors.Black)
+                                        .PaddingVertical(8)
+                                        .PaddingHorizontal(14)
+                                        .Text(ticket.StartTime.ToString("hh:mm tt").ToUpper())
+                                        .FontSize(14)
+                                        .Bold()
+                                        .FontColor(Colors.Black);
+
+                                    infoRow.ConstantItem(10);
+
+                                    // Giá
+                                    infoRow.AutoItem().Border(2).BorderColor(Colors.Black)
+                                        .PaddingVertical(8)
+                                        .PaddingHorizontal(14)
+                                        .Text($"PRICE: {ticket.Price:N0} VND")
+                                        .FontSize(14)
+                                        .Bold()
+                                        .FontColor(Colors.Black);
+                                });
+
+                                // Thông tin chi tiết vé
+                                rightCol.Item().PaddingTop(6).Background(Color.FromHex("#f8f8f8"))
+                                    .Padding(8)
+                                    .Text("THÔNG TIN VÉ CHI TIẾT")
+                                    .FontSize(10)
+                                    .Bold()
+                                    .FontColor(Color.FromHex("#666666"))
+                                    .LetterSpacing(1);
+
+                                rightCol.Item().Border(1).BorderColor(Color.FromHex("#e0e0e0"))
+                                    .Padding(10).Row(detailRow =>
+                                    {
+                                        // Cột thông tin bên trái
+                                        detailRow.RelativeItem().Column(infoCol =>
                                         {
                                             infoCol.Item().Row(r =>
                                             {
-                                                r.ConstantItem(80).Text("Loại vé:").FontSize(10).FontColor(Color.FromHex("#686868"));
-                                                r.RelativeItem().Text(ticket.TicketType).FontSize(11).Bold().FontColor(Color.FromHex("#3c3c3c"));
+                                                r.ConstantItem(80).Text("Loại vé:").FontSize(10).FontColor(Color.FromHex("#666666"));
+                                                r.RelativeItem().Text(ticket.TicketType).FontSize(11).Bold().FontColor(Colors.Black);
                                             });
-                                            infoCol.Item().PaddingTop(8).Row(r =>
+
+                                            infoCol.Item().PaddingTop(6).Row(r =>
                                             {
-                                                r.ConstantItem(80).Text("Khách:").FontSize(10).FontColor(Color.FromHex("#686868"));
-                                                r.RelativeItem().Text(ticket.CustomerName).FontSize(11).Bold().FontColor(Color.FromHex("#3c3c3c"));
+                                                r.ConstantItem(80).Text("Khách:").FontSize(10).FontColor(Color.FromHex("#666666"));
+                                                r.RelativeItem().Text(ticket.CustomerName).FontSize(11).Bold().FontColor(Colors.Black);
                                             });
-                                            infoCol.Item().PaddingTop(8).Row(r =>
+
+                                            infoCol.Item().PaddingTop(6).Row(r =>
                                             {
-                                                r.ConstantItem(80).Text("Mã vé:").FontSize(10).FontColor(Color.FromHex("#686868"));
-                                                r.RelativeItem().Text(ticket.TicketCode).FontSize(10).FontFamily("Courier New").FontColor(Color.FromHex("#3c3c3c"));
+                                                r.ConstantItem(80).Text("Mã vé:").FontSize(10).FontColor(Color.FromHex("#666666"));
+                                                r.RelativeItem().Text(ticket.TicketCode)
+                                                    .FontSize(10)
+                                                    .FontFamily("Courier New")
+                                                    .FontColor(Color.FromHex("#333333"));
                                             });
-                                            infoCol.Item().PaddingTop(8).Row(r =>
+
+                                            infoCol.Item().PaddingTop(6).Row(r =>
                                             {
-                                                r.ConstantItem(80).Text("Giá vé:").FontSize(10).FontColor(Color.FromHex("#686868"));
-                                                r.RelativeItem().Text($"{ticket.Price:N0} VND").FontSize(11).Bold().FontColor(Color.FromHex("#3c3c3c"));
+                                                r.ConstantItem(80).Text("Giá vé:").FontSize(10).FontColor(Color.FromHex("#666666"));
+                                                r.RelativeItem().Text($"{ticket.Price:N0} VND").FontSize(11).Bold().FontColor(Colors.Black);
                                             });
                                         });
 
-                                        ticketRow.ConstantItem(120).AlignMiddle().Column(qrCol =>
+                                        // QR code bên phải
+                                        detailRow.ConstantItem(110).AlignMiddle().Column(qrCol =>
                                         {
-                                            qrCol.Item().Width(100).Height(100).Border(1).BorderColor(Color.FromHex("#e0e0e0")).Padding(5).Element(qr =>
-                                            {
-                                                if (qrImages[ticket.TicketCode].Any())
-                                                    qr.Image(qrImages[ticket.TicketCode]).FitArea();
-                                                else
-                                                    qr.AlignCenter().AlignMiddle().Text("QR N/A").FontSize(9).FontColor(Color.FromHex("#686868"));
-                                            });
+                                            qrCol.Item().Width(100).Height(100).Border(2).BorderColor(Colors.Black)
+                                                .Padding(5).Element(qr =>
+                                                {
+                                                    if (qrImages[ticket.TicketCode].Any())
+                                                        qr.Image(qrImages[ticket.TicketCode]).FitArea();
+                                                    else
+                                                        qr.AlignCenter().AlignMiddle().Text("QR").FontSize(12).FontColor(Color.FromHex("#999999"));
+                                                });
+                                        });
+                                    });
+
+                                // Lưu ý quan trọng
+                                rightCol.Item().PaddingTop(6).Column(notesCol =>
+                                {
+                                    notesCol.Item().Text("LƯU Ý QUAN TRỌNG").FontSize(11).Bold().FontColor(Colors.Black);
+
+                                    notesCol.Item().PaddingTop(3).Column(listCol =>
+                                    {
+                                        listCol.Item().PaddingBottom(2).Row(r =>
+                                        {
+                                            r.ConstantItem(12).Text("•").FontSize(11).FontColor(Colors.Black);
+                                            r.RelativeItem().Text("Vui lòng đến sớm 15-30 phút để hoàn tất thủ tục check-in")
+                                                .FontSize(9).FontColor(Color.FromHex("#666666"));
+                                        });
+
+                                        listCol.Item().PaddingBottom(2).Row(r =>
+                                        {
+                                            r.ConstantItem(12).Text("•").FontSize(11).FontColor(Colors.Black);
+                                            r.RelativeItem().Text("Mang theo giấy tờ tùy thân hợp lệ và mã QR của vé điện tử")
+                                                .FontSize(9).FontColor(Color.FromHex("#666666"));
+                                        });
+
+                                        listCol.Item().Row(r =>
+                                        {
+                                            r.ConstantItem(12).Text("•").FontSize(11).FontColor(Colors.Black);
+                                            r.RelativeItem().Text("Liên hệ ngay tại hotline: +84 337 252 208 nếu có bất kỳ thắc mắc nào")
+                                                .FontSize(9).FontColor(Color.FromHex("#666666"));
                                         });
                                     });
                                 });
-                            }
-
-                            // Notes
-                            contentCol.Item().PaddingTop(30).Column(notesCol =>
-                            {
-                                notesCol.Item().Text("LƯU Ý QUAN TRỌNG!").FontSize(12).Bold().FontColor(Color.FromHex("#3c3c3c"));
-
-                                notesCol.Item().PaddingTop(10).Column(listCol =>
-                                {
-                                    listCol.Item().PaddingBottom(5).Row(r =>
-                                    {
-                                        r.ConstantItem(15).Text("•").FontSize(11).FontColor(Color.FromHex("#3c3c3c"));
-                                        r.RelativeItem().Text("Vui lòng đến sớm 15-30 phút để hoàn tất thủ tục check-in")
-                                            .FontSize(10).FontColor(Color.FromHex("#686868"));
-                                    });
-                                    listCol.Item().PaddingBottom(5).Row(r =>
-                                    {
-                                        r.ConstantItem(15).Text("•").FontSize(11).FontColor(Color.FromHex("#3c3c3c"));
-                                        r.RelativeItem().Text("Mang theo giấy tờ tùy thân hợp lệ và vé điện tử")
-                                            .FontSize(10).FontColor(Color.FromHex("#686868"));
-                                    });
-                                    listCol.Item().PaddingBottom(5).Row(r =>
-                                    {
-                                        r.ConstantItem(15).Text("•").FontSize(11).FontColor(Color.FromHex("#3c3c3c"));
-                                        r.RelativeItem().Text("Liên hệ ngay nếu có bất kỳ thắc mắc nào")
-                                            .FontSize(10).FontColor(Color.FromHex("#686868"));
-                                    });
-                                });
-                            });
-                        });
-
-                        // Footer
-                        mainCol.Item().PaddingTop(20).PaddingHorizontal(25).PaddingBottom(25).Column(footerCol =>
-                        {
-                            footerCol.Item().LineHorizontal(1).LineColor(Color.FromHex("#e0e0e0"));
-                            footerCol.Item().PaddingTop(15).Row(r =>
-                            {
-                                r.RelativeItem().Text("© AIEvent - Nền tảng đặt vé sự kiện").FontSize(9).FontColor(Color.FromHex("#686868"));
-                                r.ConstantItem(200).AlignRight().Text("📱 Xuất trình mã QR khi tham dự").FontSize(9).FontColor(Color.FromHex("#686868"));
                             });
                         });
                     });
-                });
+                }
             });
 
             return pdf.GeneratePdf();
         }
-
     }
 }

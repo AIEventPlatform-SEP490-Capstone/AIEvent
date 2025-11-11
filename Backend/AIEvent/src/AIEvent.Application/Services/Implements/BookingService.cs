@@ -43,6 +43,7 @@ namespace AIEvent.Application.Services.Implements
             var eventEntity = await _unitOfWork.EventRepository
                 .Query()
                 .Include(u => u.OrganizerProfile)
+                .Include(e => e.EventCategory)
                 .FirstOrDefaultAsync(e => e.Id == request.EventId && !e.IsDeleted
                                           && e.Status == EventStatus.Approved && e.Publish == true);
             if (eventEntity == null)
@@ -220,6 +221,9 @@ namespace AIEvent.Application.Services.Implements
                 booking.PaymentMethod = PaymentMethod.Wallet;
                 await _unitOfWork.BookingRepository.UpdateAsync(booking);
 
+                // Lấy URL ảnh event từ ImgListEvent
+                var firstImageUrl = ParseFirstImageFromJson(eventEntity.ImgListEvent);
+
                 var ticketData = tickets.Select((t, idx) => new TicketForPdf
                 {
                     TicketCode = t.TicketCode,
@@ -231,14 +235,21 @@ namespace AIEvent.Application.Services.Implements
                     StartTime = t.StartTime,
                     EndTime = t.EndTime,
                     Address = t.Address!,
-                    QrBytes = qrResult.Bytes[qrContents[idx]]
+                    QrBytes = qrResult.Bytes[qrContents[idx]],
+                    EventImageUrl = firstImageUrl ?? "",
+                    EventCategory = eventEntity.EventCategory?.CategoryName ?? "EVENT"
                 }).ToList();
 
                 await _hangfireJobService.EnqueueSendTicketEmailJobAsync(
                     user.Email!,
                     user.FullName!,
                     eventEntity.Title,
-                    ticketData
+                    ticketData,
+                    eventEntity.OrganizerProfile?.ContactName,
+                    eventEntity.OrganizerProfile?.ContactPhone,
+                    eventEntity.OrganizerProfile?.ContactEmail,
+                    eventEntity.StartTime,
+                    eventEntity.EndTime
                 );
 
                 return Result.Success();
@@ -383,6 +394,10 @@ namespace AIEvent.Application.Services.Implements
         {
             if (string.IsNullOrWhiteSpace(imgListJson))
                 return null;
+
+            // Nếu là URL trực tiếp (không phải JSON)
+            if (imgListJson.StartsWith("http://") || imgListJson.StartsWith("https://"))
+                return imgListJson;
 
             try
             {
