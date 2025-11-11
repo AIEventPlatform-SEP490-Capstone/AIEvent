@@ -24,6 +24,7 @@ import {
   selectEventsError,
 } from '../../redux/slices/eventsSlice';
 import EventService from '../../api/services/EventService';
+import RatingSectionMobile from '../../components/presentation/RatingSectionMobile';
 import AuthService from '../../api/services/AuthService';
 import { isStaffUser } from '../../utils/jwtUtils';
 
@@ -887,6 +888,8 @@ const EventDetailScreen = () => {
             />
           </View>
         </View>
+        {/* Ratings Section */}
+        <RatingSectionMobile eventId={eventId} />
       </View>
     </ScrollView>
   );
