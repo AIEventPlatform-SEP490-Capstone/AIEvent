@@ -28,6 +28,7 @@ import { Card, CardContent, CardHeader } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Separator } from '../../components/ui/separator';
 import { useEvents } from '../../hooks/useEvents';
+import { useFavoriteEvents } from '../../hooks/useFavoriteEvents';
 import { PATH } from '../../routes/path';
 import MapDirection from '../../components/Event/MapDirection';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
@@ -42,6 +43,7 @@ const EventDetailGuestPage = ({ previewData }) => {
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const { getEventById, getRelatedEvents, loading: eventLoading } = useEvents();
+  const { getFavoriteEvents, addFavoriteEvent, removeFavoriteEvent } = useFavoriteEvents();
 
   useEffect(() => {
     if (previewData) {
@@ -54,6 +56,23 @@ const EventDetailGuestPage = ({ previewData }) => {
       loadRelatedEvents();
     }
   }, [id, previewData]);
+
+  // Check if event is already favorited
+  useEffect(() => {
+    const checkIfFavorited = async () => {
+      if (isAuthenticated && event) {
+        try {
+          const favorites = await getFavoriteEvents();
+          const isEventFavorited = favorites.some(favEvent => favEvent.eventId === event.eventId);
+          setIsLiked(isEventFavorited);
+        } catch (error) {
+          console.error('Error checking favorite status:', error);
+        }
+      }
+    };
+
+    checkIfFavorited();
+  }, [isAuthenticated, event]);
 
   const loadEventDetail = async () => {
     try {
@@ -200,6 +219,29 @@ const EventDetailGuestPage = ({ previewData }) => {
     }
   };
 
+  const handleToggleFavorite = async () => {
+    if (!isAuthenticated) {
+      // Redirect to login page
+      navigate(`${PATH.LOGIN}?returnUrl=${PATH.EVENT.replace(':id', id)}`);
+      return;
+    }
+
+    try {
+      if (isLiked) {
+        // Remove from favorites
+        await removeFavoriteEvent(event.eventId);
+      } else {
+        // Add to favorites
+        await addFavoriteEvent(event.eventId);
+      }
+      // Toggle the local state
+      setIsLiked(!isLiked);
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      toast.error('Không thể cập nhật trạng thái yêu thích');
+    }
+  };
+
   const handleShareEvent = () => {
     if (navigator.share) {
       navigator.share({
@@ -275,20 +317,6 @@ const EventDetailGuestPage = ({ previewData }) => {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Quay lại
             </Button>
-            <div className="flex space-x-2">
-              <Button variant="outline" size="sm" onClick={() => setIsLiked(!isLiked)}>
-                <Heart className={`w-4 h-4 mr-2 ${isLiked ? "fill-red-500 text-red-500" : ""}`} />
-                Yêu thích
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleInviteFriends}>
-                <UserPlus className="w-4 h-4 mr-2" />
-                Mời bạn bè
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleShareEvent}>
-                <Share2 className="w-4 h-4 mr-2" />
-                Chia sẻ
-              </Button>
-            </div>
           </div>
         </div>
       </div>
@@ -310,6 +338,12 @@ const EventDetailGuestPage = ({ previewData }) => {
                   <span className="text-gray-500">Không có hình ảnh</span>
                 </div>
               )}
+              <div className="absolute top-4 right-4">
+                <Heart 
+                  className={`w-6 h-6 cursor-pointer ${isLiked ? "fill-red-500 text-red-500" : "text-white"}`} 
+                  onClick={handleToggleFavorite}
+                />
+              </div>
               <div className="absolute bottom-4 left-4 flex gap-2">
                 <Badge variant="secondary" className="bg-background/80 backdrop-blur">
                   {formatPrice(event)}
@@ -526,9 +560,6 @@ const EventDetailGuestPage = ({ previewData }) => {
                       {event.organizerEvent.companyDescription || "Tổ chức sự kiện chuyên nghiệp"}
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
-                    Theo dõi
-                  </Button>
                 </div>
               </div>
             )}
@@ -560,9 +591,9 @@ const EventDetailGuestPage = ({ previewData }) => {
                     <UserPlus className="w-4 h-4 mr-2" />
                     Mời bạn bè tham gia
                   </Button>
-                  <Button variant="outline" className="w-full bg-transparent">
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Hỏi nhà tổ chức
+                  <Button variant="outline" className="w-full bg-transparent" onClick={handleShareEvent}>
+                    <Share2 className="w-4 h-4 mr-2" />
+                    Chia sẻ
                   </Button>
                 </div>
               </CardContent>
