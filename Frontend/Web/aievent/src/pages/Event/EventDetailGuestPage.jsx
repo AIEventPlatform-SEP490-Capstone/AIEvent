@@ -20,6 +20,7 @@ import {
   Ticket,
   Globe,
   Activity,
+  Sparkles,
   User,
 } from "lucide-react";
 

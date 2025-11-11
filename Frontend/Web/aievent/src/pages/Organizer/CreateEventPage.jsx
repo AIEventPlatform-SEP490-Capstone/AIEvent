@@ -108,6 +108,16 @@ const createEventSchema = z.object({
 }, {
   message: 'Thời gian bán vé phải kết thúc trước thời gian bắt đầu sự kiện và thời gian bắt đầu bán vé phải trước thời gian kết thúc bán vé',
   path: ['saleEndTime'],
+}).refine((data) => {
+  // Kiểm tra điều kiện giá vé khi chọn loại vé có phí
+  if (data.ticketPricingType === '2') {
+    const hasPaidTicket = data.ticketTypes.some(ticket => ticket.ticketPrice > 0);
+    return hasPaidTicket;
+  }
+  return true;
+}, {
+  message: 'Vui lòng nhập giá vé lớn hơn 0 cho sự kiện có phí',
+  path: ['ticketTypes'],
 });
 
 const CreateEventPage = () => {
@@ -131,7 +141,7 @@ const CreateEventPage = () => {
 
   // Redux hooks
   const { categories, loading: categoriesLoading } = useCategories();
-  const { tags: reduxSelectedTags, clearAllSelectedTags } = useTags();
+  const { selectedTags: reduxSelectedTags, clearAllSelectedTags } = useTags();
   // const { selectedRules, clearSelectedRefundRules } = useRefundRules();
   const { showLoading, hideLoading, updatePageTitle } = useApp();
   const { createEvent: createEventAPI, loading: eventLoading } = useEvents();
@@ -319,7 +329,7 @@ const CreateEventPage = () => {
   const addTicketType = () => {
     append({
       ticketName: '',
-      ticketPrice: watchTicketPricingType === '1' ? 0 : '',
+      ticketPrice: watchTicketPricingType === '1' ? 0 : 0,
       ticketQuantity: 1,
       ticketDescription: '',
       // ruleRefundRequestId: selectedRules.length > 0 ? selectedRules[0].ruleRefundId : '',
@@ -334,6 +344,16 @@ const CreateEventPage = () => {
       toast.error('Phải có ít nhất một loại vé');
     }
   };
+  
+  // Cập nhật giá vé khi thay đổi loại vé
+  useEffect(() => {
+    if (watchTicketPricingType === '1') {
+      // Khi chọn miễn phí, đặt tất cả giá vé về 0
+      fields.forEach((_, index) => {
+        setValue(`ticketTypes.${index}.ticketPrice`, 0);
+      });
+    }
+  }, [watchTicketPricingType, fields]);
 
   // Generate preview data from form values
   const generatePreviewData = (formData) => {
@@ -539,7 +559,10 @@ const CreateEventPage = () => {
         images: imageUrls, // Send Cloudinary URLs instead of File objects
         evidenceImages: evidenceImageUrls, // Send Cloudinary URLs instead of File objects
         eventCategoryId: data.eventCategoryId,
-        tags: reduxSelectedTags.map(tag => ({ tagId: tag.tagId })),
+        tags: reduxSelectedTags.map(tag => {
+          console.log('Mapping tag for submission:', tag);
+          return { tagId: tag.tagId };
+        }),
         // refundRules: selectedRules.map(rule => ({ ruleRefundId: rule.ruleRefundId })),
         ticketTypes: data.ticketTypes.map(ticket => ({
           ticketName: ticket.ticketName,
@@ -549,7 +572,8 @@ const CreateEventPage = () => {
           // ruleRefundRequestId: ticket.ruleRefundRequestId,
         })),
       };
-
+      
+      console.log('Event data to send:', eventData);
       const response = await createEventAPI(eventData);
       
       if (response) {
