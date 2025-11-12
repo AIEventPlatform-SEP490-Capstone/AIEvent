@@ -13,8 +13,7 @@ namespace AIEvent.Domain.Entities
         public string? BankShortName { get; set; }
         public string? BankLogo { get; set; }
         public string? BranchName { get; set; }
-        public User User { get; set; } = default!;
-        public virtual ICollection<EndEventRequest> EndEventRequests { get; set; } = new Collection<EndEventRequest>();
+        public User User { get; set; } = default!; 
 
     }
 }

@@ -28,8 +28,7 @@ namespace AIEvent.Infrastructure.Repositories.Implements
         public IGenericRepository<Wallet> WalletRepository => GetRepository<Wallet>();
         public IGenericRepository<WalletTransaction> WalletTransactionRepository => GetRepository<WalletTransaction>();
         public IGenericRepository<PaymentTransaction> PaymentTransactionRepository => GetRepository<PaymentTransaction>(); 
-        public IGenericRepository<PaymentInformation> PaymentInformationRepository => GetRepository<PaymentInformation>();
-        public IGenericRepository<EndEventRequest> EndEventRequestRepository => GetRepository<EndEventRequest>();
+        public IGenericRepository<PaymentInformation> PaymentInformationRepository => GetRepository<PaymentInformation>(); 
         public IGenericRepository<RevenueReport> RevenueReportRepository => GetRepository<RevenueReport>();
         public IGenericRepository<Friendship> FriendshipRepository => GetRepository<Friendship>();
         public IGenericRepository<Rating> RatingRepository => GetRepository<Rating>();

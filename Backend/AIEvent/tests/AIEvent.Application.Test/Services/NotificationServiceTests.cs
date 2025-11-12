@@ -1,10 +1,7 @@
 using AIEvent.Application.Constants;
-using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Notification;
-using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
-using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Hubs;
@@ -529,7 +526,7 @@ namespace AIEvent.Application.Test.Services
 
         // UTCID01: Valid request with notifications - Success
         [Fact]
-        public async Task UTCID23_GetNotificationsByUserIdAsync_WithNotifications_ShouldReturnSuccess()
+        public async Task UTCID01_GetNotificationsByUserIdAsync_WithNotifications_ShouldReturnSuccess()
         {
             // Arrange
             var notifications = new List<Notification>
@@ -561,7 +558,7 @@ namespace AIEvent.Application.Test.Services
 
         // UTCID02: Pagination - Page 1 with 10 items - Success
         [Fact]
-        public async Task UTCID24_GetNotificationsByUserIdAsync_WithPaginationPage1_ShouldReturnCorrectPage()
+        public async Task UTCID02_GetNotificationsByUserIdAsync_WithPaginationPage1_ShouldReturnCorrectPage()
         {
             // Arrange
             var notifications = new List<Notification>();
@@ -595,7 +592,7 @@ namespace AIEvent.Application.Test.Services
 
         // UTCID03: Pagination - Page 2 with 10 items - Success
         [Fact]
-        public async Task UTCID25_GetNotificationsByUserIdAsync_WithPaginationPage2_ShouldReturnCorrectPage()
+        public async Task UTCID03_GetNotificationsByUserIdAsync_WithPaginationPage2_ShouldReturnCorrectPage()
         {
             // Arrange
             var notifications = new List<Notification>();
@@ -628,7 +625,7 @@ namespace AIEvent.Application.Test.Services
 
         // UTCID04: Pagination - Last page with remaining items - Success
         [Fact]
-        public async Task UTCID26_GetNotificationsByUserIdAsync_WithPaginationLastPage_ShouldReturnRemainingItems()
+        public async Task UTCID04_GetNotificationsByUserIdAsync_WithPaginationLastPage_ShouldReturnRemainingItems()
         {
             // Arrange
             var notifications = new List<Notification>();
@@ -659,28 +656,9 @@ namespace AIEvent.Application.Test.Services
             result.Value!.TotalPages.Should().Be(3);
         }
 
-        // UTCID05: Boundary - Minimum page number (1) - Success
+        // UTCID05: No notifications for user - Success (empty list)
         [Fact]
-        public async Task UTCID27_GetNotificationsByUserIdAsync_WithMinPageNumber_ShouldReturnSuccess()
-        {
-            // Arrange
-            var notifications = new List<Notification>
-            {
-                new Notification { Id = NotificationId, UserId = UserId, Title = "Test", Message = "Test", Type = NotificationType.System }
-            }.AsQueryable().BuildMockDbSet();
-
-            _mockUnitOfWork.Setup(x => x.NotificationRepository.Query(It.IsAny<bool>())).Returns(notifications.Object);
-
-            // Act
-            var result = await _notificationService.GetNotificationsByUserIdAsync(UserId, 1, 10);
-
-            // Assert
-            result.IsSuccess.Should().BeTrue();
-        }
-
-        // UTCID06: No notifications for user - Success (empty list)
-        [Fact]
-        public async Task UTCID29_GetNotificationsByUserIdAsync_WithNoNotifications_ShouldReturnEmptyList()
+        public async Task UTCID05_GetNotificationsByUserIdAsync_WithNoNotifications_ShouldReturnEmptyList()
         {
             // Arrange
             var notifications = new List<Notification>().AsQueryable().BuildMockDbSet();
@@ -696,9 +674,9 @@ namespace AIEvent.Application.Test.Services
             result.Value!.TotalPages.Should().Be(0);
         }
 
-        // UTCID07: Deleted notifications filtered out - Success
+        // UTCID06: Deleted notifications filtered out - Success
         [Fact]
-        public async Task UTCID07_GetNotificationsByUserIdAsync_WithDeletedNotifications_ShouldFilterDeleted()
+        public async Task UTCID06_GetNotificationsByUserIdAsync_WithDeletedNotifications_ShouldFilterDeleted()
         {
             // Arrange
             var notifications = new List<Notification>

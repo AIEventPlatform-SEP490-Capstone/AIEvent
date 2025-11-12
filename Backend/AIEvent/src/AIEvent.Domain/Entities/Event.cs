@@ -39,9 +39,10 @@ namespace AIEvent.Domain.Entities
         public float? Longitude { get; set; }
         public DateTime? SaleStartTime { get; set; }  
         public DateTime? SaleEndTime { get; set; }
+        public DateTime? PaidOutAt { get; set; }
+        public DateTime? CompletedAt { get; set; }
         public EventCategory EventCategory { get; set; } = default!;
-        public virtual OrganizerProfile? OrganizerProfile { get; set; }
-        public virtual ICollection<EndEventRequest> EndEventRequests { get; set; } = new List<EndEventRequest>();
+        public virtual OrganizerProfile? OrganizerProfile { get; set; } 
         public virtual ICollection<TicketType> TicketTypes { get; set; } = new List<TicketType>();
         public virtual ICollection<EventTag> EventTags { get; set; } = new List<EventTag>();
         public ICollection<FavoriteEvent> FavoriteEvents { get; set; } = new List<FavoriteEvent>();

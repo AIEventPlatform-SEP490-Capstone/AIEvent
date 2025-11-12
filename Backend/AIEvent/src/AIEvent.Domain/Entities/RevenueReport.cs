@@ -16,7 +16,7 @@ namespace AIEvent.Domain.Entities
         public decimal PlatformFee { get; set; }
         public int ReportMonth {  get; set; }
         public int ReportYear {  get; set; }
-        public DateTime PayoutDate { get; set; }
+        public DateTime? PayoutDate { get; set; }
         public virtual OrganizerProfile OrganizerProfile { get; set; } = default!;
         public virtual Event Event { get; set; } = default!;
     }

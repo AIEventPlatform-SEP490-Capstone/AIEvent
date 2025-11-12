@@ -16,7 +16,7 @@ namespace AIEvent.Application.Services.Implements
         {
             _httpClient = httpClient;
             _apiKey = config["AIProviders:Pinecone:ApiKey"]!;
-            _host = config["AIProviders:Pinecone:Host"]!;
+            _host = config["AIProviders:Pinecone:HostEvent"]!;
 
             _httpClient.BaseAddress = new Uri(_host);
             _httpClient.DefaultRequestHeaders.Add("Api-Key", _apiKey);

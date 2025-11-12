@@ -1,7 +1,6 @@
 ﻿using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.InviteFriend;
-using AIEvent.Application.DTOs.Notification;
-using AIEvent.Application.DTOs.RevenueReport;
+using AIEvent.Application.DTOs.Notification; 
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
@@ -10,8 +9,7 @@ using AIEvent.Infrastructure.Repositories.Interfaces;
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using MimeKit;
-using PayOS.Models.V1.Payouts;
+using MimeKit; 
 using System.Text;
 using System.Text.Json;
 
@@ -22,8 +20,7 @@ namespace AIEvent.Application.Services.Implements
         private readonly IPdfService _pdfService;
         private readonly IEmailService _emailService;
         private readonly ILogger<HangfireJobService> _logger;
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IPayOSService _payOSService;
+        private readonly IUnitOfWork _unitOfWork; 
         private readonly ITransactionHelper _transactionHelper;
         private readonly INotificationService _notificationService;
         private readonly IVoyageEmbeddingService _voyageEmbeddingService;
@@ -33,8 +30,7 @@ namespace AIEvent.Application.Services.Implements
         IPdfService pdfService,
         IEmailService emailService,
         ILogger<HangfireJobService> logger,
-        IUnitOfWork unitOfWork,
-        IPayOSService payService,
+        IUnitOfWork unitOfWork, 
         ITransactionHelper transactionHelper,
         INotificationService notificationService,
         IVoyageEmbeddingService voyageEmbeddingService,
@@ -43,8 +39,7 @@ namespace AIEvent.Application.Services.Implements
             _pdfService = pdfService;
             _emailService = emailService;
             _logger = logger;
-            _unitOfWork = unitOfWork;
-            _payOSService = payService;
+            _unitOfWork = unitOfWork; 
             _transactionHelper = transactionHelper;
             _notificationService = notificationService;
             _pineconeVectorService = pineconeVectorService;
@@ -85,111 +80,6 @@ namespace AIEvent.Application.Services.Implements
             }
         }
 
-        // payout for organizer
-        public async Task EnqueueOrganizerPayoutJobAsync(RevenueReportRequest request)
-        {
-            BackgroundJob.Schedule(() => ProcessOrganizerPayoutAsync(request), TimeSpan.FromMilliseconds(1));
-            await Task.CompletedTask;
-        }
-
-        private static long GenerateOrderCode()
-        {
-            var random = new Random();
-            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            var randomPart = random.Next(100, 999);
-            return long.Parse($"{timestamp}{randomPart}");
-        }
-
-        [AutomaticRetry(Attempts = 3)]
-        public async Task ProcessOrganizerPayoutAsync(RevenueReportRequest request)
-        {
-            try
-            {
-                var existingReport = await _unitOfWork.RevenueReportRepository
-                    .Query()
-                    .AsNoTracking()
-                    .AnyAsync(r => r.EventId == request.EventId && !r.IsDeleted);
-
-                if (existingReport)
-                {
-                    _logger.LogWarning("RevenueReport already exists for Event {EventId}, skipping", request.EventId);
-                    return;
-                }
-                const decimal platformFeePercent = 0.066m;
-                const decimal platformFixedFee = 45000m;
-
-                var platformFee = request.TotalAmount * platformFeePercent + platformFixedFee;
-                var payoutAmount = request.TotalAmount - platformFee;
-
-                if (payoutAmount < 0)
-                {
-                    _logger.LogWarning("Event {EventId}: payoutAmount < 0, skipping payout", request.EventId);
-                    return;
-                }
-
-                var paymentInfor = await _unitOfWork.PaymentInformationRepository
-                    .Query()
-                    .AsNoTracking()
-                    .Select(u => new {u.Id, u.AccountNumber, u.BankBin, u.IsDeleted })
-                    .FirstOrDefaultAsync(p => p.Id == request.PaymentInforId && !p.IsDeleted);
-
-                if (paymentInfor == null)
-                {
-                    _logger.LogError("PaymentInformation of Organizer not found");
-                    return;
-                }
-                var result = await _transactionHelper.ExecuteInTransactionAsync(async () =>
-                {
-                    // chuyen tien
-                    var referenceId = GenerateOrderCode().ToString();
-                    var payoutRequest = new PayoutRequest
-                    {
-                        ReferenceId = referenceId,
-                        Amount = (long)payoutAmount,
-                        Description = $"Chuyển tiền doanh thu sự kiện '{request.EventName}' sau khi trừ {platformFee}VND phí nền tảng AIEvent",
-                        ToBin = paymentInfor.BankBin,
-                        ToAccountNumber = paymentInfor.AccountNumber,
-                        Category = new List<string> { "Payout" }
-                    };
-
-                    var payoutResponse = await _payOSService.CreatePayoutAsync(payoutRequest);
-                    Console.WriteLine($"Response:   {payoutResponse}");
-                    // create report
-                    var payoutDate = request.ConfirmDate.AddDays(10);
-                    RevenueReport revenueReport = new()
-                    {
-                        OrganizerProfileId = request.OrganizerProfileId,
-                        EventId = request.EventId,
-                        EventName = request.EventName,
-                        GrossRevenue = request.TotalAmount,
-                        PlatformFee = platformFee,
-                        NetRevenue = payoutAmount,
-                        ReportMonth = payoutDate.Month,
-                        ReportYear = payoutDate.Year,
-                        PayoutDate = payoutDate,
-                    };
-
-                    await _unitOfWork.RevenueReportRepository.AddAsync(revenueReport);
-
-                    return Result.Success();
-                });
-
-                if (result.IsSuccess)
-                {
-                    _logger.LogInformation(
-                        "Payout processed for Organizer {OrganizerId}, Event {EventId}: Total = {TotalAmount:N0}, Fee = {PlatformFee:N0}, Net = {PayoutAmount:N0}",
-                        request.OrganizerProfileId, request.EventId, request.TotalAmount, platformFee, payoutAmount
-                    );
-                }
-               
-                await Task.CompletedTask;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing payout for Organizer {OrganizerId} (Event {EventId})", request.OrganizerProfileId, request.EventId);
-                throw;
-            }
-        }
         public async Task EnqueueCancelEventJobAsync(Guid eventId, string reasonCancel)
         {
             BackgroundJob.Enqueue(() => ProcessCancelEventJobAsync(eventId, reasonCancel));
