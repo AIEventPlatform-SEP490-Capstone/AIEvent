@@ -196,14 +196,9 @@ namespace AIEvent.Application.Services.Implements
 
                     walletUser.Balance -= totalAmount;
                     await _unitOfWork.WalletRepository.UpdateAsync(walletUser);
-
-                    booking.PaymentStatus = PaymentStatus.Paid;
                 }
-                else
-                {
-                    booking.PaymentStatus = PaymentStatus.Paid;
-                }
-
+                
+                booking.PaymentStatus = PaymentStatus.Paid;
                 booking.Status = BookingStatus.Completed;
                 booking.PaymentMethod = PaymentMethod.Wallet;
                 await _unitOfWork.BookingRepository.UpdateAsync(booking);
@@ -353,13 +348,6 @@ namespace AIEvent.Application.Services.Implements
                     TicketTypeName = g.Key.TicketName,
                     Price = g.Key.TicketPrice,
                     Quantity = g.Count(),
-                    Tickets = g.Select(x => new TicketItemResponse
-                    {
-                        TicketId = x.Id,
-                        TicketCode = x.TicketCode,
-                        Status = x.Status,
-                        CreatedAt = x.CreatedAt
-                    }).ToList()
                 });
 
             var totalCount = await groupedQuery.CountAsync();

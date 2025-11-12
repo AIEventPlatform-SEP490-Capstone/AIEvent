@@ -370,6 +370,9 @@ namespace AIEvent.Application.Services.Implements
                     _logger.LogInformation("Sent refund notifications to {UserCount} users for cancelled event {EventId}", bookingsForNotification.Count, eventId);
                 }
 
+                await _pineconeVectorService.DeleteVectorAsync(eventId.ToString());
+
+                _logger.LogInformation("Deleted vector event {EventId}", eventId);
             }
             catch (Exception ex)
             {

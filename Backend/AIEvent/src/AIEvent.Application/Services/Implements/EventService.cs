@@ -22,7 +22,8 @@ namespace AIEvent.Application.Services.Implements
         private readonly IMapper _mapper;
         private readonly IHangfireJobService _hangfireJobService;
         private readonly INotificationService _notificationService;
-        public EventService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper, IMapper mapper, IHangfireJobService hangfireJobService, INotificationService notificationService)
+        public EventService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper, IMapper mapper, 
+            IHangfireJobService hangfireJobService, INotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
             _transactionHelper = transactionHelper;
@@ -339,6 +340,8 @@ namespace AIEvent.Application.Services.Implements
                     await _notificationService.CreateNotificationToAllAsync(notificationRequest);
                 }
             }
+
+            await _hangfireJobService.EnqueueEmbedNewEventJobAsync(eventId);
 
             return result;
         }
@@ -991,6 +994,63 @@ namespace AIEvent.Application.Services.Implements
 
             await _unitOfWork.EventRepository.UpdateRangeAsync(endedEvents);
             await _unitOfWork.SaveChangesAsync();
+        }
+
+        public async Task<Result> ReportEventAsyncs(Guid userId, ReportEventRequest request)
+        {
+            try
+            {
+                if (!Guid.TryParse(request.EventId, out var eventId))
+                    return ErrorResponse.FailureResult("Invalid event ID format", ErrorCodes.InvalidInput);
+
+                var eventEntity = await _unitOfWork.EventRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(e => e.Id == eventId && !e.IsDeleted && e.Publish == true && e.Status != EventStatus.Cancelled)
+                    .Select(e => new { e.Id, e.EndTime })
+                    .FirstOrDefaultAsync();
+
+                if (eventEntity == null)
+                    return ErrorResponse.FailureResult("Event not found or unavailable", ErrorCodes.NotFound);
+
+                if (eventEntity.EndTime > DateTime.Now)
+                    return ErrorResponse.FailureResult("You can only report after the event has ended", ErrorCodes.InvalidInput);
+
+                var hasBooked = await _unitOfWork.TicketRepository
+                    .Query()
+                    .AsNoTracking()
+                    .AnyAsync(t => t.UserId == userId && t.TicketType.EventId == eventId && t.Status == TicketStatus.Used);
+
+                if (!hasBooked)
+                    return ErrorResponse.FailureResult("You can only report events you booked and join", ErrorCodes.PermissionDenied);
+
+                var alreadyReported = await _unitOfWork.EventReportRepository
+                    .Query()
+                    .AsNoTracking()
+                    .AnyAsync(r => r.UserId == userId && r.EventId == eventId && !r.IsDeleted);
+
+                if (alreadyReported)
+                    return ErrorResponse.FailureResult("You have already reported this event", ErrorCodes.InvalidInput);
+
+                var report = new EventReport
+                {
+                    EventId = eventId,
+                    UserId = userId,
+                    Type = request.Type,
+                    Reason = request.Reason,
+                    AttachmentUrl = request.AttachmentUrl,
+                    ResolutionNote = request.ResolutionNote,
+                };
+
+                await _unitOfWork.EventReportRepository.AddAsync(report);
+                await _unitOfWork.SaveChangesAsync();
+
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
         }
     }
 }

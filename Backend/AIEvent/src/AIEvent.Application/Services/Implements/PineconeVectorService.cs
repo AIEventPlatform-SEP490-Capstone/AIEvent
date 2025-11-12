@@ -83,6 +83,16 @@ namespace AIEvent.Application.Services.Implements
 
             return matches;
         }
+
+        public async Task DeleteVectorAsync(string id)
+        {
+            var payload = new { ids = new[] { id } };
+            var content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync("/vectors/delete", content);
+            response.EnsureSuccessStatusCode();
+        }
+
     }
 
     public class PineconeQueryResponse

@@ -255,5 +255,22 @@ namespace AIEvent.API.Controllers
                 SuccessCodes.Success,
                 "Get invitations infor successfully"));
         }
+
+        [HttpPost("report")]
+        [Authorize(Roles = "User")]
+        public async Task<ActionResult<SuccessResponse<object>>> ReportEvent([FromQuery] ReportEventRequest request)
+        {
+            Guid userId = User.GetRequiredUserId();
+            var result = await _eventService.ReportEventAsyncs(userId, request);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Created,
+                "Report Event successfully"));
+        }
     }
 }
