@@ -161,6 +161,16 @@
   p {
     @apply text-pretty leading-relaxed mb-4;
   }
+
+  /* Hide scrollbar for sidebar */
+  [data-slot="sidebar-content"] {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+
+  [data-slot="sidebar-content"]::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
 }
 
 /* Custom animations for AIEvent */
