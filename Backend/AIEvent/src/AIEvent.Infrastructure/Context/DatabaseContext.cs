@@ -38,6 +38,7 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<EventInvitation> EventInvitations { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<StaffProfile> StaffProfiles { get; set; }
+        public DbSet<EventReport> EventReports { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -411,6 +412,26 @@ namespace AIEvent.Infrastructure.Context
 
                 entity.HasIndex(x => x.OrganizerProfileId).HasDatabaseName("IX_StaffProfile_OrganizerProfileId");
                 entity.HasIndex(x => x.UserId).HasDatabaseName("IX_StaffProfile_UserId");
+            });
+
+            //---------------EventReport-----------------
+            builder.Entity<EventReport>(entity =>
+            {
+                entity.HasOne(x => x.Event)
+                    .WithMany(e => e.EventReports)
+                    .HasForeignKey(x => x.EventId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(x => x.User)
+                    .WithMany(u => u.EventReports)
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(x => new { x.EventId, x.UserId }).IsUnique();
+                entity.HasIndex(x => x.EventId).HasDatabaseName("IX_EventReports_EventId");
+                entity.HasIndex(x => x.UserId).HasDatabaseName("IX_EventReports_UserId");
+                entity.HasIndex(x => x.Type).HasDatabaseName("IX_EventReports_Type");
+                entity.HasIndex(x => x.CreatedAt).HasDatabaseName("IX_EventReports_CreatedAt");
             });
 
             builder.Seed();
