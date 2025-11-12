@@ -46,6 +46,7 @@ export const PATH = {
   ORGANIZER_ANALYTICS: "/organizer/analytics/:id",
   ORGANIZER_CHECKIN: "/organizer/checkin/:id",
   ORGANIZER_TAGS: "/organizer/tags",
+  ORGANIZER_STAFF: "/organizer/staff",
 
   // MANAGER
   MANAGER: "/manager",
