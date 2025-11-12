@@ -12,6 +12,7 @@ using AIEvent.Infrastructure.Repositories.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -1039,7 +1040,6 @@ namespace AIEvent.Application.Services.Implements
                     Type = request.Type,
                     Reason = request.Reason,
                     AttachmentUrl = request.AttachmentUrl,
-                    ResolutionNote = request.ResolutionNote,
                 };
 
                 await _unitOfWork.EventReportRepository.AddAsync(report);
@@ -1051,6 +1051,124 @@ namespace AIEvent.Application.Services.Implements
             {
                 throw new Exception(ex.Message);
             }
+        }
+
+        public async Task<Result<BasePaginated<ListReportResponse>>> GetAllReportByEventId(int pageNumber, int pageSize, 
+                                                                                          string eventId, EventReportType? type)
+        {
+            if (!Guid.TryParse(eventId, out var Id))
+                return ErrorResponse.FailureResult("Invalid event ID format", ErrorCodes.InvalidInput);
+
+            var reports = _unitOfWork.EventReportRepository
+                .Query()
+                .AsNoTracking()
+                .Where(r => r.EventId == Id && r.IsDeleted == false)
+                .Select(r => new
+                {
+                    r.Id,
+                    r.Reason,
+                    r.Type,
+                    r.CreatedAt,
+                    r.User.FullName,
+                    r.User.Email
+                });
+
+            if (type.HasValue)
+            {
+                reports = reports.Where(r => r.Type == type);
+            }
+
+            int totalCount = await reports.CountAsync();
+
+            var result = await reports
+                .OrderByDescending(r => r.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(e => new ListReportResponse
+                {
+                    Id = e.Id,
+                    UserEmail = e.Email!,
+                    UserName = e.FullName!,
+                    Reason = e.Reason,
+                    Type = e.Type,
+                    CreatedAt = e.CreatedAt,
+                })
+                .ToListAsync();
+
+            return new BasePaginated<ListReportResponse>(result, totalCount, pageNumber, pageSize);
+        }
+
+        public async Task<Result<ReportResponse>> GetEventReportDetailAsync(string id)
+        {
+            if (!Guid.TryParse(id, out var reportId))
+                return ErrorResponse.FailureResult("Invalid ID format", ErrorCodes.InvalidInput);
+
+            var report = await _unitOfWork.EventReportRepository
+                .Query(false)
+                .Where(r => r.Id == reportId && !r.IsDeleted)
+                .Select(r => new ReportResponse
+                {
+                    UserName = r.User.FullName!,
+                    UserEmail = r.User.Email!,
+                    Type = r.Type,
+                    Reason = r.Reason,
+                    AttachmentUrl = r.AttachmentUrl,
+                    Reply = r.Reply,
+                    CreatedAt = r.CreatedAt
+                })
+                .FirstOrDefaultAsync();
+
+            if (report == null)
+                return ErrorResponse.FailureResult("Report not found", ErrorCodes.NotFound);
+
+            return Result<ReportResponse>.Success(report);
+        }
+
+        public async Task<Result> ReplyReportAsync(string id, ReplyReportRequest request)
+        {
+            if (!Guid.TryParse(id, out var reportId))
+                return ErrorResponse.FailureResult("Invalid ID format", ErrorCodes.InvalidInput);
+
+            var report = await _unitOfWork.EventReportRepository
+                .Query()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Id == reportId && !r.IsDeleted);
+
+            if (report == null)
+                return ErrorResponse.FailureResult("Report not found", ErrorCodes.NotFound);
+
+            report.Reply = request.Reply;
+
+            await _unitOfWork.EventReportRepository.UpdateAsync(report);
+            await _unitOfWork.SaveChangesAsync();
+
+            return Result.Success();
+        }
+
+        public async Task<Result<ReportResponse>> GetEventReportOfUserAsync(Guid userId, string id)
+        {
+            if (!Guid.TryParse(id, out var eventId))
+                return ErrorResponse.FailureResult("Invalid ID format", ErrorCodes.InvalidInput);
+
+            var report = await _unitOfWork.EventReportRepository
+                .Query(false)
+                .Where(r => r.EventId == eventId && r.UserId == userId && !r.IsDeleted)
+                .Select(r => new ReportResponse
+                {
+                    UserName = r.User.FullName!,
+                    UserEmail = r.User.Email!,
+                    Type = r.Type,
+                    Reason = r.Reason,
+                    AttachmentUrl = r.AttachmentUrl,
+                    Reply = r.Reply,
+                    CreatedAt = r.CreatedAt
+                })
+                .FirstOrDefaultAsync();
+
+            if (report == null)
+                return ErrorResponse.FailureResult("Report not found", ErrorCodes.NotFound);
+
+            return Result<ReportResponse>.Success(report);
         }
     }
 }

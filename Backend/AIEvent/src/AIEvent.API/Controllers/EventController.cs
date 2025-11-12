@@ -272,5 +272,75 @@ namespace AIEvent.API.Controllers
                 SuccessCodes.Created,
                 "Report Event successfully"));
         }
+
+        [HttpGet("{id}/report")]
+        [Authorize(Roles = "Admin, Manager, Organizer")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<ListReportResponse>>>> GetListReportEvent(string id,
+                                                                                                          [FromQuery] EventReportType? type = null,
+                                                                                                          [FromQuery] int pageNumber = 1,
+                                                                                                          [FromQuery] int pageSize = 10)
+        {
+            var result = await _eventService.GetAllReportByEventId(pageNumber, pageSize, id, type);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<ListReportResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "ReportEvent retrieved successfully"));
+        }
+
+        [HttpGet("report/{id}")]
+        [Authorize(Roles = "Admin, Manager, Organizer")]
+        public async Task<ActionResult<SuccessResponse<ReportResponse>>> GetEventReport(string id)
+        {
+            var result = await _eventService.GetEventReportDetailAsync(id);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<ReportResponse>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "ReportEvent retrieved successfully"));
+        }
+
+        [HttpPatch("report/{id}/reply")]
+        [Authorize(Roles = "Admin, Manager, Organizer")]
+        public async Task<ActionResult<SuccessResponse<object>>> ReplyReport(string id, [FromQuery] ReplyReportRequest request)
+        {
+            var result = await _eventService.ReplyReportAsync(id, request);
+
+            if (!result.IsSuccess)
+                return BadRequest(result.Error!);
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Success,
+                "Reply successfully"));
+        }
+
+        [HttpGet("{id}/report/user")]
+        [Authorize(Roles = "User")]
+        public async Task<ActionResult<SuccessResponse<ReportResponse>>> GetEventReportOfUser(string id)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _eventService.GetEventReportOfUserAsync(userId, id);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<ReportResponse>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "ReportEvent retrieved successfully"));
+        }
     }
 }

@@ -59,24 +59,23 @@ namespace AIEvent.API.Controllers
 
         [HttpGet("event/{id}/ticket")]
         [Authorize(Roles = "User")]
-        public async Task<ActionResult<SuccessResponse<BasePaginated<TicketByEventResponse>>>> GetListEventOfUser(
-           string id, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public async Task<ActionResult<SuccessResponse<List<TicketByEventResponse>>>> GetTicketOfUser(string id)
         {
             var userId = User.GetRequiredUserId();
-            var result = await _bookingService.GetTicketsByEventAsync(userId, id, pageNumber, pageSize);
+            var result = await _bookingService.GetTicketsByEventAsync(userId, id);
 
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
 
-            return Ok(SuccessResponse<BasePaginated<TicketByEventResponse>>.SuccessResult(
+            return Ok(SuccessResponse<List<TicketByEventResponse>>.SuccessResult(
                 result.Value!,
                 message: "Ticket retrieved successfully"));
         }
 
         [HttpPatch("check-in")]
-        [Authorize(Roles = "Admin,Manager,Organizer,Staff")]
+        [Authorize(Roles = "Organizer,Staff")]
         public async Task<ActionResult<SuccessResponse<CheckInResponse>>> CheckIn(CheckInRequest request)
         {
             var result = await _bookingService.CheckInTicketAsync(request.QrContent);
