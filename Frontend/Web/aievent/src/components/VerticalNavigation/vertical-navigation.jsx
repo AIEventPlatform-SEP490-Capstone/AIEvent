@@ -35,6 +35,8 @@ import {
   BookmarkMinus,
   Tag,
   LayoutDashboard,
+  UserPlus2,
+  UserCog,
 } from "lucide-react";
 import {
   Sidebar,
@@ -169,6 +171,12 @@ export function VerticalNavigation() {
           url: "/organizer/tags",
           icon: Tag,
           isActive: pathname === "/organizer/tags",
+        },
+        {
+          title: "Quản lí nhân viên",
+          url: "/organizer/staff",
+          icon: UserCog,
+          isActive: pathname === "/organizer/staff",
         },
       ];
     }

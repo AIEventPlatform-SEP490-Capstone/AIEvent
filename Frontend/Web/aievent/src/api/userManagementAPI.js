@@ -7,7 +7,7 @@ export const userManagementAPI = {
       const params = new URLSearchParams();
       params.append('pageNumber', pageNumber.toString());
       params.append('pageSize', pageSize.toString());
-      
+
       if (email) params.append('email', email);
       if (name) params.append('name', name);
       if (role) params.append('role', role);
@@ -26,7 +26,7 @@ export const userManagementAPI = {
       const params = new URLSearchParams();
       params.append('pageNumber', pageNumber.toString());
       params.append('pageSize', pageSize.toString());
-      
+
       if (email) params.append('email', email);
       if (name) params.append('name', name);
       if (role) params.append('role', role);
@@ -66,7 +66,55 @@ export const userManagementAPI = {
     } catch (error) {
       throw new Error(error.message || 'Failed to unban user');
     }
-  }
+  },
+
+  //Staff Management
+  getAllStaff: async (pageNumber = 1, pageSize = 10, email = '', name = '') => {
+    try {
+      const params = new URLSearchParams();
+      params.append('pageNumber', pageNumber.toString());
+      params.append('pageSize', pageSize.toString());
+
+      if (email) params.append('email', email);
+      if (name) params.append('name', name);
+
+      const response = await fetcher.get(`/user/staff?${params.toString()}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to fetch staff');
+    }
+  },
+
+  addStaff: async (data) => {
+    try {
+      // If data is FormData, fetcher will handle Content-Type automatically
+      // If data is not FormData, fetcher will set Content-Type to application/json
+      const response = await fetcher.post('/user/staff', data);
+      return response.data;
+    } catch (error) {
+      // Parse error response to get statusCode and message
+      const errorResponse = error.response?.data || error;
+      const errorMessage = errorResponse.message || error.message || 'Failed to add staff';
+      const errorCode = errorResponse.statusCode;
+      
+      // Create error object with code and message
+      const customError = new Error(errorMessage);
+      customError.code = errorCode;
+      customError.response = errorResponse;
+      
+      throw customError;
+    }
+  },
+
+  deleteStaff: async (id) => {
+    try {
+      const response = await fetcher.delete(`/user/staff/${id}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to delete staff');
+    }
+  },
+
 };
 
 export default userManagementAPI;
