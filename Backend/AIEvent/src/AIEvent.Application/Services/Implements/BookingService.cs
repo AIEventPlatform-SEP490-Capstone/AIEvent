@@ -324,43 +324,41 @@ namespace AIEvent.Application.Services.Implements
         }
 
 
-        public async Task<Result<BasePaginated<TicketByEventResponse>>> GetTicketsByEventAsync(Guid userId, string id, int pageNumber, int pageSize)
+        public async Task<Result<List<TicketByEventResponse>>> GetTicketsByEventAsync(Guid userId, string id)
         {
             if (!Guid.TryParse(id, out var eventId))
                 return ErrorResponse.FailureResult("Invalid ticket ID format", ErrorCodes.InvalidInput);
 
-            var query = _unitOfWork.TicketRepository
-                .Query(false)
+            var query = _unitOfWork.BookingItemRepository
+                .Query() 
                 .AsNoTracking()
-                .Where(t => !t.DeletedAt.HasValue &&
-                            t.UserId == userId &&
-                            t.TicketType.EventId == eventId);
+                .Where(bi =>
+                    !bi.IsDeleted
+                    && bi.Booking != null
+                    && !bi.Booking.IsDeleted && bi.Booking.Status == BookingStatus.Completed
+                    && bi.Booking.EventId == eventId && bi.Booking.UserId == userId
+                );
 
-            var groupedQuery = query
-                .GroupBy(t => new
+            var ticketItems = await query
+                .Select(bi => new
                 {
-                    t.TicketTypeId,
-                    t.TicketType.TicketName,
-                    t.TicketType.TicketPrice
+                    TicketTypeName = bi.TicketType.TicketName,
+                    Price = bi.UnitPrice,
+                    Quantity = bi.Quantity,
+                    CreatedAt = bi.CreatedAt
                 })
+                .GroupBy(x => new { x.TicketTypeName, x.Price })
                 .Select(g => new TicketByEventResponse
                 {
-                    TicketTypeName = g.Key.TicketName,
-                    Price = g.Key.TicketPrice,
-                    Quantity = g.Count(),
-                });
-
-            var totalCount = await groupedQuery.CountAsync();
-
-            var pageData = await groupedQuery
-                .OrderByDescending(g => g.TicketTypeName)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
+                    TicketTypeName = g.Key.TicketTypeName,
+                    Price = g.Key.Price,
+                    Quantity = g.Sum(x => x.Quantity),
+                    CreatedAt = g.Max(x => x.CreatedAt)
+                })
+                .OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
 
-            var result = new BasePaginated<TicketByEventResponse>(pageData, totalCount, pageNumber, pageSize);
-
-            return Result<BasePaginated<TicketByEventResponse>>.Success(result);
+            return Result<List<TicketByEventResponse>>.Success(ticketItems);
         }
 
 
