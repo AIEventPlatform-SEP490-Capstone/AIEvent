@@ -43,6 +43,7 @@ namespace AIEvent.Application.Services.Implements
             var eventEntity = await _unitOfWork.EventRepository
                 .Query()
                 .Include(u => u.OrganizerProfile)
+                .Include(e => e.EventCategory)
                 .FirstOrDefaultAsync(e => e.Id == request.EventId && !e.IsDeleted
                                           && e.Status == EventStatus.Approved && e.Publish == true);
             if (eventEntity == null)
@@ -146,22 +147,10 @@ namespace AIEvent.Application.Services.Implements
                     return ErrorResponse.FailureResult("Not enough tickets for the event", ErrorCodes.InvalidInput);
                 }
 
-                await _unitOfWork.BookingItemRepository.AddRangeAsync(bookingItems);
-
-                var qrContents = tickets.Select(t =>
-                {
-                    var signature = _ticketSignatureService.CreateSignature(t.TicketCode);
-                    return $"{t.TicketCode}|{signature}";
-                }).ToList();
-                var qrResult = await _qrCodeService.GenerateQrBytesAndUrlsAsync(qrContents);
-
-                for (int i = 0; i < tickets.Count; i++)
-                {
-                    tickets[i].QrCodeUrl = qrResult.Urls[qrContents[i]];
-                }
-                await _unitOfWork.TicketRepository.AddRangeAsync(tickets);
-
                 booking.TotalAmount = totalAmount;
+
+                await _unitOfWork.BookingItemRepository.AddRangeAsync(bookingItems);
+                await _unitOfWork.TicketRepository.AddRangeAsync(tickets);
 
                 await _unitOfWork.SaveChangesAsync();
 
@@ -215,10 +204,12 @@ namespace AIEvent.Application.Services.Implements
                     booking.PaymentStatus = PaymentStatus.Paid;
                 }
 
-                booking.TotalAmount = totalAmount;
                 booking.Status = BookingStatus.Completed;
                 booking.PaymentMethod = PaymentMethod.Wallet;
                 await _unitOfWork.BookingRepository.UpdateAsync(booking);
+
+                // send email job
+                var firstImageUrl = ParseFirstImageFromJson(eventEntity.ImgListEvent);
 
                 var ticketData = tickets.Select((t, idx) => new TicketForPdf
                 {
@@ -227,19 +218,25 @@ namespace AIEvent.Application.Services.Implements
                     CustomerName = user.FullName!,
                     TicketType = ticketTypes[t.TicketTypeId].TicketName,
                     Price = t.Price,
-                    QrUrl = t.QrCodeUrl,
                     StartTime = t.StartTime,
                     EndTime = t.EndTime,
                     Address = t.Address!,
-                    QrBytes = qrResult.Bytes[qrContents[idx]]
+                    EventImageUrl = firstImageUrl ?? "",
+                    EventCategory = eventEntity.EventCategory?.CategoryName ?? "EVENT"
                 }).ToList();
 
-                await _hangfireJobService.EnqueueSendTicketEmailJobAsync(
-                    user.Email!,
-                    user.FullName!,
-                    eventEntity.Title,
-                    ticketData
-                );
+                await _hangfireJobService.EnqueueSendTicketEmailJobAsync(new SendEmailJobRequest
+                {
+                    Email = user.Email!,
+                    FullName = user.FullName!,
+                    EventTitle = eventEntity.Title,
+                    Tickets = ticketData,
+                    OrganizerName = eventEntity.OrganizerProfile.ContactName,
+                    OrganizerPhone = eventEntity.OrganizerProfile.ContactPhone,
+                    OrganizerEmail = eventEntity.OrganizerProfile.ContactEmail,
+                    StartTime = eventEntity.StartTime,
+                    EndTime = eventEntity.EndTime
+                });
 
                 return Result.Success();
             });
@@ -384,6 +381,10 @@ namespace AIEvent.Application.Services.Implements
             if (string.IsNullOrWhiteSpace(imgListJson))
                 return null;
 
+            // Nếu là URL trực tiếp (không phải JSON)
+            if (imgListJson.StartsWith("http://") || imgListJson.StartsWith("https://"))
+                return imgListJson;
+
             try
             {
                 var list = System.Text.Json.JsonSerializer.Deserialize<List<string>>(imgListJson);
@@ -402,26 +403,6 @@ namespace AIEvent.Application.Services.Implements
             return null;
         }
 
-
-        public async Task<Result<QrResponse>> GetQrCodeAsync(Guid userId, string id)
-        {
-            if (!Guid.TryParse(id, out var ticketId))
-                return ErrorResponse.FailureResult("Invalid ticket ID format", ErrorCodes.InvalidInput);
-
-            var qrCodeUrl = await _unitOfWork.TicketRepository
-                .Query()
-                .AsNoTracking()
-                .Where(t => t.Id == ticketId && t.UserId == userId && !t.IsDeleted && t.Status == TicketStatus.Valid)
-                .Select(t => t.QrCodeUrl)
-                .FirstOrDefaultAsync();
-
-            if (qrCodeUrl == null)
-            {
-                return ErrorResponse.FailureResult("Ticket not found", ErrorCodes.NotFound);
-            }
-
-            return Result<QrResponse>.Success(new QrResponse { QrCode = qrCodeUrl });
-        }
 
         public async Task<Result<CheckInResponse>> CheckInTicketAsync(string qrContent)
         {

@@ -112,7 +112,7 @@ namespace AIEvent.API.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin, Organizer, Manager")]
-        public async Task<ActionResult<SuccessResponse<object>>> CreateEvent([FromForm] CreateEventRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> CreateEvent([FromBody] CreateEventRequest request)
         {
             Guid organizerId = User.GetRequiredOrganizerId();
             var result = await _eventService.CreateEventAsync(organizerId, request);

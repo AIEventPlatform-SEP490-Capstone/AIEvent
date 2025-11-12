@@ -39,23 +39,6 @@ namespace AIEvent.API.Controllers
                 "Create Booking successfully"));
         }
 
-        [HttpGet("ticket/qr/{id}")]
-        [Authorize(Roles = "User")]
-        public async Task<ActionResult<SuccessResponse<QrResponse>>> GetQrCode(string id)
-        {
-            var userId = User.GetRequiredUserId();
-            var result = await _bookingService.GetQrCodeAsync(userId, id);
-
-            if (!result.IsSuccess)
-            {
-                return BadRequest(result.Error!);
-            }
-
-            return Ok(SuccessResponse<QrResponse>.SuccessResult(
-                result.Value!,
-                message: "QrCode retrieved successfully"));
-        }
-
         [HttpGet("event")]
         [Authorize(Roles = "User")]
         public async Task<ActionResult<SuccessResponse<BasePaginated<ListEventOfUser>>>> GetListEventOfUser(string? title, DateTime? startTime,DateTime? endTime,

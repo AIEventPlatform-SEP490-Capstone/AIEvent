@@ -130,7 +130,7 @@ const ProfileHeader = ({
 
         {/* Enhanced Skills Tags with better animations */}
         <div className="mt-4">
-          <h3 className="text-white/90 font-semibold mb-2 text-xs uppercase tracking-wide flex items-center">
+          <h3 className="text-white/90 font-semibold mb-2 text-xs tracking-wide flex items-center">
             <Sparkles className="w-3 h-3 mr-2" />
             Kỹ năng chuyên môn
           </h3>
