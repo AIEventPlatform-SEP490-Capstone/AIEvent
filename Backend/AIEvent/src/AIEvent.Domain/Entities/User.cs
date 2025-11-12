@@ -54,5 +54,6 @@ namespace AIEvent.Domain.Entities
         public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
         public ICollection<EventInvitation> SentInvitations { get; set; } = new List<EventInvitation>();
         public virtual ICollection<EventInvitation> ReceivedInvitations { get; set; } = new List<EventInvitation>();
+        public virtual ICollection<EventReport> EventReports { get; set; } = new List<EventReport>();
     }
 }

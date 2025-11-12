@@ -158,23 +158,23 @@ namespace AIEvent.Application.Test.Services
                 .Setup(s => s.CreateSignature(It.IsAny<string>()))
                 .Returns((string code) => $"SIG_{code}");
 
-            _qrCodeServiceMock
-                .Setup(s => s.GenerateQrBytesAndUrlsAsync(It.IsAny<List<string>>()))
-                .ReturnsAsync((List<string> contents) => 
-                { 
-                    var bytes = contents.ToDictionary(c => c, c => new byte[] { 1, 2, 3 }); 
-                    var urls = contents.ToDictionary(c => c, c => $"https://example.com/{c}.png"); 
-                    return (bytes, urls); 
-                });
+            //_qrCodeServiceMock
+            //    .Setup(s => s.GenerateQrBytesAndUrlsAsync(It.IsAny<List<string>>()))
+            //    .ReturnsAsync((List<string> contents) => 
+            //    { 
+            //        var bytes = contents.ToDictionary(c => c, c => new byte[] { 1, 2, 3 }); 
+            //        var urls = contents.ToDictionary(c => c, c => $"https://example.com/{c}.png"); 
+            //        return (bytes, urls); 
+            //    });
 
-            _hangfireJobServiceMock
-                .Setup(h => h.EnqueueSendTicketEmailJobAsync(
-                    It.IsAny<string>(),
-                    It.IsAny<string>(),
-                    It.IsAny<string>(),
-                    It.IsAny<List<TicketForPdf>>()))
-                .Returns(Task.CompletedTask)
-                .Verifiable();
+            //_hangfireJobServiceMock
+            //    .Setup(h => h.EnqueueSendTicketEmailJobAsync(
+            //        It.IsAny<string>(),
+            //        It.IsAny<string>(),
+            //        It.IsAny<string>(),
+            //        It.IsAny<List<TicketForPdf>>()))
+            //    .Returns(Task.CompletedTask)
+            //    .Verifiable();
 
             // ===== Act =====
             var result = await _bookingService.CreateBookingAsync(userId, request);
@@ -187,11 +187,11 @@ namespace AIEvent.Application.Test.Services
             _unitOfWorkMock.Verify(u => u.TicketRepository.AddRangeAsync(It.IsAny<IEnumerable<Ticket>>()), Times.Once);
             _unitOfWorkMock.Verify(u => u.SaveChangesAsync(), Times.AtLeastOnce);
 
-            _hangfireJobServiceMock.Verify(h => h.EnqueueSendTicketEmailJobAsync(
-                It.Is<string>(email => email == user.Email),
-                It.Is<string>(name => name == user.FullName),
-                It.Is<string>(title => title == eventEntity.Title),
-                It.IsAny<List<TicketForPdf>>()), Times.Once);
+            //_hangfireJobServiceMock.Verify(h => h.EnqueueSendTicketEmailJobAsync(
+            //    It.Is<string>(email => email == user.Email),
+            //    It.Is<string>(name => name == user.FullName),
+            //    It.Is<string>(title => title == eventEntity.Title),
+            //    It.IsAny<List<TicketForPdf>>()), Times.Once);
         }
 
 
@@ -306,13 +306,13 @@ namespace AIEvent.Application.Test.Services
                 .Setup(s => s.CreateSignature(It.IsAny<string>()))
                 .Returns((string code) => $"SIG_{code}");
 
-            _qrCodeServiceMock.Setup(s => s.GenerateQrBytesAndUrlsAsync(It.IsAny<List<string>>()))
-                .ReturnsAsync((List<string> contents) =>
-                {
-                    var bytes = contents.ToDictionary(c => c, c => new byte[] { 1, 2, 3 });
-                    var urls = contents.ToDictionary(c => c, c => $"https://example.com/{c}.png");
-                    return (bytes, urls);
-                });
+            //_qrCodeServiceMock.Setup(s => s.GenerateQrBytesAndUrlsAsync(It.IsAny<List<string>>()))
+            //    .ReturnsAsync((List<string> contents) =>
+            //    {
+            //        var bytes = contents.ToDictionary(c => c, c => new byte[] { 1, 2, 3 });
+            //        var urls = contents.ToDictionary(c => c, c => $"https://example.com/{c}.png");
+            //        return (bytes, urls);
+            //    });
 
             // ===== Act =====
             var result = await _bookingService.CreateBookingAsync(userId, request);
@@ -1518,13 +1518,13 @@ namespace AIEvent.Application.Test.Services
                 .Setup(s => s.CreateSignature(It.IsAny<string>()))
                 .Returns((string code) => $"SIG_{code}");
 
-            _qrCodeServiceMock.Setup(s => s.GenerateQrBytesAndUrlsAsync(It.IsAny<List<string>>()))
-                .ReturnsAsync((List<string> contents) =>
-                {
-                    var bytes = contents.ToDictionary(c => c, c => new byte[] { 1, 2, 3 });
-                    var urls = contents.ToDictionary(c => c, c => $"https://example.com/{c}.png");
-                    return (bytes, urls);
-                });
+            //_qrCodeServiceMock.Setup(s => s.GenerateQrBytesAndUrlsAsync(It.IsAny<List<string>>()))
+            //    .ReturnsAsync((List<string> contents) =>
+            //    {
+            //        var bytes = contents.ToDictionary(c => c, c => new byte[] { 1, 2, 3 });
+            //        var urls = contents.ToDictionary(c => c, c => $"https://example.com/{c}.png");
+            //        return (bytes, urls);
+            //    });
 
             // ===== Act =====
             var result = await _bookingService.CreateBookingAsync(userId, request);

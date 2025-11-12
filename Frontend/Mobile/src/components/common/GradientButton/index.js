@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 3,
@@ -61,6 +61,8 @@ const styles = StyleSheet.create({
   },
   text: {
     fontFamily: 'OpenSans-SemiBold',
+    fontSize: 16,
+    lineHeight: 20,
   },
 });
 

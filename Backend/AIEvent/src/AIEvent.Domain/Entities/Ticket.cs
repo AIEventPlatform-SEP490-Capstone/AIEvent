@@ -32,7 +32,7 @@ namespace AIEvent.Domain.Entities
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public required string TicketCode { get; set; }
-        public required string QrCodeUrl { get; set; }
+        public required string? QrCodeUrl { get; set; }
         public TicketStatus Status { get; set; }
         public DateTime? UseAt { get; set; }
     }

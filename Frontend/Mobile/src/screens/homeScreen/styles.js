@@ -66,6 +66,13 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     paddingVertical: 14,
   },
+  clearButton: {
+    padding: 8,
+  },
+  clearButtonText: {
+    fontSize: Fonts.sm,
+    fontFamily: Fonts.medium,
+  },
   categorySection: {
     marginBottom: 20,
   },
@@ -217,6 +224,127 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: Fonts.lg,
     fontFamily: Fonts.medium,
+    color: Colors.textSecondary,
+  },
+  // Featured Events Section
+  featuredEventsSection: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  
+  // New modern UI elements
+  greetingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  greetingText: {
+    fontSize: 20,
+    fontFamily: Fonts.bold,
+    color: Colors.textPrimary,
+    marginRight: 8,
+  },
+  userName: {
+    fontSize: 20,
+    fontFamily: Fonts.bold,
+    color: Colors.primary,
+  },
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 15,
+  },
+  dateText: {
+    fontSize: 14,
+    fontFamily: Fonts.medium,
+    color: Colors.textSecondary,
+  },
+
+
+  // Enhanced category chips based on web version
+  categoryChipWebStyle: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 25,
+    marginRight: 12,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  categoryChipWebStyleSelected: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  categoryTextWebStyle: {
+    fontSize: Fonts.md,
+    fontFamily: Fonts.medium,
+    color: Colors.textSecondary,
+  },
+  categoryTextWebStyleSelected: {
+    color: Colors.white,
+    fontWeight: '600',
+  },
+  // Filter button
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    marginLeft: 12,
+  },
+  filterButtonText: {
+    fontSize: Fonts.sm,
+    fontFamily: Fonts.medium,
+    color: Colors.textSecondary,
+    marginLeft: 8,
+  },
+  filterIcon: {
+    width: 16,
+    height: 16,
+    tintColor: Colors.textSecondary,
+  },
+  // Section header with divider
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  sectionTitleWithDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sectionTitleText: {
+    fontSize: 20,
+    fontFamily: Fonts.bold,
+    color: Colors.textPrimary,
+    marginRight: 12,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.border,
   },
 });
 

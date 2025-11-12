@@ -15,6 +15,7 @@ import { styles } from './styles';
 import CustomText from '../../components/common/customTextRN';
 import { LinearGradient } from 'expo-linear-gradient';
 import EventCard from '../../components/presentation/EventCard';
+import CompactEventCard from '../../components/presentation/CompactEventCard';
 import Images from '../../constants/Images';
 import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
@@ -44,6 +45,8 @@ const HomeScreen = () => {
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [currentDate, setCurrentDate] = useState(new Date());
+
 
   useEffect(() => {
     loadEvents();
@@ -53,8 +56,9 @@ const HomeScreen = () => {
   useEffect(() => {
     if (searchText.trim() === '' && !selectedCategory) {
       // When no filter is applied, use the events from Redux
-      // The events are already transformed in the Redux slice
-      setFilteredEvents(events);
+      // Transform all events to ensure consistent structure
+      const transformedEvents = events.map(event => transformEventData(event));
+      setFilteredEvents(transformedEvents);
     } else {
       filterEvents();
     }
@@ -73,9 +77,9 @@ const HomeScreen = () => {
         pageNumber: 1,
         pageSize: 20
       });
-      console.log('Events response:', response);
       // The data transformation is now handled in the Redux slice
       // We just need to check if the call was successful
+      // console.log('Events response:', response);
       if (response && response.success) {
         // The events are already transformed in the Redux store
         // The useEffect will handle updating filteredEvents
@@ -123,8 +127,28 @@ const HomeScreen = () => {
     return 'Miễn phí';
   };
 
+  // Transform event data to ensure consistent structure
+  const transformEventData = (eventData) => {
+    // Transform tags to ensure they are strings
+    const transformTags = (tags) => {
+      if (!tags || !Array.isArray(tags)) return [];
+      return tags.map(tag => {
+        if (typeof tag === 'object') {
+          return tag.tagName || tag.name || tag.tagId || 'Tag';
+        }
+        return tag;
+      });
+    };
+    
+    return {
+      ...eventData,
+      price: calculateDisplayPrice(eventData),
+      tags: transformTags(eventData.tags || eventData.Tags || eventData.eventTags || [])
+    };
+  };
+
   const filterEvents = () => {
-    let result = events;
+    let result = events.map(event => transformEventData(event));
     
     // Filter by search text
     if (searchText.trim() !== '') {

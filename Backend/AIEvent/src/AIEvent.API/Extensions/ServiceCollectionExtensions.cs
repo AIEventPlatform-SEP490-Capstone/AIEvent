@@ -53,7 +53,9 @@ namespace AIEvent.API.Extensions
                     .AddScoped<IEventInvitationService, EventInvitationService>()
                     .AddScoped<IContentModerationService, ContentModerationService>()
                     .AddScoped<IFriendService, FriendService>()
+                    .AddScoped<IHangfireScheduler, HangfireScheduler>()
                     .AddScoped<INotificationService, NotificationService>();
+
 
             return services;
         }

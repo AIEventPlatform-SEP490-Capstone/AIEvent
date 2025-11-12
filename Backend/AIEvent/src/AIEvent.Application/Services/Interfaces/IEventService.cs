@@ -17,9 +17,7 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result<BasePaginated<EventsRawResponse>>> GetAllEventStatusAsync(Guid? organizerId, string? search, EventStatus? status = null, int pageNumber = 1, int pageSize = 10);
         Task<Result> ConfirmEventAsync(Guid userId, Guid eventId, ConfirmEventRequest request);
         Task<Result<BasePaginated<EventsRawResponse>>> GetAllEventDraftAsync(Guid organizerId, int pageNumber = 1, int pageSize = 10);
-        Task<Result> RequestEndEventAsync(Guid userId, CompleteEventRequest request);
-        Task<Result> ConfirmEndEventAsync(ApproveEndEventRequest request);
-        Task<Result<EndEventReview>> GetEndEventRequestByIdAsync(Guid endEventRequestId);
-        Task<Result<BasePaginated<EndEventReviews>>> GetEndEventRequestsAsync(Guid? organizerId, Guid? eventId, EndEventStatus? status = null, int pageNumber = 1, int pageSize = 10);
+        Task CompleteExpiredEventsAsync();
+        Task<Result> ReportEventAsyncs(Guid userId, ReportEventRequest request);
     }
 }

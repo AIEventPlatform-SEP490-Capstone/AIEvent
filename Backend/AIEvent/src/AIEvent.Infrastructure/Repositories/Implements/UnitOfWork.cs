@@ -28,14 +28,14 @@ namespace AIEvent.Infrastructure.Repositories.Implements
         public IGenericRepository<Wallet> WalletRepository => GetRepository<Wallet>();
         public IGenericRepository<WalletTransaction> WalletTransactionRepository => GetRepository<WalletTransaction>();
         public IGenericRepository<PaymentTransaction> PaymentTransactionRepository => GetRepository<PaymentTransaction>(); 
-        public IGenericRepository<PaymentInformation> PaymentInformationRepository => GetRepository<PaymentInformation>();
-        public IGenericRepository<EndEventRequest> EndEventRequestRepository => GetRepository<EndEventRequest>();
+        public IGenericRepository<PaymentInformation> PaymentInformationRepository => GetRepository<PaymentInformation>(); 
         public IGenericRepository<RevenueReport> RevenueReportRepository => GetRepository<RevenueReport>();
         public IGenericRepository<Friendship> FriendshipRepository => GetRepository<Friendship>();
         public IGenericRepository<Rating> RatingRepository => GetRepository<Rating>();
         public IGenericRepository<Notification> NotificationRepository => GetRepository<Notification>();
         public IGenericRepository<EventInvitation> EventInvitationRepository => GetRepository<EventInvitation>();
         public IGenericRepository<StaffProfile> StaffProfileRepository => GetRepository<StaffProfile>();
+        public IGenericRepository<EventReport> EventReportRepository => GetRepository<EventReport>();
         public void EnableSoftDelete() => _context.EnableSoftDelete = true;
         public void DisableSoftDelete() => _context.EnableSoftDelete = false;
 
