@@ -1,5 +1,4 @@
-﻿using PayOS.Models.V1.Payouts;
-using PayOS.Models.V1.Payouts.Batch;
+﻿using PayOS.Models.V1.Payouts; 
 using PayOS.Models.V2.PaymentRequests;
 using PayOS.Models.Webhooks;
 

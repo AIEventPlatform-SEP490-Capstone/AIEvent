@@ -15,6 +15,8 @@
         EventInvitationRejected = 23,
         PaymentSuccess = 30,
         Refund = 31,
+        PayoutCompleted,
+        PayoutFailed,
         System = 99
     }
 }

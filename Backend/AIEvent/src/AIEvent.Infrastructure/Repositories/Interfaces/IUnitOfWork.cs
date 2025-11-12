@@ -20,8 +20,7 @@ namespace AIEvent.Infrastructure.Repositories.Interfaces
         IGenericRepository<Wallet> WalletRepository { get; }
         IGenericRepository<WalletTransaction> WalletTransactionRepository { get; }
         IGenericRepository<PaymentTransaction> PaymentTransactionRepository { get; } 
-        IGenericRepository<PaymentInformation> PaymentInformationRepository { get; }
-        IGenericRepository<EndEventRequest> EndEventRequestRepository { get; }
+        IGenericRepository<PaymentInformation> PaymentInformationRepository { get; } 
         IGenericRepository<RevenueReport> RevenueReportRepository { get; }
         IGenericRepository<Friendship> FriendshipRepository { get; }
         IGenericRepository<Rating> RatingRepository { get; }

@@ -5,10 +5,8 @@
         PendingApproval,
         Approved,
         Rejected,
-        Cancelled,
-        PendingApprovalEnd,
-        RejectEnded,
+        Cancelled, 
         WaitingForPayout,
-        Ended,
+        PaidOut,
     }
 }

@@ -29,8 +29,7 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<Booking> Bookings { get; set; }
         public DbSet<BookingItem> BookingItems { get; set; }
         public DbSet<Ticket> Tickets { get; set; } 
-        public DbSet<PaymentInformation> PaymentInformations { get; set; }
-        public DbSet<EndEventRequest> EndEventRequests { get; set; }
+        public DbSet<PaymentInformation> PaymentInformations { get; set; } 
         public DbSet<Friendship> Friendships { get; set; }
         public DbSet<Wallet> Wallets { get; set; }
         public DbSet<WalletTransaction> WalletTransactions { get; set; }
@@ -139,25 +138,6 @@ namespace AIEvent.Infrastructure.Context
 
             builder.Entity<EventTag>()
                 .HasKey(et => new { et.EventId, et.TagId });
-
-            //-----------------EndReuqestEvent-------------
-            builder.Entity<EndEventRequest>(entity =>
-            {
-                entity.HasOne(e => e.OrganizerProfile)
-                    .WithMany(o => o.EndEventRequests)
-                    .HasForeignKey(e => e.OrganizerProfileId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(e => e.Event)
-                    .WithMany(o => o.EndEventRequests)
-                    .HasForeignKey(o => o.EventId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(e => e.PaymentInformation)
-                    .WithMany(p => p.EndEventRequests)
-                    .HasForeignKey(e => e.PaymentInformationId)
-                    .OnDelete(DeleteBehavior.Restrict);
-            });
 
             //-----------------RevenueReport-------------
             builder.Entity<RevenueReport>(entity =>
