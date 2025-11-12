@@ -10,11 +10,9 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { styles } from './styles';
 import CustomText from '../../components/common/customTextRN';
-import CustomButton from '../../components/common/customButtonRN';
-import { GradientBackground } from '../../components/common';
 import { LinearGradient } from 'expo-linear-gradient';
 import EventCard from '../../components/presentation/EventCard';
 import Images from '../../constants/Images';
@@ -31,12 +29,10 @@ const { width } = Dimensions.get('window');
 
 const HomeScreen = () => {
   const navigation = useNavigation();
-  const dispatch = useDispatch();
   
   // Use Redux selectors
   const events = useSelector(selectEvents);
   const eventsLoading = useSelector(selectEventsLoading);
-  const eventsError = useSelector(selectEventsError);
   const categories = useSelector(selectCategories);
   const categoriesLoading = useSelector(selectCategoriesLoading);
   
@@ -196,105 +192,224 @@ const HomeScreen = () => {
     return id ? id.toString() : Math.random().toString();
   };
 
+  // Get latest events (first 3 events)
+  const latestEvents = filteredEvents.slice(0, 3);
+  // Get remaining events for the list
+  const eventList = filteredEvents.slice(3);
+
+  const renderLatestEventCard = ({ item, index }) => (
+    <TouchableOpacity
+      style={[styles.latestEventCard, { marginLeft: index === 0 ? 0 : 15 }]}
+      onPress={() => handleEventPress(item)}
+      activeOpacity={0.9}
+    >
+      <Image 
+        source={getEventImage(item)} 
+        style={styles.latestEventImage}
+      />
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.7)']}
+        style={styles.latestEventGradient}
+      >
+        <View style={styles.latestEventContent}>
+          <CustomText variant="h3" color="white" style={styles.latestEventTitle} numberOfLines={2}>
+            {item.title}
+          </CustomText>
+          <View style={styles.latestEventInfo}>
+            <View style={[styles.latestEventInfoRow, { marginBottom: 8 }]}>
+              <Image source={Images.location} style={styles.latestEventIcon} />
+              <CustomText variant="caption" color="white" style={styles.latestEventText} numberOfLines={1}>
+                {item.location}
+              </CustomText>
+            </View>
+            <View style={styles.latestEventInfoRow}>
+              <Image source={Images.calendar} style={styles.latestEventIcon} />
+              <CustomText variant="caption" color="white" style={styles.latestEventText}>
+                {item.date}
+              </CustomText>
+            </View>
+          </View>
+        </View>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+
+  const getEventImage = (event) => {
+    if (event.image && typeof event.image === 'object' && event.image.uri) {
+      return { uri: event.image.uri };
+    }
+    if (typeof event.image === 'string') {
+      const imageMap = {
+        card1: Images.event1,
+        card2: Images.event2,
+      };
+      return imageMap[event.image] || Images.event1;
+    }
+    return Images.event1;
+  };
+
   const renderEventCard = ({ item }) => (
     <EventCard event={item} onPress={handleEventPress} />
   );
 
+  const renderCategoryButton = (category, index) => {
+    const isSelected = selectedCategory && selectedCategory.eventCategoryId === category.eventCategoryId;
+    const categoryColors = [
+      { bg: '#E3F2FD', icon: '#2196F3' },
+      { bg: '#F3E5F5', icon: '#9C27B0' },
+      { bg: '#E8F5E9', icon: '#4CAF50' },
+      { bg: '#FFF3E0', icon: '#FF9800' },
+      { bg: '#FCE4EC', icon: '#E91E63' },
+    ];
+    const colorIndex = index % categoryColors.length;
+    const colors = isSelected 
+      ? { bg: Colors.primary, icon: Colors.white }
+      : categoryColors[colorIndex];
+
+    return (
+      <TouchableOpacity
+        key={category.eventCategoryId || category.id || Math.random().toString()}
+        style={[
+          styles.categoryButton,
+          { backgroundColor: colors.bg },
+          isSelected && styles.categoryButtonSelected
+        ]}
+        onPress={() => handleCategoryPress(category)}
+        activeOpacity={0.8}
+      >
+        <View style={[styles.categoryIconContainer, { backgroundColor: colors.icon + '20' }]}>
+          <Image 
+            source={Images.calendar} 
+            style={[styles.categoryIcon, { tintColor: colors.icon }]} 
+          />
+        </View>
+        <CustomText 
+          variant="caption" 
+          style={[
+            styles.categoryButtonText,
+            { color: colors.icon },
+            isSelected && styles.categoryButtonTextSelected
+          ]}
+          numberOfLines={1}
+        >
+          {category.eventCategoryName}
+        </CustomText>
+      </TouchableOpacity>
+    );
+  };
+
   return (
-    <GradientBackground style={styles.container}>
-      {/* Premium Header */}
+    <View style={styles.container}>
+      {/* Header */}
       <LinearGradient
         colors={Colors.gradientHeaderTitle}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.header}
       >
-        <CustomText variant="h2" color="white" style={styles.headerTitle}>
-          Danh sách sự kiện
-        </CustomText>
-        
-        <TouchableOpacity style={styles.notificationButton} activeOpacity={0.7}>
-          <Image source={Images.bell} style={styles.notificationIcon} />
-        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <CustomText variant="h2" color="white" style={styles.headerTitle}>
+            Khám phá sự kiện
+          </CustomText>
+          <TouchableOpacity style={styles.notificationButton} activeOpacity={0.7}>
+            <Image source={Images.bell} style={styles.notificationIcon} />
+          </TouchableOpacity>
+        </View>
       </LinearGradient>
 
-      {/* Modern Search Bar */}
+      {/* Search Bar */}
       <View style={styles.searchContainer}>
         <Image source={Images.search} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder={Strings.SEARCH_PLACEHOLDER}
+          placeholder="Tìm kiếm sự kiện..."
           placeholderTextColor={Colors.textLight}
           value={searchText}
           onChangeText={setSearchText}
         />
       </View>
 
-      {/* Category Chips */}
+      {/* Category Section */}
       <View style={styles.categorySection}>
         <ScrollView 
           horizontal 
           showsHorizontalScrollIndicator={false}
-          style={styles.categoryContainer}
+          contentContainerStyle={styles.categoryScrollContent}
         >
           <TouchableOpacity
             style={[
-              styles.categoryChip,
-              !selectedCategory && styles.categoryChipSelected
+              styles.categoryButton,
+              { backgroundColor: selectedCategory ? '#F5F5F5' : Colors.primary },
             ]}
             onPress={() => setSelectedCategory(null)}
+            activeOpacity={0.8}
           >
+            <View style={[
+              styles.categoryIconContainer, 
+              { backgroundColor: selectedCategory ? Colors.primary + '20' : Colors.white + '40' }
+            ]}>
+              <Image 
+                source={Images.calendar} 
+                style={[
+                  styles.categoryIcon, 
+                  { tintColor: selectedCategory ? Colors.primary : Colors.white }
+                ]} 
+              />
+            </View>
             <CustomText 
               variant="caption" 
               style={[
-                styles.categoryText,
-                !selectedCategory && styles.categoryTextSelected
+                styles.categoryButtonText,
+                { color: selectedCategory ? Colors.primary : Colors.white }
               ]}
             >
               Tất cả
             </CustomText>
           </TouchableOpacity>
           
-          {categories.map((category) => (
-            <TouchableOpacity
-              key={category.eventCategoryId || category.id || Math.random().toString()}
-              style={[
-                styles.categoryChip,
-                selectedCategory && selectedCategory.eventCategoryId === category.eventCategoryId && styles.categoryChipSelected
-              ]}
-              onPress={() => handleCategoryPress(category)}
-            >
-              <CustomText 
-                variant="caption" 
-                style={[
-                  styles.categoryText,
-                  selectedCategory && selectedCategory.eventCategoryId === category.eventCategoryId && styles.categoryTextSelected
-                ]}
-              >
-                {category.eventCategoryName}
-              </CustomText>
-            </TouchableOpacity>
-          ))}
+          {categories.map((category, index) => renderCategoryButton(category, index))}
         </ScrollView>
       </View>
 
       {/* Main Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Welcome Section */}
-        <View style={styles.welcomeSection}>
-          <CustomText variant="h1" color="primary" align="center" style={styles.welcomeTitle}>
-            {Strings.HOME_TITLE}
-          </CustomText>
-          <CustomText variant="body" color="secondary" align="center" style={styles.welcomeSubtitle}>
-            {Strings.HOME_SUBTITLE}
-          </CustomText>
-        </View>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.contentContainer}
+      >
+        {/* Latest Events Section */}
+        {latestEvents.length > 0 && (
+          <View style={styles.latestEventsSection}>
+            <View style={styles.sectionHeader}>
+              <CustomText variant="h2" color="primary" style={styles.sectionTitle}>
+                Sự kiện mới nhất
+              </CustomText>
+            </View>
+            <FlatList
+              data={latestEvents}
+              renderItem={renderLatestEventCard}
+              keyExtractor={keyExtractor}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.latestEventsList}
+            />
+          </View>
+        )}
 
-        {/* Events List */}
-        <View style={styles.eventsSection}>
-          <CustomText variant="h2" color="primary" style={styles.sectionTitle}>
-            {Strings.UPCOMING_EVENTS}
-          </CustomText>
+        {/* Events List Section */}
+        <View style={styles.eventsListSection}>
+          <View style={styles.sectionHeader}>
+            <CustomText variant="h2" color="primary" style={styles.sectionTitle}>
+              Danh sách sự kiện
+            </CustomText>
+            {filteredEvents.length > 3 && (
+              <TouchableOpacity>
+                <CustomText variant="body" color="primary" style={styles.viewAllText}>
+                  Xem tất cả
+                </CustomText>
+              </TouchableOpacity>
+            )}
+          </View>
           
           {loading ? (
             <View style={styles.loadingContainer}>
@@ -302,7 +417,7 @@ const HomeScreen = () => {
                 {Strings.LOADING}
               </CustomText>
             </View>
-          ) : filteredEvents.length === 0 ? (
+          ) : eventList.length === 0 && latestEvents.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Image source={Images.calendar} style={styles.emptyIcon} />
               <CustomText variant="h3" color="secondary" align="center" style={styles.emptyText}>
@@ -311,7 +426,7 @@ const HomeScreen = () => {
             </View>
           ) : (
             <FlatList
-              data={filteredEvents}
+              data={eventList}
               renderItem={renderEventCard}
               keyExtractor={keyExtractor}
               showsVerticalScrollIndicator={false}
@@ -320,7 +435,7 @@ const HomeScreen = () => {
           )}
         </View>
       </ScrollView>
-    </GradientBackground>
+    </View>
   );
 };
 

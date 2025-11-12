@@ -3,18 +3,22 @@ import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
 
 const { width, height } = Dimensions.get('window');
+const CARD_WIDTH = width * 0.85;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colors.background,
   },
   header: {
+    paddingTop: 60,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+  },
+  headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
   },
   headerTitle: {
     fontSize: 24,
@@ -41,12 +45,13 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     paddingHorizontal: 16,
     borderRadius: 25,
-    marginBottom: 15,
+    marginTop: 10,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 3,
   },
   searchIcon: {
     width: 20,
@@ -62,59 +67,138 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   categorySection: {
-    paddingHorizontal: 20,
-    marginBottom: 10,
+    marginBottom: 20,
   },
-  categoryContainer: {
-    flexDirection: 'row',
+  categoryScrollContent: {
+    paddingHorizontal: 20,
     paddingVertical: 5,
   },
-  categoryChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 10,
-    backgroundColor: Colors.lightGray,
-    borderWidth: 1,
-    borderColor: Colors.border,
+  categoryButton: {
+    width: 90,
+    height: 90,
+    borderRadius: 16,
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  categoryChipSelected: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+  categoryButtonSelected: {
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
   },
-  categoryText: {
-    fontSize: Fonts.sm,
-    fontFamily: Fonts.medium,
-    color: Colors.textSecondary,
+  categoryIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  categoryTextSelected: {
+  categoryIcon: {
+    width: 24,
+    height: 24,
+  },
+  categoryButtonText: {
+    fontSize: Fonts.xs,
+    fontFamily: Fonts.semiBold,
+    textAlign: 'center',
+  },
+  categoryButtonTextSelected: {
     color: Colors.white,
-    fontWeight: '600',
   },
   content: {
     flex: 1,
   },
-  welcomeSection: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
+  contentContainer: {
+    paddingBottom: 30,
   },
-  welcomeTitle: {
-    fontSize: 28,
-    fontFamily: Fonts.bold,
-    marginBottom: 8,
-  },
-  welcomeSubtitle: {
-    fontSize: Fonts.md,
-    fontFamily: Fonts.regular,
-  },
-  eventsSection: {
-    paddingHorizontal: 20,
+  latestEventsSection: {
     marginBottom: 30,
   },
-  sectionTitle: {
-    fontSize: 22,
-    fontFamily: Fonts.bold,
+  eventsListSection: {
+    paddingHorizontal: 20,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 15,
+    paddingHorizontal: 20,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontFamily: Fonts.bold,
+    color: Colors.textPrimary,
+  },
+  viewAllText: {
+    fontSize: Fonts.sm,
+    fontFamily: Fonts.semiBold,
+    color: Colors.primary,
+  },
+  latestEventsList: {
+    paddingHorizontal: 20,
+    paddingRight: 5,
+  },
+  latestEventCard: {
+    width: CARD_WIDTH,
+    height: 220,
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginRight: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  latestEventImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  latestEventGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '60%',
+    justifyContent: 'flex-end',
+  },
+  latestEventContent: {
+    padding: 16,
+  },
+  latestEventTitle: {
+    fontSize: Fonts.lg,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
+    marginBottom: 12,
+    lineHeight: 24,
+  },
+  latestEventInfo: {
+    // gap: 8, // Using marginBottom on children instead for compatibility
+  },
+  latestEventInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  latestEventIcon: {
+    width: 16,
+    height: 16,
+    tintColor: Colors.white,
+    marginRight: 8,
+    opacity: 0.9,
+  },
+  latestEventText: {
+    fontSize: Fonts.xs,
+    fontFamily: Fonts.regular,
+    color: Colors.white,
+    opacity: 0.95,
+    flex: 1,
   },
   loadingContainer: {
     paddingVertical: 40,
