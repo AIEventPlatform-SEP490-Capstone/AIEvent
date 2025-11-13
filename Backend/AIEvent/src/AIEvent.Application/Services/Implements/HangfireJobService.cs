@@ -397,7 +397,7 @@ namespace AIEvent.Application.Services.Implements
               .AppendLine($"<p>Bạn được <strong>{request.InviterFullName}</strong> mời tham gia sự kiện <b>{request.EventTitle}</b>.</p>")
               .AppendLine($"<p><em>\"{request.Message}\"</em></p>")
               .AppendLine("<p>Nhấn để xem chi tiết:</p>")
-              .AppendLine($"<p><a href=\"https/events/{request.EventId}\">Xem sự kiện</a></p>")
+              .AppendLine($"<p><a href=\"http://localhost:5173/event/{request.EventId}\">Xem sự kiện</a></p>")
               .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
 
             var message = new MimeMessage
@@ -428,7 +428,7 @@ namespace AIEvent.Application.Services.Implements
             sb.AppendLine($"<p>Xin chào {request.InviterFullName},</p>")
               .AppendLine($"<p><strong>{request.InvitedUserFullName}</strong> đã <strong>{action}</strong> lời mời tham gia sự kiện <b>{request.EventTitle}</b>.</p>")
               .AppendLine($"<p><em>\"{request.Message}\"</em></p>")
-              .AppendLine($"<p><a href=\"https/events/{request.EventId}\">Xem sự kiện</a></p>")
+              .AppendLine($"<p><a href=\"http://localhost:5173/event/{request.EventId}\">Xem sự kiện</a></p>")
               .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
 
             var message = new MimeMessage

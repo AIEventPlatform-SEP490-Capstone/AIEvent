@@ -6,5 +6,6 @@ namespace AIEvent.Application.DTOs.AIRecommendation
     {
         [Required(ErrorMessage = "Need context")]
         public string UserPrompt { get; set; } = default!;
+        public Guid? SessionId { get; set; }
     }
 }

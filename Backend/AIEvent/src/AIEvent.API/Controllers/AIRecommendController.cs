@@ -2,8 +2,7 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.AIRecommendation;
 using AIEvent.Application.DTOs.Common;
-using AIEvent.Application.DTOs.Event;
-using AIEvent.Application.Services.Implements;
+using AIEvent.Application.DTOs.Event; 
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using Microsoft.AspNetCore.Authorization;
@@ -32,11 +31,12 @@ namespace AIEvent.API.Controllers
             return Ok("Đã embed tất cả sự kiện vào Pinecone!");
         }
 
-        [HttpPost]
+        [HttpPost("chat")]
         [Authorize]
-        public async Task<ActionResult<SuccessResponse<object>>> EmbedEventsToPinecone(PromptRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> ChatRecommendEvents(PromptRequest request)
         {
-            var result = await _eventRecommendationService.RecommendEventsAsync(request.UserPrompt);
+            Guid userId = User.GetRequiredUserId();
+            var result = await _eventRecommendationService.RecommendEventsAsync(request.UserPrompt, userId, request.SessionId);
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
@@ -63,6 +63,62 @@ namespace AIEvent.API.Controllers
                 result.Value!,
                 SuccessCodes.Success,
                 "Event retrieved successfully"));
+        }
+
+        [HttpGet("chat/history")]
+        [Authorize]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<ChatLogResponse>>>> GetChatHistory(
+            [FromQuery] Guid? sessionId = null,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            Guid userId = User.GetRequiredUserId();
+            var result = await _eventRecommendationService.GetChatHistoryAsync(userId, sessionId, pageNumber, pageSize);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<ChatLogResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Chat history retrieved successfully"));
+        }
+
+        [HttpGet("chat/sessions")]
+        [Authorize]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<SessionResponse>>>> GetSessions(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            Guid userId = User.GetRequiredUserId();
+            var result = await _eventRecommendationService.GetSessionsAsync(userId, pageNumber, pageSize);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<SessionResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Sessions retrieved successfully"));
+        }
+
+        [HttpDelete("chat/sessions/{sessionId}")]
+        [Authorize]
+        public async Task<ActionResult<SuccessResponse<object>>> DeleteSession(Guid sessionId)
+        {
+            Guid userId = User.GetRequiredUserId();
+            var result = await _eventRecommendationService.DeleteSessionAsync(userId, sessionId);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Success,
+                "Session deleted successfully"));
         }
     }
 }
