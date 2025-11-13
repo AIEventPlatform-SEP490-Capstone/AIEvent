@@ -30,9 +30,6 @@ import { Label } from '../../components/ui/label';
 import { useEvents } from '../../hooks/useEvents';
 import { PATH } from '../../routes/path';
 
-// Import EndEventRequestButton
-import EndEventRequestButton from '../../components/Organizer/EndEventRequestButton';
-
 // Import EventStatus constants
 import { EventStatus, EventStatusDisplay } from '../../constants/eventConstants';
 
@@ -85,21 +82,16 @@ const MyEventsPage = () => {
       setInitiationDropdownLabel('Bị từ chối');
     } 
     // Reset initiation dropdown to default when selecting completion statuses or other main tabs
-    else if ([EventStatus.PendingApprovalEnd, EventStatus.RejectEnded, 
-              EventStatus.WaitingForPayout, EventStatus.Ended, 
+    else if ([EventStatus.WaitingForPayout, EventStatus.PaidOut, 
               'all', 'draft', EventStatus.Cancelled].includes(activeTab)) {
       setInitiationDropdownLabel('Khởi tạo sự kiện');
     }
 
     // Update completion dropdown label
-    if (activeTab === EventStatus.PendingApprovalEnd) {
-      setCompletionDropdownLabel('Chờ kết thúc');
-    } else if (activeTab === EventStatus.RejectEnded) {
-      setCompletionDropdownLabel('Từ chối kết thúc');
-    } else if (activeTab === EventStatus.WaitingForPayout) {
+    if (activeTab === EventStatus.WaitingForPayout) {
       setCompletionDropdownLabel('Chờ thanh toán');
-    } else if (activeTab === EventStatus.Ended) {
-      setCompletionDropdownLabel('Đã kết thúc');
+    } else if (activeTab === EventStatus.PaidOut) {
+      setCompletionDropdownLabel('Đã thanh toán');
     }
     // Reset completion dropdown to default when selecting initiation statuses or other main tabs
     else if ([EventStatus.PendingApproval, EventStatus.Approved, 
@@ -191,10 +183,8 @@ const MyEventsPage = () => {
       EventStatus.Approved, 
       EventStatus.Rejected,
       EventStatus.Cancelled,
-      EventStatus.PendingApprovalEnd,
-      EventStatus.RejectEnded,
       EventStatus.WaitingForPayout,
-      EventStatus.Ended
+      EventStatus.PaidOut
     ].includes(activeTab);
     
     if (filterStatus && filterStatus !== 'all' && !isSpecialTab) {
@@ -377,10 +367,8 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       case EventStatus.Approved: return 'Đã phê duyệt';
       case EventStatus.Rejected: return 'Bị từ chối';
       case EventStatus.Cancelled: return 'Đã hủy';
-      case EventStatus.PendingApprovalEnd: return 'Chờ kết thúc';
-      case EventStatus.RejectEnded: return 'Từ chối kết thúc';
       case EventStatus.WaitingForPayout: return 'Chờ thanh toán';
-      case EventStatus.Ended: return 'Đã kết thúc';
+      case EventStatus.PaidOut: return 'Đã thanh toán';
       default: return tab;
     }
   };
@@ -454,28 +442,6 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       };
     }
     
-    if (activeTab === EventStatus.PendingApprovalEnd) {
-      // Count pending approval end events
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        drafts: 0
-      };
-    }
-    
-    if (activeTab === EventStatus.RejectEnded) {
-      // Count reject ended events
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        drafts: 0
-      };
-    }
-    
     if (activeTab === EventStatus.WaitingForPayout) {
       // Count waiting for payout events
       return {
@@ -487,8 +453,8 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       };
     }
     
-    if (activeTab === EventStatus.Ended) {
-      // Count ended events
+    if (activeTab === EventStatus.PaidOut) {
+      // Count paid out events
       return {
         total: allEvents.length,
         upcoming: 0,
@@ -672,10 +638,8 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
             <SelectItem value={EventStatus.Approved}>Đã phê duyệt</SelectItem>
             <SelectItem value={EventStatus.Rejected}>Bị từ chối</SelectItem>
             <SelectItem value={EventStatus.Cancelled}>Đã hủy</SelectItem>
-            <SelectItem value={EventStatus.PendingApprovalEnd}>Chờ kết thúc</SelectItem>
-            <SelectItem value={EventStatus.RejectEnded}>Từ chối kết thúc</SelectItem>
             <SelectItem value={EventStatus.WaitingForPayout}>Chờ thanh toán</SelectItem>
-            <SelectItem value={EventStatus.Ended}>Đã kết thúc</SelectItem>
+            <SelectItem value={EventStatus.PaidOut}>Đã thanh toán</SelectItem>
           </SelectContent>
         </Select>
 
@@ -801,7 +765,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                 setShowInitiationDropdown(false);
               }}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${
-                [EventStatus.PendingApprovalEnd, EventStatus.RejectEnded, EventStatus.WaitingForPayout, EventStatus.Ended].includes(activeTab)
+                [EventStatus.WaitingForPayout, EventStatus.PaidOut].includes(activeTab)
                   ? 'bg-white text-blue-600 shadow-sm'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
@@ -814,32 +778,6 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
             
             {showCompletionDropdown && (
               <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10">
-                <button
-                  onClick={() => {
-                    setActiveTab(EventStatus.PendingApprovalEnd);
-                    setShowCompletionDropdown(false);
-                  }}
-                  className={`block w-full text-left px-4 py-2 text-sm ${
-                    activeTab === EventStatus.PendingApprovalEnd
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  Chờ kết thúc
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveTab(EventStatus.RejectEnded);
-                    setShowCompletionDropdown(false);
-                  }}
-                  className={`block w-full text-left px-4 py-2 text-sm ${
-                    activeTab === EventStatus.RejectEnded
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  Từ chối kết thúc
-                </button>
                 <button
                   onClick={() => {
                     setActiveTab(EventStatus.WaitingForPayout);
@@ -855,16 +793,16 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                 </button>
                 <button
                   onClick={() => {
-                    setActiveTab(EventStatus.Ended);
+                    setActiveTab(EventStatus.PaidOut);
                     setShowCompletionDropdown(false);
                   }}
                   className={`block w-full text-left px-4 py-2 text-sm ${
-                    activeTab === EventStatus.Ended
+                    activeTab === EventStatus.PaidOut
                       ? 'bg-blue-50 text-blue-600'
                       : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  Đã kết thúc
+                  Đã thanh toán
                 </button>
               </div>
             )}
@@ -964,24 +902,18 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                                       ? 'text-red-600 border-red-200 bg-red-50' 
                                       : eventStatus === EventStatus.Cancelled
                                         ? 'text-gray-600 border-gray-200 bg-gray-50'
-                                        : eventStatus === EventStatus.PendingApprovalEnd
-                                          ? 'text-yellow-600 border-yellow-200 bg-yellow-50'
-                                          : eventStatus === EventStatus.RejectEnded
-                                            ? 'text-purple-600 border-purple-200 bg-purple-50'
-                                            : eventStatus === EventStatus.WaitingForPayout
-                                              ? 'text-indigo-600 border-indigo-200 bg-indigo-50'
-                                              : eventStatus === EventStatus.Ended
-                                                ? 'text-blue-600 border-blue-200 bg-blue-50'
-                                                : 'text-orange-600 border-orange-200 bg-orange-50'
+                                        : eventStatus === EventStatus.WaitingForPayout
+                                          ? 'text-indigo-600 border-indigo-200 bg-indigo-50'
+                                          : eventStatus === EventStatus.PaidOut
+                                            ? 'text-blue-600 border-blue-200 bg-blue-50'
+                                            : 'text-orange-600 border-orange-200 bg-orange-50'
                                 }
                               >
                                 {eventStatus === EventStatus.Approved && <CheckCircle className="w-3 h-3 mr-1" />}
                                 {eventStatus === EventStatus.Rejected && <XCircle className="w-3 h-3 mr-1" />}
                                 {eventStatus === EventStatus.Cancelled && <XCircle className="w-3 h-3 mr-1" />}
-                                {eventStatus === EventStatus.PendingApprovalEnd && <Clock className="w-3 h-3 mr-1" />}
-                                {eventStatus === EventStatus.RejectEnded && <XCircle className="w-3 h-3 mr-1" />}
                                 {eventStatus === EventStatus.WaitingForPayout && <Clock className="w-3 h-3 mr-1" />}
-                                {eventStatus === EventStatus.Ended && <CheckCircle className="w-3 h-3 mr-1" />}
+                                {eventStatus === EventStatus.PaidOut && <CheckCircle className="w-3 h-3 mr-1" />}
                                 {eventStatus === EventStatus.PendingApproval && <Clock className="w-3 h-3 mr-1" />}
                                 {EventStatusDisplay[eventStatus] || eventStatus}
                               </Badge>
@@ -1060,12 +992,6 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
 
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          {(eventStatus === EventStatus.Approved || eventStatus === EventStatus.RejectEnded) && event.endTime && (
-                            <EndEventRequestButton 
-                              event={event} 
-                              onEndEventRequested={() => loadEvents()} // Reload events after request
-                            />
-                          )}
                         </div>
 
                         <div className="flex items-center gap-2">

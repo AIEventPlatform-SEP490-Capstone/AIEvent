@@ -144,93 +144,36 @@ export const eventAPI = {
 
   // Create new event (requires Organizer role)
   createEvent: async (eventData) => {
-    const formData = new FormData();
-    
-    // Add basic event fields
-    formData.append('Title', eventData.title);
-    formData.append('Description', eventData.description);
-    formData.append('StartTime', eventData.startTime);
-    formData.append('EndTime', eventData.endTime);
-    formData.append('TotalTickets', eventData.totalTickets);
-    formData.append('TicketPricingType', eventData.ticketPricingType);
-    formData.append('RequireApproval', eventData.requireApproval || EventStatus.PendingApproval);
-    formData.append('Publish', eventData.publish || false);
-    
-    // Optional fields
-    if (eventData.locationName) {
-      formData.append('LocationName', eventData.locationName);
-    }
-    if (eventData.detailedDescription) {
-      formData.append('DetailedDescription', eventData.detailedDescription);
-    }
-    if (eventData.linkRef) {
-      formData.append('LinkRef', eventData.linkRef);
-    }
-    if (eventData.district) {
-      formData.append('District', eventData.district);
-    }
-    if (eventData.address) {
-      formData.append('Address', eventData.address);
-    }
-    if (eventData.latitude) {
-      formData.append('Latitude', eventData.latitude);
-    }
-    if (eventData.longitude) {
-      formData.append('Longitude', eventData.longitude);
-    }
-    if (eventData.saleStartTime) {
-      formData.append('SaleStartTime', eventData.saleStartTime);
-    }
-    if (eventData.saleEndTime) {
-      formData.append('SaleEndTime', eventData.saleEndTime);
-    }
-    if (eventData.eventCategoryId) {
-      formData.append('EventCategoryId', eventData.eventCategoryId);
-    }
+    // Prepare data object for JSON submission
+    const data = {
+      Title: eventData.title,
+      Description: eventData.description,
+      StartTime: eventData.startTime,
+      EndTime: eventData.endTime,
+      TotalTickets: eventData.totalTickets,
+      TicketPricingType: eventData.ticketPricingType,
+      RequireApproval: eventData.requireApproval || EventStatus.PendingApproval,
+      Publish: eventData.publish || false,
+      LocationName: eventData.locationName,
+      DetailedDescription: eventData.detailedDescription,
+      LinkRef: eventData.linkRef,
+      District: eventData.district,
+      Address: eventData.address,
+      Latitude: eventData.latitude,
+      Longitude: eventData.longitude,
+      SaleStartTime: eventData.saleStartTime,
+      SaleEndTime: eventData.saleEndTime,
+      EventCategoryId: eventData.eventCategoryId,
+      ImgListEvent: eventData.images || [],
+      ImgListEvidences: eventData.evidenceImages || [],
+      TicketTypes: eventData.ticketTypes || [],
+      Tags: eventData.tags || []
+    };
 
-    // Add images
-    if (eventData.images && eventData.images.length > 0) {
-      eventData.images.forEach((image, index) => {
-        formData.append(`ImgListEvent`, image);
-      });
-    }
+    // Remove undefined properties
+    Object.keys(data).forEach(key => data[key] === undefined && delete data[key]);
 
-    // Add evidence images
-    if (eventData.evidenceImages && eventData.evidenceImages.length > 0) {
-      eventData.evidenceImages.forEach((image, index) => {
-        formData.append(`ImgListEvidences`, image);
-      });
-    }
-
-    // Add ticket types
-    if (eventData.ticketTypes && eventData.ticketTypes.length > 0) {
-      eventData.ticketTypes.forEach((ticket, index) => {
-        formData.append(`TicketTypes[${index}].TicketName`, ticket.ticketName);
-        formData.append(`TicketTypes[${index}].TicketPrice`, ticket.ticketPrice);
-        formData.append(`TicketTypes[${index}].TicketQuantity`, ticket.ticketQuantity);
-        if (ticket.ticketDescription) {
-          formData.append(`TicketTypes[${index}].TicketDescription`, ticket.ticketDescription);
-        }
-      });
-    }
-
-    // Add tags
-    if (eventData.tags && eventData.tags.length > 0) {
-      eventData.tags.forEach((tag, index) => {
-        formData.append(`Tags[${index}].TagId`, tag.tagId);
-      });
-    }
-
-    // Debug FormData contents
-    for (let [key, value] of formData.entries()) {
-      console.log(`${key}:`, value);
-    }
-
-    const response = await fetcher.post('/event', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await fetcher.post('/event', data);
     // Return the actual response data
     return response.data?.data || response.data;
   },
@@ -356,11 +299,7 @@ export const eventAPI = {
       console.log(`${key}:`, value);
     }
 
-    const response = await fetcher.patch(`/event/${eventData.eventId}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await fetcher.patch(`/event/${eventData.eventId}`, formData);
     // Return the actual response data
     return response.data?.data || response.data;
   },
