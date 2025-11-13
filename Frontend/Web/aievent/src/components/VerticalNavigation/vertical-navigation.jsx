@@ -238,7 +238,7 @@ export function VerticalNavigation() {
         isActive: pathname === "/favorites",
       },
       {
-        title: "Ví điện tử",
+        title: "Ví của tôi",
         url: "/wallet",
         icon: Wallet,
         isActive: pathname === "/wallet",

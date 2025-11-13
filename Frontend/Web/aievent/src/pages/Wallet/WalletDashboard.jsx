@@ -297,7 +297,7 @@ const WalletDashboard = () => {
             </div>
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                Ví điện tử
+                Ví của tôi
               </h1>
               <p className="text-gray-600 text-sm">Quản lý tài chính</p>
             </div>
@@ -360,7 +360,7 @@ const WalletDashboard = () => {
                   <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mb-3 backdrop-blur-sm">
                     <Sparkles className="h-10 w-10 text-white" />
                   </div>
-                  <p className="text-white/90 text-sm font-medium">AIEvent - Ví điện tử</p>
+                  <p className="text-white/90 text-sm font-medium">AIEvent - Ví của tôi</p>
                 </div>
               </div>
             </div>
@@ -524,8 +524,8 @@ const WalletDashboard = () => {
                     <p className="text-gray-500">Bắt đầu với giao dịch đầu tiên của bạn</p>
                   </div>
                 ) : (
-                  sortedTransactions.map((transaction) => (
-                    <div key={transaction.orderCode} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200 hover:border-blue-300">
+                  sortedTransactions.map((transaction, idx) => (
+                    <div key={transaction.orderCode || `transaction-${transaction.createdAt}-${idx}`} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200 hover:border-blue-300">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
                           <div className={`p-3 rounded-xl ${transaction.direction === 'In'
@@ -542,10 +542,6 @@ const WalletDashboard = () => {
                               <span className="flex items-center space-x-1">
                                 <Clock className="h-4 w-4" />
                                 <span>{formatDate(transaction.createdAt)}</span>
-                              </span>
-                              <span>•</span>
-                              <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-                                {transaction.orderCode}
                               </span>
                             </div>
                           </div>
@@ -1029,9 +1025,9 @@ const WalletDashboard = () => {
                     <div className="space-y-4">
                       <p className="text-gray-600 text-sm mb-4">Chọn thông tin thanh toán để rút tiền</p>
                       <div className="grid gap-4">
-                        {paymentInformations.map((paymentInfo) => (
+                        {paymentInformations.map((paymentInfo, idx) => (
                           <div
-                            key={paymentInfo.paymentInformationId}
+                            key={paymentInfo.paymentInformationId || `payment-${idx}`}
                             onClick={() => handleSelectPaymentInfo(paymentInfo)}
                             className="group relative overflow-hidden bg-gradient-to-br from-[#F8F8F8] to-[#E8E8E8] rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 border border-[#D1D5DB] cursor-pointer"
                           >
