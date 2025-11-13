@@ -14,6 +14,7 @@ using MockQueryable.Moq;
 using Moq; 
 using PayOS.Models.V2.PaymentRequests;
 using PayOS.Models.Webhooks;
+using Microsoft.Extensions.Logging;
 
 namespace AIEvent.Application.Test.Services
 {
@@ -25,12 +26,16 @@ namespace AIEvent.Application.Test.Services
         private readonly Mock<ITransactionHelper> _mockTransactionHelper;
         private readonly IPaymentService _paymentService;
         private readonly Mock<IMapper> _mockMapper;
+        private readonly Mock<INotificationService> _notificationService;
+        private readonly Mock<ILogger<PaymentService>> _mockLog;
         public PaymentServiceTests()
         {
             _mockpayOSService = new Mock<IPayOSService>();
             _mockUnitOfWork = new Mock<IUnitOfWork>();
             _mockConfiguration = new Mock<IConfiguration>();
+            _notificationService = new Mock<INotificationService>();
             _mockTransactionHelper = new Mock<ITransactionHelper>();
+            _mockLog = new Mock<ILogger<PaymentService>>();
             _mockMapper = new Mock<IMapper>();
             // Setup configuration default values
             _mockConfiguration.Setup(c => c["PayOS:CancelUrl"]).Returns("http://localhost:5173/wallet");
@@ -41,7 +46,9 @@ namespace AIEvent.Application.Test.Services
                 _mockConfiguration.Object,
                 _mockTransactionHelper.Object,
                 _mockpayOSService.Object,
-                _mockMapper.Object
+                _mockMapper.Object,
+                _notificationService.Object,
+                _mockLog.Object
             );
         }
 

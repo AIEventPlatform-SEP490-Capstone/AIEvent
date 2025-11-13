@@ -37,6 +37,7 @@ import FavoriteEventsPage from "../pages/User/FavoriteEventsPage";
 import OrganizerApprovalListPage from "../pages/Admin/OrganizerApprovalListPage";
 import OrganizerApprovalDetailPage from "../pages/Admin/OrganizerApprovalDetailPage";
 import FriendDetailPage from "../pages/User/FriendDetailPage";
+import StaffManagePage from "../pages/Organizer/StaffManagePage";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -211,6 +212,7 @@ export default function useRouterElement() {
         { path: "analytics/:id", element: <div>Organizer Analytics Page</div> },
         { path: "checkin/:id", element: <div>Organizer Check-in Page</div> },
         { path: "tags", element: <TagManagementPage userRole="organizer" /> },
+        { path: "staff", element: <StaffManagePage /> },
       ],
     },
     {

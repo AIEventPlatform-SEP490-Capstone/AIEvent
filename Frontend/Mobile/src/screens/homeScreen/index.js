@@ -10,11 +10,9 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { styles } from './styles';
 import CustomText from '../../components/common/customTextRN';
-import CustomButton from '../../components/common/customButtonRN';
-import { GradientBackground } from '../../components/common';
 import { LinearGradient } from 'expo-linear-gradient';
 import EventCard from '../../components/presentation/EventCard';
 import CompactEventCard from '../../components/presentation/CompactEventCard';
@@ -32,12 +30,10 @@ const { width } = Dimensions.get('window');
 
 const HomeScreen = () => {
   const navigation = useNavigation();
-  const dispatch = useDispatch();
   
   // Use Redux selectors
   const events = useSelector(selectEvents);
   const eventsLoading = useSelector(selectEventsLoading);
-  const eventsError = useSelector(selectEventsError);
   const categories = useSelector(selectCategories);
   const categoriesLoading = useSelector(selectCategoriesLoading);
   
@@ -220,175 +216,223 @@ const HomeScreen = () => {
     return id ? id.toString() : Math.random().toString();
   };
 
+  // Get latest events (first 3 events)
+  const latestEvents = filteredEvents.slice(0, 3);
+  // Get remaining events for the list
+  const eventList = filteredEvents.slice(3);
+
+  const renderLatestEventCard = ({ item, index }) => (
+    <TouchableOpacity
+      style={[styles.latestEventCard, { marginLeft: index === 0 ? 0 : 15 }]}
+      onPress={() => handleEventPress(item)}
+      activeOpacity={0.9}
+    >
+      <Image 
+        source={getEventImage(item)} 
+        style={styles.latestEventImage}
+      />
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.7)']}
+        style={styles.latestEventGradient}
+      >
+        <View style={styles.latestEventContent}>
+          <CustomText variant="h3" color="white" style={styles.latestEventTitle} numberOfLines={2}>
+            {item.title}
+          </CustomText>
+          <View style={styles.latestEventInfo}>
+            <View style={[styles.latestEventInfoRow, { marginBottom: 8 }]}>
+              <Image source={Images.location} style={styles.latestEventIcon} />
+              <CustomText variant="caption" color="white" style={styles.latestEventText} numberOfLines={1}>
+                {item.location}
+              </CustomText>
+            </View>
+            <View style={styles.latestEventInfoRow}>
+              <Image source={Images.calendar} style={styles.latestEventIcon} />
+              <CustomText variant="caption" color="white" style={styles.latestEventText}>
+                {item.date}
+              </CustomText>
+            </View>
+          </View>
+        </View>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+
+  const getEventImage = (event) => {
+    if (event.image && typeof event.image === 'object' && event.image.uri) {
+      return { uri: event.image.uri };
+    }
+    if (typeof event.image === 'string') {
+      const imageMap = {
+        card1: Images.event1,
+        card2: Images.event2,
+      };
+      return imageMap[event.image] || Images.event1;
+    }
+    return Images.event1;
+  };
+
   const renderEventCard = ({ item }) => (
     <EventCard event={item} onPress={handleEventPress} />
   );
 
-  // Get formatted date
-  const getFormattedDate = () => {
-    return currentDate.toLocaleDateString('vi-VN', { 
-      weekday: 'long', 
-      day: 'numeric', 
-      month: 'long' 
-    });
+  const renderCategoryButton = (category, index) => {
+    const isSelected = selectedCategory && selectedCategory.eventCategoryId === category.eventCategoryId;
+    const categoryColors = [
+      { bg: '#E3F2FD', icon: '#2196F3' },
+      { bg: '#F3E5F5', icon: '#9C27B0' },
+      { bg: '#E8F5E9', icon: '#4CAF50' },
+      { bg: '#FFF3E0', icon: '#FF9800' },
+      { bg: '#FCE4EC', icon: '#E91E63' },
+    ];
+    const colorIndex = index % categoryColors.length;
+    const colors = isSelected 
+      ? { bg: Colors.primary, icon: Colors.white }
+      : categoryColors[colorIndex];
+
+    return (
+      <TouchableOpacity
+        key={category.eventCategoryId || category.id || Math.random().toString()}
+        style={[
+          styles.categoryButton,
+          { backgroundColor: colors.bg },
+          isSelected && styles.categoryButtonSelected
+        ]}
+        onPress={() => handleCategoryPress(category)}
+        activeOpacity={0.8}
+      >
+        <View style={[styles.categoryIconContainer, { backgroundColor: colors.icon + '20' }]}>
+          <Image 
+            source={Images.calendar} 
+            style={[styles.categoryIcon, { tintColor: colors.icon }]} 
+          />
+        </View>
+        <CustomText 
+          variant="caption" 
+          style={[
+            styles.categoryButtonText,
+            { color: colors.icon },
+            isSelected && styles.categoryButtonTextSelected
+          ]}
+          numberOfLines={1}
+        >
+          {category.eventCategoryName}
+        </CustomText>
+      </TouchableOpacity>
+    );
   };
-
-  // Get featured event (first event in the list)
-  const getFeaturedEvent = () => {
-    if (events && events.length > 0) {
-      return transformEventData(events[0]);
-    }
-    return null;
-  };
-
-  const featuredEvent = getFeaturedEvent();
-
 
   return (
     <View style={styles.container}>
-      {/* Premium Header */}
+      {/* Header */}
       <LinearGradient
         colors={Colors.gradientHeaderTitle}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.header}
       >
-        <CustomText variant="h2" color="white" style={styles.headerTitle}>
-          Danh sách sự kiện
-        </CustomText>
-        
-        <TouchableOpacity style={styles.notificationButton} activeOpacity={0.7}>
-          <Image source={Images.bell} style={styles.notificationIcon} />
-        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <CustomText variant="h2" color="white" style={styles.headerTitle}>
+            Khám phá sự kiện
+          </CustomText>
+          <TouchableOpacity style={styles.notificationButton} activeOpacity={0.7}>
+            <Image source={Images.bell} style={styles.notificationIcon} />
+          </TouchableOpacity>
+        </View>
       </LinearGradient>
 
-      {/* Main Content - All content scrolls together */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Modern Search Bar */}
-        <View style={styles.searchContainer}>
-          <Image source={Images.search} style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder={Strings.SEARCH_PLACEHOLDER}
-            placeholderTextColor={Colors.textLight}
-            value={searchText}
-            onChangeText={setSearchText}
-          />
-          
-          {/* Clear Search Button */}
-          {(searchText.trim() !== '' || selectedCategory) && (
-            <TouchableOpacity 
-              style={styles.clearButton}
-              onPress={() => {
-                setSearchText('');
-                setSelectedCategory(null);
-              }}
-            >
-              <CustomText variant="body" color="primary" style={styles.clearButtonText}>
-                Clear
-              </CustomText>
-            </TouchableOpacity>
-          )}
-        </View>
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <Image source={Images.search} style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Tìm kiếm sự kiện..."
+          placeholderTextColor={Colors.textLight}
+          value={searchText}
+          onChangeText={setSearchText}
+        />
+      </View>
 
-        {/* Category Chips */}
-        <View style={styles.categorySection}>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            style={styles.categoryContainer}
+      {/* Category Section */}
+      <View style={styles.categorySection}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryScrollContent}
+        >
+          <TouchableOpacity
+            style={[
+              styles.categoryButton,
+              { backgroundColor: selectedCategory ? '#F5F5F5' : Colors.primary },
+            ]}
+            onPress={() => setSelectedCategory(null)}
+            activeOpacity={0.8}
           >
-            <TouchableOpacity
-              style={[
-                styles.categoryChipWebStyle,
-                !selectedCategory && styles.categoryChipWebStyleSelected
-              ]}
-              onPress={() => setSelectedCategory(null)}
-            >
-              <CustomText 
-                variant="caption" 
+            <View style={[
+              styles.categoryIconContainer, 
+              { backgroundColor: selectedCategory ? Colors.primary + '20' : Colors.white + '40' }
+            ]}>
+              <Image 
+                source={Images.calendar} 
                 style={[
-                  styles.categoryTextWebStyle,
-                  !selectedCategory && styles.categoryTextWebStyleSelected
-                ]}
-              >
-                Tất cả
-              </CustomText>
-            </TouchableOpacity>
-            
-            {categories.map((category) => (
-              <TouchableOpacity
-                key={category.eventCategoryId || category.id || Math.random().toString()}
-                style={[
-                  styles.categoryChipWebStyle,
-                  selectedCategory && selectedCategory.eventCategoryId === category.eventCategoryId && styles.categoryChipWebStyleSelected
-                ]}
-                onPress={() => handleCategoryPress(category)}
-              >
-                <CustomText 
-                  variant="caption" 
-                  style={[
-                    styles.categoryTextWebStyle,
-                    selectedCategory && selectedCategory.eventCategoryId === category.eventCategoryId && styles.categoryTextWebStyleSelected
-                  ]}
-                >
-                  {category.eventCategoryName}
-                </CustomText>
-              </TouchableOpacity>
-            ))}
-            
-            <TouchableOpacity style={styles.filterButton}>
-              <Image source={Images.filter} style={styles.filterIcon} />
-              <CustomText variant="body" color="secondary" style={styles.filterButtonText}>
-                Bộ lọc
-              </CustomText>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-
-        {/* Featured Events - Show first 3 events in horizontal scroll */}
-        {/* Only show featured events when there's no search text and no category selected */}
-        {searchText.trim() === '' && !selectedCategory && events && events.length > 0 && (
-          <View style={styles.featuredEventsSection}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleWithDivider}>
-                <CustomText variant="h2" color="primary" style={styles.sectionTitleText}>
-                  Sự kiện nổi bật
-                </CustomText>
-              </View>
-              <View style={styles.divider} />
+                  styles.categoryIcon, 
+                  { tintColor: selectedCategory ? Colors.primary : Colors.white }
+                ]} 
+              />
             </View>
-            
+            <CustomText 
+              variant="caption" 
+              style={[
+                styles.categoryButtonText,
+                { color: selectedCategory ? Colors.primary : Colors.white }
+              ]}
+            >
+              Tất cả
+            </CustomText>
+          </TouchableOpacity>
+          
+          {categories.map((category, index) => renderCategoryButton(category, index))}
+        </ScrollView>
+      </View>
+
+      {/* Main Content */}
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.contentContainer}
+      >
+        {/* Latest Events Section */}
+        {latestEvents.length > 0 && (
+          <View style={styles.latestEventsSection}>
+            <View style={styles.sectionHeader}>
+              <CustomText variant="h2" color="primary" style={styles.sectionTitle}>
+                Sự kiện mới nhất
+              </CustomText>
+            </View>
             <FlatList
-              data={events.slice(0, 3)}
-              renderItem={({ item }) => (
-                <CompactEventCard 
-                  event={item} 
-                  onPress={handleEventPress} 
-                  isRecommended={true} 
-                />
-              )}
+              data={latestEvents}
+              renderItem={renderLatestEventCard}
               keyExtractor={keyExtractor}
               horizontal
-              pagingEnabled
               showsHorizontalScrollIndicator={false}
-              snapToInterval={356} // Card width (340) + margin (16)
-              decelerationRate="fast"
-              contentContainerStyle={{ paddingRight: 20 }}
+              contentContainerStyle={styles.latestEventsList}
             />
           </View>
         )}
 
-
-        {/* All Events */}
-        <View style={styles.eventsSection}>
+        {/* Events List Section */}
+        <View style={styles.eventsListSection}>
           <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleWithDivider}>
-              <CustomText variant="h2" color="primary" style={styles.sectionTitleText}>
-                Danh sách sự kiện
-              </CustomText>
-            </View>
-            <View style={styles.divider} />
+            <CustomText variant="h2" color="primary" style={styles.sectionTitle}>
+              Danh sách sự kiện
+            </CustomText>
+            {filteredEvents.length > 3 && (
+              <TouchableOpacity>
+                <CustomText variant="body" color="primary" style={styles.viewAllText}>
+                  Xem tất cả
+                </CustomText>
+              </TouchableOpacity>
+            )}
           </View>
           
           {loading ? (
@@ -397,7 +441,7 @@ const HomeScreen = () => {
                 {Strings.LOADING}
               </CustomText>
             </View>
-          ) : filteredEvents.length === 0 ? (
+          ) : eventList.length === 0 && latestEvents.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Image source={Images.calendar} style={styles.emptyIcon} />
               <CustomText variant="h3" color="secondary" align="center" style={styles.emptyText}>
@@ -405,13 +449,13 @@ const HomeScreen = () => {
               </CustomText>
             </View>
           ) : (
-            <View>
-              {filteredEvents.map((event, index) => (
-                <View key={keyExtractor(event, index)}>
-                  <EventCard event={event} onPress={handleEventPress} />
-                </View>
-              ))}
-            </View>
+            <FlatList
+              data={eventList}
+              renderItem={renderEventCard}
+              keyExtractor={keyExtractor}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={false}
+            />
           )}
         </View>
       </ScrollView>

@@ -70,14 +70,14 @@ const CITIES = [
 const FREQUENCY_OPTIONS = [
   { value: "Weekly", label: "Hàng tuần" },
   { value: "Monthly", label: "Hàng tháng" },
-  { value: "Quarterly", label: "Hàng quý" },
-  { value: "Yearly", label: "Hàng năm" },
+  { value: "Occasionally", label: "Thỉnh thoảng" },
+  { value: "Daily", label: "Hàng ngày" },
 ];
 
 const BUDGET_OPTIONS = [
-  { value: "Low", label: "Thấp (dưới 500k)" },
-  { value: "Medium", label: "Trung bình (500k - 2tr)" },
-  { value: "High", label: "Cao (trên 2tr)" },
+  { value: "Under500k", label: "Thấp (dưới 500k)" },
+  { value: "From500kTo2M", label: "Trung bình (500k - 2tr)" },
+  { value: "Above2M", label: "Cao (trên 2tr)" },
   { value: "Flexible", label: "Linh hoạt" },
 ];
 const INTERESTS = [

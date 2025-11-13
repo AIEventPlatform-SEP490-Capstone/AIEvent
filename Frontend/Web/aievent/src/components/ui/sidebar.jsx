@@ -7,7 +7,7 @@ import { Separator } from "./separator";
 
 const SIDEBAR_WIDTH = "16rem";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
-const SIDEBAR_WIDTH_ICON = "3rem";
+const SIDEBAR_WIDTH_ICON = "5rem";
 
 const SidebarContext = React.createContext(null);
 
@@ -103,7 +103,7 @@ export function Sidebar({
       data-collapsible={collapsible}
       data-state={state}
       className={cn(
-        "bg-sidebar text-sidebar-foreground flex flex-col border-r z-50 backdrop-blur-xl bg-gradient-to-b from-background/95 to-muted/40",
+        "bg-sidebar text-sidebar-foreground flex flex-col border-r z-50 backdrop-blur-xl bg-gradient-to-b from-background/95 to-muted/40 overflow-x-hidden",
         "transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] transform",
         state === "collapsed" && collapsible === "icon"
           ? "w-[var(--sidebar-width-icon)] translate-x-0 opacity-100 scale-100"
@@ -230,10 +230,16 @@ export function SidebarContent({
     <div
       data-slot="sidebar-content"
       className={cn(
-        "flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
+        "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden",
+        "[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]",
+        "group-data-[collapsible=icon]:overflow-hidden",
         state === "collapsed" && collapsible === "icon" && "justify-center items-center",
         className,
       )}
+      style={{
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+      }}
       {...props}
     />
   );

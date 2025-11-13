@@ -18,8 +18,8 @@
   --secondary-foreground: #475569;
   --muted: #f8fafc;
   --muted-foreground: #64748b;
-  --accent: #8b5cf6; /* violet-500 */
-  --accent-foreground: #ffffff;
+  --accent: #6f8af6; /* violet-500 */
+  --accent-foreground: #1e293b;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   --border: #e2e8f0;
@@ -160,6 +160,16 @@
 
   p {
     @apply text-pretty leading-relaxed mb-4;
+  }
+
+  /* Hide scrollbar for sidebar */
+  [data-slot="sidebar-content"] {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+
+  [data-slot="sidebar-content"]::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
   }
 }
 

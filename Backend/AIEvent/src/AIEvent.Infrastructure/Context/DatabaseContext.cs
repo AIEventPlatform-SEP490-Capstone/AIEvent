@@ -29,8 +29,7 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<Booking> Bookings { get; set; }
         public DbSet<BookingItem> BookingItems { get; set; }
         public DbSet<Ticket> Tickets { get; set; } 
-        public DbSet<PaymentInformation> PaymentInformations { get; set; }
-        public DbSet<EndEventRequest> EndEventRequests { get; set; }
+        public DbSet<PaymentInformation> PaymentInformations { get; set; } 
         public DbSet<Friendship> Friendships { get; set; }
         public DbSet<Wallet> Wallets { get; set; }
         public DbSet<WalletTransaction> WalletTransactions { get; set; }
@@ -39,6 +38,7 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<EventInvitation> EventInvitations { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<StaffProfile> StaffProfiles { get; set; }
+        public DbSet<EventReport> EventReports { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -139,25 +139,6 @@ namespace AIEvent.Infrastructure.Context
 
             builder.Entity<EventTag>()
                 .HasKey(et => new { et.EventId, et.TagId });
-
-            //-----------------EndReuqestEvent-------------
-            builder.Entity<EndEventRequest>(entity =>
-            {
-                entity.HasOne(e => e.OrganizerProfile)
-                    .WithMany(o => o.EndEventRequests)
-                    .HasForeignKey(e => e.OrganizerProfileId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(e => e.Event)
-                    .WithMany(o => o.EndEventRequests)
-                    .HasForeignKey(o => o.EventId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(e => e.PaymentInformation)
-                    .WithMany(p => p.EndEventRequests)
-                    .HasForeignKey(e => e.PaymentInformationId)
-                    .OnDelete(DeleteBehavior.Restrict);
-            });
 
             //-----------------RevenueReport-------------
             builder.Entity<RevenueReport>(entity =>
@@ -431,6 +412,26 @@ namespace AIEvent.Infrastructure.Context
 
                 entity.HasIndex(x => x.OrganizerProfileId).HasDatabaseName("IX_StaffProfile_OrganizerProfileId");
                 entity.HasIndex(x => x.UserId).HasDatabaseName("IX_StaffProfile_UserId");
+            });
+
+            //---------------EventReport-----------------
+            builder.Entity<EventReport>(entity =>
+            {
+                entity.HasOne(x => x.Event)
+                    .WithMany(e => e.EventReports)
+                    .HasForeignKey(x => x.EventId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(x => x.User)
+                    .WithMany(u => u.EventReports)
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(x => new { x.EventId, x.UserId }).IsUnique();
+                entity.HasIndex(x => x.EventId).HasDatabaseName("IX_EventReports_EventId");
+                entity.HasIndex(x => x.UserId).HasDatabaseName("IX_EventReports_UserId");
+                entity.HasIndex(x => x.Type).HasDatabaseName("IX_EventReports_Type");
+                entity.HasIndex(x => x.CreatedAt).HasDatabaseName("IX_EventReports_CreatedAt");
             });
 
             builder.Seed();

@@ -2,6 +2,7 @@
 using AIEvent.API.Middleware;
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
+using AIEvent.Application.Services.Interfaces;
 using AIEvent.Infrastructure.Hubs;
 using Hangfire;
 using Hangfire.SqlServer;
@@ -88,6 +89,8 @@ namespace AIEvent.API
 
             builder.Services.AddHangfireServer();
 
+            builder.Services.AddHostedService<HangfireJobScheduler>();
+
             builder.Services.AddJwtAuthentication(builder.Configuration);
 
             builder.Services.AddCustomCors(builder.Configuration);
@@ -110,7 +113,7 @@ namespace AIEvent.API
 
             app.UseCors("AllowFrontend");
 
-            app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
+            app.UseMiddleware<GlobalExceptionHandlingMiddleware>(); 
 
             app.UseAuthentication();
             app.UseAuthorization();

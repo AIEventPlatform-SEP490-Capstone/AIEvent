@@ -43,6 +43,7 @@ namespace AIEvent.Application.Services.Implements
             var eventEntity = await _unitOfWork.EventRepository
                 .Query()
                 .Include(u => u.OrganizerProfile)
+                .Include(e => e.EventCategory)
                 .FirstOrDefaultAsync(e => e.Id == request.EventId && !e.IsDeleted
                                           && e.Status == EventStatus.Approved && e.Publish == true);
             if (eventEntity == null)
@@ -146,22 +147,10 @@ namespace AIEvent.Application.Services.Implements
                     return ErrorResponse.FailureResult("Not enough tickets for the event", ErrorCodes.InvalidInput);
                 }
 
-                await _unitOfWork.BookingItemRepository.AddRangeAsync(bookingItems);
-
-                var qrContents = tickets.Select(t =>
-                {
-                    var signature = _ticketSignatureService.CreateSignature(t.TicketCode);
-                    return $"{t.TicketCode}|{signature}";
-                }).ToList();
-                var qrResult = await _qrCodeService.GenerateQrBytesAndUrlsAsync(qrContents);
-
-                for (int i = 0; i < tickets.Count; i++)
-                {
-                    tickets[i].QrCodeUrl = qrResult.Urls[qrContents[i]];
-                }
-                await _unitOfWork.TicketRepository.AddRangeAsync(tickets);
-
                 booking.TotalAmount = totalAmount;
+
+                await _unitOfWork.BookingItemRepository.AddRangeAsync(bookingItems);
+                await _unitOfWork.TicketRepository.AddRangeAsync(tickets);
 
                 await _unitOfWork.SaveChangesAsync();
 
@@ -207,18 +196,15 @@ namespace AIEvent.Application.Services.Implements
 
                     walletUser.Balance -= totalAmount;
                     await _unitOfWork.WalletRepository.UpdateAsync(walletUser);
-
-                    booking.PaymentStatus = PaymentStatus.Paid;
                 }
-                else
-                {
-                    booking.PaymentStatus = PaymentStatus.Paid;
-                }
-
-                booking.TotalAmount = totalAmount;
+                
+                booking.PaymentStatus = PaymentStatus.Paid;
                 booking.Status = BookingStatus.Completed;
                 booking.PaymentMethod = PaymentMethod.Wallet;
                 await _unitOfWork.BookingRepository.UpdateAsync(booking);
+
+                // send email job
+                var firstImageUrl = ParseFirstImageFromJson(eventEntity.ImgListEvent);
 
                 var ticketData = tickets.Select((t, idx) => new TicketForPdf
                 {
@@ -227,19 +213,25 @@ namespace AIEvent.Application.Services.Implements
                     CustomerName = user.FullName!,
                     TicketType = ticketTypes[t.TicketTypeId].TicketName,
                     Price = t.Price,
-                    QrUrl = t.QrCodeUrl,
                     StartTime = t.StartTime,
                     EndTime = t.EndTime,
                     Address = t.Address!,
-                    QrBytes = qrResult.Bytes[qrContents[idx]]
+                    EventImageUrl = firstImageUrl ?? "",
+                    EventCategory = eventEntity.EventCategory?.CategoryName ?? "EVENT"
                 }).ToList();
 
-                await _hangfireJobService.EnqueueSendTicketEmailJobAsync(
-                    user.Email!,
-                    user.FullName!,
-                    eventEntity.Title,
-                    ticketData
-                );
+                await _hangfireJobService.EnqueueSendTicketEmailJobAsync(new SendEmailJobRequest
+                {
+                    Email = user.Email!,
+                    FullName = user.FullName!,
+                    EventTitle = eventEntity.Title,
+                    Tickets = ticketData,
+                    OrganizerName = eventEntity.OrganizerProfile.ContactName,
+                    OrganizerPhone = eventEntity.OrganizerProfile.ContactPhone,
+                    OrganizerEmail = eventEntity.OrganizerProfile.ContactEmail,
+                    StartTime = eventEntity.StartTime,
+                    EndTime = eventEntity.EndTime
+                });
 
                 return Result.Success();
             });
@@ -332,50 +324,41 @@ namespace AIEvent.Application.Services.Implements
         }
 
 
-        public async Task<Result<BasePaginated<TicketByEventResponse>>> GetTicketsByEventAsync(Guid userId, string id, int pageNumber, int pageSize)
+        public async Task<Result<List<TicketByEventResponse>>> GetTicketsByEventAsync(Guid userId, string id)
         {
             if (!Guid.TryParse(id, out var eventId))
                 return ErrorResponse.FailureResult("Invalid ticket ID format", ErrorCodes.InvalidInput);
 
-            var query = _unitOfWork.TicketRepository
-                .Query(false)
+            var query = _unitOfWork.BookingItemRepository
+                .Query() 
                 .AsNoTracking()
-                .Where(t => !t.DeletedAt.HasValue &&
-                            t.UserId == userId &&
-                            t.TicketType.EventId == eventId);
+                .Where(bi =>
+                    !bi.IsDeleted
+                    && bi.Booking != null
+                    && !bi.Booking.IsDeleted && bi.Booking.Status == BookingStatus.Completed
+                    && bi.Booking.EventId == eventId && bi.Booking.UserId == userId
+                );
 
-            var groupedQuery = query
-                .GroupBy(t => new
+            var ticketItems = await query
+                .Select(bi => new
                 {
-                    t.TicketTypeId,
-                    t.TicketType.TicketName,
-                    t.TicketType.TicketPrice
+                    TicketTypeName = bi.TicketType.TicketName,
+                    Price = bi.UnitPrice,
+                    Quantity = bi.Quantity,
+                    CreatedAt = bi.CreatedAt
                 })
+                .GroupBy(x => new { x.TicketTypeName, x.Price })
                 .Select(g => new TicketByEventResponse
                 {
-                    TicketTypeName = g.Key.TicketName,
-                    Price = g.Key.TicketPrice,
-                    Quantity = g.Count(),
-                    Tickets = g.Select(x => new TicketItemResponse
-                    {
-                        TicketId = x.Id,
-                        TicketCode = x.TicketCode,
-                        Status = x.Status,
-                        CreatedAt = x.CreatedAt
-                    }).ToList()
-                });
-
-            var totalCount = await groupedQuery.CountAsync();
-
-            var pageData = await groupedQuery
-                .OrderByDescending(g => g.TicketTypeName)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
+                    TicketTypeName = g.Key.TicketTypeName,
+                    Price = g.Key.Price,
+                    Quantity = g.Sum(x => x.Quantity),
+                    CreatedAt = g.Max(x => x.CreatedAt)
+                })
+                .OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
 
-            var result = new BasePaginated<TicketByEventResponse>(pageData, totalCount, pageNumber, pageSize);
-
-            return Result<BasePaginated<TicketByEventResponse>>.Success(result);
+            return Result<List<TicketByEventResponse>>.Success(ticketItems);
         }
 
 
@@ -383,6 +366,10 @@ namespace AIEvent.Application.Services.Implements
         {
             if (string.IsNullOrWhiteSpace(imgListJson))
                 return null;
+
+            // Nếu là URL trực tiếp (không phải JSON)
+            if (imgListJson.StartsWith("http://") || imgListJson.StartsWith("https://"))
+                return imgListJson;
 
             try
             {
@@ -402,26 +389,6 @@ namespace AIEvent.Application.Services.Implements
             return null;
         }
 
-
-        public async Task<Result<QrResponse>> GetQrCodeAsync(Guid userId, string id)
-        {
-            if (!Guid.TryParse(id, out var ticketId))
-                return ErrorResponse.FailureResult("Invalid ticket ID format", ErrorCodes.InvalidInput);
-
-            var qrCodeUrl = await _unitOfWork.TicketRepository
-                .Query()
-                .AsNoTracking()
-                .Where(t => t.Id == ticketId && t.UserId == userId && !t.IsDeleted && t.Status == TicketStatus.Valid)
-                .Select(t => t.QrCodeUrl)
-                .FirstOrDefaultAsync();
-
-            if (qrCodeUrl == null)
-            {
-                return ErrorResponse.FailureResult("Ticket not found", ErrorCodes.NotFound);
-            }
-
-            return Result<QrResponse>.Success(new QrResponse { QrCode = qrCodeUrl });
-        }
 
         public async Task<Result<CheckInResponse>> CheckInTicketAsync(string qrContent)
         {
