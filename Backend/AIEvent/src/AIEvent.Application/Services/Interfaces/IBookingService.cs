@@ -17,7 +17,7 @@ namespace AIEvent.Application.Services.Interfaces
             string? title,
             DateTime? startTime,
             DateTime? endTime);
-        Task<Result<BasePaginated<TicketByEventResponse>>> GetTicketsByEventAsync(Guid userId, string eventId, int pageNumber, int pageSize);
+        Task<Result<List<TicketByEventResponse>>> GetTicketsByEventAsync(Guid userId, string id);
         Task<Result<CheckInResponse>> CheckInTicketAsync(string qrContent);
     }
 }

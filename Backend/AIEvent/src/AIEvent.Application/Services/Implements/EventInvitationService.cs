@@ -209,7 +209,7 @@ namespace AIEvent.Application.Services.Implements
             IQueryable<EventInvitation> eventInvitations = _unitOfWork.EventInvitationRepository
                                                 .Query()
                                                 .AsNoTracking()
-                                                .Where(ei => ei.InviterId == userId
+                                                .Where(ei => (ei.InvitedUserId == userId || ei.InviterId == userId)
                                                         && ei.IsDeleted == false);
 
             if (status != null || status.HasValue)
