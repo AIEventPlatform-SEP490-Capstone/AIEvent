@@ -342,5 +342,27 @@ namespace AIEvent.API.Controllers
                 SuccessCodes.Success,
                 "ReportEvent retrieved successfully"));
         }
+
+        [HttpGet("/staff")]
+        [Authorize(Roles = "Staff")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<ListEventResponse>>>> GetListEventForStaff(
+                                                                                                          [FromQuery] string? title,
+                                                                                                          [FromQuery] string? categoryId,
+                                                                                                          [FromQuery] int pageNumber = 1,
+                                                                                                          [FromQuery] int pageSize = 10)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _eventService.GetAllEventForStaff(userId, title, categoryId, pageNumber, pageSize);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<ListEventResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Event retrieved successfully"));
+        }
     }
 }
