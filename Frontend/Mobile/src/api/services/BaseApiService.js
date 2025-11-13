@@ -182,6 +182,33 @@ class BaseApiService {
     }
   }
 
+  static async put(url, data) {
+    try {
+      console.log('Making PUT request to:', url);
+      console.log('Request Data:', data);
+      const headers = await this.getAuthHeaders();
+
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(data),
+      });
+
+      return await this.handleApiResponse(response, async () => {
+        const newHeaders = await this.getAuthHeaders();
+        const retryResponse = await fetch(url, {
+          method: 'PUT',
+          headers: newHeaders,
+          body: JSON.stringify(data),
+        });
+        return await this.handleApiResponse(retryResponse, null);
+      });
+    } catch (error) {
+      console.error('Error in PUT request:', error);
+      throw error;
+    }
+  }
+
   static async delete(url) {
     try {
       console.log('Making DELETE request to:', url);

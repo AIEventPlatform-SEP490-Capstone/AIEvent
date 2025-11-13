@@ -1,5 +1,6 @@
 ﻿using AIEvent.Application.DTOs.PineconeVector;
 using AIEvent.Application.Services.Interfaces;
+using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,7 +30,9 @@ namespace AIEvent.Application.Services.Implements
                 .Include(e => e.EventTags)
                     .ThenInclude(et => et.Tag)
                 .Include(e => e.TicketTypes)
-                .Where(e => e.Publish == true && !e.IsDeleted)
+                .Where(e => e.Publish == true 
+                    && e.Status == EventStatus.Approved 
+                    && !e.IsDeleted)
                 .ToListAsync();
 
             if (events.Count == 0)

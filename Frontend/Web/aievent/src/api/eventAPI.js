@@ -547,6 +547,52 @@ export const eventAPI = {
     
     return data;
   },
+
+  // Invite friends to event
+  inviteFriends: async (eventId, invitationData) => {
+    const response = await fetcher.post(`/event/${eventId}/invite-friends`, invitationData, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    // Return the actual response data
+    return response.data?.data || response.data;
+  },
+
+  // Confirm event invitation (Accept/Reject)
+  confirmInvitation: async (invitationId, confirmData) => {
+    const response = await fetcher.put(`/event/invitations/${invitationId}/confirm`, confirmData, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    // Return the actual response data
+    return response.data?.data || response.data;
+  },
+
+  // Get invitations status (paginated)
+  getInvitationsStatus: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    
+    if (params.pageNumber) queryParams.append('pageNumber', params.pageNumber);
+    if (params.pageSize) queryParams.append('pageSize', params.pageSize);
+    if (params.status) queryParams.append('status', params.status);
+
+    const response = await fetcher.get(`/event/invitations-status?${queryParams.toString()}`);
+    // Return the actual data from the paginated response
+    let data = response.data?.data || response.data;
+    
+    // Process dates for invitations if needed
+    if (data && data.items) {
+      data.items = data.items.map(invitation => ({
+        ...invitation,
+        createdAt: invitation.createdAt ? convertUTCToUTC7ISOString(invitation.createdAt) : null,
+        respondedAt: invitation.respondedAt ? convertUTCToUTC7ISOString(invitation.respondedAt) : null,
+      }));
+    }
+    
+    return data;
+  },
 };
 
 export default eventAPI;
