@@ -37,6 +37,7 @@ import FavoriteEventsPage from "../pages/User/FavoriteEventsPage";
 import OrganizerApprovalListPage from "../pages/Admin/OrganizerApprovalListPage";
 import OrganizerApprovalDetailPage from "../pages/Admin/OrganizerApprovalDetailPage";
 import FriendDetailPage from "../pages/User/FriendDetailPage";
+import EventInvitationsPage from "../pages/User/EventInvitationsPage";
 import StaffManagePage from "../pages/Organizer/StaffManagePage";
 
 export default function useRouterElement() {
@@ -138,7 +139,7 @@ export default function useRouterElement() {
           path: "event-invitations",
           element: (
             <ProtectedRoute>
-              <div>Event Invitations Page</div>
+              <EventInvitationsPage />
             </ProtectedRoute>
           ),
         },

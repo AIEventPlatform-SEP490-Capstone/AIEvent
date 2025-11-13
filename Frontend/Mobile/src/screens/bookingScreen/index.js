@@ -83,26 +83,50 @@ const BookingScreen = () => {
 
     try {
       setCreating(true);
+      console.log('Creating booking...');
       const bookingResponse = await BookingService.createBooking(
         eventId,
         ticketTypeRequests,
       );
+      console.log('Booking response:', bookingResponse);
+      
       if (!bookingResponse.success) {
-        throw new Error(bookingResponse.message);
+        throw new Error(bookingResponse.message || 'Đặt vé thất bại');
       }
 
+      console.log('Booking created successfully, fetching tickets...');
       const ticketsResponse = await BookingService.getEventTickets(eventId);
-      if (ticketsResponse.success && ticketsResponse.data.length > 0) {
+      console.log('Tickets response:', ticketsResponse);
+      
+      if (!ticketsResponse.success) {
+        console.warn('Failed to fetch tickets:', ticketsResponse.message);
+        // Still show success even if we can't get the QR code
+        setBookingComplete(true);
+        return;
+      }
+
+      if (ticketsResponse.data && ticketsResponse.data.length > 0) {
         const latestTicket =
           ticketsResponse.data[ticketsResponse.data.length - 1];
+        console.log('Latest ticket:', latestTicket);
 
+        console.log('Fetching QR code for ticket:', latestTicket.id);
         const qrResponse = await BookingService.getTicketQR(latestTicket.id);
-        if (qrResponse.success) {
+        console.log('QR response:', qrResponse);
+        
+        if (qrResponse.success && qrResponse.data) {
           setQrCode(qrResponse.data);
-          setBookingComplete(true);
+        } else {
+          console.warn('Failed to fetch QR code:', qrResponse.message);
         }
+      } else {
+        console.warn('No tickets found in response');
       }
+      
+      // Always show success if booking was created
+      setBookingComplete(true);
     } catch (error) {
+      console.error('Booking error:', error);
       setBookingError(
         error.message ||
           'Đặt vé thất bại, vui lòng thử lại hoặc kiểm tra số dư ví.',
