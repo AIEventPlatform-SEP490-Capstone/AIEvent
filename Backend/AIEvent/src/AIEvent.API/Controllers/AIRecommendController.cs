@@ -32,11 +32,19 @@ namespace AIEvent.API.Controllers
             return Ok("Đã embed tất cả sự kiện vào Pinecone!");
         }
 
-        [HttpPost()]
-        public async Task<IActionResult> EmbedEventsToPinecone(PromptRequest request)
+        [HttpPost]
+        [Authorize]
+        public async Task<ActionResult<SuccessResponse<object>>> EmbedEventsToPinecone(PromptRequest request)
         {
-            var response = await _eventRecommendationService.RecommendEventsAsync(request.UserPrompt);
-            return Ok(response);
+            var result = await _eventRecommendationService.RecommendEventsAsync(request.UserPrompt);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+            return Ok(SuccessResponse<object>.SuccessResult(
+               result.Value!,
+               SuccessCodes.Success,
+               "Event retrieved successfully"));
         }
 
         [HttpGet("event")]

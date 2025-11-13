@@ -1,12 +1,12 @@
-﻿using AIEvent.Application.DTOs.AIRecommendation;
+﻿using AIEvent.Application.DTOs.PineconeVector;
 
 namespace AIEvent.Application.Services.Interfaces
 {
     public interface IPineconeVectorService
     {
-        Task UpsertVectorAsync(string id, float[] values, Dictionary<string, object>? metadata = null);
-        Task<List<(string Id, double Score, Dictionary<string, object>? Metadata)>> QuerySimilarAsync(float[] vector, int topK = 5);
-        Task UpsertVectorAsync(IEnumerable<PineconeVector> vectors);
-        Task DeleteVectorAsync(string id);
+        Task UpsertVectorAsync(string id, float[] values, bool isUser, Dictionary<string, object>? metadata = null);
+        Task<List<(string Id, double Score, Dictionary<string, object>? Metadata)>> QuerySimilarAsync(float[] vector, bool isUser, int topK = 5);
+        Task UpsertVectorAsync(IEnumerable<PineconeVector> vectors, bool isUser);
+        Task DeleteVectorAsync(string id, bool isUser);
     }
 }

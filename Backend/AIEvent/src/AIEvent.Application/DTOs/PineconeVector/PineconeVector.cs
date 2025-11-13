@@ -1,4 +1,4 @@
-﻿namespace AIEvent.Application.DTOs.AIRecommendation
+﻿namespace AIEvent.Application.DTOs.PineconeVector
 {
     public class PineconeVector
     {

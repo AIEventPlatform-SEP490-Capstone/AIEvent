@@ -1,7 +1,10 @@
-﻿namespace AIEvent.Application.DTOs.AIRecommendation
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace AIEvent.Application.DTOs.AIRecommendation
 {
     public class PromptRequest
     {
-        public required string UserPrompt { get; set; }
+        [Required(ErrorMessage = "Need context")]
+        public string UserPrompt { get; set; } = default!;
     }
 }

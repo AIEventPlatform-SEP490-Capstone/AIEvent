@@ -1,8 +1,7 @@
-﻿using AIEvent.Application.DTOs.AIRecommendation;
-using AIEvent.Application.DTOs.Booking;
-using AIEvent.Application.DTOs.Common;
+﻿using AIEvent.Application.DTOs.Booking;
 using AIEvent.Application.DTOs.InviteFriend;
-using AIEvent.Application.DTOs.Notification; 
+using AIEvent.Application.DTOs.Notification;
+using AIEvent.Application.DTOs.PineconeVector;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
@@ -370,7 +369,7 @@ namespace AIEvent.Application.Services.Implements
                     _logger.LogInformation("Sent refund notifications to {UserCount} users for cancelled event {EventId}", bookingsForNotification.Count, eventId);
                 }
 
-                await _pineconeVectorService.DeleteVectorAsync(eventId.ToString());
+                await _pineconeVectorService.DeleteVectorAsync(eventId.ToString(), isUser: false);
 
                 _logger.LogInformation("Deleted vector event {EventId}", eventId);
             }
@@ -485,7 +484,7 @@ namespace AIEvent.Application.Services.Implements
                     ["Introduction"] = user.Introduction ?? "",
                 };
 
-                await _pineconeVectorService.UpsertVectorAsync(user.Id.ToString(), embedding, metadata);
+                await _pineconeVectorService.UpsertVectorAsync(user.Id.ToString(), embedding, isUser: true, metadata);
 
                 _logger.LogInformation("Embedding stored successfully for user {UserId}", userId);
             }
@@ -597,7 +596,7 @@ namespace AIEvent.Application.Services.Implements
                     }
                 };
 
-                await _pineconeVectorService.UpsertVectorAsync(new[] { vector });
+                await _pineconeVectorService.UpsertVectorAsync(new[] { vector }, isUser: false);
 
                 _logger.LogInformation("Embedding stored successfully for Event {EventId}", eventEntity.Id);
             }
