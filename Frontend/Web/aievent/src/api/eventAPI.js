@@ -593,6 +593,75 @@ export const eventAPI = {
     
     return data;
   },
+
+  reportEvent: async ({ eventId, type, reason, attachmentUrl }) => {
+    const params = new URLSearchParams();
+    if (eventId) params.append("EventId", eventId);
+    if (type) params.append("Type", type);
+    if (reason) params.append("Reason", reason);
+    if (attachmentUrl) params.append("AttachmentUrl", attachmentUrl);
+
+    const response = await fetcher.post(`/event/report?${params.toString()}`);
+    return response.data?.data ?? response.data;
+  },
+
+  getUserReports: async (eventId) => {
+    const response = await fetcher.get(`/event/${eventId}/report/user`);
+    const data = response.data?.data;
+
+    if (!data) return [];
+    return Array.isArray(data) ? data : [data];
+  },
+
+  getEventReports: async (eventId, params = {}) => {
+    const queryParams = new URLSearchParams();
+
+    if (params.type) queryParams.append("type", params.type);
+    if (params.pageNumber) queryParams.append("pageNumber", params.pageNumber);
+    if (params.pageSize) queryParams.append("pageSize", params.pageSize);
+
+    const queryString = queryParams.toString();
+    const url = queryString ? `/event/${eventId}/report?${queryString}` : `/event/${eventId}/report`;
+
+    const response = await fetcher.get(url);
+    const data = response.data?.data ?? response.data ?? {};
+
+    const items = Array.isArray(data.items) ? data.items : [];
+    const totalItems = data.totalItems ?? items.length ?? 0;
+
+    return {
+      items,
+      totalItems,
+      currentPage: data.currentPage ?? params.pageNumber ?? 1,
+      totalPages: data.totalPages ?? 1,
+      pageSize: data.pageSize ?? params.pageSize ?? 10,
+      hasPreviousPage: data.hasPreviousPage ?? false,
+      hasNextPage: data.hasNextPage ?? false,
+    };
+  },
+
+  getEventReportDetail: async (reportId) => {
+    const response = await fetcher.get(`/event/report/${reportId}`);
+    return response.data?.data ?? response.data;
+  },
+
+  replyEventReport: async (reportId, replyText) => {
+    const trimmedReply = replyText?.trim();
+    if (!trimmedReply) {
+      throw new Error("Reply text is required");
+    }
+
+    const response = await fetcher.patch(
+      `/event/report/${reportId}/reply`,
+      null,
+      {
+        params: { Reply: trimmedReply },
+      }
+    );
+
+    return response.data?.data || response.data;
+  },
+  
 };
 
 export default eventAPI;

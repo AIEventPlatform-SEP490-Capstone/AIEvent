@@ -271,18 +271,18 @@ namespace AIEvent.Application.Services.Implements
 
                 var sb = new StringBuilder()
                             .AppendLine($"<p>Xin chào {request.FullName},</p>")
-                            .AppendLine($"<p>Hồ sơ đăng ký quản lí nền tảng AIEvent của bạn đã được <b>chấp thuận</b>.</p>")
-                            .AppendLine("<p>Thông tin đăng nhập của bạn:</p>")
+                            .AppendLine($"<p>Hồ sơ đăng ký quản lí nền tảng AIEvent của bạn đã được <b>khởi tạo thành công</b>.</p>")
+                            .AppendLine("<p>Thông tin đăng nhập của bạn là:</p>")
                             .AppendLine("<ul>")
                             .AppendLine($"<li>Email: <b>{request.Email}</b></li>")
                             .AppendLine($"<li>Mật khẩu: <b>{request.Password}</b></li>")
                             .AppendLine("</ul>")
-                            .AppendLine("<p>Vui lòng đăng nhập và <b>đổi mật khẩu ngay</b> sau khi truy cập để đảm bảo an toàn.</p>")
+                            .AppendLine("<p>Vui lòng đăng nhập và thực hiện <b>đổi mật khẩu ngay</b> sau khi truy cập để đảm bảo an toàn.</p>")
                             .AppendLine("<p>Trân trọng,<br/>Đội ngũ AIEvent</p>");
 
                 MimeMessage msg = new()
                 {
-                    Subject = "Tài khoản quản lí nền tảng AIEvent của bạn đã được chấp thuận",
+                    Subject = "Tài khoản Quản Trị Viên nền tảng AIEvent của bạn đã được tạo!",
                     Body = new TextPart("html") { Text = sb.ToString() }
                 };
 
@@ -370,18 +370,19 @@ namespace AIEvent.Application.Services.Implements
 
                 var sb = new StringBuilder()
                             .AppendLine($"<p>Xin chào {request.FullName},</p>")
-                            .AppendLine($"<p>Hồ sơ đăng ký nhân viên tổ chức <b>{organizer.CompanyName}</b> nền tảng AIEvent của bạn đã được <b>chấp thuận</b>.</p>")
-                            .AppendLine("<p>Thông tin đăng nhập của bạn:</p>")
+                            .AppendLine($"<p>Hồ sơ đăng ký nhân viên tổ chức <b>{organizer.CompanyName}</b> nền tảng AIEvent của bạn đã được <b>tạo thành công</b>.</p>")
+                            .AppendLine("<p>Thông tin đăng nhập của bạn là:</p>")
                             .AppendLine("<ul>")
                             .AppendLine($"<li>Email: <b>{request.Email}</b></li>")
                             .AppendLine($"<li>Mật khẩu: <b>{request.Password}</b></li>")
                             .AppendLine("</ul>")
-                            .AppendLine("<p>Vui lòng đăng nhập và <b>đổi mật khẩu ngay</b> sau khi truy cập để đảm bảo an toàn.</p>")
+                            .AppendLine("<p>Vui lòng giữ <b> bảo mật và không để lộ </b> thông tin ra ngoài dẫn đến các sự cố không muốn.</p>")
+                            .AppendLine("<p>Nền tảng không <b> chịu bất kỳ trách nhiệm </b> nào cho trường hợp thông tin bị rò rỉ hoặc không nhớ thông tin.</p>")
                             .AppendLine("<p>Trân trọng,<br/>Đội ngũ AIEvent</p>");
 
                 MimeMessage msg = new()
                 {
-                    Subject = "Tài khoản nhân viên nền tảng AIEvent của bạn đã được chấp thuận",
+                    Subject = "Tài khoản nhân viên nền tảng AIEvent của bạn đã tạo",
                     Body = new TextPart("html") { Text = sb.ToString() }
                 };
 

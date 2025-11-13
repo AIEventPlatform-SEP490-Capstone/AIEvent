@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
-import { 
-  Calendar, 
-  MapPin, 
-  Users, 
+import {
+  Calendar,
+  MapPin,
+  Users,
   Clock,
   Search,
   Eye,
@@ -16,7 +16,9 @@ import {
   Download,
   TrendingUp,
   Shield,
-  Plus
+  Plus,
+  Flag,
+  Loader2,
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
@@ -26,15 +28,18 @@ import { Badge } from '../../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Textarea } from '../../components/ui/textarea';
 import { Label } from '../../components/ui/label';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
 } from '../../components/ui/dialog';
 import { useEvents } from '../../hooks/useEvents';
 import { PATH } from '../../routes/path';
+import eventAPI from '../../api/eventAPI';
+import EventReportManager from '../../components/Manager/EventReportManager';
 
 // Import EventStatus constants
 import { EventStatus, EventStatusDisplay } from '../../constants/eventConstants';
@@ -61,6 +66,9 @@ const ManagerEventsPage = () => {
   const initiationDropdownRef = useRef(null);
   const completionDropdownRef = useRef(null);
   const pageSize = 12;
+  const [reportCounts, setReportCounts] = useState({});
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [reportDialogEvent, setReportDialogEvent] = useState(null);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -88,11 +96,11 @@ const ManagerEventsPage = () => {
       setInitiationDropdownLabel('Đã phê duyệt');
     } else if (activeTab === EventStatus.Rejected) {
       setInitiationDropdownLabel('Bị từ chối');
-    } 
+    }
     // Reset initiation dropdown to default when selecting completion statuses or other main tabs
-    else if ([EventStatus.PendingApprovalEnd, EventStatus.RejectEnded, 
-              EventStatus.WaitingForPayout, EventStatus.Ended, 
-              'all', EventStatus.Cancelled].includes(activeTab)) {
+    else if ([EventStatus.PendingApprovalEnd, EventStatus.RejectEnded,
+    EventStatus.WaitingForPayout, EventStatus.Ended,
+      'all', EventStatus.Cancelled].includes(activeTab)) {
       setInitiationDropdownLabel('Khởi tạo sự kiện');
     }
 
@@ -107,8 +115,8 @@ const ManagerEventsPage = () => {
       setCompletionDropdownLabel('Đã kết thúc');
     }
     // Reset completion dropdown to default when selecting initiation statuses or other main tabs
-    else if ([EventStatus.PendingApproval, EventStatus.Approved, 
-              EventStatus.Rejected, 'all', EventStatus.Cancelled].includes(activeTab)) {
+    else if ([EventStatus.PendingApproval, EventStatus.Approved,
+    EventStatus.Rejected, 'all', EventStatus.Cancelled].includes(activeTab)) {
       setCompletionDropdownLabel('Kết thúc sự kiện');
     }
   }, [activeTab]);
@@ -118,7 +126,7 @@ const ManagerEventsPage = () => {
     // Check for tab parameter in URL
     const urlParams = new URLSearchParams(location.search);
     const tabParam = urlParams.get('tab');
-    
+
     if (tabParam && tabParam !== activeTab) {
       setActiveTab(tabParam);
     } else {
@@ -137,13 +145,14 @@ const ManagerEventsPage = () => {
     }
   }, [searchTerm, filterStatus, sortBy, allEvents]);
 
+
   const loadEvents = async () => {
     try {
       setIsLoading(true);
       // Clear existing events immediately when switching tabs
       setEvents([]);
       setAllEvents([]);
-      
+
       let response;
       if (activeTab === 'all') {
         // For the 'all' tab, we want to show all events including all approval statuses
@@ -160,11 +169,11 @@ const ManagerEventsPage = () => {
           getEventsByStatus({ search: '', status: EventStatus.WaitingForPayout, pageNumber: 1, pageSize: 1000 }),
           getEventsByStatus({ search: '', status: EventStatus.Ended, pageNumber: 1, pageSize: 1000 })
         ]);
-        
+
         // Combine all events and remove duplicates
         const combinedEvents = [];
         const eventIds = new Set();
-        
+
         allResponses.forEach(resp => {
           if (resp && resp.items) {
             resp.items.forEach(event => {
@@ -183,7 +192,7 @@ const ManagerEventsPage = () => {
             });
           }
         });
-        
+
         response = { items: combinedEvents, totalCount: combinedEvents.length };
       } else {
         // Load events by specific status
@@ -194,8 +203,6 @@ const ManagerEventsPage = () => {
           pageSize: 1000,
         });
       }
-
-      console.log('Events response:', response);
 
       if (response) {
         const eventsData = response.items || response || [];
@@ -222,25 +229,22 @@ const ManagerEventsPage = () => {
 
     let filtered = [...dataToFilter];
 
-    console.log('Applying filters:', { searchTerm, filterStatus, sortBy, activeTab, eventsCount: filtered.length });
-
     // Apply search filter
     if (searchTerm && searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase().trim();
-      filtered = filtered.filter(event => 
+      filtered = filtered.filter(event =>
         (event.title && event.title.toLowerCase().includes(searchLower)) ||
         (event.description && event.description.toLowerCase().includes(searchLower)) ||
         (event.locationName && event.locationName.toLowerCase().includes(searchLower)) ||
         (event.eventCategoryName && event.eventCategoryName.toLowerCase().includes(searchLower))
       );
-      console.log('After search filter:', filtered.length);
     }
 
     // Apply status filter - but only for time-based filters, not approval status tabs
     // Approval status tabs (NeedConfirm, Approve, Reject) are handled by the API call
     const isApprovalTab = [
-      EventStatus.PendingApproval, 
-      EventStatus.Approved, 
+      EventStatus.PendingApproval,
+      EventStatus.Approved,
       EventStatus.Rejected,
       EventStatus.Cancelled,
       EventStatus.PendingApprovalEnd,
@@ -248,22 +252,20 @@ const ManagerEventsPage = () => {
       EventStatus.WaitingForPayout,
       EventStatus.Ended
     ].includes(activeTab);
-    
+
     if (filterStatus && filterStatus !== 'all' && !isApprovalTab) {
       filtered = filtered.filter(event => {
         const status = getEventStatus(event);
         return status === filterStatus;
       });
-      console.log('After status filter:', filtered.length);
     }
-    
+
     // If filterStatus is one of the EventStatus values, apply it regardless of activeTab
     if (filterStatus && filterStatus !== 'all' && Object.values(EventStatus).includes(filterStatus)) {
       filtered = filtered.filter(event => {
         const eventStatus = 'status' in event ? event.status : null;
         return eventStatus === filterStatus;
       });
-      console.log('After EventStatus filter:', filtered.length);
     }
 
     // Apply sorting
@@ -284,7 +286,6 @@ const ManagerEventsPage = () => {
       });
     }
 
-    console.log('Final filtered events:', filtered.length);
     setEvents(filtered);
     setTotalPages(Math.ceil(filtered.length / pageSize));
     setCurrentPage(1); // Reset to first page when filtering
@@ -302,10 +303,10 @@ const ManagerEventsPage = () => {
     // Find event name for better confirmation
     const event = allEvents.find(e => e.eventId === eventId);
     const eventName = event?.title || 'sự kiện này';
-    
+
     // Check if event has bookings that require a reason
     const hasBookings = event?.totalPersonJoin > 0;
-    
+
     if (hasBookings) {
       // For events with bookings, show prompt for reason
       const reason = prompt(`Bạn có chắc chắn muốn xóa "${eventName}"?
@@ -313,12 +314,12 @@ const ManagerEventsPage = () => {
 ⚠️ Sự kiện này đã có ${event.totalPersonJoin} người đăng ký.
 
 Vui lòng nhập lý do hủy bỏ sự kiện:`);
-      
+
       if (reason === null) {
         // User cancelled
         return;
       }
-      
+
       if (!reason.trim()) {
         toast.error('Vui lòng nhập lý do hủy bỏ sự kiện');
         return;
@@ -326,20 +327,20 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
 
       try {
         const loadingToast = toast.loading('Đang xóa sự kiện...');
-        
+
         const response = await deleteEventAPI(eventId, reason.trim());
-        
+
         toast.dismiss(loadingToast);
-        
+
         if (response !== null) {
           toast.success('✅ Xóa sự kiện thành công!', {
             duration: 3000,
           });
-          
+
           // Update local state immediately for better UX
           setAllEvents(prev => prev.filter(event => event.eventId !== eventId));
           setEvents(prev => prev.filter(event => event.eventId !== eventId));
-          
+
           // Reload to sync with server
           loadEvents();
         }
@@ -358,27 +359,27 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
     } else {
       // For events without bookings, use simple confirmation
       const confirmMessage = `Bạn có chắc chắn muốn xóa "${eventName}"?\n\n⚠️ Hành động này không thể hoàn tác!`;
-      
+
       if (!window.confirm(confirmMessage)) {
         return;
       }
 
       try {
         const loadingToast = toast.loading('Đang xóa sự kiện...');
-        
+
         const response = await deleteEventAPI(eventId);
-        
+
         toast.dismiss(loadingToast);
-        
+
         if (response !== null) {
           toast.success('✅ Xóa sự kiện thành công!', {
             duration: 3000,
           });
-          
+
           // Update local state immediately for better UX
           setAllEvents(prev => prev.filter(event => event.eventId !== eventId));
           setEvents(prev => prev.filter(event => event.eventId !== eventId));
-          
+
           // Reload to sync with server
           loadEvents();
         }
@@ -403,7 +404,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       const response = await confirmEventAPI(eventId, {
         status: EventStatus.Approved
       });
-      
+
       if (response) {
         toast.success('Sự kiện đã được phê duyệt thành công!');
         loadEvents();
@@ -420,13 +421,13 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       toast.error('Vui lòng nhập lý do từ chối');
       return;
     }
-    
+
     try {
       const response = await confirmEventAPI(eventId, {
         status: EventStatus.Rejected,
         reason: reason
       });
-      
+
       if (response) {
         toast.success('Sự kiện đã bị từ chối!');
         setRejectionReason('');
@@ -436,6 +437,23 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       console.error('Error rejecting event:', error);
       toast.error('Có lỗi xảy ra khi từ chối sự kiện');
     }
+  };
+
+  const handleOpenReports = (event) => {
+    setReportDialogEvent(event);
+    setIsReportDialogOpen(true);
+  };
+
+  const handleCloseReports = () => {
+    setIsReportDialogOpen(false);
+    setReportDialogEvent(null);
+  };
+
+  const handleReportCountChange = (eventId, count) => {
+    setReportCounts((prev) => ({
+      ...prev,
+      [eventId]: count,
+    }));
   };
 
   const formatDate = (dateString) => {
@@ -453,14 +471,14 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
     // Handle both string enum names and number values
     if (ticketType === 1 || ticketType === "Free" || ticketType === "free" || ticketType === "Miễn phí") return 'Miễn phí';
     if (ticketType === 2 || ticketType === "Paid" || ticketType === "paid" || ticketType === "Có phí") return 'Có phí';
-    
+
     // Additional check for string values (case insensitive)
     if (typeof ticketType === 'string') {
       const lowerTicketType = ticketType.toLowerCase();
       if (lowerTicketType === 'free') return 'Miễn phí';
       if (lowerTicketType === 'paid') return 'Có phí';
     }
-    
+
     // Default fallback
     return 'Không xác định';
   };
@@ -492,14 +510,14 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
 
   const getEventStats = () => {
     if (!allEvents.length) return { total: 0, upcoming: 0, ongoing: 0, completed: 0, pendingApprovals: 0 };
-    
+
     // When on a specific approval tab, we should count based on that tab
     if (activeTab === EventStatus.PendingApproval) {
       // Count events needing approval
-      const pendingApprovals = allEvents.filter(event => 
+      const pendingApprovals = allEvents.filter(event =>
         'status' in event && event.status === EventStatus.PendingApproval
       ).length;
-      
+
       return {
         total: allEvents.length,
         upcoming: 0,
@@ -508,7 +526,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
         pendingApprovals: pendingApprovals
       };
     }
-    
+
     if (activeTab === EventStatus.Approved) {
       // Count approved events
       return {
@@ -519,7 +537,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
         pendingApprovals: 0
       };
     }
-    
+
     if (activeTab === EventStatus.Rejected) {
       // Count rejected events
       return {
@@ -530,7 +548,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
         pendingApprovals: 0
       };
     }
-    
+
     if (activeTab === EventStatus.Cancelled) {
       // Count cancelled events
       return {
@@ -541,7 +559,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
         pendingApprovals: 0
       };
     }
-    
+
     if (activeTab === EventStatus.PendingApprovalEnd) {
       // Count pending approval end events
       return {
@@ -552,7 +570,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
         pendingApprovals: 0
       };
     }
-    
+
     if (activeTab === EventStatus.RejectEnded) {
       // Count reject ended events
       return {
@@ -563,7 +581,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
         pendingApprovals: 0
       };
     }
-    
+
     if (activeTab === EventStatus.WaitingForPayout) {
       // Count waiting for payout events
       return {
@@ -574,7 +592,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
         pendingApprovals: 0
       };
     }
-    
+
     if (activeTab === EventStatus.Ended) {
       // Count ended events
       return {
@@ -585,15 +603,15 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
         pendingApprovals: 0
       };
     }
-    
+
     // For 'all' tab, calculate based on time-based status
     return allEvents.reduce((acc, event) => {
       const status = getEventStatus(event);
-      
+
       // Count events needing approval - check if property exists before accessing
       // EventsRawResponse doesn't have requireApproval property
       const pendingApproval = ('status' in event && event.status === EventStatus.PendingApproval) ? 1 : 0;
-      
+
       return {
         total: acc.total + 1,
         upcoming: acc.upcoming + (status === 'upcoming' ? 1 : 0),
@@ -607,36 +625,84 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
   // Handle search input change
   const handleSearchChange = (e) => {
     const value = e.target.value;
-    console.log('Search term changed:', value);
     setSearchTerm(value);
   };
 
   // Handle sort change
   const handleSortChange = (value) => {
-    console.log('Sort changed:', value);
     setSortBy(value);
   };
 
   // Handle status filter change
   const handleStatusFilter = (status) => {
-    console.log('Status filter changed:', status);
     setFilterStatus(status);
   };
 
   // Handle clear all filters
   const handleClearFilters = () => {
-    console.log('Clearing all filters');
     setSearchTerm('');
     setFilterStatus('all');
     setSortBy('newest');
   };
 
   const stats = getEventStats();
-  
+
   // Pagination for current events
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedEvents = events.slice(startIndex, endIndex);
+  const paginatedEvents = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return events.slice(startIndex, startIndex + pageSize);
+  }, [events, currentPage, pageSize]);
+
+  useEffect(() => {
+    const idsToFetch = paginatedEvents
+      .map((event) => event?.eventId)
+      .filter((eventId) => eventId && reportCounts[eventId] === undefined);
+
+    if (!idsToFetch.length) return;
+
+    let isCancelled = false;
+
+    const preloadCounts = async () => {
+      try {
+        const results = await Promise.all(
+          idsToFetch.map(async (eventId) => {
+            const response = await eventAPI.getEventReports(eventId, { pageNumber: 1, pageSize: 1 });
+            const count = response.totalItems ?? (response.items?.length ?? 0);
+            return { eventId, count };
+          })
+        );
+
+        if (isCancelled) return;
+
+        setReportCounts((prev) => {
+          const next = { ...prev };
+          results.forEach(({ eventId, count }) => {
+            next[eventId] = count;
+          });
+          return next;
+        });
+      } catch (error) {
+        console.error('Error preloading event report counts:', error);
+        if (!isCancelled) {
+          setReportCounts((prev) => {
+            const next = { ...prev };
+            idsToFetch.forEach((eventId) => {
+              if (next[eventId] === undefined) {
+                next[eventId] = 0;
+              }
+            });
+            return next;
+          });
+        }
+      }
+    };
+
+    preloadCounts();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [paginatedEvents, reportCounts]);
 
   // Get event image
   const getEventImage = (event) => {
@@ -773,15 +839,14 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
               setShowCompletionDropdown(false);
               navigate(PATH.MANAGER_EVENTS);
             }}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'all'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'all'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+              }`}
           >
             Tất cả sự kiện
           </button>
-          
+
           {/* Event Initiation Dropdown */}
           <div className="relative" ref={initiationDropdownRef}>
             <button
@@ -789,18 +854,17 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                 setShowInitiationDropdown(!showInitiationDropdown);
                 setShowCompletionDropdown(false);
               }}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${
-                [EventStatus.PendingApproval, EventStatus.Approved, EventStatus.Rejected].includes(activeTab)
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${[EventStatus.PendingApproval, EventStatus.Approved, EventStatus.Rejected].includes(activeTab)
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+                }`}
             >
               {initiationDropdownLabel}
               <svg className={`ml-1 w-4 h-4 transition-transform ${showInitiationDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
-            
+
             {showInitiationDropdown && (
               <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10">
                 <button
@@ -809,11 +873,10 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                     setShowInitiationDropdown(false);
                     navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.PendingApproval}`);
                   }}
-                  className={`block w-full text-left px-4 py-2 text-sm ${
-                    activeTab === EventStatus.PendingApproval
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
+                  className={`block w-full text-left px-4 py-2 text-sm ${activeTab === EventStatus.PendingApproval
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-gray-700 hover:bg-gray-100'
+                    }`}
                 >
                   Chờ phê duyệt
                   {stats.pendingApprovals > 0 && (
@@ -828,11 +891,10 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                     setShowInitiationDropdown(false);
                     navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.Approved}`);
                   }}
-                  className={`block w-full text-left px-4 py-2 text-sm ${
-                    activeTab === EventStatus.Approved
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
+                  className={`block w-full text-left px-4 py-2 text-sm ${activeTab === EventStatus.Approved
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-gray-700 hover:bg-gray-100'
+                    }`}
                 >
                   Đã phê duyệt
                 </button>
@@ -842,18 +904,17 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                     setShowInitiationDropdown(false);
                     navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.Rejected}`);
                   }}
-                  className={`block w-full text-left px-4 py-2 text-sm ${
-                    activeTab === EventStatus.Rejected
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
+                  className={`block w-full text-left px-4 py-2 text-sm ${activeTab === EventStatus.Rejected
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-gray-700 hover:bg-gray-100'
+                    }`}
                 >
                   Bị từ chối
                 </button>
               </div>
             )}
           </div>
-          
+
           {/* Event Completion Dropdown */}
           <div className="relative" ref={completionDropdownRef}>
             <button
@@ -861,18 +922,17 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                 setShowCompletionDropdown(!showCompletionDropdown);
                 setShowInitiationDropdown(false);
               }}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${
-                [EventStatus.PendingApprovalEnd, EventStatus.RejectEnded, EventStatus.WaitingForPayout, EventStatus.Ended].includes(activeTab)
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${[EventStatus.PendingApprovalEnd, EventStatus.RejectEnded, EventStatus.WaitingForPayout, EventStatus.Ended].includes(activeTab)
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+                }`}
             >
               {completionDropdownLabel}
               <svg className={`ml-1 w-4 h-4 transition-transform ${showCompletionDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
-            
+
             {showCompletionDropdown && (
               <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10">
                 <button
@@ -881,11 +941,10 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                     setShowCompletionDropdown(false);
                     navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.PendingApprovalEnd}`);
                   }}
-                  className={`block w-full text-left px-4 py-2 text-sm ${
-                    activeTab === EventStatus.PendingApprovalEnd
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
+                  className={`block w-full text-left px-4 py-2 text-sm ${activeTab === EventStatus.PendingApprovalEnd
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-gray-700 hover:bg-gray-100'
+                    }`}
                 >
                   Chờ kết thúc
                 </button>
@@ -895,11 +954,10 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                     setShowCompletionDropdown(false);
                     navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.RejectEnded}`);
                   }}
-                  className={`block w-full text-left px-4 py-2 text-sm ${
-                    activeTab === EventStatus.RejectEnded
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
+                  className={`block w-full text-left px-4 py-2 text-sm ${activeTab === EventStatus.RejectEnded
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-gray-700 hover:bg-gray-100'
+                    }`}
                 >
                   Từ chối kết thúc
                 </button>
@@ -909,11 +967,10 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                     setShowCompletionDropdown(false);
                     navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.WaitingForPayout}`);
                   }}
-                  className={`block w-full text-left px-4 py-2 text-sm ${
-                    activeTab === EventStatus.WaitingForPayout
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
+                  className={`block w-full text-left px-4 py-2 text-sm ${activeTab === EventStatus.WaitingForPayout
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-gray-700 hover:bg-gray-100'
+                    }`}
                 >
                   Chờ thanh toán
                 </button>
@@ -923,18 +980,17 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                     setShowCompletionDropdown(false);
                     navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.Ended}`);
                   }}
-                  className={`block w-full text-left px-4 py-2 text-sm ${
-                    activeTab === EventStatus.Ended
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
+                  className={`block w-full text-left px-4 py-2 text-sm ${activeTab === EventStatus.Ended
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-gray-700 hover:bg-gray-100'
+                    }`}
                 >
                   Đã kết thúc
                 </button>
               </div>
             )}
           </div>
-          
+
           <button
             onClick={() => {
               setActiveTab(EventStatus.Cancelled);
@@ -942,11 +998,10 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
               setShowCompletionDropdown(false);
               navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.Cancelled}`);
             }}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === EventStatus.Cancelled
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === EventStatus.Cancelled
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+              }`}
           >
             Đã hủy
           </button>
@@ -964,13 +1019,13 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
           <CardContent className="p-8 text-center">
             <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-700 mb-2">
-              {allEvents.length === 0 
-                ? 'Chưa có sự kiện nào' 
+              {allEvents.length === 0
+                ? 'Chưa có sự kiện nào'
                 : 'Không có sự kiện'
               }
             </h3>
             <p className="text-gray-500 mb-6">
-              {allEvents.length === 0 
+              {allEvents.length === 0
                 ? 'Bắt đầu quản lý sự kiện trong hệ thống!'
                 : `Không có sự kiện nào trong danh mục "${getTabDisplayName(activeTab)}".`
               }
@@ -982,6 +1037,8 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
           {paginatedEvents.map((event) => {
             const eventImage = getEventImage(event);
             const eventStatus = 'status' in event ? event.status : null;
+            const eventReportCount = reportCounts[event.eventId];
+            const displayReportCount = typeof eventReportCount === 'number' ? eventReportCount : '…';
 
             return (
               <Card key={event.eventId} className="hover:shadow-md transition-shadow">
@@ -1005,20 +1062,20 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <h3 
+                            <h3
                               className="text-lg font-semibold text-balance hover:text-blue-600 cursor-pointer"
                               onClick={() => handleViewEvent(event.eventId)}
                             >
                               {event.title}
                             </h3>
                             {eventStatus && (
-                              <Badge 
-                                variant="outline" 
+                              <Badge
+                                variant="outline"
                                 className={
-                                  eventStatus === EventStatus.Approved 
-                                    ? 'text-green-600 border-green-200 bg-green-50' 
-                                    : eventStatus === EventStatus.Rejected 
-                                      ? 'text-red-600 border-red-200 bg-red-50' 
+                                  eventStatus === EventStatus.Approved
+                                    ? 'text-green-600 border-green-200 bg-green-50'
+                                    : eventStatus === EventStatus.Rejected
+                                      ? 'text-red-600 border-red-200 bg-red-50'
                                       : eventStatus === EventStatus.Cancelled
                                         ? 'text-gray-600 border-gray-200 bg-gray-50'
                                         : eventStatus === EventStatus.PendingApprovalEnd
@@ -1128,13 +1185,26 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => handleViewEvent(event.eventId)}
                           >
                             <Eye className="w-4 h-4 mr-2" />
                             Xem chi tiết
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenReports(event)}
+                            className="relative"
+                          >
+                            <Flag className="w-4 h-4 mr-2 text-red-600" />
+                            Báo cáo
+                            <span className="ml-2 inline-flex min-w-[1.5rem] items-center justify-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
+                              {displayReportCount}
+                            </span>
                           </Button>
 
                           {eventStatus === EventStatus.PendingApproval && (
@@ -1149,9 +1219,9 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                               </Button>
                               <Dialog>
                                 <DialogTrigger asChild>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
                                     className="bg-red-600 hover:bg-red-700 text-white border-red-600"
                                   >
                                     <XCircle className="w-4 h-4 mr-2" />
@@ -1196,9 +1266,9 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                             </>
                           )}
 
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="bg-transparent"
                             onClick={() => handleDeleteEvent(event.eventId)}
                           >
@@ -1246,6 +1316,15 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
           </Button>
         </div>
       )}
+
+      {/* Event Report Manager Component */}
+      <EventReportManager
+        event={reportDialogEvent}
+        isOpen={isReportDialogOpen}
+        onClose={handleCloseReports}
+        onReportCountChange={handleReportCountChange}
+      />
+
     </div>
   );
 };

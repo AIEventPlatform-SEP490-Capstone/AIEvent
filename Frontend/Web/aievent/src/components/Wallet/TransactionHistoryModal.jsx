@@ -223,7 +223,7 @@ const TransactionHistoryModal = ({ isOpen, onClose, walletId }) => {
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <Input
-                  placeholder="Tìm kiếm theo mô tả hoặc mã giao dịch..."
+                  placeholder="Tìm kiếm theo mô tả..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-12 h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-base"
@@ -350,8 +350,8 @@ const TransactionHistoryModal = ({ isOpen, onClose, walletId }) => {
                   <p className="text-gray-500 text-lg">Bắt đầu với giao dịch đầu tiên của bạn</p>
                 </div>
               ) : (
-                paginatedTransactions.map((transaction) => (
-                  <Card key={transaction.orderCode} className="p-8 hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-blue-300 hover:-translate-y-1">
+                paginatedTransactions.map((transaction, idx) => (
+                  <Card key={transaction.orderCode || `transaction-${transaction.createdAt}-${idx}`} className="p-8 hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-blue-300 hover:-translate-y-1">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-6">
                         <div className={`p-4 rounded-2xl ${
@@ -383,10 +383,6 @@ const TransactionHistoryModal = ({ isOpen, onClose, walletId }) => {
                             <span className="flex items-center space-x-2">
                               <Calendar className="h-4 w-4" />
                               <span className="font-medium">{formatDate(transaction.createdAt)}</span>
-                            </span>
-                            <span>•</span>
-                            <span className="font-mono text-sm bg-gray-100 px-3 py-1 rounded-lg">
-                              {transaction.orderCode}
                             </span>
                           </div>
                         </div>
