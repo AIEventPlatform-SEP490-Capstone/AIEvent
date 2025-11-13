@@ -50,12 +50,26 @@ namespace AIEvent.Application.Services.Implements
             return content ?? string.Empty;
         }
          
-        public async Task<string> GenerateRAGResponseAsync(string query, List<string> contexts)
+        public async Task<string> GenerateRAGResponseAsync(string query, List<string> contexts, List<(string prompt, string response)>? chatHistory = null)
         {
             var contextText = string.Join("\n---\n", contexts);
 
+            var chatHistoryText = "";
+            if (chatHistory != null && chatHistory.Any())
+            {
+                var historyItems = chatHistory.Select((h, index) => 
+                    $@"Cuộc hội thoại {index + 1}:
+                    - Người dùng: {h.prompt}
+                    - Trợ lý: {h.response}").ToList();
+                chatHistoryText = $@"
+            Lịch sử hội thoại trước đó (để hiểu rõ hơn về sở thích và yêu cầu của người dùng):
+            {string.Join("\n\n", historyItems)}
+            ";
+            }
+
             var prompt = $@"
             Người dùng hỏi: ""{query}"".
+            {chatHistoryText}
             Dưới đây là danh sách sự kiện liên quan (ngữ cảnh):
             {contextText}
 
@@ -75,6 +89,31 @@ namespace AIEvent.Application.Services.Implements
             ";
 
             return await GenerateTextAsync(prompt);
+        }
+
+        public async Task<string> GenerateSessionNameAsync(string prompt)
+        {
+            var sessionNamePrompt = $@"
+            Dựa vào câu hỏi sau đây của người dùng, hãy tạo một tiêu đề ngắn gọn (tối đa 50 ký tự) để đặt tên cho cuộc hội thoại này.
+            Chỉ trả về tiêu đề, không có giải thích hay ký tự đặc biệt.
+
+            Câu hỏi: ""{prompt}""
+            ";
+
+            var sessionName = await GenerateTextAsync(sessionNamePrompt);
+             
+            sessionName = sessionName.Trim();
+            if (sessionName.Length > 50)
+            {
+                sessionName = sessionName.Substring(0, 50).Trim();
+            }
+             
+            if (string.IsNullOrWhiteSpace(sessionName) || sessionName.Length < 3)
+            {
+                sessionName = prompt.Length > 50 ? prompt.Substring(0, 50) + "..." : prompt;
+            }
+
+            return sessionName;
         }
     }
 }

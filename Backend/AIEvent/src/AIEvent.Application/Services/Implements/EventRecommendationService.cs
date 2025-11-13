@@ -1,10 +1,12 @@
 ﻿using AIEvent.Application.Constants;
+using AIEvent.Application.DTOs.AIRecommendation;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
 using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
+using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -30,10 +32,38 @@ namespace AIEvent.Application.Services.Implements
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<Result<string>> RecommendEventsAsync(string userPrompt, int topK = 5)
+        public async Task<Result<string>> RecommendEventsAsync(string userPrompt, Guid? userId = null, Guid? sessionId = null, int topK = 5)
         {
             if (string.IsNullOrWhiteSpace(userPrompt))
                 throw new ArgumentException("Prompt không được để trống.");
+             
+            List<(string prompt, string response)>? chatHistory = null;
+             
+            if (sessionId.HasValue && userId.HasValue)
+            {
+                try
+                {
+                    var recentChats = await _unitOfWork.ChatLogRepository.FindPagedAsync(
+                        c => c.UserId == userId.Value && c.Session == sessionId.Value,
+                        0,
+                        5,
+                        c => c.CreatedAt,
+                        sortDescending: true);
+
+                    if (recentChats.Any())
+                    { 
+                        var chatList = recentChats.ToList();
+                        chatList.Reverse();
+                        chatHistory = chatList
+                            .Select(c => (c.Prompt, c.Response))
+                            .ToList();
+                    }
+                }
+                catch
+                { 
+                    chatHistory = null;
+                }
+            }
              
             var queryEmbedding = await _voyageEmbeddingService.GetEmbeddingAsync(userPrompt);
              
@@ -56,7 +86,7 @@ namespace AIEvent.Application.Services.Implements
                 meta.TryGetValue("StartTime", out var start);
                 meta.TryGetValue("EndTime", out var end);
                 meta.TryGetValue("Tickets", out var tickets);
-                var eventUrl = eventId != null ? $"/events/{eventId}" : "#";
+                var eventUrl = eventId != null ? $"http://localhost:5173/event/{eventId}" : "#";
                 return $@"
                     - {title ?? "Sự kiện"} ({category ?? "Không rõ danh mục"})
                       Địa điểm: {(location ?? address ?? "Không rõ")} - {district ?? ""}
@@ -68,7 +98,82 @@ namespace AIEvent.Application.Services.Implements
                     ";
             }).ToList();
              
-            var response = await _llmService.GenerateRAGResponseAsync(userPrompt, contexts);
+            ChatLog? chatLog = null;
+            if (userId.HasValue)
+            { 
+                Guid finalSessionId;
+                string sessionName;
+
+                if (sessionId.HasValue)
+                { 
+                    finalSessionId = sessionId.Value;
+                     
+                    try
+                    {
+                        var existingSession = await _unitOfWork.ChatLogRepository.FindAsync(
+                            c => c.UserId == userId.Value && c.Session == sessionId.Value);
+                        var existingChat = existingSession.FirstOrDefault();
+                        sessionName = existingChat?.SessionName ?? (userPrompt.Length > 50 ? userPrompt.Substring(0, 50) + "..." : userPrompt);
+                    }
+                    catch
+                    { 
+                        sessionName = userPrompt.Length > 50 ? userPrompt.Substring(0, 50) + "..." : userPrompt;
+                    }
+                }
+                else
+                { 
+                    finalSessionId = Guid.NewGuid();
+                     
+                    try
+                    {
+                        sessionName = await _llmService.GenerateSessionNameAsync(userPrompt);
+                        if (string.IsNullOrWhiteSpace(sessionName))
+                        {
+                            sessionName = userPrompt.Length > 50 ? userPrompt.Substring(0, 50) + "..." : userPrompt;
+                        }
+                    }
+                    catch 
+                    {  
+                        sessionName = userPrompt.Length > 50 ? userPrompt.Substring(0, 50) + "..." : userPrompt;
+                    }
+                }
+
+                try
+                { 
+                    chatLog = new ChatLog
+                    {
+                        UserId = userId.Value,
+                        Prompt = userPrompt,
+                        Response = "",  
+                        Session = finalSessionId,
+                        SessionName = sessionName,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    chatLog = await _unitOfWork.ChatLogRepository.AddAsync(chatLog);
+                }
+                catch (Exception ex)
+                { 
+                    Console.WriteLine($"Error saving chat log (prompt): {ex.Message}");
+                }
+            }
+
+            var response = await _llmService.GenerateRAGResponseAsync(userPrompt, contexts, chatHistory);
+            
+            if (string.IsNullOrWhiteSpace(response))
+                response = "Xin lỗi, tôi không thể tạo phản hồi lúc này. Vui lòng thử lại sau.";
+ 
+            if (chatLog != null && !string.IsNullOrEmpty(chatLog.Id))
+            {
+                try
+                {
+                    chatLog.Response = response;
+                    await _unitOfWork.ChatLogRepository.UpdateAsync(chatLog);
+                }
+                catch (Exception ex)
+                { 
+                    Console.WriteLine($"Error updating chat log (response): {ex.Message}");
+                }
+            }
 
             return response;
         }
@@ -166,6 +271,80 @@ namespace AIEvent.Application.Services.Implements
 
             return new BasePaginated<EventsResponse>(result, totalCount, pageNumber, pageSize);
         }
+
+        public async Task<Result<BasePaginated<ChatLogResponse>>> GetChatHistoryAsync(Guid userId, Guid? sessionId = null, int pageNumber = 1, int pageSize = 10)
+        {
+            if (!sessionId.HasValue)
+            {
+                return new BasePaginated<ChatLogResponse>(new List<ChatLogResponse>(), 0, pageNumber, pageSize);
+            }
+
+            long totalCount = await _unitOfWork.ChatLogRepository.CountAsync(
+                c => c.UserId == userId && c.Session == sessionId.Value);
+            
+            var chatLogs = await _unitOfWork.ChatLogRepository.FindPagedAsync(
+                c => c.UserId == userId && c.Session == sessionId.Value,
+                (pageNumber - 1) * pageSize,
+                pageSize,
+                c => c.CreatedAt,
+                sortDescending: true);
+
+            var result = chatLogs.Select(c => new ChatLogResponse
+            {
+                Id = c.Id,
+                Prompt = c.Prompt,
+                Response = c.Response,
+                Session = c.Session,
+                SessionName = c.SessionName,
+                CreatedAt = c.CreatedAt
+            }).ToList();
+
+            return new BasePaginated<ChatLogResponse>(result, (int)totalCount, pageNumber, pageSize);
+        }
+
+        public async Task<Result<BasePaginated<SessionResponse>>> GetSessionsAsync(Guid userId, int pageNumber = 1, int pageSize = 10)
+        { 
+            var allChatLogs = await _unitOfWork.ChatLogRepository.FindAsync(c => c.UserId == userId);
+             
+            var groupedSessions = allChatLogs
+                .GroupBy(c => new { c.Session, c.SessionName })
+                .Select(g => new SessionResponse
+                {
+                    SessionId = g.Key.Session,
+                    SessionName = g.Key.SessionName,
+                    CreatedAt = g.Min(c => c.CreatedAt),
+                    LastMessageAt = g.Max(c => c.CreatedAt),
+                    MessageCount = g.Count()
+                })
+                .OrderByDescending(s => s.LastMessageAt)
+                .ToList();
+
+            int totalCount = groupedSessions.Count;
+            var result = groupedSessions
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return new BasePaginated<SessionResponse>(result, totalCount, pageNumber, pageSize);
+        }
+
+        public async Task<Result> DeleteSessionAsync(Guid userId, Guid sessionId)
+        { 
+            var chatLogs = await _unitOfWork.ChatLogRepository.FindAsync(
+                c => c.UserId == userId && c.Session == sessionId);
+
+            if (!chatLogs.Any())
+                return ErrorResponse.FailureResult("Session not found", ErrorCodes.NotFound);
+ 
+            var deletedCount = await _unitOfWork.ChatLogRepository.DeleteManyAsync(
+                c => c.UserId == userId && c.Session == sessionId);
+
+            if (deletedCount == 0)
+                return ErrorResponse.FailureResult("Failed to delete session", ErrorCodes.InternalServerError);
+
+            return Result.Success();
+        }
+
 
     }
 }
