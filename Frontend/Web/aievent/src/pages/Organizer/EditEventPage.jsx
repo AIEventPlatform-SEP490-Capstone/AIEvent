@@ -575,7 +575,6 @@ const EditEventPage = () => {
       const response = await updateEventAPI(eventDataToSend);
       
       if (response) {
-        toast.success('✅ Cập nhật sự kiện thành công!');
         navigate(`/organizer/event/${eventId}`);
       }
     } catch (error) {

@@ -11,7 +11,6 @@ const ScreenNames = {
   // Event Screens
   EVENT_DETAIL_SCREEN: 'EventDetailScreen',
   MY_EVENTS_SCREEN: 'MyEventsScreen',
-  EVENT_DETAIL_SCREEN: 'EventDetailScreen',
   EVENT_MAP_SCREEN: 'EventMapScreen',
   EVENT_SCHEDULE_SCREEN: 'EventScheduleScreen',
   BOOKING_SCREEN: 'BookingScreen',
