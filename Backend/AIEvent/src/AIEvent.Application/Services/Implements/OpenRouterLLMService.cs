@@ -49,22 +49,30 @@ namespace AIEvent.Application.Services.Implements
 
             return content ?? string.Empty;
         }
-
-        /// <summary>
-        /// Sinh câu trả lời RAG: dùng context từ Pinecone.
-        /// </summary>
+         
         public async Task<string> GenerateRAGResponseAsync(string query, List<string> contexts)
         {
             var contextText = string.Join("\n---\n", contexts);
 
             var prompt = $@"
-                Người dùng hỏi: ""{query}"".
+            Người dùng hỏi: ""{query}"".
+            Dưới đây là danh sách sự kiện liên quan (ngữ cảnh):
+            {contextText}
 
-                Dưới đây là danh sách sự kiện liên quan (ngữ cảnh):
-                {contextText}
+            Chọn **1 sự kiện phù hợp nhất** và trả về theo định dạng:
 
-                Hãy gợi ý các sự kiện phù hợp nhất, tóm tắt ngắn gọn lý do và thông tin cơ bản (tên, địa điểm, giá, thời gian).
-                ";
+            - Bắt đầu bằng **câu tự nhiên** giải thích lý do vì sao sự kiện này phù hợp với yêu cầu người dùng, ví dụ: 'Với yêu cầu của bạn, tôi cảm thấy sự kiện ""Tên sự kiện"" rất phù hợp vì ...'
+
+            - Tiếp theo là **form chuẩn**:
+            - **Địa điểm:** [Địa điểm tổ chức]
+            - **Thời gian:** [dd/MM/yyyy HH:mm → dd/MM/yyyy HH:mm]
+            - **Giá vé:** [Miễn phí hoặc giá vé]
+
+            - Cuối cùng là link điều hướng:
+              Xem chi tiết: [link đã có trong context]
+
+            Hãy gợi ý các sự kiện phù hợp nhất
+            ";
 
             return await GenerateTextAsync(prompt);
         }

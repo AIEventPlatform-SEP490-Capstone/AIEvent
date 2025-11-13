@@ -30,25 +30,22 @@ namespace AIEvent.Application.Services.Implements
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<string> RecommendEventsAsync(string userPrompt, int topK = 5)
+        public async Task<Result<string>> RecommendEventsAsync(string userPrompt, int topK = 5)
         {
             if (string.IsNullOrWhiteSpace(userPrompt))
                 throw new ArgumentException("Prompt không được để trống.");
-
-            // 1️⃣ Sinh embedding cho câu hỏi người dùng bằng Google Gemini
+             
             var queryEmbedding = await _voyageEmbeddingService.GetEmbeddingAsync(userPrompt);
-
-            // 2️⃣ Tìm các sự kiện tương tự trong Pinecone
-            var results = await _pineconeService.QuerySimilarAsync(queryEmbedding, topK);
+             
+            var results = await _pineconeService.QuerySimilarAsync(queryEmbedding, isUser: false, topK);
 
             if (results == null || !results.Any())
                 return "Xin lỗi, hiện tại tôi chưa tìm thấy sự kiện nào phù hợp với yêu cầu của bạn.";
 
-            // 3️⃣ Chuẩn bị context từ metadata trong Pinecone (phù hợp với EventEmbeddingService)
             var contexts = results.Select(r =>
             {
                 var meta = r.Metadata ?? new Dictionary<string, object>();
-
+                meta.TryGetValue("EventId", out var eventId);
                 meta.TryGetValue("Title", out var title);
                 meta.TryGetValue("Description", out var description);
                 meta.TryGetValue("CategoryName", out var category);
@@ -59,7 +56,7 @@ namespace AIEvent.Application.Services.Implements
                 meta.TryGetValue("StartTime", out var start);
                 meta.TryGetValue("EndTime", out var end);
                 meta.TryGetValue("Tickets", out var tickets);
-
+                var eventUrl = eventId != null ? $"/events/{eventId}" : "#";
                 return $@"
                     - {title ?? "Sự kiện"} ({category ?? "Không rõ danh mục"})
                       Địa điểm: {(location ?? address ?? "Không rõ")} - {district ?? ""}
@@ -67,10 +64,10 @@ namespace AIEvent.Application.Services.Implements
                       Mô tả: {description ?? "Không có mô tả"}
                       Thẻ: {tags ?? "Không có"}
                       Vé: {tickets ?? "Không có thông tin vé"}
+                      Xem chi tiết: {eventUrl}
                     ";
             }).ToList();
-
-            // 4️⃣ Gọi mô hình LLM OpenRouter để tạo phản hồi tự nhiên
+             
             var response = await _llmService.GenerateRAGResponseAsync(userPrompt, contexts);
 
             return response;
@@ -118,7 +115,7 @@ namespace AIEvent.Application.Services.Implements
 
             var embedding = await _voyageEmbeddingService.GetEmbeddingAsync(descriptionText);
 
-            var aiResults = await _pineconeService.QuerySimilarAsync(embedding, topK: 10);
+            var aiResults = await _pineconeService.QuerySimilarAsync(embedding, isUser: false, topK: 10);
 
             var eventIds = aiResults
                 .Select(r => Guid.TryParse(r.Id, out var guid) ? guid : Guid.Empty)
