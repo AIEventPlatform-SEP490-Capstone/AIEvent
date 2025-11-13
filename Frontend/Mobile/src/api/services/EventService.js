@@ -298,6 +298,127 @@ class EventService {
       };
     }
   }
+
+  /**
+   * Invite friends to event
+   * @param {string} eventId - The ID of the event
+   * @param {string[]} invitedUserIds - Array of user IDs to invite
+   * @param {string} message - Invitation message
+   */
+  static async inviteFriends(eventId, invitedUserIds, message) {
+    try {
+      const requestBody = {
+        invitedUserIds: invitedUserIds,
+        message: message || '',
+      };
+      
+      const data = await BaseApiService.post(
+        EndUrls.INVITE_FRIENDS(eventId),
+        requestBody
+      );
+      
+      return {
+        success: true,
+        data: data,
+        message: 'Friends invited successfully',
+      };
+    } catch (error) {
+      console.error('Error inviting friends:', error);
+      return {
+        success: false,
+        data: null,
+        message: `Failed to invite friends: ${error.message}`,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Confirm invitation (Accept/Reject/Pending)
+   * @param {string} invitationId - The ID of the invitation
+   * @param {string} status - Status: "Pending", "Accepted", or "Rejected"
+   */
+  static async confirmInvitation(invitationId, status) {
+    try {
+      // Validate status
+      const validStatuses = ['Pending', 'Accepted', 'Rejected'];
+      if (!validStatuses.includes(status)) {
+        return {
+          success: false,
+          data: null,
+          message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`,
+          error: 'Invalid status',
+        };
+      }
+
+      const requestBody = {
+        status: status,
+      };
+      
+      const data = await BaseApiService.put(
+        EndUrls.CONFIRM_INVITATION(invitationId),
+        requestBody
+      );
+      
+      return {
+        success: true,
+        data: data,
+        message: 'Invitation status updated successfully',
+      };
+    } catch (error) {
+      console.error('Error confirming invitation:', error);
+      return {
+        success: false,
+        data: null,
+        message: `Failed to confirm invitation: ${error.message}`,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Get invitations status
+   * Returns a list of invitations with pagination
+   */
+  static async getInvitationsStatus() {
+    try {
+      const response = await BaseApiService.get(EndUrls.GET_INVITATIONS_STATUS);
+      
+      // Extract data from the response
+      let data = response;
+      
+      // Handle different response structures
+      if (response.data) {
+        data = response.data;
+      }
+      
+      // Extract items from paginated response
+      let items = data.items || data.Items || [];
+      
+      return {
+        success: true,
+        data: items,
+        pagination: {
+          currentPage: data.currentPage || data.CurrentPage || 1,
+          totalPages: data.totalPages || data.TotalPages || 1,
+          totalItems: data.totalItems || data.TotalItems || items.length || 0,
+          pageSize: data.pageSize || data.PageSize || 10,
+          hasPreviousPage: data.hasPreviousPage || data.HasPreviousPage || false,
+          hasNextPage: data.hasNextPage || data.HasNextPage || false,
+        },
+        message: 'Invitations fetched successfully',
+      };
+    } catch (error) {
+      console.error('Error fetching invitations status:', error);
+      return {
+        success: false,
+        data: [],
+        pagination: null,
+        message: `Failed to fetch invitations: ${error.message}`,
+        error: error.message,
+      };
+    }
+  }
 }
 
 export default EventService;
