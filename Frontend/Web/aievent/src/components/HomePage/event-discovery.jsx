@@ -28,6 +28,8 @@ import {
   Bot,
   Search,
   SlidersHorizontal,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useFavoriteEvents } from "../../hooks/useFavoriteEvents";
 import { useSelector } from "react-redux";
@@ -65,6 +67,7 @@ export function EventDiscovery({
   const [likedEvents, setLikedEvents] = useState(new Set([2, 4]));
   const [isAIEventsExpanded, setIsAIEventsExpanded] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentSlide, setCurrentSlide] = useState(0);
   const { getFavoriteEvents, addFavoriteEvent, removeFavoriteEvent } = useFavoriteEvents();
   const { isAuthenticated } = useSelector((state) => state.auth);
 
@@ -88,6 +91,17 @@ export function EventDiscovery({
     
     loadFavoriteEvents();
   }, [isAuthenticated]);
+
+  // Auto slide for featured events
+  useEffect(() => {
+    if (allEvents.length > 0) {
+      const interval = setInterval(() => {
+        setCurrentSlide(prev => (prev + 1) % Math.max(1, Math.ceil(allEvents.length / 3)));
+      }, 5000); // Change slide every 5 seconds
+      
+      return () => clearInterval(interval);
+    }
+  }, [allEvents.length]);
 
   const toggleLike = async (eventId) => {
     // Only allow toggling favorites if user is authenticated
@@ -175,6 +189,18 @@ export function EventDiscovery({
       style: "currency",
       currency: "VND",
     }).format(actualPrice);
+  };
+
+  // Get featured events (first 10 events)
+  const featuredEvents = allEvents.slice(0, Math.min(10, allEvents.length));
+
+  // Handle slide navigation
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % Math.max(1, Math.ceil(featuredEvents.length / 3)));
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + Math.max(1, Math.ceil(featuredEvents.length / 3))) % Math.max(1, Math.ceil(featuredEvents.length / 3)));
   };
 
   if (loading) {
@@ -345,6 +371,105 @@ export function EventDiscovery({
         </div>
       )}
 
+      {/* Featured Events Section - Simplified Carousel */}
+      {featuredEvents.length > 0 && !searchQuery && (
+        <div className="mb-12">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-2 flex-1">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-400 flex items-center justify-center">
+                <Star className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-foreground">
+                Sự kiện nổi bật
+              </h2>
+            </div>
+            <div className="h-px bg-gradient-to-r from-orange-200 to-transparent flex-1"></div>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={prevSlide}
+                className="w-8 h-8 p-0"
+                disabled={featuredEvents.length <= 3}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={nextSlide}
+                className="w-8 h-8 p-0"
+                disabled={featuredEvents.length <= 3}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="relative overflow-hidden rounded-2xl">
+            <div 
+              className="flex transition-transform duration-500 ease-in-out"
+              style={{ transform: `translateX(-${currentSlide * 33.333}%)` }}
+            >
+              {featuredEvents.map((event, index) => (
+                <div 
+                  key={event.eventId || event.id}
+                  className="flex-shrink-0 w-1/3 px-2"
+                >
+                  <div 
+                    className="relative group cursor-pointer rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
+                    onClick={() => handleViewDetail(event.eventId || event.id)}
+                  >
+                    <img
+                      src={
+                        event.image || 
+                        (event.imgListEvent && event.imgListEvent[0]) || 
+                        "/placeholder.svg"
+                      }
+                      alt={event.title}
+                      className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    {/* Hover overlay with event info */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                      <h3 className="text-white font-bold text-lg mb-1">{event.title}</h3>
+                      <div className="flex items-center text-white/90 text-sm mb-1">
+                        <Calendar className="w-4 h-4 mr-1" />
+                        <span>
+                          {new Date(event.startTime || event.date).toLocaleDateString("vi-VN")}
+                        </span>
+                      </div>
+                      <div className="flex items-center text-white/90 text-sm">
+                        <MapPin className="w-4 h-4 mr-1" />
+                        <span className="truncate">
+                          {event.locationName || event.location}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Like button */}
+                    <button
+                      className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 hover:bg-white/30 shadow-sm flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleLike(event.eventId || event.id);
+                      }}
+                    >
+                      <Heart
+                        className={`w-4 h-4 ${
+                          likedEvents.has(event.eventId || event.id)
+                            ? "fill-red-500 text-red-500"
+                            : "text-white"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div id="recommended-events-section" className="mb-10">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
           <div className="flex items-center gap-3">
@@ -481,7 +606,7 @@ export function EventDiscovery({
                     <div className="flex items-center text-gray-600 text-sm">
                       <MapPin className="w-4 h-4 mr-2 text-blue-500 flex-shrink-0" />
                       <span className="truncate">
-                        {event.locationName || event.location}, {event.address}
+                        {event.locationName || event.location}
                       </span>
                     </div>
 
@@ -501,110 +626,89 @@ export function EventDiscovery({
                     </div>
 
                     <div className="flex space-x-2 pt-2">
-                      {isEventPastAndAttended(event) ? (
-                        <Button
-                          className="flex-1 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold text-sm py-2"
-                          size="sm"
-                          onClick={() => console.log(`Rate event ${event.eventId || event.id}`)}
-                        >
-                          <Star className="w-3 h-3 mr-1" />
-                          Đánh giá
-                        </Button>
-                      ) : (
-                        <>
-                          <Button
-                            className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm py-2"
-                            size="sm"
-                            onClick={() => handleRegister(event.eventId || event.id)}
-                          >
-                            Đăng ký
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold text-sm py-2"
-                            onClick={() => handleViewDetail(event.eventId || event.id)}
-                          >
-                            Chi tiết
-                          </Button>
-                        </>
-                      )}
+                      <Button
+                        className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm py-2"
+                        size="sm"
+                        onClick={() => handleRegister(event.eventId || event.id)}
+                      >
+                        Đăng ký
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold text-sm py-2"
+                        onClick={() => handleViewDetail(event.eventId || event.id)}
+                      >
+                        Chi tiết
+                      </Button>
                     </div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-
+          
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-center gap-2 mt-10">
+          {filteredEvents.length > pageSize && (
+            <div className="flex justify-center items-center mt-12 space-x-2">
               <Button
                 variant="outline"
-                onClick={() => onPageChange && onPageChange(Math.max(1, currentPage - 1))}
+                size="sm"
+                onClick={() => onPageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="px-4 py-2"
+                className="px-4"
               >
                 Trước
               </Button>
-              <div className="flex items-center gap-2">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <Button
-                    key={page}
-                    variant={currentPage === page ? 'default' : 'outline'}
-                    onClick={() => onPageChange && onPageChange(page)}
-                    className={`w-10 h-10 rounded-full ${
-                      currentPage === page 
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white' 
-                        : ''
-                    }`}
-                  >
-                    {page}
-                  </Button>
-                ))}
-              </div>
+              
+              {[...Array(totalPages)].map((_, index) => {
+                const pageNumber = index + 1;
+                // Only show first, last, current, and nearby pages
+                if (
+                  pageNumber === 1 ||
+                  pageNumber === totalPages ||
+                  (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+                ) {
+                  return (
+                    <Button
+                      key={pageNumber}
+                      variant={currentPage === pageNumber ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => onPageChange(pageNumber)}
+                      className={`px-4 ${currentPage === pageNumber ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white' : ''}`}
+                    >
+                      {pageNumber}
+                    </Button>
+                  );
+                }
+                
+                // Show ellipsis for skipped pages
+                if (pageNumber === currentPage - 2 || pageNumber === currentPage + 2) {
+                  return <span key={pageNumber} className="px-2 text-gray-400">...</span>;
+                }
+                
+                return null;
+              })}
+              
               <Button
                 variant="outline"
-                onClick={() => onPageChange && onPageChange(Math.min(totalPages, currentPage + 1))}
+                size="sm"
+                onClick={() => onPageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="px-4 py-2"
+                className="px-4"
               >
                 Sau
               </Button>
             </div>
           )}
-
-          <div className="text-center mt-10">
-            <Button
-              variant="outline"
-              size="lg"
-              className="px-8 py-3 border-border hover:bg-muted text-foreground font-semibold bg-transparent"
-            >
-              Xem thêm sự kiện thú vị ({allEvents.length - filteredEvents.length} sự
-              kiện khác)
-            </Button>
-          </div>
         </>
       ) : (
-        <div className="text-center py-16">
-          <div className="bg-gray-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
-            <Calendar className="w-10 h-10 text-gray-400" />
+        <div className="text-center py-12">
+          <div className="bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+            <Calendar className="w-8 h-8 text-gray-400" />
           </div>
-          <h3 className="text-2xl font-semibold text-gray-900 mb-3">Không tìm thấy sự kiện</h3>
-          <p className="text-gray-500 mb-8 max-w-md mx-auto">
-            Không có sự kiện nào phù hợp với tiêu chí tìm kiếm của bạn. Hãy thử thay đổi bộ lọc hoặc tìm kiếm khác.
-          </p>
-          <div className="flex justify-center gap-4">
-            <Button onClick={() => {
-              setSearchQuery("");
-              setSelectedCategory("all");
-            }}>
-              Xóa bộ lọc
-            </Button>
-            <Button variant="outline" onClick={onRefresh}>
-              Làm mới
-            </Button>
-          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Không tìm thấy sự kiện</h3>
+          <p className="text-gray-500">Hãy thử thay đổi bộ lọc hoặc tìm kiếm khác</p>
         </div>
       )}
     </div>
