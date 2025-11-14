@@ -982,13 +982,40 @@ namespace AIEvent.Application.Services.Implements
             foreach (var ev in endedEvents)
             {
                 var totalRevenue = ev.TotalAmount;
+                
+                if (totalRevenue > 0)
+                {
+                    decimal platformFee = totalRevenue * 0.066m + 45000m;
+                    decimal netRevenue = totalRevenue - platformFee;
+                    ev.PlatformFee = platformFee;
+                    ev.PayoutAmount = netRevenue;
+                    ev.Status = EventStatus.WaitingForPayout;
+                }
+                else
+                {
+                    var payoutDate = DateTime.UtcNow;
+                    ev.PlatformFee = 0;
+                    ev.PayoutAmount = 0;
+                    ev.Status = EventStatus.PaidOut;
+                    ev.PaidOutAt = payoutDate;
 
-                var platformFee = totalRevenue * 0.066m + 45000m;
-                var netRevenue = totalRevenue - platformFee;
+                    var revenueReport = new RevenueReport
+                    {
+                        OrganizerProfileId = ev.OrganizerProfileId,
+                        EventId = ev.Id,
+                        EventName = ev.Title,
+                        GrossRevenue = 0,
+                        PlatformFee = 0,
+                        NetRevenue = 0,
+                        ReportMonth = payoutDate.Month,
+                        ReportYear = payoutDate.Year,
+                        PayoutDate = null
+                    };
 
-                ev.PlatformFee = platformFee;
-                ev.PayoutAmount = netRevenue;
-                ev.Status = EventStatus.WaitingForPayout;
+                    await _unitOfWork.RevenueReportRepository.AddAsync(revenueReport);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+                
                 ev.CompletedAt = now;
             }
 

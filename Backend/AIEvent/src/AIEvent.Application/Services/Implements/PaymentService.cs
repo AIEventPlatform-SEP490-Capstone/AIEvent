@@ -415,7 +415,10 @@ namespace AIEvent.Application.Services.Implements
                             _logger.LogInformation("Event {EventId} already paid out.", ev.Id);
                             continue;
                         }
-                         
+
+                        if(ev.TotalAmount <= 0)
+                            continue;
+
                         if (paymentInfor == null)
                         { 
                             var hasWarned = await _unitOfWork.NotificationRepository
