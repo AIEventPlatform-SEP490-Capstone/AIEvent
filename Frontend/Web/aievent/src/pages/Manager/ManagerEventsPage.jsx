@@ -117,22 +117,21 @@ const ManagerEventsPage = () => {
     if (tabParam && tabParam !== activeTab) {
       setActiveTab(tabParam);
     } else {
-      loadEvents();
+      setCurrentPage(1);
+      loadEvents(1);
     }
-  }, [location.search]);
+  }, [location.search, activeTab, searchTerm, filterStatus, sortBy]);
 
   // Debounced search effect
   useEffect(() => {
-    if (allEvents.length > 0) {
-      const timeoutId = setTimeout(() => {
-        applyFiltersAndSearch();
-      }, 300);
+    const timeoutId = setTimeout(() => {
+      applyFiltersAndSearch();
+    }, 300);
 
-      return () => clearTimeout(timeoutId);
-    }
-  }, [searchTerm, filterStatus, sortBy, allEvents]);
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, filterStatus, sortBy]);
 
-  const loadEvents = async () => {
+  const loadEvents = async (page = 1) => {
     try {
       setIsLoading(true);
       // Clear existing events immediately when switching tabs
@@ -142,136 +141,50 @@ const ManagerEventsPage = () => {
       let response;
       if (activeTab === 'all') {
         // For the 'all' tab, we want to show all events including all approval statuses
-        // We'll fetch events using the general getEvents API which should return all events
-        // and also fetch events from all status categories to ensure completeness
-        const allResponses = await Promise.all([
-          getEvents({ search: '', pageNumber: 1, pageSize: 1000 }), // All events from general endpoint
-          getEventsByStatus({ search: '', status: EventStatus.PendingApproval, pageNumber: 1, pageSize: 1000 }),
-          getEventsByStatus({ search: '', status: EventStatus.Approved, pageNumber: 1, pageSize: 1000 }),
-          getEventsByStatus({ search: '', status: EventStatus.Rejected, pageNumber: 1, pageSize: 1000 }),
-          getEventsByStatus({ search: '', status: EventStatus.Cancelled, pageNumber: 1, pageSize: 1000 }),
-          getEventsByStatus({ search: '', status: EventStatus.WaitingForPayout, pageNumber: 1, pageSize: 1000 }),
-          getEventsByStatus({ search: '', status: EventStatus.PaidOut, pageNumber: 1, pageSize: 1000 })
-        ]);
-        
-        // Combine all events and remove duplicates
-        const combinedEvents = [];
-        const eventIds = new Set();
-        
-        allResponses.forEach(resp => {
-          if (resp && resp.items) {
-            resp.items.forEach(event => {
-              if (!eventIds.has(event.eventId)) {
-                eventIds.add(event.eventId);
-                combinedEvents.push(event);
-              }
-            });
-          } else if (resp && Array.isArray(resp)) {
-            // Handle case where response is directly an array
-            resp.forEach(event => {
-              if (!eventIds.has(event.eventId)) {
-                eventIds.add(event.eventId);
-                combinedEvents.push(event);
-              }
-            });
-          }
+        response = await getEvents({ 
+          search: searchTerm || '',
+          pageNumber: page, 
+          pageSize: pageSize 
         });
-        
-        response = { items: combinedEvents, totalCount: combinedEvents.length };
       } else {
         // Load events by specific status
         response = await getEventsByStatus({
-          search: '',
+          search: searchTerm || '',
           status: activeTab !== 'all' ? activeTab : null,
-          pageNumber: 1,
-          pageSize: 1000,
+          pageNumber: page,
+          pageSize: pageSize,
         });
       }
 
-
       if (response) {
         const eventsData = response.items || response || [];
+        const totalCount = response.totalCount || eventsData.length;
+        
         setAllEvents(eventsData);
-        // Apply initial filtering after setting allEvents
-        setTimeout(() => applyFiltersAndSearch(eventsData), 0);
+        setEvents(eventsData);
+        setTotalPages(Math.ceil(totalCount / pageSize));
       } else {
         setAllEvents([]);
         setEvents([]);
+        setTotalPages(1);
       }
     } catch (error) {
       console.error('Error loading events:', error);
       toast.error('Không thể tải danh sách sự kiện');
       setAllEvents([]);
       setEvents([]);
+      setTotalPages(1);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const applyFiltersAndSearch = (eventsList) => {
-    const dataToFilter = eventsList || allEvents;
-    if (!dataToFilter || dataToFilter.length === 0) return;
-
-    let filtered = [...dataToFilter];
-
-    // Apply search filter
-    if (searchTerm && searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase().trim();
-      filtered = filtered.filter(event => 
-        (event.title && event.title.toLowerCase().includes(searchLower)) ||
-        (event.description && event.description.toLowerCase().includes(searchLower)) ||
-        (event.locationName && event.locationName.toLowerCase().includes(searchLower)) ||
-        (event.eventCategoryName && event.eventCategoryName.toLowerCase().includes(searchLower))
-      );
-    }
-
-    // Apply status filter - but only for time-based filters, not approval status tabs
-    // Approval status tabs (NeedConfirm, Approve, Reject) are handled by the API call
-    const isApprovalTab = [
-      EventStatus.PendingApproval, 
-      EventStatus.Approved, 
-      EventStatus.Rejected,
-      EventStatus.Cancelled,
-      EventStatus.WaitingForPayout,
-      EventStatus.PaidOut
-    ].includes(activeTab);
-    
-    if (filterStatus && filterStatus !== 'all' && !isApprovalTab) {
-      filtered = filtered.filter(event => {
-        const status = getEventStatus(event);
-        return status === filterStatus;
-      });
-    }
-    
-    // If filterStatus is one of the EventStatus values, apply it regardless of activeTab
-    if (filterStatus && filterStatus !== 'all' && Object.values(EventStatus).includes(filterStatus)) {
-      filtered = filtered.filter(event => {
-        const eventStatus = 'status' in event ? event.status : null;
-        return eventStatus === filterStatus;
-      });
-    }
-
-    // Apply sorting
-    if (sortBy) {
-      filtered.sort((a, b) => {
-        switch (sortBy) {
-          case 'newest':
-            return new Date(b.createDate || b.startTime) - new Date(a.createDate || a.startTime);
-          case 'oldest':
-            return new Date(a.createDate || a.startTime) - new Date(b.createDate || b.startTime);
-          case 'name':
-            return (a.title || '').localeCompare(b.title || '');
-          case 'startTime':
-            return new Date(a.startTime) - new Date(b.startTime);
-          default:
-            return 0;
-        }
-      });
-    }
-
-    setEvents(filtered);
-    setTotalPages(Math.ceil(filtered.length / pageSize));
-    setCurrentPage(1); // Reset to first page when filtering
+  // With server-side pagination, we no longer need client-side filtering
+  // The filtering and sorting should be handled by the API
+  const applyFiltersAndSearch = () => {
+    // Reset to first page when filtering
+    setCurrentPage(1);
+    loadEvents(1);
   };
 
   const handleViewEvent = (eventId) => {
@@ -1139,7 +1052,11 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
         <div className="flex justify-center gap-2 mt-8">
           <Button
             variant="outline"
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            onClick={() => {
+              const newPage = Math.max(1, currentPage - 1);
+              setCurrentPage(newPage);
+              loadEvents(newPage);
+            }}
             disabled={currentPage === 1}
           >
             Trước
@@ -1149,7 +1066,10 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
               <Button
                 key={page}
                 variant={currentPage === page ? 'default' : 'outline'}
-                onClick={() => setCurrentPage(page)}
+                onClick={() => {
+                  setCurrentPage(page);
+                  loadEvents(page);
+                }}
                 className={currentPage === page ? 'bg-blue-600' : ''}
               >
                 {page}
@@ -1158,7 +1078,11 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
           </div>
           <Button
             variant="outline"
-            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            onClick={() => {
+              const newPage = Math.min(totalPages, currentPage + 1);
+              setCurrentPage(newPage);
+              loadEvents(newPage);
+            }}
             disabled={currentPage === totalPages}
           >
             Sau

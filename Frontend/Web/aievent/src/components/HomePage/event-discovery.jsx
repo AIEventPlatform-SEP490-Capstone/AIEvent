@@ -51,7 +51,11 @@ export function EventDiscovery({
   loading = false, 
   error = null,
   onRefresh,
-  showAIRecommendedSection = false
+  showAIRecommendedSection = false,
+  currentPage = 1,
+  totalPages = 1,
+  onPageChange,
+  pageSize = 12
 }) {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -145,6 +149,11 @@ export function EventDiscovery({
           const categoryName = event.category || event.eventCategoryName;
           return categoryName === selectedCategory;
         });
+  
+  // Pagination for filtered events
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedEvents = filteredEvents.slice(startIndex, endIndex);
 
   const formatPrice = (price, isFree) => {
     // Handle both mock data and API data structure
@@ -393,7 +402,7 @@ export function EventDiscovery({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-        {filteredEvents.map((event) => (
+        {paginatedEvents.map((event) => (
           <Card
             key={event.eventId || event.id}
             className="overflow-hidden hover:shadow-xl transition-all duration-300 border-border/50 bg-card"
@@ -546,6 +555,38 @@ export function EventDiscovery({
           </Card>
         ))}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center gap-2 mt-8">
+          <Button
+            variant="outline"
+            onClick={() => onPageChange && onPageChange(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
+          >
+            Trước
+          </Button>
+          <div className="flex items-center gap-2">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <Button
+                key={page}
+                variant={currentPage === page ? 'default' : 'outline'}
+                onClick={() => onPageChange && onPageChange(page)}
+                className={currentPage === page ? 'bg-blue-600' : ''}
+              >
+                {page}
+              </Button>
+            ))}
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => onPageChange && onPageChange(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Sau
+          </Button>
+        </div>
+      )}
 
       <div className="text-center mt-12">
         <Button
