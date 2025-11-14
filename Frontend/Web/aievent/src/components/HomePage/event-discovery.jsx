@@ -1,3 +1,4 @@
+import React from "react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
@@ -25,6 +26,8 @@ import {
   ChevronDown,
   ChevronUp,
   Bot,
+  Search,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useFavoriteEvents } from "../../hooks/useFavoriteEvents";
 import { useSelector } from "react-redux";
@@ -61,6 +64,7 @@ export function EventDiscovery({
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [likedEvents, setLikedEvents] = useState(new Set([2, 4]));
   const [isAIEventsExpanded, setIsAIEventsExpanded] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const { getFavoriteEvents, addFavoriteEvent, removeFavoriteEvent } = useFavoriteEvents();
   const { isAuthenticated } = useSelector((state) => state.auth);
 
@@ -141,14 +145,20 @@ export function EventDiscovery({
     );
   };
 
-  const filteredEvents =
-    selectedCategory === "all"
-      ? allEvents
-      : allEvents.filter((event) => {
-          // Handle both mock data and API data structure
-          const categoryName = event.category || event.eventCategoryName;
-          return categoryName === selectedCategory;
-        });
+  // Filter events based on category and search query
+  const filteredEvents = allEvents.filter((event) => {
+    // Category filter
+    const matchesCategory = selectedCategory === "all" || 
+      (event.category || event.eventCategoryName) === selectedCategory;
+    
+    // Search filter
+    const matchesSearch = !searchQuery || 
+      event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (event.locationName || event.location || "").toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return matchesCategory && matchesSearch;
+  });
   
   // Pagination for filtered events
   const startIndex = (currentPage - 1) * pageSize;
@@ -227,9 +237,9 @@ export function EventDiscovery({
           {isAIEventsExpanded && (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {recommendedEvents.map((event) => (
-              <Card
+              <div 
                 key={event.eventId || event.id}
-                className="overflow-hidden hover:shadow-xl transition-all duration-300 border-border/50 bg-card"
+                className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group"
               >
                 <div className="relative">
                   <img
@@ -239,116 +249,96 @@ export function EventDiscovery({
                       "/placeholder.svg"
                     }
                     alt={event.title}
-                    className="w-full h-56 object-cover"
+                    className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                  <div className="absolute top-4 right-4 flex space-x-2">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="w-10 h-10 p-0 bg-background/90 backdrop-blur-sm border border-border/50 hover:bg-background"
+                  <div className="absolute top-3 right-3 flex space-x-2">
+                    <button
+                      className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 hover:bg-white shadow-sm flex items-center justify-center transition-all"
                       onClick={() => toggleLike(event.eventId || event.id)}
                     >
                       <Heart
-                        className={`w-5 h-5 ${
+                        className={`w-4 h-4 ${
                           likedEvents.has(event.eventId || event.id)
                             ? "fill-red-500 text-red-500"
-                            : "text-muted-foreground"
+                            : "text-gray-600"
                         }`}
                       />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="w-10 h-10 p-0 bg-background/90 backdrop-blur-sm border border-border/50 hover:bg-background"
+                    </button>
+                    <button
+                      className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 hover:bg-white shadow-sm flex items-center justify-center transition-all"
                       onClick={() => handleViewDetail(event.eventId || event.id)}
                     >
-                      <MessageCircle className="w-5 h-5 text-muted-foreground" />
-                    </Button>
+                      <MessageCircle className="w-4 h-4 text-gray-600" />
+                    </button>
                   </div>
-                  <div className="absolute bottom-4 left-4">
-                    <span className="bg-background/90 backdrop-blur-sm text-foreground font-semibold px-3 py-1">
+                  <div className="absolute bottom-3 left-3">
+                    <span className="bg-white/90 backdrop-blur-sm text-gray-900 font-bold px-3 py-1 rounded-full text-sm shadow-sm">
                       {formatPrice(event, event.ticketPricingType === "Free")}
                     </span>
                   </div>
                 </div>
 
-                <CardHeader className="pb-4 pt-6">
-                  <div className="flex items-start justify-between">
-                    <h3 className="font-bold text-xl leading-tight text-balance text-card-foreground">
+                <div className="p-5">
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="font-bold text-lg leading-tight text-gray-900 line-clamp-2">
                       {event.title}
                     </h3>
                   </div>
-                  <p className="text-muted-foreground text-pretty leading-relaxed mt-2">
+                  <p className="text-gray-600 text-sm leading-relaxed mb-4 line-clamp-2">
                     {event.description}
                   </p>
 
-                  {event.averageRating && event.totalRatings && (
-                    <div className="flex items-center gap-2 mt-3">
-                      <span className="text-sm text-muted-foreground">
-                        {event.averageRating.toFixed(1)} ({event.totalRatings} đánh
-                        giá)
-                      </span>
-                    </div>
-                  )}
-                </CardHeader>
-
-                <CardContent className="pt-0 pb-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center text-muted-foreground">
-                      <Calendar className="w-5 h-5 mr-3 text-primary" />
-                      <span className="font-medium">
+                  <div className="space-y-3">
+                    <div className="flex items-center text-gray-600 text-sm">
+                      <Calendar className="w-4 h-4 mr-2 text-blue-500" />
+                      <span>
                         {new Date(event.startTime || event.date).toLocaleDateString("vi-VN")} •{" "}
                         {event.time || new Date(event.startTime).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
 
-                    <div className="flex items-center text-muted-foreground">
-                      <MapPin className="w-5 h-5 mr-3 text-primary flex-shrink-0" />
-                      <span className="truncate font-medium">
+                    <div className="flex items-center text-gray-600 text-sm">
+                      <MapPin className="w-4 h-4 mr-2 text-blue-500 flex-shrink-0" />
+                      <span className="truncate">
                         {event.locationName || event.location}
                       </span>
                     </div>
 
-                    <div className="flex items-center text-muted-foreground">
-                      <Users className="w-5 h-5 mr-3 text-primary" />
-                      <span className="font-medium">
-                        {event.soldQuantity || 0} / {event.totalTickets} người tham gia
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-sm text-muted-foreground pt-3 border-t border-border/50">
-                      <div className="flex items-center space-x-4">
-                        <div className="flex items-center space-x-1">
-                          <Heart className="w-4 h-4" />
-                          <span>{event.likesCount || 0} lượt thích</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <MessageCircle className="w-4 h-4" />
-                          <span>{event.commentsCount || 0} bình luận</span>
-                        </div>
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                      <div className="flex items-center">
+                        <Users className="w-4 h-4 mr-1 text-gray-500" />
+                        <span className="text-sm text-gray-600">
+                          {event.soldQuantity || 0}/{event.totalTickets}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <Heart className="w-4 h-4 mr-1 text-gray-500" />
+                        <span className="text-sm text-gray-600">
+                          {event.likesCount || 0}
+                        </span>
                       </div>
                     </div>
 
-                    <div className="flex space-x-3 pt-2">
+                    <div className="flex space-x-2 pt-2">
                       <Button
-                        className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-                        size="lg"
+                        className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm py-2"
+                        size="sm"
                         onClick={() => handleRegister(event.eventId || event.id)}
                       >
-                        Đăng ký ngay
+                        Đăng ký
                       </Button>
                       <Button
                         variant="outline"
-                        size="lg"
-                        className="border-border hover:bg-muted text-foreground bg-transparent"
+                        size="sm"
+                        className="border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold text-sm py-2"
                         onClick={() => handleViewDetail(event.eventId || event.id)}
                       >
                         Chi tiết
                       </Button>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
             </div>
           )}
@@ -356,7 +346,7 @@ export function EventDiscovery({
       )}
 
       <div id="recommended-events-section" className="mb-10">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 via-sky-400 to-gray-300 flex items-center justify-center">
               <Calendar className="w-5 h-5 text-white" />
@@ -366,17 +356,31 @@ export function EventDiscovery({
             </h2>
             <div className="h-px bg-gradient-to-r from-gray-200 to-transparent w-20"></div>
           </div>
-          <Button
-            variant="outline"
-            size="lg"
-            className="border-border hover:bg-muted bg-transparent"
-          >
-            <Filter className="w-5 h-5 mr-2" />
-            Bộ lọc nâng cao
-          </Button>
+          
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            <div className="relative flex-1 md:w-64">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Tìm kiếm sự kiện..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full transition-all"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="lg"
+              className="border-border hover:bg-muted bg-transparent whitespace-nowrap"
+            >
+              <SlidersHorizontal className="w-5 h-5 mr-2" />
+              Bộ lọc
+            </Button>
+          </div>
         </div>
 
-        <div className="flex space-x-3 overflow-x-auto pb-4">
+        {/* Category Filter Chips */}
+        <div className="flex space-x-3 overflow-x-auto pb-4 mb-8 scrollbar-hide">
           {categories.map((category) => {
             const Icon = category.icon;
             return (
@@ -387,10 +391,10 @@ export function EventDiscovery({
                 }
                 size="lg"
                 onClick={() => setSelectedCategory(category.id)}
-                className={`whitespace-nowrap min-w-fit px-6 ${
+                className={`whitespace-nowrap min-w-fit px-6 transition-all duration-300 flex-shrink-0 ${
                   selectedCategory === category.id
-                    ? "bg-primary text-primary-foreground shadow-lg"
-                    : "border-border hover:bg-muted text-foreground"
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg hover:shadow-xl"
+                    : "border-border hover:bg-muted text-foreground hover:shadow-md"
                 }`}
               >
                 <Icon className="w-5 h-5 mr-2" />
@@ -401,203 +405,208 @@ export function EventDiscovery({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-        {paginatedEvents.map((event) => (
-          <Card
-            key={event.eventId || event.id}
-            className="overflow-hidden hover:shadow-xl transition-all duration-300 border-border/50 bg-card"
-          >
-            <div className="relative">
-              <img
-                src={
-                  event.image || 
-                  (event.imgListEvent && event.imgListEvent[0]) || 
-                  "/placeholder.svg"
-                }
-                alt={event.title}
-                className="w-full h-56 object-cover"
-              />
-              <div className="absolute top-4 right-4 flex space-x-2">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="w-10 h-10 p-0 bg-background/90 backdrop-blur-sm border border-border/50 hover:bg-background"
-                  onClick={() => toggleLike(event.eventId || event.id)}
-                >
-                  <Heart
-                    className={`w-5 h-5 ${
-                      likedEvents.has(event.eventId || event.id)
-                        ? "fill-red-500 text-red-500"
-                        : "text-muted-foreground"
-                    }`}
+      {/* Events Grid */}
+      {paginatedEvents.length > 0 ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {paginatedEvents.map((event) => (
+              <div 
+                key={event.eventId || event.id}
+                className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group"
+              >
+                <div className="relative">
+                  <img
+                    src={
+                      event.image || 
+                      (event.imgListEvent && event.imgListEvent[0]) || 
+                      "/placeholder.svg"
+                    }
+                    alt={event.title}
+                    className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="w-10 h-10 p-0 bg-background/90 backdrop-blur-sm border border-border/50 hover:bg-background"
-                >
-                  <Share2 className="w-5 h-5 text-muted-foreground" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="w-10 h-10 p-0 bg-background/90 backdrop-blur-sm border border-border/50 hover:bg-background"
-                  onClick={() => handleViewDetail(event.eventId || event.id)}
-                >
-                  <MessageCircle className="w-5 h-5 text-muted-foreground" />
-                </Button>
-              </div>
-              <div className="absolute bottom-4 left-4">
-                <span className="bg-background/90 backdrop-blur-sm text-foreground font-semibold px-3 py-1">
-                  {formatPrice(event, event.ticketType === 1)}
-                </span>
-              </div>
-              {isEventPastAndAttended(event) && (
-                <div className="absolute top-4 left-4">
-                  <span className="bg-green-100 text-green-800 border border-green-200 px-2 py-1 text-sm">
-                    <Star className="w-3 h-3 mr-1 inline" />
-                    Đã tham gia
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <CardHeader className="pb-4 pt-6">
-              <div className="flex items-start justify-between">
-                <h3 className="font-bold text-xl leading-tight text-balance text-card-foreground">
-                  {event.title}
-                </h3>
-              </div>
-              <p className="text-muted-foreground text-pretty leading-relaxed mt-2">
-                {event.description}
-              </p>
-
-              {event.averageRating && event.totalRatings && (
-                <div className="flex items-center gap-2 mt-3">
-                  <span className="text-sm text-muted-foreground">
-                    {event.averageRating.toFixed(1)} ({event.totalRatings} đánh
-                    giá)
-                  </span>
-                </div>
-              )}
-            </CardHeader>
-
-            <CardContent className="pt-0 pb-6">
-              <div className="space-y-4">
-                <div className="flex items-center text-muted-foreground">
-                  <Calendar className="w-5 h-5 mr-3 text-primary" />
-                  <span className="font-medium">
-                    {new Date(event.startTime || event.date).toLocaleDateString("vi-VN")} •{" "}
-                    {event.time || new Date(event.startTime).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-
-                <div className="flex items-center text-muted-foreground">
-                  <MapPin className="w-5 h-5 mr-3 text-primary flex-shrink-0" />
-                  <span className="truncate font-medium">
-                    {event.locationName || event.location}, {event.address}
-                  </span>
-                </div>
-
-                <div className="flex items-center text-muted-foreground">
-                  <Users className="w-5 h-5 mr-3 text-primary" />
-                  <span className="font-medium">
-                    {event.soldQuantity || 0} / {event.totalTickets} người tham gia
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between text-sm text-muted-foreground pt-3 border-t border-border/50">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-1">
-                      <Heart className="w-4 h-4" />
-                      <span>{event.likesCount || 0} lượt thích</span>
+                  <div className="absolute top-3 right-3 flex space-x-2">
+                    <button
+                      className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 hover:bg-white shadow-sm flex items-center justify-center transition-all"
+                      onClick={() => toggleLike(event.eventId || event.id)}
+                    >
+                      <Heart
+                        className={`w-4 h-4 ${
+                          likedEvents.has(event.eventId || event.id)
+                            ? "fill-red-500 text-red-500"
+                            : "text-gray-600"
+                        }`}
+                      />
+                    </button>
+                    <button
+                      className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 hover:bg-white shadow-sm flex items-center justify-center transition-all"
+                      onClick={() => handleViewDetail(event.eventId || event.id)}
+                    >
+                      <MessageCircle className="w-4 h-4 text-gray-600" />
+                    </button>
+                  </div>
+                  <div className="absolute bottom-3 left-3">
+                    <span className="bg-white/90 backdrop-blur-sm text-gray-900 font-bold px-3 py-1 rounded-full text-sm shadow-sm">
+                      {formatPrice(event, event.ticketType === 1)}
+                    </span>
+                  </div>
+                  {isEventPastAndAttended(event) && (
+                    <div className="absolute top-3 left-3">
+                      <span className="bg-green-100 text-green-800 border border-green-200 px-2 py-1 text-xs rounded-full flex items-center">
+                        <Star className="w-3 h-3 mr-1" />
+                        Đã tham gia
+                      </span>
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <MessageCircle className="w-4 h-4" />
-                      <span>{event.commentsCount || 0} bình luận</span>
+                  )}
+                </div>
+
+                <div className="p-5">
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="font-bold text-lg leading-tight text-gray-900 line-clamp-2">
+                      {event.title}
+                    </h3>
+                  </div>
+                  <p className="text-gray-600 text-sm leading-relaxed mb-4 line-clamp-2">
+                    {event.description}
+                  </p>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center text-gray-600 text-sm">
+                      <Calendar className="w-4 h-4 mr-2 text-blue-500" />
+                      <span>
+                        {new Date(event.startTime || event.date).toLocaleDateString("vi-VN")} •{" "}
+                        {event.time || new Date(event.startTime).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center text-gray-600 text-sm">
+                      <MapPin className="w-4 h-4 mr-2 text-blue-500 flex-shrink-0" />
+                      <span className="truncate">
+                        {event.locationName || event.location}, {event.address}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                      <div className="flex items-center">
+                        <Users className="w-4 h-4 mr-1 text-gray-500" />
+                        <span className="text-sm text-gray-600">
+                          {event.soldQuantity || 0}/{event.totalTickets}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <Heart className="w-4 h-4 mr-1 text-gray-500" />
+                        <span className="text-sm text-gray-600">
+                          {event.likesCount || 0}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex space-x-2 pt-2">
+                      {isEventPastAndAttended(event) ? (
+                        <Button
+                          className="flex-1 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold text-sm py-2"
+                          size="sm"
+                          onClick={() => console.log(`Rate event ${event.eventId || event.id}`)}
+                        >
+                          <Star className="w-3 h-3 mr-1" />
+                          Đánh giá
+                        </Button>
+                      ) : (
+                        <>
+                          <Button
+                            className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm py-2"
+                            size="sm"
+                            onClick={() => handleRegister(event.eventId || event.id)}
+                          >
+                            Đăng ký
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold text-sm py-2"
+                            onClick={() => handleViewDetail(event.eventId || event.id)}
+                          >
+                            Chi tiết
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
-
-                <div className="flex space-x-3 pt-2">
-                  {isEventPastAndAttended(event) ? (
-                    <Button
-                      className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold"
-                      size="lg"
-                      onClick={() => console.log(`Rate event ${event.eventId || event.id}`)}
-                    >
-                      <Star className="w-4 h-4 mr-2" />
-                      Đánh giá sự kiện
-                    </Button>
-                  ) : (
-                    <>
-                      <Button
-                        className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-                        size="lg"
-                        onClick={() => handleRegister(event.eventId || event.id)}
-                      >
-                        Đăng ký ngay
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        className="border-border hover:bg-muted text-foreground bg-transparent"
-                        onClick={() => handleViewDetail(event.eventId || event.id)}
-                      >
-                        Chi tiết
-                      </Button>
-                    </>
-                  )}
-                </div>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-8">
-          <Button
-            variant="outline"
-            onClick={() => onPageChange && onPageChange(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-          >
-            Trước
-          </Button>
-          <div className="flex items-center gap-2">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <Button
-                key={page}
-                variant={currentPage === page ? 'default' : 'outline'}
-                onClick={() => onPageChange && onPageChange(page)}
-                className={currentPage === page ? 'bg-blue-600' : ''}
-              >
-                {page}
-              </Button>
             ))}
           </div>
-          <Button
-            variant="outline"
-            onClick={() => onPageChange && onPageChange(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage === totalPages}
-          >
-            Sau
-          </Button>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center gap-2 mt-10">
+              <Button
+                variant="outline"
+                onClick={() => onPageChange && onPageChange(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2"
+              >
+                Trước
+              </Button>
+              <div className="flex items-center gap-2">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? 'default' : 'outline'}
+                    onClick={() => onPageChange && onPageChange(page)}
+                    className={`w-10 h-10 rounded-full ${
+                      currentPage === page 
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white' 
+                        : ''
+                    }`}
+                  >
+                    {page}
+                  </Button>
+                ))}
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => onPageChange && onPageChange(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2"
+              >
+                Sau
+              </Button>
+            </div>
+          )}
+
+          <div className="text-center mt-10">
+            <Button
+              variant="outline"
+              size="lg"
+              className="px-8 py-3 border-border hover:bg-muted text-foreground font-semibold bg-transparent"
+            >
+              Xem thêm sự kiện thú vị ({allEvents.length - filteredEvents.length} sự
+              kiện khác)
+            </Button>
+          </div>
+        </>
+      ) : (
+        <div className="text-center py-16">
+          <div className="bg-gray-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
+            <Calendar className="w-10 h-10 text-gray-400" />
+          </div>
+          <h3 className="text-2xl font-semibold text-gray-900 mb-3">Không tìm thấy sự kiện</h3>
+          <p className="text-gray-500 mb-8 max-w-md mx-auto">
+            Không có sự kiện nào phù hợp với tiêu chí tìm kiếm của bạn. Hãy thử thay đổi bộ lọc hoặc tìm kiếm khác.
+          </p>
+          <div className="flex justify-center gap-4">
+            <Button onClick={() => {
+              setSearchQuery("");
+              setSelectedCategory("all");
+            }}>
+              Xóa bộ lọc
+            </Button>
+            <Button variant="outline" onClick={onRefresh}>
+              Làm mới
+            </Button>
+          </div>
         </div>
       )}
-
-      <div className="text-center mt-12">
-        <Button
-          variant="outline"
-          size="lg"
-          className="px-8 py-3 border-border hover:bg-muted text-foreground font-semibold bg-transparent"
-        >
-          Xem thêm sự kiện thú vị ({allEvents.length - filteredEvents.length} sự
-          kiện khác)
-        </Button>
-      </div>
     </div>
   );
 }
