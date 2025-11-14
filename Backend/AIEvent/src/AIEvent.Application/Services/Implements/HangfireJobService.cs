@@ -1,4 +1,5 @@
 ﻿using AIEvent.Application.DTOs.Booking;
+using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.InviteFriend;
 using AIEvent.Application.DTOs.Notification;
 using AIEvent.Application.DTOs.PineconeVector;
@@ -466,9 +467,12 @@ namespace AIEvent.Application.Services.Implements
 
                 var embedding = await _voyageEmbeddingService.GetEmbeddingAsync(description);
 
+                var interests = ParseJsonList(user.UserInterestsJson);
+                var favoriteEvents = ParseJsonList(user.FavoriteEventTypesJson);
+                var skills = ParseJsonList(user.ProfessionalSkillsJson);
+
                 var metadata = new Dictionary<string, object>
                 {
-                    ["UserId"] = user.Id.ToString(),
                     ["FullName"] = user.FullName ?? "",
                     ["Occupation"] = user.Occupation ?? "",
                     ["JobTitle"] = user.JobTitle ?? "",
@@ -477,9 +481,9 @@ namespace AIEvent.Application.Services.Implements
                     ["BudgetOption"] = user.BudgetOption.ToString(),
                     ["ParticipationFrequency"] = user.ParticipationFrequency.ToString(),
                     ["ExperienceLevel"] = user.Experience?.ToString() ?? "",
-                    ["Interests"] = user.UserInterestsJson ?? "[]",
-                    ["FavoriteEventTypes"] = user.FavoriteEventTypesJson ?? "[]",
-                    ["Skills"] = user.ProfessionalSkillsJson ?? "[]",
+                    ["Interests"] = interests,
+                    ["FavoriteEventTypes"] = favoriteEvents,
+                    ["Skills"] = skills,
                     ["Languages"] = user.LanguagesJson ?? "[]",
                     ["Introduction"] = user.Introduction ?? "",
                 };
@@ -525,13 +529,22 @@ namespace AIEvent.Application.Services.Implements
 
             try
             {
-                return JsonSerializer.Deserialize<List<string>>(json) ?? new List<string>();
+                var objList = JsonSerializer.Deserialize<List<UserInterest>>(json);
+                if (objList == null)
+                    return new List<string>();
+
+                return objList
+                    .Where(i => !string.IsNullOrWhiteSpace(i.InterestName))
+                    .Select(i => i.InterestName!.Trim())
+                    .Distinct()
+                    .ToList();
             }
             catch
             {
                 return new List<string>();
             }
         }
+
 
         // embedding new event
         public async Task EnqueueEmbedNewEventJobAsync(Guid eventId)

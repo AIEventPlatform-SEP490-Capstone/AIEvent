@@ -2,7 +2,8 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.AIRecommendation;
 using AIEvent.Application.DTOs.Common;
-using AIEvent.Application.DTOs.Event; 
+using AIEvent.Application.DTOs.Event;
+using AIEvent.Application.DTOs.Friend;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using Microsoft.AspNetCore.Authorization;
@@ -119,6 +120,23 @@ namespace AIEvent.API.Controllers
                 new { },
                 SuccessCodes.Success,
                 "Session deleted successfully"));
+        }
+
+        [HttpGet("friend")]
+        [Authorize(Roles = "User")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<ListSearchFriend>>>> GetFriendAIRecommend([FromQuery] int pageNumber = 1,[FromQuery] int pageSize = 5)
+        {
+            Guid userId = User.GetRequiredUserId();
+            var result = await _eventRecommendationService.GetFriendAIRecommendAsync(pageNumber, pageSize, userId);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<ListSearchFriend>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Friend retrieved successfully"));
         }
     }
 }

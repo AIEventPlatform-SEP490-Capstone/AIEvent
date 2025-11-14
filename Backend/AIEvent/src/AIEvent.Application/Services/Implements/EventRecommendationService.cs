@@ -2,6 +2,7 @@
 using AIEvent.Application.DTOs.AIRecommendation;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
+using AIEvent.Application.DTOs.Friend;
 using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
@@ -10,6 +11,8 @@ using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -345,6 +348,127 @@ namespace AIEvent.Application.Services.Implements
             return Result.Success();
         }
 
+        private static List<string> ParseJsonList(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return new List<string>();
 
+            try
+            {
+                var objList = JsonSerializer.Deserialize<List<UserInterest>>(json);
+                if (objList == null)
+                    return new List<string>();
+
+                return objList
+                    .Where(i => !string.IsNullOrWhiteSpace(i.InterestName))
+                    .Select(i => i.InterestName!.Trim())
+                    .Distinct()
+                    .ToList();
+            }
+            catch
+            {
+                return new List<string>();
+            }
+        }
+
+        public async Task<Result<BasePaginated<ListSearchFriend>>> GetFriendAIRecommendAsync(int pageNumber, int pageSize, Guid userId)
+        {
+            var user = await _unitOfWork.UserRepository
+                .Query()
+                .AsNoTracking()
+                .Where(u => u.Id == userId && !u.IsDeleted && u.IsActive)
+                .Select(u => new
+                {
+                    u.Id,
+                    u.District,
+                    u.BudgetOption,
+                    u.InterestedDistrictsJson,
+                    u.UserInterestsJson,
+                    u.Occupation,
+                    u.ProfessionalSkillsJson,
+                    u.JobTitle,
+                    u.CareerGoal,
+                    u.ParticipationFrequency,
+                    u.Experience,
+                    u.FavoriteEventTypesJson,
+                    u.LanguagesJson,
+                    u.Introduction
+                })
+                .FirstOrDefaultAsync();
+
+            if (user == null)
+                return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
+
+            var interests = ParseJsonList(user.UserInterestsJson);
+            var districts = ParseJsonList(user.InterestedDistrictsJson);
+            var events = ParseJsonList(user.FavoriteEventTypesJson);
+            var skills = ParseJsonList(user.ProfessionalSkillsJson);
+            var languages = ParseJsonList(user.LanguagesJson);
+
+            var desc = new List<string?>
+            {
+                user.District != null ? $"Lives in {user.District}" : null,
+                interests.Count != 0 ? $"Interests: {string.Join(", ", interests)}" : null,
+                events.Count != 0 ? $"Events: {string.Join(", ", events)}" : null,
+                districts.Count != 0 ? $"Explore: {string.Join(", ", districts)}" : null,
+                $"Budget: {user.BudgetOption}",
+                $"Frequency: {user.ParticipationFrequency}",
+                user.Occupation != null ? $"Works as: {user.Occupation}" : null,
+                user.JobTitle != null ? $"Job: {user.JobTitle}" : null,
+                user.CareerGoal != null ? $"Goal: {user.CareerGoal}" : null,
+                skills.Count != 0 ? $"Skills: {string.Join(", ", skills)}" : null,
+                languages.Count != 0 ? $"Speaks: {string.Join(", ", languages)}" : null,
+                user.Introduction != null ? $"About: {user.Introduction}" : null
+            }
+            .Where(s => s != null)
+            .Select(s => s!)
+            .ToList();
+
+            var descriptionText = desc.Any() ? string.Join(". ", desc) : "A user with flexible preferences.";
+
+            var embedding = await _voyageEmbeddingService.GetEmbeddingAsync(descriptionText);
+            if (embedding?.Length == 0)
+                return ErrorResponse.FailureResult("Embedding failed", ErrorCodes.InternalServerError);
+
+            var pineconeResults = await _pineconeService.QuerySimilarAsync(embedding!, isUser: true, topK: 11);
+
+            var candidates = pineconeResults
+                .Where(r => r.Id != userId.ToString())
+                .Take(10)
+                .ToList();
+
+            if (!candidates.Any())
+                return new BasePaginated<ListSearchFriend>(new List<ListSearchFriend>(), 0, pageNumber, pageSize);
+
+            var userIds = candidates
+                .Select(r => Guid.TryParse(r.Id, out var g) ? g : (Guid?)null)
+                .Where(g => g.HasValue)
+                .Select(g => g.Value)
+                .ToList();
+
+            var query = _unitOfWork.UserRepository
+                .Query()
+                .AsNoTracking()
+                .Include(u => u.Role)
+                .Where(u => userIds.Contains(u.Id) && !u.IsDeleted && u.IsActive && u.Role.Name == "User")
+                .OrderBy(u => userIds.IndexOf(u.Id))
+                .Select(u => new ListSearchFriend
+                {
+                    Id = u.Id,
+                    FriendName = u.FullName!,
+                    District = u.District ?? "",
+                    Image = u.AvatarImgUrl ?? "",
+                    InterestsJson = u.UserInterestsJson ?? "[]"
+                });
+
+            var totalCount = userIds.Count;
+
+            var result = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return new BasePaginated<ListSearchFriend>(result, totalCount, pageNumber, pageSize);
+        }
     }
 }
