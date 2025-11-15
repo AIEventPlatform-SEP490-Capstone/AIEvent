@@ -6,6 +6,7 @@ using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 
 namespace AIEvent.Application.Services.Implements
@@ -362,6 +363,55 @@ namespace AIEvent.Application.Services.Implements
             {
                 return ErrorResponse.FailureResult($"Error getting revenue by category/tag: {ex.Message}", ErrorCodes.InternalServerError);
             }
+        }
+
+        public async Task<Result> UpdateSystemSetiing(string adminId, SystemSettingRequest request)
+        {
+            try
+            {
+                var systemSetting = await _unitOfWork.SystemSettingRepository
+                    .Query()
+                    .FirstOrDefaultAsync(s => s.CreatedBy == adminId && !s.IsDeleted);
+
+                if (systemSetting == null)
+                {
+                    return ErrorResponse.FailureResult("No Permission", ErrorCodes.PermissionDenied);
+                }
+
+                systemSetting.FlatformFee = request.FlatformFee;
+                systemSetting.FixFee = request.FixFee;
+                systemSetting.DatePayout = request.DatePayout;
+
+                await _unitOfWork.SystemSettingRepository.UpdateAsync(systemSetting);
+                await _unitOfWork.SaveChangesAsync();
+
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                return ErrorResponse.FailureResult($"Error getting revenue by category/tag: {ex.Message}", ErrorCodes.InternalServerError);
+            }
+        }
+
+        public async Task<Result<SystemSettingRequest>> GetSystemSetting(string adminId)
+        {
+            var systemSetting = await _unitOfWork.SystemSettingRepository
+                    .Query()
+                    .FirstOrDefaultAsync(s => s.CreatedBy == adminId && !s.IsDeleted);
+
+            if (systemSetting == null)
+            {
+                return ErrorResponse.FailureResult("No Permission", ErrorCodes.PermissionDenied);
+            }
+
+            SystemSettingRequest request = new()
+            {
+                DatePayout = systemSetting.DatePayout,
+                FixFee = systemSetting.FixFee,
+                FlatformFee = systemSetting.FlatformFee,
+            };
+
+            return Result<SystemSettingRequest>.Success(request);
         }
     }
 }
