@@ -1,5 +1,6 @@
 import BaseApiService from './BaseApiService';
 import EndUrls from '../EndUrls';
+import { translateReportEventError } from '../../utility';
 
 // Helper function to convert UTC to UTC+7
 const convertUTCToUTC7 = (utcDate) => {
@@ -415,6 +416,145 @@ class EventService {
         data: [],
         pagination: null,
         message: `Failed to fetch invitations: ${error.message}`,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Get AI recommended events
+   */
+  static async getAIRecommendedEvents(params = {}) {
+    try {
+      const {
+        pageNumber = 1,
+        pageSize = 5,
+      } = params;
+
+      // Build query parameters
+      const queryParams = new URLSearchParams();
+      if (pageNumber) queryParams.append('pageNumber', pageNumber);
+      if (pageSize) queryParams.append('pageSize', pageSize);
+
+      const url = `${EndUrls.AI_EVENTS}?${queryParams.toString()}`;
+      const response = await BaseApiService.get(url);
+      
+      // Extract data from the paginated response
+      let data = response;
+      
+      // Handle different response structures
+      if (response.data) {
+        data = response.data;
+      }
+      
+      // If we have a data wrapper, extract the actual data
+      if (data.data) {
+        data = data.data;
+      }
+      
+      // Extract items from paginated response
+      let items = data.items || data.Items || [];
+      
+      // Process dates for all events
+      items = processEventsArray(items);
+      
+      return {
+        success: true,
+        data: items,
+        pagination: {
+          currentPage: data.currentPage || data.CurrentPage || pageNumber,
+          totalPages: data.totalPages || data.TotalPages || 1,
+          totalItems: data.totalItems || data.TotalItems || items.length || 0,
+          pageSize: data.pageSize || data.PageSize || pageSize
+        },
+        message: 'AI recommended events fetched successfully',
+      };
+    } catch (error) {
+      console.error('Error fetching AI recommended events:', error);
+      return {
+        success: false,
+        data: [],
+        pagination: null,
+        message: `Failed to fetch AI recommended events: ${error.message}`,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Report an event
+   */
+  static async reportEvent(params = {}) {
+    try {
+      const {
+        eventId,
+        type,
+        reason,
+        attachmentUrl = '',
+      } = params;
+
+      if (!eventId || !type || !reason) {
+        return {
+          success: false,
+          message: 'Missing required parameters: eventId, type, reason',
+        };
+      }
+
+      // Build query parameters
+      const queryParams = new URLSearchParams();
+      queryParams.append('EventId', eventId);
+      queryParams.append('Type', type);
+      queryParams.append('Reason', reason);
+      if (attachmentUrl) {
+        queryParams.append('AttachmentUrl', attachmentUrl);
+      }
+
+      const url = `${EndUrls.REPORT_EVENT}?${queryParams.toString()}`;
+      const response = await BaseApiService.post(url, {});
+      
+      return {
+        success: true,
+        data: response,
+        message: 'Event reported successfully',
+      };
+    } catch (error) {
+      console.error('Error reporting event:', error);
+      const errorMessage = error.message || 'Failed to report event';
+      const translatedMessage = translateReportEventError(errorMessage);
+      
+      return {
+        success: false,
+        message: translatedMessage,
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * Get user reports for an event
+   */
+  static async getUserReports(eventId) {
+    try {
+      const response = await BaseApiService.get(EndUrls.GET_USER_REPORTS(eventId));
+      
+      let data = response;
+      if (response.data) {
+        data = response.data;
+      }
+      
+      const reports = Array.isArray(data) ? data : (data ? [data] : []);
+      
+      return {
+        success: true,
+        data: reports,
+        message: 'User reports fetched successfully',
+      };
+    } catch (error) {
+      console.error('Error fetching user reports:', error);
+      return {
+        success: false,
+        data: [],
+        message: `Failed to fetch user reports: ${error.message}`,
         error: error.message,
       };
     }

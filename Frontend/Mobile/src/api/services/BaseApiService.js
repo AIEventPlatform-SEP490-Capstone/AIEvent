@@ -40,23 +40,52 @@ class BaseApiService {
 
     if (response.status === 400) {
       try {
-        const errorData = await response.json();
-        console.error('API 400 Error Body:', errorData);
-        // Include full error body when throwing to aid debugging (may contain validation details)
-        const errMsg =
-          errorData && (errorData.message || JSON.stringify(errorData));
-
+        // Read response as text first to avoid body consumption issues
+        const textData = await response.text();
+        console.error('API 400 Error Body (text):', textData);
+        
+        let errorData = null;
+        let errorMessage = 'Bad Request: Invalid data provided';
+        let statusCode = '400';
+        
+        // Try to parse as JSON
+        try {
+          errorData = JSON.parse(textData);
+          console.error('API 400 Error Body (parsed):', errorData);
+          
+          // Extract message from parsed data
+          if (errorData && errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData) {
+            errorMessage = JSON.stringify(errorData);
+          }
+          
+          statusCode = errorData?.statusCode || '400';
+        } catch (parseError) {
+          console.error('Failed to parse 400 response as JSON:', parseError);
+          // If parsing fails, try to use textData if it looks like an error message
+          if (textData && textData.length < 500 && !textData.includes('<!DOCTYPE')) {
+            errorMessage = textData;
+          }
+        }
+        
         // Create error object with proper properties
-        const error = new Error(errMsg || 'Bad Request: Invalid data provided');
-        error.statusCode = errorData?.statusCode || '400';
+        const error = new Error(errorMessage);
+        error.statusCode = statusCode;
         error.errors = errorData?.errors;
+        error.originalData = errorData;
 
         throw error;
-      } catch (parseError) {
-        console.error('Failed to parse 400 response body:', parseError);
-        const error = new Error('Bad Request: Invalid data provided');
-        error.statusCode = '400';
-        throw error;
+      } catch (error) {
+        // If error is already our custom error, re-throw it
+        if (error.statusCode) {
+          throw error;
+        }
+        // Otherwise, wrap it
+        console.error('Error handling 400 response:', error);
+        const wrappedError = new Error(error.message || 'Bad Request: Invalid data provided');
+        wrappedError.statusCode = '400';
+        throw wrappedError;
       }
     }
     throw new Error(`HTTP error! status: ${response.status}`);

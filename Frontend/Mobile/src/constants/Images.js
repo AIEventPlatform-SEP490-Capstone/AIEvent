@@ -20,6 +20,7 @@ const Images = {
   showEye: require('../assets/icons/show-eye.png'),
   pushpin: require('../assets/icons/pushpin.png'),
   qrCode: require('../assets/icons/qr-code.png'),
+  ticket: require('../assets/icons/document.png'), // Using document icon as ticket icon
 
   // Event images (using existing card images)
   event1: require('../assets/images/card1.png'),
@@ -35,6 +36,7 @@ const Images = {
 
   // Logo
   aiEventLogo: require('../assets/images/AIEventLogo.png'),
+  robotCycle: require('../assets/images/robot-cycle.png'),
 
   //share
   shareSystem: require('../assets/images/system.png'),

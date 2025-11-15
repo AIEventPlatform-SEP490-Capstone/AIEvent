@@ -25,6 +25,7 @@ import { useEvents } from '../../hooks/useEvents';
 import { useCategories } from '../../hooks/useCategories';
 import { selectEvents, selectEventsLoading, selectEventsError } from '../../redux/slices/eventsSlice';
 import { selectCategories, selectCategoriesLoading } from '../../redux/slices/categoriesSlice';
+import { EventService } from '../../api/services';
 
 const { width } = Dimensions.get('window');
 
@@ -46,6 +47,10 @@ const HomeScreen = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [aiEvents, setAiEvents] = useState([]);
+  const [loadingAIEvents, setLoadingAIEvents] = useState(false);
+  const [showAIEvents, setShowAIEvents] = useState(false);
+  const [aiRequestCount, setAiRequestCount] = useState(0);
 
 
   useEffect(() => {
@@ -209,6 +214,47 @@ const HomeScreen = () => {
     }
   };
 
+  const handleAISuggestionPress = async () => {
+    if (showAIEvents && aiEvents.length > 0) {
+      // If already showing AI events, hide them
+      setShowAIEvents(false);
+      return;
+    }
+
+    // Prevent request if already loading or exceeded request limit
+    if (loadingAIEvents) {
+      return;
+    }
+
+    // Limit to maximum 2 requests
+    if (aiRequestCount >= 2) {
+      Alert.alert('Thông báo', 'Bạn đã tải sự kiện gợi ý tối đa 2 lần. Vui lòng làm mới trang để tiếp tục.');
+      return;
+    }
+
+    try {
+      setLoadingAIEvents(true);
+      const response = await EventService.getAIRecommendedEvents({
+        pageNumber: 1,
+        pageSize: 5
+      });
+      
+      if (response && response.success && response.data) {
+        const transformedEvents = response.data.map(event => transformEventData(event));
+        setAiEvents(transformedEvents);
+        setShowAIEvents(true);
+        setAiRequestCount(prev => prev + 1);
+      } else {
+        Alert.alert('Thông báo', 'Không thể tải sự kiện gợi ý');
+      }
+    } catch (error) {
+      console.error('Error loading AI events:', error);
+      Alert.alert('Lỗi', 'Không thể tải sự kiện gợi ý: ' + error.message);
+    } finally {
+      setLoadingAIEvents(false);
+    }
+  };
+
   // Robust keyExtractor that handles undefined IDs
   const keyExtractor = (item, index) => {
     // Try multiple possible ID properties
@@ -351,6 +397,21 @@ const HomeScreen = () => {
           value={searchText}
           onChangeText={setSearchText}
         />
+        <TouchableOpacity 
+          onPress={handleAISuggestionPress}
+          style={styles.aiIconButton}
+          activeOpacity={0.7}
+          disabled={loadingAIEvents || aiRequestCount >= 2}
+        >
+          <Image 
+            source={Images.robotCycle} 
+            style={[
+              styles.aiIcon, 
+              showAIEvents && styles.aiIconActive,
+              (loadingAIEvents || aiRequestCount >= 2) && styles.aiIconDisabled
+            ]} 
+          />
+        </TouchableOpacity>
       </View>
 
       {/* Category Section */}
@@ -401,6 +462,41 @@ const HomeScreen = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.contentContainer}
       >
+        {/* AI Recommended Events Section */}
+        {showAIEvents && (
+          <View style={styles.aiEventsSection}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.aiSectionTitleContainer}>
+                <Image source={Images.robotCycle} style={styles.aiSectionIcon} />
+                <CustomText variant="h2" color="primary" style={styles.sectionTitle}>
+                  Sự kiện gợi ý
+                </CustomText>
+              </View>
+            </View>
+            {loadingAIEvents ? (
+              <View style={styles.loadingContainer}>
+                <CustomText variant="body" color="secondary" align="center">
+                  {Strings.LOADING}
+                </CustomText>
+              </View>
+            ) : aiEvents.length > 0 ? (
+              <FlatList
+                data={aiEvents}
+                renderItem={renderEventCard}
+                keyExtractor={keyExtractor}
+                showsVerticalScrollIndicator={false}
+                scrollEnabled={false}
+              />
+            ) : (
+              <View style={styles.emptyContainer}>
+                <CustomText variant="body" color="secondary" align="center">
+                  Không có sự kiện gợi ý
+                </CustomText>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Latest Events Section */}
         {latestEvents.length > 0 && (
           <View style={styles.latestEventsSection}>

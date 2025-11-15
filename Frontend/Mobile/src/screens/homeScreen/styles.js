@@ -66,6 +66,21 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     paddingVertical: 14,
   },
+  aiIconButton: {
+    padding: 8,
+    marginLeft: 8,
+  },
+  aiIcon: {
+    left: 10,
+    width: 35,
+    height: 35,
+  },
+  aiIconActive: {
+    opacity: 1,
+  },
+  aiIconDisabled: {
+    opacity: 0.5,
+  },
   clearButton: {
     padding: 8,
   },
@@ -126,6 +141,19 @@ const styles = StyleSheet.create({
   },
   latestEventsSection: {
     marginBottom: 30,
+  },
+  aiEventsSection: {
+    paddingHorizontal: 20,
+    marginBottom: 30,
+  },
+  aiSectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  aiSectionIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 8,
   },
   eventsListSection: {
     paddingHorizontal: 20,
