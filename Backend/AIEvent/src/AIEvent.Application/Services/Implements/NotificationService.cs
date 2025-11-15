@@ -265,6 +265,8 @@ namespace AIEvent.Application.Services.Implements
                 .Select(u => new { u.Id, u.IsPushNotificationEnabled, u.IsEmailNotificationEnabled, u.Email, u.FullName })
                 .ToDictionaryAsync(x => x.Id, x => new { x.IsPushNotificationEnabled, x.IsEmailNotificationEnabled, x.Email, x.FullName });
 
+            var bookingsToUpdate = new List<Booking>();
+
             foreach (var ev in upcomingEvents)
             {
                 if (!ev.Bookings.Any())
@@ -279,12 +281,16 @@ namespace AIEvent.Application.Services.Implements
                     if(booking.Status != BookingStatus.Completed)
                         continue;
 
+                    if (booking.IsNotification == true)
+                        continue;
+
                     var key = $"{ev.Id}_{booking.UserId}";
                     if (sentLookup.Contains(key)) continue;
 
                     if (!userNotificationPrefs.TryGetValue(booking.UserId, out var userPrefs))
                         continue;
  
+                    var notificationSent = false; 
                     if (userPrefs.IsPushNotificationEnabled == true)
                     {
                         var dto = new PushNotificationRequest
@@ -299,8 +305,9 @@ namespace AIEvent.Application.Services.Implements
                         };
 
                         await _oneSignalService.SendNotificationAsync(dto);
+                        notificationSent = true;
                     }
- 
+  
                     if (userPrefs.IsEmailNotificationEnabled == true && !string.IsNullOrEmpty(userPrefs.Email))
                     {
                         var sb = new StringBuilder();
@@ -320,9 +327,23 @@ namespace AIEvent.Application.Services.Implements
                         };
 
                         await _emailService.SendEmailAsync(userPrefs.Email, message);
+                        notificationSent = true;
+                    } 
+                    
+                    if (notificationSent)
+                    {
+                        booking.IsNotification = true;
+                        bookingsToUpdate.Add(booking);
                     }
                 }
             }
+            
+            if (bookingsToUpdate.Any())
+            {
+                await _unitOfWork.BookingRepository.UpdateRangeAsync(bookingsToUpdate);
+                await _unitOfWork.SaveChangesAsync();
+            }
+
             return Result.Success();
         }
 
