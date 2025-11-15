@@ -25,8 +25,8 @@ namespace AIEvent.Application.Services.Implements
                 "*/5 * * * *");
 
             _recurringJobManager.AddOrUpdate<INotificationService>(
-                "auto-process-event-reminder",
-                service => service.SendEventReminderAsync(),
+                "auto-process-event-booking-reminder",
+                service => service.SendEventBookingReminderAsync(),
                 "*/15 * * * *");
         }
     }
