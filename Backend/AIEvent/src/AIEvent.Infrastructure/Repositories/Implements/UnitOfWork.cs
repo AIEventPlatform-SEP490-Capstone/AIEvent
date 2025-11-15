@@ -38,6 +38,7 @@ namespace AIEvent.Infrastructure.Repositories.Implements
         public IGenericRepository<EventInvitation> EventInvitationRepository => GetRepository<EventInvitation>();
         public IGenericRepository<StaffProfile> StaffProfileRepository => GetRepository<StaffProfile>();
         public IGenericRepository<EventReport> EventReportRepository => GetRepository<EventReport>();
+        public IGenericRepository<SystemSetting> SystemSettingRepository => GetRepository<SystemSetting>();
 
         public IMongoRepository<ChatLog> ChatLogRepository => GetMongoRepository<ChatLog>();
 
