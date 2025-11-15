@@ -9,6 +9,7 @@ using AIEvent.Domain.Entities;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using AIEvent.Domain.Enums; 
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -16,11 +17,13 @@ namespace AIEvent.Application.Services.Implements
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly IOneSignalService _oneSignalService;
 
-        public NotificationService(IUnitOfWork unitOfWork, IHubContext<NotificationHub> hubContext)
+        public NotificationService(IUnitOfWork unitOfWork, IHubContext<NotificationHub> hubContext, IOneSignalService oneSignalService)
         {
             _unitOfWork = unitOfWork;
             _hubContext = hubContext;
+            _oneSignalService = oneSignalService;
         }
 
         public async Task<Result> CreateNotificationAsync(CreateNotificationRequest request)
@@ -219,5 +222,63 @@ namespace AIEvent.Application.Services.Implements
             await _unitOfWork.SaveChangesAsync();
             return Result.Success();
         }
+
+        public async Task<Result> SendEventReminderAsync()
+        {
+            var upcomingEvents = await _unitOfWork.EventRepository
+                                        .Query()
+                                        .Where(e => !e.IsDeleted
+                                                    && e.Status == Domain.Enums.EventStatus.Approved
+                                                    && e.StartTime > DateTime.UtcNow
+                                                    && e.StartTime <= DateTime.UtcNow.AddHours(3))
+                                        .Include(e => e.Bookings)
+                                        .ToListAsync();
+            if (!upcomingEvents.Any())
+                return ErrorResponse.FailureResult("Upcoming events not found", ErrorCodes.NotFound);
+
+            var eventIds = upcomingEvents.Select(e => e.Id).ToList();
+            var sentNotifications = await _unitOfWork.NotificationRepository
+                                            .Query()
+                                            .AsNoTracking()
+                                            .Where(n => n.EventId.HasValue
+                                                     && eventIds.Contains(n.EventId.Value)
+                                                     && n.Type == NotificationType.EventReminder)
+                                            .Select(n => new { EventId = n.EventId!.Value, n.UserId })
+                                            .ToListAsync();
+
+            var sentLookup = sentNotifications
+                                .Select(x => $"{x.EventId}_{x.UserId}")
+                                .ToHashSet();
+
+            foreach (var ev in upcomingEvents)
+            {
+                if (!ev.Bookings.Any())
+                    continue;
+
+                var firstImage = !string.IsNullOrEmpty(ev.ImgListEvent) 
+                    ? ev.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() 
+                    : string.Empty;
+                foreach (var booking in ev.Bookings)
+                {
+                    var key = $"{ev.Id}_{booking.UserId}";
+                    if (sentLookup.Contains(key)) continue;
+
+                    var dto = new PushNotificationRequest
+                    {
+                        UserId = booking.UserId,
+                        Title = $"Sắp diễn ra: {ev.Title}",
+                        Content = $"Sự kiện {ev.Title} sẽ diễn ra vào {ev.StartTime:HH:mm dd/MM/yyyy}",
+                        EventId = ev.Id,
+                        ImageUrl = firstImage,
+                        Type = NotificationType.EventReminder,
+                        Channel = NotificationChannel.Push
+                    };
+
+                    await _oneSignalService.SendNotificationAsync(dto);
+                }
+            }
+            return Result.Success();
+        }
+
     }
 }

@@ -23,6 +23,11 @@ namespace AIEvent.Application.Services.Implements
                 "auto-process-pending-payouts",
                 service => service.ProcessPendingPayoutsAsync(),
                 "*/5 * * * *");
+
+            _recurringJobManager.AddOrUpdate<INotificationService>(
+                "auto-process-event-reminder",
+                service => service.SendEventReminderAsync(),
+                "*/15 * * * *");
         }
     }
 }
