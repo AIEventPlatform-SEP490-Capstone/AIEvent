@@ -2,6 +2,8 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Dashboard;
+using AIEvent.Application.DTOs.Event;
+using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -125,6 +127,42 @@ namespace AIEvent.API.Controllers
                 result.Value!,
                 SuccessCodes.Success,
                 "Revenue by category/tag retrieved successfully"));
+        }
+
+        [HttpPatch("system-setting")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<SuccessResponse<object>>> UpdateSystemSetting(SystemSettingRequest request)
+        {
+            string userId = User.GetRequiredUserId().ToString();
+            var result = await _dashboardService.UpdateSystemSetiing(userId, request);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Success,
+                "SystemSetting updated successfully"));
+        }
+
+        [HttpGet("system-setting")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<SuccessResponse<SystemSettingRequest>>> GetSystemSetting()
+        {
+            string userId = User.GetRequiredUserId().ToString();
+            var result = await _dashboardService.GetSystemSetting(userId);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<SystemSettingRequest>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "SystemSetting retrieved successfully"));
         }
     }
 }

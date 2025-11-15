@@ -28,6 +28,7 @@ namespace AIEvent.Infrastructure.Repositories.Interfaces
         IGenericRepository<EventInvitation> EventInvitationRepository { get; }
         IGenericRepository<StaffProfile> StaffProfileRepository { get; }
         IGenericRepository<EventReport> EventReportRepository { get; }
+        IGenericRepository<SystemSetting> SystemSettingRepository { get; }
         IMongoRepository<ChatLog> ChatLogRepository { get; }
         void EnableSoftDelete();
         void DisableSoftDelete();

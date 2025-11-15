@@ -39,6 +39,7 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<StaffProfile> StaffProfiles { get; set; }
         public DbSet<EventReport> EventReports { get; set; }
+        public DbSet<SystemSetting> SystemSettings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

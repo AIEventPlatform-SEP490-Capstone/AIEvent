@@ -11,6 +11,8 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result<RevenueStatisticsResponse>> GetRevenueStatisticsAsync(Guid organizerProfileId, DashboardFilterRequest? filter = null);
         Task<Result<NetRevenueStatisticsResponse>> GetNetRevenueStatisticsAsync(Guid organizerProfileId, DashboardFilterRequest? filter = null);
         Task<Result<RevenueByCategoryTagResponse>> GetRevenueByCategoryTagAsync(Guid organizerProfileId, DashboardFilterRequest? filter = null);
+        Task<Result> UpdateSystemSetiing(string adminId, SystemSettingRequest request);
+        Task<Result<SystemSettingRequest>> GetSystemSetting(string adminId);
     }
 }
 
