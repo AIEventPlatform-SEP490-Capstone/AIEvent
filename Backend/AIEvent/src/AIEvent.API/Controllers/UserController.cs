@@ -113,8 +113,7 @@ namespace AIEvent.API.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<SuccessResponse<object>>> UnBanUser(string id)
         {
-            var userId = User.GetRequiredUserId();
-            var result = await _userService.UnBanUserAsync(userId, id);
+            var result = await _userService.UnBanUserAsync(id);
 
             if (!result.IsSuccess)
             {
@@ -213,6 +212,24 @@ namespace AIEvent.API.Controllers
                 new { },
                 SuccessCodes.Deleted,
                 "Ban Staff successfully"));
+        }
+
+        [HttpPatch("location")]
+        [Authorize(Roles = "User")]
+        public async Task<ActionResult<SuccessResponse<object>>> TurnOnOffLocation(bool action)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _userService.TurnOnOffLocationAsync(userId, action);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Success,
+                "Successfully"));
         }
     }
 }

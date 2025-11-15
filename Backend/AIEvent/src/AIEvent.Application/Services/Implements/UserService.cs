@@ -139,7 +139,7 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("Invalid ID format", ErrorCodes.InvalidInput);
 
             var user = await _unitOfWork.UserRepository.Query()
-                .FirstOrDefaultAsync(u => u.Id == Id && !u.IsDeleted && u.IsActive);
+                .FirstOrDefaultAsync(u => u.Id == Id && !u.IsDeleted && u.IsActive && u.Id != userId);
 
             if(user == null)
                 return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
@@ -151,7 +151,7 @@ namespace AIEvent.Application.Services.Implements
             return Result.Success();
         }
 
-        public async Task<Result> UnBanUserAsync(Guid userId, string id)
+        public async Task<Result> UnBanUserAsync(string id)
         {
             if (!Guid.TryParse(id, out var Id))
                 return ErrorResponse.FailureResult("Invalid ID format", ErrorCodes.InvalidInput);
@@ -294,7 +294,7 @@ namespace AIEvent.Application.Services.Implements
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.Message);
+                return ErrorResponse.FailureResult($"Error : {ex.Message}", ErrorCodes.InternalServerError);
             }
         }
 
@@ -394,7 +394,7 @@ namespace AIEvent.Application.Services.Implements
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.Message);
+                return ErrorResponse.FailureResult($"Error : {ex.Message}", ErrorCodes.InternalServerError);
             }
         }
 
@@ -461,7 +461,31 @@ namespace AIEvent.Application.Services.Implements
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.Message);
+                return ErrorResponse.FailureResult($"Error : {ex.Message}", ErrorCodes.InternalServerError);
+            }
+        }
+
+        public async Task<Result> TurnOnOffLocationAsync(Guid userId, bool action)
+        {
+            try
+            {
+                var user = await _unitOfWork.UserRepository
+                    .Query()
+                    .FirstOrDefaultAsync(u => u.Id == userId && !u.IsDeleted && u.IsActive);
+
+                if (user == null)
+                    return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
+
+                user.IsTurnOnLocation = action;
+
+                await _unitOfWork.UserRepository.UpdateAsync(user);
+                await _unitOfWork.SaveChangesAsync();
+
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                return ErrorResponse.FailureResult($"Error : {ex.Message}", ErrorCodes.InternalServerError);
             }
         }
     }

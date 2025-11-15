@@ -393,7 +393,7 @@ namespace AIEvent.Application.Services.Implements
             }
         }
 
-        public async Task<Result<SystemSettingRequest>> GetSystemSetting(string adminId)
+        public async Task<Result<SystemSettingResponse>> GetSystemSetting(string adminId)
         {
             var systemSetting = await _unitOfWork.SystemSettingRepository
                     .Query()
@@ -404,14 +404,15 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("No Permission", ErrorCodes.PermissionDenied);
             }
 
-            SystemSettingRequest request = new()
+            SystemSettingResponse request = new()
             {
                 DatePayout = systemSetting.DatePayout,
                 FixFee = systemSetting.FixFee,
                 FlatformFee = systemSetting.FlatformFee,
+                UpdateAt = systemSetting.UpdatedAt,
             };
 
-            return Result<SystemSettingRequest>.Success(request);
+            return Result<SystemSettingResponse>.Success(request);
         }
     }
 }

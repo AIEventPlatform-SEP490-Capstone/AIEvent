@@ -149,7 +149,7 @@ namespace AIEvent.API.Controllers
 
         [HttpGet("system-setting")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<SuccessResponse<SystemSettingRequest>>> GetSystemSetting()
+        public async Task<ActionResult<SuccessResponse<SystemSettingResponse>>> GetSystemSetting()
         {
             string userId = User.GetRequiredUserId().ToString();
             var result = await _dashboardService.GetSystemSetting(userId);
@@ -159,7 +159,7 @@ namespace AIEvent.API.Controllers
                 return BadRequest(result.Error!);
             }
 
-            return Ok(SuccessResponse<SystemSettingRequest>.SuccessResult(
+            return Ok(SuccessResponse<SystemSettingResponse>.SuccessResult(
                 result.Value!,
                 SuccessCodes.Success,
                 "SystemSetting retrieved successfully"));
