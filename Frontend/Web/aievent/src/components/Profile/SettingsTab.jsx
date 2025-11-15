@@ -24,7 +24,7 @@ const SettingsTab = ({
         {/* Security Settings */}
         <div className="group relative overflow-hidden bg-white rounded-2xl shadow-lg border border-gray-100 hover:shadow-2xl transition-all duration-300">
           {/* Decorative gradient background */}
-          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-500 via-pink-500 to-rose-500"></div>
+          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-200 via-pink-200 to-rose-200"></div>
           
           <div className="p-6">
             <div className="flex items-center mb-6">
@@ -33,7 +33,7 @@ const SettingsTab = ({
               </div>
               <div>
                 <h3 className="text-xl font-bold text-gray-900">Bảo mật</h3>
-                <p className="text-sm text-gray-500">Bảo vệ tài khoản của bạn</p>
+                <p className="text-sm text-gray-500">Cấu hình bảo mật tài khoản của bạn</p>
               </div>
             </div>
 
@@ -46,7 +46,6 @@ const SettingsTab = ({
                     </div>
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-900 mb-1">Mật khẩu</h4>
-                      <p className="text-sm text-gray-600 mb-1">Cập nhật mật khẩu để bảo vệ tài khoản</p>
                       <p className="text-xs text-gray-500">Khuyến nghị đổi mật khẩu định kỳ</p>
                     </div>
                   </div>
@@ -57,6 +56,7 @@ const SettingsTab = ({
                     Đổi mật khẩu
                   </Button>
                 </div>
+                
               </div>
             </div>
           </div>
@@ -74,7 +74,7 @@ const SettingsTab = ({
               </div>
               <div>
                 <h3 className="text-xl font-bold text-gray-900">Thông báo</h3>
-                <p className="text-sm text-gray-500">Quản lý cách bạn nhận thông báo</p>
+                <p className="text-sm text-gray-500">Quản lý cách bạn nhận thông báo (coming soon...)</p>
               </div>
             </div>
 
@@ -87,7 +87,7 @@ const SettingsTab = ({
                     </div>
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-900 mb-1">Email thông báo</h4>
-                      <p className="text-sm text-gray-600">Nhận thông báo về sự kiện qua email</p>
+                      <p className="text-sm text-gray-600">Nhận thông báo về sự kiện qua email (coming soon...)</p>
                     </div>
                   </div>
                   <div className="ml-4">
@@ -111,7 +111,7 @@ const SettingsTab = ({
                     </div>
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-900 mb-1">Push thông báo</h4>
-                      <p className="text-sm text-gray-600">Nhận thông báo đẩy trên trình duyệt</p>
+                      <p className="text-sm text-gray-600">Nhận thông báo đẩy trên trình duyệt (coming soon...)</p>
                     </div>
                   </div>
                   <div className="ml-4">

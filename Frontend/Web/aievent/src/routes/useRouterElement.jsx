@@ -36,6 +36,7 @@ import SearchPage from "../pages/Search/SearchPage";
 import FavoriteEventsPage from "../pages/User/FavoriteEventsPage";
 import OrganizerApprovalListPage from "../pages/Admin/OrganizerApprovalListPage";
 import OrganizerApprovalDetailPage from "../pages/Admin/OrganizerApprovalDetailPage";
+import SystemSettings from "../pages/Admin/SystemSettings";
 import FriendDetailPage from "../pages/User/FriendDetailPage";
 import EventInvitationsPage from "../pages/User/EventInvitationsPage";
 import StaffManagePage from "../pages/Organizer/StaffManagePage";
@@ -253,7 +254,7 @@ export default function useRouterElement() {
         { path: "settings", element: <div>Admin Settings Page</div> },
         {
           path: "system-settings",
-          element: <div>Admin System Settings Page</div>,
+          element: <SystemSettings />,
         },
         { path: "documentation", element: <div>Admin Documentation Page</div> },
         { path: "help", element: <div>Admin Help Page</div> },
