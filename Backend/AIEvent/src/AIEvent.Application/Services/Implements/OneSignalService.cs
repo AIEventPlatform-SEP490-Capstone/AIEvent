@@ -32,14 +32,19 @@ namespace AIEvent.Application.Services.Implements
             if(dto.UserId == null)
                 return ErrorResponse.FailureResult("UserId not valid", ErrorCodes.InvalidInput);
 
-            var deviceToken = await _unitOfWork.UserRepository
+            var userData = await _unitOfWork.UserRepository
                                     .Query()
                                     .Where(u => u.Id == dto.UserId && !u.IsDeleted)
-                                    .Select(u => u.DeviceToken)
+                                    .Select(u => new
+                                    {
+                                        u.DeviceToken,
+                                        u.IsPushNotificationEnabled
+                                    })
                                     .FirstOrDefaultAsync();
 
-            if (string.IsNullOrWhiteSpace(deviceToken))
+            if (string.IsNullOrWhiteSpace(userData?.DeviceToken))
                 return ErrorResponse.FailureResult("Device token not found", ErrorCodes.InvalidInput);
+
 
             var payload = new
             {
@@ -47,7 +52,7 @@ namespace AIEvent.Application.Services.Implements
                 included_segments = new[] { "Subscribed Users" },
                 headings = new { en = dto.Title },
                 contents = new { en = dto.Content },
-                include_player_ids = new[] { deviceToken },
+                include_player_ids = new[] { userData?.DeviceToken },
                 include_external_user_ids = new[] { dto.UserId.ToString() },
                 big_picture = string.IsNullOrWhiteSpace(dto.ImageUrl) ? null : dto.ImageUrl
             };

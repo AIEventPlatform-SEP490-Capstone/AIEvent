@@ -250,6 +250,17 @@ namespace AIEvent.Application.Services.Implements
                                 .Select(x => $"{x.EventId}_{x.UserId}")
                                 .ToHashSet();
 
+            var allUserIds = upcomingEvents
+                            .SelectMany(e => e.Bookings.Select(b => b.UserId))
+                            .Distinct()
+                            .ToList();
+             
+            var userNotificationPrefs = await _unitOfWork.UserRepository
+                .Query()
+                .Where(u => allUserIds.Contains(u.Id) && !u.IsDeleted)
+                .Select(u => new { u.Id, u.IsPushNotificationEnabled })
+                .ToDictionaryAsync(x => x.Id, x => x.IsPushNotificationEnabled);
+
             foreach (var ev in upcomingEvents)
             {
                 if (!ev.Bookings.Any())
@@ -258,10 +269,17 @@ namespace AIEvent.Application.Services.Implements
                 var firstImage = !string.IsNullOrEmpty(ev.ImgListEvent) 
                     ? ev.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() 
                     : string.Empty;
+
                 foreach (var booking in ev.Bookings)
                 {
+                    if(booking.Status != BookingStatus.Completed)
+                        continue;
+
                     var key = $"{ev.Id}_{booking.UserId}";
                     if (sentLookup.Contains(key)) continue;
+
+                    if (!userNotificationPrefs.TryGetValue(booking.UserId, out var enabled) || enabled != true)
+                        continue;
 
                     var dto = new PushNotificationRequest
                     {

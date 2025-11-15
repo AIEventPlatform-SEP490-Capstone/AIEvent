@@ -16,6 +16,7 @@ namespace AIEvent.Application.Test.Services
     public class NotificationServiceTests
     {
         private readonly Mock<IUnitOfWork> _mockUnitOfWork;
+        private readonly Mock<IOneSignalService> _mockOneSignalService;
         private readonly Mock<IHubContext<NotificationHub>> _mockHubContext;
         private readonly Mock<IClientProxy> _mockClientProxy;
         private readonly INotificationService _notificationService;
@@ -31,7 +32,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork = new Mock<IUnitOfWork>();
             _mockHubContext = new Mock<IHubContext<NotificationHub>>();
             _mockClientProxy = new Mock<IClientProxy>();
-
+            _mockOneSignalService = new Mock<IOneSignalService>();
             // Setup SendCoreAsync for extension method SendAsync
             _mockClientProxy.Setup(x => x.SendCoreAsync(
                 It.IsAny<string>(),
@@ -43,7 +44,7 @@ namespace AIEvent.Application.Test.Services
             mockClients.Setup(x => x.User(It.IsAny<string>())).Returns(_mockClientProxy.Object);
             _mockHubContext.Setup(x => x.Clients).Returns(mockClients.Object);
 
-            _notificationService = new NotificationService(_mockUnitOfWork.Object, _mockHubContext.Object);
+            _notificationService = new NotificationService(_mockUnitOfWork.Object, _mockHubContext.Object, _mockOneSignalService.Object);
         }
 
         #region CreateNotificationAsync Tests
