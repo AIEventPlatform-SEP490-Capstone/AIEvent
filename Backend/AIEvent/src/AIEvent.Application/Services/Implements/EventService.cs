@@ -10,8 +10,7 @@ using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using AutoMapper;
-using AutoMapper.QueryableExtensions;
-using CloudinaryDotNet;
+using AutoMapper.QueryableExtensions; 
 using Microsoft.EntityFrameworkCore;
 
 namespace AIEvent.Application.Services.Implements

@@ -26,6 +26,7 @@ namespace AIEvent.Application.Test.Services
         private readonly Mock<IHasherHelper> _mockHasherHelper;
         private readonly Mock<ICacheService> _mockCacheService;
         private readonly Mock<IConfiguration> _mockConfiguration;
+        private readonly Mock<IHangfireJobService> _mockHangfireJobService;
         private readonly IAuthService _authService;
         
 
@@ -39,13 +40,15 @@ namespace AIEvent.Application.Test.Services
             _mockEmailService = new Mock<IEmailService>();
             _mockCacheService = new Mock<ICacheService>();
             _mockConfiguration = new Mock<IConfiguration>();
+            _mockHangfireJobService = new Mock<IHangfireJobService>();
             _authService = new AuthService(_mockUnitOfWork.Object,
                                                _mockJwtService.Object,
                                                _mockMapper.Object,
                                                _mockEmailService.Object,
                                                _mockHasherHelper.Object,
                                                _mockCacheService.Object,
-                                               _mockConfiguration.Object);
+                                               _mockConfiguration.Object,
+                                               _mockHangfireJobService.Object);
         }
         #region Login
         // UTCID01: Valid credentials, successful login

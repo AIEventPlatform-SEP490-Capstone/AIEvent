@@ -36,7 +36,7 @@ namespace AIEvent.Domain.Entities
         public string? TwitterUrl { get; set; }
         public string? InstagramUrl { get; set; }
         public string? FacebookUrl { get; set; }
-
+        public string? DeviceToken { get; set; }
         public string? LanguagesJson { get; set; }
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 
