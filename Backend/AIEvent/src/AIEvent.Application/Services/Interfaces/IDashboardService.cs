@@ -12,7 +12,7 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result<NetRevenueStatisticsResponse>> GetNetRevenueStatisticsAsync(Guid organizerProfileId, DashboardFilterRequest? filter = null);
         Task<Result<RevenueByCategoryTagResponse>> GetRevenueByCategoryTagAsync(Guid organizerProfileId, DashboardFilterRequest? filter = null);
         Task<Result> UpdateSystemSetiing(string adminId, SystemSettingRequest request);
-        Task<Result<SystemSettingRequest>> GetSystemSetting(string adminId);
+        Task<Result<SystemSettingResponse>> GetSystemSetting(string adminId);
     }
 }
 
