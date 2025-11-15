@@ -20,6 +20,7 @@ namespace AIEvent.Application.Test.Services
         private readonly Mock<IHubContext<NotificationHub>> _mockHubContext;
         private readonly Mock<IClientProxy> _mockClientProxy;
         private readonly INotificationService _notificationService;
+        private readonly Mock<IEmailService> _mockEmailService;
 
         private static readonly Guid UserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         private static readonly Guid UserId2 = Guid.Parse("22222222-2222-2222-2222-222222222222");
@@ -32,6 +33,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork = new Mock<IUnitOfWork>();
             _mockHubContext = new Mock<IHubContext<NotificationHub>>();
             _mockClientProxy = new Mock<IClientProxy>();
+            _mockEmailService = new Mock<IEmailService>();
             _mockOneSignalService = new Mock<IOneSignalService>();
             // Setup SendCoreAsync for extension method SendAsync
             _mockClientProxy.Setup(x => x.SendCoreAsync(
@@ -44,7 +46,7 @@ namespace AIEvent.Application.Test.Services
             mockClients.Setup(x => x.User(It.IsAny<string>())).Returns(_mockClientProxy.Object);
             _mockHubContext.Setup(x => x.Clients).Returns(mockClients.Object);
 
-            _notificationService = new NotificationService(_mockUnitOfWork.Object, _mockHubContext.Object, _mockOneSignalService.Object);
+            _notificationService = new NotificationService(_mockUnitOfWork.Object, _mockHubContext.Object, _mockOneSignalService.Object, _mockEmailService.Object);
         }
 
         #region CreateNotificationAsync Tests

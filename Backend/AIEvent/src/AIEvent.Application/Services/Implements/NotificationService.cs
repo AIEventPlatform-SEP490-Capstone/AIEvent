@@ -9,7 +9,9 @@ using AIEvent.Domain.Entities;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using AIEvent.Domain.Enums; 
+using AIEvent.Domain.Enums;
+using MimeKit;
+using System.Text; 
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -18,12 +20,14 @@ namespace AIEvent.Application.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly IHubContext<NotificationHub> _hubContext;
         private readonly IOneSignalService _oneSignalService;
+        private readonly IEmailService _emailService;
 
-        public NotificationService(IUnitOfWork unitOfWork, IHubContext<NotificationHub> hubContext, IOneSignalService oneSignalService)
+        public NotificationService(IUnitOfWork unitOfWork, IHubContext<NotificationHub> hubContext, IOneSignalService oneSignalService, IEmailService emailService)
         {
             _unitOfWork = unitOfWork;
             _hubContext = hubContext;
             _oneSignalService = oneSignalService;
+            _emailService = emailService;
         }
 
         public async Task<Result> CreateNotificationAsync(CreateNotificationRequest request)
@@ -223,12 +227,12 @@ namespace AIEvent.Application.Services.Implements
             return Result.Success();
         }
 
-        public async Task<Result> SendEventReminderAsync()
+        public async Task<Result> SendEventBookingReminderAsync()
         {
             var upcomingEvents = await _unitOfWork.EventRepository
                                         .Query()
                                         .Where(e => !e.IsDeleted
-                                                    && e.Status == Domain.Enums.EventStatus.Approved
+                                                    && e.Status ==  EventStatus.Approved
                                                     && e.StartTime > DateTime.UtcNow
                                                     && e.StartTime <= DateTime.UtcNow.AddHours(3))
                                         .Include(e => e.Bookings)
@@ -258,8 +262,8 @@ namespace AIEvent.Application.Services.Implements
             var userNotificationPrefs = await _unitOfWork.UserRepository
                 .Query()
                 .Where(u => allUserIds.Contains(u.Id) && !u.IsDeleted)
-                .Select(u => new { u.Id, u.IsPushNotificationEnabled })
-                .ToDictionaryAsync(x => x.Id, x => x.IsPushNotificationEnabled);
+                .Select(u => new { u.Id, u.IsPushNotificationEnabled, u.IsEmailNotificationEnabled, u.Email, u.FullName })
+                .ToDictionaryAsync(x => x.Id, x => new { x.IsPushNotificationEnabled, x.IsEmailNotificationEnabled, x.Email, x.FullName });
 
             foreach (var ev in upcomingEvents)
             {
@@ -278,21 +282,45 @@ namespace AIEvent.Application.Services.Implements
                     var key = $"{ev.Id}_{booking.UserId}";
                     if (sentLookup.Contains(key)) continue;
 
-                    if (!userNotificationPrefs.TryGetValue(booking.UserId, out var enabled) || enabled != true)
+                    if (!userNotificationPrefs.TryGetValue(booking.UserId, out var userPrefs))
                         continue;
-
-                    var dto = new PushNotificationRequest
+ 
+                    if (userPrefs.IsPushNotificationEnabled == true)
                     {
-                        UserId = booking.UserId,
-                        Title = $"Sắp diễn ra: {ev.Title}",
-                        Content = $"Sự kiện {ev.Title} sẽ diễn ra vào {ev.StartTime:HH:mm dd/MM/yyyy}",
-                        EventId = ev.Id,
-                        ImageUrl = firstImage,
-                        Type = NotificationType.EventReminder,
-                        Channel = NotificationChannel.Push
-                    };
+                        var dto = new PushNotificationRequest
+                        {
+                            UserId = booking.UserId,
+                            Title = $"Sắp diễn ra: {ev.Title}",
+                            Content = $"Sự kiện {ev.Title} sẽ diễn ra vào {ev.StartTime:HH:mm dd/MM/yyyy}",
+                            EventId = ev.Id,
+                            ImageUrl = firstImage,
+                            Type = NotificationType.EventReminder,
+                            Channel = NotificationChannel.Push
+                        };
 
-                    await _oneSignalService.SendNotificationAsync(dto);
+                        await _oneSignalService.SendNotificationAsync(dto);
+                    }
+ 
+                    if (userPrefs.IsEmailNotificationEnabled == true && !string.IsNullOrEmpty(userPrefs.Email))
+                    {
+                        var sb = new StringBuilder();
+                        if (!string.IsNullOrEmpty(firstImage))
+                            sb.AppendLine($"<img src='{firstImage}' alt='Event' style='width:100%;max-width:600px;border-radius:8px;margin-bottom:20px;'/>");
+
+                        sb.AppendLine($"<p>Xin chào {userPrefs.FullName ?? userPrefs.Email},</p>")
+                          .AppendLine($"<p>Sự kiện <strong>{ev.Title}</strong> sẽ diễn ra vào <strong>{ev.StartTime:HH:mm dd/MM/yyyy}</strong>.</p>")
+                          .AppendLine("<p>Đừng quên tham gia sự kiện nhé!</p>")
+                          .AppendLine($"<p><a href=\"http://localhost:5173/event/{ev.Id}\">Xem chi tiết sự kiện</a></p>")
+                          .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
+
+                        var message = new MimeMessage
+                        {
+                            Subject = $"Nhắc nhở: {ev.Title} sắp diễn ra",
+                            Body = new TextPart("html") { Text = sb.ToString() }
+                        };
+
+                        await _emailService.SendEmailAsync(userPrefs.Email, message);
+                    }
                 }
             }
             return Result.Success();
