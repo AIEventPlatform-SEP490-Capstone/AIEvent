@@ -979,13 +979,18 @@ namespace AIEvent.Application.Services.Implements
 
             if (!endedEvents.Any()) return;
 
+            var systemSetting = await _unitOfWork.SystemSettingRepository
+                .Query()
+                .FirstOrDefaultAsync(s => !s.IsDeleted);
+            if (systemSetting == null) return;
+
             foreach (var ev in endedEvents)
             {
                 var totalRevenue = ev.TotalAmount;
                 
                 if (totalRevenue > 0)
                 {
-                    decimal platformFee = totalRevenue * 0.066m + 45000m;
+                    decimal platformFee = totalRevenue * systemSetting.FlatformFee + systemSetting.FixFee;
                     decimal netRevenue = totalRevenue - platformFee;
                     ev.PlatformFee = platformFee;
                     ev.PayoutAmount = netRevenue;
