@@ -7,6 +7,8 @@ import {
   Alert,
   Share,
   Linking,
+  Modal,
+  StyleSheet,
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
@@ -26,7 +28,10 @@ import {
 import EventService from '../../api/services/EventService';
 import RatingSectionMobile from '../../components/presentation/RatingSectionMobile';
 import AuthService from '../../api/services/AuthService';
-import { isStaffUser } from '../../utils/jwtUtils';
+import {isStaffUser} from '../../utils/jwtUtils';
+// import Clipboard from '@react-native-clipboard/clipboard';
+import * as Clipboard from 'expo-clipboard';
+import Toast from 'react-native-simple-toast';
 
 const EventDetailScreen = () => {
   const navigation = useNavigation();
@@ -48,11 +53,53 @@ const EventDetailScreen = () => {
   const [isJoined, setIsJoined] = useState(false);
   const [event, setEvent] = useState(null);
   const [isStaff, setIsStaff] = useState(false);
+  const [shareModalVisible, setShareModalVisible] = useState(false);
+
+  const shareUrl = `https://yourapp.com/event/${eventId}`;
+  const handleShareSystem = async () => {
+    try {
+      await Share.share({
+        message: `${event?.title}\n${shareUrl}`,
+      });
+      Toast.show('Đã chia sẻ!');
+    } catch (error) {
+      Toast.show('Không thể chia sẻ');
+    }
+  };
+  const handleCopyLink = () => {
+    Clipboard.setString(shareUrl);
+    Toast.show('Đã sao chép link!');
+  };
+
+  const handleShareZalo = () => {
+    const url = `zalo://qr/share?url=${encodeURIComponent(shareUrl)}`;
+    Linking.openURL(url).catch(() => {
+      Toast.show('Zalo không khả dụng');
+    });
+  };
+  const handleShareFacebook = () => {
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+    Linking.openURL(url).catch(() => {
+      Toast.show('Facebook không khả dụng');
+    });
+  };
+  const handleShareTwitter = () => {
+    const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(event?.title || '')}`;
+    Linking.openURL(url).catch(() => {
+      Toast.show('Twitter không khả dụng');
+    });
+  };
+  const handleShareLinkedIn = () => {
+    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+    Linking.openURL(url).catch(() => {
+      Toast.show('LinkedIn không khả dụng');
+    });
+  };
 
   useEffect(() => {
     // Check if user is staff
     checkUserRole();
-    
+
     // Only load event detail if we have a valid eventId
     if (eventId && typeof eventId === 'string' && eventId.trim() !== '') {
       loadEventDetail();
@@ -119,10 +166,11 @@ const EventDetailScreen = () => {
 
   const transformEventData = eventData => {
     // Ensure we have a valid ID
-    const eventId = eventData.eventId || eventData.EventId || eventData.id || 'unknown';
-    
+    const eventId =
+      eventData.eventId || eventData.EventId || eventData.id || 'unknown';
+
     // Transform tags to ensure they are strings
-    const transformTags = (tags) => {
+    const transformTags = tags => {
       if (!tags || !Array.isArray(tags)) return [];
       return tags.map(tag => {
         if (typeof tag === 'object') {
@@ -131,7 +179,7 @@ const EventDetailScreen = () => {
         return tag;
       });
     };
-    
+
     return {
       id: eventId,
       title: eventData.title || eventData.Title || 'Chưa có tiêu đề',
@@ -183,8 +231,10 @@ const EventDetailScreen = () => {
           'Nhà tổ chức'
         : 'Chưa xác định',
       isFavorite: eventData.isFavorite || false,
-      tags: transformTags(eventData.tags || eventData.Tags || eventData.eventTags || []),
-      ticketDetails: eventData.ticketDetails || eventData.TicketDetails || []
+      tags: transformTags(
+        eventData.tags || eventData.Tags || eventData.eventTags || [],
+      ),
+      ticketDetails: eventData.ticketDetails || eventData.TicketDetails || [],
     };
   };
 
@@ -235,28 +285,6 @@ const EventDetailScreen = () => {
     navigation.navigate('BookingScreen', {eventId});
   };
 
-  const handleShareEvent = async () => {
-    try {
-      // Check if we have a valid eventId
-      if (!eventId || typeof eventId !== 'string' || eventId.trim() === '') {
-        Alert.alert('Error', 'No valid event ID provided');
-        return;
-      }
-
-      const response = await EventService.shareEvent(eventId);
-      if (response.success) {
-        await Share.share({
-          message: `Check out this event: ${event?.title || 'Event'}\n${response.data.shareUrl}`,
-          title: event?.title || 'Event',
-        });
-        Alert.alert('Success', Strings.SHARE_SUCCESS);
-      }
-    } catch (error) {
-      console.error('Error sharing event:', error);
-      Alert.alert('Error', 'Failed to share event');
-    }
-  };
-
   const handleViewMap = () => {
     // Open map with event location
     if (event && event.location) {
@@ -269,7 +297,7 @@ const EventDetailScreen = () => {
 
   const handleScanQR = () => {
     // Navigate to QR scanner screen
-    navigation.navigate('QrScannerScreen', { eventId });
+    navigation.navigate('QrScannerScreen', {eventId});
   };
 
   const getEventImage = () => {
@@ -366,14 +394,13 @@ const EventDetailScreen = () => {
           activeOpacity={0.8}>
           <Image source={Images.logout} style={styles.backIcon} />
         </TouchableOpacity>
-        
+
         {/* QR Icon for Staff Users - Only visible for staff users */}
         {isStaff && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.qrButton}
             onPress={handleScanQR}
-            activeOpacity={0.8}
-          >
+            activeOpacity={0.8}>
             <Image source={Images.qrCode} style={styles.qrIcon} />
           </TouchableOpacity>
         )}
@@ -432,7 +459,10 @@ const EventDetailScreen = () => {
             <CustomText variant="h3" color="primary" style={styles.statValue}>
               {event.attendees || 0}
             </CustomText>
-            <CustomText variant="body" color="secondary" style={styles.statLabel}>
+            <CustomText
+              variant="body"
+              color="secondary"
+              style={styles.statLabel}>
               Người tham gia
             </CustomText>
           </View>
@@ -440,7 +470,10 @@ const EventDetailScreen = () => {
             <CustomText variant="h3" color="primary" style={styles.statValue}>
               {totalAvailableTickets}
             </CustomText>
-            <CustomText variant="body" color="secondary" style={styles.statLabel}>
+            <CustomText
+              variant="body"
+              color="secondary"
+              style={styles.statLabel}>
               Vé còn lại
             </CustomText>
           </View>
@@ -448,7 +481,10 @@ const EventDetailScreen = () => {
             <CustomText variant="h3" color="primary" style={styles.statValue}>
               {event.ticketDetails?.length || 0}
             </CustomText>
-            <CustomText variant="body" color="secondary" style={styles.statLabel}>
+            <CustomText
+              variant="body"
+              color="secondary"
+              style={styles.statLabel}>
               Loại vé
             </CustomText>
           </View>
@@ -457,15 +493,24 @@ const EventDetailScreen = () => {
         {/* Organizer Section */}
         <View style={styles.organizerSection}>
           <View style={styles.organizerAvatar}>
-            <CustomText variant="h3" color="white" style={styles.organizerAvatarText}>
+            <CustomText
+              variant="h3"
+              color="white"
+              style={styles.organizerAvatarText}>
               {getOrganizerInitials()}
             </CustomText>
           </View>
           <View style={styles.organizerInfo}>
-            <CustomText variant="h4" color="primary" style={styles.organizerName}>
+            <CustomText
+              variant="h4"
+              color="primary"
+              style={styles.organizerName}>
               {event.organizer}
             </CustomText>
-            <CustomText variant="body" color="secondary" style={styles.organizerEvents}>
+            <CustomText
+              variant="body"
+              color="secondary"
+              style={styles.organizerEvents}>
               Nhà tổ chức sự kiện
             </CustomText>
           </View>
@@ -476,8 +521,14 @@ const EventDetailScreen = () => {
           <View style={styles.tagsContainer}>
             {event.tags.map((tag, index) => (
               <View key={index} style={styles.tag}>
-                <CustomText variant="caption" color="primary" style={styles.tagText}>
-                  #{typeof tag === 'object' ? tag.tagName || tag.name || 'Tag' : tag}
+                <CustomText
+                  variant="caption"
+                  color="primary"
+                  style={styles.tagText}>
+                  #
+                  {typeof tag === 'object'
+                    ? tag.tagName || tag.name || 'Tag'
+                    : tag}
                 </CustomText>
               </View>
             ))}
@@ -489,50 +540,77 @@ const EventDetailScreen = () => {
           <CustomText variant="h3" color="primary" style={styles.sectionTitle}>
             Lịch trình sự kiện
           </CustomText>
-          
+
           <View style={styles.programItem}>
             <View style={styles.programTime}>
-              <CustomText variant="caption" color="white" style={styles.programTimeText}>
+              <CustomText
+                variant="caption"
+                color="white"
+                style={styles.programTimeText}>
                 09:00
               </CustomText>
             </View>
             <View style={styles.programContent}>
-              <CustomText variant="body" color="primary" style={styles.programTitle}>
+              <CustomText
+                variant="body"
+                color="primary"
+                style={styles.programTitle}>
                 Khai mạc và giới thiệu
               </CustomText>
-              <CustomText variant="caption" color="secondary" style={styles.programDescription}>
+              <CustomText
+                variant="caption"
+                color="secondary"
+                style={styles.programDescription}>
                 Lễ khai mạc và giới thiệu chương trình sự kiện
               </CustomText>
             </View>
           </View>
-          
+
           <View style={styles.programItem}>
             <View style={styles.programTime}>
-              <CustomText variant="caption" color="white" style={styles.programTimeText}>
+              <CustomText
+                variant="caption"
+                color="white"
+                style={styles.programTimeText}>
                 10:30
               </CustomText>
             </View>
             <View style={styles.programContent}>
-              <CustomText variant="body" color="primary" style={styles.programTitle}>
+              <CustomText
+                variant="body"
+                color="primary"
+                style={styles.programTitle}>
                 Buổi thuyết trình chính
               </CustomText>
-              <CustomText variant="caption" color="secondary" style={styles.programDescription}>
+              <CustomText
+                variant="caption"
+                color="secondary"
+                style={styles.programDescription}>
                 Các bài thuyết trình quan trọng của sự kiện
               </CustomText>
             </View>
           </View>
-          
+
           <View style={styles.programItem}>
             <View style={styles.programTime}>
-              <CustomText variant="caption" color="white" style={styles.programTimeText}>
+              <CustomText
+                variant="caption"
+                color="white"
+                style={styles.programTimeText}>
                 12:00
               </CustomText>
             </View>
             <View style={styles.programContent}>
-              <CustomText variant="body" color="primary" style={styles.programTitle}>
+              <CustomText
+                variant="body"
+                color="primary"
+                style={styles.programTitle}>
                 Nghỉ trưa và giao lưu
               </CustomText>
-              <CustomText variant="caption" color="secondary" style={styles.programDescription}>
+              <CustomText
+                variant="caption"
+                color="secondary"
+                style={styles.programDescription}>
                 Thời gian nghỉ ngơi và giao lưu với các khách mời
               </CustomText>
             </View>
@@ -544,31 +622,43 @@ const EventDetailScreen = () => {
           <CustomText variant="h3" color="primary" style={styles.benefitsTitle}>
             Lợi ích khi tham gia
           </CustomText>
-          
+
           <View style={styles.benefitItem}>
             <Image source={Images.check} style={styles.benefitIcon} />
-            <CustomText variant="body" color="primary" style={styles.benefitText}>
+            <CustomText
+              variant="body"
+              color="primary"
+              style={styles.benefitText}>
               Kết nối với chuyên gia trong ngành
             </CustomText>
           </View>
-          
+
           <View style={styles.benefitItem}>
             <Image source={Images.check} style={styles.benefitIcon} />
-            <CustomText variant="body" color="primary" style={styles.benefitText}>
+            <CustomText
+              variant="body"
+              color="primary"
+              style={styles.benefitText}>
               Học hỏi kiến thức mới và cập nhật
             </CustomText>
           </View>
-          
+
           <View style={styles.benefitItem}>
             <Image source={Images.check} style={styles.benefitIcon} />
-            <CustomText variant="body" color="primary" style={styles.benefitText}>
+            <CustomText
+              variant="body"
+              color="primary"
+              style={styles.benefitText}>
               Cơ hội nghề nghiệp và việc làm
             </CustomText>
           </View>
-          
+
           <View style={styles.benefitItem}>
             <Image source={Images.check} style={styles.benefitIcon} />
-            <CustomText variant="body" color="primary" style={styles.benefitText}>
+            <CustomText
+              variant="body"
+              color="primary"
+              style={styles.benefitText}>
               Nhận chứng chỉ tham dự sự kiện
             </CustomText>
           </View>
@@ -819,32 +909,52 @@ const EventDetailScreen = () => {
           <CustomText variant="h3" color="primary" style={styles.sectionTitle}>
             Sự kiện liên quan
           </CustomText>
-          
+
           <View style={styles.relatedEventCard}>
             <Image source={Images.event2} style={styles.relatedEventImage} />
             <View style={styles.relatedEventInfo}>
-              <CustomText variant="body" color="primary" style={styles.relatedEventTitle} numberOfLines={1}>
+              <CustomText
+                variant="body"
+                color="primary"
+                style={styles.relatedEventTitle}
+                numberOfLines={1}>
                 Workshop Công nghệ mới 2023
               </CustomText>
-              <CustomText variant="caption" color="secondary" style={styles.relatedEventDate}>
+              <CustomText
+                variant="caption"
+                color="secondary"
+                style={styles.relatedEventDate}>
                 15 Tháng 12, 2023
               </CustomText>
-              <CustomText variant="caption" color="primary" style={styles.relatedEventPrice}>
+              <CustomText
+                variant="caption"
+                color="primary"
+                style={styles.relatedEventPrice}>
                 250.000đ
               </CustomText>
             </View>
           </View>
-          
+
           <View style={styles.relatedEventCard}>
             <Image source={Images.event3} style={styles.relatedEventImage} />
             <View style={styles.relatedEventInfo}>
-              <CustomText variant="body" color="primary" style={styles.relatedEventTitle} numberOfLines={1}>
+              <CustomText
+                variant="body"
+                color="primary"
+                style={styles.relatedEventTitle}
+                numberOfLines={1}>
                 Hội thảo AI và Tương lai
               </CustomText>
-              <CustomText variant="caption" color="secondary" style={styles.relatedEventDate}>
+              <CustomText
+                variant="caption"
+                color="secondary"
+                style={styles.relatedEventDate}>
                 20 Tháng 12, 2023
               </CustomText>
-              <CustomText variant="caption" color="primary" style={styles.relatedEventPrice}>
+              <CustomText
+                variant="caption"
+                color="primary"
+                style={styles.relatedEventPrice}>
                 Miễn phí
               </CustomText>
             </View>
@@ -852,13 +962,18 @@ const EventDetailScreen = () => {
         </View>
 
         {/* Share Button */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.shareButton}
-          onPress={handleShareEvent}
-          activeOpacity={0.8}
-        >
-          <Image source={Images.share} style={{ width: 24, height: 24, tintColor: Colors.white }} />
-          <CustomText variant="button" color="white" style={styles.shareButtonText}>
+          onPress={() => setShareModalVisible(true)}
+          activeOpacity={0.8}>
+          <Image
+            source={Images.share}
+            style={{width: 24, height: 24, tintColor: Colors.white}}
+          />
+          <CustomText
+            variant="button"
+            color="white"
+            style={styles.shareButtonText}>
             Chia sẻ sự kiện
           </CustomText>
         </TouchableOpacity>
@@ -875,7 +990,7 @@ const EventDetailScreen = () => {
           <View style={styles.secondaryActions}>
             <CustomButton
               title={Strings.SHARE_EVENT}
-              onPress={handleShareEvent}
+              onPress={() => setShareModalVisible(true)}
               variant="outline"
               style={styles.actionButton}
             />
@@ -891,6 +1006,65 @@ const EventDetailScreen = () => {
         {/* Ratings Section */}
         <RatingSectionMobile eventId={eventId} />
       </View>
+
+      {/*Share modal*/}
+      {shareModalVisible && (
+        <View style={styles.shareOverlay}>
+          <TouchableOpacity
+            style={styles.shareBackdrop}
+            onPress={() => setShareModalVisible(false)}
+          />
+
+          <View style={styles.shareContainer}>
+            <View style={styles.shareHeader}>
+              <CustomText variant="h3" style={{fontWeight: '700'}}>
+                Chia sẻ sự kiện
+              </CustomText>
+              <TouchableOpacity onPress={() => setShareModalVisible(false)}>
+                <Image source={Images.close} style={styles.closeIcon} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.shareGrid}>
+              {[
+                {
+                  title: 'Hệ thống',
+                  onPress: handleShareSystem,
+                  icon: Images.shareSystem,
+                },
+                {title: 'Sao chép', onPress: handleCopyLink, icon: Images.copy},
+                {title: 'Zalo', onPress: handleShareZalo, icon: Images.zalo},
+                {
+                  title: 'Facebook',
+                  onPress: handleShareFacebook,
+                  icon: Images.facebook,
+                },
+                {
+                  title: 'Twitter',
+                  onPress: handleShareTwitter,
+                  icon: Images.twitter,
+                },
+                {
+                  title: 'LinkedIn',
+                  onPress: handleShareLinkedIn,
+                  icon: Images.linkedin,
+                },
+              ].map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.shareGridItem}
+                  onPress={item.onPress}
+                  activeOpacity={0.7}>
+                  <Image source={item.icon} style={styles.shareGridIcon} />
+                  <CustomText variant="caption" style={styles.shareGridText}>
+                    {item.title}
+                  </CustomText>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 };

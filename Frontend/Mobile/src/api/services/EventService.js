@@ -280,24 +280,24 @@ class EventService {
   /**
    * Share event
    */
-  static async shareEvent(eventId) {
-    try {
-      const data = await BaseApiService.post(EndUrls.SHARE_EVENT(eventId), {});
-      return {
-        success: true,
-        data: data,
-        message: 'Event shared successfully',
-      };
-    } catch (error) {
-      console.error('Error sharing event:', error);
-      return {
-        success: false,
-        data: null,
-        message: `Failed to share event: ${error.message}`,
-        error: error.message,
-      };
-    }
-  }
+  // static async shareEvent(eventId) {
+  //   try {
+  //     const data = await BaseApiService.post(EndUrls.SHARE_EVENT(eventId), {});
+  //     return {
+  //       success: true,
+  //       data: data,
+  //       message: 'Event shared successfully',
+  //     };
+  //   } catch (error) {
+  //     console.error('Error sharing event:', error);
+  //     return {
+  //       success: false,
+  //       data: null,
+  //       message: `Failed to share event: ${error.message}`,
+  //       error: error.message,
+  //     };
+  //   }
+  // }
 
   /**
    * Invite friends to event

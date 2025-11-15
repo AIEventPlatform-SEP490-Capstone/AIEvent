@@ -24,6 +24,7 @@ namespace AIEvent.Application.Services.Implements
         private readonly ICacheService _cacheService;
         private readonly IMapper _mapper;
         private readonly IConfiguration _configuration;
+        private readonly IHangfireJobService _hangfireJobService;
 
         public AuthService(
             IUnitOfWork unitOfWork,
@@ -32,7 +33,8 @@ namespace AIEvent.Application.Services.Implements
             IEmailService emailService,
             IHasherHelper hasherHelper,
             ICacheService cacheService,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IHangfireJobService hangfireJobService)
         {
             _unitOfWork = unitOfWork;
             _jwtService = jwtService;
@@ -41,6 +43,7 @@ namespace AIEvent.Application.Services.Implements
             _hasherHelper = hasherHelper;
             _cacheService = cacheService;
             _configuration = configuration;
+            _hangfireJobService = hangfireJobService;
         }
 
         public async Task<Result<AuthResponse>> LoginAsync(LoginRequest request)
@@ -75,6 +78,11 @@ namespace AIEvent.Application.Services.Implements
             };
 
             await _unitOfWork.RefreshTokenRepository.AddAsync(refreshTokenEntity);
+            if (user.DeviceToken != request.DeviceToken || user.DeviceToken == null)
+            {
+                user.DeviceToken = request.DeviceToken ?? "N/A";
+                await _unitOfWork.UserRepository.UpdateAsync(user);
+            }
             await _unitOfWork.SaveChangesAsync();
 
             var authResponse = new AuthResponse
@@ -175,6 +183,11 @@ namespace AIEvent.Application.Services.Implements
             };
 
             await _unitOfWork.RefreshTokenRepository.AddAsync(refreshTokenEntity);
+            if (user.DeviceToken != request.DeviceToken || user.DeviceToken == null)
+            {
+                user.DeviceToken = request.DeviceToken ?? "N/A";
+                await _unitOfWork.UserRepository.UpdateAsync(user);
+            }
             await _unitOfWork.SaveChangesAsync();
 
             var authResponse = new AuthResponse
@@ -187,6 +200,8 @@ namespace AIEvent.Application.Services.Implements
             await _cacheService.RemoveAsync($"Register {request.Email}");
             await _cacheService.RemoveAsync($"ResendCount {request.Email}");
 
+            await _hangfireJobService.EnqueueUserEmbeddingJobAsync(user.Id);
+            
             return Result<AuthResponse>.Success(authResponse);
         }
 
@@ -392,6 +407,11 @@ namespace AIEvent.Application.Services.Implements
                 };
 
                 await _unitOfWork.RefreshTokenRepository.AddAsync(refreshTokenEntity);
+                if (user.DeviceToken != request.DeviceToken || user.DeviceToken == null)
+                {
+                    user.DeviceToken = request.DeviceToken ?? "N/A";
+                    await _unitOfWork.UserRepository.UpdateAsync(user);
+                }
                 await _unitOfWork.SaveChangesAsync();
 
                 var authResponse = new AuthResponse

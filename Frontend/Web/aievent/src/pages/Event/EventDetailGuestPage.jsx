@@ -24,6 +24,8 @@ import {
   Sparkles,
   Loader2,
   Send,
+  X,
+  Link2,
 } from "lucide-react";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
@@ -46,7 +48,16 @@ import {
 } from "../../components/ui/dialog";
 import RatingSection from "../../components/Rating/RatingSection";
 import { friendAPI } from "../../api/friendAPI";
-import { eventAPI } from "../../api/eventAPI"; // Import eventAPI
+import { eventAPI } from "../../api/eventAPI";
+import eventAvt from "../../assets/loginpanel.jpg";
+import userAvt from "../../assets/user.png";
+import Zalo from "../../assets/Zalo.png";
+import Facebook from "../../assets/Facebook.png";
+import Twitter from "../../assets/Twitter.png";
+import LinkedIn from "../../assets/LinkedIn.png";
+import Tiktok from "../../assets/TikTok.png";
+import Instagram from "../../assets/Instagram.png";
+
 const EventDetailGuestPage = ({ previewData }) => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -63,6 +74,9 @@ const EventDetailGuestPage = ({ previewData }) => {
   const [isLoadingFriends, setIsLoadingFriends] = useState(false);
   const [inviteMessage, setInviteMessage] = useState("Tham gia cùng tôi nhé!");
   const [isInviting, setIsInviting] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+
+  //tải danh sách bạn bè khi mở dialog mời
   useEffect(() => {
     const loadFriends = async () => {
       if (isInviteDialogOpen) {
@@ -105,7 +119,8 @@ const EventDetailGuestPage = ({ previewData }) => {
 
     setIsInviting(true);
     try {
-      const response = await eventAPI.inviteFriends(event.eventId, { // Access inviteFriends from eventAPI
+      const response = await eventAPI.inviteFriends(event.eventId, {
+        // Access inviteFriends from eventAPI
         invitedUserIds: selectedFriends,
         message: inviteMessage,
       });
@@ -811,10 +826,18 @@ const EventDetailGuestPage = ({ previewData }) => {
                   <UserPlus className="w-5 h-5 mr-2" />
                   Mời bạn bè tham gia
                 </Button>
-                <Button
+                {/* <Button
                   variant="outline"
                   className="w-full border-2 hover:bg-gray-50 font-medium transition-all duration-300"
                   onClick={handleShareEvent}
+                >
+                  <Share2 className="w-5 h-5 mr-2" />
+                  Chia sẻ
+                </Button> */}
+                <Button
+                  variant="outline"
+                  className="w-full border-2 hover:bg-gray-50 font-medium transition-all duration-300"
+                  onClick={() => setIsShareOpen(true)}
                 >
                   <Share2 className="w-5 h-5 mr-2" />
                   Chia sẻ
@@ -996,7 +1019,7 @@ const EventDetailGuestPage = ({ previewData }) => {
 
           <div className="flex gap-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100 rounded-xl p-4 mb-4 shadow-sm">
             <img
-              src={event.imgListEvent?.[0] || "/placeholder.jpg"}
+              src={event.imgListEvent?.[0] || eventAvt || "/placeholder.jpg"}
               alt={event.title}
               className="w-24 h-24 rounded-lg object-cover flex-shrink-0 border border-gray-200 shadow-sm"
             />
@@ -1082,7 +1105,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                     >
                       <div className="relative flex-shrink-0">
                         <img
-                          src={f.image || "/default-avatar.png"}
+                          src={f.image || userAvt || "/default-avatar.png"}
                           alt={f.friendName}
                           className={`w-16 h-16 rounded-xl object-cover border-2 transition-all ${
                             isSelected ? "border-blue-500" : "border-gray-300"
@@ -1177,6 +1200,175 @@ const EventDetailGuestPage = ({ previewData }) => {
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Share Dialog */}
+      <Dialog open={isShareOpen} onOpenChange={setIsShareOpen}>
+        <DialogContent
+          className="
+      p-0 border-0 rounded-3xl shadow-2xl
+      bg-gradient-to-br from-slate-800 to-slate-900
+      max-w-md w-full
+      animate-in fade-in duration-200
+    "
+        >
+          <div className="p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-2xl font-bold text-white mb-1">
+                  Chia sẻ với bạn bè
+                </h3>
+                <p className="text-slate-400 text-sm">
+                  Chọn nơi bạn muốn chia sẻ
+                </p>
+              </div>
+              <button
+                onClick={() => setIsShareOpen(false)}
+                className="w-10 h-10 rounded-full bg-slate-700/50 hover:bg-slate-700 
+                     flex items-center justify-center transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-300" />
+              </button>
+            </div>
+
+            {/* Social Options Grid */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              {[
+                {
+                  name: "Facebook",
+                  icon: <img src={Facebook} alt="Facebook" />,
+                  gradient: "from-blue-600 to-blue-400",
+                  url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+                    window.location.href
+                  )}`,
+                },
+                {
+                  name: "Twitter",
+                  icon: <img src={Twitter} alt="Twitter" />,
+                  gradient: "from-blue-400 to-cyan-500",
+                  url: `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+                    window.location.href
+                  )}&text=${encodeURIComponent("Check this out!")}`,
+                },
+
+                {
+                  name: "Zalo",
+                  icon: <img src={Zalo} alt="Zalo" />,
+                  gradient: "from-blue-400 to-cyan-400",
+                  url: `https://zalo.me/share?url=${encodeURIComponent(
+                    window.location.href
+                  )}`,
+                },
+                {
+                  name: "Instagram",
+                  icon: <img src={Instagram} alt="Instagram" />,
+                  gradient: "from-purple-600 via-pink-500 to-orange-400",
+                  url: `https://www.instagram.com/?url=${encodeURIComponent(
+                    window.location.href
+                  )}`,
+                },
+                {
+                  name: "TikTok",
+                  icon: <img src={Tiktok} alt="TikTok" />,
+                  gradient: "from-black to-gray-800",
+                  url: `https://www.tiktok.com/share?url=${encodeURIComponent(
+                    window.location.href
+                  )}`,
+                },
+                {
+                  name: "LinkedIn",
+                  icon: <img src={LinkedIn} alt="LinkedIn" />,
+                  gradient: "from-blue-700 to-blue-500",
+                  url: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+                    window.location.href
+                  )}`,
+                },
+              ].map((option, index) => (
+                <button
+                  key={index}
+                  onClick={() => window.open(option.url, "_blank")}
+                  className="
+              group relative overflow-hidden rounded-2xl p-4 
+              bg-slate-700/30 hover:bg-slate-700/50 
+              transition-all duration-300 hover:scale-105 active:scale-95
+            "
+                >
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-br ${option.gradient}
+                            opacity-0 group-hover:opacity-20 transition-opacity`}
+                  ></div>
+
+                  <div className="relative flex flex-col items-center gap-2">
+                    <div
+                      className={`w-12 h-12 rounded-xl bg-gradient-to-br ${option.gradient}
+                              flex items-center justify-center text-2xl shadow-lg group-hover:shadow-xl`}
+                    >
+                      {option.icon}
+                    </div>
+                    <span className="text-white text-xs font-medium">
+                      {option.name}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Copy Link Section */}
+            <div className="bg-slate-700/30 rounded-2xl p-4 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="flex-1 bg-slate-800/50 rounded-xl px-4 py-3 flex items-center gap-2">
+                  <Link2 className="w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    value={window.location.href}
+                    readOnly
+                    className="bg-transparent text-slate-300 text-sm outline-none flex-1 truncate"
+                  />
+                </div>
+
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(window.location.href);
+                    toast.success("Đã sao chép liên kết!");
+                  }}
+                  className="
+              px-6 py-3 rounded-xl font-semibold
+              bg-gradient-to-r from-purple-600 to-pink-600 text-white
+              hover:shadow-lg hover:shadow-purple-500/50 transition-all
+            "
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+
+            {/* Native Share Button */}
+            <button
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({
+                    title: event?.title,
+                    text: "Cùng tham gia sự kiện này nhé!",
+                    url: window.location.href,
+                  });
+                } else {
+                  toast.error("Thiết bị không hỗ trợ chia sẻ trực tiếp");
+                }
+              }}
+              className="
+          w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600
+          text-white font-semibold hover:shadow-lg hover:shadow-blue-500/50 
+          transition-all duration-300 hover:scale-[1.02] active:scale-95
+        "
+            >
+              <div className="flex items-center justify-center gap-2">
+                <Share2 className="w-5 h-5" />
+                <span>Chia sẻ khác</span>
+              </div>
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
