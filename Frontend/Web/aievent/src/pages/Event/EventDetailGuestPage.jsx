@@ -20,7 +20,6 @@ import {
   Ticket,
   Globe,
   Activity,
-  Sparkles,
   User,
   Sparkles,
   Loader2,
