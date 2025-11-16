@@ -590,56 +590,6 @@ Nhấn OK để xác nhận xóa.`;
                 </p>
               </div>
             </div>
-
-            {/* Evidence Image Gallery */}
-            {event.imgListEvidences && event.imgListEvidences.length > 0 && event.imgListEvidences.some(img => 
-              img && typeof img === 'string' && img.trim() !== '' && !img.includes('System.Collections.Generic.List')
-            ) && (
-              <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                <h2 className="text-2xl font-bold text-gray-900 mb-5">Hình ảnh bằng chứng tổ chức</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {event.imgListEvidences
-                    .filter(img => 
-                      img && typeof img === 'string' && img.trim() !== '' && !img.includes('System.Collections.Generic.List')
-                    )
-                    .map((img, index) => (
-                      <div key={index} className="rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                        <img
-                          src={img}
-                          alt={`${event.title} - Evidence ${index + 1}`}
-                          className="w-full h-64 object-cover"
-                        />
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* Organizer */}
-            {event.organizerEvent && (
-              <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                <h2 className="text-2xl font-bold text-gray-900 mb-5">Nhà tổ chức</h2>
-                <div className="flex items-center gap-5 p-5 bg-gray-50 rounded-xl">
-                  {event.organizerEvent.imgCompany ? (
-                    <img 
-                      src={event.organizerEvent.imgCompany} 
-                      alt={event.organizerEvent.companyName || "Nhà tổ chức"} 
-                      className="w-16 h-16 rounded-xl object-cover flex-shrink-0 border-2 border-white shadow-sm"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-sm">
-                      <User className="h-8 w-8 text-white" />
-                    </div>
-                  )}
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900">{event.organizerEvent.companyName || "Nhà tổ chức"}</h3>
-                    <p className="text-gray-600 text-sm mt-1">
-                      {event.organizerEvent.companyDescription || "Tổ chức sự kiện chuyên nghiệp"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Sidebar */}

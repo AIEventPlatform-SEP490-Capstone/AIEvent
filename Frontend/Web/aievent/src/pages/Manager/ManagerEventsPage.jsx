@@ -149,7 +149,8 @@ const ManagerEventsPage = () => {
       let response;
       if (activeTab === 'all') {
         // For the 'all' tab, we want to show all events including all approval statuses
-        response = await getEvents({ 
+        // Use getEventsByStatus without a status parameter to get all events
+        response = await getEventsByStatus({ 
           search: searchTerm || '',
           pageNumber: page, 
           pageSize: pageSize 
@@ -715,7 +716,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
               setActiveTab('all');
               setShowInitiationDropdown(false);
               setShowCompletionDropdown(false);
-              navigate(PATH.MANAGER_EVENTS);
+              navigate(`${PATH.MANAGER_EVENTS}?tab=all`);
             }}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'all'
               ? 'bg-white text-blue-600 shadow-sm'
