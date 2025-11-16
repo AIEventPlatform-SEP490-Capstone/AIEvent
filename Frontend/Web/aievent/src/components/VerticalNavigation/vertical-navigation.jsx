@@ -38,6 +38,7 @@ import {
   UserPlus2,
   UserCog,
   Activity
+  MessageCircle,
 } from "lucide-react";
 import {
   Sidebar,
@@ -244,6 +245,12 @@ export function VerticalNavigation() {
         url: "/my-tickets",
         icon: Calendar,
         isActive: pathname === "/my-tickets",
+      },
+      {
+        title: "AI Chat",
+        url: "/chat",
+        icon: MessageCircle,
+        isActive: pathname === "/chat",
       },
     ];
   };

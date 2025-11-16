@@ -42,6 +42,7 @@ import AdminEventManagement from "../pages/Admin/AdminEventManagement";
 import FriendDetailPage from "../pages/User/FriendDetailPage";
 import EventInvitationsPage from "../pages/User/EventInvitationsPage";
 import StaffManagePage from "../pages/Organizer/StaffManagePage";
+import ChatPage from "../pages/Chat/ChatPage";
 import HelpPage from "../pages/Shared/HelpPage";
 import AboutPage from "../pages/Shared/AboutPage";
 
@@ -86,6 +87,14 @@ export default function useRouterElement() {
           element: (
             <ProtectedRoute>
               <MyTickets />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "chat",
+          element: (
+            <ProtectedRoute>
+              <ChatPage />
             </ProtectedRoute>
           ),
         },
