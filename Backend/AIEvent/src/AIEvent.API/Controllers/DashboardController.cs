@@ -166,21 +166,9 @@ namespace AIEvent.API.Controllers
 
         [HttpGet("admin-overview")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<SuccessResponse<AdminDashboardResponse>>> GetAdminDashboard(
-            [FromQuery] int pendingEventsPageNumber = 1,
-            [FromQuery] int pendingEventsPageSize = 10,
-            [FromQuery] int pendingOrganizersPageNumber = 1,
-            [FromQuery] int pendingOrganizersPageSize = 10,
-            [FromQuery] int newUsersPageNumber = 1,
-            [FromQuery] int newUsersPageSize = 10)
+        public async Task<ActionResult<SuccessResponse<AdminDashboardResponse>>> GetAdminDashboard()
         {
-            var result = await _dashboardService.GetAdminDashboardAsync(
-                pendingEventsPageNumber,
-                pendingEventsPageSize,
-                pendingOrganizersPageNumber,
-                pendingOrganizersPageSize,
-                newUsersPageNumber,
-                newUsersPageSize);
+            var result = await _dashboardService.GetAdminDashboardAsync();
 
             if (!result.IsSuccess)
             {
