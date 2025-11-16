@@ -408,12 +408,16 @@ const CreateEventPage = () => {
         
         // Load existing images
         if (event.imgListEvent && event.imgListEvent.length > 0) {
-          setImagePreview(event.imgListEvent);
+          // Filter out any null or undefined values
+          const validImages = event.imgListEvent.filter(img => img !== null && img !== undefined && img !== '');
+          setImagePreview(validImages);
         }
         
         // Load existing evidence images
         if (event.imgListEvidences && event.imgListEvidences.length > 0) {
-          setEvidenceImagePreview(event.imgListEvidences);
+          // Filter out any null or undefined values
+          const validEvidenceImages = event.imgListEvidences.filter(img => img !== null && img !== undefined && img !== '');
+          setEvidenceImagePreview(validEvidenceImages);
         }
         
         // Load existing tags if any
@@ -942,7 +946,10 @@ const CreateEventPage = () => {
       case 2:
         return watch('startTime') && watch('endTime') && watch('district') && watch('locationName') && watch('address');
       case 3:
-        return imagePreview.length > 0 && evidenceImagePreview.length > 0;
+        // Filter out null/undefined values before checking length
+        const validImages = imagePreview.filter(img => img !== null && img !== undefined && img !== '');
+        const validEvidenceImages = evidenceImagePreview.filter(img => img !== null && img !== undefined && img !== '');
+        return validImages.length > 0 && validEvidenceImages.length > 0;
       case 4:
         const ticketTypes = watch('ticketTypes');
         return ticketTypes && ticketTypes.length > 0 && ticketTypes.some(t => t.ticketName && t.ticketQuantity > 0);
@@ -1333,10 +1340,10 @@ const CreateEventPage = () => {
                         {imagePreview.length > 0 && (
                           <div>
                             <h3 className="font-semibold mb-4">
-                              Hình ảnh đã tải ({imagePreview.length}/5)
+                              Hình ảnh đã tải ({imagePreview.filter(img => img !== null && img !== undefined && img !== '').length}/5)
                             </h3>
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                              {imagePreview.map((img, index) => (
+                              {imagePreview.filter(img => img !== null && img !== undefined && img !== '').map((img, index) => (
                                 <div key={index} className="relative group rounded-lg overflow-hidden bg-muted">
                                   <img
                                     src={img}
@@ -1391,10 +1398,10 @@ const CreateEventPage = () => {
                         {evidenceImagePreview.length > 0 && (
                           <div>
                             <h3 className="font-semibold mb-4">
-                              Hình ảnh bằng chứng ({evidenceImagePreview.length}/5)
+                              Hình ảnh bằng chứng ({evidenceImagePreview.filter(img => img !== null && img !== undefined && img !== '').length}/5)
                             </h3>
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                              {evidenceImagePreview.map((img, index) => (
+                              {evidenceImagePreview.filter(img => img !== null && img !== undefined && img !== '').map((img, index) => (
                                 <div key={index} className="relative group rounded-lg overflow-hidden bg-muted">
                                   <img
                                     src={img}
