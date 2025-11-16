@@ -28,9 +28,7 @@ namespace AIEvent.Application.DTOs.User
         public ExperienceLevel? Experience { get; set; } = ExperienceLevel.None;
         public string? PersonalWebsite { get; set; }
         public string? Introduction { get; set; }
-        public bool? IsEmailNotificationEnabled { get; set; } = false;
-        public bool? IsPushNotificationEnabled { get; set; } = false;
-        public bool? IsSmsNotificationEnabled { get; set; } = false;
+        public bool? IsEmailNotificationEnabled { get; set; } = false; 
         public List<UserInterest>? UserInterests { get; set; }
         public List<InterestedDistricts>? InterestedDistricts { get; set; }
         public List<FavoriteEventTypes>? FavoriteEventTypes { get; set; }

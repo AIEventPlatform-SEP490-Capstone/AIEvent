@@ -230,8 +230,8 @@ namespace AIEvent.Application.Test.Services
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
             var user = new User { Id = Guid.NewGuid(), Email = request.Email, IsActive = false };
             var role = new Role { Id = Guid.NewGuid(), Name = "User" };
@@ -279,8 +279,8 @@ namespace AIEvent.Application.Test.Services
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
             var existingUser = new User { Id = Guid.NewGuid(), Email = request.Email, IsActive = true };
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
@@ -315,8 +315,8 @@ namespace AIEvent.Application.Test.Services
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
                            .Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
@@ -352,8 +352,8 @@ namespace AIEvent.Application.Test.Services
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
             var user = new User { Id = Guid.NewGuid(), Email = request.Email, IsActive = false };
             var role = new Role { Id = Guid.NewGuid(), Name = "User" };
@@ -412,8 +412,8 @@ namespace AIEvent.Application.Test.Services
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
 
             // Act
@@ -445,8 +445,8 @@ namespace AIEvent.Application.Test.Services
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
 
             // Act
@@ -478,8 +478,8 @@ namespace AIEvent.Application.Test.Services
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
 
             // Act
@@ -511,8 +511,8 @@ namespace AIEvent.Application.Test.Services
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
 
             // Act
@@ -544,8 +544,8 @@ namespace AIEvent.Application.Test.Services
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
 
             // Act
@@ -577,8 +577,8 @@ namespace AIEvent.Application.Test.Services
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
 
             // Act
@@ -610,8 +610,8 @@ namespace AIEvent.Application.Test.Services
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
             var user = new User { Id = Guid.NewGuid(), Email = request.Email, IsActive = false };
             var role = new Role { Id = Guid.NewGuid(), Name = "User" };
@@ -654,9 +654,7 @@ namespace AIEvent.Application.Test.Services
                 InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
-                IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true,
+                IsEmailNotificationEnabled = true, 
                 ParticipationFrequency = (ParticipationFrequency)0,
                 BudgetOption = BudgetOption.From500kTo2M
             };
@@ -687,9 +685,7 @@ namespace AIEvent.Application.Test.Services
                 InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
-                IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true,
+                IsEmailNotificationEnabled = true, 
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = (BudgetOption)4
             };
@@ -723,8 +719,8 @@ namespace AIEvent.Application.Test.Services
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
             var role = new Role { Id = Guid.NewGuid(), Name = "User" };
 

@@ -18,15 +18,13 @@ namespace AIEvent.Application.Services.Implements
     public class NotificationService : INotificationService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IHubContext<NotificationHub> _hubContext;
-        private readonly IOneSignalService _oneSignalService;
+        private readonly IHubContext<NotificationHub> _hubContext; 
         private readonly IEmailService _emailService;
 
-        public NotificationService(IUnitOfWork unitOfWork, IHubContext<NotificationHub> hubContext, IOneSignalService oneSignalService, IEmailService emailService)
+        public NotificationService(IUnitOfWork unitOfWork, IHubContext<NotificationHub> hubContext, IEmailService emailService)
         {
             _unitOfWork = unitOfWork;
-            _hubContext = hubContext;
-            _oneSignalService = oneSignalService;
+            _hubContext = hubContext; 
             _emailService = emailService;
         }
 
@@ -45,8 +43,7 @@ namespace AIEvent.Application.Services.Implements
                 Message = request.Message,
                 ImageUrl = request.ImageUrl,
                 EventId = request.EventId,
-                Type = request.Type,
-                Channel = request.Channel,
+                Type = request.Type, 
                 IsRead = false,
                 ReadAt = null,
             };
@@ -100,8 +97,7 @@ namespace AIEvent.Application.Services.Implements
                 Message = request.Message,
                 ImageUrl = request.ImageUrl,
                 EventId = request.EventId,
-                Type = request.Type,
-                Channel = request.Channel,
+                Type = request.Type, 
                 IsRead = false,
                 ReadAt = null,
             }).ToList();
@@ -240,20 +236,6 @@ namespace AIEvent.Application.Services.Implements
             if (!upcomingEvents.Any())
                 return ErrorResponse.FailureResult("Upcoming events not found", ErrorCodes.NotFound);
 
-            var eventIds = upcomingEvents.Select(e => e.Id).ToList();
-            var sentNotifications = await _unitOfWork.NotificationRepository
-                                            .Query()
-                                            .AsNoTracking()
-                                            .Where(n => n.EventId.HasValue
-                                                     && eventIds.Contains(n.EventId.Value)
-                                                     && n.Type == NotificationType.EventReminder)
-                                            .Select(n => new { EventId = n.EventId!.Value, n.UserId })
-                                            .ToListAsync();
-
-            var sentLookup = sentNotifications
-                                .Select(x => $"{x.EventId}_{x.UserId}")
-                                .ToHashSet();
-
             var allUserIds = upcomingEvents
                             .SelectMany(e => e.Bookings.Select(b => b.UserId))
                             .Distinct()
@@ -262,8 +244,8 @@ namespace AIEvent.Application.Services.Implements
             var userNotificationPrefs = await _unitOfWork.UserRepository
                 .Query()
                 .Where(u => allUserIds.Contains(u.Id) && !u.IsDeleted)
-                .Select(u => new { u.Id, u.IsPushNotificationEnabled, u.IsEmailNotificationEnabled, u.Email, u.FullName })
-                .ToDictionaryAsync(x => x.Id, x => new { x.IsPushNotificationEnabled, x.IsEmailNotificationEnabled, x.Email, x.FullName });
+                .Select(u => new { u.Id, u.IsEmailNotificationEnabled, u.Email, u.FullName })
+                .ToDictionaryAsync(x => x.Id, x => new { x.IsEmailNotificationEnabled, x.Email, x.FullName });
 
             var bookingsToUpdate = new List<Booking>();
 
@@ -282,32 +264,25 @@ namespace AIEvent.Application.Services.Implements
                         continue;
 
                     if (booking.IsNotification == true)
-                        continue;
-
-                    var key = $"{ev.Id}_{booking.UserId}";
-                    if (sentLookup.Contains(key)) continue;
+                        continue; 
 
                     if (!userNotificationPrefs.TryGetValue(booking.UserId, out var userPrefs))
                         continue;
  
-                    var notificationSent = false; 
-                    if (userPrefs.IsPushNotificationEnabled == true)
+                    var notificationSent = false;
+                    var notificationRequest = new CreateNotificationRequest
                     {
-                        var dto = new PushNotificationRequest
-                        {
-                            UserId = booking.UserId,
-                            Title = $"Sắp diễn ra: {ev.Title}",
-                            Content = $"Sự kiện {ev.Title} sẽ diễn ra vào {ev.StartTime:HH:mm dd/MM/yyyy}",
-                            EventId = ev.Id,
-                            ImageUrl = firstImage,
-                            Type = NotificationType.EventReminder,
-                            Channel = NotificationChannel.Push
-                        };
+                        UserId = booking.UserId,
+                        Title = $"Sắp diễn ra: {ev.Title}",
+                        Message = $"Sự kiện {ev.Title} sẽ diễn ra vào {ev.StartTime:HH:mm dd/MM/yyyy}",
+                        Type = NotificationType.EventReminder, 
+                        EventId = ev.Id,
+                        ImageUrl = firstImage
+                    };
 
-                        await _oneSignalService.SendNotificationAsync(dto);
-                        notificationSent = true;
-                    }
-  
+                    await CreateNotificationAsync(notificationRequest);
+                    notificationSent = true;
+
                     if (userPrefs.IsEmailNotificationEnabled == true && !string.IsNullOrEmpty(userPrefs.Email))
                     {
                         var sb = new StringBuilder();

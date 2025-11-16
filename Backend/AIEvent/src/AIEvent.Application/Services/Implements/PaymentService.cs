@@ -443,8 +443,7 @@ namespace AIEvent.Application.Services.Implements
                                     UserId = ev.OrganizerProfile!.UserId,
                                     Title = "Doanh thu chưa được chuyển",
                                     Message = $"Sự kiện <strong>{ev.Title}</strong> chưa thể chuyển tiền do chưa có thông tin ngân hàng. Vui lòng cập nhật thông tin để nhận thanh toán.",
-                                    Type = NotificationType.PayoutFailed,
-                                    Channel = NotificationChannel.InApp,
+                                    Type = NotificationType.PayoutFailed, 
                                     EventId = ev.Id
                                 });
                                 _logger.LogInformation("Sent payout warning for Event {EventId} (no payment info)", ev.Id);
@@ -510,8 +509,7 @@ namespace AIEvent.Application.Services.Implements
                             UserId = ev.OrganizerProfile!.UserId,
                             Title = "Doanh thu đã được chuyển",
                             Message = $"Sự kiện <strong>{ev.Title}</strong> đã được chuyển <strong>{payoutAmount:N0} VND</strong> vào tài khoản.",
-                            Type = NotificationType.PayoutCompleted,
-                            Channel = NotificationChannel.InApp,
+                            Type = NotificationType.PayoutCompleted, 
                             EventId = ev.Id
                         });
 

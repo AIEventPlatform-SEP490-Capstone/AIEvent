@@ -18,9 +18,7 @@ namespace AIEvent.Application.DTOs.User
         public string? Latitude { get; set; }
         public string? Longitude { get; set; }
         public string? AvatarImgUrl { get; set; }
-        public bool? IsEmailNotificationEnabled { get; set; } = false;
-        public bool? IsPushNotificationEnabled { get; set; } = false;
-        public bool? IsSmsNotificationEnabled { get; set; } = false;
+        public bool? IsEmailNotificationEnabled { get; set; } = false; 
         public List<FavoriteEventTypes>? FavoriteEventTypes { get; set; }
         public string? Occupation { get; set; }
         public string? JobTitle { get; set; }
