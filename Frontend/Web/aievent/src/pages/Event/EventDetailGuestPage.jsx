@@ -55,7 +55,7 @@ import Zalo from "../../assets/Zalo.png";
 import Facebook from "../../assets/Facebook.png";
 import Twitter from "../../assets/Twitter.png";
 import LinkedIn from "../../assets/LinkedIn.png";
-import Tiktok from "../../assets/TikTok.png";
+import Tiktok from "../../assets/Tiktok.png";
 import Instagram from "../../assets/Instagram.png";
 
 const EventDetailGuestPage = ({ previewData }) => {
