@@ -140,6 +140,8 @@ const EditEventPage = () => {
   const [removedImages, setRemovedImages] = useState([]);
   const [removedEvidenceImages, setRemovedEvidenceImages] = useState([]);
   const [removedTickets, setRemovedTickets] = useState([]);
+  // Add state to track original tags
+  const [originalTagIds, setOriginalTagIds] = useState([]);
   // Add state for individual date validation errors
   const [dateTimeErrors, setDateTimeErrors] = useState({
     startTime: '',
@@ -153,7 +155,7 @@ const EditEventPage = () => {
 
   // Redux hooks
   const { categories, loading: categoriesLoading } = useCategories();
-  const { tags: reduxSelectedTags, clearAllSelectedTags, selectTagForForm } = useTags();
+  const { selectedTags: reduxSelectedTags, clearAllSelectedTags, selectTagForForm } = useTags();
   // const { selectedRules, clearSelectedRefundRules, selectRuleForForm } = useRefundRules();
   const { showLoading, hideLoading, updatePageTitle } = useApp();
   const { getEventById, updateEvent: updateEventAPI, loading: eventLoading } = useEvents();
@@ -322,13 +324,16 @@ const EditEventPage = () => {
         }
 
         // Load existing tags if any
+        let loadedTagIds = [];
         if (event.eventTags && event.eventTags.length > 0) {
           event.eventTags.forEach(eventTag => {
             if (eventTag.tag) {
               selectTagForForm(eventTag.tag);
+              loadedTagIds.push(eventTag.tag.tagId);
             } else if (eventTag.tagName || eventTag.nameTag) {
               // Handle case where eventTag is the tag itself
               selectTagForForm(eventTag);
+              loadedTagIds.push(eventTag.tagId || eventTag.id);
             }
           });
         } else if (event.tags && event.tags.length > 0) {
@@ -343,10 +348,15 @@ const EditEventPage = () => {
                 ...tag
               };
               selectTagForForm(normalizedTag);
+              loadedTagIds.push(normalizedTag.tagId);
             }
           });
         } else {
         }
+        
+        // Store original tag IDs for comparison during update
+        setOriginalTagIds(loadedTagIds);
+
         // Load existing refund rule if any
         if (event.ticketDetails && event.ticketDetails.length > 0) {
           const firstTicket = event.ticketDetails[0];
@@ -520,6 +530,19 @@ const EditEventPage = () => {
     return previewData;
   };
 
+  // Calculate added and removed tag IDs for update
+  const calculateTagChanges = () => {
+    const selectedTagIds = reduxSelectedTags.map(tag => tag.tagId);
+    
+    // Find added tags (in selected but not in original)
+    const addTagIds = selectedTagIds.filter(id => !originalTagIds.includes(id));
+    
+    // Find removed tags (in original but not in selected)
+    const removeTagIds = originalTagIds.filter(id => !selectedTagIds.includes(id));
+    
+    return { addTagIds, removeTagIds };
+  };
+
   // Handle form submission
   const onSubmit = async (formData) => {
     if (!eventId) {
@@ -564,6 +587,9 @@ const EditEventPage = () => {
         return utcDate.toISOString();
       };
 
+      // Calculate tag changes
+      const { addTagIds, removeTagIds } = calculateTagChanges();
+
       // Prepare data to send
       const eventDataToSend = {
         eventId: eventId,
@@ -590,10 +616,9 @@ const EditEventPage = () => {
         removeImageUrls: removedImages,
         removeEvidenceImageUrls: removedEvidenceImages,
         eventCategoryId: formData.eventCategoryId,
-        // Handle tags correctly
-        tags: reduxSelectedTags.map(tag => {
-          return { tagId: tag.tagId };
-        }),
+        // Handle tags correctly for update
+        addTagIds: addTagIds,
+        removeTagIds: removeTagIds,
         ticketTypes: formData.ticketTypes.map((ticket, index) => ({
           // Include the ID if it exists (for existing tickets)
           ...(eventData?.ticketDetails?.[index]?.ticketDetailId && { 
@@ -832,7 +857,7 @@ const EditEventPage = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-center text-gray-900">Truy cập bị từ chồi</h3>
+          <h3 className="text-lg font-medium text-center text-gray-900">Truy cập bị từ chối</h3>
           <p className="mt-2 text-sm text-center text-gray-500">
             Bạn cần đăng nhập với tài khoản Organizer hoặc Admin để chỉnh sửa sự kiện.
           </p>
