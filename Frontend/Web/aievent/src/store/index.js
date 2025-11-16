@@ -14,6 +14,11 @@ import favoriteEventsReducer from "./slices/favoriteEventsSlice";
 import endEventRequestsReducer from "./slices/endEventRequestsSlice";
 import ratingsReducer from "./slices/ratingsSlice";
 import staffManagementReducer from "./slices/staffManageSlice";
+import notificationsReducer from "./slices/notificationsSlice";
+
+// Add debugging to see when the store is accessed
+console.log('Configuring store with notifications reducer');
+
 export const store = configureStore({
   reducer: {
     auth: authReducer,
@@ -31,6 +36,7 @@ export const store = configureStore({
     endEventRequests: endEventRequestsReducer,
     ratings: ratingsReducer,
     staffManagement: staffManagementReducer,
+    notifications: notificationsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -45,6 +51,9 @@ export const store = configureStore({
     }),
   devTools: process.env.NODE_ENV !== "production",
 });
+
+// Log when the store is created
+console.log('Store created with notifications slice');
 
 // TypeScript types would go here if using .ts file
 // export type RootState = ReturnType<typeof store.getState>;

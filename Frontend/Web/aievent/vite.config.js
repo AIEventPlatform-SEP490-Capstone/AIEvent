@@ -30,6 +30,12 @@ export default defineConfig({
           });
         },
       },
+      "/hubs": {
+        target: "https://localhost:7777",
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      }
     },
   },
 });

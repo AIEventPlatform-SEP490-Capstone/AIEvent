@@ -38,6 +38,7 @@ import OrganizerApprovalListPage from "../pages/Admin/OrganizerApprovalListPage"
 import OrganizerApprovalDetailPage from "../pages/Admin/OrganizerApprovalDetailPage";
 import FriendDetailPage from "../pages/User/FriendDetailPage";
 import EventInvitationsPage from "../pages/User/EventInvitationsPage";
+import NotificationsPage from "../pages/User/NotificationsPage";
 import StaffManagePage from "../pages/Organizer/StaffManagePage";
 
 export default function useRouterElement() {
@@ -88,7 +89,7 @@ export default function useRouterElement() {
           path: "notifications",
           element: (
             <ProtectedRoute>
-              <div>Notifications Page</div>
+              <NotificationsPage />
             </ProtectedRoute>
           ),
         },
