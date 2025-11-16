@@ -156,7 +156,7 @@ const CreateEventPage = () => {
 
   // Redux hooks
   const { categories, loading: categoriesLoading } = useCategories();
-  const { selectedTags: reduxSelectedTags, clearAllSelectedTags } = useTags();
+  const { selectedTags: reduxSelectedTags, clearAllSelectedTags, selectTagForForm } = useTags();
   // const { selectedRules, clearSelectedRefundRules } = useRefundRules();
   const { showLoading, hideLoading, updatePageTitle } = useApp();
   const { createEvent: createEventAPI, loading: eventLoading } = useEvents();
@@ -167,6 +167,7 @@ const CreateEventPage = () => {
     handleSubmit,
     watch,
     setValue,
+    reset,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(createEventSchema),
@@ -197,6 +198,9 @@ const CreateEventPage = () => {
       ],
     },
   });
+  
+  // Get the getEventById function from the hook
+  const { getEventById } = useEvents();
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -211,6 +215,8 @@ const CreateEventPage = () => {
     
     // Check for cloned event data
     const storedCloneData = localStorage.getItem('cloneEventData');
+    const cloneEventId = localStorage.getItem('cloneEventId');
+    
     if (storedCloneData) {
       try {
         const cloneData = JSON.parse(storedCloneData);
@@ -224,6 +230,9 @@ const CreateEventPage = () => {
       } catch (error) {
         console.error('Error parsing cloned event data:', error);
       }
+    } else if (cloneEventId) {
+      // Load event data for cloning
+      loadCloneEventData(cloneEventId);
     }
     
     return () => {
@@ -242,8 +251,8 @@ const CreateEventPage = () => {
     setValue('locationName', cloneData.locationName || '');
     setValue('address', cloneData.address || '');
     setValue('district', cloneData.district || '');
-    setValue('eventCategoryId', cloneData.eventCategoryId || '');
-    setValue('ticketPricingType', cloneData.ticketPricingType?.toString() || '1');
+    setValue('eventCategoryId', cloneData.eventCategoryId || cloneData.eventCategory?.eventCategoryId || '');
+    setValue('ticketPricingType', (cloneData.ticketPricingType || cloneData.ticketType || '1').toString());
     
     // Format dates for datetime-local inputs
     if (cloneData.startTime) {
@@ -288,6 +297,163 @@ const CreateEventPage = () => {
           // ruleRefundRequestId: ticket.ruleRefundRequestId || '',
         });
       });
+    } else if (cloneData.ticketDetails && cloneData.ticketDetails.length > 0) {
+      // Handle alternative ticket structure
+      remove(0);
+      cloneData.ticketDetails.forEach((ticket, index) => {
+        append({
+          ticketName: ticket.ticketName || ticket.TicketName || '',
+          ticketPrice: ticket.ticketPrice || ticket.TicketPrice || 0,
+          ticketQuantity: ticket.ticketQuantity || ticket.TicketQuantity || 1,
+          ticketDescription: ticket.ticketDescription || ticket.TicketDescription || '',
+        });
+      });
+    }
+    
+    // Handle tags - select them in the Redux store
+    if (cloneData.eventTags && cloneData.eventTags.length > 0) {
+      // Process tags and select them
+      cloneData.eventTags.forEach(tag => {
+        // Normalize tag structure
+        const normalizedTag = {
+          tagId: tag.tagId || tag.id || tag.TagId,
+          tagName: tag.tagName || tag.nameTag || tag.name || tag.TagName,
+          nameTag: tag.nameTag || tag.tagName || tag.name || tag.TagName,
+          ...tag
+        };
+        
+        // Select the tag in the Redux store
+        selectTagForForm(normalizedTag);
+      });
+    } else if (cloneData.tags && cloneData.tags.length > 0) {
+      // Handle alternative tag structure
+      cloneData.tags.forEach(tag => {
+        // Normalize tag structure
+        const normalizedTag = {
+          tagId: tag.tagId || tag.id || tag.TagId,
+          tagName: tag.tagName || tag.nameTag || tag.name || tag.TagName,
+          nameTag: tag.nameTag || tag.tagName || tag.name || tag.TagName,
+          ...tag
+        };
+        
+        // Select the tag in the Redux store
+        selectTagForForm(normalizedTag);
+      });
+    }
+    
+    // Handle images - set image previews for cloning
+    if (cloneData.imgListEvent && cloneData.imgListEvent.length > 0) {
+      // Set existing images as previews
+      setImagePreview([...cloneData.imgListEvent]);
+    }
+    
+    if (cloneData.imgListEvidences && cloneData.imgListEvidences.length > 0) {
+      // Set existing evidence images as previews
+      setEvidenceImagePreview([...cloneData.imgListEvidences]);
+    }
+  };
+
+  // Load event data for cloning
+  const loadCloneEventData = async (cloneEventId) => {
+    try {
+      setIsLoading(true);
+      showLoading();
+      
+      // Clear previously selected tags
+      clearAllSelectedTags();
+      
+      // Fetch event details by ID using the hook function
+      const event = await getEventById(cloneEventId);
+      
+      if (event) {
+        // Populate form with cloned event data
+        const formData = {
+          title: `${event.title} (Bản sao)` || '',
+          description: event.description || '',
+          detailedDescription: event.detailedDescription || '',
+          linkRef: event.linkRef || '',
+          startTime: event.startTime ? convertUTCToUTC7(event.startTime).toISOString().slice(0, 16) : '',
+          endTime: event.endTime ? convertUTCToUTC7(event.endTime).toISOString().slice(0, 16) : '',
+          saleStartTime: event.saleStartTime ? convertUTCToUTC7(event.saleStartTime).toISOString().slice(0, 16) : '',
+          saleEndTime: event.saleEndTime ? convertUTCToUTC7(event.saleEndTime).toISOString().slice(0, 16) : '',
+          locationName: event.locationName || '',
+          address: event.address || '',
+          district: event.district || '',
+          eventCategoryId: event.eventCategoryId || event.eventCategory?.eventCategoryId || '',
+          publish: false, // Always start as draft for cloned events
+          ticketPricingType: (event.ticketPricingType !== undefined && event.ticketPricingType !== null) ? 
+          (event.ticketPricingType.toString() === 'Free' || event.ticketPricingType === 1 ? '1' : 
+           event.ticketPricingType.toString() === 'Paid' || event.ticketPricingType === 2 ? '2' : '1') : '1',
+          ticketTypes: event.ticketDetails && event.ticketDetails.length > 0 
+            ? event.ticketDetails.map(ticket => ({
+                ticketName: ticket.ticketName || '',
+                ticketPrice: ticket.ticketPrice || 0,
+                ticketQuantity: ticket.ticketQuantity || 1,
+                ticketDescription: ticket.ticketDescription || '',
+                // ruleRefundRequestId: ticket.ruleRefundRequestId || '',
+              }))
+            : [
+                {
+                  ticketName: 'Vé thường',
+                  ticketPrice: 0,
+                  ticketQuantity: event.totalTickets || 1,
+                  ticketDescription: '',
+                  // ruleRefundRequestId: '',
+                }
+              ],
+        };
+        
+        // Reset form with loaded data
+        reset(formData);
+        
+        // Load existing images
+        if (event.imgListEvent && event.imgListEvent.length > 0) {
+          setImagePreview(event.imgListEvent);
+        }
+        
+        // Load existing evidence images
+        if (event.imgListEvidences && event.imgListEvidences.length > 0) {
+          setEvidenceImagePreview(event.imgListEvidences);
+        }
+        
+        // Load existing tags if any
+        if (event.eventTags && event.eventTags.length > 0) {
+          event.eventTags.forEach(eventTag => {
+            if (eventTag.tag) {
+              selectTagForForm(eventTag.tag);
+            } else if (eventTag.tagName || eventTag.nameTag) {
+              // Handle case where eventTag is the tag itself
+              selectTagForForm(eventTag);
+            }
+          });
+        } else if (event.tags && event.tags.length > 0) {
+          // Alternative structure
+          event.tags.forEach(tag => {
+            // Ensure tag has the correct structure
+            if (tag && (tag.tagId || tag.id)) {
+              const normalizedTag = {
+                tagId: tag.tagId || tag.id,
+                tagName: tag.tagName || tag.nameTag || tag.name,
+                nameTag: tag.nameTag || tag.tagName || tag.name,
+                ...tag
+              };
+              selectTagForForm(normalizedTag);
+            }
+          });
+        }
+        
+        toast.success('Đã tải thông tin sự kiện để sao chép');
+      } else {
+        toast.error('Không tìm thấy sự kiện để sao chép');
+      }
+    } catch (error) {
+      console.error('Error loading clone event:', error);
+      toast.error('Không thể tải thông tin sự kiện để sao chép');
+    } finally {
+      setIsLoading(false);
+      hideLoading();
+      // Remove the clone event ID from localStorage
+      localStorage.removeItem('cloneEventId');
     }
   };
 
@@ -459,16 +625,16 @@ const CreateEventPage = () => {
         return;
       }
 
-      // Validate event images
-      if (selectedImages.length === 0) {
+      // Validate event images - check for either uploaded or cloned images
+      if (selectedImages.length === 0 && imagePreview.length === 0) {
         toast.error('Vui lòng tải lên ít nhất một hình ảnh sự kiện');
         hideLoading();
         setIsSubmitting(false);
         return;
       }
 
-      // Validate evidence images
-      if (selectedEvidenceImages.length === 0) {
+      // Validate evidence images - check for either uploaded or cloned images
+      if (selectedEvidenceImages.length === 0 && evidenceImagePreview.length === 0) {
         toast.error('Vui lòng tải lên ít nhất một hình ảnh bằng chứng');
         hideLoading();
         setIsSubmitting(false);
@@ -521,14 +687,25 @@ const CreateEventPage = () => {
       }
 
       // Upload images to Cloudinary and get URLs
+      // For cloned events, we may already have image previews
       let imageUrls = [];
-      if (selectedImages.length > 0) {
+      if (imagePreview.length > 0 && selectedImages.length === 0) {
+        // This is a cloned event with existing images, use the preview URLs
+        // But we need to distinguish between existing and newly uploaded images
+        // For now, we'll assume cloned images need to be re-uploaded
+        imageUrls = [...imagePreview];
+      } else if (selectedImages.length > 0) {
+        // Upload newly selected images
         imageUrls = await uploadImagesToCloudinary(selectedImages);
       }
       
       // Upload evidence images to Cloudinary and get URLs
       let evidenceImageUrls = [];
-      if (selectedEvidenceImages.length > 0) {
+      if (evidenceImagePreview.length > 0 && selectedEvidenceImages.length === 0) {
+        // This is a cloned event with existing evidence images, use the preview URLs
+        evidenceImageUrls = [...evidenceImagePreview];
+      } else if (selectedEvidenceImages.length > 0) {
+        // Upload newly selected evidence images
         evidenceImageUrls = await uploadImagesToCloudinary(selectedEvidenceImages);
       }
       

@@ -466,25 +466,8 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
   };
 
   const handleCloneEvent = (event) => {
-    // Store event data in localStorage or pass as state
-    const cloneData = {
-      ...event,
-      // Reset fields that shouldn't be copied
-      eventId: undefined,
-      createDate: undefined,
-      updateDate: undefined,
-      status: undefined,
-      publish: false, // Start as draft
-      viewCount: 0,
-      soldQuantity: 0,
-      revenue: 0,
-      refundCount: 0,
-      rating: 0,
-      totalPersonJoin: 0
-    };
-    
-    // Store in localStorage
-    localStorage.setItem('cloneEventData', JSON.stringify(cloneData));
+    // Store only the event ID for cloning - will fetch full details in CreateEventPage
+    localStorage.setItem('cloneEventId', event.eventId);
     
     // Navigate to create event page
     navigate(PATH.ORGANIZER_CREATE);

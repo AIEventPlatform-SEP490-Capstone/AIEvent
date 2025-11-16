@@ -1523,7 +1523,7 @@ const EditEventPage = () => {
                           disabled={isSaving}
                         >
                           <Send className="w-4 h-4 mr-2" />
-                          {isSaving ? "Đang xuất bản..." : "Xuất bản"}
+                          {isSaving ? "Đang cập nhật..." : "Cập nhật"}
                         </Button>
                       </div>
                     ) : (
