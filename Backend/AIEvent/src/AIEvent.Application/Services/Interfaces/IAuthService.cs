@@ -14,5 +14,8 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result> ReSendOTPAsync(string email);
         Task<Result> ChangePasswordAsync(Guid userId, ChangePasswordRequest request);
         Task<Result<AuthResponse>> GoogleLoginAsync(GoogleLoginRequest request);
+        Task<Result> ForgotPasswordAsync(ForgotPasswordRequest request);
+        Task<Result<VerifyOtpResponse>> VerifyForgotPasswordOtpAsync(VerifyOtpRequest request);
+        Task<Result> ResetPasswordAsync(ResetPasswordRequest request);
     }
 }
