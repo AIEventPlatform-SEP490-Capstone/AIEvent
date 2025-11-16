@@ -9,6 +9,9 @@ using AIEvent.Domain.Entities;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using AIEvent.Domain.Enums;
+using MimeKit;
+using System.Text; 
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -16,11 +19,15 @@ namespace AIEvent.Application.Services.Implements
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly IOneSignalService _oneSignalService;
+        private readonly IEmailService _emailService;
 
-        public NotificationService(IUnitOfWork unitOfWork, IHubContext<NotificationHub> hubContext)
+        public NotificationService(IUnitOfWork unitOfWork, IHubContext<NotificationHub> hubContext, IOneSignalService oneSignalService, IEmailService emailService)
         {
             _unitOfWork = unitOfWork;
             _hubContext = hubContext;
+            _oneSignalService = oneSignalService;
+            _emailService = emailService;
         }
 
         public async Task<Result> CreateNotificationAsync(CreateNotificationRequest request)
@@ -219,5 +226,126 @@ namespace AIEvent.Application.Services.Implements
             await _unitOfWork.SaveChangesAsync();
             return Result.Success();
         }
+
+        public async Task<Result> SendEventBookingReminderAsync()
+        {
+            var upcomingEvents = await _unitOfWork.EventRepository
+                                        .Query()
+                                        .Where(e => !e.IsDeleted
+                                                    && e.Status ==  EventStatus.Approved
+                                                    && e.StartTime > DateTime.UtcNow
+                                                    && e.StartTime <= DateTime.UtcNow.AddHours(3))
+                                        .Include(e => e.Bookings)
+                                        .ToListAsync();
+            if (!upcomingEvents.Any())
+                return ErrorResponse.FailureResult("Upcoming events not found", ErrorCodes.NotFound);
+
+            var eventIds = upcomingEvents.Select(e => e.Id).ToList();
+            var sentNotifications = await _unitOfWork.NotificationRepository
+                                            .Query()
+                                            .AsNoTracking()
+                                            .Where(n => n.EventId.HasValue
+                                                     && eventIds.Contains(n.EventId.Value)
+                                                     && n.Type == NotificationType.EventReminder)
+                                            .Select(n => new { EventId = n.EventId!.Value, n.UserId })
+                                            .ToListAsync();
+
+            var sentLookup = sentNotifications
+                                .Select(x => $"{x.EventId}_{x.UserId}")
+                                .ToHashSet();
+
+            var allUserIds = upcomingEvents
+                            .SelectMany(e => e.Bookings.Select(b => b.UserId))
+                            .Distinct()
+                            .ToList();
+             
+            var userNotificationPrefs = await _unitOfWork.UserRepository
+                .Query()
+                .Where(u => allUserIds.Contains(u.Id) && !u.IsDeleted)
+                .Select(u => new { u.Id, u.IsPushNotificationEnabled, u.IsEmailNotificationEnabled, u.Email, u.FullName })
+                .ToDictionaryAsync(x => x.Id, x => new { x.IsPushNotificationEnabled, x.IsEmailNotificationEnabled, x.Email, x.FullName });
+
+            var bookingsToUpdate = new List<Booking>();
+
+            foreach (var ev in upcomingEvents)
+            {
+                if (!ev.Bookings.Any())
+                    continue;
+
+                var firstImage = !string.IsNullOrEmpty(ev.ImgListEvent) 
+                    ? ev.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() 
+                    : string.Empty;
+
+                foreach (var booking in ev.Bookings)
+                {
+                    if(booking.Status != BookingStatus.Completed)
+                        continue;
+
+                    if (booking.IsNotification == true)
+                        continue;
+
+                    var key = $"{ev.Id}_{booking.UserId}";
+                    if (sentLookup.Contains(key)) continue;
+
+                    if (!userNotificationPrefs.TryGetValue(booking.UserId, out var userPrefs))
+                        continue;
+ 
+                    var notificationSent = false; 
+                    if (userPrefs.IsPushNotificationEnabled == true)
+                    {
+                        var dto = new PushNotificationRequest
+                        {
+                            UserId = booking.UserId,
+                            Title = $"Sắp diễn ra: {ev.Title}",
+                            Content = $"Sự kiện {ev.Title} sẽ diễn ra vào {ev.StartTime:HH:mm dd/MM/yyyy}",
+                            EventId = ev.Id,
+                            ImageUrl = firstImage,
+                            Type = NotificationType.EventReminder,
+                            Channel = NotificationChannel.Push
+                        };
+
+                        await _oneSignalService.SendNotificationAsync(dto);
+                        notificationSent = true;
+                    }
+  
+                    if (userPrefs.IsEmailNotificationEnabled == true && !string.IsNullOrEmpty(userPrefs.Email))
+                    {
+                        var sb = new StringBuilder();
+                        if (!string.IsNullOrEmpty(firstImage))
+                            sb.AppendLine($"<img src='{firstImage}' alt='Event' style='width:100%;max-width:600px;border-radius:8px;margin-bottom:20px;'/>");
+
+                        sb.AppendLine($"<p>Xin chào {userPrefs.FullName ?? userPrefs.Email},</p>")
+                          .AppendLine($"<p>Sự kiện <strong>{ev.Title}</strong> sẽ diễn ra vào <strong>{ev.StartTime:HH:mm dd/MM/yyyy}</strong>.</p>")
+                          .AppendLine("<p>Đừng quên tham gia sự kiện nhé!</p>")
+                          .AppendLine($"<p><a href=\"http://localhost:5173/event/{ev.Id}\">Xem chi tiết sự kiện</a></p>")
+                          .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
+
+                        var message = new MimeMessage
+                        {
+                            Subject = $"Nhắc nhở: {ev.Title} sắp diễn ra",
+                            Body = new TextPart("html") { Text = sb.ToString() }
+                        };
+
+                        await _emailService.SendEmailAsync(userPrefs.Email, message);
+                        notificationSent = true;
+                    } 
+                    
+                    if (notificationSent)
+                    {
+                        booking.IsNotification = true;
+                        bookingsToUpdate.Add(booking);
+                    }
+                }
+            }
+            
+            if (bookingsToUpdate.Any())
+            {
+                await _unitOfWork.BookingRepository.UpdateRangeAsync(bookingsToUpdate);
+                await _unitOfWork.SaveChangesAsync();
+            }
+
+            return Result.Success();
+        }
+
     }
 }

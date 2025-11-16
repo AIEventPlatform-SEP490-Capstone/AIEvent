@@ -812,7 +812,7 @@ function BookingFlow() {
                     onClick={() => navigate("/wallet")}
                     className="w-full h-10 mt-2"
                   >
-                    Đi đến ví điện tử
+                    Đi đến ví của tôi
                   </Button>
                 )}
 

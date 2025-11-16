@@ -390,7 +390,7 @@ namespace AIEvent.Application.Services.Implements
         }
 
 
-        public async Task<Result<CheckInResponse>> CheckInTicketAsync(string qrContent)
+        public async Task<Result<CheckInResponse>> CheckInTicketAsync(Guid userId, string qrContent)
         {
             if (string.IsNullOrWhiteSpace(qrContent))
                 return ErrorResponse.FailureResult("QR content is empty", ErrorCodes.InvalidInput);
@@ -414,6 +414,16 @@ namespace AIEvent.Application.Services.Implements
 
             if (ticket == null)
                 return ErrorResponse.FailureResult("Ticket not found", ErrorCodes.NotFound);
+
+            var organizerId = Guid.Parse(ticket.TicketType.CreatedBy!);
+            var validStaff = await _unitOfWork.StaffProfileRepository
+                .Query()
+                .AsNoTracking()
+                .Include(s => s.OrganizerProfile)
+                .AnyAsync(s => s.UserId == userId && s.OrganizerProfile.UserId == organizerId && !s.IsDeleted);
+
+            if(!validStaff)
+                return ErrorResponse.FailureResult("No Permission", ErrorCodes.PermissionDenied);
 
             if (ticket.Status != TicketStatus.Valid)
                 return ErrorResponse.FailureResult("Ticket already checked in", ErrorCodes.InvalidInput);

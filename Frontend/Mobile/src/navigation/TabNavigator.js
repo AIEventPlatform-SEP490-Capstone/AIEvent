@@ -1,6 +1,7 @@
 import React from 'react';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {createStackNavigator} from '@react-navigation/stack';
+import {CommonActions} from '@react-navigation/native';
 import {Image, View} from 'react-native';
 import HomeScreen from '../screens/homeScreen';
 import EventDetailScreen from '../screens/eventDetailScreen';
@@ -127,36 +128,16 @@ const TimelineStack = () => {
   );
 };
 
-// Stack Navigator cho MyEvents tab
-const MyEventsStack = () => {
+// Stack Navigator cho Tickets tab (Vé của tôi)
+const TicketsStack = () => {
   return (
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
       }}>
-      <Stack.Screen name="MyEventsMain" component={MyEventsScreen} />
+      <Stack.Screen name="TicketsMain" component={TicketsScreen} />
       <Stack.Screen
         name={ScreenNames.EVENT_DETAIL_SCREEN}
-        component={EventDetailScreen}
-        options={{
-          headerShown: true,
-          title: 'Chi tiết sự kiện',
-          headerStyle: {
-            backgroundColor: Colors.white,
-            elevation: 0,
-            shadowOpacity: 0,
-            borderBottomWidth: 1,
-            borderBottomColor: Colors.border,
-          },
-          headerTitleStyle: {
-            color: Colors.textPrimary,
-            fontSize: 18,
-            fontWeight: '600',
-          },
-        }}
-      />
-      <Stack.Screen 
-        name={ScreenNames.EVENT_DETAIL_SCREEN} 
         component={EventDetailScreen}
         options={{
           headerShown: true,
@@ -300,7 +281,7 @@ const TabNavigator = () => {
           } else if (route.name === 'Timeline') {
             iconName = Images.calendar;
           } else if (route.name === 'MyEvents') {
-            iconName = Images.calendar;
+            iconName = Images.ticket;
           } else if (route.name === 'Profile') {
             iconName = Images.profile;
           }
@@ -340,9 +321,9 @@ const TabNavigator = () => {
       />
       <Tab.Screen
         name="MyEvents"
-        component={MyEventsStack}
+        component={TicketsStack}
         options={{
-          title: 'Sự kiện của tôi',
+          title: 'Vé của tôi',
         }}
       />
       <Tab.Screen
@@ -351,6 +332,23 @@ const TabNavigator = () => {
         options={{
           title: 'Hồ sơ',
         }}
+        listeners={({ navigation, route }) => ({
+          tabPress: (e) => {
+            // Reset navigation to ProfileMain when tab is pressed
+            const state = navigation.getState();
+            const profileTabState = state.routes.find(r => r.name === 'Profile');
+            if (profileTabState) {
+              const profileStackState = profileTabState.state;
+              if (profileStackState && profileStackState.index > 0) {
+                // If we're not on the main profile screen, navigate to ProfileMain
+                e.preventDefault();
+                navigation.navigate('Profile', {
+                  screen: 'ProfileMain',
+                });
+              }
+            }
+          },
+        })}
       />
     </Tab.Navigator>
   );

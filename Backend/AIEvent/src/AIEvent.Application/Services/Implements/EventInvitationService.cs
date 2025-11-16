@@ -144,8 +144,7 @@ namespace AIEvent.Application.Services.Implements
             if (invitation == null)
                 return ErrorResponse.FailureResult("The invitation does not exist or you do not have permission.", ErrorCodes.NotFound);
 
-            if (invitation.Status.HasValue)
-                return ErrorResponse.FailureResult("The invitation has been responded to.", ErrorCodes.InvalidInput);
+         
 
             if (invitation.Inviter == null || invitation.Inviter.IsDeleted)
                 return ErrorResponse.FailureResult("The invite sender does not exist.", ErrorCodes.NotFound);
@@ -209,7 +208,7 @@ namespace AIEvent.Application.Services.Implements
             IQueryable<EventInvitation> eventInvitations = _unitOfWork.EventInvitationRepository
                                                 .Query()
                                                 .AsNoTracking()
-                                                .Where(ei => ei.InviterId == userId
+                                                .Where(ei => (ei.InvitedUserId == userId || ei.InviterId == userId)
                                                         && ei.IsDeleted == false);
 
             if (status != null || status.HasValue)

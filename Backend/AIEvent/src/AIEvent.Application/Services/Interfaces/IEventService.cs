@@ -23,5 +23,6 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result<ReportResponse>> GetEventReportDetailAsync(string id);
         Task<Result> ReplyReportAsync(string id, ReplyReportRequest request);
         Task<Result<ReportResponse>> GetEventReportOfUserAsync(Guid userId, string id);
+        Task<Result<BasePaginated<ListEventResponse>>> GetAllEventForStaff(Guid staffId, string? title, string? eventCategoryId,int pageNumber, int pageSize);
     }
 }

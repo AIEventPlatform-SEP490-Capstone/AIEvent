@@ -10,9 +10,8 @@ using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using AutoMapper;
-using AutoMapper.QueryableExtensions;
+using AutoMapper.QueryableExtensions; 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -980,16 +979,48 @@ namespace AIEvent.Application.Services.Implements
 
             if (!endedEvents.Any()) return;
 
+            var systemSetting = await _unitOfWork.SystemSettingRepository
+                .Query()
+                .FirstOrDefaultAsync(s => !s.IsDeleted);
+            if (systemSetting == null) return;
+
             foreach (var ev in endedEvents)
             {
                 var totalRevenue = ev.TotalAmount;
+                
+                if (totalRevenue > 0)
+                {
+                    decimal platformFee = totalRevenue * systemSetting.FlatformFee + systemSetting.FixFee;
+                    decimal netRevenue = totalRevenue - platformFee;
+                    ev.PlatformFee = platformFee;
+                    ev.PayoutAmount = netRevenue;
+                    ev.Status = EventStatus.WaitingForPayout;
+                }
+                else
+                {
+                    var payoutDate = DateTime.UtcNow;
+                    ev.PlatformFee = 0;
+                    ev.PayoutAmount = 0;
+                    ev.Status = EventStatus.PaidOut;
+                    ev.PaidOutAt = payoutDate;
 
-                var platformFee = totalRevenue * 0.066m + 45000m;
-                var netRevenue = totalRevenue - platformFee;
+                    var revenueReport = new RevenueReport
+                    {
+                        OrganizerProfileId = ev.OrganizerProfileId,
+                        EventId = ev.Id,
+                        EventName = ev.Title,
+                        GrossRevenue = 0,
+                        PlatformFee = 0,
+                        NetRevenue = 0,
+                        ReportMonth = payoutDate.Month,
+                        ReportYear = payoutDate.Year,
+                        PayoutDate = null
+                    };
 
-                ev.PlatformFee = platformFee;
-                ev.PayoutAmount = netRevenue;
-                ev.Status = EventStatus.WaitingForPayout;
+                    await _unitOfWork.RevenueReportRepository.AddAsync(revenueReport);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+                
                 ev.CompletedAt = now;
             }
 
@@ -1070,7 +1101,8 @@ namespace AIEvent.Application.Services.Implements
                     r.Type,
                     r.CreatedAt,
                     r.User.FullName,
-                    r.User.Email
+                    r.User.Email,
+                    r.Reply
                 });
 
             if (type.HasValue)
@@ -1091,6 +1123,7 @@ namespace AIEvent.Application.Services.Implements
                     UserName = e.FullName!,
                     Reason = e.Reason,
                     Type = e.Type,
+                    Reply = e.Reply,
                     CreatedAt = e.CreatedAt,
                 })
                 .ToListAsync();
@@ -1169,6 +1202,62 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("Report not found", ErrorCodes.NotFound);
 
             return Result<ReportResponse>.Success(report);
+        }
+
+        public async Task<Result<BasePaginated<ListEventResponse>>> GetAllEventForStaff(Guid staffId, string? title, string? eventCategoryId, 
+                                                                                        int pageNumber, int pageSize)
+        {
+            var staffProfile = await _unitOfWork.StaffProfileRepository
+                .Query()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.UserId == staffId && !s.IsDeleted);
+
+            if (staffProfile == null)
+                return ErrorResponse.FailureResult("Staff not found", ErrorCodes.NotFound);
+
+            IQueryable<Event> events = _unitOfWork.EventRepository
+                                                .Query()
+                                                .AsNoTracking()
+                                                .Where(e => e.EndTime >= DateTime.Now
+                                                        && !e.DeletedAt.HasValue
+                                                        && e.Status == EventStatus.Approved && e.Publish == true
+                                                        && e.OrganizerProfileId == staffProfile.OrganizerProfileId);
+
+            if (!string.IsNullOrEmpty(title))
+                events = events.Where(e => e.Title.ToLower().Contains(title.ToLower()));
+
+            if (!string.IsNullOrEmpty(eventCategoryId))
+                events = events.Where(e => e.EventCategoryId == Guid.Parse(eventCategoryId));
+
+            int totalCount = await events.CountAsync();
+
+            var result = await events
+                .OrderBy(e => e.StartTime)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(e => new ListEventResponse
+                {
+                    EventId = e.Id,
+                    Title = e.Title,
+                    StartTime = e.StartTime,
+                    EndTime = e.EndTime,
+                    LocationName = e.LocationName,
+                    SoldQuantity = e.SoldQuantity,
+                    TotalTickets = e.TotalTickets,
+                    Tags = e.EventTags.Select(t => new TagResponse
+                    {
+                        TagId = t.TagId.ToString(),
+                        TagName = t.Tag.NameTag
+                    }).ToList(),
+                    EventCategoryName = e.EventCategory.CategoryName,
+                    Description = e.Description,
+                    ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
+                        ? new List<string>()
+                        : e.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()
+                })
+                .ToListAsync();
+
+            return new BasePaginated<ListEventResponse>(result, totalCount, pageNumber, pageSize);
         }
     }
 }

@@ -1,12 +1,11 @@
 import React from 'react';
-import {View, TouchableOpacity, Image} from 'react-native';
+import {View, Image} from 'react-native';
 import CustomText from '../../common/customTextRN';
 import {LinearGradient} from 'expo-linear-gradient';
-import {Calendar, QrCode} from 'lucide-react-native';
 import Colors from '../../../constants/Colors';
 import {styles} from './styles';
 
-const TicketCard = ({ticket, event, onPressQR, onPressCalendar}) => {
+const TicketCard = ({ticket, event}) => {
   if (!ticket || !event) return null;
 
   // Ensure gradient colors are valid strings and filter out any undefined
@@ -62,33 +61,6 @@ const TicketCard = ({ticket, event, onPressQR, onPressCalendar}) => {
           style={styles.status}>
           Trạng thái: {ticket.status === 'Valid' ? 'Hợp lệ' : 'Không hợp lệ'}
         </CustomText>
-
-        {/* Nút hành động */}
-        <View style={styles.actionContainer}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => onPressQR && onPressQR(ticket)}>
-            <QrCode color={Colors.primary} size={20} />
-            <CustomText
-              variant="caption"
-              color="primary"
-              style={styles.actionText}>
-              Xem QR
-            </CustomText>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => onPressCalendar && onPressCalendar(ticket)}>
-            <Calendar color={Colors.primary} size={20} />
-            <CustomText
-              variant="caption"
-              color="primary"
-              style={styles.actionText}>
-              Thêm Lịch
-            </CustomText>
-          </TouchableOpacity>
-        </View>
       </View>
     </View>
   );

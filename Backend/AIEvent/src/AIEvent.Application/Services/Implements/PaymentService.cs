@@ -379,7 +379,16 @@ namespace AIEvent.Application.Services.Implements
         {
             try
             {
-                var payoutDeadline = DateTime.UtcNow.AddDays(-7);
+                var systemSetting = await _unitOfWork.SystemSettingRepository
+                    .Query()
+                    .FirstOrDefaultAsync(s => !s.IsDeleted);
+                if (systemSetting == null)
+                {
+                    _logger.LogError("SystemSetting not found");
+                    return;
+                }
+
+                var payoutDeadline = DateTime.UtcNow.AddDays(-systemSetting.DatePayout);
                 var pendingEvents = await _unitOfWork.EventRepository
                     .Query()
                     .Include(e => e.OrganizerProfile)
@@ -394,8 +403,8 @@ namespace AIEvent.Application.Services.Implements
                     return;
                 }
 
-                const decimal platformFeePercent = 0.066m;
-                const decimal platformFixedFee = 45000m;
+                decimal platformFeePercent = systemSetting.FlatformFee;
+                decimal platformFixedFee = systemSetting.FixFee;
 
                 foreach (var ev in pendingEvents)
                 {
@@ -415,7 +424,10 @@ namespace AIEvent.Application.Services.Implements
                             _logger.LogInformation("Event {EventId} already paid out.", ev.Id);
                             continue;
                         }
-                         
+
+                        if(ev.TotalAmount <= 0)
+                            continue;
+
                         if (paymentInfor == null)
                         { 
                             var hasWarned = await _unitOfWork.NotificationRepository

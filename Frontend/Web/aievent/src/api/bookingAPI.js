@@ -38,18 +38,33 @@ export const bookingAPI = {
 
   getEventTickets: async (eventId) => {
     const response = await fetcher.get(`/booking/event/${eventId}/ticket`);
-    const data = response.data?.data;
-    const flatTickets = Array.isArray(data?.items)
-      ? data.items.flatMap((t) =>
-          t.tickets.map((tk) => ({
-            ...tk,
-            ticketTypeName: t.ticketTypeName,
-            price: t.price,
-            quantity: t.quantity,
-          }))
-        )
+    const rawData = response.data?.data;
+
+    const items = Array.isArray(rawData?.items)
+      ? rawData.items
+      : Array.isArray(rawData)
+      ? rawData
       : [];
-    return { ...data, tickets: flatTickets };
+
+    const flatTickets = items.flatMap((t) => {
+      if (Array.isArray(t.tickets)) {
+        return t.tickets.map((tk) => ({
+          ...tk,
+          ticketTypeName: t.ticketTypeName,
+          price: t.price,
+          quantity: t.quantity,
+        }));
+      }
+
+      return {
+        ...t,
+        ticketTypeName: t.ticketTypeName || t.ticketName,
+        price: t.price ?? 0,
+        quantity: t.quantity ?? 0,
+      };
+    });
+
+    return { items, tickets: flatTickets };
   },
 };
 

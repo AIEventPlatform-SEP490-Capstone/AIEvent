@@ -49,24 +49,71 @@ namespace AIEvent.Application.Services.Implements
 
             return content ?? string.Empty;
         }
-
-        /// <summary>
-        /// Sinh câu trả lời RAG: dùng context từ Pinecone.
-        /// </summary>
-        public async Task<string> GenerateRAGResponseAsync(string query, List<string> contexts)
+         
+        public async Task<string> GenerateRAGResponseAsync(string query, List<string> contexts, List<(string prompt, string response)>? chatHistory = null)
         {
             var contextText = string.Join("\n---\n", contexts);
 
+            var chatHistoryText = "";
+            if (chatHistory != null && chatHistory.Any())
+            {
+                var historyItems = chatHistory.Select((h, index) => 
+                    $@"Cuộc hội thoại {index + 1}:
+                    - Người dùng: {h.prompt}
+                    - Trợ lý: {h.response}").ToList();
+                chatHistoryText = $@"
+            Lịch sử hội thoại trước đó (để hiểu rõ hơn về sở thích và yêu cầu của người dùng):
+            {string.Join("\n\n", historyItems)}
+            ";
+            }
+
             var prompt = $@"
-                Người dùng hỏi: ""{query}"".
+            Người dùng hỏi: ""{query}"".
+            {chatHistoryText}
+            Dưới đây là danh sách sự kiện liên quan (ngữ cảnh):
+            {contextText}
 
-                Dưới đây là danh sách sự kiện liên quan (ngữ cảnh):
-                {contextText}
+            Chọn **1 sự kiện phù hợp nhất** và trả về theo định dạng:
 
-                Hãy gợi ý các sự kiện phù hợp nhất, tóm tắt ngắn gọn lý do và thông tin cơ bản (tên, địa điểm, giá, thời gian).
-                ";
+            - Bắt đầu bằng **câu tự nhiên** giải thích lý do vì sao sự kiện này phù hợp với yêu cầu người dùng, ví dụ: 'Với yêu cầu của bạn, tôi cảm thấy sự kiện ""Tên sự kiện"" rất phù hợp vì ...'
+
+            - Tiếp theo là **form chuẩn**:
+            - **Địa điểm:** [Địa điểm tổ chức]
+            - **Thời gian:** [dd/MM/yyyy HH:mm → dd/MM/yyyy HH:mm]
+            - **Giá vé:** [Miễn phí hoặc giá vé]
+
+            - Cuối cùng là link điều hướng:
+              Xem chi tiết: [link đã có trong context]
+
+            Hãy gợi ý các sự kiện phù hợp nhất
+            ";
 
             return await GenerateTextAsync(prompt);
+        }
+
+        public async Task<string> GenerateSessionNameAsync(string prompt)
+        {
+            var sessionNamePrompt = $@"
+            Dựa vào câu hỏi sau đây của người dùng, hãy tạo một tiêu đề ngắn gọn (tối đa 50 ký tự) để đặt tên cho cuộc hội thoại này.
+            Chỉ trả về tiêu đề, không có giải thích hay ký tự đặc biệt.
+
+            Câu hỏi: ""{prompt}""
+            ";
+
+            var sessionName = await GenerateTextAsync(sessionNamePrompt);
+             
+            sessionName = sessionName.Trim();
+            if (sessionName.Length > 50)
+            {
+                sessionName = sessionName.Substring(0, 50).Trim();
+            }
+             
+            if (string.IsNullOrWhiteSpace(sessionName) || sessionName.Length < 3)
+            {
+                sessionName = prompt.Length > 50 ? prompt.Substring(0, 50) + "..." : prompt;
+            }
+
+            return sessionName;
         }
     }
 }

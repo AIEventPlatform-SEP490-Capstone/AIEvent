@@ -78,7 +78,8 @@ namespace AIEvent.API.Controllers
         [Authorize(Roles = "Organizer,Staff")]
         public async Task<ActionResult<SuccessResponse<CheckInResponse>>> CheckIn(CheckInRequest request)
         {
-            var result = await _bookingService.CheckInTicketAsync(request.QrContent);
+            var userId = User.GetRequiredUserId();
+            var result = await _bookingService.CheckInTicketAsync(userId, request.QrContent);
 
             if (!result.IsSuccess)
             {

@@ -20,22 +20,31 @@ const Images = {
   showEye: require('../assets/icons/show-eye.png'),
   pushpin: require('../assets/icons/pushpin.png'),
   qrCode: require('../assets/icons/qr-code.png'),
+  ticket: require('../assets/icons/document.png'), // Using document icon as ticket icon
 
   // Event images (using existing card images)
   event1: require('../assets/images/card1.png'),
   event2: require('../assets/images/card1.png'), // Using card1 as placeholder
-  
+
   // Background
   background: require('../assets/images/background.png'),
   header: require('../assets/images/background.png'), // Using background as placeholder
-  
+
   // Avatars
   avatar1: require('../assets/images/avatar1.jpg'),
   avatar2: require('../assets/images/avatar1.jpg'), // Using avatar1 as placeholder
-  
+
   // Logo
   aiEventLogo: require('../assets/images/AIEventLogo.png'),
-  
+  robotCycle: require('../assets/images/robot-cycle.png'),
+
+  //share
+  shareSystem: require('../assets/images/system.png'),
+  copy: require('../assets/images/copy.png'),
+  zalo: require('../assets/images/Zalo.png'),
+  facebook: require('../assets/images/Facebook.png'),
+  twitter: require('../assets/images/Twitter.png'),
+  linkedin: require('../assets/images/LinkedIn.png'),
 };
 
 export default Images;

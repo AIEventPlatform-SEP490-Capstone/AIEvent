@@ -9,5 +9,6 @@ namespace AIEvent.Application.DTOs.User
         public required string Email { get; set; }
         [Required]
         public required string OTPCode { get; set; }
+        public string? DeviceToken { get; set; }
     }
 }

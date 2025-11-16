@@ -1,5 +1,6 @@
 import BaseApiService from './BaseApiService';
 import EndUrls from '../EndUrls';
+import { translateReportEventError } from '../../utility';
 
 // Helper function to convert UTC to UTC+7
 const convertUTCToUTC7 = (utcDate) => {
@@ -280,20 +281,280 @@ class EventService {
   /**
    * Share event
    */
-  static async shareEvent(eventId) {
+  // static async shareEvent(eventId) {
+  //   try {
+  //     const data = await BaseApiService.post(EndUrls.SHARE_EVENT(eventId), {});
+  //     return {
+  //       success: true,
+  //       data: data,
+  //       message: 'Event shared successfully',
+  //     };
+  //   } catch (error) {
+  //     console.error('Error sharing event:', error);
+  //     return {
+  //       success: false,
+  //       data: null,
+  //       message: `Failed to share event: ${error.message}`,
+  //       error: error.message,
+  //     };
+  //   }
+  // }
+
+  /**
+   * Invite friends to event
+   * @param {string} eventId - The ID of the event
+   * @param {string[]} invitedUserIds - Array of user IDs to invite
+   * @param {string} message - Invitation message
+   */
+  static async inviteFriends(eventId, invitedUserIds, message) {
     try {
-      const data = await BaseApiService.post(EndUrls.SHARE_EVENT(eventId), {});
+      const requestBody = {
+        invitedUserIds: invitedUserIds,
+        message: message || '',
+      };
+      
+      const data = await BaseApiService.post(
+        EndUrls.INVITE_FRIENDS(eventId),
+        requestBody
+      );
+      
       return {
         success: true,
         data: data,
-        message: 'Event shared successfully',
+        message: 'Friends invited successfully',
       };
     } catch (error) {
-      console.error('Error sharing event:', error);
+      console.error('Error inviting friends:', error);
       return {
         success: false,
         data: null,
-        message: `Failed to share event: ${error.message}`,
+        message: `Failed to invite friends: ${error.message}`,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Confirm invitation (Accept/Reject/Pending)
+   * @param {string} invitationId - The ID of the invitation
+   * @param {string} status - Status: "Pending", "Accepted", or "Rejected"
+   */
+  static async confirmInvitation(invitationId, status) {
+    try {
+      // Validate status
+      const validStatuses = ['Pending', 'Accepted', 'Rejected'];
+      if (!validStatuses.includes(status)) {
+        return {
+          success: false,
+          data: null,
+          message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`,
+          error: 'Invalid status',
+        };
+      }
+
+      const requestBody = {
+        status: status,
+      };
+      
+      const data = await BaseApiService.put(
+        EndUrls.CONFIRM_INVITATION(invitationId),
+        requestBody
+      );
+      
+      return {
+        success: true,
+        data: data,
+        message: 'Invitation status updated successfully',
+      };
+    } catch (error) {
+      console.error('Error confirming invitation:', error);
+      return {
+        success: false,
+        data: null,
+        message: `Failed to confirm invitation: ${error.message}`,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Get invitations status
+   * Returns a list of invitations with pagination
+   */
+  static async getInvitationsStatus() {
+    try {
+      const response = await BaseApiService.get(EndUrls.GET_INVITATIONS_STATUS);
+      
+      // Extract data from the response
+      let data = response;
+      
+      // Handle different response structures
+      if (response.data) {
+        data = response.data;
+      }
+      
+      // Extract items from paginated response
+      let items = data.items || data.Items || [];
+      
+      return {
+        success: true,
+        data: items,
+        pagination: {
+          currentPage: data.currentPage || data.CurrentPage || 1,
+          totalPages: data.totalPages || data.TotalPages || 1,
+          totalItems: data.totalItems || data.TotalItems || items.length || 0,
+          pageSize: data.pageSize || data.PageSize || 10,
+          hasPreviousPage: data.hasPreviousPage || data.HasPreviousPage || false,
+          hasNextPage: data.hasNextPage || data.HasNextPage || false,
+        },
+        message: 'Invitations fetched successfully',
+      };
+    } catch (error) {
+      console.error('Error fetching invitations status:', error);
+      return {
+        success: false,
+        data: [],
+        pagination: null,
+        message: `Failed to fetch invitations: ${error.message}`,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Get AI recommended events
+   */
+  static async getAIRecommendedEvents(params = {}) {
+    try {
+      const {
+        pageNumber = 1,
+        pageSize = 5,
+      } = params;
+
+      // Build query parameters
+      const queryParams = new URLSearchParams();
+      if (pageNumber) queryParams.append('pageNumber', pageNumber);
+      if (pageSize) queryParams.append('pageSize', pageSize);
+
+      const url = `${EndUrls.AI_EVENTS}?${queryParams.toString()}`;
+      const response = await BaseApiService.get(url);
+      
+      // Extract data from the paginated response
+      let data = response;
+      
+      // Handle different response structures
+      if (response.data) {
+        data = response.data;
+      }
+      
+      // If we have a data wrapper, extract the actual data
+      if (data.data) {
+        data = data.data;
+      }
+      
+      // Extract items from paginated response
+      let items = data.items || data.Items || [];
+      
+      // Process dates for all events
+      items = processEventsArray(items);
+      
+      return {
+        success: true,
+        data: items,
+        pagination: {
+          currentPage: data.currentPage || data.CurrentPage || pageNumber,
+          totalPages: data.totalPages || data.TotalPages || 1,
+          totalItems: data.totalItems || data.TotalItems || items.length || 0,
+          pageSize: data.pageSize || data.PageSize || pageSize
+        },
+        message: 'AI recommended events fetched successfully',
+      };
+    } catch (error) {
+      console.error('Error fetching AI recommended events:', error);
+      return {
+        success: false,
+        data: [],
+        pagination: null,
+        message: `Failed to fetch AI recommended events: ${error.message}`,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Report an event
+   */
+  static async reportEvent(params = {}) {
+    try {
+      const {
+        eventId,
+        type,
+        reason,
+        attachmentUrl = '',
+      } = params;
+
+      if (!eventId || !type || !reason) {
+        return {
+          success: false,
+          message: 'Missing required parameters: eventId, type, reason',
+        };
+      }
+
+      // Build query parameters
+      const queryParams = new URLSearchParams();
+      queryParams.append('EventId', eventId);
+      queryParams.append('Type', type);
+      queryParams.append('Reason', reason);
+      if (attachmentUrl) {
+        queryParams.append('AttachmentUrl', attachmentUrl);
+      }
+
+      const url = `${EndUrls.REPORT_EVENT}?${queryParams.toString()}`;
+      const response = await BaseApiService.post(url, {});
+      
+      return {
+        success: true,
+        data: response,
+        message: 'Event reported successfully',
+      };
+    } catch (error) {
+      console.error('Error reporting event:', error);
+      const errorMessage = error.message || 'Failed to report event';
+      const translatedMessage = translateReportEventError(errorMessage);
+      
+      return {
+        success: false,
+        message: translatedMessage,
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * Get user reports for an event
+   */
+  static async getUserReports(eventId) {
+    try {
+      const response = await BaseApiService.get(EndUrls.GET_USER_REPORTS(eventId));
+      
+      let data = response;
+      if (response.data) {
+        data = response.data;
+      }
+      
+      const reports = Array.isArray(data) ? data : (data ? [data] : []);
+      
+      return {
+        success: true,
+        data: reports,
+        message: 'User reports fetched successfully',
+      };
+    } catch (error) {
+      console.error('Error fetching user reports:', error);
+      return {
+        success: false,
+        data: [],
+        message: `Failed to fetch user reports: ${error.message}`,
         error: error.message,
       };
     }

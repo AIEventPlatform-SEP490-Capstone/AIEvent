@@ -21,6 +21,12 @@ const EndUrls = {
   LEAVE_EVENT: id => `${BASE_URL}/event/${id}/leave`,
   SHARE_EVENT: id => `${BASE_URL}/event/${id}/share`,
   EVENT_ATTENDEES: id => `${BASE_URL}/event/${id}/attendees`,
+  INVITE_FRIENDS: eventId => `${BASE_URL}/event/${eventId}/invite-friends`,
+  CONFIRM_INVITATION: invitationId => `${BASE_URL}/event/invitations/${invitationId}/confirm`,
+  GET_INVITATIONS_STATUS: `${BASE_URL}/event/invitations-status`,
+  AI_EVENTS: `${BASE_URL}/ai/event`,
+  REPORT_EVENT: `${BASE_URL}/event/report`,
+  GET_USER_REPORTS: eventId => `${BASE_URL}/event/${eventId}/report/user`,
 
   // Event Categories
   EVENT_CATEGORIES: `${BASE_URL}/event-category`,
@@ -63,6 +69,6 @@ const EndUrls = {
   RATING: id => `${BASE_URL}/rating/${id}`,
 };
 
-console.log('EndUrls:', EndUrls);
+// console.log('EndUrls:', EndUrls);
 
 export default EndUrls;

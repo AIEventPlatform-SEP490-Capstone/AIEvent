@@ -1,5 +1,6 @@
-﻿using AIEvent.Application.DTOs.AIRecommendation;
+﻿using AIEvent.Application.DTOs.PineconeVector;
 using AIEvent.Application.Services.Interfaces;
+using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,7 +30,9 @@ namespace AIEvent.Application.Services.Implements
                 .Include(e => e.EventTags)
                     .ThenInclude(et => et.Tag)
                 .Include(e => e.TicketTypes)
-                .Where(e => e.Publish == true && !e.IsDeleted)
+                .Where(e => e.Publish == true 
+                    && e.Status == EventStatus.Approved 
+                    && !e.IsDeleted)
                 .ToListAsync();
 
             if (events.Count == 0)
@@ -72,6 +75,7 @@ namespace AIEvent.Application.Services.Implements
                         Values = embedding,
                         Metadata = new Dictionary<string, object>
                         {
+                            ["EventId"] = e.Id,
                             ["Title"] = e.Title,
                             ["Description"] = e.Description,
                             ["CategoryName"] = categoryName,
@@ -93,7 +97,7 @@ namespace AIEvent.Application.Services.Implements
 
             if (vectors.Any())
             {
-                await _pineconeService.UpsertVectorAsync(vectors);
+                await _pineconeService.UpsertVectorAsync(vectors, isUser: false);
                 Console.WriteLine($"✅ Đã embed {vectors.Count} sự kiện vào Pinecone thành công!");
             }
         }

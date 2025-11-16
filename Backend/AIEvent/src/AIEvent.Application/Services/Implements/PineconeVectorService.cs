@@ -1,4 +1,4 @@
-﻿using AIEvent.Application.DTOs.AIRecommendation;
+﻿using AIEvent.Application.DTOs.PineconeVector;
 using AIEvent.Application.Services.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
@@ -10,20 +10,23 @@ namespace AIEvent.Application.Services.Implements
     {
         private readonly HttpClient _httpClient;
         private readonly string _apiKey;
-        private readonly string _host;
+        private readonly string _hostEvent;
+        private readonly string _hostUser;
 
         public PineconeVectorService(IConfiguration config, HttpClient httpClient)
         {
             _httpClient = httpClient;
             _apiKey = config["AIProviders:Pinecone:ApiKey"]!;
-            _host = config["AIProviders:Pinecone:HostEvent"]!;
-
-            _httpClient.BaseAddress = new Uri(_host);
+            _hostEvent = config["AIProviders:Pinecone:HostEvent"]!;
+            _hostUser = config["AIProviders:Pinecone:HostUser"]!;
+             
             _httpClient.DefaultRequestHeaders.Add("Api-Key", _apiKey);
             _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
         }
 
-        public async Task UpsertVectorAsync(string id, float[] values, Dictionary<string, object>? metadata = null)
+        private string GetHost(bool isUser = false) => isUser ? _hostUser : _hostEvent;
+
+        public async Task UpsertVectorAsync(string id, float[] values, bool isUser, Dictionary<string, object>? metadata = null)
         {
             var payload = new
             {
@@ -39,11 +42,12 @@ namespace AIEvent.Application.Services.Implements
             };
 
             var content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
-            var response = await _httpClient.PostAsync("/vectors/upsert", content);
+            var url = $"{GetHost(isUser)}/vectors/upsert";
+            var response = await _httpClient.PostAsync(url, content);
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task UpsertVectorAsync(IEnumerable<PineconeVector> vectors)
+        public async Task UpsertVectorAsync(IEnumerable<PineconeVector> vectors, bool isUser)
         {
             var payload = new
             {
@@ -56,12 +60,13 @@ namespace AIEvent.Application.Services.Implements
             };
 
             var content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
-            var response = await _httpClient.PostAsync("/vectors/upsert", content);
+            var url = $"{GetHost(isUser)}/vectors/upsert";
+            var response = await _httpClient.PostAsync(url, content);
 
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task<List<(string Id, double Score, Dictionary<string, object>? Metadata)>> QuerySimilarAsync(float[] vector, int topK = 5)
+        public async Task<List<(string Id, double Score, Dictionary<string, object>? Metadata)>> QuerySimilarAsync(float[] vector, bool isUser, int topK = 5)
         {
             var payload = new
             {
@@ -71,7 +76,8 @@ namespace AIEvent.Application.Services.Implements
             };
 
             var content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
-            var response = await _httpClient.PostAsync("/query", content);
+            var url = $"{GetHost(isUser)}/query";
+            var response = await _httpClient.PostAsync(url, content);
             response.EnsureSuccessStatusCode();
 
             var json = await response.Content.ReadAsStringAsync();
@@ -84,32 +90,14 @@ namespace AIEvent.Application.Services.Implements
             return matches;
         }
 
-        public async Task DeleteVectorAsync(string id)
+        public async Task DeleteVectorAsync(string id, bool isUser)
         {
             var payload = new { ids = new[] { id } };
             var content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
-
-            var response = await _httpClient.PostAsync("/vectors/delete", content);
+            var url = $"{GetHost(isUser)}/vectors/delete";
+            var response = await _httpClient.PostAsync(url, content);
             response.EnsureSuccessStatusCode();
         }
 
-    }
-
-    public class PineconeQueryResponse
-    {
-        [JsonProperty("matches")]
-        public List<PineconeMatch>? Matches { get; set; }
-    }
-
-    public class PineconeMatch
-    {
-        [JsonProperty("id")]
-        public string Id { get; set; } = string.Empty;
-
-        [JsonProperty("score")]
-        public double Score { get; set; }
-
-        [JsonProperty("metadata")]
-        public Dictionary<string, object>? Metadata { get; set; }
     }
 }

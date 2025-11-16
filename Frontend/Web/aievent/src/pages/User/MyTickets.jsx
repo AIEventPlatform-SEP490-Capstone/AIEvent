@@ -24,7 +24,10 @@ import {
   CircleAlert,
   ArrowLeft,
   X,
+  Flag,
 } from "lucide-react";
+import { showSuccess, showError } from "../../lib/toastUtils";
+import eventAPI from "../../api/eventAPI";
 
 const PAGE_SIZE = 6;
 
@@ -50,10 +53,22 @@ export default function MyTickets() {
   const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(6);
-  
+
+  // Report states
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportTargetEvent, setReportTargetEvent] = useState(null);
+  const [reportType, setReportType] = useState("Scam");
+  const [reportReason, setReportReason] = useState("");
+  const [reportAttachmentUrl, setReportAttachmentUrl] = useState("");
+  const [submittingReport, setSubmittingReport] = useState(false);
+  const [showReports, setShowReports] = useState(false);
+  const [userReports, setUserReports] = useState([]);
+  const [loadingReports, setLoadingReports] = useState(false);
+
   // Pagination for ticket types
   const [ticketTypePage, setTicketTypePage] = useState(1);
   const [ticketTypeItemsPerPage, setTicketTypeItemsPerPage] = useState(6);
+
 
   // Active filters
   const [activeFilters, setActiveFilters] = useState([]);
@@ -105,7 +120,7 @@ export default function MyTickets() {
         const res = await bookingAPI.getEventTickets(selectedEvent.eventId);
         const t = res?.tickets || [];
         setTickets(t);
-        
+
         // Group tickets by type
         const typesMap = {};
         t.forEach((ticket) => {
@@ -195,6 +210,88 @@ export default function MyTickets() {
     }
   };
 
+  const mapReportError = (err) => {
+    const code = err?.response?.data?.code || err?.response?.data?.errorCode;
+    const msg = err?.response?.data?.message || "";
+
+    // Ưu tiên theo message cụ thể từ backend
+    if (msg.includes("Event not found")) return "Không tìm thấy sự kiện hoặc không khả dụng.";
+    if (msg.includes("only report after the event has ended")) return "Chỉ có thể báo cáo sau khi sự kiện đã kết thúc.";
+    if (msg.includes("only report events you booked and join")) return "Bạn chỉ có thể báo cáo sự kiện bạn đã đặt và đã tham gia.";
+    if (msg.includes("already reported")) return "Bạn đã báo cáo sự kiện này trước đó.";
+
+    // Theo mã lỗi chuẩn
+    switch (code) {
+      case "AIE40401":
+        return "Không tìm thấy sự kiện hoặc không khả dụng.";
+      case "AIE40001":
+        return "Dữ liệu không hợp lệ.";
+      case "AIE40301":
+        return "Bạn không có quyền thực hiện hành động này.";
+      case "AIE40102":
+      case "AIE40101":
+        return "Bạn cần đăng nhập để tiếp tục.";
+      case "AIE50001":
+        return "Lỗi hệ thống. Vui lòng thử lại sau.";
+      default:
+        return "Không thể gửi báo cáo. Vui lòng thử lại.";
+    }
+  };
+
+  const openReportModal = (event) => {
+    setReportTargetEvent(event);
+    setReportType("Scam");
+    setReportReason("");
+    setReportAttachmentUrl("");
+    setShowReportModal(true);
+  };
+
+  const closeReportModal = () => {
+    setShowReportModal(false);
+    setReportTargetEvent(null);
+  };
+
+  const handleSubmitReport = async () => {
+    if (!reportTargetEvent?.eventId) {
+      showError("Thiếu thông tin sự kiện để báo cáo.");
+      return;
+    }
+    if (!reportReason.trim()) {
+      showError("Vui lòng nhập lý do báo cáo.");
+      return;
+    }
+    try {
+      setSubmittingReport(true);
+      await eventAPI.reportEvent({
+        eventId: reportTargetEvent.eventId,
+        type: reportType,
+        reason: reportReason.trim(),
+        attachmentUrl: reportAttachmentUrl.trim(),
+      });
+      showSuccess("Đã gửi báo cáo. Cảm ơn bạn đã phản hồi.");
+      closeReportModal();
+    } catch (err) {
+      console.error("reportEvent error:", err);
+      showError(mapReportError(err));
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
+
+  const fetchUserReports = async (eventId) => {
+    try {
+      setLoadingReports(true);
+      const reports = await eventAPI.getUserReports(eventId);
+      setUserReports(Array.isArray(reports) ? reports : []);
+    } catch (err) {
+      console.error("getUserReports error:", err);
+      setUserReports([]);
+      showError("Không thể tải báo cáo.");
+    } finally {
+      setLoadingReports(false);
+    }
+  };
+
   // Filtered events
   const filteredEvents = useMemo(() => {
     return events.filter((ev) => {
@@ -249,279 +346,13 @@ export default function MyTickets() {
     setTicketTypePage(1);
   }, [statusFilter, query, dateFilter, timeFilter, locationFilter, priceRangeFilter]);
 
-  // Download ticket
-  const handlePrintTicket = async (ticket) => {
-    try {
-      const ticketId = ticket?.ticketId || ticket?.id || ticket?._id;
-      if (!ticketId) {
-        alert("Thiếu ID vé để in. Vui lòng thử lại.");
-        return;
-      }
-
-      const res = await bookingAPI.getTicketQR(ticketId);
-      const qrImg = res?.qrCode;
-
-      if (!qrImg) {
-        alert("Không thể lấy mã QR cho vé này.");
-        return;
-      }
-
-      const evTitle = ticket.eventTitle || selectedEvent?.title || "Sự kiện";
-      const evAddress = selectedEvent?.address || "";
-      const eventDate = formatDate(selectedEvent?.startTime);
-      const priceText = ticket.price
-        ? new Intl.NumberFormat("vi-VN", {
-            style: "currency",
-            currency: "VND",
-          }).format(ticket.price)
-        : "Miễn phí";
-
-      const html = `
-      <html>
-        <head>
-          <title>Vé - ${ticket.ticketCode || ticketId}</title>
-          <style>
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-            }
-            body {
-              font-family: 'Segoe UI', Arial, sans-serif;
-              background: #f9fafb;
-              padding: 48px;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              min-height: 100vh;
-            }
-            .ticket-container {
-              max-width: 800px;
-              width: 100%;
-              border: 2px solid #000;
-              overflow: hidden;
-            }
-            .ticket-content {
-              display: flex;
-              height: 300px;
-            }
-            .ticket-image {
-              width: 40%;
-              background: #fff;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              overflow: hidden;
-            }
-            .ticket-image img {
-              width: 100%;
-              height: 100%;
-              object-fit: cover;
-            }
-            .ticket-info {
-              flex: 1;
-              background: #F5F0ED;
-              padding: 20px;
-              position: relative;
-              display: flex;
-              flex-direction: column;
-            }
-            .perforated-line {
-              position: absolute;
-              right: 80px;
-              top: 0;
-              bottom: 0;
-              width: 2px;
-              border-right: 2px dashed #000;
-            }
-            .perforated-line::before {
-              content: '';
-              position: absolute;
-              top: -6px;
-              left: -4px;
-              width: 8px;
-              height: 8px;
-              background: #000;
-              border-radius: 50%;
-            }
-            .perforated-line::after {
-              content: '';
-              position: absolute;
-              bottom: -6px;
-              left: -4px;
-              width: 8px;
-              height: 8px;
-              background: #000;
-              border-radius: 50%;
-            }
-            .ticket-header {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 10px;
-            }
-            .ticket-type {
-              font-size: 10px;
-              font-weight: 600;
-              text-transform: uppercase;
-              letter-spacing: 1px;
-            }
-            .ticket-address {
-              font-size: 10px;
-              text-align: right;
-              max-width: 40%;
-            }
-            .ticket-title {
-              font-size: 24px;
-              font-weight: bold;
-              margin-bottom: 20px;
-              line-height: 1.2;
-            }
-            .ticket-pills {
-              display: flex;
-              gap: 8px;
-              flex-wrap: wrap;
-              margin-top: auto;
-              margin-bottom: 10px;
-            }
-            .pill {
-              padding: 6px 16px;
-              border: 2px solid #000;
-              border-radius: 20px;
-              font-size: 10px;
-              font-weight: 600;
-              background: #F5F0ED;
-            }
-            .ticket-code {
-              font-size: 10px;
-              color: rgba(0,0,0,0.7);
-              margin-top: 8px;
-            }
-            .qr-stub {
-              position: absolute;
-              right: 0;
-              top: 0;
-              bottom: 0;
-              width: 80px;
-              background: #fff;
-              border-left: 2px dashed #000;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              padding: 10px;
-            }
-            .qr-stub img {
-              width: 100%;
-              height: 100%;
-              object-fit: contain;
-            }
-            @media print {
-              body {
-                padding: 0;
-              }
-              .ticket-container {
-                max-width: 100%;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="ticket-container">
-            <div class="ticket-content">
-              <div class="ticket-image">
-                ${selectedEvent?.image ? `<img src="${selectedEvent.image}" alt="${evTitle}" />` : `<img src="${loginPanelImage}" alt="Default event image" />`}
-              </div>
-              <div class="ticket-info">
-                <div class="perforated-line"></div>
-                <div class="ticket-header">
-                  <div class="ticket-type">${ticket.ticketTypeName || "VÉ SỰ KIỆN"}</div>
-                  ${evAddress ? `<div class="ticket-address">${evAddress}</div>` : ''}
-                </div>
-                <div class="ticket-title">${evTitle}</div>
-                <div class="ticket-pills">
-                  <div class="pill">${eventDate.date} ${eventDate.month.toUpperCase()}</div>
-                  <div class="pill">${eventDate.time}</div>
-                  <div class="pill">${priceText}</div>
-                </div>
-                <div class="ticket-code">Mã vé: <strong>${ticket.ticketCode || ticketId}</strong></div>
-                <div class="qr-stub">
-                  <img src="${qrImg}" alt="QR Code" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
-      const w = window.open("", "_blank");
-      w.document.write(html);
-      w.document.close();
-
-      setTimeout(() => {
-        w.focus();
-        w.print();
-      }, 600);
-    } catch (err) {
-      console.error("❌ Lỗi in vé:", err);
-      alert("Không thể in vé. Vui lòng thử lại.");
-    }
-  };
-
-  const handleAddToCalendar = (ticket) => {
-    try {
-      const start = new Date(selectedEvent?.startTime || new Date());
-      const end = new Date(start.getTime() + 1000 * 60 * 60 * 2);
-      const pad = (n) => (n < 10 ? `0${n}` : n);
-      const toICSDate = (d) =>
-        `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(
-          d.getUTCDate()
-        )}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`;
-      const ics = [
-        "BEGIN:VCALENDAR",
-        "VERSION:2.0",
-        "PRODID:-//MyTickets//EN",
-        "BEGIN:VEVENT",
-        `UID:${ticket.ticketId}@mytickets`,
-        `DTSTAMP:${toICSDate(new Date())}`,
-        `DTSTART:${toICSDate(start)}`,
-        `DTEND:${toICSDate(end)}`,
-        `SUMMARY:${selectedEvent?.title || ""}`,
-        `LOCATION:${selectedEvent?.address || ""}`,
-        `DESCRIPTION:Ticket ${ticket.ticketCode || ""}`,
-        "END:VEVENT",
-        "END:VCALENDAR",
-      ].join("\r\n");
-      const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${selectedEvent?.title || "sự kiện"}.ics`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleShare = async (ticket) => {
-    const shareData = {
-      title: selectedEvent?.title,
-      text: `Mã vé: ${ticket.ticketCode}`,
-      url: window.location.href,
-    };
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-      } catch (err) {
-        console.error("share failed", err);
-      }
+  useEffect(() => {
+    if (showReports && selectedEvent?.eventId) {
+      fetchUserReports(selectedEvent.eventId);
     } else {
-      await navigator.clipboard.writeText(
-        `${shareData.title}\n${shareData.text}\n${shareData.url}`
-      );
-      alert("Thông tin vé đã được sao chép. Bạn có thể dán chia sẻ.");
+      setUserReports([]);
     }
-  };
+  }, [showReports, selectedEvent]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -553,10 +384,225 @@ export default function MyTickets() {
     };
   };
 
+  const renderUserReportsSection = () => {
+    if (!showReports) return null;
+  
+    return (
+      <div className="mt-8 border rounded-lg overflow-hidden">
+        <div className="bg-red-50 px-5 py-3 border-b">
+          <h3 className="text-lg font-bold flex items-center gap-2 text-red-700">
+            <Flag className="w-5 h-5" />
+            Báo cáo của bạn
+          </h3>
+        </div>
+  
+        <div className="divide-y">
+          {loadingReports ? (
+            <div className="p-6 space-y-4">
+              {[...Array(2)].map((_, i) => (
+                <div key={i} className="h-32 bg-gray-50 rounded animate-pulse" />
+              ))}
+            </div>
+          ) : userReports.length === 0 ? (
+            <div className="p-10 text-center text-gray-500">
+              <Flag className="w-14 h-14 mx-auto mb-3 text-gray-300" />
+              <p className="text-sm italic">Bạn chưa gửi báo cáo nào cho sự kiện này.</p>
+            </div>
+          ) : (
+            userReports.map((report, idx) => {
+              const createdAt = new Date(report.createdAt);
+              const dateStr = createdAt.toLocaleDateString("vi-VN");
+              const timeStr = createdAt.toLocaleTimeString("vi-VN", {
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+  
+              const reportTypeLabel = {
+                Scam: "Lừa đảo",
+                FakeInfo: "Thông tin sai lệch",
+                Reactionary: "Phản động",
+                SexualHarassment: "Quấy rối tình dục",
+                Violence: "Bạo lực",
+                Inappropriate: "Không phù hợp",
+                Other: "Khác",
+              }[report.type] || report.type;
+  
+              return (
+                <div
+                  key={idx}
+                  className="p-5 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    {/* Cột 1: Thông tin người báo */}
+                    <div className="space-y-2">
+                      <div>
+                        <span className="font-medium text-gray-600">Người báo:</span>
+                        <p className="font-semibold text-gray-900 mt-0.5">
+                          {report.userName || "-"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-600">Email:</span>
+                        <p className="text-gray-900 mt-0.5 break-all">
+                          {report.userEmail || "-"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-600">Thời gian gửi:</span>
+                        <p className="text-gray-900 mt-0.5">
+                          {dateStr} lúc {timeStr}
+                        </p>
+                      </div>
+                    </div>
+  
+                    {/* Cột 2: Nội dung báo cáo */}
+                    <div className="space-y-2">
+                      <div>
+                        <span className="font-medium text-gray-600">Loại báo cáo:</span>
+                        <div className="mt-1">
+                          <span className="inline-block px-3 py-1 text-xs font-medium text-red-800 bg-red-100 rounded-full">
+                            {reportTypeLabel}
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-600">Lý do:</span>
+                        <p className="mt-1 text-gray-800 leading-relaxed whitespace-pre-wrap">
+                          {report.reason || "(Không có lý do)"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-600">Minh chứng:</span>
+                        <p className="mt-1">
+                          {report.attachmentUrl ? (
+                            <a
+                              href={report.attachmentUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-blue-600 hover:underline text-sm font-medium"
+                            >
+                              Xem liên kết
+                            </a>
+                          ) : (
+                            <span className="text-gray-400 italic">Không có</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+  
+                    {/* Cột 3: Phản hồi hệ thống */}
+                    <div className="space-y-2">
+                      <div>
+                        <span className="font-medium text-gray-600">Phản hồi từ hệ thống:</span>
+                        <div className="mt-1 p-1.5 bg-gray-10 border border-gray-400 rounded-md min-h-[3rem] flex items-center">
+                          {report.reply ? (
+                            <p className="text-sm text-gray-900 leading-relaxed">
+                              {report.reply}
+                            </p>
+                          ) : (
+                            <span className="text-gray-400 italic text-sm">
+                              Chưa có phản hồi
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const reportModal = showReportModal ? (
+    <div
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50"
+      onClick={closeReportModal}
+    >
+      <div
+        className="w-full max-w-lg rounded-md bg-white p-4 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-3">
+          <h3 className="text-lg font-bold">Báo cáo sự kiện</h3>
+          <p className="text-sm text-gray-600 mt-1">{reportTargetEvent?.title}</p>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Loại báo cáo
+            </label>
+            <select
+              value={reportType}
+              onChange={(e) => setReportType(e.target.value)}
+              className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="Scam">Lừa đảo</option>
+              <option value="FakeInfo">Thông tin sai lệch</option>
+              <option value="Reactionary">Phản động</option>
+              <option value="SexualHarassment">Quấy rối tình dục</option>
+              <option value="Violence">Bạo lực</option>
+              <option value="Inappropriate">Không phù hợp</option>
+              <option value="Other">Khác</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Lý do
+            </label>
+            <textarea
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              rows={4}
+              placeholder="Mô tả vấn đề bạn gặp phải..."
+              className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Liên kết minh chứng (tùy chọn)
+            </label>
+            <input
+              type="url"
+              value={reportAttachmentUrl}
+              onChange={(e) => setReportAttachmentUrl(e.target.value)}
+              onPaste={(e) => {
+                const text = e.clipboardData.getData("text");
+                if (text) {
+                  e.preventDefault();
+                  setReportAttachmentUrl(text);
+                }
+              }}
+              autoComplete="off"
+              placeholder="https://..."
+              className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="outline" onClick={closeReportModal}>
+            Hủy
+          </Button>
+          <Button onClick={handleSubmitReport} disabled={submittingReport}>
+            {submittingReport ? "Đang gửi..." : "Gửi báo cáo"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   // If event is selected, show ticket details
   if (selectedEvent) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
+        {reportModal}
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-6">
@@ -594,6 +640,15 @@ export default function MyTickets() {
             >
               <Filter className="w-4 h-4 mr-2" />
               {showFilters ? "Ẩn" : "Hiện"} bộ lọc
+            </Button>
+            <Button
+              variant={showReports ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowReports(!showReports)}
+              disabled={!selectedEvent}
+            >
+              <Flag className="w-4 h-4 mr-2" />
+              Xem báo cáo
             </Button>
           </div>
 
@@ -634,7 +689,7 @@ export default function MyTickets() {
                     className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Trạng thái
@@ -717,268 +772,269 @@ export default function MyTickets() {
           {/* Ticket Types - Card View */}
           {viewMode === "card" && (
             <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              {loadingTickets ? (
-                [...Array(4)].map((_, i) => (
-                  <div key={i} className="h-64 bg-white rounded-lg animate-pulse" />
-                ))
-              ) : paginatedTicketTypes.length === 0 ? (
-                <div className="col-span-2 text-center text-gray-500 py-12">
-                  Không có loại vé nào.
-                </div>
-              ) : (
-                paginatedTicketTypes.map((type) => {
-                  const eventDate = formatDate(selectedEvent.startTime);
-                  const isOnSale = new Date(selectedEvent.startTime) > new Date();
-                  
-                  return (
-                    <Card key={type.name} className="overflow-hidden rounded-none shadow-lg hover:shadow-xl transition-shadow bg-transparent border-0">
-                      <div className="flex h-64">
-                        {/* Left Section - Event Image (40%) */}
-                        <div className="w-[40%] bg-gray-100 flex items-center justify-center overflow-hidden relative">
-                          {selectedEvent?.image ? (
-                            <img
-                              src={selectedEvent.image}
-                              alt={selectedEvent.title}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <img
-                              src={loginPanelImage}
-                              alt="Default event image"
-                              className="w-full h-full object-cover"
-                            />
-                          )}
-                        </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {loadingTickets ? (
+                  [...Array(4)].map((_, i) => (
+                    <div key={i} className="h-64 bg-white rounded-lg animate-pulse" />
+                  ))
+                ) : paginatedTicketTypes.length === 0 ? (
+                  <div className="col-span-2 text-center text-gray-500 py-12">
+                    Không có loại vé nào.
+                  </div>
+                ) : (
+                  paginatedTicketTypes.map((type) => {
+                    const eventDate = formatDate(selectedEvent.startTime);
+                    const isOnSale = new Date(selectedEvent.startTime) > new Date();
 
-                        {/* Right Section - Ticket Type Info (60%) */}
-                        <div className="flex-1 bg-[#F5F0ED] relative overflow-hidden">
-                          <div className="h-full flex flex-col p-5">
-                            {/* Top Section */}
-                            <div className="flex justify-between items-start mb-3">
-                              <div className="text-sm font-bold text-black uppercase tracking-wide">
-                                {type.name || "LOẠI VÉ"}
-                              </div>
-                              {selectedEvent?.address && (
-                                <div className="text-sm text-black text-right max-w-[40%] font-medium">
-                                  {selectedEvent.address}
+                    return (
+                      <Card key={type.name} className="overflow-hidden rounded-none shadow-lg hover:shadow-xl transition-shadow bg-transparent border-0">
+                        <div className="flex h-64">
+                          {/* Left Section - Event Image (40%) */}
+                          <div className="w-[40%] bg-gray-100 flex items-center justify-center overflow-hidden relative">
+                            {selectedEvent?.image ? (
+                              <img
+                                src={selectedEvent.image}
+                                alt={selectedEvent.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <img
+                                src={loginPanelImage}
+                                alt="Default event image"
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                          </div>
+
+                          {/* Right Section - Ticket Type Info (60%) */}
+                          <div className="flex-1 bg-[#F5F0ED] relative overflow-hidden">
+                            <div className="h-full flex flex-col p-5">
+                              {/* Top Section */}
+                              <div className="flex justify-between items-start mb-3">
+                                <div className="text-sm font-bold text-black uppercase tracking-wide">
+                                  {type.name || "LOẠI VÉ"}
                                 </div>
-                              )}
-                            </div>
-
-                            {/* Event Title */}
-                            <h3 className="font-bold text-black mb-3 leading-normal flex-shrink-0" style={{ fontSize: '2.8rem', lineHeight: '1.2' }}>
-                              {selectedEvent?.title || "Sự kiện"}
-                            </h3>
-
-                            {/* Info Pills */}
-                            <div className="mt-auto flex gap-2 flex-wrap mb-2 flex-shrink-0">
-                              <div className="px-3 py-1.5 border-2 border-black rounded-full text-xs font-bold text-black bg-white">
-                                {eventDate.date} {eventDate.month.toUpperCase()}
+                                {selectedEvent?.address && (
+                                  <div className="text-sm text-black text-right max-w-[40%] font-medium">
+                                    {selectedEvent.address}
+                                  </div>
+                                )}
                               </div>
-                              <div className="px-3 py-1.5 border-2 border-black rounded-full text-xs font-bold text-black bg-white">
-                                {eventDate.time}
-                              </div>
-                              <div className="px-3 py-1.5 border-2 border-black rounded-full text-xs font-bold text-black bg-white">
-                                {type.price
-                                  ? new Intl.NumberFormat("vi-VN", {
+
+                              {/* Event Title */}
+                              <h3 className="font-bold text-black mb-3 leading-normal flex-shrink-0" style={{ fontSize: '1.8rem', lineHeight: '1.2' }}>
+                                {selectedEvent?.title || "Sự kiện"}
+                              </h3>
+
+                              {/* Info Pills */}
+                              <div className="mt-auto flex gap-2 flex-wrap mb-2 flex-shrink-0">
+                                <div className="px-3 py-1.5 border-2 border-black rounded-full text-xs font-bold text-black bg-white">
+                                  {eventDate.date} {eventDate.month.toUpperCase()}
+                                </div>
+                                <div className="px-3 py-1.5 border-2 border-black rounded-full text-xs font-bold text-black bg-white">
+                                  {eventDate.time}
+                                </div>
+                                <div className="px-3 py-1.5 border-2 border-black rounded-full text-xs font-bold text-black bg-white">
+                                  {type.price
+                                    ? new Intl.NumberFormat("vi-VN", {
                                       style: "currency",
                                       currency: "VND",
                                     }).format(type.price)
-                                  : "Miễn phí"}
+                                    : "Miễn phí"}
+                                </div>
                               </div>
-                            </div>
 
-                            {/* Ticket Info */}
-                            <div className="text-xs text-black/80 font-medium flex-shrink-0">
-                              <div>Số lượng: <span className="font-bold">{type.quantity}</span></div>
+                              {/* Ticket Info */}
+                              <div className="text-xs text-black/80 font-medium flex-shrink-0">
+                                <div>Số lượng: <span className="font-bold">{type.quantity}</span></div>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </Card>
-                  );
-                })
+                      </Card>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Pagination for ticket types - Card View */}
+              {ticketTypes.length > ticketTypeItemsPerPage && (
+                <div className="flex items-center justify-between mb-6 pt-4 border-t">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Hiển thị:</span>
+                    <select
+                      value={ticketTypeItemsPerPage}
+                      onChange={(e) => {
+                        setTicketTypeItemsPerPage(Number(e.target.value));
+                        setTicketTypePage(1);
+                      }}
+                      className="px-2 py-1 border rounded text-sm"
+                    >
+                      <option value={4}>4 / trang</option>
+                      <option value={6}>6 / trang</option>
+                      <option value={8}>8 / trang</option>
+                      <option value={12}>12 / trang</option>
+                    </select>
+                    <span className="text-sm text-gray-500">
+                      (Tổng: {ticketTypes.length} loại vé)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setTicketTypePage((p) => Math.max(1, p - 1))}
+                      disabled={ticketTypePage === 1}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <span className="text-sm text-gray-600">
+                      Trang {ticketTypePage} / {totalTicketTypePages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setTicketTypePage((p) => Math.min(totalTicketTypePages, p + 1))}
+                      disabled={ticketTypePage === totalTicketTypePages}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
               )}
-            </div>
-            
-            {/* Pagination for ticket types - Card View */}
-            {ticketTypes.length > ticketTypeItemsPerPage && (
-              <div className="flex items-center justify-between mb-6 pt-4 border-t">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">Hiển thị:</span>
-                  <select
-                    value={ticketTypeItemsPerPage}
-                    onChange={(e) => {
-                      setTicketTypeItemsPerPage(Number(e.target.value));
-                      setTicketTypePage(1);
-                    }}
-                    className="px-2 py-1 border rounded text-sm"
-                  >
-                    <option value={4}>4 / trang</option>
-                    <option value={6}>6 / trang</option>
-                    <option value={8}>8 / trang</option>
-                    <option value={12}>12 / trang</option>
-                  </select>
-                  <span className="text-sm text-gray-500">
-                    (Tổng: {ticketTypes.length} loại vé)
-                  </span>
+              {ticketTypes.length > 0 && ticketTypes.length <= ticketTypeItemsPerPage && (
+                <div className="mb-6 pt-4 border-t">
+                  <div className="text-sm text-gray-500 text-center">
+                    Hiển thị tất cả {ticketTypes.length} loại vé
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTicketTypePage((p) => Math.max(1, p - 1))}
-                    disabled={ticketTypePage === 1}
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                  <span className="text-sm text-gray-600">
-                    Trang {ticketTypePage} / {totalTicketTypePages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTicketTypePage((p) => Math.min(totalTicketTypePages, p + 1))}
-                    disabled={ticketTypePage === totalTicketTypePages}
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-            {ticketTypes.length > 0 && ticketTypes.length <= ticketTypeItemsPerPage && (
-              <div className="mb-6 pt-4 border-t">
-                <div className="text-sm text-gray-500 text-center">
-                  Hiển thị tất cả {ticketTypes.length} loại vé
-                </div>
-              </div>
-            )}
+              )}
             </>
           )}
 
           {/* Ticket Types - Table View */}
           {viewMode === "table" && (
             <>
-            <div className="bg-white rounded-lg border overflow-hidden mb-6">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Tên
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Bắt đầu bán
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Giá
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Số lượng
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {loadingTickets ? (
-                      [...Array(4)].map((_, i) => (
-                        <tr key={i}>
-                          <td colSpan={4} className="px-4 py-4">
-                            <div className="h-8 bg-gray-100 rounded animate-pulse" />
+              <div className="bg-white rounded-lg border overflow-hidden mb-6">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Tên
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Bắt đầu bán
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Giá
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Số lượng
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {loadingTickets ? (
+                        [...Array(4)].map((_, i) => (
+                          <tr key={i}>
+                            <td colSpan={4} className="px-4 py-4">
+                              <div className="h-8 bg-gray-100 rounded animate-pulse" />
+                            </td>
+                          </tr>
+                        ))
+                      ) : paginatedTicketTypes.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                            Không có loại vé nào.
                           </td>
                         </tr>
-                      ))
-                    ) : paginatedTicketTypes.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
-                          Không có loại vé nào.
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedTicketTypes.map((type, idx) => {
-                        const eventDate = formatDate(selectedEvent.startTime);
-                        return (
-                          <tr key={type.name} className="hover:bg-gray-50">
-                            <td className="px-4 py-4 text-sm font-medium text-gray-900">
-                              {type.name}
-                            </td>
-                            <td className="px-4 py-4 text-sm text-gray-600">
-                              {eventDate.day} {eventDate.date} {eventDate.month}, {eventDate.time}
-                            </td>
-                            <td className="px-4 py-4 text-sm text-gray-900">
-                              {type.price
-                                ? new Intl.NumberFormat("vi-VN", {
+                      ) : (
+                        paginatedTicketTypes.map((type, idx) => {
+                          const eventDate = formatDate(selectedEvent.startTime);
+                          return (
+                            <tr key={type.name} className="hover:bg-gray-50">
+                              <td className="px-4 py-4 text-sm font-medium text-gray-900">
+                                {type.name}
+                              </td>
+                              <td className="px-4 py-4 text-sm text-gray-600">
+                                {eventDate.day} {eventDate.date} {eventDate.month}, {eventDate.time}
+                              </td>
+                              <td className="px-4 py-4 text-sm text-gray-900">
+                                {type.price
+                                  ? new Intl.NumberFormat("vi-VN", {
                                     style: "currency",
                                     currency: "VND",
                                   }).format(type.price)
-                                : "Miễn phí"}
-                            </td>
-                            <td className="px-4 py-4 text-sm text-gray-600">
-                              {type.quantity}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            
-            {/* Pagination for ticket types - Table View */}
-            {ticketTypes.length > ticketTypeItemsPerPage && (
-              <div className="flex items-center justify-between mb-6 pt-4 border-t">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">Hiển thị:</span>
-                  <select
-                    value={ticketTypeItemsPerPage}
-                    onChange={(e) => {
-                      setTicketTypeItemsPerPage(Number(e.target.value));
-                      setTicketTypePage(1);
-                    }}
-                    className="px-2 py-1 border rounded text-sm"
-                  >
-                    <option value={4}>4 / trang</option>
-                    <option value={6}>6 / trang</option>
-                    <option value={8}>8 / trang</option>
-                    <option value={12}>12 / trang</option>
-                  </select>
-                  <span className="text-sm text-gray-500">
-                    (Tổng: {ticketTypes.length} loại vé)
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTicketTypePage((p) => Math.max(1, p - 1))}
-                    disabled={ticketTypePage === 1}
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                  <span className="text-sm text-gray-600">
-                    Trang {ticketTypePage} / {totalTicketTypePages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTicketTypePage((p) => Math.min(totalTicketTypePages, p + 1))}
-                    disabled={ticketTypePage === totalTicketTypePages}
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
+                                  : "Miễn phí"}
+                              </td>
+                              <td className="px-4 py-4 text-sm text-gray-600">
+                                {type.quantity}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-            )}
-            {ticketTypes.length > 0 && ticketTypes.length <= ticketTypeItemsPerPage && (
-              <div className="mb-6 pt-4 border-t">
-                <div className="text-sm text-gray-500 text-center">
-                  Hiển thị tất cả {ticketTypes.length} loại vé
+              {ticketTypes.length > ticketTypeItemsPerPage && (
+                <div className="flex items-center justify-between mb-6 pt-4 border-t">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Hiển thị:</span>
+                    <select
+                      value={ticketTypeItemsPerPage}
+                      onChange={(e) => {
+                        setTicketTypeItemsPerPage(Number(e.target.value));
+                        setTicketTypePage(1);
+                      }}
+                      className="px-2 py-1 border rounded text-sm"
+                    >
+                      <option value={4}>4 / trang</option>
+                      <option value={6}>6 / trang</option>
+                      <option value={8}>8 / trang</option>
+                      <option value={12}>12 / trang</option>
+                    </select>
+                    <span className="text-sm text-gray-500">
+                      (Tổng: {ticketTypes.length} loại vé)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setTicketTypePage((p) => Math.max(1, p - 1))}
+                      disabled={ticketTypePage === 1}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <span className="text-sm text-gray-600">
+                      Trang {ticketTypePage} / {totalTicketTypePages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setTicketTypePage((p) => Math.min(totalTicketTypePages, p + 1))}
+                      disabled={ticketTypePage === totalTicketTypePages}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+              {ticketTypes.length > 0 && ticketTypes.length <= ticketTypeItemsPerPage && (
+                <div className="mb-6 pt-4 border-t">
+                  <div className="text-sm text-gray-500 text-center">
+                    Hiển thị tất cả {ticketTypes.length} loại vé
+                  </div>
+                </div>
+              )}
             </>
           )}
+
+          {/* User Reports Section (shared) */}
+          {renderUserReportsSection()}
         </div>
 
       </div>
@@ -988,6 +1044,7 @@ export default function MyTickets() {
   // Main events list view
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+      {reportModal}
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -1117,8 +1174,7 @@ export default function MyTickets() {
             ) : (
               paginatedEvents.map((event) => {
                 const eventDate = formatDate(event.startTime);
-                const isUpcoming = new Date(event.startTime) > new Date();
-                
+
                 return (
                   <Card
                     key={event.eventId}
@@ -1128,6 +1184,17 @@ export default function MyTickets() {
                     <div className="flex h-64">
                       {/* Left Section - Event Image (40%) */}
                       <div className="w-[40%] bg-gray-100 flex items-center justify-center overflow-hidden relative">
+                        <button
+                          type="button"
+                          className="absolute left-0 top-0 z-10 inline-flex items-center justify-center rounded-full p-2 text-red-500 hover:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openReportModal(event);
+                          }}
+                          title="Báo cáo sự kiện"
+                        >
+                          <Flag className="h-4 w-4" />
+                        </button>
                         {event.image ? (
                           <img
                             src={event.image}
@@ -1159,7 +1226,7 @@ export default function MyTickets() {
                           </div>
 
                           {/* Event Title */}
-                          <h3 className="font-bold text-black mb-3 leading-normal" style={{ fontSize: '2.8rem', lineHeight: '1.2' }}>
+                          <h3 className="font-bold text-black mb-3 leading-normal" style={{ fontSize: '1.9rem', lineHeight: '1.2' }}>
                             {event.title}
                           </h3>
 
@@ -1262,16 +1329,28 @@ export default function MyTickets() {
                             </Badge>
                           </td>
                           <td className="px-4 py-4">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedEvent(event);
-                              }}
-                            >
-                              Xem vé
-                            </Button>
+                            <div className="mt-3 flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedEvent(event);
+                                }}
+                              >
+                                Xem vé
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openReportModal(event);
+                                }}
+                              >
+                                Báo cáo
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       );

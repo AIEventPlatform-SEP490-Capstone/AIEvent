@@ -1,8 +1,8 @@
-﻿using AIEvent.Application.DTOs.AIRecommendation;
-using AIEvent.Application.DTOs.Booking;
+﻿using AIEvent.Application.DTOs.Booking;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.InviteFriend;
-using AIEvent.Application.DTOs.Notification; 
+using AIEvent.Application.DTOs.Notification;
+using AIEvent.Application.DTOs.PineconeVector;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
@@ -370,7 +370,7 @@ namespace AIEvent.Application.Services.Implements
                     _logger.LogInformation("Sent refund notifications to {UserCount} users for cancelled event {EventId}", bookingsForNotification.Count, eventId);
                 }
 
-                await _pineconeVectorService.DeleteVectorAsync(eventId.ToString());
+                await _pineconeVectorService.DeleteVectorAsync(eventId.ToString(), isUser: false);
 
                 _logger.LogInformation("Deleted vector event {EventId}", eventId);
             }
@@ -398,7 +398,7 @@ namespace AIEvent.Application.Services.Implements
               .AppendLine($"<p>Bạn được <strong>{request.InviterFullName}</strong> mời tham gia sự kiện <b>{request.EventTitle}</b>.</p>")
               .AppendLine($"<p><em>\"{request.Message}\"</em></p>")
               .AppendLine("<p>Nhấn để xem chi tiết:</p>")
-              .AppendLine($"<p><a href=\"https/events/{request.EventId}\">Xem sự kiện</a></p>")
+              .AppendLine($"<p><a href=\"http://localhost:5173/event/{request.EventId}\">Xem sự kiện</a></p>")
               .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
 
             var message = new MimeMessage
@@ -429,7 +429,7 @@ namespace AIEvent.Application.Services.Implements
             sb.AppendLine($"<p>Xin chào {request.InviterFullName},</p>")
               .AppendLine($"<p><strong>{request.InvitedUserFullName}</strong> đã <strong>{action}</strong> lời mời tham gia sự kiện <b>{request.EventTitle}</b>.</p>")
               .AppendLine($"<p><em>\"{request.Message}\"</em></p>")
-              .AppendLine($"<p><a href=\"https/events/{request.EventId}\">Xem sự kiện</a></p>")
+              .AppendLine($"<p><a href=\"http://localhost:5173/event/{request.EventId}\">Xem sự kiện</a></p>")
               .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
 
             var message = new MimeMessage
@@ -467,9 +467,12 @@ namespace AIEvent.Application.Services.Implements
 
                 var embedding = await _voyageEmbeddingService.GetEmbeddingAsync(description);
 
+                var interests = ParseJsonList(user.UserInterestsJson);
+                var favoriteEvents = ParseJsonList(user.FavoriteEventTypesJson);
+                var skills = ParseJsonList(user.ProfessionalSkillsJson);
+
                 var metadata = new Dictionary<string, object>
                 {
-                    ["UserId"] = user.Id.ToString(),
                     ["FullName"] = user.FullName ?? "",
                     ["Occupation"] = user.Occupation ?? "",
                     ["JobTitle"] = user.JobTitle ?? "",
@@ -478,14 +481,14 @@ namespace AIEvent.Application.Services.Implements
                     ["BudgetOption"] = user.BudgetOption.ToString(),
                     ["ParticipationFrequency"] = user.ParticipationFrequency.ToString(),
                     ["ExperienceLevel"] = user.Experience?.ToString() ?? "",
-                    ["Interests"] = user.UserInterestsJson ?? "[]",
-                    ["FavoriteEventTypes"] = user.FavoriteEventTypesJson ?? "[]",
-                    ["Skills"] = user.ProfessionalSkillsJson ?? "[]",
+                    ["Interests"] = interests,
+                    ["FavoriteEventTypes"] = favoriteEvents,
+                    ["Skills"] = skills,
                     ["Languages"] = user.LanguagesJson ?? "[]",
                     ["Introduction"] = user.Introduction ?? "",
                 };
 
-                await _pineconeVectorService.UpsertVectorAsync(user.Id.ToString(), embedding, metadata);
+                await _pineconeVectorService.UpsertVectorAsync(user.Id.ToString(), embedding, isUser: true, metadata);
 
                 _logger.LogInformation("Embedding stored successfully for user {UserId}", userId);
             }
@@ -526,13 +529,22 @@ namespace AIEvent.Application.Services.Implements
 
             try
             {
-                return JsonSerializer.Deserialize<List<string>>(json) ?? new List<string>();
+                var objList = JsonSerializer.Deserialize<List<UserInterest>>(json);
+                if (objList == null)
+                    return new List<string>();
+
+                return objList
+                    .Where(i => !string.IsNullOrWhiteSpace(i.InterestName))
+                    .Select(i => i.InterestName!.Trim())
+                    .Distinct()
+                    .ToList();
             }
             catch
             {
                 return new List<string>();
             }
         }
+
 
         // embedding new event
         public async Task EnqueueEmbedNewEventJobAsync(Guid eventId)
@@ -597,7 +609,7 @@ namespace AIEvent.Application.Services.Implements
                     }
                 };
 
-                await _pineconeVectorService.UpsertVectorAsync(new[] { vector });
+                await _pineconeVectorService.UpsertVectorAsync(new[] { vector }, isUser: false);
 
                 _logger.LogInformation("Embedding stored successfully for Event {EventId}", eventEntity.Id);
             }
