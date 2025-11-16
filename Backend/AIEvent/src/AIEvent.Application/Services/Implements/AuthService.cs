@@ -12,6 +12,8 @@ using Google.Apis.Auth;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using MimeKit;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -342,6 +344,22 @@ namespace AIEvent.Application.Services.Implements
             return Result.Success();
         }
 
+        private string HashOtp(string otp, string email, string secretKey)
+        {
+            var message = $"{otp}:{email}";
+
+            using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secretKey));
+            var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(message));
+
+            return Convert.ToBase64String(hashBytes);
+        }
+
+        private bool VerifyOtp(string inputOtp, string email, string storedHash, string secretKey)
+        {
+            var computedHash = HashOtp(inputOtp, email, secretKey);
+            return computedHash == storedHash;
+        }
+
         public async Task<Result> ForgotPasswordAsync(ForgotPasswordRequest request)
         {
             try
@@ -356,6 +374,9 @@ namespace AIEvent.Application.Services.Implements
                     return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
 
                 var otpCode = new Random().Next(100000, 999999).ToString();
+                var secretKey = _configuration["Ticket:SecretKey"];
+                var otpHash = HashOtp(otpCode, request.Email, secretKey!);
+
                 var message = new MimeMessage
                 {
                     Subject = "Mã OTP của bạn",
@@ -370,7 +391,12 @@ namespace AIEvent.Application.Services.Implements
                 {
                     return ErrorResponse.FailureResult("Failed to send email", ErrorCodes.InternalServerError);
                 }
-                await _cacheService.SetAsync($"Register {request.Email}", otpCode, TimeSpan.FromMinutes(5));
+
+                await _cacheService.SetAsync(
+                    $"ForgotPassword:{request.Email}",
+                    otpHash,
+                    TimeSpan.FromMinutes(5)
+                );
                 await _unitOfWork.SaveChangesAsync();
 
                 return Result.Success();
@@ -380,6 +406,79 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult($"Error : {ex.Message}", ErrorCodes.InternalServerError);
             }
         }
+
+        public async Task<Result<VerifyOtpResponse>> VerifyForgotPasswordOtpAsync(VerifyOtpRequest request)
+        {
+            try
+            {
+                var secretKey = _configuration["Ticket:SecretKey"];
+
+                var cacheKey = $"ForgotPassword:{request.Email}";
+                var storedHash = await _cacheService.GetAsync<string>(cacheKey);
+
+                if (storedHash == null)
+                    return ErrorResponse.FailureResult("OTP expired or not found", ErrorCodes.Unauthorized);
+
+                var isValid = VerifyOtp(request.Otp, request.Email, storedHash, secretKey!);
+
+                if (!isValid)
+                    return ErrorResponse.FailureResult("OTP invalid", ErrorCodes.Unauthorized);
+
+                var resetToken = Guid.NewGuid().ToString("N");
+                await _cacheService.SetAsync(
+                    $"ResetPassword:{request.Email}",
+                    resetToken,
+                    TimeSpan.FromMinutes(10)
+                );
+
+                await _cacheService.RemoveAsync(cacheKey);
+
+                return Result<VerifyOtpResponse>.Success(new VerifyOtpResponse
+                {
+                    ResetToken = resetToken
+                });
+            }
+            catch(Exception ex)
+            {
+                return ErrorResponse.FailureResult($"Error : {ex.Message}", ErrorCodes.InternalServerError);
+            }
+        }
+
+        public async Task<Result> ResetPasswordAsync(ResetPasswordRequest request)
+        {
+            try
+            {
+                var cacheKey = $"ResetPassword:{request.Email}";
+                string? storedToken = await _cacheService.GetAsync<string>(cacheKey);
+
+                if (storedToken == null)
+                    return ErrorResponse.FailureResult("Reset token expired or invalid", ErrorCodes.Unauthorized);
+
+                if (!string.Equals(storedToken, request.ResetCode, StringComparison.Ordinal))
+                    return ErrorResponse.FailureResult("Invalid reset token", ErrorCodes.Unauthorized);
+
+                var user = await _unitOfWork.UserRepository
+                    .Query()
+                    .FirstOrDefaultAsync(u => u.Email == request.Email && u.IsActive == true && u.IsDeleted == false);
+
+                if (user == null)
+                    return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
+
+                user.PasswordHash = _hasherHelper.Hash(request.NewPassword);
+
+                await _unitOfWork.UserRepository.UpdateAsync(user);
+                await _unitOfWork.SaveChangesAsync();
+
+                await _cacheService.RemoveAsync(cacheKey);
+
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                return ErrorResponse.FailureResult($"Error: {ex.Message}", ErrorCodes.InternalServerError);
+            }
+        }
+
 
         public async Task<Result<AuthResponse>> GoogleLoginAsync(GoogleLoginRequest request)
         {

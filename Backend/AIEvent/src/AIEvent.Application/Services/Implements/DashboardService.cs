@@ -415,7 +415,7 @@ namespace AIEvent.Application.Services.Implements
             return Result<SystemSettingResponse>.Success(request);
         }
 
-        public async Task<Result<AdminDashboardResponse>> GetAdminDashboardAsync()
+        public async Task<Result<AdminDashboardResponse>> GetAdminDashboardAsync(int? year = null, int? month = null)
         {
             try
             {
@@ -437,6 +437,19 @@ namespace AIEvent.Application.Services.Implements
                 response.TotalUsers = totalUsers;
  
                 var now = DateTimeOffset.UtcNow;
+                
+                var targetYear = year ?? now.Year;
+                var targetMonth = month ?? now.Month;
+                
+                if (targetYear < 2000 || targetYear > 9999)
+                    return ErrorResponse.FailureResult("Invalid year. Year must be between 2000 and 9999", ErrorCodes.InvalidInput);
+                
+                if (targetMonth < 1 || targetMonth > 12)
+                    return ErrorResponse.FailureResult("Invalid month. Month must be between 1 and 12", ErrorCodes.InvalidInput);
+                
+                var selectedMonthStart = new DateTimeOffset(targetYear, targetMonth, 1, 0, 0, 0, TimeSpan.Zero);
+                var selectedMonthEnd = selectedMonthStart.AddMonths(1).AddTicks(-1);
+                
                 var currentMonthStart = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero);
                 var lastMonthStart = currentMonthStart.AddMonths(-1);
                 var lastMonthEnd = currentMonthStart.AddTicks(-1);
@@ -482,7 +495,7 @@ namespace AIEvent.Application.Services.Implements
                 response.CancelledEventsCount = await _unitOfWork.EventRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(e => e.Status == EventStatus.Cancelled)
+                    .Where(e => !e.IsDeleted && e.Status == EventStatus.Cancelled)
                     .CountAsync();
 
                 response.PendingOrganizerRequestsCount = await _unitOfWork.OrganizerProfileRepository
@@ -494,86 +507,187 @@ namespace AIEvent.Application.Services.Implements
                 var todayStart = new DateTimeOffset(now.Year, now.Month, now.Day, 0, 0, 0, TimeSpan.Zero);
                 var todayEnd = todayStart.AddDays(1).AddTicks(-1);
 
-                response.TotalBookings = await _unitOfWork.BookingRepository
+                var bookingsBaseQuery = _unitOfWork.BookingRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(b => !b.IsDeleted)
+                    .Where(b => !b.IsDeleted);
+
+                response.TotalBookings = await bookingsBaseQuery.CountAsync();
+
+                response.BookingsToday = await bookingsBaseQuery
+                    .Where(b => b.CreatedAt >= todayStart && b.CreatedAt <= todayEnd)
                     .CountAsync();
 
-                response.BookingsToday = await _unitOfWork.BookingRepository
+                var bookingsByStatus = await bookingsBaseQuery
+                    .GroupBy(b => b.Status)
+                    .Select(g => new { Status = g.Key, Count = g.Count() })
+                    .ToListAsync();
+
+                response.CompletedBookings = bookingsByStatus.FirstOrDefault(x => x.Status == BookingStatus.Completed)?.Count ?? 0;
+                response.PendingBookings = bookingsByStatus.FirstOrDefault(x => x.Status == BookingStatus.Pending)?.Count ?? 0;
+                response.CancelledBookings = bookingsByStatus.FirstOrDefault(x => x.Status == BookingStatus.Cancelled)?.Count ?? 0;
+
+                var ticketsBaseQuery = _unitOfWork.TicketRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(b => !b.IsDeleted && b.CreatedAt >= todayStart && b.CreatedAt <= todayEnd)
+                    .Where(t => !t.IsDeleted);
+
+                var validTicketsQuery = ticketsBaseQuery.Where(t => t.Status != TicketStatus.Refunded && t.Status != TicketStatus.Cancelled);
+                response.TotalTicketsSold = await validTicketsQuery.CountAsync();
+
+                response.TicketsSoldToday = await validTicketsQuery
+                    .Where(t => t.CreatedAt >= todayStart && t.CreatedAt <= todayEnd)
                     .CountAsync();
 
-                response.CompletedBookings = await _unitOfWork.BookingRepository
-                    .Query()
-                    .AsNoTracking()
-                    .Where(b => !b.IsDeleted && b.Status == BookingStatus.Completed)
-                    .CountAsync();
+                var ticketsByStatus = await ticketsBaseQuery
+                    .GroupBy(t => t.Status)
+                    .Select(g => new { Status = g.Key, Count = g.Count() })
+                    .ToListAsync();
 
-                response.PendingBookings = await _unitOfWork.BookingRepository
+                response.ValidTickets = ticketsByStatus.FirstOrDefault(x => x.Status == TicketStatus.Valid)?.Count ?? 0;
+                response.UsedTickets = ticketsByStatus.FirstOrDefault(x => x.Status == TicketStatus.Used)?.Count ?? 0;
+                 
+                var revenueBaseQuery = _unitOfWork.BookingRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(b => !b.IsDeleted && b.Status == BookingStatus.Pending)
-                    .CountAsync();
+                    .Where(b => !b.IsDeleted && b.Status == BookingStatus.Completed);
 
-                response.CancelledBookings = await _unitOfWork.BookingRepository
-                    .Query()
-                    .AsNoTracking()
-                    .Where(b => !b.IsDeleted && b.Status == BookingStatus.Cancelled)
-                    .CountAsync();
- 
-                response.TotalTicketsSold = await _unitOfWork.TicketRepository
-                    .Query()
-                    .AsNoTracking()
-                    .Where(t => !t.IsDeleted && t.Status != TicketStatus.Refunded && t.Status != TicketStatus.Cancelled)
-                    .CountAsync();
+                response.TotalRevenue = await revenueBaseQuery.SumAsync(b => (decimal?)b.TotalAmount) ?? 0;
 
-                response.TicketsSoldToday = await _unitOfWork.TicketRepository
+                response.RevenueToday = await revenueBaseQuery
+                    .Where(b => b.CreatedAt >= todayStart && b.CreatedAt <= todayEnd)
+                    .SumAsync(b => (decimal?)b.TotalAmount) ?? 0;
+
+                response.RevenueThisMonth = await revenueBaseQuery
+                    .Where(b => b.CreatedAt >= selectedMonthStart && b.CreatedAt <= selectedMonthEnd)
+                    .SumAsync(b => (decimal?)b.TotalAmount) ?? 0;
+                 
+                var startDate = now.AddMonths(-12);
+                DateTimeOffset? endDate = null;
+                
+                if (year.HasValue)
+                {
+                    startDate = new DateTimeOffset(year.Value, 1, 1, 0, 0, 0, TimeSpan.Zero);
+                    var yearEnd = new DateTimeOffset(year.Value, 12, 31, 23, 59, 59, TimeSpan.Zero);
+                    if (yearEnd > now)
+                        endDate = now;
+                    else
+                        endDate = yearEnd;
+                }
+                 
+                var bookingsQuery = _unitOfWork.BookingRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(b => !b.IsDeleted && b.CreatedAt >= startDate);
+                
+                if (endDate.HasValue)
+                    bookingsQuery = bookingsQuery.Where(b => b.CreatedAt <= endDate.Value);
+                
+                var bookingsByMonth = await bookingsQuery
+                    .GroupBy(b => new { b.CreatedAt.Year, b.CreatedAt.Month })
+                    .Select(g => new
+                    {
+                        Year = g.Key.Year,
+                        Month = g.Key.Month,
+                        Count = g.Count()
+                    })
+                    .OrderBy(x => x.Year)
+                    .ThenBy(x => x.Month)
+                    .ToListAsync();
+                 
+                var ticketsQuery = _unitOfWork.TicketRepository
                     .Query()
                     .AsNoTracking()
                     .Where(t => !t.IsDeleted && 
                                t.Status != TicketStatus.Refunded && 
                                t.Status != TicketStatus.Cancelled &&
-                               t.CreatedAt >= todayStart && 
-                               t.CreatedAt <= todayEnd)
-                    .CountAsync();
-
-                response.ValidTickets = await _unitOfWork.TicketRepository
-                    .Query()
-                    .AsNoTracking()
-                    .Where(t => !t.IsDeleted && t.Status == TicketStatus.Valid)
-                    .CountAsync();
-
-                response.UsedTickets = await _unitOfWork.TicketRepository
-                    .Query()
-                    .AsNoTracking()
-                    .Where(t => !t.IsDeleted && t.Status == TicketStatus.Used)
-                    .CountAsync();
- 
-                response.TotalRevenue = await _unitOfWork.BookingRepository
-                    .Query()
-                    .AsNoTracking()
-                    .Where(b => !b.IsDeleted && b.Status == BookingStatus.Completed)
-                    .SumAsync(b => b.TotalAmount);
-
-                response.RevenueToday = await _unitOfWork.BookingRepository
+                               t.CreatedAt >= startDate);
+                
+                if (endDate.HasValue)
+                    ticketsQuery = ticketsQuery.Where(t => t.CreatedAt <= endDate.Value);
+                
+                var ticketsByMonth = await ticketsQuery
+                    .GroupBy(t => new { t.CreatedAt.Year, t.CreatedAt.Month })
+                    .Select(g => new
+                    {
+                        Year = g.Key.Year,
+                        Month = g.Key.Month,
+                        Count = g.Count()
+                    })
+                    .OrderBy(x => x.Year)
+                    .ThenBy(x => x.Month)
+                    .ToListAsync();
+                 
+                var revenueQuery = _unitOfWork.BookingRepository
                     .Query()
                     .AsNoTracking()
                     .Where(b => !b.IsDeleted && 
                                b.Status == BookingStatus.Completed &&
-                               b.CreatedAt >= todayStart && 
-                               b.CreatedAt <= todayEnd)
-                    .SumAsync(b => (decimal?)b.TotalAmount) ?? 0;
+                               b.CreatedAt >= startDate);
+                
+                if (endDate.HasValue)
+                    revenueQuery = revenueQuery.Where(b => b.CreatedAt <= endDate.Value);
+                
+                var revenueByMonth = await revenueQuery
+                    .GroupBy(b => new { b.CreatedAt.Year, b.CreatedAt.Month })
+                    .Select(g => new
+                    {
+                        Year = g.Key.Year,
+                        Month = g.Key.Month,
+                        Revenue = g.Sum(b => b.TotalAmount)
+                    })
+                    .OrderBy(x => x.Year)
+                    .ThenBy(x => x.Month)
+                    .ToListAsync();
+                 
+                var monthlyStatsDict = new Dictionary<(int Year, int Month), MonthlyStatisticsResponse>();
 
-                response.RevenueThisMonth = await _unitOfWork.BookingRepository
-                    .Query()
-                    .AsNoTracking()
-                    .Where(b => !b.IsDeleted && 
-                               b.Status == BookingStatus.Completed &&
-                               b.CreatedAt >= currentMonthStart)
-                    .SumAsync(b => (decimal?)b.TotalAmount) ?? 0;
+                foreach (var booking in bookingsByMonth)
+                {
+                    var key = (booking.Year, booking.Month);
+                    if (!monthlyStatsDict.ContainsKey(key))
+                    {
+                        monthlyStatsDict[key] = new MonthlyStatisticsResponse
+                        {
+                            Year = booking.Year,
+                            Month = booking.Month
+                        };
+                    }
+                    monthlyStatsDict[key].BookingsCount = booking.Count;
+                }
+
+                foreach (var ticket in ticketsByMonth)
+                {
+                    var key = (ticket.Year, ticket.Month);
+                    if (!monthlyStatsDict.ContainsKey(key))
+                    {
+                        monthlyStatsDict[key] = new MonthlyStatisticsResponse
+                        {
+                            Year = ticket.Year,
+                            Month = ticket.Month
+                        };
+                    }
+                    monthlyStatsDict[key].TicketsSoldCount = ticket.Count;
+                }
+
+                foreach (var revenue in revenueByMonth)
+                {
+                    var key = (revenue.Year, revenue.Month);
+                    if (!monthlyStatsDict.ContainsKey(key))
+                    {
+                        monthlyStatsDict[key] = new MonthlyStatisticsResponse
+                        {
+                            Year = revenue.Year,
+                            Month = revenue.Month
+                        };
+                    }
+                    monthlyStatsDict[key].Revenue = revenue.Revenue;
+                }
+
+                response.MonthlyStatistics = monthlyStatsDict.Values
+                    .OrderBy(x => x.Year)
+                    .ThenBy(x => x.Month)
+                    .ToList();
 
                 return Result<AdminDashboardResponse>.Success(response);
             }
