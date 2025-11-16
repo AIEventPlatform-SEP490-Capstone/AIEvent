@@ -455,56 +455,6 @@ const AdminProfile = () => {
                 )}
               </CardContent>
             </Card>
-
-            {/* Admin Statistics - Moved below Personal Information */}
-            <Card className="shadow-xl border-0 overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50/50 border-b">
-                <div>
-                  <CardTitle className="text-2xl font-bold text-gray-900">Thống kê Admin</CardTitle>
-                  <CardDescription className="text-base mt-1">Thống kê hoạt động của bạn</CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-8">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Activity className="h-5 w-5 text-muted-foreground mr-3" />
-                      <span className="text-sm">Tổng thao tác</span>
-                    </div>
-                    <span className="font-semibold">{adminStats.totalOperations.toLocaleString()}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Calendar className="h-5 w-5 text-muted-foreground mr-3" />
-                      <span className="text-sm">Sự kiện đã duyệt</span>
-                    </div>
-                    <span className="font-semibold">{adminStats.eventsApproved}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Users className="h-5 w-5 text-muted-foreground mr-3" />
-                      <span className="text-sm">User đã quản lý</span>
-                    </div>
-                    <span className="font-semibold">{adminStats.usersManaged}</span>
-                  </div>
-
-                  <div className="border-t border-gray-200 pt-4 mt-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Tham gia từ:</span>
-                        <span className="text-sm font-medium">{adminData.joinDate}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Đăng nhập cuối:</span>
-                        <span className="text-sm font-medium">{adminData.lastLogin}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         )}
 
@@ -550,45 +500,6 @@ const AdminProfile = () => {
               <CardTitle className="text-2xl font-bold text-gray-900">Hoạt động</CardTitle>
               <CardDescription className="text-base mt-1">Lịch sử hoạt động gần đây của bạn</CardDescription>
             </CardHeader>
-            <CardContent className="pt-8">
-              <div className="space-y-4">
-                <div className="relative flex items-start space-x-4 p-5 bg-gradient-to-r from-blue-50/50 to-transparent rounded-xl border-l-4 border-blue-500 hover:shadow-lg transition-all duration-300">
-                  <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                    <Activity className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 mb-1">Đăng nhập thành công</p>
-                    <p className="text-sm text-gray-600 mb-2">Hệ thống đã xác thực thành công đăng nhập của bạn</p>
-                    <p className="text-xs text-gray-500">14:30:00 15/3/2024</p>
-                  </div>
-                  <Badge className="bg-green-100 text-green-800 border-0">Thành công</Badge>
-                </div>
-                
-                <div className="relative flex items-start space-x-4 p-5 bg-gradient-to-r from-green-50/50 to-transparent rounded-xl border-l-4 border-green-500 hover:shadow-lg transition-all duration-300">
-                  <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                    <Calendar className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 mb-1">Duyệt sự kiện "Tech Conference 2024"</p>
-                    <p className="text-sm text-gray-600 mb-2">Bạn đã phê duyệt sự kiện thành công</p>
-                    <p className="text-xs text-gray-500">10:15:00 15/3/2024</p>
-                  </div>
-                  <Badge className="bg-blue-100 text-blue-800 border-0">Đã duyệt</Badge>
-                </div>
-                
-                <div className="relative flex items-start space-x-4 p-5 bg-gradient-to-r from-purple-50/50 to-transparent rounded-xl border-l-4 border-purple-500 hover:shadow-lg transition-all duration-300">
-                  <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                    <Users className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 mb-1">Quản lý người dùng mới</p>
-                    <p className="text-sm text-gray-600 mb-2">Bạn đã thêm và quản lý người dùng mới vào hệ thống</p>
-                    <p className="text-xs text-gray-500">09:45:00 15/3/2024</p>
-                  </div>
-                  <Badge className="bg-purple-100 text-purple-800 border-0">Hoàn thành</Badge>
-                </div>
-              </div>
-            </CardContent>
           </Card>
         )}
 

@@ -37,6 +37,7 @@ import {
   LayoutDashboard,
   UserPlus2,
   UserCog,
+  Activity
 } from "lucide-react";
 import {
   Sidebar,
@@ -95,29 +96,35 @@ export function VerticalNavigation() {
     if (user?.role?.toLowerCase() === "admin") {
       return [
         {
-          title: "Admin Panel",
+          title: "Admin Dashboard",
           url: "/admin",
-          icon: Settings,
+          icon: LayoutDashboard,
           isActive: pathname === "/admin",
         },
         {
-          title: "Duyệt sự kiện",
-          url: "/admin/events",
-          icon: CheckSquare,
-          isActive: pathname === "/admin/events",
-        },
-        {
-          title: "Quản lý User",
+          title: "Quản lý Người dùng",
           url: "/admin/users",
           icon: Users,
           isActive: pathname === "/admin/users",
         },
 
         {
-          title: "Quản lý Organizer",
+          title: "Quản lý Tổ chức",
           url: "/admin/organizers",
           icon: User,
           isActive: pathname === "/admin/organizers",
+        },
+        {
+          title: "Quản lí sự kiện",
+          url: "/admin/events",
+          icon: Calendar,
+          isActive: pathname === "/admin/events",
+        },
+        {
+          title: "Flatform Log Activity",
+          url: "/admin/platform-log-activity",
+          icon: Activity,
+          isActive: pathname === "/admin/platform-log-activity",
         },
         {
           title: "Cài đặt hệ thống",
@@ -125,18 +132,7 @@ export function VerticalNavigation() {
           icon: Settings,
           isActive: pathname === "/admin/system-settings",
         },
-        {
-          title: "Tài liệu Admin",
-          url: "/admin/documentation",
-          icon: HelpCircle,
-          isActive: pathname === "/admin/documentation",
-        },
-        {
-          title: "Thao tác nhanh",
-          url: "/admin/quick-actions",
-          icon: Zap,
-          isActive: pathname === "/admin/quick-actions",
-        },
+     
       ];
     }
 

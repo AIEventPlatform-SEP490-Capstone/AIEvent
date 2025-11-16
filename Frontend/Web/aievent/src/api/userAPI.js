@@ -7,6 +7,14 @@ export const userAPI = {
         return response.data;
     },
 
+    // Bật/Tắt chia sẻ vị trí người dùng
+    toggleLocationSharing: async (action) => {
+        const response = await fetcher.patch('/user/location', null, {
+            params: { action }
+        });
+        return response.data?.data || response.data;
+    },
+
     updateUserProfile: async (profileData) => {
         const formData = new FormData();
 
