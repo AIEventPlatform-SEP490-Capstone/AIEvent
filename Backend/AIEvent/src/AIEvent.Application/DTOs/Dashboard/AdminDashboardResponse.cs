@@ -26,6 +26,8 @@ namespace AIEvent.Application.DTOs.Dashboard
         public decimal TotalRevenue { get; set; }
         public decimal RevenueToday { get; set; }
         public decimal RevenueThisMonth { get; set; }
+        
+        public List<MonthlyStatisticsResponse> MonthlyStatistics { get; set; } = new List<MonthlyStatisticsResponse>();
     }
 }
 
