@@ -2,43 +2,80 @@ import { Provider } from 'react-redux'
 import { store } from './store'
 import { Toaster } from 'react-hot-toast'
 import useRouterElement from './routes/useRouterElement'
+import { useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { fetchUnreadCount } from './store/slices/notificationsSlice'
+
+// Function to refresh unread count periodically
+const useNotificationRefresh = () => {
+  const dispatch = useDispatch();
+  const { isAuthenticated } = useSelector(state => state.auth);
+
+  useEffect(() => {
+    let intervalId;
+    
+    if (isAuthenticated) {
+      // Fetch unread count immediately
+      dispatch(fetchUnreadCount());
+      
+      // Refresh every 30 seconds
+      intervalId = setInterval(() => {
+        dispatch(fetchUnreadCount());
+      }, 30000);
+    }
+    
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [isAuthenticated, dispatch]);
+};
 
 function App() {
   const routerElement = useRouterElement();
+  
+  // Refresh notification count periodically
+  useNotificationRefresh();
 
   return (
-    <Provider store={store}>
-      <div className="App">
-        {routerElement}
-        <Toaster 
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            success: {
-              style: {
-                background: '#10b981',
-                color: '#ffffff',
-              },
-              iconTheme: {
-                primary: '#ffffff',
-                secondary: '#10b981',
-              },
+    <div className="App">
+      {routerElement}
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          success: {
+            style: {
+              background: '#10b981',
+              color: '#ffffff',
             },
-            error: {
-              style: {
-                background: '#ef4444',
-                color: '#ffffff',
-              },
-              iconTheme: {
-                primary: '#ffffff',
-                secondary: '#ef4444',
-              },
+            iconTheme: {
+              primary: '#ffffff',
+              secondary: '#10b981',
             },
-          }}
-        />
-      </div>
-    </Provider>
+          },
+          error: {
+            style: {
+              background: '#ef4444',
+              color: '#ffffff',
+            },
+            iconTheme: {
+              primary: '#ffffff',
+              secondary: '#ef4444',
+            },
+          },
+        }}
+      />
+    </div>
   );
 }
 
-export default App
+// Wrap the App component with the Redux Provider
+export default function AppWrapper() {
+  return (
+    <Provider store={store}>
+      <App />
+    </Provider>
+  );
+}

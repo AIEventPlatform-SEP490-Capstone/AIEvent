@@ -123,10 +123,8 @@ const userManagementSlice = createSlice({
       })
       .addCase(fetchAllUsers.fulfilled, (state, action) => {
         state.loading = false;
-        console.log('Received user data:', action.payload);
         // Handle the SuccessResponse structure
         const data = action.payload.data || action.payload;
-        console.log('Extracted data:', data);
         state.users = data.items || [];
         state.pagination = {
           currentPage: data.pageNumber || 1,

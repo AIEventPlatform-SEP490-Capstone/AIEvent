@@ -13,7 +13,6 @@ export const userManagementAPI = {
       if (role) params.append('role', role);
 
       const response = await fetcher.get(`/user?${params.toString()}`);
-      console.log('API Response:', response);
       return response.data;
     } catch (error) {
       throw new Error(error.message || 'Failed to fetch users');
@@ -65,6 +64,28 @@ export const userManagementAPI = {
       return response.data;
     } catch (error) {
       throw new Error(error.message || 'Failed to unban user');
+    }
+  },
+
+  // Create manager account
+  createManagerAccount: async (data) => {
+    try {
+      // If data is FormData, fetcher will handle Content-Type automatically
+      // If data is not FormData, fetcher will set Content-Type to application/json
+      const response = await fetcher.post('/user/manager', data);
+      return response.data;
+    } catch (error) {
+      // Parse error response to get statusCode and message
+      const errorResponse = error.response?.data || error;
+      const errorMessage = errorResponse.message || error.message || 'Failed to create manager account';
+      const errorCode = errorResponse.statusCode;
+      
+      // Create error object with code and message
+      const customError = new Error(errorMessage);
+      customError.code = errorCode;
+      customError.response = errorResponse;
+      
+      throw customError;
     }
   },
 

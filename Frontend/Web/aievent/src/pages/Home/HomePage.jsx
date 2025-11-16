@@ -18,8 +18,16 @@ const HomePage = () => {
     (state) => state.auth
   );
 
-  const { allEvents, recommendedEvents, loading, error, refreshEvents } =
-    useHomepageEvents();
+  const { 
+    allEvents, 
+    recommendedEvents, 
+    loading, 
+    error, 
+    refreshEvents,
+    currentPage,
+    totalPages,
+    goToPage
+  } = useHomepageEvents();
   
   const { profile, getUserProfile } = useUserProfile();
   
@@ -132,6 +140,9 @@ const HomePage = () => {
           error={error}
           onRefresh={refreshEvents}
           showAIRecommendedSection={showAIEvents}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={goToPage}
         />
       </div>
       <Footer />

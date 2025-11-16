@@ -55,6 +55,7 @@ import {
   useSidebar,
 } from "../ui/sidebar";
 import { cn } from "../../lib/utils";
+import { NotificationBadge } from "../common/NotificationBadge";
 
 export function VerticalNavigation() {
   const location = useLocation();
@@ -505,10 +506,15 @@ export function VerticalNavigation() {
                         {!isCollapsed && (
                           <>
                             <span className="font-medium text-sm">Thông báo</span>
-                            <div className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                              3
+                            <div className="ml-auto">
+                              <NotificationBadge />
                             </div>
                           </>
+                        )}
+                        {isCollapsed && (
+                          <div className="absolute -top-1 -right-1">
+                            <NotificationBadge />
+                          </div>
                         )}
                       </NavLink>
                     </SidebarMenuButton>

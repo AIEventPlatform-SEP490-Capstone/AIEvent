@@ -19,7 +19,6 @@ export const createInterest = createAsyncThunk(
   async (interestData, { rejectWithValue }) => {
     try {
       const response = await interestAPI.createInterest(interestData);
-      console.log("Create interest API response:", response);
       // Xử lý response structure từ backend
       return response.data || response;
     } catch (error) {
@@ -122,7 +121,6 @@ const interestsSlice = createSlice({
       })
       .addCase(createInterest.fulfilled, (state, action) => {
         state.creating = false;
-        console.log("Adding new interest to store:", action.payload);
         // Đảm bảo interest mới có đúng structure
         const newInterest = action.payload;
         if (newInterest && (newInterest.interestId || newInterest.id)) {

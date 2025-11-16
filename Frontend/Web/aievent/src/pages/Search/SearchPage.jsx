@@ -164,7 +164,6 @@ export default function SearchPage() {
     // Only allow toggling favorites if user is authenticated
     if (!isAuthenticated) {
       // Optionally redirect to login or show a message
-      console.log("User must be logged in to favorite events");
       return;
     }
     
