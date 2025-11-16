@@ -93,8 +93,7 @@ namespace AIEvent.Application.Services.Implements
                     {
                         Title = "Yêu cầu phê duyệt sự kiện",
                         Message = $"Có một sự kiện mới <strong>{request.Title}</strong> cần được phê duyệt.",
-                        Type = NotificationType.EventCreated,
-                        Channel = NotificationChannel.InApp,
+                        Type = NotificationType.EventCreated, 
                         TargetRoles = new List<Guid> { managerRole.Id },
                         EventId = events.Id,
                         ImageUrl = firstImage
@@ -330,8 +329,7 @@ namespace AIEvent.Application.Services.Implements
                     {
                         Title = "Yêu cầu phê duyệt sự kiện",
                         Message = $"Có một sự kiện mới <strong>{eventTitle}</strong> cần được phê duyệt.",
-                        Type = NotificationType.EventCreated,
-                        Channel = NotificationChannel.InApp,
+                        Type = NotificationType.EventCreated, 
                         TargetRoles = new List<Guid> { managerRole.Id },
                         EventId = eventId,
                         ImageUrl = firstImage
@@ -949,8 +947,7 @@ namespace AIEvent.Application.Services.Implements
                         : $"Sự kiện <strong>{eventTitle}</strong> của bạn đã <strong>không được phê duyệt</strong>.{(string.IsNullOrEmpty(request.Reason) ? "" : $" Lý do: {request.Reason}")}",
                     Type = request.Status == ConfirmStatus.Approved
                         ? NotificationType.EventApproved
-                        : NotificationType.EventRejected,
-                    Channel = NotificationChannel.InApp,
+                        : NotificationType.EventRejected, 
                     EventId = eventId,
                     ImageUrl = firstImage
                 };

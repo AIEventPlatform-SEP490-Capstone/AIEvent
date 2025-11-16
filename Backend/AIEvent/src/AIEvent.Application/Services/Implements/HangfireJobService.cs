@@ -357,8 +357,7 @@ namespace AIEvent.Application.Services.Implements
                                 UserId = bookingInfo.UserId,
                                 Title = "Sự kiện đã bị hủy - Hoàn tiền",
                                 Message = $"Sự kiện <strong>{eventTitle}</strong> đã bị hủy.{(string.IsNullOrEmpty(reasonCancel) ? "" : $" Lý do: {reasonCancel}")} Số tiền <strong>{bookingInfo.TotalAmount:N0} VNĐ</strong> đã được hoàn vào ví của bạn.",
-                                Type = NotificationType.Refund,
-                                Channel = NotificationChannel.InApp,
+                                Type = NotificationType.Refund, 
                                 EventId = eventId
                             };
 

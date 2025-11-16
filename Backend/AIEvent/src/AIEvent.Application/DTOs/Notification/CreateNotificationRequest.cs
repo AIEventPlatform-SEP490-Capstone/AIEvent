@@ -9,7 +9,6 @@ namespace AIEvent.Application.DTOs.Notification
         public string Message { get; set; } = default!;
         public string? ImageUrl { get; set; }
         public Guid? EventId { get; set; }
-        public NotificationType Type { get; set; } = NotificationType.System;
-        public NotificationChannel Channel { get; set; } = NotificationChannel.InApp;
+        public NotificationType Type { get; set; } = NotificationType.System; 
     }
 }

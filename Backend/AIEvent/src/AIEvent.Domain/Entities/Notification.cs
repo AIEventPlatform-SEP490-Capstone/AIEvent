@@ -13,7 +13,6 @@ namespace AIEvent.Domain.Entities
         public string? ImageUrl { get; set; } 
         public bool IsRead { get; set; } = false;
         public DateTime? ReadAt { get; set; }
-        public virtual User User { get; set; } = default!;
-        public NotificationChannel Channel { get; set; } = NotificationChannel.InApp;
+        public virtual User User { get; set; } = default!; 
     }
 }

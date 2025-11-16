@@ -112,8 +112,7 @@ namespace AIEvent.Application.Services.Implements
                     UserId = user.Id,
                     Title = "Lời mời tham gia sự kiện",
                     Message = $"<strong>{userInviter.FullName ?? "Người dùng"}</strong> đã mời bạn tham gia sự kiện <strong>{eventEntity.Title}</strong>.{(string.IsNullOrEmpty(request.Message) ? "" : $" \"{request.Message}\"")}",
-                    Type = NotificationType.EventInvitation,
-                    Channel = NotificationChannel.InApp,
+                    Type = NotificationType.EventInvitation, 
                     EventId = eventEntity.Id,
                     ImageUrl = firstImage
                 };
@@ -188,8 +187,7 @@ namespace AIEvent.Application.Services.Implements
                     Message = $"<strong>{invitedUser.FullName ?? "Người dùng"}</strong> đã <strong>{action}</strong> lời mời tham gia sự kiện <strong>{invitation.Event.Title}</strong>.",
                     Type = request.Status == ConfirmStatus.Approved 
                         ? NotificationType.EventInvitationAccepted 
-                        : NotificationType.EventInvitationRejected,
-                    Channel = NotificationChannel.InApp,
+                        : NotificationType.EventInvitationRejected, 
                     EventId = invitation.Event.Id,
                     ImageUrl = firstImage
                 };

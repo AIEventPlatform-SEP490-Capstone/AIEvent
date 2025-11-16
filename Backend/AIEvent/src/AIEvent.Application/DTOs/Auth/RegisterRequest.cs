@@ -28,8 +28,6 @@ namespace AIEvent.Application.DTOs.Auth
         public ParticipationFrequency ParticipationFrequency { get; set; }
         [Range(0, 3, ErrorMessage = "The field BudgetOption must be between 0 and 3")]
         public BudgetOption BudgetOption { get; set; }
-        public bool? IsEmailNotificationEnabled { get; set; } = false;
-        public bool? IsPushNotificationEnabled { get; set; } = false;
-        public bool? IsSmsNotificationEnabled { get; set; } = false;
+        public bool? IsEmailNotificationEnabled { get; set; } = false;  
     }
 }
