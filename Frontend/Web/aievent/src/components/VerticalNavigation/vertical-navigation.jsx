@@ -37,7 +37,7 @@ import {
   LayoutDashboard,
   UserPlus2,
   UserCog,
-  Activity
+  Activity,
   MessageCircle,
 } from "lucide-react";
 import {
