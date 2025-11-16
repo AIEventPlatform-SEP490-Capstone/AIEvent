@@ -38,17 +38,14 @@ const TagSelector = ({ className = '' }) => {
 
   // Force component update when tags change
   React.useEffect(() => {
-    console.log('Available tags updated:', availableTags.length, availableTags);
   }, [availableTags]);
 
   // Log selected tags for debugging
   React.useEffect(() => {
-    console.log('Selected tags updated:', selectedTags.length, selectedTags);
   }, [selectedTags]);
   
   // Log available tags for debugging
   React.useEffect(() => {
-    console.log('Available tags updated:', availableTags.length, availableTags);
   }, [availableTags]);
 
   // Add tag to selection using Redux

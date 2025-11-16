@@ -54,6 +54,10 @@ const MyEventsPage = () => {
   const completionDropdownRef = useRef(null);
   const pageSize = 5;
 
+  // New state for storing all events for statistics
+  const [allEventsForStats, setAllEventsForStats] = useState([]);
+  const [loadingStats, setLoadingStats] = useState(true);
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -69,6 +73,35 @@ const MyEventsPage = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
+  }, []);
+
+  // Load all events for statistics when component mounts
+  useEffect(() => {
+    const loadAllEventsForStats = async () => {
+      setLoadingStats(true);
+      try {
+        // Fetch all events with a large page size to get everything
+        const response = await getEventsByStatus({
+          pageNumber: 1,
+          pageSize: 10000, // Large number to get all events
+        });
+        
+        if (response) {
+          const eventsData = response.items || response || [];
+          setAllEventsForStats(eventsData);
+        } else {
+          setAllEventsForStats([]);
+        }
+      } catch (error) {
+        console.error('Error loading all events for stats:', error);
+        toast.error('Không thể tải thống kê sự kiện');
+        setAllEventsForStats([]);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    loadAllEventsForStats();
   }, []);
 
   // Update dropdown labels when activeTab changes
@@ -330,101 +363,41 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
     return 'completed';
   };
 
+  // Modified getEventStats to use allEventsForStats instead of allEvents
   const getEventStats = () => {
-    if (!allEvents.length) return { total: 0, upcoming: 0, ongoing: 0, completed: 0, drafts: 0 };
+    if (!allEventsForStats.length) return { 
+      total: 0, 
+      approved: 0, 
+      pendingApproval: 0, 
+      rejected: 0, 
+      totalRegistrations: 0 
+    };
+
+    // Count events by status
+    const approved = allEventsForStats.filter(event => 
+      'status' in event && event.status === EventStatus.Approved
+    ).length;
     
-    // When on a specific tab, we should count based on that tab
-    if (activeTab === 'draft') {
-      // When on draft tab, all events are drafts
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        drafts: allEvents.length
-      };
-    }
+    const pendingApproval = allEventsForStats.filter(event => 
+      'status' in event && event.status === EventStatus.PendingApproval
+    ).length;
     
-    if (activeTab === EventStatus.PendingApproval) {
-      // Count events needing approval
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        drafts: 0
-      };
-    }
+    const rejected = allEventsForStats.filter(event => 
+      'status' in event && event.status === EventStatus.Rejected
+    ).length;
     
-    if (activeTab === EventStatus.Approved) {
-      // Count approved events
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        drafts: 0
-      };
-    }
-    
-    if (activeTab === EventStatus.Rejected) {
-      // Count rejected events
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        drafts: 0
-      };
-    }
-    
-    if (activeTab === EventStatus.Cancelled) {
-      // Count cancelled events
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        drafts: 0
-      };
-    }
-    
-    if (activeTab === EventStatus.WaitingForPayout) {
-      // Count waiting for payout events
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        drafts: 0
-      };
-    }
-    
-    if (activeTab === EventStatus.PaidOut) {
-      // Count paid out events
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        drafts: 0
-      };
-    }
-    
-    // For 'all' tab, calculate based on time-based status and draft status
-    let drafts = allEvents.filter(event => !('publish' in event) || !event.publish).length;
-    
-    return allEvents.reduce((acc, event) => {
-      const status = getEventStatus(event);
-      
-      return {
-        total: acc.total + 1,
-        upcoming: acc.upcoming + (status === 'upcoming' ? 1 : 0),
-        ongoing: acc.ongoing + (status === 'ongoing' ? 1 : 0),
-        completed: acc.completed + (status === 'completed' ? 1 : 0),
-        drafts: drafts
-      };
-    }, { total: 0, upcoming: 0, ongoing: 0, completed: 0, drafts: drafts });
+    // Calculate total registrations
+    const totalRegistrations = allEventsForStats.reduce((sum, event) => {
+      return sum + (('totalPersonJoin' in event) ? event.totalPersonJoin : 0);
+    }, 0);
+
+    return {
+      total: allEventsForStats.length,
+      approved,
+      pendingApproval,
+      rejected,
+      totalRegistrations
+    };
   };
 
   // Handle search input change
@@ -489,7 +462,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -506,10 +479,10 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Đã xuất bản</p>
-                <p className="text-2xl font-bold text-green-600">{stats.upcoming + stats.ongoing}</p>
+                <p className="text-sm text-muted-foreground">Đã phê duyệt</p>
+                <p className="text-2xl font-bold text-green-600">{stats.approved}</p>
               </div>
-              <TrendingUp className="w-8 h-8 text-green-500" />
+              <CheckCircle className="w-8 h-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
@@ -518,8 +491,8 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Bản nháp</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.drafts}</p>
+                <p className="text-sm text-muted-foreground">Chờ phê duyệt</p>
+                <p className="text-2xl font-bold text-orange-600">{stats.pendingApproval}</p>
               </div>
               <Clock className="w-8 h-8 text-orange-500" />
             </div>
@@ -530,10 +503,20 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
+                <p className="text-sm text-muted-foreground">Bị từ chối</p>
+                <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
+              </div>
+              <XCircle className="w-8 h-8 text-red-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
                 <p className="text-sm text-muted-foreground">Tổng người tham gia</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {allEvents.reduce((sum, event) => sum + (('totalPersonJoin' in event) ? event.totalPersonJoin : 0), 0)}
-                </p>
+                <p className="text-2xl font-bold text-purple-600">{stats.totalRegistrations}</p>
               </div>
               <Users className="w-8 h-8 text-purple-500" />
             </div>
@@ -618,7 +601,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Bản nháp ({stats.drafts})
+            Bản nháp
           </button>
           
           {/* Event Initiation Dropdown */}

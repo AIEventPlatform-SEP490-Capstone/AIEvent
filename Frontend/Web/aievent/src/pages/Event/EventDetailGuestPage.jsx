@@ -174,10 +174,6 @@ const EventDetailGuestPage = ({ previewData }) => {
     try {
       setIsLoading(true);
       const eventData = await getEventById(id);
-
-      // Log event data to see its structure
-      console.log("Event data:", eventData);
-
       if (eventData) {
         setEvent(eventData);
       } else {

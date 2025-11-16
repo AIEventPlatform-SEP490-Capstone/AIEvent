@@ -70,6 +70,10 @@ const ManagerEventsPage = () => {
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [reportDialogEvent, setReportDialogEvent] = useState(null);
 
+  // New state for storing all events for statistics
+  const [allEventsForStats, setAllEventsForStats] = useState([]);
+  const [loadingStats, setLoadingStats] = useState(true);
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -85,6 +89,35 @@ const ManagerEventsPage = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
+  }, []);
+
+  // Load all events for statistics when component mounts
+  useEffect(() => {
+    const loadAllEventsForStats = async () => {
+      setLoadingStats(true);
+      try {
+        // Fetch all events with a large page size to get everything
+        const response = await getEventsByStatus({
+          pageNumber: 1,
+          pageSize: 10000, // Large number to get all events
+        });
+        
+        if (response) {
+          const eventsData = response.items || response || [];
+          setAllEventsForStats(eventsData);
+        } else {
+          setAllEventsForStats([]);
+        }
+      } catch (error) {
+        console.error('Error loading all events for stats:', error);
+        toast.error('Không thể tải thống kê sự kiện');
+        setAllEventsForStats([]);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    loadAllEventsForStats();
   }, []);
 
   // Update dropdown labels when activeTab changes
@@ -411,96 +444,41 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
     return 'completed';
   };
 
+  // Modified getEventStats to use allEventsForStats instead of allEvents
   const getEventStats = () => {
-    if (!allEvents.length) return { total: 0, upcoming: 0, ongoing: 0, completed: 0, pendingApprovals: 0 };
+    if (!allEventsForStats.length) return { 
+      total: 0, 
+      approved: 0, 
+      pendingApproval: 0, 
+      rejected: 0, 
+      totalRegistrations: 0 
+    };
 
-    // When on a specific approval tab, we should count based on that tab
-    if (activeTab === EventStatus.PendingApproval) {
-      // Count events needing approval
-      const pendingApprovals = allEvents.filter(event =>
-        'status' in event && event.status === EventStatus.PendingApproval
-      ).length;
-
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        pendingApprovals: pendingApprovals
-      };
-    }
-
-    if (activeTab === EventStatus.Approved) {
-      // Count approved events
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        pendingApprovals: 0
-      };
-    }
-
-    if (activeTab === EventStatus.Rejected) {
-      // Count rejected events
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        pendingApprovals: 0
-      };
-    }
-
-    if (activeTab === EventStatus.Cancelled) {
-      // Count cancelled events
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        pendingApprovals: 0
-      };
-    }
+    // Count events by status
+    const approved = allEventsForStats.filter(event => 
+      'status' in event && event.status === EventStatus.Approved
+    ).length;
     
-    if (activeTab === EventStatus.WaitingForPayout) {
-      // Count waiting for payout events
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        pendingApprovals: 0
-      };
-    }
+    const pendingApproval = allEventsForStats.filter(event => 
+      'status' in event && event.status === EventStatus.PendingApproval
+    ).length;
     
-    if (activeTab === EventStatus.PaidOut) {
-      // Count paid out events
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        pendingApprovals: 0
-      };
-    }
+    const rejected = allEventsForStats.filter(event => 
+      'status' in event && event.status === EventStatus.Rejected
+    ).length;
+    
+    // Calculate total registrations
+    const totalRegistrations = allEventsForStats.reduce((sum, event) => {
+      return sum + (('totalPersonJoin' in event) ? event.totalPersonJoin : 0);
+    }, 0);
 
-    // For 'all' tab, calculate based on time-based status
-    return allEvents.reduce((acc, event) => {
-      const status = getEventStatus(event);
-
-      // Count events needing approval - check if property exists before accessing
-      // EventsRawResponse doesn't have requireApproval property
-      const pendingApproval = ('status' in event && event.status === EventStatus.PendingApproval) ? 1 : 0;
-
-      return {
-        total: acc.total + 1,
-        upcoming: acc.upcoming + (status === 'upcoming' ? 1 : 0),
-        ongoing: acc.ongoing + (status === 'ongoing' ? 1 : 0),
-        completed: acc.completed + (status === 'completed' ? 1 : 0),
-        pendingApprovals: acc.pendingApprovals + pendingApproval
-      };
-    }, { total: 0, upcoming: 0, ongoing: 0, completed: 0, pendingApprovals: 0 });
+    return {
+      total: allEventsForStats.length,
+      approved,
+      pendingApproval,
+      rejected,
+      totalRegistrations
+    };
   };
 
   // Handle search input change
@@ -605,15 +583,15 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Chờ duyệt</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.pendingApprovals}</p>
+                <p className="text-sm text-muted-foreground">Tổng sự kiện</p>
+                <p className="text-2xl font-bold text-foreground">{stats.total}</p>
               </div>
-              <Clock className="w-8 h-8 text-orange-500" />
+              <Calendar className="w-8 h-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
@@ -622,8 +600,8 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Đã duyệt</p>
-                <p className="text-2xl font-bold text-green-600">{stats.upcoming + stats.ongoing}</p>
+                <p className="text-sm text-muted-foreground">Đã phê duyệt</p>
+                <p className="text-2xl font-bold text-green-600">{stats.approved}</p>
               </div>
               <CheckCircle className="w-8 h-8 text-green-500" />
             </div>
@@ -634,10 +612,20 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Từ chối</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {allEvents.filter(e => e.status === EventStatus.Rejected).length}
-                </p>
+                <p className="text-sm text-muted-foreground">Chờ phê duyệt</p>
+                <p className="text-2xl font-bold text-orange-600">{stats.pendingApproval}</p>
+              </div>
+              <Clock className="w-8 h-8 text-orange-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Bị từ chối</p>
+                <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
               </div>
               <XCircle className="w-8 h-8 text-red-500" />
             </div>
@@ -648,10 +636,10 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Tổng sự kiện</p>
-                <p className="text-2xl font-bold text-foreground">{stats.total}</p>
+                <p className="text-sm text-muted-foreground">Tổng người tham gia</p>
+                <p className="text-2xl font-bold text-purple-600">{stats.totalRegistrations}</p>
               </div>
-              <TrendingUp className="w-8 h-8 text-blue-500" />
+              <Users className="w-8 h-8 text-purple-500" />
             </div>
           </CardContent>
         </Card>
