@@ -189,5 +189,56 @@ namespace AIEvent.API.Controllers
 
             return Ok(SuccessResponse<AuthResponse>.SuccessResult(result.Value!));
         }
+
+        [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        public async Task<ActionResult<SuccessResponse<object>>> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            var result = await _authService.ForgotPasswordAsync(request);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Success,
+                "Request forgot password successfully"));
+        }
+
+        [HttpPost("forgot-password/verify-otp")]
+        [AllowAnonymous]
+        public async Task<ActionResult<SuccessResponse<object>>> VerifyOtpForgotPassword([FromBody] VerifyOtpRequest request)
+        {
+            var result = await _authService.VerifyForgotPasswordOtpAsync(request);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Verify otp successfully"));
+        }
+
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        public async Task<ActionResult<SuccessResponse<object>>> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            var result = await _authService.ResetPasswordAsync(request);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Success,
+                "Reset password successfully"));
+        }
     }
 }
