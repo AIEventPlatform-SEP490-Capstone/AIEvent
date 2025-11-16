@@ -1,8 +1,27 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNotifications } from "../../hooks/useNotifications";
+import { useAuth } from "../../hooks/useAuth";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
+import { Input } from "../../components/ui/input";
+import { Textarea } from "../../components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../../components/ui/dialog";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { 
@@ -14,10 +33,12 @@ import {
   Ticket,
   CreditCard,
   AlertCircle,
-  Info
+  Info,
+  Plus
 } from "lucide-react";
 import { showError, showSuccess } from "../../lib/toastUtils";
 import { sanitizeHtml } from "../../utils/sanitizeHtml";
+import fetcher from "../../api/fetcher";
 
 const NotificationIcon = ({ type }) => {
   const iconMap = {
@@ -94,6 +115,7 @@ const NotificationTypeBadge = ({ type }) => {
 
 export default function NotificationsPage() {
   console.log('Rendering NotificationsPage');
+  const { user } = useAuth();
   const {
     notifications,
     loading,
@@ -108,6 +130,15 @@ export default function NotificationsPage() {
     deleteReadNotifications
   } = useNotifications();
   
+  // State for create notification modal
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newNotification, setNewNotification] = useState({
+    title: "",
+    message: "",
+    type: "System"
+  });
+
   console.log('NotificationsPage - notifications:', notifications, 'loading:', loading, 'error:', error);
 
   const pageSize = 10;
@@ -152,14 +183,56 @@ export default function NotificationsPage() {
     }
   };
 
+  const handleCreateNotification = async () => {
+    if (!newNotification.title || !newNotification.message) {
+      showError("Please fill in all required fields");
+      return;
+    }
 
+    setIsCreating(true);
+    try {
+      // Create the request payload matching CreateNotificationToAllRequest structure
+      const payload = {
+        title: newNotification.title,
+        message: newNotification.message,
+        type: newNotification.type,
+        channel: "InApp" // Match the NotificationChannel enum
+      };
 
+      await fetcher.post("/notifications/admin/create", payload);
+      showSuccess("Notification created successfully");
+      setIsCreateModalOpen(false);
+      setNewNotification({ title: "", message: "", type: "System" });
+      
+      // Refresh notifications
+      fetchNotifications(1, pageSize);
+    } catch (err) {
+      console.error("Failed to create notification:", err);
+      if (err.response && err.response.data && err.response.data.message) {
+        showError(err.response.data.message);
+      } else {
+        showError("Failed to create notification");
+      }
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleInputChange = (field, value) => {
+    setNewNotification(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
     return format(date, "dd/MM/yyyy HH:mm", { locale: vi });
   };
+
+  // Check if user is admin
+  const isAdmin = user && user.role === "Admin";
 
   if (loading && notifications.length === 0) {
     return (
@@ -195,6 +268,97 @@ export default function NotificationsPage() {
           <p className="text-gray-600">Manage your notifications and alerts</p>
         </div>
         <div className="flex space-x-2 mt-4 md:mt-0">
+          {isAdmin && (
+            <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+              <DialogTrigger asChild>
+                <Button variant="default">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Notification
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Create New Notification</DialogTitle>
+                  <DialogDescription>
+                    Send a notification to all users
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <label htmlFor="title" className="text-right">
+                      Title
+                    </label>
+                    <Input
+                      id="title"
+                      value={newNotification.title}
+                      onChange={(e) => handleInputChange("title", e.target.value)}
+                      className="col-span-3"
+                      placeholder="Notification title"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <label htmlFor="message" className="text-right">
+                      Message
+                    </label>
+                    <Textarea
+                      id="message"
+                      value={newNotification.message}
+                      onChange={(e) => handleInputChange("message", e.target.value)}
+                      className="col-span-3"
+                      placeholder="Notification message"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <label htmlFor="type" className="text-right">
+                      Type
+                    </label>
+                    <Select
+                      value={newNotification.type}
+                      onValueChange={(value) => handleInputChange("type", value)}
+                    >
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="System">System</SelectItem>
+                        <SelectItem value="OrganizerRegistrationPending">Organizer Registration Pending</SelectItem>
+                        <SelectItem value="OrganizerApproved">Organizer Approved</SelectItem>
+                        <SelectItem value="OrganizerRejected">Organizer Rejected</SelectItem>
+                        <SelectItem value="EventCreated">Event Created</SelectItem>
+                        <SelectItem value="EventApproved">Event Approved</SelectItem>
+                        <SelectItem value="EventRejected">Event Rejected</SelectItem>
+                        <SelectItem value="EventCancelled">Event Cancelled</SelectItem>
+                        <SelectItem value="BookingConfirmed">Booking Confirmed</SelectItem>
+                        <SelectItem value="EventInvitation">Event Invitation</SelectItem>
+                        <SelectItem value="EventInvitationAccepted">Event Invitation Accepted</SelectItem>
+                        <SelectItem value="EventInvitationRejected">Event Invitation Rejected</SelectItem>
+                        <SelectItem value="PaymentSuccess">Payment Success</SelectItem>
+                        <SelectItem value="Refund">Refund</SelectItem>
+                        <SelectItem value="PayoutCompleted">Payout Completed</SelectItem>
+                        <SelectItem value="PayoutFailed">Payout Failed</SelectItem>
+                        <SelectItem value="EventReminder">Event Reminder</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsCreateModalOpen(false)}
+                    disabled={isCreating}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleCreateNotification}
+                    disabled={isCreating}
+                  >
+                    {isCreating ? "Creating..." : "Create"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
           <Button 
             onClick={handleMarkAllAsRead}
             variant="outline"
