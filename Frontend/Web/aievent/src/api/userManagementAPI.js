@@ -67,6 +67,28 @@ export const userManagementAPI = {
     }
   },
 
+  // Create manager account
+  createManagerAccount: async (data) => {
+    try {
+      // If data is FormData, fetcher will handle Content-Type automatically
+      // If data is not FormData, fetcher will set Content-Type to application/json
+      const response = await fetcher.post('/user/manager', data);
+      return response.data;
+    } catch (error) {
+      // Parse error response to get statusCode and message
+      const errorResponse = error.response?.data || error;
+      const errorMessage = errorResponse.message || error.message || 'Failed to create manager account';
+      const errorCode = errorResponse.statusCode;
+      
+      // Create error object with code and message
+      const customError = new Error(errorMessage);
+      customError.code = errorCode;
+      customError.response = errorResponse;
+      
+      throw customError;
+    }
+  },
+
   //Staff Management
   getAllStaff: async (pageNumber = 1, pageSize = 10, email = '', name = '') => {
     try {

@@ -19,7 +19,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../../components/ui/dialog';
 import { useUserManagement } from '../../hooks/useUserManagement';
+import { userManagementAPI } from '../../api/userManagementAPI';
+import { showSuccess, showError } from '../../lib/toastUtils';
 
 const UserManagement = () => {
   
@@ -52,6 +63,18 @@ const UserManagement = () => {
   
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [showUserDetail, setShowUserDetail] = useState(false);
+  
+  // State for create manager modal
+  const [isCreateManagerModalOpen, setIsCreateManagerModalOpen] = useState(false);
+  const [isCreatingManager, setIsCreatingManager] = useState(false);
+  const [newManagerData, setNewManagerData] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    phoneNumber: '',
+    address: '',
+    image: null
+  });
 
   const isInitialMount = useRef(true);
   const lastFilters = useRef({ name: '', role: 'all' });
@@ -197,6 +220,89 @@ const UserManagement = () => {
     }
   };
 
+  const handleCreateManagerChange = (field, value) => {
+    setNewManagerData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setNewManagerData(prev => ({
+        ...prev,
+        image: file
+      }));
+    }
+  };
+
+  const handleCreateManager = async () => {
+    // Validate required fields
+    if (!newManagerData.fullName || !newManagerData.email || !newManagerData.password || !newManagerData.phoneNumber) {
+      showError('Please fill in all required fields');
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newManagerData.email)) {
+      showError('Please enter a valid email address');
+      return;
+    }
+
+    // Validate phone number format (simple validation)
+    const phoneRegex = /^[0-9+\-\s()]+$/;
+    if (!phoneRegex.test(newManagerData.phoneNumber)) {
+      showError('Please enter a valid phone number');
+      return;
+    }
+
+    // Validate password length
+    if (newManagerData.password.length < 8) {
+      showError('Password must be at least 8 characters long');
+      return;
+    }
+
+    setIsCreatingManager(true);
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('FullName', newManagerData.fullName);
+      formData.append('Email', newManagerData.email);
+      formData.append('Password', newManagerData.password);
+      formData.append('PhoneNumber', newManagerData.phoneNumber);
+      if (newManagerData.address) {
+        formData.append('Address', newManagerData.address);
+      }
+      if (newManagerData.image) {
+        formData.append('Image', newManagerData.image);
+      }
+
+      await userManagementAPI.createManagerAccount(formData);
+      showSuccess('Manager account created successfully');
+      
+      // Close modal and reset form
+      setIsCreateManagerModalOpen(false);
+      setNewManagerData({
+        fullName: '',
+        email: '',
+        password: '',
+        phoneNumber: '',
+        address: '',
+        image: null
+      });
+      
+      // Refresh user list
+      refreshUsers();
+    } catch (err) {
+      console.error('Failed to create manager account:', err);
+      showError(err.message || 'Failed to create manager account');
+    } finally {
+      setIsCreatingManager(false);
+    }
+  };
+
   const getStatusBadge = (status) => {
     const statusConfig = {
       active: { color: 'bg-green-100 text-green-800', label: 'Hoạt động' },
@@ -292,10 +398,113 @@ const UserManagement = () => {
             <Shield className="w-4 h-4 mr-2" />
             Administrator
           </Badge>
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <UserPlus className="w-4 h-4 mr-2" />
-            Thêm người dùng
-          </Button>
+          <Dialog open={isCreateManagerModalOpen} onOpenChange={setIsCreateManagerModalOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <UserPlus className="w-4 h-4 mr-2" />
+                Thêm người dùng
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Create New Manager Account</DialogTitle>
+                <DialogDescription>
+                  Enter the details for the new manager account.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="fullName" className="text-right text-sm font-medium">
+                    Full Name *
+                  </label>
+                  <Input
+                    id="fullName"
+                    value={newManagerData.fullName}
+                    onChange={(e) => handleCreateManagerChange('fullName', e.target.value)}
+                    className="col-span-3"
+                    placeholder="Enter full name"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="email" className="text-right text-sm font-medium">
+                    Email *
+                  </label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={newManagerData.email}
+                    onChange={(e) => handleCreateManagerChange('email', e.target.value)}
+                    className="col-span-3"
+                    placeholder="Enter email"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="password" className="text-right text-sm font-medium">
+                    Password *
+                  </label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={newManagerData.password}
+                    onChange={(e) => handleCreateManagerChange('password', e.target.value)}
+                    className="col-span-3"
+                    placeholder="Enter password"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="phoneNumber" className="text-right text-sm font-medium">
+                    Phone *
+                  </label>
+                  <Input
+                    id="phoneNumber"
+                    value={newManagerData.phoneNumber}
+                    onChange={(e) => handleCreateManagerChange('phoneNumber', e.target.value)}
+                    className="col-span-3"
+                    placeholder="Enter phone number"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="address" className="text-right text-sm font-medium">
+                    Address
+                  </label>
+                  <Input
+                    id="address"
+                    value={newManagerData.address}
+                    onChange={(e) => handleCreateManagerChange('address', e.target.value)}
+                    className="col-span-3"
+                    placeholder="Enter address"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="image" className="text-right text-sm font-medium">
+                    Avatar
+                  </label>
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="col-span-3"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsCreateManagerModalOpen(false)}
+                  disabled={isCreatingManager}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreateManager}
+                  disabled={isCreatingManager}
+                >
+                  {isCreatingManager ? 'Creating...' : 'Create Manager'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

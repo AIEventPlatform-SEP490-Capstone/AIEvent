@@ -47,13 +47,11 @@ export const useNotifications = () => {
 
   // Initialize SignalR connection for real-time notifications
   useEffect(() => {
-    console.log('Initializing SignalR connection');
     const newConnection = new signalR.HubConnectionBuilder()
       .withUrl("/hubs/notification", {
         accessTokenFactory: () => {
           const token = localStorage.getItem("accessToken") || 
                        document.cookie.replace(/(?:(?:^|.*;\s*)accessToken\s*=\s*([^;]*).*$)|^.*$/, "$1");
-          console.log('Using access token:', token ? 'Token present' : 'No token');
           return token;
         }
       })
@@ -62,16 +60,11 @@ export const useNotifications = () => {
 
     newConnection.start()
       .then(() => {
-        console.log("Connected to Notification Hub");
         // Register for notifications after connection is established
         newConnection.on("ReceiveNotification", (notification) => {
-          console.log('Received notification via SignalR:', notification);
           dispatch(addNotification(notification));
-          // Update unread count immediately
-          console.log('Updating unread count after receiving notification');
           // Use a simple increment approach
           const currentUnreadCount = unreadCount;
-          console.log('Current unread count:', currentUnreadCount);
           dispatch(updateUnreadCount(currentUnreadCount + 1));
         });
       })
@@ -85,7 +78,6 @@ export const useNotifications = () => {
 
     // Cleanup on unmount
     return () => {
-      console.log('Cleaning up SignalR connection');
       if (newConnection) {
         newConnection.stop();
       }

@@ -114,7 +114,6 @@ const NotificationTypeBadge = ({ type }) => {
 };
 
 export default function NotificationsPage() {
-  console.log('Rendering NotificationsPage');
   const { user } = useAuth();
   const {
     notifications,
@@ -139,12 +138,9 @@ export default function NotificationsPage() {
     type: "System"
   });
 
-  console.log('NotificationsPage - notifications:', notifications, 'loading:', loading, 'error:', error);
-
   const pageSize = 10;
 
   useEffect(() => {
-    console.log('NotificationsPage - fetching initial notifications');
     fetchNotifications(1, pageSize);
     // Unread count is now handled globally by the App component
   }, []);

@@ -12,24 +12,19 @@ const useNotificationRefresh = () => {
   const { isAuthenticated } = useSelector(state => state.auth);
 
   useEffect(() => {
-    console.log('useNotificationRefresh effect triggered, isAuthenticated:', isAuthenticated);
     let intervalId;
     
     if (isAuthenticated) {
-      console.log('User is authenticated, setting up notification refresh');
       // Fetch unread count immediately
-      console.log('Fetching initial unread count');
       dispatch(fetchUnreadCount());
       
       // Refresh every 30 seconds
       intervalId = setInterval(() => {
-        console.log('Fetching periodic unread count');
         dispatch(fetchUnreadCount());
       }, 30000);
     }
     
     return () => {
-      console.log('Cleaning up notification refresh interval');
       if (intervalId) {
         clearInterval(intervalId);
       }
