@@ -13,9 +13,11 @@ export const PATH = {
   TIMELINE: "/timeline",
   FRIENDS: "/friends",
   FRIENDS_SEARCH: "/friends/search",
+  FRIEND_DETAIL: "/friend/:friendId",
   FAVORITES: "/favorites",
   WALLET: "/wallet",
   MY_TICKETS: "/my-tickets",
+  CHAT: "/chat",
   NOTIFICATIONS: "/notifications",
   HELP: "/help",
   ABOUT: "/about",
@@ -45,6 +47,7 @@ export const PATH = {
   ORGANIZER_ANALYTICS: "/organizer/analytics/:id",
   ORGANIZER_CHECKIN: "/organizer/checkin/:id",
   ORGANIZER_TAGS: "/organizer/tags",
+  ORGANIZER_STAFF: "/organizer/staff",
 
   // MANAGER
   MANAGER: "/manager",
@@ -68,6 +71,7 @@ export const PATH = {
   ADMIN_PROFILE: "/admin/profile",
   ADMIN_SETTINGS: "/admin/settings",
   ADMIN_SYSTEM_SETTINGS: "/admin/system-settings",
+  ADMIN_PLATFORM_LOG_ACTIVITY: "/admin/platform-log-activity",
   ADMIN_DOCUMENTATION: "/admin/documentation",
   ADMIN_HELP: "/admin/help",
   ADMIN_QUICK_ACTIONS: "/admin/quick-actions",

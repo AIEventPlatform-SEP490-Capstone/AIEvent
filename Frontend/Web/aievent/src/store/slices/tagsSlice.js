@@ -27,7 +27,6 @@ export const createTag = createAsyncThunk(
   async (tagData, { rejectWithValue }) => {
     try {
       const response = await tagAPI.createTag(tagData);
-      console.log('Create tag API response:', response);
       // Xử lý response structure từ backend
       return response.data || response;
     } catch (error) {
@@ -126,7 +125,6 @@ const tagsSlice = createSlice({
       })
       .addCase(createTag.fulfilled, (state, action) => {
         state.creating = false;
-        console.log('Adding new tag to store:', action.payload);
         // Đảm bảo tag mới có đúng structure
         const newTag = action.payload;
         if (newTag && (newTag.tagId || newTag.id)) {

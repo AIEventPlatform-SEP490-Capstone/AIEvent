@@ -30,6 +30,7 @@ namespace AIEvent.Infrastructure.Data
             SeedEventTag(modelBuilder);
             SeedTicketDetail(modelBuilder);
             SeedWallet(modelBuilder);
+            SeedSystemSetting(modelBuilder);
         }
 
         private static void SeedRoles(ModelBuilder modelBuilder)
@@ -473,6 +474,20 @@ namespace AIEvent.Infrastructure.Data
                 new EventTag { EventId = eventId3, TagId = tagId1 }, 
 
                 new EventTag { EventId = eventId4, TagId = tagId4 }  
+            );
+        }
+
+        private static void SeedSystemSetting(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<SystemSetting>().HasData(
+                new SystemSetting
+                {
+                    FlatformFee = 0.066m,
+                    FixFee = 45000m,
+                    DatePayout = 7,
+                    CreatedBy = adminUserId.ToString(),
+                    CreatedAt = DateTime.Now,
+                }
             );
         }
 

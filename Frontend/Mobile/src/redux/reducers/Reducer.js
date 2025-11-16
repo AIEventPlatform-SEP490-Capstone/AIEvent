@@ -2,7 +2,7 @@
 //Centralized state cho auth data
 //Predictable state changes thông qua actions
 
-import { AUTH_ACTIONS, WALLET_ACTIONS } from '../actions/Action';
+import {AUTH_ACTIONS, WALLET_ACTIONS} from '../actions/Action';
 
 const initialState = {
   // Auth State
@@ -13,12 +13,12 @@ const initialState = {
   refreshToken: null,
   expiresAt: null,
   error: null,
-  
+
   // Change Password State
   isChangingPassword: false,
   changePasswordError: null,
   changePasswordSuccess: null,
-  
+
   // Wallet State
   wallet: null,
   transactions: {
@@ -90,6 +90,12 @@ const authReducer = (state = initialState, action) => {
       return {
         ...state,
         isLoggedIn: action.payload,
+      };
+
+    case AUTH_ACTIONS.SET_USER_INFO:
+      return {
+        ...state,
+        user: action.payload,
       };
 
     case AUTH_ACTIONS.CHANGE_PASSWORD_REQUEST:

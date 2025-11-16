@@ -49,9 +49,14 @@ namespace AIEvent.API.Extensions
                     .AddScoped<IContentModerationService, ContentModerationService>()
                     .AddScoped<IPineconeVectorService, PineconeVectorService>()
                     .AddScoped<IVoyageEmbeddingService, VoyageEmbeddingService>()
-                    .AddScoped<IRatingService, RatingService>()
+                    .AddScoped<IRatingService, RatingService>() 
+                    .AddScoped<IEventInvitationService, EventInvitationService>()
                     .AddScoped<IContentModerationService, ContentModerationService>()
-                    .AddScoped<IFriendService, FriendService>();
+                    .AddScoped<IFriendService, FriendService>()
+                    .AddScoped<IHangfireScheduler, HangfireScheduler>()
+                    .AddScoped<INotificationService, NotificationService>()
+                    .AddScoped<IDashboardService, DashboardService>();
+
 
             return services;
         }
@@ -61,6 +66,8 @@ namespace AIEvent.API.Extensions
         {
             services.AddDbContext<DatabaseContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+ 
+            services.AddSingleton<MongoDbContext>();
 
             return services;
         }

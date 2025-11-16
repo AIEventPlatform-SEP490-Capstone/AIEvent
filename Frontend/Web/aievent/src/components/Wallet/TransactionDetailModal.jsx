@@ -155,17 +155,6 @@ const TransactionDetailModal = ({ isOpen, onClose, transaction }) => {
               </h4>
               
               <div className="space-y-6">
-                <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
-                  <div className="p-3 bg-blue-100 rounded-xl">
-                    <Hash className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Mã giao dịch</label>
-                    <p className="text-lg font-mono text-gray-900 break-all mt-1">
-                      {transaction.orderCode}
-                    </p>
-                  </div>
-                </div>
 
                 <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
                   <div className="p-3 bg-green-100 rounded-xl">

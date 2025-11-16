@@ -1,7 +1,8 @@
 import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createStackNavigator } from '@react-navigation/stack';
-import { Image, View } from 'react-native';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {createStackNavigator} from '@react-navigation/stack';
+import {CommonActions} from '@react-navigation/native';
+import {Image, View} from 'react-native';
 import HomeScreen from '../screens/homeScreen';
 import EventDetailScreen from '../screens/eventDetailScreen';
 import MyEventsScreen from '../screens/myEventsScreen';
@@ -14,10 +15,13 @@ import SettingsScreen from '../screens/settingsScreen';
 import TicketsScreen from '../screens/ticketsScreen';
 import LikesScreen from '../screens/likesScreen';
 import FriendsScreen from '../screens/friendsScreen';
+import FriendDetailScreen from '../screens/friendDetailScreen';
 import TimelineScreen from '../screens/timelineScreen';
+import QrScannerScreen from '../screens/qrScannerScreen';
 import ScreenNames from '../constants/ScreenNames';
 import Images from '../constants/Images';
 import Colors from '../constants/Colors';
+import BookingScreen from '../screens/bookingScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -28,14 +32,10 @@ const HomeStack = () => {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-      }}
-    >
-      <Stack.Screen 
-        name={ScreenNames.HOME_SCREEN} 
-        component={HomeScreen}
-      />
-      <Stack.Screen 
-        name={ScreenNames.EVENT_DETAIL_SCREEN} 
+      }}>
+      <Stack.Screen name={ScreenNames.HOME_SCREEN} component={HomeScreen} />
+      <Stack.Screen
+        name={ScreenNames.EVENT_DETAIL_SCREEN}
         component={EventDetailScreen}
         options={{
           headerShown: true,
@@ -54,6 +54,34 @@ const HomeStack = () => {
           },
         }}
       />
+      <Stack.Screen 
+        name={ScreenNames.QR_SCANNER_SCREEN} 
+        component={QrScannerScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name={ScreenNames.BOOKING_SCREEN}
+        component={BookingScreen}
+        options={{
+          headerShown: true,
+          title: 'Đặt vé',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
+        }}
+      />
+
     </Stack.Navigator>
   );
 };
@@ -64,14 +92,13 @@ const TimelineStack = () => {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-      }}
-    >
-      <Stack.Screen 
-        name={ScreenNames.TIMELINE_SCREEN} 
+      }}>
+      <Stack.Screen
+        name={ScreenNames.TIMELINE_SCREEN}
         component={TimelineScreen}
       />
-      <Stack.Screen 
-        name={ScreenNames.EVENT_DETAIL_SCREEN} 
+      <Stack.Screen
+        name={ScreenNames.EVENT_DETAIL_SCREEN}
         component={EventDetailScreen}
         options={{
           headerShown: true,
@@ -90,21 +117,51 @@ const TimelineStack = () => {
           },
         }}
       />
+      <Stack.Screen 
+        name={ScreenNames.QR_SCANNER_SCREEN} 
+        component={QrScannerScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack.Navigator>
   );
 };
 
-// Stack Navigator cho MyEvents tab
-const MyEventsStack = () => {
+// Stack Navigator cho Tickets tab (Vé của tôi)
+const TicketsStack = () => {
   return (
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-      }}
-    >
+      }}>
+      <Stack.Screen name="TicketsMain" component={TicketsScreen} />
+      <Stack.Screen
+        name={ScreenNames.EVENT_DETAIL_SCREEN}
+        component={EventDetailScreen}
+        options={{
+          headerShown: true,
+          title: 'Chi tiết sự kiện',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
+        }}
+      />
       <Stack.Screen 
-        name="MyEventsMain" 
-        component={MyEventsScreen}
+        name={ScreenNames.QR_SCANNER_SCREEN} 
+        component={QrScannerScreen}
+        options={{
+          headerShown: false,
+        }}
       />
     </Stack.Navigator>
   );
@@ -116,64 +173,94 @@ const ProfileStack = () => {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-      }}
-    >
-      <Stack.Screen 
-        name="ProfileMain" 
-        component={ProfileScreen}
-      />
-      <Stack.Screen 
-        name={ScreenNames.WALLET_SCREEN} 
+      }}>
+      <Stack.Screen name="ProfileMain" component={ProfileScreen} />
+      <Stack.Screen
+        name={ScreenNames.WALLET_SCREEN}
         component={WalletScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name={ScreenNames.PAYMENT_SCREEN} 
+      <Stack.Screen
+        name={ScreenNames.PAYMENT_SCREEN}
         component={PaymentScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name={ScreenNames.PAYMENT_INFORMATION_SCREEN} 
+      <Stack.Screen
+        name={ScreenNames.PAYMENT_INFORMATION_SCREEN}
         component={PaymentInformationScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name={ScreenNames.SETTINGS_SCREEN} 
+      <Stack.Screen
+        name={ScreenNames.SETTINGS_SCREEN}
         component={SettingsScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name={ScreenNames.CHANGE_PASSWORD_SCREEN} 
+      <Stack.Screen
+        name={ScreenNames.CHANGE_PASSWORD_SCREEN}
         component={ChangePasswordScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name={ScreenNames.TICKETS_SCREEN} 
+      <Stack.Screen
+        name={ScreenNames.TICKETS_SCREEN}
         component={TicketsScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name={ScreenNames.LIKES_SCREEN} 
+      <Stack.Screen
+        name={ScreenNames.LIKES_SCREEN}
         component={LikesScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name={ScreenNames.FRIENDS_SCREEN} 
+      <Stack.Screen
+        name={ScreenNames.FRIENDS_SCREEN}
         component={FriendsScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name={ScreenNames.FRIEND_DETAIL_SCREEN}
+        component={FriendDetailScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name={ScreenNames.EVENT_DETAIL_SCREEN}
+        component={EventDetailScreen}
+        options={{
+          headerShown: true,
+          title: 'Chi tiết sự kiện',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
+        }}
+      />
+      <Stack.Screen 
+        name={ScreenNames.QR_SCANNER_SCREEN} 
+        component={QrScannerScreen}
         options={{
           headerShown: false,
         }}
@@ -185,8 +272,8 @@ const ProfileStack = () => {
 const TabNavigator = () => {
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
+      screenOptions={({route}) => ({
+        tabBarIcon: ({focused, color, size}) => {
           let iconName;
 
           if (route.name === 'HomeTab') {
@@ -194,19 +281,19 @@ const TabNavigator = () => {
           } else if (route.name === 'Timeline') {
             iconName = Images.calendar;
           } else if (route.name === 'MyEvents') {
-            iconName = Images.calendar;
+            iconName = Images.ticket;
           } else if (route.name === 'Profile') {
             iconName = Images.profile;
           }
 
           return (
-            <Image 
-              source={iconName} 
-              style={{ 
-                width: size, 
-                height: size, 
-                tintColor: color 
-              }} 
+            <Image
+              source={iconName}
+              style={{
+                width: size,
+                height: size,
+                tintColor: color,
+              }}
             />
           );
         },
@@ -217,35 +304,51 @@ const TabNavigator = () => {
           backgroundColor: Colors.white,
           borderTopColor: Colors.border,
         },
-      })}
-    >
-      <Tab.Screen 
-        name="HomeTab" 
+      })}>
+      <Tab.Screen
+        name="HomeTab"
         component={HomeStack}
         options={{
           title: 'Trang chủ',
         }}
       />
-      <Tab.Screen 
-        name="Timeline" 
+      <Tab.Screen
+        name="Timeline"
         component={TimelineStack}
         options={{
           title: 'Timeline',
         }}
       />
-      <Tab.Screen 
-        name="MyEvents" 
-        component={MyEventsStack}
+      <Tab.Screen
+        name="MyEvents"
+        component={TicketsStack}
         options={{
-          title: 'Sự kiện của tôi',
+          title: 'Vé của tôi',
         }}
       />
-      <Tab.Screen 
-        name="Profile" 
+      <Tab.Screen
+        name="Profile"
         component={ProfileStack}
         options={{
           title: 'Hồ sơ',
         }}
+        listeners={({ navigation, route }) => ({
+          tabPress: (e) => {
+            // Reset navigation to ProfileMain when tab is pressed
+            const state = navigation.getState();
+            const profileTabState = state.routes.find(r => r.name === 'Profile');
+            if (profileTabState) {
+              const profileStackState = profileTabState.state;
+              if (profileStackState && profileStackState.index > 0) {
+                // If we're not on the main profile screen, navigate to ProfileMain
+                e.preventDefault();
+                navigation.navigate('Profile', {
+                  screen: 'ProfileMain',
+                });
+              }
+            }
+          },
+        })}
       />
     </Tab.Navigator>
   );

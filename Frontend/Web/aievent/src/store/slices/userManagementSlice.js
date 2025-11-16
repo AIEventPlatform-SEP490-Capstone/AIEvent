@@ -14,6 +14,18 @@ export const fetchAllUsers = createAsyncThunk(
   }
 );
 
+export const fetchAllBannedUsers = createAsyncThunk(
+  'userManagement/fetchAllBanned',
+  async ({ pageNumber = 1, pageSize = 10, email = '', name = '', role = '' }, { rejectWithValue }) => {
+    try {
+      const response = await userManagementAPI.getAllBannedUsers(pageNumber, pageSize, email, name, role);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const fetchUserById = createAsyncThunk(
   'userManagement/fetchById',
   async (userId, { rejectWithValue }) => {
@@ -38,10 +50,23 @@ export const banUser = createAsyncThunk(
   }
 );
 
+export const unbanUser = createAsyncThunk(
+  'userManagement/unbanUser',
+  async (userId, { rejectWithValue }) => {
+    try {
+      const response = await userManagementAPI.unbanUser(userId);
+      return { userId, response };
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const userManagementSlice = createSlice({
   name: 'userManagement',
   initialState: {
     users: [],
+    bannedUsers: [],
     selectedUser: null,
     loading: false,
     loadingUser: false,
@@ -52,11 +77,18 @@ const userManagementSlice = createSlice({
       totalItems: 0,
       totalPages: 0
     },
+    bannedPagination: {
+      currentPage: 1,
+      pageSize: 10,
+      totalItems: 0,
+      totalPages: 0
+    },
     filters: {
       email: '',
       name: '',
       role: ''
-    }
+    },
+    activeTab: 'active' // 'active' or 'banned'
   },
   reducers: {
     clearError: (state) => {
@@ -77,6 +109,9 @@ const userManagementSlice = createSlice({
         name: '',
         role: ''
       };
+    },
+    setActiveTab: (state, action) => {
+      state.activeTab = action.payload;
     }
   },
   extraReducers: (builder) => {
@@ -88,10 +123,8 @@ const userManagementSlice = createSlice({
       })
       .addCase(fetchAllUsers.fulfilled, (state, action) => {
         state.loading = false;
-        console.log('Received user data:', action.payload);
         // Handle the SuccessResponse structure
         const data = action.payload.data || action.payload;
-        console.log('Extracted data:', data);
         state.users = data.items || [];
         state.pagination = {
           currentPage: data.pageNumber || 1,
@@ -102,6 +135,28 @@ const userManagementSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchAllUsers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      
+      // Fetch all banned users
+      .addCase(fetchAllBannedUsers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAllBannedUsers.fulfilled, (state, action) => {
+        state.loading = false;
+        const data = action.payload.data || action.payload;
+        state.bannedUsers = data.items || [];
+        state.bannedPagination = {
+          currentPage: data.pageNumber || 1,
+          pageSize: data.pageSize || 10,
+          totalItems: data.totalItems || 0,
+          totalPages: data.totalPages || 0
+        };
+        state.error = null;
+      })
+      .addCase(fetchAllBannedUsers.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
@@ -140,6 +195,22 @@ const userManagementSlice = createSlice({
       .addCase(banUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      
+      // Unban user
+      .addCase(unbanUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(unbanUser.fulfilled, (state, action) => {
+        state.loading = false;
+        // Remove the unbanned user from the banned users list
+        state.bannedUsers = state.bannedUsers.filter(user => user.id !== action.payload.userId);
+        state.error = null;
+      })
+      .addCase(unbanUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   }
 });
@@ -149,16 +220,20 @@ export const {
   setSelectedUser, 
   clearSelectedUser, 
   setFilters, 
-  clearFilters 
+  clearFilters,
+  setActiveTab
 } = userManagementSlice.actions;
 
 // Selectors
 export const selectUsers = (state) => state.userManagement.users;
+export const selectBannedUsers = (state) => state.userManagement.bannedUsers;
 export const selectSelectedUser = (state) => state.userManagement.selectedUser;
 export const selectUserManagementLoading = (state) => state.userManagement.loading;
 export const selectUserLoading = (state) => state.userManagement.loadingUser;
 export const selectUserManagementError = (state) => state.userManagement.error;
 export const selectUserPagination = (state) => state.userManagement.pagination;
+export const selectBannedUserPagination = (state) => state.userManagement.bannedPagination;
 export const selectUserFilters = (state) => state.userManagement.filters;
+export const selectActiveTab = (state) => state.userManagement.activeTab;
 
 export default userManagementSlice.reducer;

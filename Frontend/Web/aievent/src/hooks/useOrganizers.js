@@ -1,4 +1,5 @@
 import { useDispatch, useSelector } from "react-redux";
+import { useCallback } from "react";
 import { toast } from "react-hot-toast";
 import {
   fetchOrganizers,
@@ -33,14 +34,16 @@ export const useOrganizers = () => {
     }
   };
 
-  const getOrganizerById = async (id) => {
-    try {
-      return await dispatch(fetchOrganizerById(id)).unwrap();
-    } catch {
-      toast.error("Không thể tải thông tin tổ chức");
-    }
-  };
-
+  const getOrganizerById = useCallback(
+    async (id) => {
+      try {
+        return await dispatch(fetchOrganizerById(id)).unwrap();
+      } catch {
+        toast.error("Không thể tải thông tin tổ chức");
+      }
+    },
+    [dispatch]
+  );
   const getOrganizerProfile = async () => {
     try {
       return await dispatch(fetchOrganizerProfile()).unwrap();

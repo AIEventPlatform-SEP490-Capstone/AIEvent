@@ -115,11 +115,54 @@ export const confirmEvent = createAsyncThunk(
   }
 );
 
+// Invite friends to event
+export const inviteFriends = createAsyncThunk(
+  'events/inviteFriends',
+  async ({ eventId, invitationData }, { rejectWithValue }) => {
+    try {
+      const response = await eventAPI.inviteFriends(eventId, invitationData);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to invite friends');
+    }
+  }
+);
+
+// Confirm invitation (Accept/Reject)
+export const confirmInvitation = createAsyncThunk(
+  'events/confirmInvitation',
+  async ({ invitationId, confirmData }, { rejectWithValue }) => {
+    try {
+      const response = await eventAPI.confirmInvitation(invitationId, confirmData);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to confirm invitation');
+    }
+  }
+);
+
+// Fetch invitations status
+export const fetchInvitationsStatus = createAsyncThunk(
+  'events/fetchInvitationsStatus',
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      const response = await eventAPI.getInvitationsStatus(params);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to fetch invitations');
+    }
+  }
+);
+
 // Initial state
 const initialState = {
   events: [],
   currentEvent: null,
   relatedEvents: [],
+  invitations: [],
+  invitationsLoading: false,
+  invitationsError: null,
+  invitationsTotalCount: 0,
   loading: false,
   error: null,
   totalCount: 0,
@@ -151,7 +194,7 @@ const eventsSlice = createSlice({
       .addCase(fetchEvents.fulfilled, (state, action) => {
         state.loading = false;
         state.events = action.payload?.items || action.payload || [];
-        state.totalCount = action.payload?.totalCount || 0;
+        state.totalCount = action.payload?.totalItems || action.payload?.totalCount || 0;
       })
       .addCase(fetchEvents.rejected, (state, action) => {
         state.loading = false;
@@ -249,7 +292,7 @@ const eventsSlice = createSlice({
       .addCase(fetchDraftEvents.fulfilled, (state, action) => {
         state.loading = false;
         state.events = action.payload?.items || action.payload || [];
-        state.totalCount = action.payload?.totalCount || 0;
+        state.totalCount = action.payload?.totalItems || action.payload?.totalCount || 0;
       })
       .addCase(fetchDraftEvents.rejected, (state, action) => {
         state.loading = false;
@@ -263,7 +306,7 @@ const eventsSlice = createSlice({
       .addCase(fetchEventsByStatus.fulfilled, (state, action) => {
         state.loading = false;
         state.events = action.payload?.items || action.payload || [];
-        state.totalCount = action.payload?.totalCount || 0;
+        state.totalCount = action.payload?.totalItems || action.payload?.totalCount || 0;
       })
       .addCase(fetchEventsByStatus.rejected, (state, action) => {
         state.loading = false;
@@ -289,6 +332,50 @@ const eventsSlice = createSlice({
       .addCase(confirmEvent.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      // Invite friends
+      .addCase(inviteFriends.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(inviteFriends.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(inviteFriends.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Confirm invitation
+      .addCase(confirmInvitation.pending, (state) => {
+        state.invitationsLoading = true;
+        state.invitationsError = null;
+      })
+      .addCase(confirmInvitation.fulfilled, (state, action) => {
+        state.invitationsLoading = false;
+        // Update the invitation in the invitations list if it exists
+        const index = state.invitations.findIndex(inv => inv.invitationId === action.meta.arg.invitationId);
+        if (index !== -1) {
+          state.invitations[index].status = action.meta.arg.confirmData.status;
+          state.invitations[index].respondedAt = new Date().toISOString();
+        }
+      })
+      .addCase(confirmInvitation.rejected, (state, action) => {
+        state.invitationsLoading = false;
+        state.invitationsError = action.payload;
+      })
+      // Fetch invitations status
+      .addCase(fetchInvitationsStatus.pending, (state) => {
+        state.invitationsLoading = true;
+        state.invitationsError = null;
+      })
+      .addCase(fetchInvitationsStatus.fulfilled, (state, action) => {
+        state.invitationsLoading = false;
+        state.invitations = action.payload?.items || action.payload || [];
+        state.invitationsTotalCount = action.payload?.totalItems || action.payload?.totalCount || 0;
+      })
+      .addCase(fetchInvitationsStatus.rejected, (state, action) => {
+        state.invitationsLoading = false;
+        state.invitationsError = action.payload;
       });
   },
 });
@@ -303,5 +390,9 @@ export const selectRelatedEvents = (state) => state.events.relatedEvents;
 export const selectEventsLoading = (state) => state.events.loading;
 export const selectEventsError = (state) => state.events.error;
 export const selectEventsTotalCount = (state) => state.events.totalCount;
+export const selectInvitations = (state) => state.events.invitations;
+export const selectInvitationsLoading = (state) => state.events.invitationsLoading;
+export const selectInvitationsError = (state) => state.events.invitationsError;
+export const selectInvitationsTotalCount = (state) => state.events.invitationsTotalCount;
 
 export default eventsSlice.reducer;

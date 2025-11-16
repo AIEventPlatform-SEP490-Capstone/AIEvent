@@ -1,27 +1,22 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { motion } from "framer-motion";
 import { Button } from "../../components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../../components/ui/card";
-import { Input } from "../../components/ui/input";
-import { Separator } from "../../components/ui/separator";
-import {
   Calendar,
   MapPin,
-  Clock,
-  QrCode,
   Loader2,
   Ticket,
-  Heart,
-  Phone,
-  Info,
+  Menu,
+  ChevronRight,
+  ChevronLeft,
+  Minus,
+  Plus,
+  Globe,
+  Wallet,
   CheckCircle,
+  CircleAlert,
 } from "lucide-react";
 import {
   createBooking,
@@ -29,21 +24,28 @@ import {
 } from "../../store/slices/bookingSlice";
 import { eventAPI } from "../../api/eventAPI";
 import { bookingAPI } from "../../api/bookingAPI";
+import { useWallet } from "../../hooks/useWallet";
 
 function BookingFlow() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const error = useSelector(selectBookingError);
+  const { user } = useSelector((state) => state.auth);
+  const { wallet, getWallet } = useWallet();
 
   // --- state (same logic retained) ---
   const [event, setEvent] = useState(null);
   const [fetching, setFetching] = useState(true);
   const [fetchError, setFetchError] = useState(null);
-  const [qrCode, setQrCode] = useState(null);
-  const [bookingComplete, setBookingComplete] = useState(false);
   const creating = useSelector((state) => state.booking.creating);
   const [selectedTickets, setSelectedTickets] = useState({});
   const [bookingError, setBookingError] = useState("");
+  const [timeRemaining, setTimeRemaining] = useState(6000);
+  const [showSelectedTickets, setShowSelectedTickets] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1); // 1: Chọn vé, 2: Thanh toán, 3: Thành công
+  const [bookingData, setBookingData] = useState(null); // Lưu thông tin booking sau khi đặt thành công
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -59,7 +61,41 @@ function BookingFlow() {
       }
     };
     fetchEvent();
-  }, [id]);
+    getWallet(); // Load wallet info
+  }, [id, getWallet]);
+
+  // Timer countdown
+  useEffect(() => {
+    if (timeRemaining <= 0) return;
+    const timer = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [timeRemaining]);
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, "0")} : ${String(secs).padStart(2, "0")}`;
+  };
+
+  const getCityCode = (eventData) => {
+    if (!eventData) return null;
+    const location = eventData.locationName || eventData.district || "";
+    const locationUpper = location.toUpperCase();
+
+    if (locationUpper.includes("HCM") || locationUpper.includes("HỒ CHÍ MINH") || locationUpper.includes("TP.HCM") || locationUpper.includes("hcm")) {
+      return "HCM";
+    }
+
+    return null;
+  };
 
   if (fetching)
     return (
@@ -103,447 +139,693 @@ function BookingFlow() {
     }));
 
   // --- handlers ---
-  const handleBooking = async () => {
+  const handleContinue = () => {
     setBookingError("");
-    //  Kiểm tra không chọn vé nào
+    // Kiểm tra không chọn vé nào
     if (ticketTypeRequests.length === 0) {
       setBookingError("Vui lòng chọn ít nhất một loại vé để đặt.");
       return;
     }
+    // Chỉ chuyển sang bước thanh toán, chưa tạo booking
+    setCurrentStep(2);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    getWallet(); // Refresh wallet balance
+  };
+
+  const handlePayment = async () => {
+    setBookingError("");
+    // Kiểm tra không chọn vé nào
+    if (ticketTypeRequests.length === 0) {
+      setBookingError("Vui lòng chọn ít nhất một loại vé để đặt.");
+      return;
+    }
+    
+    setIsProcessingPayment(true);
     try {
+      // Tạo booking và thanh toán khi bấm nút Thanh toán
       const payload = { eventId: event.eventId, ticketTypeRequests };
-      await dispatch(createBooking(payload)).unwrap();
-      // Lấy danh sách vé mới sau khi đặt
-      const ticketsResponse = await bookingAPI.getEventTickets(event.eventId);
-      const tickets = ticketsResponse?.items?.[0]?.tickets || [];
-      const latest = tickets[tickets.length - 1];
-      // Lấy QR code vé
-      const qrResponse = await bookingAPI.getTicketQR(latest.ticketId);
-      setQrCode(qrResponse?.qrCode);
-      setBookingComplete(true);
+      const bookingResult = await dispatch(createBooking(payload)).unwrap();
+      
+      // Lưu thông tin booking sau khi tạo thành công
+      setBookingData({
+        bookingId: bookingResult?.bookingId,
+        totalPrice: totalPrice,
+        ticketTypeRequests: ticketTypeRequests,
+      });
+      
+      // Chuyển sang step 3
+      setCurrentStep(3);
       window.scrollTo({ top: 0, behavior: "smooth" });
+      await getWallet(); // Refresh wallet balance
     } catch (err) {
       console.error("Booking failed:", err);
       setBookingError(
         "Đặt vé thất bại, vui lòng thử lại hoặc kiểm tra số dư ví."
       );
+    } finally {
+      setIsProcessingPayment(false);
     }
   };
 
-  // --- After booking success UI ---
-  if (bookingComplete)
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-100 p-6 flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-2xl w-full bg-white/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-indigo-50 text-center"
-        >
-          <div className="mx-auto w-24 h-24 rounded-full bg-gradient-to-r from-green-400 to-emerald-500 flex items-center justify-center mb-4">
-            <CheckCircle className="w-10 h-10 text-white" />
-          </div>
-          <h2 className="text-3xl font-bold text-indigo-700 mb-2">
-            Đặt vé thành công!
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Vé đã được gửi tới email của bạn. Vui lòng kiểm tra hoặc mở vé dưới
-            đây.
-          </p>
 
-          <div className="bg-white rounded-xl border border-indigo-100 shadow-inner p-6 mb-6">
-            {qrCode ? (
-              <img src={qrCode} alt="QR" className="mx-auto w-44 h-44" />
-            ) : (
-              <p className="text-gray-500">Đang tải mã QR...</p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Button className="w-full h-12 text-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-xl">
-              <a href="/my-tickets">Xem vé của tôi</a>
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full h-12 text-lg rounded-xl"
-            >
-              <a href="/">Về trang chủ</a>
-            </Button>
-          </div>
-        </motion.div>
-      </div>
-    );
-
-  //   //  Layout chính
+  // Layout chính - Thiết kế mới theo phong cách CTicket
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-white text-[0.95rem] md:text-[1rem]">
-      {/* ---------- Banner (Hero) ---------- */}
-      <div className="relative w-full h-[320px] md:h-[380px] lg:h-[420px] overflow-hidden">
-        <img
-          src={event.imgListEvent?.[0] || "/placeholder.svg"}
-          alt={event.title}
-          className="w-full h-full object-cover brightness-75"
-        />
+    <div className="min-h-screen bg-gray-50">
+      {/* Top Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Ticket className="w-5 h-5 text-gray-800" />
+            <span className="font-bold text-lg text-gray-800">Mua vé</span>
+          </div>
+          <div className="flex items-center gap-4">
+            {user && (
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center border-2 border-blue-300">
+                  {user.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={user.unique_name || user.name || "User"}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <span className="text-blue-600 font-semibold text-xs">
+                      {user.unique_name
+                        ? user.unique_name.charAt(0).toUpperCase()
+                        : user.name
+                          ? user.name.charAt(0).toUpperCase()
+                          : "U"}
+                    </span>
+                  )}
+                </div>
+                <span className="hidden md:inline">
+                  {user.unique_name || user.name || "Người dùng"}
+                </span>
+              </div>
+            )}
+            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-md hover:bg-blue-100 hover:border-blue-300 text-gray-900 hover:text-gray-900">
+              <Menu className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" className="h-9 px-2 gap-1 rounded-md hover:bg-blue-100 hover:border-blue-300 text-gray-900 hover:text-gray-900" onClick={() => navigate("/wallet")}>
+              <Wallet className="w-4 h-4" />
+              <span className="text-sm">Ví của tôi</span>
+            </Button>
+          </div>
+        </div>
+      </header>
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+      {/* Step Navigation Bar */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center gap-2 md:gap-4">
+            <button
+              onClick={() => {
+                if (currentStep > 1) {
+                  setCurrentStep(1);
+                }
+              }}
+              className={`flex items-center gap-2 ${
+                currentStep > 1 ? "cursor-pointer hover:opacity-80" : ""
+              }`}
+              disabled={currentStep === 1}
+            >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                currentStep === 1
+                  ? "bg-blue-600 text-white"
+                  : currentStep > 1
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-600"
+              }`}>
+                1
+              </div>
+              <span className={`text-sm font-medium ${
+                currentStep === 1 ? "text-blue-600" : currentStep > 1 ? "text-blue-600" : "text-gray-600"
+              }`}>Chọn vé</span>
+            </button>
+            <ChevronRight className="w-4 h-4 text-gray-400" />
+            <button
+              onClick={() => {
+                // Không cho phép quay lại step 2 từ step 3 (đã thanh toán thành công)
+                if (currentStep === 2) {
+                  // Có thể quay lại từ step 2 về step 1
+                  setCurrentStep(1);
+                }
+              }}
+              className={`flex items-center gap-2 ${
+                currentStep === 2 ? "cursor-pointer hover:opacity-80" : ""
+              }`}
+              disabled={currentStep !== 2}
+            >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                currentStep === 2
+                  ? "bg-blue-600 text-white"
+                  : currentStep > 2
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-600"
+              }`}>
+                2
+              </div>
+              <span className={`text-sm font-medium ${
+                currentStep === 2 ? "text-blue-600" : currentStep > 2 ? "text-blue-600" : "text-gray-600"
+              }`}>Thanh toán</span>
+            </button>
+            <ChevronRight className="w-4 h-4 text-gray-400" />
+            <div className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                currentStep === 3
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-600"
+              }`}>
+                3
+              </div>
+              <span className={`text-sm font-medium ${
+                currentStep === 3 ? "text-blue-600" : "text-gray-600"
+              }`}>Hoàn tất</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-12">
-          <div className="max-w-6xl w-full mx-auto text-white">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-3">
-                <h1 className="text-3xl md:text-5xl font-extrabold leading-tight drop-shadow-lg">
-                  {event.title}
-                </h1>
-                <div className="flex flex-wrap items-center gap-4 text-sm md:text-base text-white/90">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    <span>
-                      {new Date(event.startTime).toLocaleDateString("vi-VN")} •{" "}
+      {/* Event Details Bar */}
+      <div className="relative text-white overflow-hidden">
+        {/* Animated gradient overlay */}
+        <div 
+          className="absolute inset-0"
+          style={{
+            background: 'linear-gradient(90deg, #60a5fa 0%, #3b82f6 20%, #2563eb 40%, #1d4ed8 60%, #1e40af 80%, #60a5fa 100%)',
+            backgroundSize: '300% 100%',
+            animation: 'gradient-flow 8s linear infinite'
+          }}
+        ></div>
+        <div className="relative max-w-7xl mx-auto px-4 py-3 z-10">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+            <div>
+              <h2 className="font-semibold text-base">
+                {(() => {
+                  const code = getCityCode(event);
+                  return code ? `[${code}] ` : "";
+                })()}
+                {event.title}
+              </h2>
+            </div>
+            <div className="flex flex-wrap items-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                <span>
+                  {new Date(event.startTime).toLocaleDateString("vi-VN", {
+                    weekday: "long",
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  })}{" "}
+                  - {new Date(event.startTime).toLocaleTimeString("vi-VN", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
+                <span>{event.locationName || "Không xác định"}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <style>{`
+          @keyframes gradient-flow {
+            0% {
+              background-position: 0% 50%;
+            }
+            100% {
+              background-position: 200% 50%;
+            }
+          }
+        `}</style>
+      </div>
+
+      {/* Main Content - Two Column Layout */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {currentStep === 3 ? (
+          /* Step 3: Success - Two Column Layout */
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="w-full space-y-6"
+          >
+            {/* Success Header */}
+            <div className="bg-white rounded-lg p-6 border border-gray-200 text-center shadow-sm">
+              <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-r from-green-400 to-emerald-500 flex items-center justify-center mb-4">
+                <CheckCircle className="w-10 h-10 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-indigo-700 mb-2">
+                Đặt vé thành công!
+              </h2>
+              <p className="text-gray-600">
+                Vé đã được gửi tới email của bạn. Vui lòng kiểm tra hoặc mở vé dưới
+                đây.
+              </p>
+              <div className="mt-3 flex items-center gap-2 text-sm font-semibold text-yellow-600">
+                <CircleAlert className="h-5 w-5" />
+                <span>
+                  Vé điện tử của bạn sẽ được gửi tới email, vui lòng kiểm tra hộp thư, nếu không thấy xin vui lòng chờ trong ít phút và kiểm tra thư spam và thư rác.
+                </span>
+              </div>
+            </div>
+
+            {/* Two Column Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-[60%_40%] gap-6">
+              {/* Left Column - Event Information */}
+              <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Thông tin sự kiện</h3>
+                <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden shadow-md mb-4">
+                  <img
+                    src={event.imgListEvent?.[0] || "/placeholder.svg"}
+                    alt={event.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/30 p-4 flex flex-col justify-end">
+                    <div className="text-white">
+                      <div className="text-sm font-medium mb-2">{event.title?.split(' - ')[0] || event.title}</div>
+                      <div className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#FFD700' }}>
+                        {event.title?.split(' - ')[1] || event.title}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
+                    <div>
+                      <div className="text-sm text-gray-500">Ngày giờ</div>
+                      <div className="font-medium text-gray-800">
+                        {new Date(event.startTime).toLocaleDateString("vi-VN", {
+                          weekday: "long",
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        })}{" "}
+                        - {new Date(event.startTime).toLocaleTimeString("vi-VN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
+                    <div>
+                      <div className="text-sm text-gray-500">Địa điểm</div>
+                      <div className="font-medium text-gray-800">
+                        {event.locationName || "Không xác định"}
+                      </div>
+                      {event.address && (
+                        <div className="text-sm text-gray-600 mt-1">{event.address}</div>
+                      )}
+                    </div>
+                  </div>
+                  {event.description && (
+                    <div className="pt-3 border-t border-gray-200">
+                      <div className="text-sm text-gray-500 mb-2">Mô tả</div>
+                      <div className="text-sm text-gray-700 line-clamp-3">{event.description}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Column - Ticket Information */}
+              <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Thông tin vé đã mua</h3>
+                {bookingData && bookingData.ticketTypeRequests && (
+                  <div className="space-y-4">
+                    {bookingData.ticketTypeRequests.map((ticketRequest, index) => {
+                      const ticketType = ticketTypes.find(
+                        (t) => t.ticketDetailId === ticketRequest.ticketTypeId
+                      );
+                      if (!ticketType) return null;
+                      
+                      return (
+                        <div
+                          key={index}
+                          className="p-4 rounded-lg border border-gray-200 bg-gray-50"
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <div className="font-semibold text-gray-800">
+                                {ticketType.ticketName}
+                              </div>
+                              {ticketType.ticketDescription && (
+                                <div className="text-sm text-gray-600 mt-1">
+                                  {ticketType.ticketDescription}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                            <div className="text-sm text-gray-600">
+                              Số lượng: <span className="font-medium text-gray-800">{ticketRequest.quantity}</span>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm text-gray-600">Đơn giá</div>
+                              <div className="font-bold text-blue-600">
+                                {ticketType.ticketPrice === 0
+                                  ? "Miễn phí"
+                                  : `${ticketType.ticketPrice.toLocaleString("vi-VN")} VND`}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center pt-2 mt-2 border-t border-gray-200">
+                            <span className="font-semibold text-gray-800">Thành tiền:</span>
+                            <span className="font-bold text-lg text-indigo-600">
+                              {(
+                                ticketType.ticketPrice * ticketRequest.quantity
+                              ).toLocaleString("vi-VN")} VND
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    
+                    <div className="pt-4 border-t-2 border-gray-300">
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-semibold text-gray-800">Tổng cộng:</span>
+                        <span className="text-2xl font-bold text-indigo-600">
+                          {bookingData.totalPrice.toLocaleString("vi-VN")} VND
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="grid grid-cols-1 gap-3 mt-6 pt-6 border-t border-gray-200">
+                  <Button 
+                    className="w-full h-12 text-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-xl"
+                    onClick={() => navigate("/my-tickets")}
+                  >
+                    Xem vé của tôi
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full h-12 text-lg rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50"
+                    onClick={() => navigate("/")}
+                  >
+                    Về trang chủ
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-[60%_40%] gap-6">
+            {/* Left Column - Promotional Image */}
+            <div className="relative">
+              <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden shadow-lg">
+                <img
+                  src={event.imgListEvent?.[0] || "/placeholder.svg"}
+                  alt={event.title}
+                  className="w-full h-full object-cover"
+                />
+                {/* Event Info Overlay */}
+                <div className="absolute inset-0 bg-black/30 p-4 flex flex-col justify-end">
+                  <div className="text-white">
+                    <div className="text-sm font-medium mb-2">{event.title?.split(' - ')[0] || event.title}</div>
+                    <div className="text-4xl md:text-5xl font-bold mb-2" style={{ color: '#FFD700' }}>
+                      {event.title?.split(' - ')[1] || event.title}
+                    </div>
+                    <div className="text-sm mb-1">{event.locationName || "Sự kiện"}</div>
+                    <div className="text-xs">
                       {new Date(event.startTime).toLocaleTimeString("vi-VN", {
                         hour: "2-digit",
                         minute: "2-digit",
+                      })} - {new Date(event.startTime).toLocaleDateString("vi-VN", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
                       })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4" />
-                    <span>{event.locationName || "Không xác định"}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="hidden md:flex items-center gap-3">
-                <Button className="bg-white/20 backdrop-blur-sm text-white border border-white/30 px-4 py-2 rounded-lg">
-                  <a href={`/event/${id}`}>Quay lại sự kiện</a>
-                </Button>
-                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">
-                  <a href="#tickets">Chọn vé ngay</a>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ---------- Progress bar ---------- */}
-      <div className="max-w-6xl mx-auto px-4 -mt-8">
-        <div className="bg-white/60 backdrop-blur-md rounded-xl p-3 shadow-md border border-indigo-50">
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center">
-                    1
-                  </div>
-                  <div className="text-sm">Chọn vé</div>
-                </div>
-
-                <div className="flex-1 h-2 bg-indigo-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-indigo-600 to-blue-500 rounded-full"
-                    style={{ width: "40%" }}
-                  />
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-white border border-indigo-100 flex items-center justify-center text-gray-600">
-                    2
-                  </div>
-                  <div className="text-sm text-gray-600">Xác nhận</div>
-                </div>
-
-                <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gray-100 rounded-full"
-                    style={{ width: "0%" }}
-                  />
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-white border border-indigo-100 flex items-center justify-center text-gray-600">
-                    3
-                  </div>
-                  <div className="text-sm text-gray-600">Hoàn tất</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* --- Chọn vé và xác nhận --- */}
-      <div className="max-w-6xl mx-auto px-4 mt-8 pb-16 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Trái Danh sách vé và thông tin */}
-        <div className="lg:col-span-2" id="tickets">
-          <Card className="rounded-3xl bg-white/80 backdrop-blur-xl border border-indigo-100 shadow-lg overflow-hidden">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <CardTitle className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
-                    Chọn vé
-                  </CardTitle>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Chọn loại vé và số lượng bạn muốn đặt. Giá đã gồm phí dịch
-                    vụ (nếu có).
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="text-sm text-gray-600 flex items-center gap-2">
-                    <Heart className="w-4 h-4 text-pink-500" /> Thêm vào yêu
-                    thích
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {ticketTypes.map((t) => {
-                  const selectedQty = Number(
-                    selectedTickets[t.ticketDetailId] || 0
-                  );
-                  const isOver = selectedQty > t.remainingQuantity;
-
-                  return (
-                    <motion.div
-                      key={t.ticketDetailId}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.18 }}
-                      whileHover={{ scale: 1.01 }}
-                      className={`relative p-4 rounded-2xl transition-all shadow-sm hover:shadow-md cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-3 ${
-                        selectedQty > 0 && !isOver
-                          ? "bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200"
-                          : "bg-white"
-                      }`}
-                    >
-                      {/* Thông tin vé */}
-                      <div className="flex items-center gap-4 flex-1">
-                        <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white">
-                          <Ticket className="w-5 h-5" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between gap-3">
-                            <div>
-                              <h3 className="font-semibold text-lg text-gray-800">
-                                {t.ticketName}
-                              </h3>
-                              <p className="text-sm text-gray-500">
-                                {t.ticketDescription || "Không có mô tả"}
-                              </p>
-                            </div>
-
-                            <div className="text-right">
-                              <div className="font-bold text-indigo-600 text-lg">
-                                {t.ticketPrice === 0
-                                  ? "Miễn phí"
-                                  : `${t.ticketPrice.toLocaleString("vi-VN")}đ`}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                Còn lại: {t.remainingQuantity}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Nhóm số lượng */}
-                      <div className="flex items-center gap-3 relative">
-                        <Input
-                          type="number"
-                          min="0"
-                          max={t.remainingQuantity}
-                          value={selectedQty || ""}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (!/^\d*$/.test(val)) return;
-                            setSelectedTickets((prev) => ({
-                              ...prev,
-                              [t.ticketDetailId]: val,
-                            }));
-                            setBookingError("");
-                          }}
-                          className={`w-28 text-center rounded-lg focus:ring-2 ${
-                            isOver
-                              ? "border-red-400 focus:ring-red-300"
-                              : "border-indigo-200 focus:ring-indigo-300 focus:border-indigo-400"
-                          }`}
-                          placeholder="Số lượng"
-                        />
-                        <div className="text-sm text-gray-500">
-                          / {t.remainingQuantity}
-                        </div>
-
-                        {/* Dòng cảnh báo */}
-                        {isOver && (
-                          <div className="absolute -bottom-5 right-13 text-sm text-red-500">
-                            Chỉ còn {t.remainingQuantity} vé.
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Additional event info */}
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-white rounded-2xl border border-indigo-50 shadow-sm">
-              <div className="flex items-center gap-3">
-                <Calendar className="w-5 h-5 text-indigo-600" />
-                <div>
-                  <div className="text-xs text-gray-500">Ngày</div>
-                  <div className="font-medium">
-                    {new Date(event.startTime).toLocaleDateString("vi-VN")}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="p-4 bg-white rounded-2xl border border-indigo-50 shadow-sm">
-              <div className="flex items-center gap-3">
-                <Clock className="w-5 h-5 text-indigo-600" />
-                <div>
-                  <div className="text-xs text-gray-500">Giờ</div>
-                  <div className="font-medium">
-                    {new Date(event.startTime).toLocaleTimeString("vi-VN", {
+            {/* Right Column - Conditional Content */}
+            {currentStep === 1 ? (
+              /* Step 1: Ticket Selection */
+              <div className="bg-gray-100 rounded-lg p-6 space-y-4">
+                {/* Timer */}
+                <div className="bg-white rounded-lg p-3 border border-gray-200">
+                <div className="text-sm text-gray-600 mb-1">Thời gian bán vé còn lại</div>
+                <div className="text-2xl font-bold text-blue-600">{formatTime(timeRemaining)}</div>
+              </div>
+
+              {/* Event Details */}
+              <div className="bg-white rounded-lg p-3 border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-700">
+                    {new Date(event.startTime).toLocaleDateString("vi-VN", {
+                      weekday: "long",
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    })} • {new Date(event.startTime).toLocaleTimeString("vi-VN", {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="p-4 bg-white rounded-2xl border border-indigo-50 shadow-sm">
-              <div className="flex items-center gap-3">
-                <MapPin className="w-5 h-5 text-indigo-600" />
-                <div>
-                  <div className="text-xs text-gray-500">Địa điểm</div>
-                  <div className="font-medium">
-                    {event.locationName || "Không xác định"}
-                  </div>
+              {/* Ticket Selection */}
+              <div className="bg-white rounded-lg p-4 border border-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-gray-800">Loại vé</h3>
+                  <h3 className="font-semibold text-gray-800">Số lượng</h3>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Phải: đặt vé */}
-        <aside className="lg:col-span-1 sticky top-24 self-start">
-          <Card className="rounded-3xl bg-white/90 backdrop-blur-md border border-indigo-100 shadow-2xl p-6">
-            <CardHeader>
-              <CardTitle className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
-                Xác nhận đặt vé
-              </CardTitle>
-            </CardHeader>
-
-            <CardContent className="space-y-4">
-              {ticketTypeRequests.length > 0 ? (
                 <div className="space-y-3">
-                  {ticketTypeRequests.map((t, i) => {
-                    const type = ticketTypes.find(
-                      (x) => x.ticketDetailId === t.ticketTypeId
-                    );
-                    const unitPrice = type?.ticketPrice || 0;
-                    const total = unitPrice * t.quantity;
+                  {ticketTypes.map((t) => {
+                    const selectedQty = Number(selectedTickets[t.ticketDetailId] || 0);
+                    const isOver = selectedQty > t.remainingQuantity;
+                    const isSoldOut = (t.remainingQuantity || 0) <= 0;
 
                     return (
-                      <motion.div
-                        key={i}
-                        className="p-3 rounded-2xl border border-indigo-100 bg-gradient-to-br from-white/80 to-indigo-50/50 shadow-sm"
+                      <div
+                        key={t.ticketDetailId}
+                        className={`p-3 rounded-lg border ${
+                          isSoldOut
+                            ? "border-red-200 bg-red-50 opacity-60"
+                            : "border-gray-200 bg-white"
+                        }`}
                       >
-                        <div className="flex justify-between items-center mb-1">
-                          <h4 className="font-semibold text-gray-800 text-base">
-                            {type?.ticketName}
-                          </h4>
-                          <span className="font-semibold text-indigo-600 text-sm">
-                            {total.toLocaleString("vi-VN")}đ
-                          </span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <div className="font-medium text-gray-800 text-sm">
+                                {t.ticketName}
+                              </div>
+                              {isSoldOut && (
+                                <span className="px-2 py-0.5 text-xs font-semibold bg-red-500 text-white rounded">
+                                  Hết vé
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-sm font-semibold text-gray-700 mt-1">
+                              {t.ticketPrice === 0
+                                ? "Miễn phí"
+                                : `${t.ticketPrice.toLocaleString("vi-VN")} VND`}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              Còn lại: <span className="font-medium">{t.remainingQuantity || 0}</span> vé
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8 rounded-md hover:bg-blue-100 hover:border-blue-300 text-gray-900 hover:text-gray-900"
+                              onClick={() => {
+                                if (selectedQty > 0) {
+                                  setSelectedTickets((prev) => ({
+                                    ...prev,
+                                    [t.ticketDetailId]: selectedQty - 1,
+                                  }));
+                                }
+                              }}
+                              disabled={selectedQty === 0 || isSoldOut}
+                            >
+                              <Minus className="w-4 h-4" />
+                            </Button>
+                            <div className={`w-10 text-center font-medium ${
+                              isSoldOut ? "text-gray-400" : "text-gray-800"
+                            }`}>
+                              {selectedQty}
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8 rounded-md hover:bg-blue-100 hover:border-blue-300 text-gray-900 hover:text-gray-900"
+                              onClick={() => {
+                                if (selectedQty < t.remainingQuantity) {
+                                  setSelectedTickets((prev) => ({
+                                    ...prev,
+                                    [t.ticketDetailId]: selectedQty + 1,
+                                  }));
+                                }
+                              }}
+                              disabled={selectedQty >= t.remainingQuantity || isSoldOut}
+                            >
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex justify-between text-sm text-gray-500">
-                          <span>
-                            Đơn giá: {unitPrice.toLocaleString("vi-VN")}đ
-                          </span>
-                          <span>Số lượng: {t.quantity}</span>
-                        </div>
-                      </motion.div>
+                        {isOver && !isSoldOut && (
+                          <div className="text-xs text-red-500 mt-1">
+                            Chỉ còn {t.remainingQuantity} vé
+                          </div>
+                        )}
+                        {isSoldOut && (
+                          <div className="text-xs text-red-500 mt-1 font-medium">
+                            Loại vé này đã hết
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
-              ) : (
-                <p className="text-gray-500 text-sm text-center py-6">
-                  Chưa chọn loại vé nào
-                </p>
-              )}
 
-              <Separator className="my-2" />
-
-              <div className="flex justify-between items-center px-1">
-                <span className="text-lg font-semibold text-gray-800">
-                  Tổng cộng
-                </span>
-                <span className="text-2xl font-extrabold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
-                  {totalPrice.toLocaleString("vi-VN")}đ
-                </span>
+                {/* Selected Tickets Summary */}
+                {ticketTypeRequests.length > 0 && (
+                  <div className="mt-5 pt-5 border-t border-gray-200">
+                    <button
+                      onClick={() => setShowSelectedTickets(!showSelectedTickets)}
+                      className="w-full flex items-center justify-between text-sm font-medium text-gray-700"
+                    >
+                      <span>Vé đã chọn</span>
+                      <ChevronRight
+                        className={`w-4 h-4 transition-transform ${showSelectedTickets ? "rotate-90" : ""
+                          }`}
+                      />
+                    </button>
+                    {showSelectedTickets && (
+                      <div className="mt-2 space-y-2">
+                        {ticketTypeRequests.map((t, i) => {
+                          const type = ticketTypes.find(
+                            (x) => x.ticketDetailId === t.ticketTypeId
+                          );
+                          return (
+                            <div
+                              key={i}
+                              className="text-xs text-gray-600 flex justify-between"
+                            >
+                              <span>
+                                {type?.ticketName} x{t.quantity}
+                              </span>
+                              <span className="font-medium">
+                                {(
+                                  (type?.ticketPrice || 0) * t.quantity
+                                ).toLocaleString("vi-VN")} VND
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
+              {/* Continue Button */}
               <Button
-                onClick={handleBooking}
-                disabled={ticketTypeRequests.length === 0 || creating}
-                className="w-full h-12 mt-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-xl shadow-md"
+                onClick={handleContinue}
+                disabled={ticketTypeRequests.length === 0}
+                className="w-full h-12 bg-sky-400 hover:bg-blue-400 text-white font-semibold rounded-lg shadow-md"
               >
-                {creating && <Loader2 className="w-5 h-5 mr-2 animate-spin" />}
-                {creating ? "Đang đặt vé..." : "Xác nhận đặt vé"}
+                Tiếp tục
               </Button>
 
               {bookingError && (
-                <div className="text-red-600 text-sm text-center mt-3 bg-red-50 border border-red-200 py-2 px-3 rounded-xl">
+                <div className="text-red-600 text-sm text-center bg-red-50 border border-red-200 py-2 px-3 rounded-lg">
                   {bookingError}
                 </div>
               )}
-
-              {/* Support box */}
-              <div className="mt-4 p-3 rounded-xl bg-indigo-50/60 border border-indigo-100 text-sm">
-                <div className="flex items-start gap-3">
-                  <Phone className="w-5 h-5 text-indigo-600 mt-1" />
-                  <div>
-                    <div className="font-semibold">Hỗ trợ khách hàng</div>
-                    <div className="text-xs text-gray-600">
-                      Hotline: <span className="font-medium">1900-1234</span>
+            </div>
+          ) : currentStep === 2 ? (
+            /* Step 2: Payment */
+            <div className="bg-gray-100 rounded-lg p-6 space-y-4">
+              <div className="bg-white rounded-lg p-4 border border-gray-200">
+                <h3 className="font-semibold text-gray-800 mb-4">Thông tin thanh toán</h3>
+                
+                {/* Booking Summary */}
+                {ticketTypeRequests.length > 0 && (
+                  <div className="space-y-3 mb-4">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Tổng tiền vé:</span>
+                      <span className="font-semibold text-gray-800">
+                        {totalPrice.toLocaleString("vi-VN")} VND
+                      </span>
                     </div>
-                    <div className="text-xs text-gray-600">
-                      Email:{" "}
-                      <span className="font-medium">support@gmail.com</span>
+                    <div className="border-t border-gray-200 pt-3 flex justify-between">
+                      <span className="font-semibold text-gray-800">Tổng thanh toán:</span>
+                      <span className="font-bold text-lg text-blue-600">
+                        {totalPrice.toLocaleString("vi-VN")} VND
+                      </span>
                     </div>
                   </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                )}
 
-          {/* Floating summary for mobile */}
-          <div className="lg:hidden fixed left-1/2 -translate-x-1/2 bottom-4 w-[92%]">
-            <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-indigo-100 shadow-lg p-3 flex items-center justify-between">
-              <div>
-                <div className="text-sm text-gray-500">Tổng</div>
-                <div className="font-bold text-lg">
-                  {totalPrice.toLocaleString("vi-VN")}đ
+                {/* Wallet Balance */}
+                <div className="bg-blue-50 rounded-lg p-3 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="w-5 h-5 text-blue-600" />
+                      <span className="text-sm text-gray-700">Số dư ví:</span>
+                    </div>
+                    <span className="font-bold text-blue-600">
+                      {wallet?.balance ? wallet.balance.toLocaleString("vi-VN") : "0"} VND
+                    </span>
+                  </div>
+                  {wallet?.balance < totalPrice && (
+                    <div className="mt-2 text-xs text-red-600">
+                      Số dư không đủ. Vui lòng nạp thêm tiền vào ví.
+                    </div>
+                  )}
                 </div>
-              </div>
-              <div className="w-40">
+
+                {/* Payment Button */}
                 <Button
-                  onClick={handleBooking}
-                  disabled={ticketTypeRequests.length === 0 || creating}
-                  className="w-full h-11 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl"
+                  onClick={handlePayment}
+                  disabled={!wallet || wallet.balance < totalPrice || isProcessingPayment}
+                  className="w-full h-12 bg-sky-400 hover:bg-blue-400 text-white font-semibold rounded-lg shadow-md"
                 >
-                  {creating ? "Đang..." : "Xác nhận"}
+                  {isProcessingPayment && <Loader2 className="w-5 h-5 mr-2 animate-spin" />}
+                  {isProcessingPayment 
+                    ? "Đang xử lý..." 
+                    : wallet?.balance >= totalPrice 
+                    ? "Thanh toán" 
+                    : "Nạp tiền vào ví"}
                 </Button>
+
+                {wallet?.balance < totalPrice && (
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate("/wallet")}
+                    className="w-full h-10 mt-2"
+                  >
+                    Đi đến ví của tôi
+                  </Button>
+                )}
+
+                {bookingError && (
+                  <div className="text-red-600 text-sm text-center bg-red-50 border border-red-200 py-2 px-3 rounded-lg mt-4">
+                    {bookingError}
+                  </div>
+                )}
               </div>
             </div>
+          ) : null}
           </div>
-        </aside>
+        )}
       </div>
     </div>
   );

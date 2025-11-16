@@ -9,7 +9,9 @@ namespace AIEvent.Infrastructure.Repositories.Implements
     public class UnitOfWork : IUnitOfWork, IDisposable, IAsyncDisposable
     {
         private readonly DatabaseContext _context;
+        private readonly MongoDbContext _mongoDbContext;
         private readonly Dictionary<Type, object> _repositories = new Dictionary<Type, object>();
+        private readonly Dictionary<Type, object> _mongoRepositories = new Dictionary<Type, object>();
         private IDbContextTransaction? _transaction;
 
         public IGenericRepository<User> UserRepository => GetRepository<User>();
@@ -27,19 +29,26 @@ namespace AIEvent.Infrastructure.Repositories.Implements
         public IGenericRepository<BookingItem> BookingItemRepository => GetRepository<BookingItem>();
         public IGenericRepository<Wallet> WalletRepository => GetRepository<Wallet>();
         public IGenericRepository<WalletTransaction> WalletTransactionRepository => GetRepository<WalletTransaction>();
-        public IGenericRepository<PaymentTransaction> PaymentTransactionRepository => GetRepository<PaymentTransaction>();
-        public IGenericRepository<WithdrawRequest> WithdrawRequestRepository => GetRepository<WithdrawRequest>();
-        public IGenericRepository<PaymentInformation> PaymentInformationRepository => GetRepository<PaymentInformation>();
-        public IGenericRepository<EndEventRequest> EndEventRequestRepository => GetRepository<EndEventRequest>();
+        public IGenericRepository<PaymentTransaction> PaymentTransactionRepository => GetRepository<PaymentTransaction>(); 
+        public IGenericRepository<PaymentInformation> PaymentInformationRepository => GetRepository<PaymentInformation>(); 
         public IGenericRepository<RevenueReport> RevenueReportRepository => GetRepository<RevenueReport>();
         public IGenericRepository<Friendship> FriendshipRepository => GetRepository<Friendship>();
         public IGenericRepository<Rating> RatingRepository => GetRepository<Rating>();
+        public IGenericRepository<Notification> NotificationRepository => GetRepository<Notification>();
+        public IGenericRepository<EventInvitation> EventInvitationRepository => GetRepository<EventInvitation>();
+        public IGenericRepository<StaffProfile> StaffProfileRepository => GetRepository<StaffProfile>();
+        public IGenericRepository<EventReport> EventReportRepository => GetRepository<EventReport>();
+        public IGenericRepository<SystemSetting> SystemSettingRepository => GetRepository<SystemSetting>();
+
+        public IMongoRepository<ChatLog> ChatLogRepository => GetMongoRepository<ChatLog>();
+
         public void EnableSoftDelete() => _context.EnableSoftDelete = true;
         public void DisableSoftDelete() => _context.EnableSoftDelete = false;
 
-        public UnitOfWork(DatabaseContext context)
+        public UnitOfWork(DatabaseContext context, MongoDbContext mongoDbContext)
         {
             _context = context;
+            _mongoDbContext = mongoDbContext;
         }
 
         private IGenericRepository<T> GetRepository<T>() where T : class
@@ -49,6 +58,20 @@ namespace AIEvent.Infrastructure.Repositories.Implements
                 _repositories[typeof(T)] = new GenericRepository<T>(_context);
             }
             return (IGenericRepository<T>)_repositories[typeof(T)];
+        }
+
+        private IMongoRepository<T> GetMongoRepository<T>() where T : class
+        {
+            var key = typeof(T);
+            if (!_mongoRepositories.ContainsKey(key))
+            {
+                var collectionName = typeof(T).Name + "s"; 
+                if (typeof(T) == typeof(ChatLog))
+                    collectionName = "ChatLogs";
+                
+                _mongoRepositories[key] = new MongoRepository<T>(_mongoDbContext, collectionName);
+            }
+            return (IMongoRepository<T>)_mongoRepositories[key];
         }
 
 

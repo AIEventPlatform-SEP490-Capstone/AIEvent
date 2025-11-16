@@ -6,13 +6,14 @@ const ScreenNames = {
   // Auth Screens
   LOGIN_SCREEN: 'LoginScreen',
   REGISTER_SCREEN: 'RegisterScreen',
+  OTP_VERIFY_SCREEN: 'OtpVerifyScreen',
   
   // Event Screens
   EVENT_DETAIL_SCREEN: 'EventDetailScreen',
   MY_EVENTS_SCREEN: 'MyEventsScreen',
-  EVENT_DETAIL_SCREEN: 'EventDetailScreen',
   EVENT_MAP_SCREEN: 'EventMapScreen',
   EVENT_SCHEDULE_SCREEN: 'EventScheduleScreen',
+  BOOKING_SCREEN: 'BookingScreen',
   
   // Profile Screens
   PROFILE_SCREEN: 'ProfileScreen',
@@ -24,9 +25,13 @@ const ScreenNames = {
   TICKETS_SCREEN: 'TicketsScreen',
   LIKES_SCREEN: 'LikesScreen',
   FRIENDS_SCREEN: 'FriendsScreen',
+  FRIEND_DETAIL_SCREEN: 'FriendDetailScreen',
   
   // Timeline Screen
   TIMELINE_SCREEN: 'TimelineScreen',
+  
+  // QR Scanner Screen
+  QR_SCANNER_SCREEN: 'QrScannerScreen',
   
   // Navigation
   TAB_NAVIGATOR: 'TabNavigator',

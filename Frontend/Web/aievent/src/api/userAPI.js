@@ -7,6 +7,14 @@ export const userAPI = {
         return response.data;
     },
 
+    // Bật/Tắt chia sẻ vị trí người dùng
+    toggleLocationSharing: async (action) => {
+        const response = await fetcher.patch('/user/location', null, {
+            params: { action }
+        });
+        return response.data?.data || response.data;
+    },
+
     updateUserProfile: async (profileData) => {
         const formData = new FormData();
 
@@ -50,9 +58,9 @@ export const userAPI = {
             formData.append(`UserInterests[${index}].interestName`, interest.interestName || interest);
         });
 
-        const interestedCities = profileData.interestedCities || [];
-        interestedCities.forEach((city, index) => {
-            formData.append(`InterestedCities[${index}].cityName`, city.cityName || city);
+        const interestedDistricts = profileData.interestedDistricts || [];
+        interestedDistricts.forEach((district, index) => {
+            formData.append(`InterestedDistricts[${index}].districtName`, district.districtName || district);
         });
 
         const languages = profileData.languages || [];

@@ -37,8 +37,8 @@ namespace AIEvent.Domain.Entities
         public string? ConfirmBy { get; set; }
 
         public User User { get; set; } = default!;
-        public ICollection<Event>? Events { get; set; }
-        public ICollection<EndEventRequest> EndEventRequests { get; set; } = new List<EndEventRequest>();
+        public ICollection<Event>? Events { get; set; } 
         public ICollection<RevenueReport>? RevenueReports { get; set; }
+        public ICollection<StaffProfile>? StaffProfiles { get; set; }
     }
 }

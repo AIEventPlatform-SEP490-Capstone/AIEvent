@@ -35,9 +35,11 @@ const PasswordInput = React.memo(
     onToggleVisibility,
     onChangeText,
     disabled,
+    touched,
   }) => {
     const hasValue = value.length > 0;
-    const showValidation = (hasValue || errorMessage) && field !== 'currentPassword';
+    // Only show validation if user has touched the field (entered something)
+    const showValidation = touched && hasValue && field !== 'currentPassword';
 
     return (
       <View style={styles.inputContainer}>
@@ -50,7 +52,7 @@ const PasswordInput = React.memo(
               styles.input,
               field === 'currentPassword' 
                 ? styles.inputDefault
-                : !hasValue
+                : !hasValue || !touched
                 ? styles.inputDefault
                 : isValid
                 ? styles.inputValid
@@ -193,6 +195,11 @@ const ChangePasswordScreen = ({ navigation }) => {
     newPassword: false,
     confirmPassword: false,
   });
+  const [touchedFields, setTouchedFields] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false,
+  });
 
   // Memoized validation function
   const validateForm = useCallback(() => {
@@ -215,7 +222,8 @@ const ChangePasswordScreen = ({ navigation }) => {
     const hasNumber = /\d/.test(newPassword);
     const isNewPasswordValid = hasMinLength && hasUppercase && hasLowercase && hasNumber;
 
-    if (newPassword.length > 0) {
+    // Only validate if user has touched the field
+    if (touchedFields.newPassword && newPassword.length > 0) {
       if (!isNewPasswordValid) {
         newValidation.newPassword = false;
         newValidation.messages.newPassword =
@@ -228,13 +236,17 @@ const ChangePasswordScreen = ({ navigation }) => {
         newValidation.newPassword = true;
         newValidation.messages.newPassword = 'Mật khẩu mới hợp lệ';
       }
-    } else {
+    } else if (touchedFields.newPassword && newPassword.length === 0) {
       newValidation.newPassword = false;
       newValidation.messages.newPassword = 'Vui lòng nhập mật khẩu mới';
+    } else {
+      // Field not touched yet, no validation message
+      newValidation.newPassword = true;
+      newValidation.messages.newPassword = '';
     }
 
     // Confirm password: must match new password
-    if (formData.confirmPassword.length > 0) {
+    if (touchedFields.confirmPassword && formData.confirmPassword.length > 0) {
       if (formData.confirmPassword !== formData.newPassword) {
         newValidation.confirmPassword = false;
         newValidation.messages.confirmPassword = 'Mật khẩu xác nhận không khớp';
@@ -242,13 +254,17 @@ const ChangePasswordScreen = ({ navigation }) => {
         newValidation.confirmPassword = true;
         newValidation.messages.confirmPassword = 'Mật khẩu xác nhận khớp';
       }
-    } else {
+    } else if (touchedFields.confirmPassword && formData.confirmPassword.length === 0) {
       newValidation.confirmPassword = false;
       newValidation.messages.confirmPassword = 'Vui lòng xác nhận mật khẩu mới';
+    } else {
+      // Field not touched yet, no validation message
+      newValidation.confirmPassword = true;
+      newValidation.messages.confirmPassword = '';
     }
 
     return newValidation;
-  }, [formData]);
+  }, [formData, touchedFields]);
 
   // Compute validation state
   const validation = useMemo(() => validateForm(), [validateForm]);
@@ -260,12 +276,19 @@ const ChangePasswordScreen = ({ navigation }) => {
         ...prev,
         [field]: value,
       }));
+      // Mark field as touched when user starts typing
+      if (!touchedFields[field]) {
+        setTouchedFields((prev) => ({
+          ...prev,
+          [field]: true,
+        }));
+      }
       // Only clear error when user starts typing, not success message
       if (changePasswordError) {
         dispatch(clearChangePasswordError());
       }
     },
-    [changePasswordError, dispatch]
+    [changePasswordError, dispatch, touchedFields]
   );
 
   // Handle password visibility toggle
@@ -358,22 +381,7 @@ const ChangePasswordScreen = ({ navigation }) => {
           end={{ x: 1, y: 0 }}
           style={styles.header}
         >
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-            disabled={isChangingPassword}
-            accessibilityLabel="Quay lại"
-            accessibilityRole="button"
-          >
-            <CustomText
-              variant="h3"
-              color="white"
-              style={styles.backIcon}
-            >
-              ←
-            </CustomText>
-          </TouchableOpacity>
-          <View style={styles.headerCenter}>
+          <View style={styles.headerContent}>
             <CustomText variant="h2" color="white" style={styles.headerTitle}>
               Đổi mật khẩu
             </CustomText>
@@ -381,7 +389,6 @@ const ChangePasswordScreen = ({ navigation }) => {
               Bảo mật tài khoản của bạn
             </CustomText>
           </View>
-          <View style={styles.placeholder} />
         </LinearGradient>
 
         {/* Content */}
@@ -407,6 +414,7 @@ const ChangePasswordScreen = ({ navigation }) => {
               onToggleVisibility={togglePasswordVisibility}
               onChangeText={handleInputChange}
               disabled={isChangingPassword}
+              touched={touchedFields.currentPassword}
             />
 
             <PasswordInput
@@ -420,6 +428,7 @@ const ChangePasswordScreen = ({ navigation }) => {
               onToggleVisibility={togglePasswordVisibility}
               onChangeText={handleInputChange}
               disabled={isChangingPassword}
+              touched={touchedFields.newPassword}
             />
 
             <PasswordInput
@@ -433,6 +442,7 @@ const ChangePasswordScreen = ({ navigation }) => {
               onToggleVisibility={togglePasswordVisibility}
               onChangeText={handleInputChange}
               disabled={isChangingPassword}
+              touched={touchedFields.confirmPassword}
             />
 
             <PasswordRequirements password={formData.newPassword} />

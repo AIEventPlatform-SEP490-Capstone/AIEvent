@@ -26,6 +26,7 @@ namespace AIEvent.Application.Test.Services
         private readonly Mock<IHasherHelper> _mockHasherHelper;
         private readonly Mock<ICacheService> _mockCacheService;
         private readonly Mock<IConfiguration> _mockConfiguration;
+        private readonly Mock<IHangfireJobService> _mockHangfireJobService;
         private readonly IAuthService _authService;
         
 
@@ -39,13 +40,15 @@ namespace AIEvent.Application.Test.Services
             _mockEmailService = new Mock<IEmailService>();
             _mockCacheService = new Mock<ICacheService>();
             _mockConfiguration = new Mock<IConfiguration>();
+            _mockHangfireJobService = new Mock<IHangfireJobService>();
             _authService = new AuthService(_mockUnitOfWork.Object,
                                                _mockJwtService.Object,
                                                _mockMapper.Object,
                                                _mockEmailService.Object,
                                                _mockHasherHelper.Object,
                                                _mockCacheService.Object,
-                                               _mockConfiguration.Object);
+                                               _mockConfiguration.Object,
+                                               _mockHangfireJobService.Object);
         }
         #region Login
         // UTCID01: Valid credentials, successful login
@@ -221,14 +224,14 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
             var user = new User { Id = Guid.NewGuid(), Email = request.Email, IsActive = false };
             var role = new Role { Id = Guid.NewGuid(), Name = "User" };
@@ -270,14 +273,14 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
             var existingUser = new User { Id = Guid.NewGuid(), Email = request.Email, IsActive = true };
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
@@ -306,14 +309,14 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false))
                            .Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
@@ -343,14 +346,14 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
             var user = new User { Id = Guid.NewGuid(), Email = request.Email, IsActive = false };
             var role = new Role { Id = Guid.NewGuid(), Name = "User" };
@@ -403,14 +406,14 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
 
             // Act
@@ -436,14 +439,14 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
 
             // Act
@@ -469,14 +472,14 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
 
             // Act
@@ -502,14 +505,14 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
 
             // Act
@@ -535,14 +538,14 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
 
             // Act
@@ -568,14 +571,14 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
 
             // Act
@@ -601,14 +604,14 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
             var user = new User { Id = Guid.NewGuid(), Email = request.Email, IsActive = false };
             var role = new Role { Id = Guid.NewGuid(), Name = "User" };
@@ -648,12 +651,10 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
-                IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true,
+                IsEmailNotificationEnabled = true, 
                 ParticipationFrequency = (ParticipationFrequency)0,
                 BudgetOption = BudgetOption.From500kTo2M
             };
@@ -681,12 +682,10 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     new InterestedDistricts { DistrictName = "Quận 1"}
                 },
-                IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true,
+                IsEmailNotificationEnabled = true, 
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = (BudgetOption)4
             };
@@ -714,14 +713,14 @@ namespace AIEvent.Application.Test.Services
                 UserInterests = new List<UserInterest>{
                     new UserInterest { InterestName = "book"}
                 },
-                InterestedCities = new List<InterestedDistricts>{
+                InterestedDistricts = new List<InterestedDistricts>{
                     
                 },
                 ParticipationFrequency = ParticipationFrequency.Occasionally,
                 BudgetOption = BudgetOption.Flexible,
                 IsEmailNotificationEnabled = true,
-                IsPushNotificationEnabled = true,
-                IsSmsNotificationEnabled = true
+                
+                
             };
             var role = new Role { Id = Guid.NewGuid(), Name = "User" };
 

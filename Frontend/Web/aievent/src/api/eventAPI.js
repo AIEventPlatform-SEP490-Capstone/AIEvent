@@ -144,102 +144,42 @@ export const eventAPI = {
 
   // Create new event (requires Organizer role)
   createEvent: async (eventData) => {
-    console.log('Creating FormData from:', eventData);
-    const formData = new FormData();
-    
-    // Add basic event fields
-    formData.append('Title', eventData.title);
-    formData.append('Description', eventData.description);
-    formData.append('StartTime', eventData.startTime);
-    formData.append('EndTime', eventData.endTime);
-    formData.append('TotalTickets', eventData.totalTickets);
-    formData.append('TicketPricingType', eventData.ticketPricingType);
-    formData.append('RequireApproval', eventData.requireApproval || EventStatus.PendingApproval);
-    formData.append('Publish', eventData.publish || false);
-    
-    // Optional fields
-    if (eventData.locationName) {
-      formData.append('LocationName', eventData.locationName);
-    }
-    if (eventData.detailedDescription) {
-      formData.append('DetailedDescription', eventData.detailedDescription);
-    }
-    if (eventData.linkRef) {
-      formData.append('LinkRef', eventData.linkRef);
-    }
-    if (eventData.district) {
-      formData.append('District', eventData.district);
-    }
-    if (eventData.address) {
-      formData.append('Address', eventData.address);
-    }
-    if (eventData.latitude) {
-      formData.append('Latitude', eventData.latitude);
-    }
-    if (eventData.longitude) {
-      formData.append('Longitude', eventData.longitude);
-    }
-    if (eventData.saleStartTime) {
-      formData.append('SaleStartTime', eventData.saleStartTime);
-    }
-    if (eventData.saleEndTime) {
-      formData.append('SaleEndTime', eventData.saleEndTime);
-    }
-    if (eventData.eventCategoryId) {
-      formData.append('EventCategoryId', eventData.eventCategoryId);
-    }
+    // Prepare data object for JSON submission
+    const data = {
+      Title: eventData.title,
+      Description: eventData.description,
+      StartTime: eventData.startTime,
+      EndTime: eventData.endTime,
+      TotalTickets: eventData.totalTickets,
+      TicketPricingType: eventData.ticketPricingType,
+      RequireApproval: eventData.requireApproval || EventStatus.PendingApproval,
+      Publish: eventData.publish || false,
+      LocationName: eventData.locationName,
+      DetailedDescription: eventData.detailedDescription,
+      LinkRef: eventData.linkRef,
+      District: eventData.district,
+      Address: eventData.address,
+      Latitude: eventData.latitude,
+      Longitude: eventData.longitude,
+      SaleStartTime: eventData.saleStartTime,
+      SaleEndTime: eventData.saleEndTime,
+      EventCategoryId: eventData.eventCategoryId,
+      ImgListEvent: eventData.images || [],
+      ImgListEvidences: eventData.evidenceImages || [],
+      TicketTypes: eventData.ticketTypes || [],
+      Tags: eventData.tags || []
+    };
 
-    // Add images
-    if (eventData.images && eventData.images.length > 0) {
-      eventData.images.forEach((image, index) => {
-        formData.append(`ImgListEvent`, image);
-      });
-    }
+    // Remove undefined properties
+    Object.keys(data).forEach(key => data[key] === undefined && delete data[key]);
 
-    // Add evidence images
-    if (eventData.evidenceImages && eventData.evidenceImages.length > 0) {
-      eventData.evidenceImages.forEach((image, index) => {
-        formData.append(`ImgListEvidences`, image);
-      });
-    }
-
-    // Add ticket types
-    if (eventData.ticketTypes && eventData.ticketTypes.length > 0) {
-      eventData.ticketTypes.forEach((ticket, index) => {
-        formData.append(`TicketTypes[${index}].TicketName`, ticket.ticketName);
-        formData.append(`TicketTypes[${index}].TicketPrice`, ticket.ticketPrice);
-        formData.append(`TicketTypes[${index}].TicketQuantity`, ticket.ticketQuantity);
-        if (ticket.ticketDescription) {
-          formData.append(`TicketTypes[${index}].TicketDescription`, ticket.ticketDescription);
-        }
-      });
-    }
-
-    // Add tags
-    if (eventData.tags && eventData.tags.length > 0) {
-      eventData.tags.forEach((tag, index) => {
-        formData.append(`Tags[${index}].TagId`, tag.tagId);
-      });
-    }
-
-    // Debug FormData contents
-    console.log('FormData contents:');
-    for (let [key, value] of formData.entries()) {
-      console.log(`${key}:`, value);
-    }
-
-    const response = await fetcher.post('/event', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await fetcher.post('/event', data);
     // Return the actual response data
     return response.data?.data || response.data;
   },
 
   // Update event (requires Organizer role)
   updateEvent: async (eventData) => {
-    console.log('Updating event with data:', eventData);
     const formData = new FormData();
     
     // Add event ID
@@ -355,16 +295,11 @@ export const eventAPI = {
     }
 
     // Debug FormData contents
-    console.log('Update FormData contents:');
     for (let [key, value] of formData.entries()) {
       console.log(`${key}:`, value);
     }
 
-    const response = await fetcher.patch(`/event/${eventData.eventId}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await fetcher.patch(`/event/${eventData.eventId}`, formData);
     // Return the actual response data
     return response.data?.data || response.data;
   },
@@ -523,6 +458,145 @@ export const eventAPI = {
     
     return data;
   },
+
+  // Get AI recommended events
+  getAIRecommendedEvents: async (pageNumber = 1, pageSize = 5) => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('pageNumber', pageNumber);
+    queryParams.append('pageSize', pageSize);
+
+    const response = await fetcher.get(`/ai/event?${queryParams.toString()}`);
+    // Return the actual data from the paginated response
+    let data = response.data?.data || response.data;
+    
+    // Process dates for all events in the response
+    if (data) {
+      if (data.items) {
+        // Paginated response
+        data.items = processEventsArrayForDisplay(data.items);
+      } else if (Array.isArray(data)) {
+        // Array response
+        data = processEventsArrayForDisplay(data);
+      }
+    }
+    
+    return data;
+  },
+
+  // Invite friends to event
+  inviteFriends: async (eventId, invitationData) => {
+    const response = await fetcher.post(`/event/${eventId}/invite-friends`, invitationData, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    // Return the actual response data
+    return response.data?.data || response.data;
+  },
+
+  // Confirm event invitation (Accept/Reject)
+  confirmInvitation: async (invitationId, confirmData) => {
+    const response = await fetcher.put(`/event/invitations/${invitationId}/confirm`, confirmData, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    // Return the actual response data
+    return response.data?.data || response.data;
+  },
+
+  // Get invitations status (paginated)
+  getInvitationsStatus: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    
+    if (params.pageNumber) queryParams.append('pageNumber', params.pageNumber);
+    if (params.pageSize) queryParams.append('pageSize', params.pageSize);
+    if (params.status) queryParams.append('status', params.status);
+
+    const response = await fetcher.get(`/event/invitations-status?${queryParams.toString()}`);
+    // Return the actual data from the paginated response
+    let data = response.data?.data || response.data;
+    
+    // Process dates for invitations if needed
+    if (data && data.items) {
+      data.items = data.items.map(invitation => ({
+        ...invitation,
+        createdAt: invitation.createdAt ? convertUTCToUTC7ISOString(invitation.createdAt) : null,
+        respondedAt: invitation.respondedAt ? convertUTCToUTC7ISOString(invitation.respondedAt) : null,
+      }));
+    }
+    
+    return data;
+  },
+
+  reportEvent: async ({ eventId, type, reason, attachmentUrl }) => {
+    const params = new URLSearchParams();
+    if (eventId) params.append("EventId", eventId);
+    if (type) params.append("Type", type);
+    if (reason) params.append("Reason", reason);
+    if (attachmentUrl) params.append("AttachmentUrl", attachmentUrl);
+
+    const response = await fetcher.post(`/event/report?${params.toString()}`);
+    return response.data?.data ?? response.data;
+  },
+
+  getUserReports: async (eventId) => {
+    const response = await fetcher.get(`/event/${eventId}/report/user`);
+    const data = response.data?.data;
+
+    if (!data) return [];
+    return Array.isArray(data) ? data : [data];
+  },
+
+  getEventReports: async (eventId, params = {}) => {
+    const queryParams = new URLSearchParams();
+
+    if (params.type) queryParams.append("type", params.type);
+    if (params.pageNumber) queryParams.append("pageNumber", params.pageNumber);
+    if (params.pageSize) queryParams.append("pageSize", params.pageSize);
+
+    const queryString = queryParams.toString();
+    const url = queryString ? `/event/${eventId}/report?${queryString}` : `/event/${eventId}/report`;
+
+    const response = await fetcher.get(url);
+    const data = response.data?.data ?? response.data ?? {};
+
+    const items = Array.isArray(data.items) ? data.items : [];
+    const totalItems = data.totalItems ?? items.length ?? 0;
+
+    return {
+      items,
+      totalItems,
+      currentPage: data.currentPage ?? params.pageNumber ?? 1,
+      totalPages: data.totalPages ?? 1,
+      pageSize: data.pageSize ?? params.pageSize ?? 10,
+      hasPreviousPage: data.hasPreviousPage ?? false,
+      hasNextPage: data.hasNextPage ?? false,
+    };
+  },
+
+  getEventReportDetail: async (reportId) => {
+    const response = await fetcher.get(`/event/report/${reportId}`);
+    return response.data?.data ?? response.data;
+  },
+
+  replyEventReport: async (reportId, replyText) => {
+    const trimmedReply = replyText?.trim();
+    if (!trimmedReply) {
+      throw new Error("Reply text is required");
+    }
+
+    const response = await fetcher.patch(
+      `/event/report/${reportId}/reply`,
+      null,
+      {
+        params: { Reply: trimmedReply },
+      }
+    );
+
+    return response.data?.data || response.data;
+  },
+  
 };
 
 export default eventAPI;

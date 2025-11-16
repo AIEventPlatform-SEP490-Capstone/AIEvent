@@ -1,5 +1,6 @@
 ﻿using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
+using AIEvent.Application.DTOs.Notification;
 using AIEvent.Application.DTOs.Payment;
 using AIEvent.Application.DTOs.PaymentInformation;
 using AIEvent.Application.Helpers;
@@ -11,6 +12,7 @@ using AIEvent.Infrastructure.Repositories.Interfaces;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using PayOS.Models.V1.Payouts;
 using PayOS.Models.V2.PaymentRequests;
 using PayOS.Models.Webhooks;
@@ -22,14 +24,18 @@ namespace AIEvent.Application.Services.Implements
         private readonly IPayOSService _payOSService;
         private readonly IConfiguration _configuration;
         private readonly ITransactionHelper _transactionHelper;
+        private readonly INotificationService _notificationService;
         private readonly IMapper _mapper;
-        public PaymentService(IUnitOfWork unitOfWork, IConfiguration configuration, ITransactionHelper transactionHelper, IPayOSService payOSService, IMapper mapper)
+        private readonly ILogger<PaymentService> _logger;
+        public PaymentService(IUnitOfWork unitOfWork, IConfiguration configuration, ITransactionHelper transactionHelper, IPayOSService payOSService, IMapper mapper, INotificationService notificationService, ILogger<PaymentService> logger)
         {
             _unitOfWork = unitOfWork;
             _configuration = configuration;
             _transactionHelper = transactionHelper;
             _payOSService = payOSService;
             _mapper = mapper;
+            _logger = logger;
+            _notificationService = notificationService;
         }
 
         public async Task<Result<CreatePaymentLinkResponse>> CreatePaymentTopUpAsync(Guid userId, long amount)
@@ -366,6 +372,159 @@ namespace AIEvent.Application.Services.Implements
                 await _unitOfWork.WalletTransactionRepository.AddAsync(transaction);
                 await _unitOfWork.SaveChangesAsync();
                 return ErrorResponse.FailureResult($"Withdraw failed: {ex.Message}", ErrorCodes.InternalServerError);
+            }
+        }
+
+        public async Task ProcessPendingPayoutsAsync()
+        {
+            try
+            {
+                var systemSetting = await _unitOfWork.SystemSettingRepository
+                    .Query()
+                    .FirstOrDefaultAsync(s => !s.IsDeleted);
+                if (systemSetting == null)
+                {
+                    _logger.LogError("SystemSetting not found");
+                    return;
+                }
+
+                var payoutDeadline = DateTime.UtcNow.AddDays(-systemSetting.DatePayout);
+                var pendingEvents = await _unitOfWork.EventRepository
+                    .Query()
+                    .Include(e => e.OrganizerProfile)
+                    .Where(e => e.Status == EventStatus.WaitingForPayout
+                                && e.CompletedAt <= payoutDeadline
+                                && !e.IsDeleted)
+                    .ToListAsync();
+
+                if (!pendingEvents.Any())
+                {
+                    _logger.LogInformation("No events ready for payout.");
+                    return;
+                }
+
+                decimal platformFeePercent = systemSetting.FlatformFee;
+                decimal platformFixedFee = systemSetting.FixFee;
+
+                foreach (var ev in pendingEvents)
+                {
+                    try
+                    {
+                        var paymentInfor = await _unitOfWork.PaymentInformationRepository
+                            .Query()
+                            .AsNoTracking()
+                            .FirstOrDefaultAsync(p => p.UserId == ev.OrganizerProfile!.UserId && !p.IsDeleted);
+
+                        var hasBeenPaid = await _unitOfWork.RevenueReportRepository
+                            .Query()
+                            .AnyAsync(r => r.EventId == ev.Id && r.PayoutDate != null && !r.IsDeleted);
+                         
+                        if (hasBeenPaid)
+                        {
+                            _logger.LogInformation("Event {EventId} already paid out.", ev.Id);
+                            continue;
+                        }
+
+                        if(ev.TotalAmount <= 0)
+                            continue;
+
+                        if (paymentInfor == null)
+                        { 
+                            var hasWarned = await _unitOfWork.NotificationRepository
+                                .Query()
+                                .AnyAsync(n => n.EventId == ev.Id
+                                              && n.Type == NotificationType.PayoutFailed
+                                              && !n.IsDeleted);
+
+                            if (!hasWarned)
+                            {
+                                await _notificationService.CreateNotificationAsync(new CreateNotificationRequest
+                                {
+                                    UserId = ev.OrganizerProfile!.UserId,
+                                    Title = "Doanh thu chưa được chuyển",
+                                    Message = $"Sự kiện <strong>{ev.Title}</strong> chưa thể chuyển tiền do chưa có thông tin ngân hàng. Vui lòng cập nhật thông tin để nhận thanh toán.",
+                                    Type = NotificationType.PayoutFailed, 
+                                    EventId = ev.Id
+                                });
+                                _logger.LogInformation("Sent payout warning for Event {EventId} (no payment info)", ev.Id);
+                            }
+                            continue;
+                        }
+                         
+                        var platformFee = ev.TotalAmount * platformFeePercent + platformFixedFee;
+                        var payoutAmount = ev.TotalAmount - platformFee;
+
+                        if (payoutAmount < 0)
+                        {
+                            _logger.LogWarning("Payout amount negative for Event {EventId}: {Amount}", ev.Id, payoutAmount);
+                            continue;
+                        }
+
+                        var result = await _transactionHelper.ExecuteInTransactionAsync(async () =>
+                        {
+                            var referenceId = GenerateOrderCode().ToString();
+                            var payoutRequest = new PayoutRequest
+                            {
+                                ReferenceId = referenceId,
+                                Amount = (long)payoutAmount,
+                                Description = $"Chuyển tiền doanh thu sự kiện '{ev.Title}' sau khi trừ {platformFee:N0} VND phí nền tảng AIEvent",
+                                ToBin = paymentInfor.BankBin,
+                                ToAccountNumber = paymentInfor.AccountNumber,
+                                Category = new List<string> { "Payout" }
+                            };
+
+                            var payoutResponse = await _payOSService.CreatePayoutAsync(payoutRequest);
+                            var payoutDate = DateTime.UtcNow;
+                             
+                            var revenueReport = new RevenueReport
+                            {
+                                OrganizerProfileId = ev.OrganizerProfileId,
+                                EventId = ev.Id,
+                                EventName = ev.Title,
+                                GrossRevenue = ev.TotalAmount,
+                                PlatformFee = platformFee,
+                                NetRevenue = payoutAmount,
+                                ReportMonth = payoutDate.Month,
+                                ReportYear = payoutDate.Year,
+                                PayoutDate = payoutDate
+                            };
+
+                            await _unitOfWork.RevenueReportRepository.AddAsync(revenueReport);
+                            return Result.Success();
+                        });
+
+                        if (!result.IsSuccess)
+                        {
+                            _logger.LogError("Payout transaction failed for Event {EventId}", ev.Id);
+                            continue;
+                        }
+                         
+                        ev.Status = EventStatus.PaidOut;
+                        ev.PaidOutAt = DateTime.UtcNow;
+                        await _unitOfWork.EventRepository.UpdateAsync(ev);
+                        await _unitOfWork.SaveChangesAsync();
+                         
+                        await _notificationService.CreateNotificationAsync(new CreateNotificationRequest
+                        {
+                            UserId = ev.OrganizerProfile!.UserId,
+                            Title = "Doanh thu đã được chuyển",
+                            Message = $"Sự kiện <strong>{ev.Title}</strong> đã được chuyển <strong>{payoutAmount:N0} VND</strong> vào tài khoản.",
+                            Type = NotificationType.PayoutCompleted, 
+                            EventId = ev.Id
+                        });
+
+                        _logger.LogInformation("Payout success: Event {EventId} → {Amount:N0} VND", ev.Id, payoutAmount);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Payout failed for Event {EventId}", ev.Id);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in ProcessPendingPayoutsAsync job");
+                throw;
             }
         }
     }

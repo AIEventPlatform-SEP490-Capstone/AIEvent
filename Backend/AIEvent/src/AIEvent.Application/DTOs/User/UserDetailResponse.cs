@@ -10,7 +10,7 @@ namespace AIEvent.Application.DTOs.User
         public string FullName { get; set; } = string.Empty;
         public string? PhoneNumber { get; set; }
         public List<UserInterest>? UserInterests { get; set; }
-        public List<InterestedDistricts>? InterestedCities { get; set; }
+        public List<InterestedDistricts>? InterestedDistricts { get; set; }
         public ParticipationFrequency ParticipationFrequency { get; set; }
         public BudgetOption BudgetOption { get; set; }
         public string? Address { get; set; }
@@ -19,8 +19,7 @@ namespace AIEvent.Application.DTOs.User
         public string? Longitude { get; set; }
         public string? AvatarImgUrl { get; set; }
         public bool? IsEmailNotificationEnabled { get; set; } = false;
-        public bool? IsPushNotificationEnabled { get; set; } = false;
-        public bool? IsSmsNotificationEnabled { get; set; } = false;
+        public bool? IsTurnOnLocation { get; set; }
         public List<FavoriteEventTypes>? FavoriteEventTypes { get; set; }
         public string? Occupation { get; set; }
         public string? JobTitle { get; set; }

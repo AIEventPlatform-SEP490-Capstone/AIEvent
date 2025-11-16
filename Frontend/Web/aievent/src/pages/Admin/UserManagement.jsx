@@ -12,31 +12,49 @@ import {
   Users,
   TrendingUp,
   UserPlus,
-  Lock
+  Lock,
+  Unlock
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../../components/ui/dialog';
 import { useUserManagement } from '../../hooks/useUserManagement';
+import { userManagementAPI } from '../../api/userManagementAPI';
+import { showSuccess, showError } from '../../lib/toastUtils';
 
 const UserManagement = () => {
   
   const { 
     users, 
+    bannedUsers,
     selectedUser, 
     loading, 
     error, 
     pagination, 
+    bannedPagination,
     filters, 
+    activeTab,
     loadUsers, 
     loadUserById, 
     selectUser, 
     clearSelectedUserDetails, 
     banSelectedUser, 
+    unbanSelectedUser,
     updateUserFilters,
     refreshUsers,
-    clearUserManagementError
+    clearUserManagementError,
+    switchToActiveTab,
+    switchToBannedTab
   } = useUserManagement();
 
   const [searchTerm, setSearchTerm] = useState(filters.name || '');
@@ -45,6 +63,18 @@ const UserManagement = () => {
   
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [showUserDetail, setShowUserDetail] = useState(false);
+  
+  // State for create manager modal
+  const [isCreateManagerModalOpen, setIsCreateManagerModalOpen] = useState(false);
+  const [isCreatingManager, setIsCreatingManager] = useState(false);
+  const [newManagerData, setNewManagerData] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    phoneNumber: '',
+    address: '',
+    image: null
+  });
 
   const isInitialMount = useRef(true);
   const lastFilters = useRef({ name: '', role: 'all' });
@@ -180,6 +210,99 @@ const UserManagement = () => {
     }
   };
 
+  const handleUnbanUser = async (userId) => {
+    if (window.confirm('Are you sure you want to unban this user?')) {
+      try {
+        await unbanSelectedUser(userId);
+      } catch (err) {
+        console.error('Failed to unban user:', err);
+      }
+    }
+  };
+
+  const handleCreateManagerChange = (field, value) => {
+    setNewManagerData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setNewManagerData(prev => ({
+        ...prev,
+        image: file
+      }));
+    }
+  };
+
+  const handleCreateManager = async () => {
+    // Validate required fields
+    if (!newManagerData.fullName || !newManagerData.email || !newManagerData.password || !newManagerData.phoneNumber) {
+      showError('Please fill in all required fields');
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newManagerData.email)) {
+      showError('Please enter a valid email address');
+      return;
+    }
+
+    // Validate phone number format (simple validation)
+    const phoneRegex = /^[0-9+\-\s()]+$/;
+    if (!phoneRegex.test(newManagerData.phoneNumber)) {
+      showError('Please enter a valid phone number');
+      return;
+    }
+
+    // Validate password length
+    if (newManagerData.password.length < 8) {
+      showError('Password must be at least 8 characters long');
+      return;
+    }
+
+    setIsCreatingManager(true);
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('FullName', newManagerData.fullName);
+      formData.append('Email', newManagerData.email);
+      formData.append('Password', newManagerData.password);
+      formData.append('PhoneNumber', newManagerData.phoneNumber);
+      if (newManagerData.address) {
+        formData.append('Address', newManagerData.address);
+      }
+      if (newManagerData.image) {
+        formData.append('Image', newManagerData.image);
+      }
+
+      await userManagementAPI.createManagerAccount(formData);
+      showSuccess('Manager account created successfully');
+      
+      // Close modal and reset form
+      setIsCreateManagerModalOpen(false);
+      setNewManagerData({
+        fullName: '',
+        email: '',
+        password: '',
+        phoneNumber: '',
+        address: '',
+        image: null
+      });
+      
+      // Refresh user list
+      refreshUsers();
+    } catch (err) {
+      console.error('Failed to create manager account:', err);
+      showError(err.message || 'Failed to create manager account');
+    } finally {
+      setIsCreatingManager(false);
+    }
+  };
+
   const getStatusBadge = (status) => {
     const statusConfig = {
       active: { color: 'bg-green-100 text-green-800', label: 'Hoạt động' },
@@ -250,7 +373,15 @@ const UserManagement = () => {
     );
   };
 
-  if (loading && users.length === 0) {
+  const getCurrentUsers = () => {
+    return activeTab === 'active' ? users : bannedUsers;
+  };
+
+  const getCurrentPagination = () => {
+    return activeTab === 'active' ? pagination : bannedPagination;
+  };
+
+  if (loading && getCurrentUsers().length === 0) {
     return <div className="flex justify-center items-center h-64">Loading...</div>;
   }
 
@@ -267,10 +398,113 @@ const UserManagement = () => {
             <Shield className="w-4 h-4 mr-2" />
             Administrator
           </Badge>
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <UserPlus className="w-4 h-4 mr-2" />
-            Thêm người dùng
-          </Button>
+          <Dialog open={isCreateManagerModalOpen} onOpenChange={setIsCreateManagerModalOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <UserPlus className="w-4 h-4 mr-2" />
+                Thêm người dùng
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Create New Manager Account</DialogTitle>
+                <DialogDescription>
+                  Enter the details for the new manager account.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="fullName" className="text-right text-sm font-medium">
+                    Full Name *
+                  </label>
+                  <Input
+                    id="fullName"
+                    value={newManagerData.fullName}
+                    onChange={(e) => handleCreateManagerChange('fullName', e.target.value)}
+                    className="col-span-3"
+                    placeholder="Enter full name"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="email" className="text-right text-sm font-medium">
+                    Email *
+                  </label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={newManagerData.email}
+                    onChange={(e) => handleCreateManagerChange('email', e.target.value)}
+                    className="col-span-3"
+                    placeholder="Enter email"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="password" className="text-right text-sm font-medium">
+                    Password *
+                  </label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={newManagerData.password}
+                    onChange={(e) => handleCreateManagerChange('password', e.target.value)}
+                    className="col-span-3"
+                    placeholder="Enter password"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="phoneNumber" className="text-right text-sm font-medium">
+                    Phone *
+                  </label>
+                  <Input
+                    id="phoneNumber"
+                    value={newManagerData.phoneNumber}
+                    onChange={(e) => handleCreateManagerChange('phoneNumber', e.target.value)}
+                    className="col-span-3"
+                    placeholder="Enter phone number"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="address" className="text-right text-sm font-medium">
+                    Address
+                  </label>
+                  <Input
+                    id="address"
+                    value={newManagerData.address}
+                    onChange={(e) => handleCreateManagerChange('address', e.target.value)}
+                    className="col-span-3"
+                    placeholder="Enter address"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="image" className="text-right text-sm font-medium">
+                    Avatar
+                  </label>
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="col-span-3"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsCreateManagerModalOpen(false)}
+                  disabled={isCreatingManager}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreateManager}
+                  disabled={isCreatingManager}
+                >
+                  {isCreatingManager ? 'Creating...' : 'Create Manager'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -325,6 +559,22 @@ const UserManagement = () => {
         </Card>
       </div>
 
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 mb-6">
+        <button
+          className={`py-2 px-4 font-medium text-sm ${activeTab === 'active' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+          onClick={switchToActiveTab}
+        >
+          Người dùng hoạt động
+        </button>
+        <button
+          className={`py-2 px-4 font-medium text-sm ${activeTab === 'banned' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+          onClick={switchToBannedTab}
+        >
+          Người dùng bị cấm ({bannedPagination.totalItems || 0})
+        </button>
+      </div>
+
       {/* Filters and Search */}
       <Card className="mb-6">
         <CardContent className="p-6">
@@ -374,7 +624,9 @@ const UserManagement = () => {
       {/* Users List */}
       <Card>
         <CardHeader>
-          <CardTitle>Danh sách người dùng</CardTitle>
+          <CardTitle>
+            {activeTab === 'active' ? 'Danh sách người dùng' : 'Danh sách người dùng bị cấm'}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {error && (
@@ -384,7 +636,7 @@ const UserManagement = () => {
           )}
 
           <div className="space-y-4">
-            {users.map((user) => (
+            {getCurrentUsers().map((user) => (
               <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-muted rounded-full flex-shrink-0 flex items-center justify-center">
@@ -415,19 +667,34 @@ const UserManagement = () => {
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => handleViewUser(user.id)}>
-                    <Eye className="w-4 h-4 mr-1" />
-                    Xem
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => handleBanUser(user.id)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    title="Khóa người dùng"
-                  >
-                    <Lock className="w-4 h-4" />
-                  </Button>
+                  {activeTab === 'active' ? (
+                    <>
+                      <Button variant="outline" size="sm" onClick={() => handleViewUser(user.id)}>
+                        <Eye className="w-4 h-4 mr-1" />
+                        Xem
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleBanUser(user.id)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Khóa người dùng"
+                      >
+                        <Lock className="w-4 h-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleUnbanUser(user.id)}
+                      className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                      title="Mở khóa người dùng"
+                    >
+                      <Unlock className="w-4 h-4 mr-1" />
+                      Mở khóa
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm">
                     <MoreHorizontal className="w-4 h-4" />
                   </Button>
@@ -436,12 +703,16 @@ const UserManagement = () => {
             ))}
           </div>
 
-          {users.length === 0 && !loading && (
+          {getCurrentUsers().length === 0 && !loading && (
             <div className="text-center py-12">
               <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-2 text-sm font-medium">Không tìm thấy người dùng</h3>
+              <h3 className="mt-2 text-sm font-medium">
+                {activeTab === 'active' ? 'Không tìm thấy người dùng' : 'Không có người dùng bị cấm'}
+              </h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.
+                {activeTab === 'active' 
+                  ? 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.' 
+                  : 'Tất cả người dùng đều đang hoạt động bình thường.'}
               </p>
             </div>
           )}
@@ -449,18 +720,18 @@ const UserManagement = () => {
           {/* Pagination */}
           <div className="flex items-center justify-between mt-6">
             <div className="text-sm text-muted-foreground">
-              Hiển thị {(pagination.currentPage - 1) * pagination.pageSize + 1} đến {Math.min(pagination.currentPage * pagination.pageSize, pagination.totalItems)} trong tổng số {pagination.totalItems}
+              Hiển thị {(getCurrentPagination().currentPage - 1) * getCurrentPagination().pageSize + 1} đến {Math.min(getCurrentPagination().currentPage * getCurrentPagination().pageSize, getCurrentPagination().totalItems)} trong tổng số {getCurrentPagination().totalItems}
             </div>
             <div className="flex space-x-2">
               <Button
                 onClick={() => loadUsers(
-                  Math.max(pagination.currentPage - 1, 1),
-                  pagination.pageSize,
+                  Math.max(getCurrentPagination().currentPage - 1, 1),
+                  getCurrentPagination().pageSize,
                   filters.email,
                   filters.name,
                   filters.role
                 )}
-                disabled={pagination.currentPage === 1}
+                disabled={getCurrentPagination().currentPage === 1}
                 variant="outline"
                 size="sm"
               >
@@ -468,13 +739,13 @@ const UserManagement = () => {
               </Button>
               <Button
                 onClick={() => loadUsers(
-                  Math.min(pagination.currentPage + 1, pagination.totalPages),
-                  pagination.pageSize,
+                  Math.min(getCurrentPagination().currentPage + 1, getCurrentPagination().totalPages),
+                  getCurrentPagination().pageSize,
                   filters.email,
                   filters.name,
                   filters.role
                 )}
-                disabled={pagination.currentPage === pagination.totalPages}
+                disabled={getCurrentPagination().currentPage === getCurrentPagination().totalPages}
                 variant="outline"
                 size="sm"
               >

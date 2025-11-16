@@ -2,12 +2,14 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
+using AIEvent.Application.DTOs.InviteFriend;
 using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PayOS.Models;
 
 namespace AIEvent.API.Controllers
 {
@@ -16,9 +18,11 @@ namespace AIEvent.API.Controllers
     public class EventController : ControllerBase
     {
         private readonly IEventService _eventService;
-        public EventController(IEventService eventService)
+        private readonly IEventInvitationService _invitationService;
+        public EventController(IEventService eventService, IEventInvitationService invitationService)
         {
             _eventService = eventService;
+            _invitationService = invitationService;
         }
 
         [HttpGet("{id}")]
@@ -108,7 +112,7 @@ namespace AIEvent.API.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin, Organizer, Manager")]
-        public async Task<ActionResult<SuccessResponse<object>>> CreateEvent([FromForm] CreateEventRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> CreateEvent([FromBody] CreateEventRequest request)
         {
             Guid organizerId = User.GetRequiredOrganizerId();
             var result = await _eventService.CreateEventAsync(organizerId, request);
@@ -203,12 +207,61 @@ namespace AIEvent.API.Controllers
                 "Confirm event successfully"));
         }
 
-        [HttpPost("request-end")]
-        [Authorize(Roles = "Admin,Manager,Organizer")]
-        public async Task<ActionResult<SuccessResponse<object>>> RequestEndEvent(CompleteEventRequest request)
+        [HttpPost("{eventId}/invite-friends")]
+        [Authorize]
+        public async Task<ActionResult<SuccessResponse<object>>> InviteFriends(Guid eventId, [FromBody] InviteFriendRequest request)
         {
             var userId = User.GetRequiredUserId();
-            var result = await _eventService.RequestEndEventAsync(userId, request);
+
+            var result = await _invitationService.InviteFriendsAsync(eventId, userId, request);
+
+            if (!result.IsSuccess)
+                return BadRequest(result.Error!);
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Success,
+                "Invite friends successfully"));
+        }
+
+        [HttpPut("invitations/{invitationId}/confirm")]
+        [Authorize]
+        public async Task<ActionResult<SuccessResponse<object>>> ConfirmInvitation(Guid invitationId, [FromBody] ConfirmInvitationRequest request)
+        {
+            var userId = User.GetRequiredUserId();
+
+            var result = await _invitationService.ConfirmInvitationAsync(invitationId, userId, request);
+
+            if (!result.IsSuccess)
+                return BadRequest(result.Error!);
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Success,
+                "Confirm invite successfully"));
+        }
+
+        [HttpGet("invitations-status")]
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<BasePaginated<InviteFriendResponse>>>> GetSentInvitations([FromQuery] InvitationStatus? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _invitationService.GetInviteFriendsByStatusAsync(userId, status, page, pageSize);
+            if (!result.IsSuccess)
+                return BadRequest(result.Error!);
+
+            return Ok(SuccessResponse<object>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Get invitations infor successfully"));
+        }
+
+        [HttpPost("report")]
+        [Authorize(Roles = "User")]
+        public async Task<ActionResult<SuccessResponse<object>>> ReportEvent([FromQuery] ReportEventRequest request)
+        {
+            Guid userId = User.GetRequiredUserId();
+            var result = await _eventService.ReportEventAsyncs(userId, request);
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
@@ -217,63 +270,99 @@ namespace AIEvent.API.Controllers
             return Ok(SuccessResponse<object>.SuccessResult(
                 new { },
                 SuccessCodes.Created,
-                "Request end event successfully"));
+                "Report Event successfully"));
         }
 
-        [HttpPatch("confirm-end-event")]
-        [Authorize(Roles = "Admin,Manager")]
-        public async Task<ActionResult<SuccessResponse<object>>> ConfirmEndEvent(ApproveEndEventRequest request)
+        [HttpGet("{id}/report")]
+        [Authorize(Roles = "Admin, Manager, Organizer")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<ListReportResponse>>>> GetListReportEvent(string id,
+                                                                                                          [FromQuery] EventReportType? type = null,
+                                                                                                          [FromQuery] int pageNumber = 1,
+                                                                                                          [FromQuery] int pageSize = 10)
         {
-            var result = await _eventService.ConfirmEndEventAsync(request);
+            var result = await _eventService.GetAllReportByEventId(pageNumber, pageSize, id, type);
+
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
+
+            return Ok(SuccessResponse<BasePaginated<ListReportResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "ReportEvent retrieved successfully"));
+        }
+
+        [HttpGet("report/{id}")]
+        [Authorize(Roles = "Admin, Manager, Organizer")]
+        public async Task<ActionResult<SuccessResponse<ReportResponse>>> GetEventReport(string id)
+        {
+            var result = await _eventService.GetEventReportDetailAsync(id);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<ReportResponse>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "ReportEvent retrieved successfully"));
+        }
+
+        [HttpPatch("report/{id}/reply")]
+        [Authorize(Roles = "Admin, Manager, Organizer")]
+        public async Task<ActionResult<SuccessResponse<object>>> ReplyReport(string id, [FromQuery] ReplyReportRequest request)
+        {
+            var result = await _eventService.ReplyReportAsync(id, request);
+
+            if (!result.IsSuccess)
+                return BadRequest(result.Error!);
 
             return Ok(SuccessResponse<object>.SuccessResult(
                 new { },
                 SuccessCodes.Success,
-                "End event successfully"));
+                "Reply successfully"));
         }
 
-        [HttpGet("request-end/{endEventRequestId}")]
-        [Authorize(Roles = "Admin,Manager,Organizer")]
-        public async Task<ActionResult<SuccessResponse<EndEventReview>>> GetEndEventRequestById(Guid endEventRequestId)
+        [HttpGet("{id}/report/user")]
+        [Authorize(Roles = "User")]
+        public async Task<ActionResult<SuccessResponse<ReportResponse>>> GetEventReportOfUser(string id)
         {
-            var result = await _eventService.GetEndEventRequestByIdAsync(endEventRequestId);
+            var userId = User.GetRequiredUserId();
+            var result = await _eventService.GetEventReportOfUserAsync(userId, id);
+
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
 
-            return Ok(SuccessResponse<EndEventReview>.SuccessResult(
+            return Ok(SuccessResponse<ReportResponse>.SuccessResult(
                 result.Value!,
                 SuccessCodes.Success,
-                "Get end event request successfully"));
+                "ReportEvent retrieved successfully"));
         }
 
-        [HttpGet("request-end")]
-        [Authorize(Roles = "Admin,Manager,Organizer")]
-        public async Task<ActionResult<SuccessResponse<BasePaginated<EndEventReviews>>>> GetEndEventRequest([FromQuery] Guid? eventId,
-                                                                                                            [FromQuery] EndEventStatus? status = null,
-                                                                                                            [FromQuery] int pageNumber = 1,
-                                                                                                            [FromQuery] int pageSize = 10)
+        [HttpGet("/staff")]
+        [Authorize(Roles = "Staff")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<ListEventResponse>>>> GetListEventForStaff(
+                                                                                                          [FromQuery] string? title,
+                                                                                                          [FromQuery] string? categoryId,
+                                                                                                          [FromQuery] int pageNumber = 1,
+                                                                                                          [FromQuery] int pageSize = 10)
         {
-            Guid organizerId = Guid.Empty;
-            if (User.IsInRole("Organizer"))
-            {
-                organizerId = User.GetRequiredOrganizerId();
-            }
-            var result = await _eventService.GetEndEventRequestsAsync(organizerId, eventId, status, pageNumber, pageSize);
+            var userId = User.GetRequiredUserId();
+            var result = await _eventService.GetAllEventForStaff(userId, title, categoryId, pageNumber, pageSize);
+
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
 
-            return Ok(SuccessResponse<BasePaginated<EndEventReviews>>.SuccessResult(
+            return Ok(SuccessResponse<BasePaginated<ListEventResponse>>.SuccessResult(
                 result.Value!,
                 SuccessCodes.Success,
-                "Get list end event request successfully"));
+                "Event retrieved successfully"));
         }
     }
 }

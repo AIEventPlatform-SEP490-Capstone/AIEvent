@@ -3,7 +3,6 @@ using AIEvent.Application.DTOs.Event;
 using AIEvent.Application.DTOs.Ticket;
 using AIEvent.Application.Helpers;
 using AIEvent.Domain.Bases;
-using AIEvent.Domain.Enums;
 
 namespace AIEvent.Application.Services.Interfaces
 {
@@ -17,8 +16,7 @@ namespace AIEvent.Application.Services.Interfaces
             string? title,
             DateTime? startTime,
             DateTime? endTime);
-        Task<Result<BasePaginated<TicketByEventResponse>>> GetTicketsByEventAsync(Guid userId, string eventId, int pageNumber, int pageSize);
-        Task<Result<QrResponse>> GetQrCodeAsync(Guid userId, string id);
-        Task<Result<CheckInResponse>> CheckInTicketAsync(string qrContent);
+        Task<Result<List<TicketByEventResponse>>> GetTicketsByEventAsync(Guid userId, string id);
+        Task<Result<CheckInResponse>> CheckInTicketAsync(Guid userId, string qrContent);
     }
 }

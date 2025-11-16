@@ -1,36 +1,36 @@
-import { StyleSheet, Dimensions, Platform } from 'react-native';
+import {StyleSheet, Dimensions, Platform} from 'react-native';
 import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
 
-const { width, height } = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
 
-const styles = StyleSheet.create({
+export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: Colors.background,
   },
-  
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F7FA',
+    backgroundColor: Colors.background,
   },
-  
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F7FA',
+    backgroundColor: Colors.background,
     padding: 20,
   },
-  
+
   // Premium Image section
   imageContainer: {
+    width: '100%',
+    height: height * 0.4,
     position: 'relative',
     height: height * 0.45,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: {width: 0, height: 8},
     shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 10,
@@ -41,17 +41,12 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
   imageOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 100,
-    background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Reduced opacity from 0.8 to 0.3
   },
   backButton: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 50,
+    top: 50,
     left: 20,
     width: 48,
     height: 48,
@@ -60,7 +55,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 8,
@@ -68,9 +63,23 @@ const styles = StyleSheet.create({
   backIcon: {
     width: 24,
     height: 24,
-    tintColor: Colors.primary,
+    tintColor: Colors.white,
   },
-  
+  qrButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 20,
+    padding: 10,
+  },
+  qrIcon: {
+    width: 24,
+    height: 24,
+    tintColor: Colors.white,
+  },
+
   // Premium Content
   content: {
     padding: 24,
@@ -80,50 +89,117 @@ const styles = StyleSheet.create({
     marginTop: -32,
     minHeight: height * 0.65,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -8 },
+    shadowOffset: {width: 0, height: -8},
     shadowOpacity: 0.1,
     shadowRadius: 16,
     elevation: 10,
   },
-  
+
   // Title section
   titleSection: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
-    backgroundColor: '#FFF8E1',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 16,
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: '#FFE082',
   },
   starIcon: {
-    width: 20,
-    height: 20,
+    width: 16,
+    height: 16,
+    marginRight: 4,
     tintColor: Colors.warning,
-    marginRight: 8,
   },
-  
+
   // Premium Price badge
   priceBadge: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 22,
-    paddingVertical: 12,
-    borderRadius: 20,
     alignSelf: 'flex-start',
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 20,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  statBox: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statValue: {
+    fontSize: Fonts.lg,
+    fontWeight: '700',
+    fontFamily: Fonts.bold,
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: Fonts.sm,
+    color: Colors.textSecondary,
+    fontFamily: Fonts.medium,
+  },
+  // Organizer section
+  organizerSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  organizerAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  organizerAvatarText: {
+    fontSize: Fonts.md,
+    fontWeight: '700',
+    fontFamily: Fonts.bold,
+  },
+  organizerInfo: {
+    flex: 1,
+  },
+  organizerName: {
+    fontSize: Fonts.md,
+    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
+    marginBottom: 2,
+  },
+  organizerEvents: {
+    fontSize: Fonts.sm,
+    color: Colors.textSecondary,
+    fontFamily: Fonts.regular,
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 24,
+  },
+  tag: {
+    backgroundColor: Colors.tagBackground,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  tagText: {
+    fontSize: Fonts.xs,
+    fontFamily: Fonts.medium,
+  },
+  programSection: {
+    marginBottom: 24,
     marginBottom: 24,
     shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: {width: 0, height: 6},
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 8,
   },
-  
+
   // Premium Details section
   detailsSection: {
     marginBottom: 28,
@@ -134,33 +210,91 @@ const styles = StyleSheet.create({
     borderColor: '#F0F3F7',
   },
   sectionTitle: {
-    marginBottom: 20,
-    fontSize: 22,
+    fontSize: Fonts.lg,
+    fontWeight: '700',
     fontFamily: Fonts.bold,
-    fontWeight: '800',
-    color: Colors.textPrimary,
-    letterSpacing: 0.5,
+    marginBottom: 16,
+  },
+  programItem: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  programTime: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  programTimeText: {
+    fontSize: Fonts.sm,
+    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
+  },
+  programContent: {
+    flex: 1,
+  },
+  programTitle: {
+    fontSize: Fonts.md,
+    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
+    marginBottom: 4,
+  },
+  programDescription: {
+    fontSize: Fonts.sm,
+    color: Colors.textSecondary,
+    fontFamily: Fonts.regular,
+    lineHeight: 18,
+  },
+  benefitsSection: {
+    marginBottom: 24,
+  },
+  benefitsTitle: {
+    fontSize: Fonts.lg,
+    fontWeight: '700',
+    fontFamily: Fonts.bold,
+    marginBottom: 16,
+  },
+  benefitItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  benefitIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 12,
+    tintColor: Colors.primary,
+  },
+  benefitText: {
+    fontSize: Fonts.md,
+    fontFamily: Fonts.regular,
+    flex: 1,
+  },
+  detailsSection: {
+    marginBottom: 24,
   },
   detailRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 18,
-    paddingVertical: 12,
-    paddingHorizontal: 4,
+    marginBottom: 16,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F3F7',
+    borderBottomColor: Colors.border,
   },
   detailIcon: {
-    width: 28,
-    height: 28,
+    width: 20,
+    height: 20,
+    marginRight: 12,
     tintColor: Colors.primary,
-    marginRight: 16,
     marginTop: 2,
   },
   detailInfo: {
     flex: 1,
   },
-  
+
   // Ticket information styles
   ticketRow: {
     flexDirection: 'row',
@@ -168,57 +302,109 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     paddingHorizontal: 16,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#F0F3F7',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
   ticketRowUnavailable: {
-    backgroundColor: '#F8F9FA',
-    opacity: 0.7,
+    opacity: 0.6,
   },
   ticketInfo: {
     flex: 1,
-    marginRight: 12,
   },
   ticketName: {
-    fontSize: 16,
-    fontFamily: Fonts.semiBold,
+    fontSize: Fonts.md,
     fontWeight: '600',
-    color: Colors.textPrimary,
+    fontFamily: Fonts.semiBold,
     marginBottom: 4,
   },
   ticketDescription: {
-    fontSize: 14,
-    fontFamily: Fonts.regular,
+    fontSize: Fonts.sm,
     color: Colors.textSecondary,
+    fontFamily: Fonts.regular,
     marginBottom: 8,
   },
   ticketStats: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
   },
   ticketStat: {
-    fontSize: 12,
-    fontFamily: Fonts.medium,
+    fontSize: Fonts.xs,
     color: Colors.textSecondary,
+    fontFamily: Fonts.regular,
+    marginRight: 12,
   },
   ticketPriceContainer: {
     alignItems: 'flex-end',
   },
   ticketPrice: {
-    fontSize: 18,
-    fontFamily: Fonts.bold,
+    fontSize: Fonts.md,
     fontWeight: '700',
+    fontFamily: Fonts.bold,
+  },
+  descriptionSection: {
+    marginBottom: 24,
+  },
+  relatedEventsSection: {
+    marginBottom: 24,
+  },
+  relatedEventCard: {
+    flexDirection: 'row',
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+  relatedEventImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  relatedEventInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  relatedEventTitle: {
+    fontSize: Fonts.md,
+    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
+    marginBottom: 4,
+  },
+  relatedEventDate: {
+    fontSize: Fonts.sm,
+    color: Colors.textSecondary,
+    fontFamily: Fonts.regular,
+    marginBottom: 4,
+  },
+  relatedEventPrice: {
+    fontSize: Fonts.sm,
+    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
     color: Colors.primary,
   },
-  
+  shareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingVertical: 16,
+    marginBottom: 24,
+  },
+  shareButtonText: {
+    fontSize: Fonts.md,
+    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
+    marginLeft: 8,
+  },
+
   // Description section
   descriptionSection: {
     marginBottom: 32,
@@ -228,7 +414,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#F0F3F7',
   },
-  
+
   // Premium Actions section
   actionsSection: {
     marginBottom: 24,
@@ -238,7 +424,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 18,
     shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: {width: 0, height: 6},
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 8,
@@ -246,15 +432,74 @@ const styles = StyleSheet.create({
   secondaryActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
   },
   actionButton: {
     flex: 1,
-    borderRadius: 16,
-    paddingVertical: 14,
-    borderWidth: 2,
-    borderColor: Colors.primary,
+    marginHorizontal: 8,
+  },
+
+  shareOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+
+  shareBackdrop: {
+    flex: 1,
+  },
+
+  shareContainer: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 40,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: -3},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 10,
+  },
+
+  shareHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+
+  closeIcon: {
+    width: 24,
+    height: 24,
+    tintColor: Colors.secondary,
+  },
+
+  shareGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+
+  shareGridItem: {
+    width: '30%',
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+
+  shareGridIcon: {
+    width: 50,
+    height: 50,
+    marginBottom: 8,
+  },
+
+  shareGridText: {
+    textAlign: 'center',
+    fontSize: 12,
   },
 });
 
-export { styles };
+export default styles;

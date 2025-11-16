@@ -12,6 +12,9 @@ import organizersReducer from "./slices/organizersSlice";
 import userManagementReducer from "./slices/userManagementSlice";
 import favoriteEventsReducer from "./slices/favoriteEventsSlice";
 import endEventRequestsReducer from "./slices/endEventRequestsSlice";
+import ratingsReducer from "./slices/ratingsSlice";
+import staffManagementReducer from "./slices/staffManageSlice";
+import notificationsReducer from "./slices/notificationsSlice";
 
 export const store = configureStore({
   reducer: {
@@ -28,6 +31,9 @@ export const store = configureStore({
     userManagement: userManagementReducer,
     favoriteEvents: favoriteEventsReducer,
     endEventRequests: endEventRequestsReducer,
+    ratings: ratingsReducer,
+    staffManagement: staffManagementReducer,
+    notifications: notificationsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

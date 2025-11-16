@@ -23,13 +23,11 @@ namespace AIEvent.Application.DTOs.Auth
         [Phone(ErrorMessage = "Invalid phone number format")]
         public string? PhoneNumber { get; set; }
         public List<UserInterest>? UserInterests { get; set; }
-        public List<InterestedDistricts>? InterestedCities { get; set; }
+        public List<InterestedDistricts>? InterestedDistricts { get; set; }
         [Range(1, 4, ErrorMessage = "The field ParticipationFrequency must be between 1 and 4")]
         public ParticipationFrequency ParticipationFrequency { get; set; }
         [Range(0, 3, ErrorMessage = "The field BudgetOption must be between 0 and 3")]
         public BudgetOption BudgetOption { get; set; }
-        public bool? IsEmailNotificationEnabled { get; set; } = false;
-        public bool? IsPushNotificationEnabled { get; set; } = false;
-        public bool? IsSmsNotificationEnabled { get; set; } = false;
+        public bool? IsEmailNotificationEnabled { get; set; } = false;  
     }
 }

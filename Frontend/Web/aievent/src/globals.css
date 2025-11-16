@@ -18,8 +18,8 @@
   --secondary-foreground: #475569;
   --muted: #f8fafc;
   --muted-foreground: #64748b;
-  --accent: #8b5cf6; /* violet-500 */
-  --accent-foreground: #ffffff;
+  --accent: #6f8af6; /* violet-500 */
+  --accent-foreground: #1e293b;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   --border: #e2e8f0;
@@ -161,6 +161,16 @@
   p {
     @apply text-pretty leading-relaxed mb-4;
   }
+
+  /* Hide scrollbar for sidebar */
+  [data-slot="sidebar-content"] {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+
+  [data-slot="sidebar-content"]::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
 }
 
 /* Custom animations for AIEvent */
@@ -217,4 +227,33 @@
 
 .animation-delay-4000 {
   animation-delay: 4s;
+}
+
+/* Gradient animation for AI Recommendation Card */
+@keyframes gradient-x {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 3s ease infinite;
+}
+
+/* Bounce slow animation for robot icon */
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3s ease-in-out infinite;
 }

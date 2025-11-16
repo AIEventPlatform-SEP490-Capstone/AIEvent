@@ -8,6 +8,6 @@ namespace AIEvent.Application.DTOs.User
         [EmailAddress(ErrorMessage = "Invalid email format")]
         public required string Email { get; set; }
         [Required]
-        public required string OTPCode { get; set; }
+        public required string OTPCode { get; set; } 
     }
 }

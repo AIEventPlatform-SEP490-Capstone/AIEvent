@@ -1,5 +1,6 @@
 ﻿using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
+using AIEvent.Application.DTOs.Notification;
 using AIEvent.Application.DTOs.Organizer;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
@@ -24,8 +25,9 @@ namespace AIEvent.Application.Services.Implements
         private readonly ICloudinaryService _cloudinaryService;
         private readonly IEmailService _emailService;
         private readonly IHasherHelper _hasherHelper;
+        private readonly INotificationService _notificationService;
         public OrganizerService(IUnitOfWork unitOfWork, IMapper mapper, 
-            ITransactionHelper transactionHelper, ICloudinaryService cloudinaryService, IEmailService emailService, IHasherHelper hasherHelper)
+            ITransactionHelper transactionHelper, ICloudinaryService cloudinaryService, IEmailService emailService, IHasherHelper hasherHelper, INotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
@@ -33,6 +35,7 @@ namespace AIEvent.Application.Services.Implements
             _cloudinaryService = cloudinaryService;
             _emailService = emailService;
             _hasherHelper = hasherHelper;
+            _notificationService = notificationService;
         }
 
         public async Task<Result> RegisterOrganizerAsync(Guid userId,RegisterOrganizerRequest request)
@@ -90,11 +93,33 @@ namespace AIEvent.Application.Services.Implements
             organizer.ImgFrontIdentity = results[2];
             organizer.ImgBusinessLicense = results[3];
 
-            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+            var result = await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
                 await _unitOfWork.OrganizerProfileRepository.AddAsync(organizer);
                 return Result.Success();
             });
+
+            if (result.IsSuccess)
+            {
+                var managerRole = await _unitOfWork.RoleRepository
+                    .Query()
+                    .FirstOrDefaultAsync(r => r.Name == "Manager" && !r.IsDeleted);
+
+                if (managerRole != null)
+                {
+                    var notificationRequest = new CreateNotificationToAllRequest
+                    {
+                        Title = "Yêu cầu phê duyệt đăng ký Organizer",
+                        Message = $"Có một yêu cầu đăng ký Organizer mới từ {organizer.ContactName ?? organizer.CompanyName ?? "Người dùng"} cần được phê duyệt.",
+                        Type = NotificationType.OrganizerRegistrationPending, 
+                        TargetRoles = new List<Guid> { managerRole.Id }
+                    };
+
+                    await _notificationService.CreateNotificationToAllAsync(notificationRequest);
+                }
+            }
+
+            return result;
         }
 
         public async Task<Result<OrganizerDetailResponse>> GetOrganizerByIdAsync(Guid id)
@@ -171,7 +196,6 @@ namespace AIEvent.Application.Services.Implements
                     if (userRegister != null && userRegister.Email?.ToLower() == profile.ContactEmail?.ToLower())
                     {
                         userRegister.RoleId = role.Id;
-                        userRegister.LinkedUserId = profile.UserId;
                         await _unitOfWork.UserRepository.UpdateAsync(userRegister);
                         var sb = new StringBuilder()
                             .AppendLine($"<p>Xin chào {profile.ContactName},</p>")
@@ -195,7 +219,6 @@ namespace AIEvent.Application.Services.Implements
                             RoleId = role.Id,
                             District = profile.Address,
                             IsActive = true,
-                            LinkedUserId = profile.UserId,
                             PhoneNumber = profile.ContactPhone,
                             Wallet = new Wallet
                             {
@@ -205,6 +228,8 @@ namespace AIEvent.Application.Services.Implements
                         var plainPassword = GenerateSecureRandomPassword();
                         newOrganizerUser.PasswordHash = _hasherHelper.Hash(plainPassword);
                         await _unitOfWork.UserRepository.AddAsync(newOrganizerUser);
+                        await _unitOfWork.SaveChangesAsync();
+                        profile.UserId = newOrganizerUser.Id;
 
                         var sb = new StringBuilder()
                             .AppendLine($"<p>Xin chào {profile.ContactName},</p>")
@@ -252,6 +277,25 @@ namespace AIEvent.Application.Services.Implements
             var emailResult = await _emailService.SendEmailAsync(profile.ContactEmail, msg);
             if (!emailResult.IsSuccess)
                 return ErrorResponse.FailureResult("Failed to send rejection email", ErrorCodes.InternalServerError);
+
+            if (result.IsSuccess)
+            {
+                 var notificationRequest = new CreateNotificationRequest
+                    {
+                        UserId = Guid.Parse(profile.CreatedBy!),
+                        Title = request.Status == ConfirmStatus.Approved 
+                            ? "Đăng ký Organizer đã được chấp thuận" 
+                            : "Đăng ký Organizer đã bị từ chối",
+                        Message = request.Status == ConfirmStatus.Approved
+                            ? $"Hồ sơ đăng ký tổ chức của bạn <strong>{profile.CompanyName ?? profile.ContactName}</strong> đã được <b>chấp thuận</b>. Tài khoản của bạn đã trở thành nhà tổ chức."
+                            : $"Hồ sơ đăng ký tổ chức của bạn <strong>{profile.CompanyName ?? profile.ContactName}</strong> đã <b>không được phê duyệt</b>.{(string.IsNullOrEmpty(request.Reason) ? "" : $" Lý do: {request.Reason}")}",
+                        Type = request.Status == ConfirmStatus.Approved 
+                            ? NotificationType.OrganizerApproved 
+                            : NotificationType.OrganizerRejected
+                    };
+
+                    await _notificationService.CreateNotificationAsync(notificationRequest);
+            }
 
             return Result.Success();
         }

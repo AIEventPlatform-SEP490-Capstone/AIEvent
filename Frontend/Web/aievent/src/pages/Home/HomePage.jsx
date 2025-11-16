@@ -1,14 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { Hero } from "../../components/hero";
-import { EventDiscovery } from "../../components/event-discovery";
+import { Hero } from "../../components/HomePage/hero";
+import { EventDiscovery } from "../../components/HomePage/event-discovery";
+import { AIRecommendationCard } from "../../components/HomePage/AIRecommendationCard";
+import ModernAIChat from "../../components/HomePage/ModernAIChat";
 import { PATH } from "../../routes/path";
 import LoadingSpinner from "../../components/LoadingSpinner/LoadingSpinner";
 import { Footer } from "../../components/Footer/Footer";
 import { useHomepageEvents } from "../../hooks/useHomepageEvents";
-import { AIRecommendationWidget } from "./AIRecommendationWidget";
-import { SmartNotifications } from "./SmartNotifications";
+import { useUserProfile } from "../../hooks/userProfile";
+import { eventAPI } from "../../api/eventAPI";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -16,8 +18,61 @@ const HomePage = () => {
     (state) => state.auth
   );
 
-  const { allEvents, recommendedEvents, loading, error, refreshEvents } =
-    useHomepageEvents();
+  const { 
+    allEvents, 
+    recommendedEvents, 
+    loading, 
+    error, 
+    refreshEvents,
+    currentPage,
+    totalPages,
+    goToPage
+  } = useHomepageEvents();
+  
+  const { profile, getUserProfile } = useUserProfile();
+  
+  const [aiRecommendedEvents, setAiRecommendedEvents] = useState([]);
+  const [loadingAIEvents, setLoadingAIEvents] = useState(false);
+  const [showAIEvents, setShowAIEvents] = useState(false);
+
+  // Load user profile when authenticated
+  useEffect(() => {
+    if (isAuthenticated && !profile) {
+      getUserProfile();
+    }
+  }, [isAuthenticated, profile, getUserProfile]);
+
+  // Handle view all AI recommendations
+  const handleViewAllAIRecommendations = async () => {
+    if (showAIEvents && aiRecommendedEvents.length > 0) {
+      // If already loaded, just scroll
+      const element = document.getElementById('ai-recommended-events-section');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      return;
+    }
+
+    try {
+      setLoadingAIEvents(true);
+      const response = await eventAPI.getAIRecommendedEvents(1, 5);
+      const events = response?.items || response || [];
+      setAiRecommendedEvents(events);
+      setShowAIEvents(true);
+      
+      // Scroll to section after a short delay to ensure DOM is updated
+      setTimeout(() => {
+        const element = document.getElementById('ai-recommended-events-section');
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    } catch (err) {
+      console.error("Error loading AI recommended events:", err);
+    } finally {
+      setLoadingAIEvents(false);
+    }
+  };
 
   useEffect(() => {
     // Chỉ redirect khi đã khởi tạo xong, đã xác thực và có user data
@@ -70,27 +125,28 @@ const HomePage = () => {
       <Hero />
 
       <div className="container mx-auto px-4 py-12 max-w-7xl">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
-          <div className="lg:col-span-3">
-            <EventDiscovery
-              allEvents={allEvents}
-              recommendedEvents={recommendedEvents}
-              loading={loading}
-              error={error}
-              onRefresh={refreshEvents}
-            />
-          </div>
-
-          <div className="space-y-6">
-            {/* AI Recommendation Widget */}
-            <AIRecommendationWidget />
-
-            {/* Smart Notifications */}
-            <SmartNotifications />
-          </div>
-        </div>
+        {isAuthenticated && recommendedEvents.length > 0 && (
+          <AIRecommendationCard 
+            recommendedEvents={recommendedEvents}
+            userProfile={profile}
+            onViewAll={handleViewAllAIRecommendations}
+            isLoadingAIEvents={loadingAIEvents}
+          />
+        )}
+        <EventDiscovery
+          allEvents={allEvents}
+          recommendedEvents={showAIEvents ? aiRecommendedEvents : recommendedEvents}
+          loading={loading}
+          error={error}
+          onRefresh={refreshEvents}
+          showAIRecommendedSection={showAIEvents}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={goToPage}
+        />
       </div>
       <Footer />
+      <ModernAIChat />
     </div>
   );
 };
