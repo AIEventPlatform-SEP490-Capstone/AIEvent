@@ -415,9 +415,7 @@ namespace AIEvent.Application.Services.Implements
             return Result<SystemSettingResponse>.Success(request);
         }
 
-        public async Task<Result<AdminDashboardResponse>> GetAdminDashboardAsync(int pendingEventsPageNumber = 1, int pendingEventsPageSize = 10, 
-                                                                                 int pendingOrganizersPageNumber = 1, int pendingOrganizersPageSize = 10,
-                                                                                 int newUsersPageNumber = 1, int newUsersPageSize = 10)
+        public async Task<Result<AdminDashboardResponse>> GetAdminDashboardAsync()
         {
             try
             {
@@ -462,13 +460,6 @@ namespace AIEvent.Application.Services.Implements
                     response.MonthlyUserGrowthPercentage = 100;
                 else
                     response.MonthlyUserGrowthPercentage = 0;
- 
-                var organizerRoleId = await _unitOfWork.RoleRepository
-                    .Query()
-                    .AsNoTracking()
-                    .Where(r => r.Name == "Organizer" && !r.IsDeleted)
-                    .Select(r => r.Id)
-                    .FirstOrDefaultAsync();
                  
                 response.TotalOrganizers = await _unitOfWork.OrganizerProfileRepository
                     .Query()
@@ -487,82 +478,102 @@ namespace AIEvent.Application.Services.Implements
                     .AsNoTracking()
                     .Where(e => !e.IsDeleted && e.Status == EventStatus.PendingApproval && e.Publish == true)
                     .CountAsync();
- 
+
+                response.CancelledEventsCount = await _unitOfWork.EventRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(e => e.Status == EventStatus.Cancelled)
+                    .CountAsync();
+
                 response.PendingOrganizerRequestsCount = await _unitOfWork.OrganizerProfileRepository
                     .Query()
                     .AsNoTracking()
                     .Where(o => !o.IsDeleted && o.Status == OrganizerProfileStatus.Pending)
                     .CountAsync();
  
-                var pendingEventsQuery = _unitOfWork.EventRepository
+                var todayStart = new DateTimeOffset(now.Year, now.Month, now.Day, 0, 0, 0, TimeSpan.Zero);
+                var todayEnd = todayStart.AddDays(1).AddTicks(-1);
+
+                response.TotalBookings = await _unitOfWork.BookingRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(e => !e.IsDeleted && e.Status == EventStatus.PendingApproval && e.Publish == true);
+                    .Where(b => !b.IsDeleted)
+                    .CountAsync();
 
-                var pendingEventsTotalCount = await pendingEventsQuery.CountAsync();
+                response.BookingsToday = await _unitOfWork.BookingRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(b => !b.IsDeleted && b.CreatedAt >= todayStart && b.CreatedAt <= todayEnd)
+                    .CountAsync();
 
-                var pendingEventsList = await pendingEventsQuery
-                    .OrderByDescending(e => e.CreatedAt)
-                    .Skip((pendingEventsPageNumber - 1) * pendingEventsPageSize)
-                    .Take(pendingEventsPageSize)
-                    .Select(e => new PendingEventResponse
-                    {
-                        EventId = e.Id,
-                        Title = e.Title,
-                        CreatedAt = e.CreatedAt,
-                        EventImg = !string.IsNullOrEmpty(e.ImgListEvent) ? e.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() : string.Empty
-                    })
-                    .ToListAsync();
+                response.CompletedBookings = await _unitOfWork.BookingRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(b => !b.IsDeleted && b.Status == BookingStatus.Completed)
+                    .CountAsync();
 
-                response.PendingEvents = new BasePaginated<PendingEventResponse>(pendingEventsList, pendingEventsTotalCount, pendingEventsPageNumber, pendingEventsPageSize);
+                response.PendingBookings = await _unitOfWork.BookingRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(b => !b.IsDeleted && b.Status == BookingStatus.Pending)
+                    .CountAsync();
+
+                response.CancelledBookings = await _unitOfWork.BookingRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(b => !b.IsDeleted && b.Status == BookingStatus.Cancelled)
+                    .CountAsync();
  
-                var pendingOrganizersQuery = _unitOfWork.OrganizerProfileRepository
+                response.TotalTicketsSold = await _unitOfWork.TicketRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(o => !o.IsDeleted && o.Status == OrganizerProfileStatus.Pending);
+                    .Where(t => !t.IsDeleted && t.Status != TicketStatus.Refunded && t.Status != TicketStatus.Cancelled)
+                    .CountAsync();
 
-                var pendingOrganizersTotalCount = await pendingOrganizersQuery.CountAsync();
+                response.TicketsSoldToday = await _unitOfWork.TicketRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(t => !t.IsDeleted && 
+                               t.Status != TicketStatus.Refunded && 
+                               t.Status != TicketStatus.Cancelled &&
+                               t.CreatedAt >= todayStart && 
+                               t.CreatedAt <= todayEnd)
+                    .CountAsync();
 
-                var pendingOrganizersList = await pendingOrganizersQuery
-                    .OrderByDescending(o => o.CreatedAt)
-                    .Skip((pendingOrganizersPageNumber - 1) * pendingOrganizersPageSize)
-                    .Take(pendingOrganizersPageSize)
-                    .Select(o => new PendingOrganizerRequestResponse
-                    {
-                        OrganizerId = o.Id,
-                        CompanyImg = o.ImgCompany,
-                        ContactName = o.ContactName,
-                        CompanyName = o.CompanyName,
-                        CreatedAt = o.CreatedAt
-                    })
-                    .ToListAsync();
+                response.ValidTickets = await _unitOfWork.TicketRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(t => !t.IsDeleted && t.Status == TicketStatus.Valid)
+                    .CountAsync();
 
-                response.PendingOrganizerRequests = new BasePaginated<PendingOrganizerRequestResponse>(pendingOrganizersList, pendingOrganizersTotalCount, pendingOrganizersPageNumber, pendingOrganizersPageSize);
+                response.UsedTickets = await _unitOfWork.TicketRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(t => !t.IsDeleted && t.Status == TicketStatus.Used)
+                    .CountAsync();
  
-                var thirtyDaysAgo = now.AddDays(-30);
-                var newUsersQuery = _unitOfWork.UserRepository
+                response.TotalRevenue = await _unitOfWork.BookingRepository
                     .Query()
                     .AsNoTracking()
-                    .Include(u => u.Role)
-                    .Where(u => !u.IsDeleted && u.RoleId != adminRoleId && u.CreatedAt >= thirtyDaysAgo);
+                    .Where(b => !b.IsDeleted && b.Status == BookingStatus.Completed)
+                    .SumAsync(b => b.TotalAmount);
 
-                var newUsersTotalCount = await newUsersQuery.CountAsync();
+                response.RevenueToday = await _unitOfWork.BookingRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(b => !b.IsDeleted && 
+                               b.Status == BookingStatus.Completed &&
+                               b.CreatedAt >= todayStart && 
+                               b.CreatedAt <= todayEnd)
+                    .SumAsync(b => (decimal?)b.TotalAmount) ?? 0;
 
-                var newUsersList = await newUsersQuery
-                    .OrderByDescending(u => u.CreatedAt)
-                    .Skip((newUsersPageNumber - 1) * newUsersPageSize)
-                    .Take(newUsersPageSize)
-                    .Select(u => new NewUserResponse
-                    {
-                        UserId = u.Id,
-                        FullName = u.FullName ?? string.Empty,
-                        Email = u.Email ?? string.Empty,
-                        RoleName = u.Role.Name,
-                        ImgProfile = u.AvatarImgUrl
-                    })
-                    .ToListAsync();
-
-                response.NewUsers = new BasePaginated<NewUserResponse>(newUsersList, newUsersTotalCount, newUsersPageNumber, newUsersPageSize);
+                response.RevenueThisMonth = await _unitOfWork.BookingRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(b => !b.IsDeleted && 
+                               b.Status == BookingStatus.Completed &&
+                               b.CreatedAt >= currentMonthStart)
+                    .SumAsync(b => (decimal?)b.TotalAmount) ?? 0;
 
                 return Result<AdminDashboardResponse>.Success(response);
             }
