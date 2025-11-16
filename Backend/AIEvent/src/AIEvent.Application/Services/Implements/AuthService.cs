@@ -77,12 +77,7 @@ namespace AIEvent.Application.Services.Implements
                 ExpiresAt = DateTime.UtcNow.AddDays(7)
             };
 
-            await _unitOfWork.RefreshTokenRepository.AddAsync(refreshTokenEntity);
-            if (user.DeviceToken != request.DeviceToken || user.DeviceToken == null)
-            {
-                user.DeviceToken = request.DeviceToken ?? "N/A";
-                await _unitOfWork.UserRepository.UpdateAsync(user);
-            }
+            await _unitOfWork.RefreshTokenRepository.AddAsync(refreshTokenEntity); 
             await _unitOfWork.SaveChangesAsync();
 
             var authResponse = new AuthResponse
@@ -182,12 +177,7 @@ namespace AIEvent.Application.Services.Implements
                 ExpiresAt = DateTime.UtcNow.AddDays(7)
             };
 
-            await _unitOfWork.RefreshTokenRepository.AddAsync(refreshTokenEntity);
-            if (user.DeviceToken != request.DeviceToken || user.DeviceToken == null)
-            {
-                user.DeviceToken = request.DeviceToken ?? "N/A";
-                await _unitOfWork.UserRepository.UpdateAsync(user);
-            }
+            await _unitOfWork.RefreshTokenRepository.AddAsync(refreshTokenEntity); 
             await _unitOfWork.SaveChangesAsync();
 
             var authResponse = new AuthResponse
@@ -352,6 +342,45 @@ namespace AIEvent.Application.Services.Implements
             return Result.Success();
         }
 
+        public async Task<Result> ForgotPasswordAsync(ForgotPasswordRequest request)
+        {
+            try
+            {
+                var user = await _unitOfWork.UserRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Select(u => new {u.Email, u.IsDeleted, u.IsActive})
+                    .FirstOrDefaultAsync(u => u.Email == request.Email && u.IsActive == true && u.IsDeleted == false);
+                
+                if (user == null)
+                    return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
+
+                var otpCode = new Random().Next(100000, 999999).ToString();
+                var message = new MimeMessage
+                {
+                    Subject = "Mã OTP của bạn",
+                    Body = new TextPart("plain")
+                    {
+                        Text = $"Mã xác thực của bạn là: {otpCode}. Mã này sẽ hết hạn sau 5 phút."
+                    }
+                };
+
+                var userOtps = await _emailService.SendEmailAsync(request.Email, message);
+                if (!userOtps.IsSuccess)
+                {
+                    return ErrorResponse.FailureResult("Failed to send email", ErrorCodes.InternalServerError);
+                }
+                await _cacheService.SetAsync($"Register {request.Email}", otpCode, TimeSpan.FromMinutes(5));
+                await _unitOfWork.SaveChangesAsync();
+
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                return ErrorResponse.FailureResult($"Error : {ex.Message}", ErrorCodes.InternalServerError);
+            }
+        }
+
         public async Task<Result<AuthResponse>> GoogleLoginAsync(GoogleLoginRequest request)
         {
             try
@@ -406,12 +435,7 @@ namespace AIEvent.Application.Services.Implements
                     ExpiresAt = DateTime.UtcNow.AddDays(7)
                 };
 
-                await _unitOfWork.RefreshTokenRepository.AddAsync(refreshTokenEntity);
-                if (user.DeviceToken != request.DeviceToken || user.DeviceToken == null)
-                {
-                    user.DeviceToken = request.DeviceToken ?? "N/A";
-                    await _unitOfWork.UserRepository.UpdateAsync(user);
-                }
+                await _unitOfWork.RefreshTokenRepository.AddAsync(refreshTokenEntity); 
                 await _unitOfWork.SaveChangesAsync();
 
                 var authResponse = new AuthResponse

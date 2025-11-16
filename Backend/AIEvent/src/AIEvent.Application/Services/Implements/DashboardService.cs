@@ -3,11 +3,11 @@ using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Dashboard;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
+using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
-using AIEvent.Infrastructure.Repositories.Interfaces;
-using AutoMapper;
-using Microsoft.EntityFrameworkCore;
+using AIEvent.Infrastructure.Repositories.Interfaces; 
+using Microsoft.EntityFrameworkCore; 
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -393,7 +393,7 @@ namespace AIEvent.Application.Services.Implements
             }
         }
 
-        public async Task<Result<SystemSettingRequest>> GetSystemSetting(string adminId)
+        public async Task<Result<SystemSettingResponse>> GetSystemSetting(string adminId)
         {
             var systemSetting = await _unitOfWork.SystemSettingRepository
                     .Query()
@@ -404,14 +404,450 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("No Permission", ErrorCodes.PermissionDenied);
             }
 
-            SystemSettingRequest request = new()
+            SystemSettingResponse request = new()
             {
                 DatePayout = systemSetting.DatePayout,
                 FixFee = systemSetting.FixFee,
                 FlatformFee = systemSetting.FlatformFee,
+                UpdateAt = systemSetting.UpdatedAt,
             };
 
-            return Result<SystemSettingRequest>.Success(request);
+            return Result<SystemSettingResponse>.Success(request);
+        }
+
+        public async Task<Result<AdminDashboardResponse>> GetAdminDashboardAsync(int pendingEventsPageNumber = 1, int pendingEventsPageSize = 10, 
+                                                                                 int pendingOrganizersPageNumber = 1, int pendingOrganizersPageSize = 10,
+                                                                                 int newUsersPageNumber = 1, int newUsersPageSize = 10)
+        {
+            try
+            {
+                var response = new AdminDashboardResponse();
+ 
+                var adminRoleId = await _unitOfWork.RoleRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(r => r.Name == "Admin" && !r.IsDeleted)
+                    .Select(r => r.Id)
+                    .FirstOrDefaultAsync();
+
+                var totalUsers = await _unitOfWork.UserRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(u => !u.IsDeleted && u.RoleId != adminRoleId)
+                    .CountAsync();
+
+                response.TotalUsers = totalUsers;
+ 
+                var now = DateTimeOffset.UtcNow;
+                var currentMonthStart = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero);
+                var lastMonthStart = currentMonthStart.AddMonths(-1);
+                var lastMonthEnd = currentMonthStart.AddTicks(-1);
+
+                var currentMonthUsers = await _unitOfWork.UserRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(u => !u.IsDeleted && u.RoleId != adminRoleId && u.CreatedAt >= currentMonthStart)
+                    .CountAsync();
+
+                var lastMonthUsers = await _unitOfWork.UserRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(u => !u.IsDeleted && u.RoleId != adminRoleId && 
+                                u.CreatedAt >= lastMonthStart && u.CreatedAt <= lastMonthEnd)
+                    .CountAsync();
+
+                if (lastMonthUsers > 0)
+                    response.MonthlyUserGrowthPercentage = ((decimal)(currentMonthUsers - lastMonthUsers) / lastMonthUsers) * 100;
+                else if (currentMonthUsers > 0)
+                    response.MonthlyUserGrowthPercentage = 100;
+                else
+                    response.MonthlyUserGrowthPercentage = 0;
+ 
+                var organizerRoleId = await _unitOfWork.RoleRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(r => r.Name == "Organizer" && !r.IsDeleted)
+                    .Select(r => r.Id)
+                    .FirstOrDefaultAsync();
+                 
+                response.TotalOrganizers = await _unitOfWork.OrganizerProfileRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(o => !o.IsDeleted && o.Status == OrganizerProfileStatus.Approved)
+                    .CountAsync();
+ 
+                response.TotalEvents = await _unitOfWork.EventRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(e => !e.IsDeleted && e.Publish == true && e.Status == EventStatus.Approved)
+                    .CountAsync();
+ 
+                response.PendingEventsCount = await _unitOfWork.EventRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(e => !e.IsDeleted && e.Status == EventStatus.PendingApproval && e.Publish == true)
+                    .CountAsync();
+ 
+                response.PendingOrganizerRequestsCount = await _unitOfWork.OrganizerProfileRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(o => !o.IsDeleted && o.Status == OrganizerProfileStatus.Pending)
+                    .CountAsync();
+ 
+                var pendingEventsQuery = _unitOfWork.EventRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(e => !e.IsDeleted && e.Status == EventStatus.PendingApproval && e.Publish == true);
+
+                var pendingEventsTotalCount = await pendingEventsQuery.CountAsync();
+
+                var pendingEventsList = await pendingEventsQuery
+                    .OrderByDescending(e => e.CreatedAt)
+                    .Skip((pendingEventsPageNumber - 1) * pendingEventsPageSize)
+                    .Take(pendingEventsPageSize)
+                    .Select(e => new PendingEventResponse
+                    {
+                        EventId = e.Id,
+                        Title = e.Title,
+                        CreatedAt = e.CreatedAt,
+                        EventImg = !string.IsNullOrEmpty(e.ImgListEvent) ? e.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() : string.Empty
+                    })
+                    .ToListAsync();
+
+                response.PendingEvents = new BasePaginated<PendingEventResponse>(pendingEventsList, pendingEventsTotalCount, pendingEventsPageNumber, pendingEventsPageSize);
+ 
+                var pendingOrganizersQuery = _unitOfWork.OrganizerProfileRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(o => !o.IsDeleted && o.Status == OrganizerProfileStatus.Pending);
+
+                var pendingOrganizersTotalCount = await pendingOrganizersQuery.CountAsync();
+
+                var pendingOrganizersList = await pendingOrganizersQuery
+                    .OrderByDescending(o => o.CreatedAt)
+                    .Skip((pendingOrganizersPageNumber - 1) * pendingOrganizersPageSize)
+                    .Take(pendingOrganizersPageSize)
+                    .Select(o => new PendingOrganizerRequestResponse
+                    {
+                        OrganizerId = o.Id,
+                        CompanyImg = o.ImgCompany,
+                        ContactName = o.ContactName,
+                        CompanyName = o.CompanyName,
+                        CreatedAt = o.CreatedAt
+                    })
+                    .ToListAsync();
+
+                response.PendingOrganizerRequests = new BasePaginated<PendingOrganizerRequestResponse>(pendingOrganizersList, pendingOrganizersTotalCount, pendingOrganizersPageNumber, pendingOrganizersPageSize);
+ 
+                var thirtyDaysAgo = now.AddDays(-30);
+                var newUsersQuery = _unitOfWork.UserRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Include(u => u.Role)
+                    .Where(u => !u.IsDeleted && u.RoleId != adminRoleId && u.CreatedAt >= thirtyDaysAgo);
+
+                var newUsersTotalCount = await newUsersQuery.CountAsync();
+
+                var newUsersList = await newUsersQuery
+                    .OrderByDescending(u => u.CreatedAt)
+                    .Skip((newUsersPageNumber - 1) * newUsersPageSize)
+                    .Take(newUsersPageSize)
+                    .Select(u => new NewUserResponse
+                    {
+                        UserId = u.Id,
+                        FullName = u.FullName ?? string.Empty,
+                        Email = u.Email ?? string.Empty,
+                        RoleName = u.Role.Name,
+                        ImgProfile = u.AvatarImgUrl
+                    })
+                    .ToListAsync();
+
+                response.NewUsers = new BasePaginated<NewUserResponse>(newUsersList, newUsersTotalCount, newUsersPageNumber, newUsersPageSize);
+
+                return Result<AdminDashboardResponse>.Success(response);
+            }
+            catch (Exception ex)
+            {
+                return ErrorResponse.FailureResult($"Error getting admin dashboard: {ex.Message}", ErrorCodes.InternalServerError);
+            }
+        }
+
+        public async Task<Result<BasePaginated<EventManagementResponse>>> GetEventManagementAsync(string? search = null, int pageNumber = 1, int pageSize = 10)
+        {
+            try
+            {
+                var query = _unitOfWork.EventRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Include(e => e.OrganizerProfile)
+                    .Where(e => !e.IsDeleted);
+ 
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var searchLower = search.ToLower();
+                    query = query.Where(e => 
+                        e.Title.ToLower().Contains(searchLower) ||
+                        (e.OrganizerProfile != null && 
+                         (e.OrganizerProfile.CompanyName != null && e.OrganizerProfile.CompanyName.ToLower().Contains(searchLower) ||
+                          e.OrganizerProfile.ContactName.ToLower().Contains(searchLower))));
+                }
+
+                var totalCount = await query.CountAsync();
+
+                var events = await query
+                    .OrderByDescending(e => e.CreatedAt)
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(e => new EventManagementResponse
+                    {
+                        EventId = e.Id,
+                        Title = e.Title,
+                        OrganizerName = e.OrganizerProfile != null 
+                            ? (!string.IsNullOrEmpty(e.OrganizerProfile.CompanyName) 
+                                ? e.OrganizerProfile.CompanyName 
+                                : e.OrganizerProfile.ContactName)
+                            : null,
+                        CreatedAt = e.CreatedAt,
+                        ImageUrl = !string.IsNullOrEmpty(e.ImgListEvent)
+                            ? e.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()
+                            : null,
+                        ParticipantCount = e.SoldQuantity,
+                        Status = e.Status
+                    })
+                    .ToListAsync();
+
+                return Result<BasePaginated<EventManagementResponse>>.Success(
+                    new BasePaginated<EventManagementResponse>(events, totalCount, pageNumber, pageSize));
+            }
+            catch (Exception ex)
+            {
+                return ErrorResponse.FailureResult($"Error getting event management: {ex.Message}", ErrorCodes.InternalServerError);
+            }
+        }
+
+        public async Task<Result<BasePaginated<UserManagementResponse>>> GetUserManagementAsync(string? search = null, int pageNumber = 1, int pageSize = 10)
+        {
+            try
+            { 
+                var adminRoleId = await _unitOfWork.RoleRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(r => r.Name == "Admin" && !r.IsDeleted)
+                    .Select(r => r.Id)
+                    .FirstOrDefaultAsync();
+
+                IQueryable<User> query = _unitOfWork.UserRepository
+                                            .Query()
+                                            .AsNoTracking()
+                                            .Where(u => !u.IsDeleted && u.RoleId != adminRoleId);
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var searchLower = search.ToLower();
+                    query = query.Where(u =>
+                        (u.FullName != null && u.FullName.ToLower().Contains(searchLower)) ||
+                        (u.Email != null && u.Email.ToLower().Contains(searchLower)) ||
+                        (u.Role != null && u.Role.Name.ToLower().Contains(searchLower)));
+                }
+
+                var totalCount = await query.CountAsync();
+
+                var result = await query
+                    .OrderByDescending(u => u.CreatedAt)
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(u => new UserManagementResponse
+                    {
+                        UserId = u.Id,
+                        FullName = u.FullName ?? "",
+                        Email = u.Email ?? "",
+                        RoleName = u.Role != null ? u.Role.Name : "",
+
+                        TotalEventsParticipated = u.Bookings.Count(),
+
+                        TotalEventsOrganized =
+                            u.Role!.Name == "Organizer"
+                                ? u.OrganizerProfile!.Events!
+                                    .Count(e =>
+                                        e.Status == EventStatus.Approved &&
+                                        e.Publish == true &&
+                                        !e.IsDeleted)
+                                : 0,
+
+                        AvatarUrl = u.AvatarImgUrl
+                    })
+                    .ToListAsync();
+
+                return Result<BasePaginated<UserManagementResponse>>.Success(
+                    new BasePaginated<UserManagementResponse>(result, totalCount, pageNumber, pageSize));
+            }
+            catch (Exception ex)
+            {
+                return ErrorResponse.FailureResult($"Error getting user management: {ex.Message}", ErrorCodes.InternalServerError);
+            }
+        }
+
+        public async Task<Result<SystemReportResponse>> GetSystemReportAsync(int recentActivitiesPageNumber = 1, int recentActivitiesPageSize = 10)
+        {
+            try
+            {
+                var response = new SystemReportResponse();
+                var now = DateTimeOffset.UtcNow;
+                var currentMonthStart = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero);
+ 
+                var adminRoleId = await _unitOfWork.RoleRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(r => r.Name == "Admin" && !r.IsDeleted)
+                    .Select(r => r.Id)
+                    .FirstOrDefaultAsync(); 
+ 
+                var monthlyStats = new MonthlyStatistics();
+ 
+                monthlyStats.NewUsers = await _unitOfWork.UserRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(u => !u.IsDeleted && u.RoleId != adminRoleId && u.CreatedAt >= currentMonthStart)
+                    .CountAsync();
+ 
+                monthlyStats.NewEvents = await _unitOfWork.EventRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(e => !e.IsDeleted && e.CreatedAt >= currentMonthStart)
+                    .CountAsync();
+ 
+                 monthlyStats.Revenue = await _unitOfWork.EventRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(e => !e.IsDeleted && e.CreatedAt >= currentMonthStart)
+                    .SumAsync(e => e.TotalAmount);
+
+                response.MonthlyStatistics = monthlyStats;
+ 
+                var thirtyDaysAgo = now.AddDays(-30);
+                var activities = new List<RecentActivityResponse>();
+ 
+                var recentUsers = await _unitOfWork.UserRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Include(u => u.Role)
+                    .Where(u => !u.IsDeleted && u.RoleId != adminRoleId && u.CreatedAt >= thirtyDaysAgo)
+                    .OrderByDescending(u => u.CreatedAt)
+                    .Take(3)
+                    .Select(u => new RecentActivityResponse
+                    {
+                        Id = u.Id, 
+                        Title = $"Người dùng mới: {u.FullName ?? u.Email ?? "Unknown"}",
+                        Description = $"Đã đăng ký với vai trò {u.Role.Name}",
+                        CreatedAt = u.CreatedAt
+                    })
+                    .ToListAsync();
+ 
+                var recentEvents = await _unitOfWork.EventRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(e => !e.IsDeleted && e.CreatedAt >= thirtyDaysAgo)
+                    .OrderByDescending(e => e.CreatedAt)
+                    .Take(3)
+                    .Select(e => new RecentActivityResponse
+                    {
+                        Id = e.Id, 
+                        Title = $"Sự kiện mới: {e.Title}",
+                        Description = $"Trạng thái: {e.Status}",
+                        CreatedAt = e.CreatedAt
+                    })
+                    .ToListAsync();
+ 
+                var recentOrganizerRequests = await _unitOfWork.OrganizerProfileRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(o => !o.IsDeleted && o.CreatedAt >= thirtyDaysAgo && o.Status == OrganizerProfileStatus.Pending)
+                    .OrderByDescending(o => o.CreatedAt)
+                    .Take(3)
+                    .Select(o => new RecentActivityResponse
+                    {
+                        Id = o.Id, 
+                        Title = $"Đơn đăng ký Organizer: {o.CompanyName ?? o.ContactName}",
+                        Description = $"Email: {o.ContactEmail}",
+                        CreatedAt = o.CreatedAt
+                    })
+                    .ToListAsync();
+ 
+                var approvedEvents = await _unitOfWork.EventRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(e => !e.IsDeleted && e.Status == EventStatus.Approved && 
+                                e.RequireApprovalAt.HasValue && e.RequireApprovalAt >= thirtyDaysAgo)
+                    .OrderByDescending(e => e.RequireApprovalAt)
+                    .Take(3)
+                    .Select(e => new RecentActivityResponse
+                    {
+                        Id = e.Id, 
+                        Title = $"Sự kiện được duyệt: {e.Title}",
+                        Description = $"Đã được phê duyệt",
+                        CreatedAt = e.RequireApprovalAt!.Value
+                    })
+                    .ToListAsync();
+ 
+                var rejectedEvents = await _unitOfWork.EventRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(e => !e.IsDeleted && e.Status == EventStatus.Rejected && 
+                                e.RequireApprovalAt.HasValue && e.RequireApprovalAt >= thirtyDaysAgo)
+                    .OrderByDescending(e => e.RequireApprovalAt)
+                    .Take(3)
+                    .Select(e => new RecentActivityResponse
+                    {
+                        Id = e.Id, 
+                        Title = $"Sự kiện bị từ chối: {e.Title}",
+                        Description = e.ReasonReject ?? "Bị từ chối",
+                        CreatedAt = e.RequireApprovalAt!.Value
+                    })
+                    .ToListAsync();
+
+                var cancelEvents = await _unitOfWork.EventRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(e => !e.IsDeleted && e.Status == EventStatus.Cancelled &&
+                                e.RequireApprovalAt.HasValue && e.RequireApprovalAt >= thirtyDaysAgo)
+                    .OrderByDescending(e => e.RequireApprovalAt)
+                    .Take(3)
+                    .Select(e => new RecentActivityResponse
+                    {
+                        Id = e.Id,
+                        Title = $"Sự kiện bị hủy: {e.Title}",
+                        Description = e.ReasonCancel ?? "Bị hủy",
+                        CreatedAt = e.RequireApprovalAt!.Value
+                    })
+                    .ToListAsync();
+
+                activities.AddRange(recentUsers);
+                activities.AddRange(recentEvents);
+                activities.AddRange(recentOrganizerRequests);
+                activities.AddRange(approvedEvents);
+                activities.AddRange(rejectedEvents);
+                activities.AddRange(cancelEvents);
+
+                var sortedActivities = activities
+                    .OrderByDescending(a => a.CreatedAt)
+                    .Skip((recentActivitiesPageNumber - 1) * recentActivitiesPageSize)
+                    .Take(recentActivitiesPageSize)
+                    .ToList();
+
+                var totalActivitiesCount = activities.Count;
+
+                response.RecentActivities = new BasePaginated<RecentActivityResponse>(
+                    sortedActivities, 
+                    totalActivitiesCount, 
+                    recentActivitiesPageNumber, 
+                    recentActivitiesPageSize);
+
+                return Result<SystemReportResponse>.Success(response);
+            }
+            catch (Exception ex)
+            {
+                return ErrorResponse.FailureResult($"Error getting system report: {ex.Message}", ErrorCodes.InternalServerError);
+            }
         }
     }
 }

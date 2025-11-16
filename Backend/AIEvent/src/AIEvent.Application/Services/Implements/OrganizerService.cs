@@ -111,8 +111,7 @@ namespace AIEvent.Application.Services.Implements
                     {
                         Title = "Yêu cầu phê duyệt đăng ký Organizer",
                         Message = $"Có một yêu cầu đăng ký Organizer mới từ {organizer.ContactName ?? organizer.CompanyName ?? "Người dùng"} cần được phê duyệt.",
-                        Type = NotificationType.OrganizerRegistrationPending,
-                        Channel = NotificationChannel.InApp,
+                        Type = NotificationType.OrganizerRegistrationPending, 
                         TargetRoles = new List<Guid> { managerRole.Id }
                     };
 
@@ -292,8 +291,7 @@ namespace AIEvent.Application.Services.Implements
                             : $"Hồ sơ đăng ký tổ chức của bạn <strong>{profile.CompanyName ?? profile.ContactName}</strong> đã <b>không được phê duyệt</b>.{(string.IsNullOrEmpty(request.Reason) ? "" : $" Lý do: {request.Reason}")}",
                         Type = request.Status == ConfirmStatus.Approved 
                             ? NotificationType.OrganizerApproved 
-                            : NotificationType.OrganizerRejected,
-                        Channel = NotificationChannel.InApp
+                            : NotificationType.OrganizerRejected
                     };
 
                     await _notificationService.CreateNotificationAsync(notificationRequest);

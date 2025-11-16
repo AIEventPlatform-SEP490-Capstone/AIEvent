@@ -15,8 +15,7 @@ namespace AIEvent.Application.Test.Services
 {
     public class NotificationServiceTests
     {
-        private readonly Mock<IUnitOfWork> _mockUnitOfWork;
-        private readonly Mock<IOneSignalService> _mockOneSignalService;
+        private readonly Mock<IUnitOfWork> _mockUnitOfWork; 
         private readonly Mock<IHubContext<NotificationHub>> _mockHubContext;
         private readonly Mock<IClientProxy> _mockClientProxy;
         private readonly INotificationService _notificationService;
@@ -33,8 +32,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork = new Mock<IUnitOfWork>();
             _mockHubContext = new Mock<IHubContext<NotificationHub>>();
             _mockClientProxy = new Mock<IClientProxy>();
-            _mockEmailService = new Mock<IEmailService>();
-            _mockOneSignalService = new Mock<IOneSignalService>();
+            _mockEmailService = new Mock<IEmailService>(); 
             // Setup SendCoreAsync for extension method SendAsync
             _mockClientProxy.Setup(x => x.SendCoreAsync(
                 It.IsAny<string>(),
@@ -46,7 +44,7 @@ namespace AIEvent.Application.Test.Services
             mockClients.Setup(x => x.User(It.IsAny<string>())).Returns(_mockClientProxy.Object);
             _mockHubContext.Setup(x => x.Clients).Returns(mockClients.Object);
 
-            _notificationService = new NotificationService(_mockUnitOfWork.Object, _mockHubContext.Object, _mockOneSignalService.Object, _mockEmailService.Object);
+            _notificationService = new NotificationService(_mockUnitOfWork.Object, _mockHubContext.Object, _mockEmailService.Object);
         }
 
         #region CreateNotificationAsync Tests
@@ -62,7 +60,7 @@ namespace AIEvent.Application.Test.Services
                 Title = "Test Notification",
                 Message = "Test message",
                 Type = NotificationType.System,
-                Channel = NotificationChannel.InApp
+                
             };
 
             var notification = new Notification
@@ -71,8 +69,7 @@ namespace AIEvent.Application.Test.Services
                 UserId = UserId,
                 Title = request.Title,
                 Message = request.Message,
-                Type = request.Type,
-                Channel = request.Channel,
+                Type = request.Type, 
                 IsRead = false
             };
 
@@ -99,8 +96,7 @@ namespace AIEvent.Application.Test.Services
                 UserId = UserId,
                 Title = "Test Notification",
                 Message = "Test message",
-                Type = NotificationType.EventApproved,
-                Channel = NotificationChannel.InApp,
+                Type = NotificationType.EventApproved, 
                 ImageUrl = "https://example.com/image.jpg",
                 EventId = EventId
             };
@@ -129,7 +125,7 @@ namespace AIEvent.Application.Test.Services
                 Title = "",
                 Message = "Test message",
                 Type = NotificationType.System,
-                Channel = NotificationChannel.InApp
+                
             };
 
             // Act
@@ -153,7 +149,7 @@ namespace AIEvent.Application.Test.Services
                 Title = null!,
                 Message = "Test message",
                 Type = NotificationType.System,
-                Channel = NotificationChannel.InApp
+                
             };
 
             // Act
@@ -176,7 +172,7 @@ namespace AIEvent.Application.Test.Services
                 Title = "Test Notification",
                 Message = "",
                 Type = NotificationType.System,
-                Channel = NotificationChannel.InApp
+                
             };
 
             // Act
@@ -200,7 +196,7 @@ namespace AIEvent.Application.Test.Services
                 Title = "Test Notification",
                 Message = null!,
                 Type = NotificationType.System,
-                Channel = NotificationChannel.InApp
+                
             };
 
             // Act
@@ -237,34 +233,7 @@ namespace AIEvent.Application.Test.Services
                 Title = "Test Notification",
                 Message = "Test message",
                 Type = type,
-                Channel = NotificationChannel.InApp
-            };
-
-            _mockUnitOfWork.Setup(x => x.NotificationRepository.AddAsync(It.IsAny<Notification>()))
-                .ReturnsAsync((Notification n) => n);
-            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
-
-            // Act
-            var result = await _notificationService.CreateNotificationAsync(request);
-
-            // Assert
-            result.IsSuccess.Should().BeTrue();
-        }
-
-        // UTCID08: All notification channels - Success
-        [Theory]
-        [InlineData(NotificationChannel.InApp)]
-        [InlineData(NotificationChannel.Push)]
-        public async Task UTCID08_CreateNotificationAsync_WithAllChannels_ShouldReturnSuccess(NotificationChannel channel)
-        {
-            // Arrange
-            var request = new CreateNotificationRequest
-            {
-                UserId = UserId,
-                Title = "Test Notification",
-                Message = "Test message",
-                Type = NotificationType.System,
-                Channel = channel
+                
             };
 
             _mockUnitOfWork.Setup(x => x.NotificationRepository.AddAsync(It.IsAny<Notification>()))
@@ -291,8 +260,7 @@ namespace AIEvent.Application.Test.Services
             {
                 Title = "Test Notification",
                 Message = "Test message",
-                Type = NotificationType.System,
-                Channel = NotificationChannel.InApp,
+                Type = NotificationType.System, 
                 TargetRoles = new List<Guid> { RoleId }
             };
 
@@ -325,8 +293,7 @@ namespace AIEvent.Application.Test.Services
             {
                 Title = "Test Notification",
                 Message = "Test message",
-                Type = NotificationType.System,
-                Channel = NotificationChannel.InApp,
+                Type = NotificationType.System, 
                 TargetRoles = null
             };
 
@@ -358,8 +325,7 @@ namespace AIEvent.Application.Test.Services
             {
                 Title = "Test Notification",
                 Message = "Test message",
-                Type = NotificationType.System,
-                Channel = NotificationChannel.InApp,
+                Type = NotificationType.System, 
                 TargetRoles = new List<Guid> { RoleId }
             };
 
@@ -387,7 +353,7 @@ namespace AIEvent.Application.Test.Services
                 Title = "",
                 Message = "Test message",
                 Type = NotificationType.System,
-                Channel = NotificationChannel.InApp
+                
             };
 
             // Act
@@ -410,7 +376,7 @@ namespace AIEvent.Application.Test.Services
                 Title = "Test Notification",
                 Message = "",
                 Type = NotificationType.System,
-                Channel = NotificationChannel.InApp
+                
             };
 
             // Act
@@ -430,8 +396,7 @@ namespace AIEvent.Application.Test.Services
             {
                 Title = "Test Notification",
                 Message = "Test message",
-                Type = NotificationType.System,
-                Channel = NotificationChannel.InApp,
+                Type = NotificationType.System, 
                 TargetRoles = new List<Guid> { RoleId }
             };
 
@@ -464,8 +429,7 @@ namespace AIEvent.Application.Test.Services
             {
                 Title = "Test Notification",
                 Message = "Test message",
-                Type = NotificationType.System,
-                Channel = NotificationChannel.InApp,
+                Type = NotificationType.System, 
                 TargetRoles = new List<Guid> { RoleId, roleId2 }
             };
 
@@ -497,8 +461,7 @@ namespace AIEvent.Application.Test.Services
             {
                 Title = "Test Notification",
                 Message = "Test message",
-                Type = NotificationType.EventApproved,
-                Channel = NotificationChannel.InApp,
+                Type = NotificationType.EventApproved, 
                 TargetRoles = new List<Guid> { RoleId },
                 ImageUrl = "https://example.com/image.jpg",
                 EventId = EventId

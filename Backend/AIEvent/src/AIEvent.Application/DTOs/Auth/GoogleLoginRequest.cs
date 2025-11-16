@@ -2,7 +2,6 @@
 {
     public class GoogleLoginRequest
     {
-        public required string IdToken { get; set; }
-        public string? DeviceToken { get; set; }
+        public required string IdToken { get; set; } 
     }
 }

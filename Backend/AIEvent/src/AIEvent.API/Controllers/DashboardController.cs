@@ -1,10 +1,9 @@
 ﻿using AIEvent.API.Extensions;
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
-using AIEvent.Application.DTOs.Dashboard;
-using AIEvent.Application.DTOs.Event;
-using AIEvent.Application.Services.Implements;
+using AIEvent.Application.DTOs.Dashboard; 
 using AIEvent.Application.Services.Interfaces;
+using AIEvent.Domain.Bases;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -149,7 +148,7 @@ namespace AIEvent.API.Controllers
 
         [HttpGet("system-setting")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<SuccessResponse<SystemSettingRequest>>> GetSystemSetting()
+        public async Task<ActionResult<SuccessResponse<SystemSettingResponse>>> GetSystemSetting()
         {
             string userId = User.GetRequiredUserId().ToString();
             var result = await _dashboardService.GetSystemSetting(userId);
@@ -159,10 +158,98 @@ namespace AIEvent.API.Controllers
                 return BadRequest(result.Error!);
             }
 
-            return Ok(SuccessResponse<SystemSettingRequest>.SuccessResult(
+            return Ok(SuccessResponse<SystemSettingResponse>.SuccessResult(
                 result.Value!,
                 SuccessCodes.Success,
                 "SystemSetting retrieved successfully"));
+        }
+
+        [HttpGet("admin-overview")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<SuccessResponse<AdminDashboardResponse>>> GetAdminDashboard(
+            [FromQuery] int pendingEventsPageNumber = 1,
+            [FromQuery] int pendingEventsPageSize = 10,
+            [FromQuery] int pendingOrganizersPageNumber = 1,
+            [FromQuery] int pendingOrganizersPageSize = 10,
+            [FromQuery] int newUsersPageNumber = 1,
+            [FromQuery] int newUsersPageSize = 10)
+        {
+            var result = await _dashboardService.GetAdminDashboardAsync(
+                pendingEventsPageNumber,
+                pendingEventsPageSize,
+                pendingOrganizersPageNumber,
+                pendingOrganizersPageSize,
+                newUsersPageNumber,
+                newUsersPageSize);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<AdminDashboardResponse>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Admin dashboard retrieved successfully"));
+        }
+
+        [HttpGet("admin/event-management")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<EventManagementResponse>>>> GetEventManagement(
+            [FromQuery] string? search = null,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            var result = await _dashboardService.GetEventManagementAsync(search, pageNumber, pageSize);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<EventManagementResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Event management retrieved successfully"));
+        }
+
+        [HttpGet("admin/user-management")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<UserManagementResponse>>>> GetUserManagement(
+            [FromQuery] string? search = null,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            var result = await _dashboardService.GetUserManagementAsync(search, pageNumber, pageSize);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<UserManagementResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "User management retrieved successfully"));
+        }
+
+        [HttpGet("admin/system-report")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<SuccessResponse<SystemReportResponse>>> GetSystemReport(
+            [FromQuery] int recentActivitiesPageNumber = 1,
+            [FromQuery] int recentActivitiesPageSize = 10)
+        {
+            var result = await _dashboardService.GetSystemReportAsync(recentActivitiesPageNumber, recentActivitiesPageSize);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<SystemReportResponse>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "System report retrieved successfully"));
         }
     }
 }
