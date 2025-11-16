@@ -37,9 +37,13 @@ import FavoriteEventsPage from "../pages/User/FavoriteEventsPage";
 import OrganizerApprovalListPage from "../pages/Admin/OrganizerApprovalListPage";
 import OrganizerApprovalDetailPage from "../pages/Admin/OrganizerApprovalDetailPage";
 import SystemSettings from "../pages/Admin/SystemSettings";
+import PlatformLogActivity from "../pages/Admin/PlatformLogActivity";
+import AdminEventManagement from "../pages/Admin/AdminEventManagement";
 import FriendDetailPage from "../pages/User/FriendDetailPage";
 import EventInvitationsPage from "../pages/User/EventInvitationsPage";
 import StaffManagePage from "../pages/Organizer/StaffManagePage";
+import HelpPage from "../pages/Shared/HelpPage";
+import AboutPage from "../pages/Shared/AboutPage";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -93,8 +97,8 @@ export default function useRouterElement() {
             </ProtectedRoute>
           ),
         },
-        { path: "help", element: <div>Help Page</div> },
-        { path: "about", element: <div>About Page</div> },
+        { path: "help", element: <HelpPage /> },
+        { path: "about", element: <AboutPage /> },
         {
           path: "profile",
           element: (
@@ -245,7 +249,7 @@ export default function useRouterElement() {
       ),
       children: [
         { index: true, element: <AdminDashboard /> },
-        { path: "events", element: <div>Admin Events Page</div> },
+        { path: "events", element: <AdminEventManagement /> },
         { path: "users", element: <UserManagement /> },
 
         { path: "organizers", element: <OrganizerApprovalListPage /> },
@@ -256,6 +260,7 @@ export default function useRouterElement() {
           path: "system-settings",
           element: <SystemSettings />,
         },
+        { path: "platform-log-activity", element: <PlatformLogActivity /> },
         { path: "documentation", element: <div>Admin Documentation Page</div> },
         { path: "help", element: <div>Admin Help Page</div> },
         { path: "quick-actions", element: <div>Admin Quick Actions Page</div> },

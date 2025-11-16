@@ -241,7 +241,52 @@ const SystemSettings = () => {
               <p className="text-gray-500 text-base mt-1">Quản lý các thông số và cấu hình của hệ thống</p>
             </div>
           </div>
-          {hasChanges && (
+          {activeTab === 'system' && (
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                {hasSystemChanges() ? (
+                  <>
+                    <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
+                    <span className="text-gray-700 hidden md:inline">Bạn có thay đổi chưa được lưu</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                    <span className="text-gray-500 hidden md:inline">Tất cả thay đổi đã được lưu</span>
+                  </>
+                )}
+              </div>
+              <div className="flex space-x-3">
+                <Button
+                  onClick={handleSystemReset}
+                  disabled={!hasSystemChanges() || isSaving}
+                  variant="outline"
+                  className="border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-gray-700 transition-all px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Khôi phục</span>
+                </Button>
+                <Button
+                  onClick={handleSystemSave}
+                  disabled={isSaving || !hasSystemChanges()}
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow transition-all px-8 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSaving ? (
+                    <>
+                      <LoadingSpinner size="sm" className="mr-2" />
+                      <span className="hidden sm:inline">Đang lưu...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      <span className="hidden sm:inline">Lưu cài đặt</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+          {activeTab === 'website' && hasChanges && (
             <div className="hidden md:flex items-center space-x-2 bg-amber-50 border border-amber-200 px-4 py-2 rounded-lg">
               <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
               <span className="text-amber-700 text-sm font-medium">Có thay đổi chưa lưu</span>
@@ -641,55 +686,6 @@ const SystemSettings = () => {
                           </button>
                         ))}
                       </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Action Buttons */}
-              <Card className="border border-gray-200 shadow-sm bg-white">
-                <CardContent className="pt-6">
-                  <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 sm:space-x-4">
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
-                      {hasSystemChanges() ? (
-                        <>
-                          <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
-                          <span className="text-gray-700">Bạn có thay đổi chưa được lưu</span>
-                        </>
-                      ) : (
-                        <>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                          <span className="text-gray-500">Tất cả thay đổi đã được lưu</span>
-                        </>
-                      )}
-                    </div>
-                    <div className="flex space-x-3 w-full sm:w-auto">
-                      <Button
-                        onClick={handleSystemReset}
-                        disabled={!hasSystemChanges() || isSaving}
-                        variant="outline"
-                        className="flex-1 sm:flex-none border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-gray-700 transition-all px-6 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <RotateCcw className="h-4 w-4 mr-2" />
-                        Khôi phục
-                      </Button>
-                      <Button
-                        onClick={handleSystemSave}
-                        disabled={isSaving || !hasSystemChanges()}
-                        className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow transition-all px-8 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isSaving ? (
-                          <>
-                            <LoadingSpinner size="sm" className="mr-2" />
-                            Đang lưu...
-                          </>
-                        ) : (
-                          <>
-                            <Save className="h-4 w-4 mr-2" />
-                            Lưu cài đặt
-                          </>
-                        )}
-                      </Button>
                     </div>
                   </div>
                 </CardContent>

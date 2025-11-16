@@ -70,6 +70,7 @@ export const PATH = {
   ADMIN_PROFILE: "/admin/profile",
   ADMIN_SETTINGS: "/admin/settings",
   ADMIN_SYSTEM_SETTINGS: "/admin/system-settings",
+  ADMIN_PLATFORM_LOG_ACTIVITY: "/admin/platform-log-activity",
   ADMIN_DOCUMENTATION: "/admin/documentation",
   ADMIN_HELP: "/admin/help",
   ADMIN_QUICK_ACTIONS: "/admin/quick-actions",

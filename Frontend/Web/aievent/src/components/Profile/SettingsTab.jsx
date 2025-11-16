@@ -1,12 +1,37 @@
-import React from 'react';
-import { Lock, Bell, Settings } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Lock, Bell, Settings, MapPin } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Switch } from '../ui/switch';
+import { showSuccess, showError } from '../../lib/toastUtils';
+import { userAPI } from '../../api/userAPI';
 
 const SettingsTab = ({ 
   profileData, 
   onOpenChangePassword 
 }) => {
+  const [isTogglingLocation, setIsTogglingLocation] = useState(false);
+  const [isLocationEnabled, setIsLocationEnabled] = useState(
+    !!(profileData?.isTurnOnLocation)
+  );
+
+  useEffect(() => {
+    setIsLocationEnabled(!!profileData?.isTurnOnLocation);
+  }, [profileData?.isTurnOnLocation]);
+
+  const handleToggleLocationSharing = async (checked) => {
+    try {
+      if (isTogglingLocation) return;
+      setIsTogglingLocation(true);
+      await userAPI.toggleLocationSharing(checked);
+      setIsLocationEnabled(checked);
+      showSuccess(checked ? 'Đã bật chia sẻ vị trí' : 'Đã tắt chia sẻ vị trí');
+    } catch (error) {
+      console.error('Toggle location error:', error);
+      showError(error?.response?.data?.message || 'Không thể cập nhật chia sẻ vị trí');
+    } finally {
+      setIsTogglingLocation(false);
+    }
+  };
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -46,7 +71,7 @@ const SettingsTab = ({
                     </div>
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-900 mb-1">Mật khẩu</h4>
-                      <p className="text-xs text-gray-500">Khuyến nghị đổi mật khẩu định kỳ</p>
+                      <p className="text-xs text-gray-500">Đổi mật khẩu</p>
                     </div>
                   </div>
                   <Button 
@@ -57,6 +82,29 @@ const SettingsTab = ({
                   </Button>
                 </div>
                 
+              </div>
+
+              {/* Location Sharing Toggle - moved to Security tab */}
+              <div className="group/item relative overflow-hidden bg-gradient-to-r from-red-50 to-pink-50 rounded-xl p-5 border border-red-100 hover:border-red-200 transition-all duration-300">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-start space-x-4 flex-1">
+                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm group-hover/item:scale-110 transition-transform duration-300">
+                      <MapPin className="w-5 h-5 text-red-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 mb-1">Chia sẻ vị trí</h4>
+                      <p className="text-xs text-gray-500">Cho phép đề xuất sự kiện gần bạn</p>
+                    </div>
+                  </div>
+                  <div className="ml-4">
+                    <Switch
+                      disabled={isTogglingLocation}
+                      checked={isLocationEnabled}
+                      onCheckedChange={handleToggleLocationSharing}
+                      className="data-[state=checked]:bg-rose-600"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -74,7 +122,7 @@ const SettingsTab = ({
               </div>
               <div>
                 <h3 className="text-xl font-bold text-gray-900">Thông báo</h3>
-                <p className="text-sm text-gray-500">Quản lý cách bạn nhận thông báo (coming soon...)</p>
+                <p className="text-sm text-gray-500">Quản lý cách bạn nhận thông báo</p>
               </div>
             </div>
 
@@ -87,7 +135,7 @@ const SettingsTab = ({
                     </div>
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-900 mb-1">Email thông báo</h4>
-                      <p className="text-sm text-gray-600">Nhận thông báo về sự kiện qua email (coming soon...)</p>
+                      <p className="text-sm text-gray-600">Tính năng đang phát triển...</p>
                     </div>
                   </div>
                   <div className="ml-4">
@@ -111,7 +159,7 @@ const SettingsTab = ({
                     </div>
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-900 mb-1">Push thông báo</h4>
-                      <p className="text-sm text-gray-600">Nhận thông báo đẩy trên trình duyệt (coming soon...)</p>
+                      <p className="text-sm text-gray-600">Tính năng đang phát triển...</p>
                     </div>
                   </div>
                   <div className="ml-4">
@@ -120,30 +168,6 @@ const SettingsTab = ({
                       onCheckedChange={(checked) => {
                         // TODO: Implement notification toggle
                         console.log('Push notification:', checked);
-                      }}
-                      className="data-[state=checked]:bg-yellow-600"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="group/item relative overflow-hidden bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-xl p-5 border border-yellow-100 hover:border-yellow-200 transition-all duration-300">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-start space-x-4 flex-1">
-                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm group-hover/item:scale-110 transition-transform duration-300">
-                      <Bell className="w-5 h-5 text-yellow-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">SMS thông báo</h4>
-                      <p className="text-sm text-gray-600">Nhận thông báo qua tin nhắn SMS</p>
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    <Switch
-                      checked={profileData?.isSmsNotificationEnabled === true}
-                      onCheckedChange={(checked) => {
-                        // TODO: Implement notification toggle
-                        console.log('SMS notification:', checked);
                       }}
                       className="data-[state=checked]:bg-yellow-600"
                     />
