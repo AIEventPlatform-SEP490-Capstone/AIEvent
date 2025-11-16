@@ -17,9 +17,8 @@ namespace AIEvent.Domain.Entities
         public bool IsActive { get; set; } = false;
         public ParticipationFrequency ParticipationFrequency { get; set; }
         public BudgetOption BudgetOption { get; set; }
-        public bool? IsEmailNotificationEnabled { get; set; } = true;
-        public bool? IsPushNotificationEnabled { get; set; } = true;
-        public bool? IsSmsNotificationEnabled { get; set; } = true;
+        public bool? IsEmailNotificationEnabled { get; set; } = true; 
+        public bool? IsTurnOnLocation { get; set; } = false;
         public string? InterestedDistrictsJson { get; set; }
         public string? AvatarImgUrl { get; set; }
         public string? UserInterestsJson { get; set; }
@@ -36,7 +35,6 @@ namespace AIEvent.Domain.Entities
         public string? TwitterUrl { get; set; }
         public string? InstagramUrl { get; set; }
         public string? FacebookUrl { get; set; }
-        public string? DeviceToken { get; set; }
         public string? LanguagesJson { get; set; }
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 
