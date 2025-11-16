@@ -75,6 +75,7 @@ const EventDetailGuestPage = ({ previewData }) => {
   const [inviteMessage, setInviteMessage] = useState("Tham gia cùng tôi nhé!");
   const [isInviting, setIsInviting] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   //tải danh sách bạn bè khi mở dialog mời
   useEffect(() => {
@@ -435,48 +436,75 @@ const EventDetailGuestPage = ({ previewData }) => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Event Image - Simplified */}
-            <div className="relative rounded-xl overflow-hidden shadow-sm">
-              {event.imgListEvent && event.imgListEvent.length > 0 ? (
-                <img
-                  src={event.imgListEvent[0]}
-                  alt={event.title}
-                  className="w-full h-80 object-cover"
-                />
-              ) : (
-                <div className="w-full h-80 bg-gray-100 flex items-center justify-center">
-                  <span className="text-gray-400 font-medium">
-                    Không có hình ảnh
-                  </span>
-                </div>
-              )}
-
-              {/* Favorite Button - Simplified */}
-              <button
-                onClick={handleToggleFavorite}
-                className="absolute top-4 right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-shadow"
-              >
-                <Heart
-                  className={`w-5 h-5 transition-all ${
-                    isLiked
-                      ? "fill-red-500 text-red-500"
-                      : "text-gray-700"
-                  }`}
-                />
-              </button>
-
-              {/* Badges - Simplified */}
-              <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
-                <Badge className="bg-white text-gray-800 border-0 shadow px-3 py-1 font-semibold">
-                  {formatPrice(event)}
-                </Badge>
-                {event.eventCategoryName && (
-                  <Badge className="bg-blue-500 text-white border-0 shadow px-3 py-1 font-medium">
-                    <Tag className="w-3 h-3 mr-1" />
-                    {event.eventCategoryName}
-                  </Badge>
+            {/* Event Image Gallery */}
+            <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200">
+              <div className="relative">
+                {event.imgListEvent && event.imgListEvent.length > 0 ? (
+                  <>
+                    <img
+                      src={event.imgListEvent[selectedImageIndex]}
+                      alt={event.title}
+                      className="w-full h-80 object-cover"
+                    />
+                    <button
+                      onClick={handleToggleFavorite}
+                      className="absolute top-4 right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-shadow"
+                    >
+                      <Heart
+                        className={`w-5 h-5 transition-all ${
+                          isLiked
+                            ? "fill-red-500 text-red-500"
+                            : "text-gray-700"
+                        }`}
+                      />
+                    </button>
+                    
+                    {/* Badges - Simplified */}
+                    <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
+                      <Badge className="bg-white text-gray-800 border-0 shadow px-3 py-1 font-semibold">
+                        {formatPrice(event)}
+                      </Badge>
+                      {event.eventCategoryName && (
+                        <Badge className="bg-blue-500 text-white border-0 shadow px-3 py-1 font-medium">
+                          <Tag className="w-3 h-3 mr-1" />
+                          {event.eventCategoryName}
+                        </Badge>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-full h-80 bg-gray-100 flex items-center justify-center">
+                    <span className="text-gray-400 font-medium">
+                      Không có hình ảnh
+                    </span>
+                  </div>
                 )}
               </div>
+              
+              {/* Thumbnail Gallery */}
+              {event.imgListEvent && event.imgListEvent.length > 1 && (
+                <div className="p-4 border-t border-gray-200">
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {event.imgListEvent.map((img, index) => (
+                      <div 
+                        key={index}
+                        onClick={() => setSelectedImageIndex(index)}
+                        className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden cursor-pointer border-2 ${
+                          selectedImageIndex === index 
+                            ? "border-blue-500" 
+                            : "border-gray-200"
+                        }`}
+                      >
+                        <img
+                          src={img}
+                          alt={`${event.title} ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Event Info - Simplified */}
