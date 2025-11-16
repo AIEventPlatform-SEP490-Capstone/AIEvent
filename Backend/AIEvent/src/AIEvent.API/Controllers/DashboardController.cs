@@ -166,9 +166,11 @@ namespace AIEvent.API.Controllers
 
         [HttpGet("admin-overview")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<SuccessResponse<AdminDashboardResponse>>> GetAdminDashboard()
+        public async Task<ActionResult<SuccessResponse<AdminDashboardResponse>>> GetAdminDashboard(
+            [FromQuery] int? year = null,
+            [FromQuery] int? month = null)
         {
-            var result = await _dashboardService.GetAdminDashboardAsync();
+            var result = await _dashboardService.GetAdminDashboardAsync(year, month);
 
             if (!result.IsSuccess)
             {
