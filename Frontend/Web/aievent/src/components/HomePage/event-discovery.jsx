@@ -537,9 +537,9 @@ export function EventDiscovery({
             {paginatedEvents.map((event) => (
               <div 
                 key={event.eventId || event.id}
-                className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group"
+                className="card w-80 bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 group"
               >
-                <div className="relative">
+                <div className="card-image relative w-full h-40 overflow-hidden">
                   <img
                     src={
                       event.image || 
@@ -547,8 +547,11 @@ export function EventDiscovery({
                       "/placeholder.svg"
                     }
                     alt={event.title}
-                    className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
+                  <div className="tag absolute top-3 left-3 bg-blue-500 text-white px-3 py-1 rounded-2xl text-sm font-medium">
+                    {event.category || event.eventCategoryName || "Event"}
+                  </div>
                   <div className="absolute top-3 right-3 flex space-x-2">
                     <button
                       className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 hover:bg-white shadow-sm flex items-center justify-center transition-all"
@@ -584,64 +587,73 @@ export function EventDiscovery({
                   )}
                 </div>
 
-                <div className="p-5">
+                <div className="card-content p-4">
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-bold text-lg leading-tight text-gray-900 line-clamp-2">
+                    <h3 className="title font-semibold text-[17px] leading-tight text-gray-900 line-clamp-2">
                       {event.title}
                     </h3>
                   </div>
-                  <p className="text-gray-600 text-sm leading-relaxed mb-4 line-clamp-2">
-                    {event.description}
-                  </p>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center text-gray-600 text-sm">
+                  <div className="info space-y-2 text-gray-600 text-[13px] leading-relaxed mb-4 line-clamp-2">
+                    <div className="flex items-center">
                       <Calendar className="w-4 h-4 mr-2 text-blue-500" />
                       <span>
                         {new Date(event.startTime || event.date).toLocaleDateString("vi-VN")} •{" "}
                         {event.time || new Date(event.startTime).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
-
-                    <div className="flex items-center text-gray-600 text-sm">
+                    <div className="flex items-center">
                       <MapPin className="w-4 h-4 mr-2 text-blue-500 flex-shrink-0" />
                       <span className="truncate">
                         {event.locationName || event.location}
                       </span>
                     </div>
+                  </div>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                      <div className="flex items-center">
-                        <Users className="w-4 h-4 mr-1 text-gray-500" />
-                        <span className="text-sm text-gray-600">
-                          {event.soldQuantity || 0}/{event.totalTickets}
-                        </span>
+                  <div className="card-footer flex justify-between items-center">
+                    <div className="flex items-center">
+                      <div className="logo w-9 h-9 bg-gray-900 text-white rounded-full flex justify-center items-center font-bold text-sm mr-2">
+                        {event.organizerName ? event.organizerName.charAt(0).toUpperCase() : "O"}
                       </div>
-                      <div className="flex items-center">
-                        <Heart className="w-4 h-4 mr-1 text-gray-500" />
-                        <span className="text-sm text-gray-600">
-                          {event.likesCount || 0}
-                        </span>
+                      <div className="text-sm font-medium text-gray-900 truncate max-w-[100px]">
+                        {event.organizerName || "Organizer"}
                       </div>
                     </div>
-
-                    <div className="flex space-x-2 pt-2">
-                      <Button
-                        className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm py-2"
-                        size="sm"
-                        onClick={() => handleRegister(event.eventId || event.id)}
-                      >
-                        Đăng ký
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold text-sm py-2"
-                        onClick={() => handleViewDetail(event.eventId || event.id)}
-                      >
-                        Chi tiết
-                      </Button>
+                    <div className="share w-9 h-9 bg-[#e8f7ff] text-[#00aaff] rounded-lg flex justify-center items-center">
+                      <Share2 className="w-4 h-4" />
                     </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-3">
+                    <div className="flex items-center">
+                      <Users className="w-4 h-4 mr-1 text-gray-500" />
+                      <span className="text-sm text-gray-600">
+                        {event.soldQuantity || 0}/{event.totalTickets}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <Heart className="w-4 h-4 mr-1 text-gray-500" />
+                      <span className="text-sm text-gray-600">
+                        {event.likesCount || 0}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex space-x-2 pt-3">
+                    <Button
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm py-2"
+                      size="sm"
+                      onClick={() => handleRegister(event.eventId || event.id)}
+                    >
+                      Đăng ký
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold text-sm py-2"
+                      onClick={() => handleViewDetail(event.eventId || event.id)}
+                    >
+                      Chi tiết
+                    </Button>
                   </div>
                 </div>
               </div>
