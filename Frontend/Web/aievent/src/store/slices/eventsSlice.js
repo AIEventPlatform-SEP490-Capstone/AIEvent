@@ -194,7 +194,7 @@ const eventsSlice = createSlice({
       .addCase(fetchEvents.fulfilled, (state, action) => {
         state.loading = false;
         state.events = action.payload?.items || action.payload || [];
-        state.totalCount = action.payload?.totalCount || 0;
+        state.totalCount = action.payload?.totalItems || action.payload?.totalCount || 0;
       })
       .addCase(fetchEvents.rejected, (state, action) => {
         state.loading = false;
@@ -292,7 +292,7 @@ const eventsSlice = createSlice({
       .addCase(fetchDraftEvents.fulfilled, (state, action) => {
         state.loading = false;
         state.events = action.payload?.items || action.payload || [];
-        state.totalCount = action.payload?.totalCount || 0;
+        state.totalCount = action.payload?.totalItems || action.payload?.totalCount || 0;
       })
       .addCase(fetchDraftEvents.rejected, (state, action) => {
         state.loading = false;
@@ -306,7 +306,7 @@ const eventsSlice = createSlice({
       .addCase(fetchEventsByStatus.fulfilled, (state, action) => {
         state.loading = false;
         state.events = action.payload?.items || action.payload || [];
-        state.totalCount = action.payload?.totalCount || 0;
+        state.totalCount = action.payload?.totalItems || action.payload?.totalCount || 0;
       })
       .addCase(fetchEventsByStatus.rejected, (state, action) => {
         state.loading = false;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
@@ -52,7 +52,7 @@ const MyEventsPage = () => {
   const [completionDropdownLabel, setCompletionDropdownLabel] = useState('Kết thúc sự kiện');
   const initiationDropdownRef = useRef(null);
   const completionDropdownRef = useRef(null);
-  const pageSize = 12;
+  const pageSize = 5;
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -143,7 +143,7 @@ const MyEventsPage = () => {
       
       if (response) {
         const eventsData = response.items || response || [];
-        const totalCount = response.totalCount || eventsData.length;
+        const totalCount = response.totalItems || response.totalCount || eventsData.length;
         
         setAllEvents(eventsData);
         setEvents(eventsData);
@@ -452,10 +452,8 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
 
   const stats = getEventStats();
   
-  // Pagination for current events
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedEvents = events.slice(startIndex, endIndex);
+  // Use server-side pagination - events array already contains the correct page of events
+  const paginatedEvents = events;
 
   // Get event image
   const getEventImage = (event) => {
@@ -982,7 +980,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       )}
 
       {/* Pagination */}
-      {!isLoading && events.length > 0 && totalPages > 1 && (
+      {!isLoading && totalPages > 1 && (
         <div className="flex justify-center gap-2 mt-8">
           <Button
             variant="outline"
