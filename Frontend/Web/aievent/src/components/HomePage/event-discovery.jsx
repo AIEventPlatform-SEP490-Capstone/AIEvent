@@ -507,7 +507,7 @@ export function EventDiscovery({
             {paginatedEvents.map((event) => (
               <div 
                 key={event.eventId || event.id}
-                className="card w-80 bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 group"
+                className="card bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 group"
               >
                 <div className="card-image relative w-full h-40 overflow-hidden">
                   <img
