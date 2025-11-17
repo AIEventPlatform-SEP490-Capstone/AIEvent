@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { dashboardAPI } from '../../api/dashboardAPI';
+import { eventCategoryAPI } from '../../api/eventCategoryAPI';
+import { EventStatus, EventStatusDisplay } from '../../constants/eventConstants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area } from 'recharts';
+import { Filter, X } from 'lucide-react';
 
 const OrganizerDashboard = () => {
   const [eventStatistics, setEventStatistics] = useState(null);
@@ -11,70 +14,191 @@ const OrganizerDashboard = () => {
   const [revenueByCategoryTag, setRevenueByCategoryTag] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  
+  // Filter states
+  const [filters, setFilters] = useState({
+    categoryId: '',
+    startDate: '',
+    endDate: '',
+    year: '',
+    month: '',
+    day: ''
+  });
+
+  // Generate options for year, month, and day dropdowns
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 10 }, (_, i) => currentYear - 5 + i); // 10 years around current year
+  const months = Array.from({ length: 12 }, (_, i) => i + 1); // 1-12
+  const days = Array.from({ length: 31 }, (_, i) => i + 1); // 1-31
+
+  // Load categories on component mount
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    setCategoriesLoading(true);
+    try {
+      const response = await eventCategoryAPI.getEventCategories(1, 100);
+      if (response?.data?.items) {
+        setCategories(response.data.items);
+      } else if (response?.data) {
+        setCategories(response.data);
+      }
+    } catch (err) {
+      console.error('Error loading categories:', err);
+      // Set fallback categories if API fails
+      setCategories([
+        { eventCategoryId: '1', eventCategoryName: 'Technology' },
+        { eventCategoryId: '2', eventCategoryName: 'Music' },
+        { eventCategoryId: '3', eventCategoryName: 'Networking' },
+        { eventCategoryId: '4', eventCategoryName: 'Workshop' },
+        { eventCategoryId: '5', eventCategoryName: 'Conference' }
+      ]);
+    } finally {
+      setCategoriesLoading(false);
+    }
+  };
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const applyFilters = () => {
+    fetchData();
+    setShowFilters(false); // Close filters after applying
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      categoryId: '',
+      startDate: '',
+      endDate: '',
+      year: '',
+      month: '',
+      day: ''
+    });
+  };
+
+  const getFilterParams = () => {
+    const params = {};
+    
+    // Map category name to ID if a category is selected
+    if (filters.categoryId) {
+      params.categoryId = filters.categoryId;
+    }
+    
+    if (filters.startDate) params.startDate = filters.startDate;
+    if (filters.endDate) params.endDate = filters.endDate;
+    if (filters.year) params.year = parseInt(filters.year);
+    if (filters.month) params.month = parseInt(filters.month);
+    if (filters.day) params.day = parseInt(filters.day);
+    return params;
+  };
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const filterParams = getFilterParams();
+      
+      // Fetch all dashboard data in parallel
+      const [
+        eventStats,
+        buyerStats,
+        checkInStats,
+        revenueStats,
+        netRevenueStats,
+        revenueCategoryTag
+      ] = await Promise.all([
+        dashboardAPI.getEventStatistics(filterParams).catch(err => {
+          console.error('Error fetching event statistics:', err);
+          return { totalEvents: 0, eventsByStatus: [], eventsByTag: [], eventsByCategory: [], eventsByDate: [] };
+        }),
+        dashboardAPI.getBuyerStatistics(filterParams).catch(err => {
+          console.error('Error fetching buyer statistics:', err);
+          return { totalBuyers: 0, buyersByEvent: [] };
+        }),
+        dashboardAPI.getCheckInStatistics(filterParams).catch(err => {
+          console.error('Error fetching check-in statistics:', err);
+          return { totalCheckedIn: 0, checkInsByEvent: [] };
+        }),
+        dashboardAPI.getRevenueStatistics(filterParams).catch(err => {
+          console.error('Error fetching revenue statistics:', err);
+          return { totalRevenue: 0, revenueByEvent: [] };
+        }),
+        dashboardAPI.getNetRevenueStatistics(filterParams).catch(err => {
+          console.error('Error fetching net revenue statistics:', err);
+          return { totalNetRevenue: 0, netRevenueByEvent: [] };
+        }),
+        dashboardAPI.getRevenueByCategoryTag(filterParams).catch(err => {
+          console.error('Error fetching revenue by category/tag:', err);
+          return { revenueByCategory: [], revenueByTag: [] };
+        })
+      ]);
+
+      setEventStatistics(eventStats);
+      setBuyerStatistics(buyerStats);
+      setCheckInStatistics(checkInStats);
+      setRevenueStatistics(revenueStats);
+      setNetRevenueStatistics(netRevenueStats);
+      setRevenueByCategoryTag(revenueCategoryTag);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError('Failed to load dashboard data. Please try again later.');
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        // Fetch all dashboard data in parallel
-        const [
-          eventStats,
-          buyerStats,
-          checkInStats,
-          revenueStats,
-          netRevenueStats,
-          revenueCategoryTag
-        ] = await Promise.all([
-          dashboardAPI.getEventStatistics().catch(err => {
-            console.error('Error fetching event statistics:', err);
-            return { totalEvents: 0, eventsByStatus: [], eventsByTag: [], eventsByCategory: [], eventsByDate: [] };
-          }),
-          dashboardAPI.getBuyerStatistics().catch(err => {
-            console.error('Error fetching buyer statistics:', err);
-            return { totalBuyers: 0, buyersByEvent: [] };
-          }),
-          dashboardAPI.getCheckInStatistics().catch(err => {
-            console.error('Error fetching check-in statistics:', err);
-            return { totalCheckedIn: 0, checkInsByEvent: [] };
-          }),
-          dashboardAPI.getRevenueStatistics().catch(err => {
-            console.error('Error fetching revenue statistics:', err);
-            return { totalRevenue: 0, revenueByEvent: [] };
-          }),
-          dashboardAPI.getNetRevenueStatistics().catch(err => {
-            console.error('Error fetching net revenue statistics:', err);
-            return { totalNetRevenue: 0, netRevenueByEvent: [] };
-          }),
-          dashboardAPI.getRevenueByCategoryTag().catch(err => {
-            console.error('Error fetching revenue by category/tag:', err);
-            return { revenueByCategory: [], revenueByTag: [] };
-          })
-        ]);
-
-        setEventStatistics(eventStats);
-        setBuyerStatistics(buyerStats);
-        setCheckInStatistics(checkInStats);
-        setRevenueStatistics(revenueStats);
-        setNetRevenueStatistics(netRevenueStats);
-        setRevenueByCategoryTag(revenueCategoryTag);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-        setError('Failed to load dashboard data. Please try again later.');
-        setLoading(false);
-      }
-    };
-
     fetchData();
   }, []);
 
   // Format data for charts
   const getEventsByStatusData = () => {
     if (!eventStatistics || !eventStatistics.eventsByStatus) return [];
-    return eventStatistics.eventsByStatus.map(item => ({
-      name: item.status || 'Unknown',
-      value: item.count || 0
-    }));
+    
+    return eventStatistics.eventsByStatus.map(item => {
+      // Map backend status integer to frontend enum
+      let statusKey = null;
+      switch (item.status) {
+        case 0: // PendingApproval
+          statusKey = EventStatus.PendingApproval;
+          break;
+        case 1: // Approved
+          statusKey = EventStatus.Approved;
+          break;
+        case 2: // Rejected
+          statusKey = EventStatus.Rejected;
+          break;
+        case 3: // Cancelled
+          statusKey = EventStatus.Cancelled;
+          break;
+        case 4: // WaitingForPayout
+          statusKey = EventStatus.WaitingForPayout;
+          break;
+        case 5: // PaidOut
+          statusKey = EventStatus.PaidOut;
+          break;
+        default:
+          statusKey = null;
+      }
+      
+      // Use display name if available, otherwise use status name from backend
+      const displayName = statusKey ? EventStatusDisplay[statusKey] : item.statusName;
+      
+      return {
+        name: displayName || 'Unknown',
+        value: item.count || 0
+      };
+    });
   };
 
   const getEventsByCategoryData = () => {
@@ -170,6 +294,129 @@ const OrganizerDashboard = () => {
             min-height: 100vh;
           }
 
+          .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+          }
+
+          .dashboard-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+          }
+
+          .filter-toggle {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+          }
+
+          .filter-toggle:hover {
+            background: #f0f0f0;
+            transform: scale(1.05);
+          }
+
+          .filter-toggle.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+          }
+
+          .dashboard-filters {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+          }
+
+          .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+          }
+
+          .filter-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+          }
+
+          .close-filter {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #999;
+            font-size: 20px;
+          }
+
+          .close-filter:hover {
+            color: #333;
+          }
+
+          .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+          }
+
+          .filter-group {
+            flex: 1;
+            min-width: 200px;
+          }
+
+          .filter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+          }
+
+          .filter-group input, .filter-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+          }
+
+          .filter-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+          }
+
+          .filter-buttons button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+          }
+
+          .apply-btn {
+            background-color: #007bff;
+            color: white;
+          }
+
+          .clear-btn {
+            background-color: #6c757d;
+            color: white;
+          }
+
           .dashboard-widgets {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -257,10 +504,130 @@ const OrganizerDashboard = () => {
             .dashboard-charts {
               grid-template-columns: 1fr;
             }
+
+            .filter-row {
+              flex-direction: column;
+            }
           }
         `}
       </style>
       
+      {/* Dashboard Header */}
+      <div className="dashboard-header">
+        <div className="dashboard-title">Organizer Dashboard</div>
+        <div 
+          className={`filter-toggle ${showFilters ? 'active' : ''}`}
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          {showFilters ? <X size={20} /> : <Filter size={20} />}
+        </div>
+      </div>
+
+      {/* Filter Section */}
+      {showFilters && (
+        <div className="dashboard-filters">
+          <div className="filter-header">
+            <div className="filter-title">Filter Dashboard Data</div>
+            <button 
+              className="close-filter"
+              onClick={() => setShowFilters(false)}
+            >
+              <X size={24} />
+            </button>
+          </div>
+          <div className="filter-row">
+            <div className="filter-group">
+              <label htmlFor="categoryId">Category</label>
+              <select
+                id="categoryId"
+                name="categoryId"
+                value={filters.categoryId}
+                onChange={handleFilterChange}
+                disabled={categoriesLoading}
+              >
+                <option value="">All Categories</option>
+                {categories.map(category => (
+                  <option 
+                    key={category.eventCategoryId} 
+                    value={category.eventCategoryId}
+                  >
+                    {category.eventCategoryName}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="filter-group">
+              <label htmlFor="startDate">Start Date</label>
+              <input
+                type="date"
+                id="startDate"
+                name="startDate"
+                value={filters.startDate}
+                onChange={handleFilterChange}
+              />
+            </div>
+            <div className="filter-group">
+              <label htmlFor="endDate">End Date</label>
+              <input
+                type="date"
+                id="endDate"
+                name="endDate"
+                value={filters.endDate}
+                onChange={handleFilterChange}
+              />
+            </div>
+          </div>
+          <div className="filter-row">
+            <div className="filter-group">
+              <label htmlFor="year">Year</label>
+              <select
+                id="year"
+                name="year"
+                value={filters.year}
+                onChange={handleFilterChange}
+              >
+                <option value="">All Years</option>
+                {years.map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+            </div>
+            <div className="filter-group">
+              <label htmlFor="month">Month</label>
+              <select
+                id="month"
+                name="month"
+                value={filters.month}
+                onChange={handleFilterChange}
+              >
+                <option value="">All Months</option>
+                {months.map(month => (
+                  <option key={month} value={month}>{month}</option>
+                ))}
+              </select>
+            </div>
+            <div className="filter-group">
+              <label htmlFor="day">Day</label>
+              <select
+                id="day"
+                name="day"
+                value={filters.day}
+                onChange={handleFilterChange}
+              >
+                <option value="">All Days</option>
+                {days.map(day => (
+                  <option key={day} value={day}>{day}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="filter-buttons">
+            <button className="apply-btn" onClick={applyFilters}>Apply Filters</button>
+            <button className="clear-btn" onClick={clearFilters}>Clear Filters</button>
+          </div>
+        </div>
+      )}
+
       <div className="dashboard-widgets">
         {widgetData.map((widget, index) => (
           <div className="widget" key={index}>
