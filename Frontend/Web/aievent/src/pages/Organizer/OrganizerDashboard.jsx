@@ -3,7 +3,7 @@ import { dashboardAPI } from '../../api/dashboardAPI';
 import { eventCategoryAPI } from '../../api/eventCategoryAPI';
 import { EventStatus, EventStatusDisplay } from '../../constants/eventConstants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area } from 'recharts';
-import { Filter, X } from 'lucide-react';
+import { Filter, X, Calendar, Users, DollarSign, CheckCircle, Eye, EyeOff } from 'lucide-react';
 
 const OrganizerDashboard = () => {
   const [eventStatistics, setEventStatistics] = useState(null);
@@ -17,6 +17,17 @@ const OrganizerDashboard = () => {
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [showChartSelector, setShowChartSelector] = useState(false);
+  
+  // Chart visibility state
+  const [visibleCharts, setVisibleCharts] = useState({
+    eventsByStatus: true,
+    revenueByEvent: true,
+    eventsOverTime: true,
+    buyersByEvent: true,
+    checkInsByEvent: true,
+    eventsByCategory: true
+  });
   
   // Filter states
   const [filters, setFilters] = useState({
@@ -161,6 +172,26 @@ const OrganizerDashboard = () => {
     fetchData();
   }, []);
 
+  // Toggle chart visibility
+  const toggleChartVisibility = (chartName) => {
+    setVisibleCharts(prev => ({
+      ...prev,
+      [chartName]: !prev[chartName]
+    }));
+  };
+
+  // Toggle all charts
+  const toggleAllCharts = (isVisible) => {
+    setVisibleCharts({
+      eventsByStatus: isVisible,
+      revenueByEvent: isVisible,
+      eventsOverTime: isVisible,
+      buyersByEvent: isVisible,
+      checkInsByEvent: isVisible,
+      eventsByCategory: isVisible
+    });
+  };
+
   // Format data for charts
   const getEventsByStatusData = () => {
     if (!eventStatistics || !eventStatistics.eventsByStatus) return [];
@@ -242,7 +273,7 @@ const OrganizerDashboard = () => {
   };
 
   // Colors for charts
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82ca9d'];
+  const COLORS = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796'];
 
   // Widget data
   const widgetData = [
@@ -250,38 +281,234 @@ const OrganizerDashboard = () => {
       title: "TOTAL EVENTS",
       value: eventStatistics?.totalEvents || 0,
       description: "All events you've created",
-      color: "rgba(255, 0, 0, 0.2)",
-      textColor: "crimson"
+      icon: <Calendar size={20} />,
+      color: "primary"
     },
     {
       title: "TOTAL BUYERS",
       value: buyerStatistics?.totalBuyers || 0,
       description: "People who bought tickets",
-      color: "rgba(218, 165, 32, 0.2)",
-      textColor: "goldenrod"
+      icon: <Users size={20} />,
+      color: "success"
     },
     {
       title: "TOTAL REVENUE",
       value: revenueStatistics?.totalRevenue ? `$${revenueStatistics.totalRevenue.toFixed(2)}` : '$0.00',
       description: "Total sales from all events",
-      color: "rgba(0, 128, 0, 0.2)",
-      textColor: "green"
+      icon: <DollarSign size={20} />,
+      color: "info"
     },
     {
       title: "CHECKED IN",
       value: checkInStatistics?.totalCheckedIn || 0,
       description: "Attendees checked in",
-      color: "rgba(128, 0, 128, 0.2)",
-      textColor: "purple"
+      icon: <CheckCircle size={20} />,
+      color: "warning"
     }
   ];
 
+  // Calculate chart height based on visibility
+  const getChartHeight = () => {
+    const visibleCount = Object.values(visibleCharts).filter(Boolean).length;
+    
+    // Adjust height based on number of visible charts
+    if (visibleCount <= 2) return 350;
+    if (visibleCount <= 4) return 300;
+    return 250;
+  };
+
+  // Chart definitions
+  const chartDefinitions = [
+    {
+      id: 'eventsByStatus',
+      title: 'Events by Status',
+      visible: visibleCharts.eventsByStatus,
+      component: (
+        <ResponsiveContainer width="100%" height={getChartHeight()}>
+          <PieChart>
+            <Pie
+              data={getEventsByStatusData()}
+              cx="50%"
+              cy="50%"
+              labelLine={true}
+              outerRadius={Math.min(getChartHeight() / 3, 80)}
+              fill="#8884d8"
+              dataKey="value"
+              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+            >
+              {getEventsByStatusData().map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip formatter={(value) => [value, 'Events']} />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
+      )
+    },
+    {
+      id: 'revenueByEvent',
+      title: 'Revenue by Event',
+      visible: visibleCharts.revenueByEvent,
+      component: (
+        <ResponsiveContainer width="100%" height={getChartHeight()}>
+          <BarChart
+            data={getRevenueByEventData()}
+            margin={{
+              top: 5,
+              right: 30,
+              left: 20,
+              bottom: 5,
+            }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip formatter={(value) => [`$${value}`, 'Revenue']} />
+            <Legend />
+            <Bar dataKey="revenue" fill="#4e73df" name="Revenue ($)" />
+          </BarChart>
+        </ResponsiveContainer>
+      )
+    },
+    {
+      id: 'eventsOverTime',
+      title: 'Events Over Time',
+      visible: visibleCharts.eventsOverTime,
+      component: (
+        <ResponsiveContainer width="100%" height={getChartHeight()}>
+          <AreaChart
+            data={getEventsByDateData()}
+            margin={{
+              top: 10,
+              right: 30,
+              left: 0,
+              bottom: 0,
+            }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" />
+            <YAxis />
+            <Tooltip />
+            <Area type="monotone" dataKey="count" stroke="#4e73df" fill="rgba(78, 115, 223, 0.2)" />
+          </AreaChart>
+        </ResponsiveContainer>
+      )
+    },
+    {
+      id: 'buyersByEvent',
+      title: 'Buyers by Event',
+      visible: visibleCharts.buyersByEvent,
+      component: (
+        <ResponsiveContainer width="100%" height={getChartHeight()}>
+          <BarChart
+            data={getBuyersByEventData()}
+            margin={{
+              top: 5,
+              right: 30,
+              left: 20,
+              bottom: 5,
+            }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip formatter={(value) => [value, 'Buyers']} />
+            <Legend />
+            <Bar dataKey="buyers" fill="#1cc88a" name="Buyers" />
+          </BarChart>
+        </ResponsiveContainer>
+      )
+    },
+    {
+      id: 'checkInsByEvent',
+      title: 'Check-ins by Event',
+      visible: visibleCharts.checkInsByEvent,
+      component: (
+        <ResponsiveContainer width="100%" height={getChartHeight()}>
+          <BarChart
+            data={getCheckInsByEventData()}
+            margin={{
+              top: 5,
+              right: 30,
+              left: 20,
+              bottom: 5,
+            }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip formatter={(value) => [value, 'Check-ins']} />
+            <Legend />
+            <Bar dataKey="checkIns" fill="#f6c23e" name="Check-ins" />
+          </BarChart>
+        </ResponsiveContainer>
+      )
+    },
+    {
+      id: 'eventsByCategory',
+      title: 'Events by Category',
+      visible: visibleCharts.eventsByCategory,
+      component: (
+        <ResponsiveContainer width="100%" height={getChartHeight()}>
+          <PieChart>
+            <Pie
+              data={getEventsByCategoryData()}
+              cx="50%"
+              cy="50%"
+              labelLine={true}
+              outerRadius={Math.min(getChartHeight() / 3, 80)}
+              fill="#8884d8"
+              dataKey="value"
+              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+            >
+              {getEventsByCategoryData().map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip formatter={(value) => [value, 'Events']} />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
+      )
+    }
+  ];
+
+  // Calculate grid layout based on visible charts
+  const getChartGridColumns = () => {
+    const visibleCount = Object.values(visibleCharts).filter(Boolean).length;
+    
+    if (visibleCount === 0) return '1fr';
+    if (visibleCount === 1) return '1fr';
+    if (visibleCount === 2) return '1fr 1fr';
+    if (visibleCount <= 4) return 'repeat(2, 1fr)';
+    return 'repeat(3, 1fr)';
+  };
+
   if (loading) {
-    return <div className="dashboard">Loading dashboard data...</div>;
+    return (
+      <div className="organizer-dashboard">
+        <div className="dashboard-loading">
+          <div className="spinner"></div>
+          <p>Loading dashboard data...</p>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="dashboard error">{error}</div>;
+    return (
+      <div className="organizer-dashboard">
+        <div className="dashboard-error">
+          <div className="error-icon">⚠️</div>
+          <h3>Error Loading Dashboard</h3>
+          <p>{error}</p>
+          <button className="retry-button" onClick={fetchData}>
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -290,29 +517,38 @@ const OrganizerDashboard = () => {
         {`
           .organizer-dashboard {
             padding: 20px;
-            background-color: #f5f5f5;
+            background-color: #f8f9fc;
             min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
           }
 
           .dashboard-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e3e6f0;
           }
 
           .dashboard-title {
-            font-size: 24px;
-            font-weight: bold;
+            font-size: 28px;
+            font-weight: 700;
             color: #333;
+            margin: 0;
           }
 
-          .filter-toggle {
+          .header-actions {
+            display: flex;
+            gap: 15px;
+          }
+
+          .filter-toggle, .chart-toggle {
             background: white;
             border: 1px solid #ddd;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -321,37 +557,39 @@ const OrganizerDashboard = () => {
             transition: all 0.3s ease;
           }
 
-          .filter-toggle:hover {
-            background: #f0f0f0;
+          .filter-toggle:hover, .chart-toggle:hover {
+            background: #f8f9fc;
             transform: scale(1.05);
           }
 
-          .filter-toggle.active {
-            background: #007bff;
+          .filter-toggle.active, .chart-toggle.active {
+            background: #4e73df;
             color: white;
-            border-color: #007bff;
+            border-color: #4e73df;
           }
 
           .dashboard-filters {
             background: white;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            margin-bottom: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
             position: relative;
+            border: 1px solid #e3e6f0;
           }
 
           .filter-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
           }
 
           .filter-title {
-            font-size: 18px;
-            font-weight: bold;
+            font-size: 20px;
+            font-weight: 600;
             color: #333;
+            margin: 0;
           }
 
           .close-filter {
@@ -360,17 +598,25 @@ const OrganizerDashboard = () => {
             cursor: pointer;
             color: #999;
             font-size: 20px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
           }
 
           .close-filter:hover {
             color: #333;
+            background: #f8f9fc;
           }
 
           .filter-row {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 15px;
+            gap: 20px;
+            margin-bottom: 20px;
           }
 
           .filter-group {
@@ -380,23 +626,33 @@ const OrganizerDashboard = () => {
 
           .filter-group label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #333;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+            font-size: 14px;
           }
 
           .filter-group input, .filter-group select {
             width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
+            padding: 10px 12px;
+            border: 1px solid #d1d3e2;
             border-radius: 4px;
             box-sizing: border-box;
+            font-size: 14px;
+            transition: border-color 0.2s;
+          }
+
+          .filter-group input:focus, .filter-group select:focus {
+            border-color: #4e73df;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(78, 115, 223, 0.2);
           }
 
           .filter-buttons {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             margin-top: 15px;
+            justify-content: flex-end;
           }
 
           .filter-buttons button {
@@ -404,101 +660,302 @@ const OrganizerDashboard = () => {
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
           }
 
           .apply-btn {
-            background-color: #007bff;
+            background-color: #4e73df;
             color: white;
           }
 
+          .apply-btn:hover {
+            background-color: #2e59d9;
+            transform: translateY(-1px);
+          }
+
           .clear-btn {
-            background-color: #6c757d;
+            background-color: #858796;
             color: white;
+          }
+
+          .clear-btn:hover {
+            background-color: #6c6e7e;
+            transform: translateY(-1px);
           }
 
           .dashboard-widgets {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 25px;
             margin-bottom: 30px;
           }
 
           .widget {
             background: white;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
             padding: 20px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: transform 0.3s ease;
+            flex-direction: column;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #e3e6f0;
           }
 
           .widget:hover {
-            transform: translateY(-5px);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
           }
 
-          .widget-content .title {
-            display: block;
+          .widget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+          }
+
+          .widget-title {
             font-size: 14px;
-            color: #999;
-            margin-bottom: 5px;
-          }
-
-          .widget-content .value {
-            display: block;
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 5px;
-          }
-
-          .widget-content .description {
-            display: block;
-            font-size: 12px;
-            color: #999;
+            font-weight: 600;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
           }
 
           .widget-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 10px;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 18px;
+          }
+
+          .widget-icon.primary {
+            background-color: rgba(78, 115, 223, 0.15);
+            color: #4e73df;
+          }
+
+          .widget-icon.success {
+            background-color: rgba(28, 200, 138, 0.15);
+            color: #1cc88a;
+          }
+
+          .widget-icon.info {
+            background-color: rgba(54, 185, 204, 0.15);
+            color: #36b9cc;
+          }
+
+          .widget-icon.warning {
+            background-color: rgba(246, 194, 62, 0.15);
+            color: #f6c23e;
+          }
+
+          .widget-value {
             font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: #333;
+          }
+
+          .widget-description {
+            font-size: 12px;
+            color: #777;
+          }
+
+          .chart-selector {
+            position: absolute;
+            top: 60px;
+            right: 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+            padding: 20px;
+            width: 300px;
+            z-index: 100;
+            border: 1px solid #e3e6f0;
+          }
+
+          .chart-selector-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+          }
+
+          .chart-selector-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0;
+            color: #333;
+          }
+
+          .chart-selector-actions {
+            display: flex;
+            gap: 8px;
+          }
+
+          .chart-selector-actions button {
+            background: #f8f9fc;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+
+          .chart-selector-actions button:hover {
+            background: #e3e6f0;
+          }
+
+          .chart-options {
+            max-height: 300px;
+            overflow-y: auto;
+          }
+
+          .chart-option {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+          }
+
+          .chart-option:last-child {
+            border-bottom: none;
+          }
+
+          .chart-option input {
+            margin-right: 10px;
+          }
+
+          .chart-option label {
+            font-size: 14px;
+            color: #555;
+            cursor: pointer;
+            flex: 1;
           }
 
           .dashboard-charts {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 20px;
+            grid-template-columns: ${getChartGridColumns()};
+            gap: 25px;
+            position: relative;
           }
 
           .chart-container {
             background: white;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            padding: 25px;
+            border: 1px solid #e3e6f0;
           }
 
-          .chart-container h3 {
-            margin-top: 0;
+          .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 20px;
-            color: #333;
-            font-size: 18px;
           }
 
-          .error {
-            color: #d32f2f;
+          .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+          }
+
+          .dashboard-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 60vh;
+          }
+
+          .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(78, 115, 223, 0.2);
+            border-top: 5px solid #4e73df;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+          }
+
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+
+          .dashboard-error {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 60vh;
             text-align: center;
             padding: 20px;
-            font-size: 18px;
+          }
+
+          .error-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+          }
+
+          .dashboard-error h3 {
+            color: #333;
+            margin-bottom: 10px;
+          }
+
+          .dashboard-error p {
+            color: #777;
+            margin-bottom: 20px;
+            max-width: 500px;
+          }
+
+          .retry-button {
+            background-color: #4e73df;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+          }
+
+          .retry-button:hover {
+            background-color: #2e59d9;
+          }
+
+          @media (max-width: 1200px) {
+            .dashboard-charts {
+              grid-template-columns: repeat(2, 1fr);
+            }
+          }
+
+          @media (max-width: 992px) {
+            .dashboard-charts {
+              grid-template-columns: 1fr;
+            }
           }
 
           @media (max-width: 768px) {
             .organizer-dashboard {
-              padding: 10px;
+              padding: 15px;
+            }
+
+            .dashboard-title {
+              font-size: 24px;
+            }
+
+            .dashboard-widgets {
+              grid-template-columns: 1fr;
             }
 
             .dashboard-charts {
@@ -508,31 +965,91 @@ const OrganizerDashboard = () => {
             .filter-row {
               flex-direction: column;
             }
+
+            .filter-buttons {
+              justify-content: center;
+            }
+
+            .chart-selector {
+              width: 280px;
+              right: -20px;
+            }
+          }
+
+          @media (max-width: 576px) {
+            .dashboard-header {
+              flex-direction: column;
+              align-items: flex-start;
+              gap: 15px;
+            }
+
+            .header-actions {
+              align-self: flex-end;
+            }
+
+            .chart-selector {
+              width: 250px;
+              right: -10px;
+            }
           }
         `}
       </style>
       
       {/* Dashboard Header */}
       <div className="dashboard-header">
-        <div className="dashboard-title">Organizer Dashboard</div>
-        <div 
-          className={`filter-toggle ${showFilters ? 'active' : ''}`}
-          onClick={() => setShowFilters(!showFilters)}
-        >
-          {showFilters ? <X size={20} /> : <Filter size={20} />}
+        <h1 className="dashboard-title">Organizer Dashboard</h1>
+        <div className="header-actions">
+          <div 
+            className={`chart-toggle ${showChartSelector ? 'active' : ''}`}
+            onClick={() => setShowChartSelector(!showChartSelector)}
+          >
+            <Eye size={20} />
+          </div>
+          <div 
+            className={`filter-toggle ${showFilters ? 'active' : ''}`}
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            {showFilters ? <X size={20} /> : <Filter size={20} />}
+          </div>
         </div>
       </div>
+
+      {/* Chart Selector Dropdown */}
+      {showChartSelector && (
+        <div className="chart-selector">
+          <div className="chart-selector-header">
+            <h3 className="chart-selector-title">Select Charts to Display</h3>
+            <div className="chart-selector-actions">
+              <button onClick={() => toggleAllCharts(true)}>All</button>
+              <button onClick={() => toggleAllCharts(false)}>None</button>
+            </div>
+          </div>
+          <div className="chart-options">
+            {chartDefinitions.map(chart => (
+              <div className="chart-option" key={chart.id}>
+                <input
+                  type="checkbox"
+                  id={`chart-${chart.id}`}
+                  checked={visibleCharts[chart.id]}
+                  onChange={() => toggleChartVisibility(chart.id)}
+                />
+                <label htmlFor={`chart-${chart.id}`}>{chart.title}</label>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Filter Section */}
       {showFilters && (
         <div className="dashboard-filters">
           <div className="filter-header">
-            <div className="filter-title">Filter Dashboard Data</div>
+            <h2 className="filter-title">Filter Dashboard Data</h2>
             <button 
               className="close-filter"
               onClick={() => setShowFilters(false)}
             >
-              <X size={24} />
+              <X size={20} />
             </button>
           </div>
           <div className="filter-row">
@@ -622,8 +1139,8 @@ const OrganizerDashboard = () => {
             </div>
           </div>
           <div className="filter-buttons">
-            <button className="apply-btn" onClick={applyFilters}>Apply Filters</button>
             <button className="clear-btn" onClick={clearFilters}>Clear Filters</button>
+            <button className="apply-btn" onClick={applyFilters}>Apply Filters</button>
           </div>
         </div>
       )}
@@ -631,153 +1148,29 @@ const OrganizerDashboard = () => {
       <div className="dashboard-widgets">
         {widgetData.map((widget, index) => (
           <div className="widget" key={index}>
-            <div className="widget-content">
-              <span className="title">{widget.title}</span>
-              <span className="value" style={{ color: widget.textColor }}>{widget.value}</span>
-              <span className="description">{widget.description}</span>
+            <div className="widget-header">
+              <div className="widget-title">{widget.title}</div>
+              <div className={`widget-icon ${widget.color}`}>
+                {widget.icon}
+              </div>
             </div>
-            <div className="widget-icon" style={{ backgroundColor: widget.color }}>
-              {/* Icon would go here */}
-            </div>
+            <div className="widget-value">{widget.value}</div>
+            <div className="widget-description">{widget.description}</div>
           </div>
         ))}
       </div>
 
       <div className="dashboard-charts">
-        <div className="chart-container">
-          <h3>Events by Status</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={getEventsByStatusData()}
-                cx="50%"
-                cy="50%"
-                labelLine={true}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-              >
-                {getEventsByStatusData().map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => [value, 'Events']} />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="chart-container">
-          <h3>Revenue by Event</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart
-              data={getRevenueByEventData()}
-              margin={{
-                top: 5,
-                right: 30,
-                left: 20,
-                bottom: 5,
-              }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip formatter={(value) => [`$${value}`, 'Revenue']} />
-              <Legend />
-              <Bar dataKey="revenue" fill="#8884d8" name="Revenue ($)" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="chart-container">
-          <h3>Events Over Time</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart
-              data={getEventsByDateData()}
-              margin={{
-                top: 10,
-                right: 30,
-                left: 0,
-                bottom: 0,
-              }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Area type="monotone" dataKey="count" stroke="#8884d8" fill="#8884d8" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="chart-container">
-          <h3>Buyers by Event</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart
-              data={getBuyersByEventData()}
-              margin={{
-                top: 5,
-                right: 30,
-                left: 20,
-                bottom: 5,
-              }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip formatter={(value) => [value, 'Buyers']} />
-              <Legend />
-              <Bar dataKey="buyers" fill="#82ca9d" name="Buyers" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="chart-container">
-          <h3>Check-ins by Event</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart
-              data={getCheckInsByEventData()}
-              margin={{
-                top: 5,
-                right: 30,
-                left: 20,
-                bottom: 5,
-              }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip formatter={(value) => [value, 'Check-ins']} />
-              <Legend />
-              <Bar dataKey="checkIns" fill="#ffc658" name="Check-ins" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="chart-container">
-          <h3>Events by Category</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={getEventsByCategoryData()}
-                cx="50%"
-                cy="50%"
-                labelLine={true}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-              >
-                {getEventsByCategoryData().map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => [value, 'Events']} />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+        {chartDefinitions
+          .filter(chart => chart.visible)
+          .map(chart => (
+            <div className="chart-container" key={chart.id}>
+              <div className="chart-header">
+                <h3 className="chart-title">{chart.title}</h3>
+              </div>
+              {chart.component}
+            </div>
+          ))}
       </div>
     </div>
   );
