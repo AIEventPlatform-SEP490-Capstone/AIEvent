@@ -28,15 +28,12 @@ const CategorySelector = ({ selectedCategories, onCategoriesChange, className })
     setIsLoading(true);
     try {
       const response = await eventCategoryAPI.getEventCategories(1, 100);
-      console.log('Categories API response:', response);
       
       if (response?.isSuccess && response?.data) {
         const categories = response.data.items || response.data || [];
-        console.log('Extracted categories:', categories);
         setAvailableCategories(categories);
       } else if (response?.data) {
         const categories = response.data.items || response.data || [];
-        console.log('Direct data categories:', categories);
         setAvailableCategories(categories);
       } else {
         console.warn('Unexpected categories response structure:', response);

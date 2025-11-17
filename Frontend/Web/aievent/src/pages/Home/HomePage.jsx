@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import { Hero } from "../../components/HomePage/hero";
 import { EventDiscovery } from "../../components/HomePage/event-discovery";
 import { AIRecommendationCard } from "../../components/HomePage/AIRecommendationCard";
+import ModernAIChat from "../../components/HomePage/ModernAIChat";
 import { PATH } from "../../routes/path";
 import LoadingSpinner from "../../components/LoadingSpinner/LoadingSpinner";
 import { Footer } from "../../components/Footer/Footer";
@@ -17,8 +18,16 @@ const HomePage = () => {
     (state) => state.auth
   );
 
-  const { allEvents, recommendedEvents, loading, error, refreshEvents } =
-    useHomepageEvents();
+  const { 
+    allEvents, 
+    recommendedEvents, 
+    loading, 
+    error, 
+    refreshEvents,
+    currentPage,
+    totalPages,
+    goToPage
+  } = useHomepageEvents();
   
   const { profile, getUserProfile } = useUserProfile();
   
@@ -131,9 +140,13 @@ const HomePage = () => {
           error={error}
           onRefresh={refreshEvents}
           showAIRecommendedSection={showAIEvents}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={goToPage}
         />
       </div>
       <Footer />
+      <ModernAIChat />
     </div>
   );
 };

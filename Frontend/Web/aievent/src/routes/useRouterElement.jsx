@@ -41,7 +41,9 @@ import PlatformLogActivity from "../pages/Admin/PlatformLogActivity";
 import AdminEventManagement from "../pages/Admin/AdminEventManagement";
 import FriendDetailPage from "../pages/User/FriendDetailPage";
 import EventInvitationsPage from "../pages/User/EventInvitationsPage";
+import NotificationsPage from "../pages/User/NotificationsPage";
 import StaffManagePage from "../pages/Organizer/StaffManagePage";
+import ChatPage from "../pages/Chat/ChatPage";
 import HelpPage from "../pages/Shared/HelpPage";
 import AboutPage from "../pages/Shared/AboutPage";
 
@@ -90,10 +92,18 @@ export default function useRouterElement() {
           ),
         },
         {
+          path: "chat",
+          element: (
+            <ProtectedRoute>
+              <ChatPage />
+            </ProtectedRoute>
+          ),
+        },
+        {
           path: "notifications",
           element: (
             <ProtectedRoute>
-              <div>Notifications Page</div>
+              <NotificationsPage />
             </ProtectedRoute>
           ),
         },

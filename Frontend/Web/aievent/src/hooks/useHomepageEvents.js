@@ -13,28 +13,36 @@ const getRecommendedEvents = (allEvents) => {
     .slice(0, 6);
 };
 
-export const useHomepageEvents = () => {
+export const useHomepageEvents = (initialPage = 1, pageSize = 12) => {
   const [allEvents, setAllEvents] = useState([]);
   const [recommendedEvents, setRecommendedEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(initialPage);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   
   const { getEvents } = useEvents();
 
-  const loadEvents = async () => {
+  const loadEvents = async (page = currentPage) => {
     try {
       setLoading(true);
       setError(null);
       
       // Fetch events from API
       const response = await getEvents({
-        pageNumber: 1,
-        pageSize: 20,
+        pageNumber: page,
+        pageSize: pageSize,
       });
       
       if (response) {
         const eventsData = response.items || response || [];
+        const totalCount = response.totalCount || eventsData.length;
+        
         setAllEvents(eventsData);
+        setTotalCount(totalCount);
+        setTotalPages(Math.ceil(totalCount / pageSize));
+        setCurrentPage(page);
         
         // Set recommended events
         const recommended = getRecommendedEvents(eventsData);
@@ -50,15 +58,25 @@ export const useHomepageEvents = () => {
 
   // Load events on mount
   useEffect(() => {
-    loadEvents();
-  }, []);
+    loadEvents(currentPage);
+  }, [currentPage]);
+
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   return {
     allEvents,
     recommendedEvents,
     loading,
     error,
-    refreshEvents: loadEvents
+    refreshEvents: () => loadEvents(currentPage),
+    currentPage,
+    totalPages,
+    totalCount,
+    goToPage
   };
 };
 

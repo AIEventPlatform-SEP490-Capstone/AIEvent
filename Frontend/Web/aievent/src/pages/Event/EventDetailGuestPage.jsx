@@ -9,7 +9,7 @@ import {
   Users,
   Heart,
   Share2,
-  ArrowLeft,
+  ChevronLeft,
   MessageCircle,
   ExternalLink,
   CreditCard,
@@ -55,7 +55,7 @@ import Zalo from "../../assets/Zalo.png";
 import Facebook from "../../assets/Facebook.png";
 import Twitter from "../../assets/Twitter.png";
 import LinkedIn from "../../assets/LinkedIn.png";
-import Tiktok from "../../assets/TikTok.png";
+import Tiktok from "../../assets/Tiktok.png";
 import Instagram from "../../assets/Instagram.png";
 
 const EventDetailGuestPage = ({ previewData }) => {
@@ -75,6 +75,7 @@ const EventDetailGuestPage = ({ previewData }) => {
   const [inviteMessage, setInviteMessage] = useState("Tham gia cùng tôi nhé!");
   const [isInviting, setIsInviting] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   //tải danh sách bạn bè khi mở dialog mời
   useEffect(() => {
@@ -173,7 +174,6 @@ const EventDetailGuestPage = ({ previewData }) => {
     try {
       setIsLoading(true);
       const eventData = await getEventById(id);
-
       if (eventData) {
         setEvent(eventData);
       } else {
@@ -410,537 +410,377 @@ const EventDetailGuestPage = ({ previewData }) => {
   }
 
   const totalAvailableTickets = event.totalTickets - (event.soldQuantity || 0);
+  const occupancyPercent = event.soldQuantity ? (event.soldQuantity / event.totalTickets) * 100 : 0;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header - Enhanced */}
-      <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200 shadow-sm">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(-1)}
-              className="hover:bg-gray-100 transition-colors rounded-lg"
+      {/* Header - Simplified */}
+      <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-200">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <button 
+            onClick={() => navigate(-1)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition"
+          >
+            <ChevronLeft className="w-5 h-5 text-foreground" />
+          </button>
+          <h1 className="text-lg font-semibold text-foreground flex-1 ml-4 truncate">{event.title}</h1>
+          <div className="flex gap-2">
+            <button 
+              onClick={handleToggleFavorite}
+              className="p-2 hover:bg-gray-100 rounded-lg transition"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Quay lại
-            </Button>
+              <Heart className={`w-5 h-5 ${isLiked ? "fill-red-500 text-red-500" : "text-gray-700"}`} />
+            </button>
+            <button 
+              onClick={() => setIsShareOpen(true)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition"
+            >
+              <Share2 className="w-5 h-5 text-gray-700" />
+            </button>
           </div>
         </div>
       </div>
 
+      <div className="relative h-96 w-full overflow-hidden bg-gray-100">
+        {event.imgListEvent && event.imgListEvent.length > 0 ? (
+          <>
+            <img 
+              src={event.imgListEvent[selectedImageIndex]} 
+              alt={event.title} 
+              className="w-full h-full object-cover" 
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            
+            <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
+              <Badge className="bg-white/95 text-gray-900 border-0 shadow-lg px-3 py-1.5 font-semibold">
+                <Tag className="w-3 h-3 mr-1" />
+                {event.eventCategory?.eventCategoryName || "Chưa phân loại"}
+              </Badge>
+              <Badge className="bg-primary text-primary-foreground border-0 shadow-lg px-3 py-1.5 font-semibold">
+                {formatPrice(event)}
+              </Badge>
+            </div>
+            
+            {event.imgListEvent.length > 1 && (
+              <div className="absolute bottom-4 right-4 flex gap-2">
+                {event.imgListEvent.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImageIndex(index)}
+                    className={`w-3 h-3 rounded-full transition-all ${
+                      selectedImageIndex === index ? "bg-white w-8" : "bg-white/50 hover:bg-white/75"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+            <span className="text-gray-400 font-medium">
+              Không có hình ảnh
+            </span>
+          </div>
+        )}
+      </div>
+
       <div className="container mx-auto px-4 py-8">
+        {/* Grid layout with main content and sidebar */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Event Image - Enhanced with overlay gradient */}
-            <div className="relative rounded-2xl overflow-hidden shadow-xl group">
-              {event.imgListEvent && event.imgListEvent.length > 0 ? (
-                <>
-                  <img
-                    src={event.imgListEvent[0]}
-                    alt={event.title}
-                    className="w-full h-64 md:h-96 object-cover transition-transform duration-500 group-hover:scale-105"
+          <div className="lg:col-span-2 space-y-8">
+            <div className="space-y-3">
+              <h1 className="text-4xl font-bold text-foreground leading-tight">{event.title}</h1>
+              <p className="text-lg text-muted-foreground leading-relaxed">{event.description}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white rounded-xl p-6 border border-gray-100 hover:shadow-lg transition">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="p-2 bg-blue-50 rounded-lg">
+                    <Calendar className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ngày diễn ra</p>
+                    <p className="font-bold text-foreground">{formatDate(event.startTime)}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl p-6 border border-gray-100 hover:shadow-lg transition">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="p-2 bg-blue-50 rounded-lg">
+                    <Clock className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Thời gian</p>
+                    <p className="font-bold text-foreground">{formatTime(event.startTime)} - {formatTime(event.endTime)}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl p-6 border border-gray-100 hover:shadow-lg transition">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="p-2 bg-blue-50 rounded-lg">
+                    <MapPin className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Địa điểm</p>
+                    <p className="font-bold text-foreground">
+                      {event.isOnlineEvent ? "Sự kiện trực tuyến" : (event.locationName || "Chưa xác định")}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl p-6 border border-gray-100 hover:shadow-lg transition">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="p-2 bg-blue-50 rounded-lg">
+                    <Users className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Người tham gia</p>
+                    <p className="font-bold text-foreground">{event.soldQuantity || 0} / {event.totalTickets || "N/A"}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Ticket Information */}
+            {event.ticketDetails && event.ticketDetails.length > 0 && (
+              <div className="bg-white rounded-xl p-6 border border-gray-100">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <Ticket className="w-5 h-5 text-primary" />
+                    Tình trạng vé
+                  </h3>
+                  <span className="text-sm font-medium text-primary">{occupancyPercent.toFixed(0)}% Đã bán</span>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-500"
+                    style={{ width: `${occupancyPercent}%` }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
-                </>
-              ) : (
-                <div className="w-full h-64 md:h-96 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                  <span className="text-gray-400 font-medium">
-                    Không có hình ảnh
-                  </span>
                 </div>
-              )}
-
-              {/* Favorite Button - Enhanced */}
-              <button
-                onClick={handleToggleFavorite}
-                className="absolute top-4 right-4 w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all duration-300 hover:shadow-xl"
-              >
-                <Heart
-                  className={`w-6 h-6 transition-all ${
-                    isLiked
-                      ? "fill-red-500 text-red-500 scale-110"
-                      : "text-gray-700"
-                  }`}
-                />
-              </button>
-
-              {/* Badges - Enhanced */}
-              <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
-                <Badge className="bg-white/95 backdrop-blur-sm text-gray-800 border-0 shadow-lg px-4 py-2 font-semibold">
-                  {formatPrice(event)}
-                </Badge>
-                {event.eventCategoryName && (
-                  <Badge className="bg-blue-500/95 backdrop-blur-sm text-white border-0 shadow-lg px-4 py-2 font-medium">
-                    <Tag className="w-3 h-3 mr-1" />
-                    {event.eventCategoryName}
-                  </Badge>
-                )}
+                <p className="text-sm text-muted-foreground mt-3">{totalAvailableTickets} chỗ còn lại</p>
               </div>
-            </div>
+            )}
 
-            {/* Event Info - Enhanced */}
-            <div className="space-y-6">
-              <div>
-                <h1 className="text-4xl font-bold text-gray-900 mb-3 leading-tight">
-                  {event.title}
-                </h1>
-                <p className="text-lg text-gray-600 leading-relaxed">
-                  {event.description}
-                </p>
-              </div>
+            {/* Ticket Options */}
+            {event.ticketDetails && event.ticketDetails.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-xl font-bold text-foreground">Loại vé có sẵn</h3>
+                {event.ticketDetails.map((ticket, index) => {
+                  const availableTickets = ticket.ticketQuantity - (ticket.soldQuantity || 0);
+                  const isAvailable = availableTickets > 0;
+                  const soldPercentage = ticket.soldQuantity ? (ticket.soldQuantity / ticket.ticketQuantity) * 100 : 0;
 
-              {/* Info Grid - Enhanced with gradient backgrounds */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-start space-x-4 p-5 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-2xl border border-blue-200/50 hover:shadow-md transition-shadow">
-                  <div className="p-3 bg-blue-500 rounded-xl flex-shrink-0 shadow-md">
-                    <Calendar className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm text-blue-900 mb-1">
-                      Ngày diễn ra sự kiện
-                    </p>
-                    <p className="font-bold text-lg text-gray-900">
-                      {formatDate(event.startTime)}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {" "}
-                      Bắt đầu vào lúc: {formatTime(event.startTime)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-4 p-5 bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-2xl border border-orange-200/50 hover:shadow-md transition-shadow">
-                  <div className="p-3 bg-orange-500 rounded-xl flex-shrink-0 shadow-md">
-                    <Clock className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm text-orange-900 mb-1">
-                      Thời gian diễn ra
-                    </p>
-                    <p className="font-bold text-lg text-gray-900">
-                      {formatTime(event.startTime)} -{" "}
-                      {formatTime(event.endTime)}
-                    </p>
-                    {(() => {
-                      const start = new Date(event.startTime);
-                      const end = new Date(event.endTime);
-                      const diffMs = end - start;
-                      const hours = Math.floor(diffMs / (1000 * 60 * 60));
-                      const minutes = Math.floor(
-                        (diffMs % (1000 * 60 * 60)) / (1000 * 60)
-                      );
-                      return (
-                        <p className="text-sm text-gray-600 mt-1">
-                          Thời lượng diễn ra: {hours} giờ{" "}
-                          {minutes > 0 ? `${minutes} phút` : ""}
-                        </p>
-                      );
-                    })()}
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-4 p-5 bg-gradient-to-br from-green-50 to-green-100/50 rounded-2xl border border-green-200/50 hover:shadow-md transition-shadow">
-                  <div className="p-3 bg-green-500 rounded-xl flex-shrink-0 shadow-md">
-                    <MapPin className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm text-green-900 mb-1">
-                      Địa điểm tổ chức
-                    </p>
-                    <p className="font-bold text-lg text-gray-900">
-                      {event.isOnlineEvent
-                        ? "Sự kiện trực tuyến"
-                        : event.locationName || "Chưa xác định"}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {event.isOnlineEvent
-                        ? "Trực tuyến"
-                        : event.address || "Chưa xác định"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-4 p-5 bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-2xl border border-purple-200/50 hover:shadow-md transition-shadow">
-                  <div className="p-3 bg-purple-500 rounded-xl flex-shrink-0 shadow-md">
-                    <Users className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm text-purple-900 mb-1">
-                      Số lượng người tham gia
-                    </p>
-                    <p className="font-bold text-lg text-gray-900">
-                      {event.soldQuantity || 0}/{event.totalTickets || "N/A"}{" "}
-                      người
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Còn trống {totalAvailableTickets} chỗ
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Ticket Information - Enhanced */}
-              {event.ticketDetails && event.ticketDetails.length > 0 && (
-                <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-200">
-                  <h3 className="text-xl font-bold mb-4 flex items-center text-gray-900">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-3 shadow-md">
-                      <Ticket className="w-5 h-5 text-white" />
-                    </div>
-                    Loại vé có sẵn
-                  </h3>
-                  <div className="space-y-3">
-                    {event.ticketDetails.map((ticket, index) => {
-                      const availableTickets =
-                        ticket.ticketQuantity - (ticket.soldQuantity || 0);
-                      const isAvailable = availableTickets > 0;
-                      const soldPercentage =
-                        ((ticket.soldQuantity || 0) / ticket.ticketQuantity) *
-                        100;
-
-                      return (
-                        <div
-                          key={index}
-                          className={`border-2 rounded-xl p-5 transition-all hover:shadow-md ${
-                            isAvailable
-                              ? "border-gray-200 bg-gradient-to-br from-white to-gray-50 hover:border-blue-300"
-                              : "border-gray-200 bg-gray-50"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-bold text-lg text-gray-900">
-                                  {ticket.ticketName}
-                                </h4>
-                                {!isAvailable && (
-                                  <Badge
-                                    variant="destructive"
-                                    className="text-xs font-semibold"
-                                  >
-                                    Hết vé
-                                  </Badge>
-                                )}
-                              </div>
-                              {ticket.ticketDescription && (
-                                <p className="text-sm text-gray-600 mb-3">
-                                  {ticket.ticketDescription}
-                                </p>
-                              )}
-                            </div>
-                            <div className="text-right ml-4">
-                              <p className="font-bold text-2xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                                {ticket.ticketPrice === 0
-                                  ? "Miễn phí"
-                                  : formatTicketPrice(ticket)}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Progress bar */}
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between text-xs text-gray-600">
-                              <span>
-                                Đã bán: {ticket.soldQuantity || 0}/
-                                {ticket.ticketQuantity}
-                              </span>
-                              <span className="font-medium">
-                                Còn lại: {availableTickets} vé
-                              </span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                              <div
-                                className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500"
-                                style={{ width: `${soldPercentage}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <Separator className="my-8" />
-
-            {/* About Event - Enhanced */}
-            <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-200">
-              <h2 className="text-2xl font-bold mb-6 text-gray-900">
-                Về sự kiện
-              </h2>
-              <div className="prose prose-gray max-w-none space-y-6">
-                <p className="text-gray-700 leading-relaxed text-lg">
-                  {event.title} là một sự kiện đặc biệt.
-                  {event.description ||
-                    "Hãy tham gia để trải nghiệm những điều thú vị."}
-                </p>
-
-                {/* Schedule - Enhanced */}
-                <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-200/50">
-                  <h3 className="text-lg font-bold mb-4 flex items-center text-gray-900">
-                    <Calendar className="w-5 h-5 mr-2 text-blue-600" />
-                    Chương trình chi tiết
-                  </h3>
-                  <div className="space-y-4">
-                    {[
-                      {
-                        time: formatTime(event.startTime),
-                        title: "Bắt đầu sự kiện",
-                        desc: "Khởi đầu chương trình",
-                      },
-                      {
-                        time: new Date(
-                          new Date(event.startTime).getTime() + 60 * 60 * 1000
-                        ).toLocaleTimeString("vi-VN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        }),
-                        title: "Phiên chính",
-                        desc: "Nội dung chính của sự kiện",
-                      },
-                      {
-                        time: new Date(
-                          new Date(event.endTime).getTime() - 30 * 60 * 1000
-                        ).toLocaleTimeString("vi-VN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        }),
-                        title: "Kết thúc",
-                        desc: "Tổng kết và networking",
-                      },
-                    ].map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-start space-x-4 group"
-                      >
-                        <div className="bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-lg px-3 py-2 text-sm font-bold min-w-fit shadow-md group-hover:shadow-lg transition-shadow">
-                          {item.time}
-                        </div>
+                  return (
+                    <div
+                      key={index}
+                      className="bg-white rounded-xl p-6 border border-gray-100 hover:border-primary/30 hover:shadow-md transition"
+                    >
+                      <div className="flex items-start justify-between mb-3">
                         <div>
-                          <p className="font-bold text-gray-900">
-                            {item.title}
+                          <h4 className="font-semibold text-foreground mb-1">{ticket.ticketName}</h4>
+                          <p className="text-sm text-muted-foreground">{ticket.ticketDescription}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-primary">
+                            {ticket.ticketPrice === 0 ? "Miễn phí" : formatTicketPrice(ticket)}
                           </p>
-                          <p className="text-sm text-gray-600">{item.desc}</p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{ticket.soldQuantity || 0} / {ticket.ticketQuantity} đã bán</span>
+                        <span className="font-medium">{availableTickets} còn lại</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
-                {/* Benefits - Enhanced */}
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-6">
-                  <h4 className="font-bold text-green-900 mb-3 text-lg flex items-center">
-                    <CheckCircle className="w-5 h-5 mr-2" />
-                    Bạn sẽ nhận được:
-                  </h4>
-                  <ul className="text-green-800 space-y-2">
-                    {[
-                      "Kiến thức và trải nghiệm quý báu",
-                      "Cơ hội kết nối với những người cùng chí hướng",
-                      "Tài liệu sự kiện (nếu có)",
-                      "Networking và chia sẻ kinh nghiệm",
-                    ].map((item, idx) => (
-                      <li key={idx} className="flex items-start">
-                        <CheckCircle className="w-4 h-4 mr-2 mt-1 text-green-600 flex-shrink-0" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+            {/* About Event */}
+            <div className="bg-white rounded-xl p-8 border border-gray-100">
+              <h2 className="text-2xl font-bold text-foreground mb-6">Về sự kiện</h2>
+              <p className="text-muted-foreground leading-relaxed mb-6">
+                {event.description || "Thông tin chi tiết về sự kiện chưa được cập nhật."}
+              </p>
+              
+              <div className="space-y-4">
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-primary" />
+                  Bạn sẽ nhận được:
+                </h3>
+                <ul className="space-y-2">
+                  {[
+                    "Kiến thức và trải nghiệm quý báu",
+                    "Cơ hội kết nối với những người cùng chí hướng",
+                    "Tài liệu sự kiện (nếu có)",
+                    "Networking và chia sẻ kinh nghiệm",
+                  ].map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-3 text-muted-foreground">
+                      <CheckCircle className="w-4 h-4 text-primary flex-shrink-0 mt-1" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
 
-            <Separator className="my-8" />
-
-            {/* Organizer - Enhanced */}
+            {/* Organizer */}
             {event.organizerEvent && (
-              <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-200">
-                <h2 className="text-2xl font-bold mb-4 text-gray-900">
-                  Nhà tổ chức
-                </h2>
-                <div className="flex items-center space-x-4 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl">
+              <div className="bg-white rounded-xl p-8 border border-gray-100">
+                <h2 className="text-xl font-bold text-foreground mb-6">Nhà tổ chức</h2>
+                <div className="flex items-start gap-4">
                   {event.organizerEvent.imgCompany ? (
                     <img
                       src={event.organizerEvent.imgCompany}
                       alt={event.organizerEvent.companyName || "Organizer"}
-                      className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-md"
+                      className="w-16 h-16 rounded-lg object-cover border border-gray-200"
                     />
                   ) : (
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center shadow-md">
-                      <User className="h-8 w-8 text-white" />
+                    <div className="w-16 h-16 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <User className="h-8 w-8 text-blue-600" />
                     </div>
                   )}
-                  <div className="flex-1">
-                    <h3 className="font-bold text-lg text-gray-900">
-                      {event.organizerEvent.companyName || "Nhà tổ chức"}
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {event.organizerEvent.companyDescription ||
-                        "Tổ chức sự kiện chuyên nghiệp"}
-                    </p>
+                  <div>
+                    <h3 className="font-semibold text-foreground text-lg">{event.organizerEvent.companyName || "Nhà tổ chức"}</h3>
+                    <p className="text-muted-foreground mt-1">{event.organizerEvent.companyDescription || "Thông tin về nhà tổ chức chưa được cập nhật."}</p>
                   </div>
                 </div>
               </div>
             )}
+
             <RatingSection eventId={event.eventId || id} />
           </div>
 
-          {/* Sidebar - Enhanced */}
-          <div className="space-y-6">
-            {/* Registration Card - Enhanced */}
-            <Card className="shadow-xl border-2 border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-br from-blue-600 to-purple-600 p-6">
-                <h3 className="text-xl font-bold text-white mb-2">
-                  Đăng ký tham gia
-                </h3>
+          {/* Sidebar - Simplified */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Registration Card */}
+            <Card className="border border-gray-200 sticky top-24 bg-white shadow-lg">
+              <CardHeader className="bg-gradient-to-br from-primary/5 to-primary/10 border-b border-gray-100">
+                <h3 className="text-xl font-bold text-foreground">Đăng ký tham gia</h3>
+                <p className="text-sm text-muted-foreground mt-1">Số lượng có hạn</p>
+              </CardHeader>
+              <CardContent className="space-y-3 pt-6">
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-white mb-2">
+                  <div className="text-2xl font-bold text-foreground mb-1">
                     {getDisplayTicketPrice(event)}
                   </div>
-                  <p className="text-sm text-blue-100">
+                  <p className="text-sm text-muted-foreground">
                     {event.ticketDetails && event.ticketDetails.length > 0
                       ? "Giá từ các loại vé khác nhau"
                       : "Bao gồm coffee break & lunch"}
                   </p>
                 </div>
-              </div>
-
-              <CardContent className="space-y-3 p-6">
-                <Button
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
-                  size="lg"
+                <Button 
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-12 text-base"
                   onClick={handleRegister}
                 >
-                  <CreditCard className="w-5 h-5 mr-2" />
+                  <CreditCard className="w-4 h-4 mr-2" />
                   Đăng ký ngay
                 </Button>
-                <Button
-                  variant="outline"
-                  className="w-full border-2 hover:bg-gray-50 font-medium transition-all duration-300"
+                <Button 
+                  variant="outline" 
+                  className="w-full h-11 font-medium border-gray-200 hover:bg-gray-50"
                   onClick={handleInviteFriends}
                 >
-                  <UserPlus className="w-5 h-5 mr-2" />
-                  Mời bạn bè tham gia
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Mời bạn bè
                 </Button>
-                {/* <Button
-                  variant="outline"
-                  className="w-full border-2 hover:bg-gray-50 font-medium transition-all duration-300"
-                  onClick={handleShareEvent}
-                >
-                  <Share2 className="w-5 h-5 mr-2" />
-                  Chia sẻ
-                </Button> */}
-                <Button
-                  variant="outline"
-                  className="w-full border-2 hover:bg-gray-50 font-medium transition-all duration-300"
+                <Button 
+                  variant="outline" 
+                  className="w-full h-11 font-medium border-gray-200 hover:bg-gray-50"
                   onClick={() => setIsShareOpen(true)}
                 >
-                  <Share2 className="w-5 h-5 mr-2" />
-                  Chia sẻ
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Chia sẻ sự kiện
                 </Button>
               </CardContent>
             </Card>
 
-            {/* Location Card - Enhanced */}
+            {/* Location Card */}
             {(!event.isOnlineEvent || event.isOnlineEvent === false) &&
               (event.locationName || event.address) && (
-                <Card className="shadow-lg border-2 border-gray-200">
-                  <CardHeader className="pb-4">
-                    <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                      <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center mr-3 shadow-md">
-                        <MapPin className="w-5 h-5 text-white" />
-                      </div>
+                <Card className="border border-gray-200 bg-white">
+                  <CardHeader className="border-b border-gray-100">
+                    <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-primary" />
                       Địa điểm
                     </h3>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4">
-                      <p className="font-bold text-lg text-gray-900 mb-1">
-                        {event.locationName}
-                      </p>
-                      <p className="text-sm text-gray-600">{event.address}</p>
-                    </div>
-
-                    {/* Map Preview - Enhanced */}
-                    {event.latitude && event.longitude ? (
-                      <div className="relative h-48 rounded-xl overflow-hidden border-2 border-gray-200 shadow-md group">
+                  <CardContent className="pt-6">
+                    <p className="font-semibold text-foreground mb-2">{event.locationName}</p>
+                    <p className="text-sm text-muted-foreground mb-4">{event.address}</p>
+                    <div className="w-full h-48 rounded-lg overflow-hidden border border-gray-200 mb-3">
+                      {event.latitude && event.longitude ? (
                         <iframe
                           src={`https://www.google.com/maps?q=${event.latitude},${event.longitude}&hl=vi&z=14&output=embed`}
-                          className="w-full h-full transition-transform duration-300 group-hover:scale-105"
+                          className="w-full h-full"
                           frameBorder="0"
                           allowFullScreen
                           title="Event Location Map Preview"
                         ></iframe>
-                      </div>
-                    ) : (
-                      <div className="relative h-48 rounded-xl overflow-hidden border-2 border-gray-200 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                        <div className="text-center">
-                          <MapPin className="h-10 w-10 text-gray-400 mx-auto mb-2" />
-                          <span className="text-sm text-gray-500 font-medium">
-                            Bản đồ không khả dụng
-                          </span>
+                      ) : (
+                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                          <div className="text-center">
+                            <MapPin className="h-8 w-8 text-gray-400 mx-auto mb-1" />
+                            <span className="text-sm text-gray-500">
+                              Bản đồ không khả dụng
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    )}
-
-                    <Button
-                      variant="outline"
-                      className="w-full border-2 hover:bg-gray-50 font-medium transition-all duration-300"
+                      )}
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      className="w-full font-medium border-gray-200 hover:bg-gray-50"
                       onClick={() => setIsMapModalOpen(true)}
                     >
-                      <ExternalLink className="w-5 h-5 mr-2" />
+                      <ExternalLink className="w-4 h-4 mr-2" />
                       Xem đường đi
                     </Button>
                   </CardContent>
                 </Card>
               )}
 
-            {/* Related Events - Enhanced */}
-            <Card className="shadow-lg border-2 border-gray-200">
-              <CardHeader className="pb-4">
-                <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                  <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-500 rounded-xl flex items-center justify-center mr-3 shadow-md">
-                    <Sparkles className="w-5 h-5 text-white" />
-                  </div>
+            {/* Related Events */}
+            <Card className="border border-gray-200 bg-white">
+              <CardHeader className="border-b border-gray-100">
+                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-primary" />
                   Sự kiện tương tự
                 </h3>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="pt-6 space-y-3">
                 {relatedEvents.length > 0 ? (
                   relatedEvents.map((relatedEvent) => (
-                    <div
-                      key={relatedEvent.eventId}
-                      className="flex space-x-3 cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 rounded-xl p-3 -m-2 transition-all duration-300 border-2 border-transparent hover:border-blue-200 hover:shadow-md group"
+                    <div 
+                      key={relatedEvent.eventId} 
+                      className="flex gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition border border-transparent hover:border-gray-200"
                       onClick={() => handleViewDetail(relatedEvent.eventId)}
                     >
                       {relatedEvent.imgListEvent?.[0] ? (
                         <img
                           src={relatedEvent.imgListEvent[0]}
                           alt={relatedEvent.title}
-                          className="w-20 h-20 rounded-lg object-cover shadow-md group-hover:shadow-lg transition-shadow"
+                          className="w-14 h-14 rounded-lg object-cover border border-gray-200"
                         />
                       ) : (
-                        <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center shadow-md">
-                          <span className="text-xs text-gray-500 font-medium">
+                        <div className="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200">
+                          <span className="text-xs text-gray-500">
                             No image
                           </span>
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-sm text-gray-900 mb-1 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                          {relatedEvent.title}
+                        <p className="font-semibold text-sm text-foreground line-clamp-2">{relatedEvent.title}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(relatedEvent.startTime).toLocaleDateString("vi-VN")}
                         </p>
-                        <p className="text-xs text-gray-600 flex items-center gap-2">
-                          <Calendar className="w-3 h-3" />
-                          {new Date(relatedEvent.startTime).toLocaleDateString(
-                            "vi-VN"
-                          )}
-                        </p>
-                        <p className="text-xs font-semibold text-blue-600 mt-1">
+                        <p className="text-xs font-semibold text-primary mt-1">
                           {relatedEvent.minTicketPrice !== undefined &&
                           relatedEvent.maxTicketPrice !== undefined
                             ? relatedEvent.minTicketPrice === 0 &&
@@ -970,11 +810,11 @@ const EventDetailGuestPage = ({ previewData }) => {
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <Sparkles className="w-8 h-8 text-gray-400" />
+                  <div className="text-center py-6">
+                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                      <Sparkles className="w-6 h-6 text-gray-400" />
                     </div>
-                    <p className="text-gray-500 font-medium">
+                    <p className="text-gray-500 text-sm">
                       Không có sự kiện tương tự
                     </p>
                   </div>
@@ -985,16 +825,16 @@ const EventDetailGuestPage = ({ previewData }) => {
         </div>
       </div>
 
-      {/* Map Modal - Enhanced */}
+      {/* Map Modal - Simplified */}
       <Dialog open={isMapModalOpen} onOpenChange={setIsMapModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto rounded-2xl">
+        <DialogContent className="max-w-4xl rounded-xl">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center">
-              <MapPin className="w-6 h-6 mr-2 text-blue-600" />
+            <DialogTitle className="text-lg font-bold text-gray-900 flex items-center">
+              <MapPin className="w-5 h-5 mr-2 text-green-600" />
               Bản đồ & Chỉ đường
             </DialogTitle>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-3">
             <MapDirection
               destinationAddress={event.address || event.locationName}
             />
@@ -1002,11 +842,11 @@ const EventDetailGuestPage = ({ previewData }) => {
         </DialogContent>
       </Dialog>
 
-      {/* Invite Friends Dialog */}
+      {/* Invite Friends Dialog - Simplified */}
       <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
-        <DialogContent className="max-w-2xl rounded-2xl overflow-y-auto max-h-[85vh]">
+        <DialogContent className="max-w-2xl rounded-xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-gray-900 flex items-center">
+            <DialogTitle className="text-lg font-bold text-gray-900 flex items-center">
               <UserPlus className="w-5 h-5 mr-2 text-blue-600" />
               Mời bạn bè tham gia sự kiện
             </DialogTitle>
@@ -1016,20 +856,19 @@ const EventDetailGuestPage = ({ previewData }) => {
           </DialogHeader>
 
           {/* Event Info */}
-
-          <div className="flex gap-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100 rounded-xl p-4 mb-4 shadow-sm">
+          <div className="flex gap-4 bg-gray-50 rounded-lg p-4 mb-4">
             <img
               src={event.imgListEvent?.[0] || eventAvt || "/placeholder.jpg"}
               alt={event.title}
-              className="w-24 h-24 rounded-lg object-cover flex-shrink-0 border border-gray-200 shadow-sm"
+              className="w-20 h-20 rounded-lg object-cover flex-shrink-0 border border-gray-200"
             />
 
             <div className="flex flex-col justify-center flex-1">
-              <h3 className="font-semibold text-lg text-gray-900 mb-1 line-clamp-2">
+              <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2">
                 {event.title}
               </h3>
 
-              <div className="flex items-center text-sm text-gray-600 mb-1.5">
+              <div className="flex items-center text-sm text-gray-500 mb-1">
                 <Calendar className="w-4 h-4 mr-1 text-blue-500" />
                 {event.startTime
                   ? new Date(event.startTime).toLocaleDateString("vi-VN", {
@@ -1053,23 +892,23 @@ const EventDetailGuestPage = ({ previewData }) => {
           </div>
 
           {/* Friends List */}
-          <div className="bg-gray-50 border rounded-2xl p-4">
-            <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
-              <Users className="w-5 h-5 mr-2 text-blue-600" />
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <h3 className="text-base font-bold text-gray-900 mb-3 flex items-center">
+              <Users className="w-4 h-4 mr-2 text-blue-600" />
               Danh sách bạn bè
             </h3>
 
             {isLoadingFriends ? (
-              <div className="flex justify-center items-center py-10 text-gray-500">
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              <div className="flex justify-center items-center py-8 text-gray-500">
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Đang tải danh sách bạn bè...
               </div>
             ) : friends.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <UserPlus className="w-8 h-8 text-gray-400" />
+              <div className="text-center py-6">
+                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <UserPlus className="w-6 h-6 text-gray-400" />
                 </div>
-                <p className="text-gray-500 font-medium">
+                <p className="text-gray-500 text-sm">
                   Bạn chưa có bạn bè nào được chấp nhận.
                 </p>
               </div>
@@ -1097,9 +936,9 @@ const EventDetailGuestPage = ({ previewData }) => {
                     <div
                       key={f.id}
                       onClick={() => toggleSelectFriend(f.id)}
-                      className={`flex items-start gap-3 p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md ${
+                      className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer ${
                         isSelected
-                          ? "border-blue-500 bg-blue-50 shadow-md scale-[1.01] z-10 relative"
+                          ? "border-blue-500 bg-blue-50"
                           : "border-gray-200 hover:border-blue-300"
                       }`}
                     >
@@ -1107,12 +946,12 @@ const EventDetailGuestPage = ({ previewData }) => {
                         <img
                           src={f.image || userAvt || "/default-avatar.png"}
                           alt={f.friendName}
-                          className={`w-16 h-16 rounded-xl object-cover border-2 transition-all ${
-                            isSelected ? "border-blue-500" : "border-gray-300"
+                          className={`w-14 h-14 rounded-lg object-cover ${
+                            isSelected ? "border-2 border-blue-500" : "border border-gray-200"
                           }`}
                         />
                         {isSelected && (
-                          <div className="absolute bottom-1 right-1 w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow-md">
+                          <div className="absolute bottom-0 right-0 w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold">
                             ✓
                           </div>
                         )}
@@ -1144,13 +983,13 @@ const EventDetailGuestPage = ({ previewData }) => {
                             interests.map((i, idx) => (
                               <span
                                 key={idx}
-                                className="px-2 py-0.5 text-[11px] bg-blue-100 text-blue-700 rounded-full font-medium"
+                                className="px-2 py-0.5 text-[10px] bg-blue-100 text-blue-700 rounded-full font-medium"
                               >
                                 #{i.InterestName}
                               </span>
                             ))
                           ) : (
-                            <span className="text-[11px] text-gray-400 italic">
+                            <span className="text-[10px] text-gray-400 italic">
                               Không có sở thích
                             </span>
                           )}
@@ -1164,7 +1003,7 @@ const EventDetailGuestPage = ({ previewData }) => {
           </div>
 
           {/* Message box */}
-          <div className="mt-5">
+          <div className="mt-4">
             <label className="text-sm font-medium text-gray-700">
               Lời nhắn
             </label>
@@ -1181,6 +1020,7 @@ const EventDetailGuestPage = ({ previewData }) => {
             <Button
               variant="outline"
               onClick={() => setIsInviteDialogOpen(false)}
+              className="border border-gray-300 hover:bg-gray-50"
             >
               Hủy
             </Button>
@@ -1203,84 +1043,69 @@ const EventDetailGuestPage = ({ previewData }) => {
         </DialogContent>
       </Dialog>
 
-      {/* Share Dialog */}
+      {/* Share Dialog - Simplified */}
       <Dialog open={isShareOpen} onOpenChange={setIsShareOpen}>
-        <DialogContent
-          className="
-      p-0 border-0 rounded-3xl shadow-2xl
-      bg-gradient-to-br from-slate-800 to-slate-900
-      max-w-md w-full
-      animate-in fade-in duration-200
-    "
-        >
-          <div className="p-6">
+        <DialogContent className="rounded-xl max-w-md w-full">
+          <div className="p-5">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-2xl font-bold text-white mb-1">
+                <h3 className="text-lg font-bold text-gray-900">
                   Chia sẻ với bạn bè
                 </h3>
-                <p className="text-slate-400 text-sm">
+                <p className="text-gray-500 text-sm">
                   Chọn nơi bạn muốn chia sẻ
                 </p>
               </div>
               <button
                 onClick={() => setIsShareOpen(false)}
-                className="w-10 h-10 rounded-full bg-slate-700/50 hover:bg-slate-700 
-                     flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center"
               >
-                <X className="w-5 h-5 text-slate-300" />
+                <X className="w-4 h-4 text-gray-500" />
               </button>
             </div>
 
             {/* Social Options Grid */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-3 gap-3 mb-5">
               {[
                 {
                   name: "Facebook",
-                  icon: <img src={Facebook} alt="Facebook" />,
-                  gradient: "from-blue-600 to-blue-400",
+                  icon: <img src={Facebook} alt="Facebook" className="w-6 h-6" />,
                   url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
                     window.location.href
                   )}`,
                 },
                 {
                   name: "Twitter",
-                  icon: <img src={Twitter} alt="Twitter" />,
-                  gradient: "from-blue-400 to-cyan-500",
+                  icon: <img src={Twitter} alt="Twitter" className="w-6 h-6" />,
                   url: `https://twitter.com/intent/tweet?url=${encodeURIComponent(
                     window.location.href
                   )}&text=${encodeURIComponent("Check this out!")}`,
                 },
-
                 {
                   name: "Zalo",
-                  icon: <img src={Zalo} alt="Zalo" />,
-                  gradient: "from-blue-400 to-cyan-400",
+                  icon: <img src={Zalo} alt="Zalo" className="w-6 h-6" />,
                   url: `https://zalo.me/share?url=${encodeURIComponent(
                     window.location.href
                   )}`,
                 },
                 {
                   name: "Instagram",
-                  icon: <img src={Instagram} alt="Instagram" />,
-                  gradient: "from-purple-600 via-pink-500 to-orange-400",
+                  icon: <img src={Instagram} alt="Instagram" className="w-6 h-6" />,
                   url: `https://www.instagram.com/?url=${encodeURIComponent(
                     window.location.href
                   )}`,
                 },
                 {
                   name: "TikTok",
-                  icon: <img src={Tiktok} alt="TikTok" />,
-                  gradient: "from-black to-gray-800",
+                  icon: <img src={Tiktok} alt="TikTok" className="w-6 h-6" />,
                   url: `https://www.tiktok.com/share?url=${encodeURIComponent(
                     window.location.href
                   )}`,
                 },
                 {
                   name: "LinkedIn",
-                  icon: <img src={LinkedIn} alt="LinkedIn" />,
-                  gradient: "from-blue-700 to-blue-500",
+                  icon: <img src={LinkedIn} alt="LinkedIn" className="w-6 h-6" />,
                   url: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
                     window.location.href
                   )}`,
@@ -1289,42 +1114,28 @@ const EventDetailGuestPage = ({ previewData }) => {
                 <button
                   key={index}
                   onClick={() => window.open(option.url, "_blank")}
-                  className="
-              group relative overflow-hidden rounded-2xl p-4 
-              bg-slate-700/30 hover:bg-slate-700/50 
-              transition-all duration-300 hover:scale-105 active:scale-95
-            "
+                  className="group flex flex-col items-center gap-2 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
                 >
-                  <div
-                    className={`absolute inset-0 bg-gradient-to-br ${option.gradient}
-                            opacity-0 group-hover:opacity-20 transition-opacity`}
-                  ></div>
-
-                  <div className="relative flex flex-col items-center gap-2">
-                    <div
-                      className={`w-12 h-12 rounded-xl bg-gradient-to-br ${option.gradient}
-                              flex items-center justify-center text-2xl shadow-lg group-hover:shadow-xl`}
-                    >
-                      {option.icon}
-                    </div>
-                    <span className="text-white text-xs font-medium">
-                      {option.name}
-                    </span>
+                  <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                    {option.icon}
                   </div>
+                  <span className="text-gray-700 text-xs font-medium">
+                    {option.name}
+                  </span>
                 </button>
               ))}
             </div>
 
             {/* Copy Link Section */}
-            <div className="bg-slate-700/30 rounded-2xl p-4 mb-4">
-              <div className="flex items-center gap-3">
-                <div className="flex-1 bg-slate-800/50 rounded-xl px-4 py-3 flex items-center gap-2">
-                  <Link2 className="w-4 h-4 text-slate-400" />
+            <div className="bg-gray-50 rounded-lg p-3 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-white rounded-lg px-3 py-2 flex items-center gap-2 border border-gray-200">
+                  <Link2 className="w-4 h-4 text-gray-400" />
                   <input
                     type="text"
                     value={window.location.href}
                     readOnly
-                    className="bg-transparent text-slate-300 text-sm outline-none flex-1 truncate"
+                    className="bg-transparent text-gray-700 text-sm outline-none flex-1 truncate"
                   />
                 </div>
 
@@ -1333,13 +1144,9 @@ const EventDetailGuestPage = ({ previewData }) => {
                     navigator.clipboard.writeText(window.location.href);
                     toast.success("Đã sao chép liên kết!");
                   }}
-                  className="
-              px-6 py-3 rounded-xl font-semibold
-              bg-gradient-to-r from-purple-600 to-pink-600 text-white
-              hover:shadow-lg hover:shadow-purple-500/50 transition-all
-            "
+                  className="px-4 py-2 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700"
                 >
-                  Copy
+                  Sao chép
                 </button>
               </div>
             </div>
@@ -1357,14 +1164,10 @@ const EventDetailGuestPage = ({ previewData }) => {
                   toast.error("Thiết bị không hỗ trợ chia sẻ trực tiếp");
                 }
               }}
-              className="
-          w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600
-          text-white font-semibold hover:shadow-lg hover:shadow-blue-500/50 
-          transition-all duration-300 hover:scale-[1.02] active:scale-95
-        "
+              className="w-full py-2.5 rounded-lg bg-gray-800 text-white font-medium hover:bg-gray-900"
             >
               <div className="flex items-center justify-center gap-2">
-                <Share2 className="w-5 h-5" />
+                <Share2 className="w-4 h-4" />
                 <span>Chia sẻ khác</span>
               </div>
             </button>

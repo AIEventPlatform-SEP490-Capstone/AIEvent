@@ -65,10 +65,14 @@ const ManagerEventsPage = () => {
   const [completionDropdownLabel, setCompletionDropdownLabel] = useState('Kết thúc sự kiện');
   const initiationDropdownRef = useRef(null);
   const completionDropdownRef = useRef(null);
-  const pageSize = 12;
+  const pageSize = 5;
   const [reportCounts, setReportCounts] = useState({});
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [reportDialogEvent, setReportDialogEvent] = useState(null);
+
+  // New state for storing all events for statistics
+  const [allEventsForStats, setAllEventsForStats] = useState([]);
+  const [loadingStats, setLoadingStats] = useState(true);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -87,6 +91,35 @@ const ManagerEventsPage = () => {
     };
   }, []);
 
+  // Load all events for statistics when component mounts
+  useEffect(() => {
+    const loadAllEventsForStats = async () => {
+      setLoadingStats(true);
+      try {
+        // Fetch all events with a large page size to get everything
+        const response = await getEventsByStatus({
+          pageNumber: 1,
+          pageSize: 10000, // Large number to get all events
+        });
+        
+        if (response) {
+          const eventsData = response.items || response || [];
+          setAllEventsForStats(eventsData);
+        } else {
+          setAllEventsForStats([]);
+        }
+      } catch (error) {
+        console.error('Error loading all events for stats:', error);
+        toast.error('Không thể tải thống kê sự kiện');
+        setAllEventsForStats([]);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    loadAllEventsForStats();
+  }, []);
+
   // Update dropdown labels when activeTab changes
   useEffect(() => {
     // Update initiation dropdown label
@@ -98,21 +131,16 @@ const ManagerEventsPage = () => {
       setInitiationDropdownLabel('Bị từ chối');
     }
     // Reset initiation dropdown to default when selecting completion statuses or other main tabs
-    else if ([EventStatus.PendingApprovalEnd, EventStatus.RejectEnded,
-    EventStatus.WaitingForPayout, EventStatus.Ended,
-      'all', EventStatus.Cancelled].includes(activeTab)) {
+    else if ([EventStatus.WaitingForPayout, EventStatus.PaidOut, 
+              'all', EventStatus.Cancelled].includes(activeTab)) {
       setInitiationDropdownLabel('Khởi tạo sự kiện');
     }
 
     // Update completion dropdown label
-    if (activeTab === EventStatus.PendingApprovalEnd) {
-      setCompletionDropdownLabel('Chờ kết thúc');
-    } else if (activeTab === EventStatus.RejectEnded) {
-      setCompletionDropdownLabel('Từ chối kết thúc');
-    } else if (activeTab === EventStatus.WaitingForPayout) {
+    if (activeTab === EventStatus.WaitingForPayout) {
       setCompletionDropdownLabel('Chờ thanh toán');
-    } else if (activeTab === EventStatus.Ended) {
-      setCompletionDropdownLabel('Đã kết thúc');
+    } else if (activeTab === EventStatus.PaidOut) {
+      setCompletionDropdownLabel('Đã thanh toán');
     }
     // Reset completion dropdown to default when selecting initiation statuses or other main tabs
     else if ([EventStatus.PendingApproval, EventStatus.Approved,
@@ -130,23 +158,21 @@ const ManagerEventsPage = () => {
     if (tabParam && tabParam !== activeTab) {
       setActiveTab(tabParam);
     } else {
-      loadEvents();
+      setCurrentPage(1);
+      loadEvents(1);
     }
-  }, [location.search]);
+  }, [location.search, activeTab, searchTerm, filterStatus, sortBy]);
 
   // Debounced search effect
   useEffect(() => {
-    if (allEvents.length > 0) {
-      const timeoutId = setTimeout(() => {
-        applyFiltersAndSearch();
-      }, 300);
+    const timeoutId = setTimeout(() => {
+      applyFiltersAndSearch();
+    }, 300);
 
-      return () => clearTimeout(timeoutId);
-    }
-  }, [searchTerm, filterStatus, sortBy, allEvents]);
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, filterStatus, sortBy]);
 
-
-  const loadEvents = async () => {
+  const loadEvents = async (page = 1) => {
     try {
       setIsLoading(true);
       // Clear existing events immediately when switching tabs
@@ -156,139 +182,51 @@ const ManagerEventsPage = () => {
       let response;
       if (activeTab === 'all') {
         // For the 'all' tab, we want to show all events including all approval statuses
-        // We'll fetch events using the general getEvents API which should return all events
-        // and also fetch events from all status categories to ensure completeness
-        const allResponses = await Promise.all([
-          getEvents({ search: '', pageNumber: 1, pageSize: 1000 }), // All events from general endpoint
-          getEventsByStatus({ search: '', status: EventStatus.PendingApproval, pageNumber: 1, pageSize: 1000 }),
-          getEventsByStatus({ search: '', status: EventStatus.Approved, pageNumber: 1, pageSize: 1000 }),
-          getEventsByStatus({ search: '', status: EventStatus.Rejected, pageNumber: 1, pageSize: 1000 }),
-          getEventsByStatus({ search: '', status: EventStatus.Cancelled, pageNumber: 1, pageSize: 1000 }),
-          getEventsByStatus({ search: '', status: EventStatus.PendingApprovalEnd, pageNumber: 1, pageSize: 1000 }),
-          getEventsByStatus({ search: '', status: EventStatus.RejectEnded, pageNumber: 1, pageSize: 1000 }),
-          getEventsByStatus({ search: '', status: EventStatus.WaitingForPayout, pageNumber: 1, pageSize: 1000 }),
-          getEventsByStatus({ search: '', status: EventStatus.Ended, pageNumber: 1, pageSize: 1000 })
-        ]);
-
-        // Combine all events and remove duplicates
-        const combinedEvents = [];
-        const eventIds = new Set();
-
-        allResponses.forEach(resp => {
-          if (resp && resp.items) {
-            resp.items.forEach(event => {
-              if (!eventIds.has(event.eventId)) {
-                eventIds.add(event.eventId);
-                combinedEvents.push(event);
-              }
-            });
-          } else if (resp && Array.isArray(resp)) {
-            // Handle case where response is directly an array
-            resp.forEach(event => {
-              if (!eventIds.has(event.eventId)) {
-                eventIds.add(event.eventId);
-                combinedEvents.push(event);
-              }
-            });
-          }
+        // Use getEventsByStatus without a status parameter to get all events
+        response = await getEventsByStatus({ 
+          search: searchTerm || '',
+          pageNumber: page, 
+          pageSize: pageSize 
         });
-
-        response = { items: combinedEvents, totalCount: combinedEvents.length };
       } else {
         // Load events by specific status
         response = await getEventsByStatus({
-          search: '',
+          search: searchTerm || '',
           status: activeTab !== 'all' ? activeTab : null,
-          pageNumber: 1,
-          pageSize: 1000,
+          pageNumber: page,
+          pageSize: pageSize,
         });
       }
 
       if (response) {
         const eventsData = response.items || response || [];
+        const totalCount = response.totalItems || response.totalCount || eventsData.length;
+        
         setAllEvents(eventsData);
-        // Apply initial filtering after setting allEvents
-        setTimeout(() => applyFiltersAndSearch(eventsData), 0);
+        setEvents(eventsData);
+        setTotalPages(Math.ceil(totalCount / pageSize));
       } else {
         setAllEvents([]);
         setEvents([]);
+        setTotalPages(1);
       }
     } catch (error) {
       console.error('Error loading events:', error);
       toast.error('Không thể tải danh sách sự kiện');
       setAllEvents([]);
       setEvents([]);
+      setTotalPages(1);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const applyFiltersAndSearch = (eventsList) => {
-    const dataToFilter = eventsList || allEvents;
-    if (!dataToFilter || dataToFilter.length === 0) return;
-
-    let filtered = [...dataToFilter];
-
-    // Apply search filter
-    if (searchTerm && searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase().trim();
-      filtered = filtered.filter(event =>
-        (event.title && event.title.toLowerCase().includes(searchLower)) ||
-        (event.description && event.description.toLowerCase().includes(searchLower)) ||
-        (event.locationName && event.locationName.toLowerCase().includes(searchLower)) ||
-        (event.eventCategoryName && event.eventCategoryName.toLowerCase().includes(searchLower))
-      );
-    }
-
-    // Apply status filter - but only for time-based filters, not approval status tabs
-    // Approval status tabs (NeedConfirm, Approve, Reject) are handled by the API call
-    const isApprovalTab = [
-      EventStatus.PendingApproval,
-      EventStatus.Approved,
-      EventStatus.Rejected,
-      EventStatus.Cancelled,
-      EventStatus.PendingApprovalEnd,
-      EventStatus.RejectEnded,
-      EventStatus.WaitingForPayout,
-      EventStatus.Ended
-    ].includes(activeTab);
-
-    if (filterStatus && filterStatus !== 'all' && !isApprovalTab) {
-      filtered = filtered.filter(event => {
-        const status = getEventStatus(event);
-        return status === filterStatus;
-      });
-    }
-
-    // If filterStatus is one of the EventStatus values, apply it regardless of activeTab
-    if (filterStatus && filterStatus !== 'all' && Object.values(EventStatus).includes(filterStatus)) {
-      filtered = filtered.filter(event => {
-        const eventStatus = 'status' in event ? event.status : null;
-        return eventStatus === filterStatus;
-      });
-    }
-
-    // Apply sorting
-    if (sortBy) {
-      filtered.sort((a, b) => {
-        switch (sortBy) {
-          case 'newest':
-            return new Date(b.createDate || b.startTime) - new Date(a.createDate || a.startTime);
-          case 'oldest':
-            return new Date(a.createDate || a.startTime) - new Date(b.createDate || b.startTime);
-          case 'name':
-            return (a.title || '').localeCompare(b.title || '');
-          case 'startTime':
-            return new Date(a.startTime) - new Date(b.startTime);
-          default:
-            return 0;
-        }
-      });
-    }
-
-    setEvents(filtered);
-    setTotalPages(Math.ceil(filtered.length / pageSize));
-    setCurrentPage(1); // Reset to first page when filtering
+  // With server-side pagination, we no longer need client-side filtering
+  // The filtering and sorting should be handled by the API
+  const applyFiltersAndSearch = () => {
+    // Reset to first page when filtering
+    setCurrentPage(1);
+    loadEvents(1);
   };
 
   const handleViewEvent = (eventId) => {
@@ -490,10 +428,8 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       case EventStatus.Approved: return 'Đã phê duyệt';
       case EventStatus.Rejected: return 'Bị từ chối';
       case EventStatus.Cancelled: return 'Đã hủy';
-      case EventStatus.PendingApprovalEnd: return 'Chờ kết thúc';
-      case EventStatus.RejectEnded: return 'Từ chối kết thúc';
       case EventStatus.WaitingForPayout: return 'Chờ thanh toán';
-      case EventStatus.Ended: return 'Đã kết thúc';
+      case EventStatus.PaidOut: return 'Đã thanh toán';
       default: return tab;
     }
   };
@@ -508,118 +444,41 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
     return 'completed';
   };
 
+  // Modified getEventStats to use allEventsForStats instead of allEvents
   const getEventStats = () => {
-    if (!allEvents.length) return { total: 0, upcoming: 0, ongoing: 0, completed: 0, pendingApprovals: 0 };
+    if (!allEventsForStats.length) return { 
+      total: 0, 
+      approved: 0, 
+      pendingApproval: 0, 
+      rejected: 0, 
+      totalRegistrations: 0 
+    };
 
-    // When on a specific approval tab, we should count based on that tab
-    if (activeTab === EventStatus.PendingApproval) {
-      // Count events needing approval
-      const pendingApprovals = allEvents.filter(event =>
-        'status' in event && event.status === EventStatus.PendingApproval
-      ).length;
+    // Count events by status
+    const approved = allEventsForStats.filter(event => 
+      'status' in event && event.status === EventStatus.Approved
+    ).length;
+    
+    const pendingApproval = allEventsForStats.filter(event => 
+      'status' in event && event.status === EventStatus.PendingApproval
+    ).length;
+    
+    const rejected = allEventsForStats.filter(event => 
+      'status' in event && event.status === EventStatus.Rejected
+    ).length;
+    
+    // Calculate total registrations
+    const totalRegistrations = allEventsForStats.reduce((sum, event) => {
+      return sum + (('totalPersonJoin' in event) ? event.totalPersonJoin : 0);
+    }, 0);
 
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        pendingApprovals: pendingApprovals
-      };
-    }
-
-    if (activeTab === EventStatus.Approved) {
-      // Count approved events
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        pendingApprovals: 0
-      };
-    }
-
-    if (activeTab === EventStatus.Rejected) {
-      // Count rejected events
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        pendingApprovals: 0
-      };
-    }
-
-    if (activeTab === EventStatus.Cancelled) {
-      // Count cancelled events
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        pendingApprovals: 0
-      };
-    }
-
-    if (activeTab === EventStatus.PendingApprovalEnd) {
-      // Count pending approval end events
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        pendingApprovals: 0
-      };
-    }
-
-    if (activeTab === EventStatus.RejectEnded) {
-      // Count reject ended events
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        pendingApprovals: 0
-      };
-    }
-
-    if (activeTab === EventStatus.WaitingForPayout) {
-      // Count waiting for payout events
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        pendingApprovals: 0
-      };
-    }
-
-    if (activeTab === EventStatus.Ended) {
-      // Count ended events
-      return {
-        total: allEvents.length,
-        upcoming: 0,
-        ongoing: 0,
-        completed: 0,
-        pendingApprovals: 0
-      };
-    }
-
-    // For 'all' tab, calculate based on time-based status
-    return allEvents.reduce((acc, event) => {
-      const status = getEventStatus(event);
-
-      // Count events needing approval - check if property exists before accessing
-      // EventsRawResponse doesn't have requireApproval property
-      const pendingApproval = ('status' in event && event.status === EventStatus.PendingApproval) ? 1 : 0;
-
-      return {
-        total: acc.total + 1,
-        upcoming: acc.upcoming + (status === 'upcoming' ? 1 : 0),
-        ongoing: acc.ongoing + (status === 'ongoing' ? 1 : 0),
-        completed: acc.completed + (status === 'completed' ? 1 : 0),
-        pendingApprovals: acc.pendingApprovals + pendingApproval
-      };
-    }, { total: 0, upcoming: 0, ongoing: 0, completed: 0, pendingApprovals: 0 });
+    return {
+      total: allEventsForStats.length,
+      approved,
+      pendingApproval,
+      rejected,
+      totalRegistrations
+    };
   };
 
   // Handle search input change
@@ -647,11 +506,8 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
 
   const stats = getEventStats();
 
-  // Pagination for current events
-  const paginatedEvents = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    return events.slice(startIndex, startIndex + pageSize);
-  }, [events, currentPage, pageSize]);
+  // Use server-side pagination - events array already contains the correct page of events
+  const paginatedEvents = events;
 
   useEffect(() => {
     const idsToFetch = paginatedEvents
@@ -727,15 +583,15 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Chờ duyệt</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.pendingApprovals}</p>
+                <p className="text-sm text-muted-foreground">Tổng sự kiện</p>
+                <p className="text-2xl font-bold text-foreground">{stats.total}</p>
               </div>
-              <Clock className="w-8 h-8 text-orange-500" />
+              <Calendar className="w-8 h-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
@@ -744,8 +600,8 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Đã duyệt</p>
-                <p className="text-2xl font-bold text-green-600">{stats.upcoming + stats.ongoing}</p>
+                <p className="text-sm text-muted-foreground">Đã phê duyệt</p>
+                <p className="text-2xl font-bold text-green-600">{stats.approved}</p>
               </div>
               <CheckCircle className="w-8 h-8 text-green-500" />
             </div>
@@ -756,10 +612,20 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Từ chối</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {allEvents.filter(e => e.status === EventStatus.Rejected).length}
-                </p>
+                <p className="text-sm text-muted-foreground">Chờ phê duyệt</p>
+                <p className="text-2xl font-bold text-orange-600">{stats.pendingApproval}</p>
+              </div>
+              <Clock className="w-8 h-8 text-orange-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Bị từ chối</p>
+                <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
               </div>
               <XCircle className="w-8 h-8 text-red-500" />
             </div>
@@ -770,10 +636,10 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Tổng sự kiện</p>
-                <p className="text-2xl font-bold text-foreground">{stats.total}</p>
+                <p className="text-sm text-muted-foreground">Tổng người tham gia</p>
+                <p className="text-2xl font-bold text-purple-600">{stats.totalRegistrations}</p>
               </div>
-              <TrendingUp className="w-8 h-8 text-blue-500" />
+              <Users className="w-8 h-8 text-purple-500" />
             </div>
           </CardContent>
         </Card>
@@ -804,10 +670,8 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
             <SelectItem value={EventStatus.Approved}>Đã phê duyệt</SelectItem>
             <SelectItem value={EventStatus.Rejected}>Bị từ chối</SelectItem>
             <SelectItem value={EventStatus.Cancelled}>Đã hủy</SelectItem>
-            <SelectItem value={EventStatus.PendingApprovalEnd}>Chờ kết thúc</SelectItem>
-            <SelectItem value={EventStatus.RejectEnded}>Từ chối kết thúc</SelectItem>
             <SelectItem value={EventStatus.WaitingForPayout}>Chờ thanh toán</SelectItem>
-            <SelectItem value={EventStatus.Ended}>Đã kết thúc</SelectItem>
+            <SelectItem value={EventStatus.PaidOut}>Đã thanh toán</SelectItem>
           </SelectContent>
         </Select>
 
@@ -837,7 +701,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
               setActiveTab('all');
               setShowInitiationDropdown(false);
               setShowCompletionDropdown(false);
-              navigate(PATH.MANAGER_EVENTS);
+              navigate(`${PATH.MANAGER_EVENTS}?tab=all`);
             }}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'all'
               ? 'bg-white text-blue-600 shadow-sm'
@@ -922,10 +786,11 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                 setShowCompletionDropdown(!showCompletionDropdown);
                 setShowInitiationDropdown(false);
               }}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${[EventStatus.PendingApprovalEnd, EventStatus.RejectEnded, EventStatus.WaitingForPayout, EventStatus.Ended].includes(activeTab)
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-                }`}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${
+                [EventStatus.WaitingForPayout, EventStatus.PaidOut].includes(activeTab)
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
             >
               {completionDropdownLabel}
               <svg className={`ml-1 w-4 h-4 transition-transform ${showCompletionDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -935,32 +800,6 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
 
             {showCompletionDropdown && (
               <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10">
-                <button
-                  onClick={() => {
-                    setActiveTab(EventStatus.PendingApprovalEnd);
-                    setShowCompletionDropdown(false);
-                    navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.PendingApprovalEnd}`);
-                  }}
-                  className={`block w-full text-left px-4 py-2 text-sm ${activeTab === EventStatus.PendingApprovalEnd
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                >
-                  Chờ kết thúc
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveTab(EventStatus.RejectEnded);
-                    setShowCompletionDropdown(false);
-                    navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.RejectEnded}`);
-                  }}
-                  className={`block w-full text-left px-4 py-2 text-sm ${activeTab === EventStatus.RejectEnded
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                >
-                  Từ chối kết thúc
-                </button>
                 <button
                   onClick={() => {
                     setActiveTab(EventStatus.WaitingForPayout);
@@ -976,16 +815,17 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                 </button>
                 <button
                   onClick={() => {
-                    setActiveTab(EventStatus.Ended);
+                    setActiveTab(EventStatus.PaidOut);
                     setShowCompletionDropdown(false);
-                    navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.Ended}`);
+                    navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.PaidOut}`);
                   }}
-                  className={`block w-full text-left px-4 py-2 text-sm ${activeTab === EventStatus.Ended
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-700 hover:bg-gray-100'
-                    }`}
+                  className={`block w-full text-left px-4 py-2 text-sm ${
+                    activeTab === EventStatus.PaidOut
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
                 >
-                  Đã kết thúc
+                  Đã thanh toán
                 </button>
               </div>
             )}
@@ -1078,24 +918,18 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                                       ? 'text-red-600 border-red-200 bg-red-50'
                                       : eventStatus === EventStatus.Cancelled
                                         ? 'text-gray-600 border-gray-200 bg-gray-50'
-                                        : eventStatus === EventStatus.PendingApprovalEnd
-                                          ? 'text-yellow-600 border-yellow-200 bg-yellow-50'
-                                          : eventStatus === EventStatus.RejectEnded
-                                            ? 'text-purple-600 border-purple-200 bg-purple-50'
-                                            : eventStatus === EventStatus.WaitingForPayout
-                                              ? 'text-indigo-600 border-indigo-200 bg-indigo-50'
-                                              : eventStatus === EventStatus.Ended
-                                                ? 'text-blue-600 border-blue-200 bg-blue-50'
-                                                : 'text-orange-600 border-orange-200 bg-orange-50'
+                                        : eventStatus === EventStatus.WaitingForPayout
+                                          ? 'text-indigo-600 border-indigo-200 bg-indigo-50'
+                                          : eventStatus === EventStatus.PaidOut
+                                            ? 'text-blue-600 border-blue-200 bg-blue-50'
+                                            : 'text-orange-600 border-orange-200 bg-orange-50'
                                 }
                               >
                                 {eventStatus === EventStatus.Approved && <CheckCircle className="w-3 h-3 mr-1" />}
                                 {eventStatus === EventStatus.Rejected && <XCircle className="w-3 h-3 mr-1" />}
                                 {eventStatus === EventStatus.Cancelled && <XCircle className="w-3 h-3 mr-1" />}
-                                {eventStatus === EventStatus.PendingApprovalEnd && <Clock className="w-3 h-3 mr-1" />}
-                                {eventStatus === EventStatus.RejectEnded && <XCircle className="w-3 h-3 mr-1" />}
                                 {eventStatus === EventStatus.WaitingForPayout && <Clock className="w-3 h-3 mr-1" />}
-                                {eventStatus === EventStatus.Ended && <CheckCircle className="w-3 h-3 mr-1" />}
+                                {eventStatus === EventStatus.PaidOut && <CheckCircle className="w-3 h-3 mr-1" />}
                                 {eventStatus === EventStatus.PendingApproval && <Clock className="w-3 h-3 mr-1" />}
                                 {EventStatusDisplay[eventStatus] || eventStatus}
                               </Badge>
@@ -1163,7 +997,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                         <div className="flex flex-col items-center p-2 bg-gray-50 rounded">
                           <span className="text-xs text-muted-foreground">Doanh thu</span>
                           <span className="font-semibold">
-                            {event.revenue ? `${event.revenue.toLocaleString()}đ` : '0đ'}
+                            {event.totalAmount ? `${event.totalAmount.toLocaleString()}đ` : '0đ'}
                           </span>
                         </div>
                         <div className="flex flex-col items-center p-2 bg-gray-50 rounded">
@@ -1270,7 +1104,6 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                             variant="outline"
                             size="sm"
                             className="bg-transparent"
-                            onClick={() => handleDeleteEvent(event.eventId)}
                           >
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
@@ -1286,11 +1119,15 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       )}
 
       {/* Pagination */}
-      {!isLoading && events.length > 0 && totalPages > 1 && (
+      {!isLoading && totalPages > 1 && (
         <div className="flex justify-center gap-2 mt-8">
           <Button
             variant="outline"
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            onClick={() => {
+              const newPage = Math.max(1, currentPage - 1);
+              setCurrentPage(newPage);
+              loadEvents(newPage);
+            }}
             disabled={currentPage === 1}
           >
             Trước
@@ -1300,7 +1137,10 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
               <Button
                 key={page}
                 variant={currentPage === page ? 'default' : 'outline'}
-                onClick={() => setCurrentPage(page)}
+                onClick={() => {
+                  setCurrentPage(page);
+                  loadEvents(page);
+                }}
                 className={currentPage === page ? 'bg-blue-600' : ''}
               >
                 {page}
@@ -1309,7 +1149,11 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
           </div>
           <Button
             variant="outline"
-            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            onClick={() => {
+              const newPage = Math.min(totalPages, currentPage + 1);
+              setCurrentPage(newPage);
+              loadEvents(newPage);
+            }}
             disabled={currentPage === totalPages}
           >
             Sau
