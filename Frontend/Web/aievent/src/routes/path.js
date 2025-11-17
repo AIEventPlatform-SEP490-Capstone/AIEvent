@@ -5,6 +5,7 @@ export const PATH = {
   REGISTER: "/auth/register",
   VERIFY_OTP: "/auth/verify-otp",
   GOOGLE_CALLBACK: "/auth/google-callback",
+  FORGOT_PASSWORD: "/auth/forgot-password",
 
   // HOME
   HOME: "/",
