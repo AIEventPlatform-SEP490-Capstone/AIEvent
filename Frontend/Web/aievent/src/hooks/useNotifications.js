@@ -1,9 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import * as signalR from "@microsoft/signalr";
 import { 
   fetchNotifications as fetchNotificationsAction, 
-  fetchUnreadCount as fetchUnreadCountAction,
   markAsRead, 
   markAllAsRead, 
   deleteReadNotifications, 
@@ -24,6 +23,9 @@ export const useNotifications = () => {
     totalPages,
     totalItems
   } = useSelector(state => state.notifications);
+  
+  // Use ref to persist connection instance
+  const connectionRef = useRef(null);
 
   // Fetch notifications
   const fetchNotifications = (pageNumber = 1, pageSize = 10) => {
@@ -47,42 +49,86 @@ export const useNotifications = () => {
 
   // Initialize SignalR connection for real-time notifications
   useEffect(() => {
-    const newConnection = new signalR.HubConnectionBuilder()
-      .withUrl("/hubs/notification", {
-        accessTokenFactory: () => {
-          const token = localStorage.getItem("accessToken") || 
+    // Only connect if user is authenticated
+    const accessToken = localStorage.getItem("accessToken") || 
                        document.cookie.replace(/(?:(?:^|.*;\s*)accessToken\s*=\s*([^;]*).*$)|^.*$/, "$1");
-          return token;
-        }
-      })
-      .withAutomaticReconnect()
-      .build();
+    
+    if (!accessToken) {
+      return;
+    }
 
-    newConnection.start()
-      .then(() => {
-        // Register for notifications after connection is established
-        newConnection.on("ReceiveNotification", (notification) => {
-          dispatch(addNotification(notification));
-          // Use a simple increment approach
-          const currentUnreadCount = unreadCount;
-          dispatch(updateUnreadCount(currentUnreadCount + 1));
-        });
-      })
-      .catch(err => {
-        // Only show errors that aren't transient negotiation issues
-        if (!(err instanceof Error && err.message.includes("connection was stopped during negotiation"))) {
-          console.error("SignalR Connection Error: ", err);
-          showError("Failed to connect to notification service");
-        }
+    // Create connection only if it doesn't exist
+    if (!connectionRef.current) {
+      connectionRef.current = new signalR.HubConnectionBuilder()
+        .withUrl("/hubs/notification", {
+          accessTokenFactory: () => {
+            return accessToken;
+          },
+          // Add transport options to handle negotiation issues
+          transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.ServerSentEvents | signalR.HttpTransportType.LongPolling,
+          skipNegotiation: false
+        })
+        .withAutomaticReconnect({
+          nextRetryDelayInMilliseconds: retryContext => {
+            // Exponential backoff with max delay of 30 seconds
+            if (retryContext.elapsedMilliseconds > 120000) {
+              // Stop reconnecting after 2 minutes
+              return null;
+            }
+            return Math.min(1000 * Math.pow(2, retryContext.previousRetryCount), 30000);
+          }
+        })
+        .build();
+      
+      // Register for notifications
+      connectionRef.current.on("ReceiveNotification", (notification) => {
+        dispatch(addNotification(notification));
+        // Update unread count in real-time
+        dispatch(updateUnreadCount(unreadCount + 1));
       });
+    }
+
+    const startConnection = async () => {
+      try {
+        if (connectionRef.current.state === signalR.HubConnectionState.Disconnected) {
+          await connectionRef.current.start();
+          console.log("SignalR Connected");
+        }
+      } catch (err) {
+        console.error("SignalR Connection Error: ", err);
+        // Don't show error for transient negotiation issues
+        if (!err.message.includes("connection was stopped during negotiation") && 
+            !err.message.includes("Failed to start the HttpConnection before stop")) {
+          showError("Failed to connect to notification service. You may not receive real-time notifications.");
+        }
+      }
+    };
+
+    startConnection();
 
     // Cleanup on unmount
     return () => {
-      if (newConnection) {
-        newConnection.stop();
-      }
+      const stopConnection = async () => {
+        if (connectionRef.current) {
+          try {
+            // Remove event listeners
+            connectionRef.current.off("ReceiveNotification");
+            
+            // Stop connection if it's not already disconnected
+            if (connectionRef.current.state !== signalR.HubConnectionState.Disconnected) {
+              await connectionRef.current.stop();
+              console.log("SignalR Disconnected");
+            }
+          } catch (err) {
+            console.error("Error stopping SignalR connection:", err);
+          } finally {
+            connectionRef.current = null;
+          }
+        }
+      };
+      stopConnection();
     };
-  }, [dispatch]);
+  }, [dispatch, unreadCount]);
 
   return {
     notifications,
@@ -98,4 +144,4 @@ export const useNotifications = () => {
     markAllAsRead: handleMarkAllAsRead,
     deleteReadNotifications: handleDeleteReadNotifications
   };
-}
+};

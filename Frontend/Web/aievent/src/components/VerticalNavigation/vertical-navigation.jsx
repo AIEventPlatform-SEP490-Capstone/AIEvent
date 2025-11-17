@@ -485,7 +485,7 @@ export function VerticalNavigation() {
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
-                      isActive={pathname === "/notifications"}
+                      isActive={pathname.startsWith("/notifications")}
                       className={cn(
                         "group rounded-lg transition-all duration-200 hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/15 data-[active=true]:text-primary",
                         isCollapsed && "p-2 justify-center w-full"
