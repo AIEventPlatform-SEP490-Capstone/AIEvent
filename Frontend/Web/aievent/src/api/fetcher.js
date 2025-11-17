@@ -154,6 +154,21 @@ export const authAPI = {
     });
     return response.data;
   },
+  forgotPassword: async (payload) => {
+    const response = await fetcher.post("/auth/forgot-password", payload);
+    return response.data;
+  },
+  verifyForgotPasswordOtp: async (payload) => {
+    const response = await fetcher.post(
+      "/auth/forgot-password/verify-otp",
+      payload
+    );
+    return response.data;
+  },
+  resetPassword: async (payload) => {
+    const response = await fetcher.post("/auth/reset-password", payload);
+    return response.data;
+  },
 };
 
 export default fetcher;
