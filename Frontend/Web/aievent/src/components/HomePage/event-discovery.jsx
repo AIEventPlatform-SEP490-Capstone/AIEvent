@@ -60,13 +60,13 @@ export function EventDiscovery({
   currentPage = 1,
   totalPages = 1,
   onPageChange,
-  pageSize = 12
+  pageSize = 6,
+  onCategoryChange // Prop for handling category change
 }) {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [likedEvents, setLikedEvents] = useState(new Set([2, 4]));
   const [isAIEventsExpanded, setIsAIEventsExpanded] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
   const [currentSlide, setCurrentSlide] = useState(0);
   const { getFavoriteEvents, addFavoriteEvent, removeFavoriteEvent } = useFavoriteEvents();
   const { isAuthenticated } = useSelector((state) => state.auth);
@@ -159,25 +159,13 @@ export function EventDiscovery({
     );
   };
 
-  // Filter events based on category and search query
-  const filteredEvents = allEvents.filter((event) => {
-    // Category filter
-    const matchesCategory = selectedCategory === "all" || 
-      (event.category || event.eventCategoryName) === selectedCategory;
-    
-    // Search filter
-    const matchesSearch = !searchQuery || 
-      event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (event.locationName || event.location || "").toLowerCase().includes(searchQuery.toLowerCase());
-    
-    return matchesCategory && matchesSearch;
-  });
-  
-  // Pagination for filtered events
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedEvents = filteredEvents.slice(startIndex, endIndex);
+  // Handle category change
+  const handleCategoryChange = (categoryId) => {
+    setSelectedCategory(categoryId);
+    if (onCategoryChange) {
+      onCategoryChange(categoryId);
+    }
+  };
 
   const formatPrice = (price, isFree) => {
     // Handle both mock data and API data structure
@@ -224,6 +212,9 @@ export function EventDiscovery({
       </div>
     );
   }
+
+  // Use allEvents directly since they are already paginated from the server
+  const paginatedEvents = allEvents;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -372,7 +363,7 @@ export function EventDiscovery({
       )}
 
       {/* Featured Events Section - Simplified Carousel */}
-      {featuredEvents.length > 0 && !searchQuery && (
+      {featuredEvents.length > 0 && selectedCategory === "all" && (
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-6">
             <div className="flex items-center gap-2 flex-1">
@@ -481,27 +472,6 @@ export function EventDiscovery({
             </h2>
             <div className="h-px bg-gradient-to-r from-gray-200 to-transparent w-20"></div>
           </div>
-          
-          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-            <div className="relative flex-1 md:w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm sự kiện..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full transition-all"
-              />
-            </div>
-            <Button
-              variant="outline"
-              size="lg"
-              className="border-border hover:bg-muted bg-transparent whitespace-nowrap"
-            >
-              <SlidersHorizontal className="w-5 h-5 mr-2" />
-              Bộ lọc
-            </Button>
-          </div>
         </div>
 
         {/* Category Filter Chips */}
@@ -515,7 +485,7 @@ export function EventDiscovery({
                   selectedCategory === category.id ? "default" : "outline"
                 }
                 size="lg"
-                onClick={() => setSelectedCategory(category.id)}
+                onClick={() => handleCategoryChange(category.id)}
                 className={`whitespace-nowrap min-w-fit px-6 transition-all duration-300 flex-shrink-0 ${
                   selectedCategory === category.id
                     ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg hover:shadow-xl"
@@ -661,7 +631,7 @@ export function EventDiscovery({
           </div>
           
           {/* Pagination */}
-          {filteredEvents.length > pageSize && (
+          {totalPages > 1 && (
             <div className="flex justify-center items-center mt-12 space-x-2">
               <Button
                 variant="outline"
@@ -720,7 +690,7 @@ export function EventDiscovery({
             <Calendar className="w-8 h-8 text-gray-400" />
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">Không tìm thấy sự kiện</h3>
-          <p className="text-gray-500">Hãy thử thay đổi bộ lọc hoặc tìm kiếm khác</p>
+          <p className="text-gray-500">Hãy thử thay đổi bộ lọc</p>
         </div>
       )}
     </div>

@@ -9,8 +9,8 @@ export default defineConfig({
     host: true,
     proxy: {
       "/api": {
-        target: "https://aievent.duckdns.org",
-        // target: "https://localhost:7777",
+        // target: "https://aievent.duckdns.org",
+        target: "https://localhost:7777",
         // target: "http://localhost:5059",
         changeOrigin: true,
         secure: false,
@@ -31,8 +31,8 @@ export default defineConfig({
         },
       },
       "/hubs": {
-        // target: "https://localhost:7777",
-        target: "https://aievent.duckdns.org",
+        target: "https://localhost:7777",
+        // target: "https://aievent.duckdns.org",
         changeOrigin: true,
         secure: false,
         ws: true,
