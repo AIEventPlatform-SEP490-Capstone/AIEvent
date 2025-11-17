@@ -1,12 +1,13 @@
 import React from 'react';
-import { Heart, Users, Settings, Wallet } from 'lucide-react';
+import { Heart, Users, Settings, Wallet, Sparkles } from 'lucide-react';
 
 const ProfileNavigation = ({ tabs, activeTab, onTabChange }) => {
   const tabIcons = {
     likes: Heart,
     friends: Users,
     card: Wallet,
-    settings: Settings
+    settings: Settings,
+    airecommended: Sparkles  // Add icon for AI Recommended tab
   };
 
   return (

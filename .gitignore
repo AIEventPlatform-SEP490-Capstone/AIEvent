@@ -179,4 +179,4 @@ lcov-report/
 .dockerignore
 docker-compose.override.yml
 docker-compose.override.yaml
-/Frontend/Web/6/
+/Frontend/Web/youtube2022-react-admin/
