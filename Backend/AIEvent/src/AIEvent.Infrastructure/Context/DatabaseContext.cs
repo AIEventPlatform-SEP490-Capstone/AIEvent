@@ -4,6 +4,7 @@ using AIEvent.Infrastructure.Data;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using System.Reflection.Emit;
 using System.Security.Claims;
 
 namespace AIEvent.Infrastructure.Context
@@ -40,6 +41,7 @@ namespace AIEvent.Infrastructure.Context
         public DbSet<StaffProfile> StaffProfiles { get; set; }
         public DbSet<EventReport> EventReports { get; set; }
         public DbSet<SystemSetting> SystemSettings { get; set; }
+        public DbSet<ActivityLog> ActivityLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -433,6 +435,13 @@ namespace AIEvent.Infrastructure.Context
                 entity.HasIndex(x => x.UserId).HasDatabaseName("IX_EventReports_UserId");
                 entity.HasIndex(x => x.Type).HasDatabaseName("IX_EventReports_Type");
                 entity.HasIndex(x => x.CreatedAt).HasDatabaseName("IX_EventReports_CreatedAt");
+            });
+
+            //---------------ActivityLog-----------------
+            builder.Entity<ActivityLog>(entity =>
+            {
+                entity.HasIndex(x => x.UserId).HasDatabaseName("IX_ActivityLogs_UserId");
+                entity.HasIndex(x => x.CreatedAt).HasDatabaseName("IX_ActivityLogs_CreatedAt");
             });
 
             builder.Seed();
