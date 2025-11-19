@@ -1256,5 +1256,117 @@ namespace AIEvent.Application.Services.Implements
 
             return new BasePaginated<ListEventResponse>(result, totalCount, pageNumber, pageSize);
         }
+
+        public async Task<Result<BasePaginated<EventsResponse>>> GetAllEventByRadius(Guid userId, int? radius, string? eventCategoryId,
+                                                                                        int pageNumber, int pageSize)
+        {
+            var user = await _unitOfWork.UserRepository
+                .Query(false)
+                .AsNoTracking()
+                .Where(u => u.Id == userId && !u.IsDeleted && u.IsActive)
+                .Select(u => new
+                {
+                    u.Latitude,
+                    u.Longitude,
+                    u.IsTurnOnLocation
+                })
+                .FirstOrDefaultAsync();
+
+            if (user == null)
+                return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
+
+            if (user.IsTurnOnLocation == false)
+                return ErrorResponse.FailureResult("Location not enabled", ErrorCodes.PermissionDenied);
+
+            if (radius == null || radius <= 0)
+                radius = 10;
+
+            double userLat = user.Latitude;
+            double userLon = user.Longitude;
+            double radiusKm = radius.Value;
+
+            double ToRad(double angle) => Math.PI * angle / 180.0;
+
+            double latRad = ToRad(userLat);
+            double lonRad = ToRad(userLon);
+
+            IQueryable<Event> query = _unitOfWork.EventRepository
+                .Query()
+                .AsNoTracking()
+                .Where(e =>
+                    !e.IsDeleted &&
+                    e.Publish == true &&
+                    e.Status == EventStatus.Approved &&
+                    e.StartTime > DateTime.UtcNow &&
+                    e.Latitude != 0 && e.Longitude != 0
+                );
+
+            if (!string.IsNullOrEmpty(eventCategoryId))
+            {
+                Guid catId = Guid.Parse(eventCategoryId);
+                query = query.Where(e => e.EventCategoryId == catId);
+            }
+
+            var queryWithDistance = query
+            .Select(e => new
+            {
+                Event = e,
+                Distance = 6371 *
+                           2 * Math.Asin(
+                               Math.Sqrt(
+                                   Math.Pow(Math.Sin((Math.PI * e.Latitude / 180.0 - latRad) / 2), 2) +
+                                   Math.Cos(latRad) *
+                                   Math.Cos(Math.PI * e.Latitude / 180.0) *
+                                   Math.Pow(Math.Sin((Math.PI * e.Longitude / 180.0 - lonRad) / 2), 2)
+                               )
+                           )
+            })
+            .Where(x => x.Distance <= radiusKm);
+
+            int totalCount = await queryWithDistance.CountAsync();
+
+            var result = await queryWithDistance
+                .OrderBy(x => x.Event.StartTime)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(e => new EventsResponse
+                {
+                    EventId = e.Event.Id,
+                    EventCategoryName = e.Event.EventCategory.CategoryName,
+                    Title = e.Event.Title,
+                    StartTime = e.Event.StartTime,
+                    EndTime = e.Event.EndTime,
+                    Description = e.Event.Description,
+                    TicketPricingType = e.Event.TicketPricingType,
+                    TotalTickets = e.Event.TotalTickets,
+                    SoldQuantity = e.Event.SoldQuantity,
+                    LocationName = e.Event.LocationName,
+                    Publish = e.Event.Publish,
+                    AverageRating = e.Event.AverageRating,
+                    TotalRatings = e.Event.TotalRatings,
+                    Status = e.Event.Status,
+
+                    Tags = e.Event.EventTags.Select(t => new TagResponse
+                    {
+                        TagId = t.TagId.ToString(),
+                        TagName = t.Tag.NameTag
+                    }).ToList(),
+
+                    TicketPrice = e.Event.TicketTypes != null
+                        ? e.Event.TicketTypes.Min(t => t.TicketPrice)
+                        : 0,
+
+                    IsFavorite = userId != Guid.Empty
+                        && e.Event.FavoriteEvents.Any(fe => fe.UserId == userId),
+
+                    ImgListEvent = string.IsNullOrEmpty(e.Event.ImgListEvent)
+                        ? new List<string>()
+                        : e.Event.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList(),
+                })
+                .ToListAsync();
+
+            return new BasePaginated<EventsResponse>(result, totalCount, pageNumber, pageSize);
+        }
+
     }
 }

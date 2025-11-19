@@ -343,7 +343,7 @@ namespace AIEvent.API.Controllers
                 "ReportEvent retrieved successfully"));
         }
 
-        [HttpGet("/staff")]
+        [HttpGet("staff")]
         [Authorize(Roles = "Staff")]
         public async Task<ActionResult<SuccessResponse<BasePaginated<ListEventResponse>>>> GetListEventForStaff(
                                                                                                           [FromQuery] string? title,
@@ -360,6 +360,28 @@ namespace AIEvent.API.Controllers
             }
 
             return Ok(SuccessResponse<BasePaginated<ListEventResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Event retrieved successfully"));
+        }
+
+        [HttpGet("radius")]
+        [Authorize(Roles = "User")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<EventsResponse>>>> GetListEventForStaff(
+                                                                                                          [FromQuery] string? categoryId,
+                                                                                                          [FromQuery] int? radius,
+                                                                                                          [FromQuery] int pageNumber = 1,
+                                                                                                          [FromQuery] int pageSize = 10)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _eventService.GetAllEventByRadius(userId, radius, categoryId, pageNumber, pageSize);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<EventsResponse>>.SuccessResult(
                 result.Value!,
                 SuccessCodes.Success,
                 "Event retrieved successfully"));

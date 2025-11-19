@@ -31,8 +31,8 @@ namespace AIEvent.Application.DTOs.Event
         public string? District { get; set; }
         [Required(ErrorMessage = "Address is required")]
         public string? Address { get; set; }
-        public float? Latitude { get; set; }
-        public float? Longitude { get; set; }
+        public double Latitude { get; set; } = 0;
+        public double Longitude { get; set; } = 0;
         public bool? Publish { get; set; } = false;
         [Required(ErrorMessage = "SaleStartTime is required")]
         public DateTime? SaleStartTime { get; set; }  

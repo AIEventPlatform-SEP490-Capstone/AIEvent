@@ -12,8 +12,8 @@ namespace AIEvent.Domain.Entities
         public string? PasswordHash { get; set; }
         public string? Address { get; set; }
         public string? District { get; set; }
-        public string? Latitude { get; set; }
-        public string? Longitude { get; set; }
+        public double Latitude { get; set; } = 0;
+        public double Longitude { get; set; } = 0;
         public bool IsActive { get; set; } = false;
         public ParticipationFrequency ParticipationFrequency { get; set; }
         public BudgetOption BudgetOption { get; set; }
