@@ -31,7 +31,7 @@ import AuthService from '../../api/services/AuthService';
 import {isStaffUser} from '../../utils/jwtUtils';
 // import Clipboard from '@react-native-clipboard/clipboard';
 import * as Clipboard from 'expo-clipboard';
-import Toast from 'react-native-simple-toast';
+import Toast from 'react-native-toast-message';
 
 const EventDetailScreen = () => {
   const navigation = useNavigation();
@@ -61,38 +61,63 @@ const EventDetailScreen = () => {
       await Share.share({
         message: `${event?.title}\n${shareUrl}`,
       });
-      Toast.show('Đã chia sẻ!');
+      Toast.show({
+        type: 'success',
+        text1: 'Đã chia sẻ!',
+      });
     } catch (error) {
-      Toast.show('Không thể chia sẻ');
+      Toast.show({
+        type: 'error',
+        text1: 'Không thể chia sẻ',
+      });
     }
   };
+
   const handleCopyLink = () => {
     Clipboard.setString(shareUrl);
-    Toast.show('Đã sao chép link!');
+    Toast.show({
+      type: 'success',
+      text1: 'Đã sao chép link!',
+    });
   };
 
   const handleShareZalo = () => {
     const url = `zalo://qr/share?url=${encodeURIComponent(shareUrl)}`;
     Linking.openURL(url).catch(() => {
-      Toast.show('Zalo không khả dụng');
+      Toast.show({
+        type: 'error',
+        text1: 'Zalo không khả dụng',
+      });
     });
   };
+
   const handleShareFacebook = () => {
     const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
     Linking.openURL(url).catch(() => {
-      Toast.show('Facebook không khả dụng');
+      Toast.show({
+        type: 'error',
+        text1: 'Facebook không khả dụng',
+      });
     });
   };
+
   const handleShareTwitter = () => {
     const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(event?.title || '')}`;
     Linking.openURL(url).catch(() => {
-      Toast.show('Twitter không khả dụng');
+      Toast.show({
+        type: 'error',
+        text1: 'Twitter không khả dụng',
+      });
     });
   };
+
   const handleShareLinkedIn = () => {
     const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
     Linking.openURL(url).catch(() => {
-      Toast.show('LinkedIn không khả dụng');
+      Toast.show({
+        type: 'error',
+        text1: 'LinkedIn không khả dụng',
+      });
     });
   };
 
