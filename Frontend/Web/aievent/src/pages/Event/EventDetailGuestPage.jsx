@@ -37,6 +37,7 @@ import { useEvents } from "../../hooks/useEvents";
 import { useFavoriteEvents } from "../../hooks/useFavoriteEvents";
 import { PATH } from "../../routes/path";
 import MapDirection from "../../components/Event/MapDirection";
+import { useSidebar } from "../../components/ui/sidebar";
 import {
   Dialog,
   DialogContent,
@@ -59,6 +60,7 @@ import Tiktok from "../../assets/Tiktok.png";
 import Instagram from "../../assets/Instagram.png";
 
 const EventDetailGuestPage = ({ previewData }) => {
+  const { state } = useSidebar();
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useSelector((state) => state.auth);
@@ -76,6 +78,7 @@ const EventDetailGuestPage = ({ previewData }) => {
   const [isInviting, setIsInviting] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const sidebarState = state === "collapsed" ? "lg:pl-16" : "lg:pl-64";
 
   //tải danh sách bạn bè khi mở dialog mời
   useEffect(() => {
@@ -413,7 +416,7 @@ const EventDetailGuestPage = ({ previewData }) => {
   const occupancyPercent = event.soldQuantity ? (event.soldQuantity / event.totalTickets) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen bg-background transition-all duration-300 ${sidebarState}`}>
       {/* Header - Simplified */}
       <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-200">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -425,19 +428,13 @@ const EventDetailGuestPage = ({ previewData }) => {
           </button>
           <h1 className="text-lg font-semibold text-foreground flex-1 ml-4 truncate">{event.title}</h1>
           <div className="flex gap-2">
-            <button 
-              onClick={handleToggleFavorite}
-              className="p-2 hover:bg-gray-100 rounded-lg transition"
-            >
-              <Heart className={`w-5 h-5 ${isLiked ? "fill-red-500 text-red-500" : "text-gray-700"}`} />
-            </button>
-            <button 
-              onClick={() => setIsShareOpen(true)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition"
-            >
-              <Share2 className="w-5 h-5 text-gray-700" />
-            </button>
-          </div>
+              <button 
+                onClick={handleToggleFavorite}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <Heart className={`w-5 h-5 ${isLiked ? "fill-red-500 text-red-500" : "text-gray-700"}`} />
+              </button>
+            </div>
         </div>
       </div>
 
