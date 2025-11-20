@@ -141,8 +141,8 @@ export function SidebarInset({
   const marginLeft =
     state === "collapsed" && collapsible === "icon"
       ? "var(--sidebar-width-icon)"
-      : "0";
-      // : "var(--sidebar-width)";
+      // : "0";
+      : "var(--sidebar-width)";
 
   return (
     <main

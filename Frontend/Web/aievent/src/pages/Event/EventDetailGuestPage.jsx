@@ -80,7 +80,7 @@ const EventDetailGuestPage = ({ previewData }) => {
   const [isInviting, setIsInviting] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const sidebarState = state === "collapsed" ? "lg:pl-16" : "lg:pl-64";
+  const sidebarState = state === "collapsed" ? "lg:pl-20" : "lg:pl-0.2";
   
   // New state for ticket sale countdown
   const [timeRemaining, setTimeRemaining] = useState(null);
