@@ -192,7 +192,8 @@ export default function NotificationsPage() {
         title: newNotification.title,
         message: newNotification.message,
         type: newNotification.type,
-        channel: "InApp" // Match the NotificationChannel enum
+        imageUrl: null, // Explicitly set to null
+        eventId: null // Explicitly set to null
       };
 
       await fetcher.post("/notifications/admin/create", payload);

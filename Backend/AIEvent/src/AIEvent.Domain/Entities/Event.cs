@@ -35,8 +35,8 @@ namespace AIEvent.Domain.Entities
         public string? District { get; set; }
         public string? ImgListEvidences { get; set; }
         public string? Address { get; set; }
-        public float? Latitude { get; set; }
-        public float? Longitude { get; set; }
+        public double Latitude { get; set; } = 0;
+        public double Longitude { get; set; } = 0;
         public DateTime? SaleStartTime { get; set; }  
         public DateTime? SaleEndTime { get; set; }
         public DateTime? PaidOutAt { get; set; }

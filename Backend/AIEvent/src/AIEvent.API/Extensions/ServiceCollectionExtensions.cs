@@ -55,6 +55,7 @@ namespace AIEvent.API.Extensions
                     .AddScoped<IFriendService, FriendService>()
                     .AddScoped<IHangfireScheduler, HangfireScheduler>()
                     .AddScoped<INotificationService, NotificationService>()
+                    .AddTransient<IActivityLogService, ActivityLogService>()
                     .AddScoped<IDashboardService, DashboardService>();
 
 

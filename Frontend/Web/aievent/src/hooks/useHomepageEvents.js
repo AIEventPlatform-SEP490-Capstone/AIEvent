@@ -13,7 +13,7 @@ const getRecommendedEvents = (allEvents) => {
     .slice(0, 6);
 };
 
-export const useHomepageEvents = (initialPage = 1, pageSize = 12) => {
+export const useHomepageEvents = (initialPage = 1, pageSize = 6) => {
   const [allEvents, setAllEvents] = useState([]);
   const [recommendedEvents, setRecommendedEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,20 +24,28 @@ export const useHomepageEvents = (initialPage = 1, pageSize = 12) => {
   
   const { getEvents } = useEvents();
 
-  const loadEvents = async (page = currentPage) => {
+  const loadEvents = async (page = currentPage, category = 'all') => {
     try {
       setLoading(true);
       setError(null);
       
-      // Fetch events from API
-      const response = await getEvents({
+      // Prepare API parameters
+      const params = {
         pageNumber: page,
-        pageSize: pageSize,
-      });
+        pageSize: pageSize
+      };
+      
+      // Add category filter if not "all"
+      if (category !== "all") {
+        params.eventCategoryId = category;
+      }
+      
+      // Fetch events from API
+      const response = await getEvents(params);
       
       if (response) {
         const eventsData = response.items || response || [];
-        const totalCount = response.totalCount || eventsData.length;
+        const totalCount = response.totalCount || response.totalItems || eventsData.length;
         
         setAllEvents(eventsData);
         setTotalCount(totalCount);
@@ -76,7 +84,8 @@ export const useHomepageEvents = (initialPage = 1, pageSize = 12) => {
     currentPage,
     totalPages,
     totalCount,
-    goToPage
+    goToPage,
+    loadEvents // Expose loadEvents to allow filtering
   };
 };
 

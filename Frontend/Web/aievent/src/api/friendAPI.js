@@ -159,5 +159,15 @@ export const friendAPI = {
   },
 };
 
+// Get AI recommended friends
+friendAPI.getAIRecommendedFriends = async (pageNumber = 1, pageSize = 5) => {
+  const queryParams = new URLSearchParams();
+  queryParams.append('pageNumber', pageNumber);
+  queryParams.append('pageSize', pageSize);
+
+  const response = await fetcher.get(`/ai/friend?${queryParams.toString()}`);
+  return response.data?.data || response.data;
+};
+
 export default friendAPI;
 

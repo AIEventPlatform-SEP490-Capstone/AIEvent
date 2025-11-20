@@ -35,7 +35,7 @@ export default defineConfig({
         target: "https://aievent.duckdns.org",
         changeOrigin: true,
         secure: false,
-        ws: true,
+        ws: true, // Enable WebSocket proxying
       }
     },
   },

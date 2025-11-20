@@ -10,14 +10,8 @@ export const notificationAPI = {
   // Get total unread notification count
   getUnreadCount: async () => {
     try {
-      // Try to get a direct count first
-      try {
-        const countResponse = await fetcher.get(`/notifications/unread-count`);
-        if (typeof countResponse.data === 'number') {
-          return countResponse.data;
-        }
-      } catch (directCountError) {
-      }
+      // Skip the direct count endpoint since it doesn't exist
+      // and go straight to fetching notifications to count unread ones
       
       // Fetch with a larger page size to get more notifications
       const response = await fetcher.get(`/notifications?pageNumber=1&pageSize=100`);
@@ -43,6 +37,7 @@ export const notificationAPI = {
 
       return 0;
     } catch (error) {
+      console.error('Error fetching unread count:', error);
       throw error;
     }
   },

@@ -5,6 +5,9 @@ import { useSelector } from "react-redux";
 export const NotificationBadge = () => {
   const { isAuthenticated } = useSelector((state) => state.auth);
   const { unreadCount } = useSelector((state) => state.notifications);
+  
+  // Debug logging
+  // console.log("NotificationBadge - isAuthenticated:", isAuthenticated, "unreadCount:", unreadCount);
 
   if (!isAuthenticated || unreadCount <= 0) {
     return null;

@@ -24,7 +24,8 @@ export const fetchUnreadCount = createAsyncThunk(
       return count;
     } catch (error) {
       console.error('Error in fetchUnreadCount thunk:', error);
-      return rejectWithValue(error.response?.data?.message || "Failed to fetch unread count");
+      // Return 0 as fallback instead of rejecting to prevent UI issues
+      return 0;
     }
   }
 );
@@ -82,7 +83,6 @@ const notificationsSlice = createSlice({
       // Add new notification to the beginning of the list
       state.items.unshift(action.payload);
       // Increment unread count since new notifications are unread by default
-      const previousCount = state.unreadCount;
       state.unreadCount += 1;
     },
     clearNotifications: (state) => {
@@ -119,9 +119,15 @@ const notificationsSlice = createSlice({
         state.totalItems = totalItems;
         state.hasMore = currentPage < totalPages;
         
-        // Count unread notifications in the current page
-        const unreadInPage = items.filter(n => !n.isRead).length;
-        
+        // For the first page, we should also update the unread count based on current notifications
+        if (currentPage === 1) {
+          const unreadInCurrentPage = items.filter(n => !n.isRead).length;
+          // But we don't want to overwrite the real-time count, so we only update if it's 0
+          // This ensures that real-time updates are preserved
+          if (state.unreadCount === 0 && unreadInCurrentPage > 0) {
+            state.unreadCount = unreadInCurrentPage;
+          }
+        }
       })
       .addCase(fetchNotifications.rejected, (state, action) => {
         state.loading = false;

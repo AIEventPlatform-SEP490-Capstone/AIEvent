@@ -15,10 +15,12 @@ namespace AIEvent.API.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IActivityLogService _activityLogService;
 
-        public UserController(IUserService userService)
+        public UserController(IUserService userService, IActivityLogService activityLogService)
         {
             _userService = userService;
+            _activityLogService = activityLogService;
         }
 
         [HttpGet("{id}")]
@@ -230,6 +232,23 @@ namespace AIEvent.API.Controllers
                 new { },
                 SuccessCodes.Success,
                 "Successfully"));
+        }
+
+        [HttpGet("{id}/activity-log")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<ActivityLogResponse>>>> GetUserActivityLog(string id, DateTimeOffset? startDate, DateTimeOffset? endDate,
+                                                                                    [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            var result = await _activityLogService.GetActivityLogsByUserAsync(id, startDate, endDate, pageNumber, pageSize);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<ActivityLogResponse>>.SuccessResult(
+                result.Value!,
+                message: "ActivityLog retrieved successfully"));
         }
     }
 }

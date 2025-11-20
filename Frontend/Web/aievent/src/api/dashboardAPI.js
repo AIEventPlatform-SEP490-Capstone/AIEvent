@@ -43,5 +43,52 @@ export const dashboardAPI = {
     });
     return response.data?.data || response.data;
   },
-};
 
+  // GET: Organizer - Event Statistics
+  getEventStatistics: async (filter = null) => {
+    const response = await fetcher.get("/dashboard/event-statistics", {
+      params: filter,
+    });
+    return response.data?.data || response.data;
+  },
+
+  // GET: Organizer - Buyer Statistics
+  getBuyerStatistics: async (filter = null) => {
+    const response = await fetcher.get("/dashboard/buyer-statistics", {
+      params: filter,
+    });
+    return response.data?.data || response.data;
+  },
+
+  // GET: Organizer - Check-in Statistics
+  getCheckInStatistics: async (filter = null) => {
+    const response = await fetcher.get("/dashboard/checkin-statistics", {
+      params: filter,
+    });
+    return response.data?.data || response.data;
+  },
+
+  // GET: Organizer - Revenue Statistics
+  getRevenueStatistics: async (filter = null) => {
+    const response = await fetcher.get("/dashboard/revenue-statistics", {
+      params: filter,
+    });
+    return response.data?.data || response.data;
+  },
+
+  // GET: Organizer - Net Revenue Statistics
+  getNetRevenueStatistics: async (filter = null) => {
+    const response = await fetcher.get("/dashboard/net-revenue-statistics", {
+      params: filter,
+    });
+    return response.data?.data || response.data;
+  },
+
+  // GET: Organizer - Revenue by Category/Tag
+  getRevenueByCategoryTag: async (filter = null) => {
+    const response = await fetcher.get("/dashboard/revenue-by-category-tag", {
+      params: filter,
+    });
+    return response.data?.data || response.data;
+  },
+};
