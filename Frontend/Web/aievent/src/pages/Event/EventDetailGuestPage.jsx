@@ -26,6 +26,7 @@ import {
   Send,
   X,
   Link2,
+  Flag,
 } from "lucide-react";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
@@ -58,6 +59,7 @@ import Twitter from "../../assets/Twitter.png";
 import LinkedIn from "../../assets/LinkedIn.png";
 import Tiktok from "../../assets/Tiktok.png";
 import Instagram from "../../assets/Instagram.png";
+import { EventTimeline } from "../../components/Event/EventTimeline";
 
 const EventDetailGuestPage = ({ previewData }) => {
   const { state } = useSidebar();
@@ -500,57 +502,71 @@ const EventDetailGuestPage = ({ previewData }) => {
               <p className="text-lg text-muted-foreground leading-relaxed">{event.description}</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white rounded-xl p-6 border border-gray-100 hover:shadow-lg transition">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <Calendar className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ngày diễn ra</p>
-                    <p className="font-bold text-foreground">{formatDate(event.startTime)}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl p-6 border border-gray-100 hover:shadow-lg transition">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <Clock className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Thời gian</p>
-                    <p className="font-bold text-foreground">{formatTime(event.startTime)} - {formatTime(event.endTime)}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl p-6 border border-gray-100 hover:shadow-lg transition">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <MapPin className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Địa điểm</p>
-                    <p className="font-bold text-foreground">
-                      {event.isOnlineEvent ? "Sự kiện trực tuyến" : (event.locationName || "Chưa xác định")}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl p-6 border border-gray-100 hover:shadow-lg transition">
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <Users className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Người tham gia</p>
-                    <p className="font-bold text-foreground">{event.soldQuantity || 0} / {event.totalTickets || "N/A"}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* Event Timeline */}
+            <EventTimeline 
+              stages={[
+                {
+                  label: "Mở bán vé",
+                  time: event.saleStartTime 
+                    ? `${new Date(event.saleStartTime).toLocaleDateString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit'
+                      })} ${new Date(event.saleStartTime).toLocaleTimeString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}`
+                    : "Chưa xác định",
+                  icon: <Ticket className="w-5 h-5" />,
+                  color: "bg-blue-500"
+                },
+                {
+                  label: "Đóng bán vé",
+                  time: event.saleEndTime 
+                    ? `${new Date(event.saleEndTime).toLocaleDateString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit'
+                      })} ${new Date(event.saleEndTime).toLocaleTimeString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}`
+                    : "Chưa xác định",
+                  icon: <Clock className="w-5 h-5" />,
+                  color: "bg-red-500"
+                },
+                {
+                  label: "Sự kiện bắt đầu",
+                  time: `${new Date(event.startTime).toLocaleDateString('vi-VN', {
+                    day: '2-digit',
+                    month: '2-digit'
+                  })} ${new Date(event.startTime).toLocaleTimeString('vi-VN', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}`,
+                  icon: <Calendar className="w-5 h-5" />,
+                  color: "bg-green-500"
+                },
+                {
+                  label: "Sự kiện kết thúc",
+                  time: `${new Date(event.endTime).toLocaleDateString('vi-VN', {
+                    day: '2-digit',
+                    month: '2-digit'
+                  })} ${new Date(event.endTime).toLocaleTimeString('vi-VN', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}`,
+                  icon: <Flag className="w-5 h-5" />,
+                  color: "bg-purple-500"
+                }
+              ]}
+              currentStage={(() => {
+                const now = new Date();
+                if (event.saleStartTime && now < new Date(event.saleStartTime)) return 0;
+                if (event.saleEndTime && now < new Date(event.saleEndTime)) return 1;
+                if (now < new Date(event.startTime)) return 2;
+                if (now < new Date(event.endTime)) return 3;
+                return 3; // Event has ended
+              })()}
+            />
 
             {/* Ticket Information */}
             {event.ticketDetails && event.ticketDetails.length > 0 && (
