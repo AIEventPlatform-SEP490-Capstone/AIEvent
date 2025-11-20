@@ -62,13 +62,16 @@ export function EventTimeline({ stages, currentStage = 0 }) {
               const isCompleted = index < currentStage
               const isCurrent = index === currentStage
               const isUpcoming = index > currentStage
+              // Handle case when currentStage is -1 (not yet started)
+              const showAsUpcoming = currentStage === -1 ? index >= 0 : isUpcoming
+              const showAsCurrent = currentStage === -1 ? false : isCurrent
 
               return (
                 <div key={index} className="flex flex-col items-center flex-1">
                   {/* Dot with animation */}
                   <div className="relative mb-4">
                     {/* Outer glow ring */}
-                    {isCurrent && (
+                    {showAsCurrent && (
                       <div className="absolute inset-0 animate-pulse">
                         <div className={`w-12 h-12 rounded-full ${stage.color} opacity-30 blur-lg`}></div>
                       </div>
@@ -79,16 +82,16 @@ export function EventTimeline({ stages, currentStage = 0 }) {
                       className={`
                         relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300
                         ${
-                          isCurrent
+                          showAsCurrent
                             ? `${stage.color} text-white shadow-lg scale-110`
                             : isCompleted
                               ? `${stage.color} text-white shadow-md`
                               : "bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300"
                         }
-                        ${isCurrent ? "ring-4 ring-offset-2 dark:ring-offset-slate-900" : ""}
+                        ${showAsCurrent ? "ring-4 ring-offset-2 dark:ring-offset-slate-900" : ""}
                       `}
                       style={
-                        isCurrent
+                        showAsCurrent
                           ? {
                               boxShadow: `0 0 20px ${stage.color.replace("bg-", "")}`,
                             }
@@ -99,7 +102,7 @@ export function EventTimeline({ stages, currentStage = 0 }) {
                     </div>
 
                     {/* Status badge */}
-                    {isCurrent && (
+                    {showAsCurrent && (
                       <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap">
                         Đang diễn ra
                       </div>
@@ -113,11 +116,14 @@ export function EventTimeline({ stages, currentStage = 0 }) {
                     </p>
                     <p
                       className={`text-sm font-bold transition-colors ${
-                        isCurrent ? "text-foreground" : isCompleted ? "text-foreground" : "text-muted-foreground"
+                        showAsCurrent ? "text-foreground" : isCompleted ? "text-foreground" : "text-muted-foreground"
                       }`}
                     >
                       {stage.time}
                     </p>
+                    {/* Countdown or ongoing status */}
+                    {stage.countdown}
+                    {stage.ongoing}
                   </div>
                 </div>
               )
@@ -131,6 +137,8 @@ export function EventTimeline({ stages, currentStage = 0 }) {
         {stages.map((stage, index) => {
           const isCompleted = index < currentStage
           const isCurrent = index === currentStage
+          // Handle case when currentStage is -1 (not yet started)
+          const showAsCurrent = currentStage === -1 ? false : isCurrent
 
           return (
             <div key={index} className="flex gap-4">
@@ -150,7 +158,7 @@ export function EventTimeline({ stages, currentStage = 0 }) {
                   className={`
                     w-10 h-10 rounded-full flex items-center justify-center transition-all
                     ${
-                      isCurrent
+                      showAsCurrent
                         ? `${stage.color} text-white scale-110 shadow-lg`
                         : isCompleted
                           ? `${stage.color} text-white`
@@ -174,7 +182,7 @@ export function EventTimeline({ stages, currentStage = 0 }) {
               {/* Stage info */}
               <div
                 className={`pt-2 pb-4 flex-1 ${
-                  isCurrent
+                  showAsCurrent
                     ? "bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 p-3 rounded-lg border border-blue-200 dark:border-blue-800"
                     : ""
                 }`}
@@ -184,12 +192,15 @@ export function EventTimeline({ stages, currentStage = 0 }) {
                 </p>
                 <p
                   className={`text-sm font-bold ${
-                    isCurrent ? "text-foreground" : isCompleted ? "text-foreground" : "text-muted-foreground"
+                    showAsCurrent ? "text-foreground" : isCompleted ? "text-foreground" : "text-muted-foreground"
                   }`}
                 >
                   {stage.time}
                 </p>
-                {isCurrent && (
+                {/* Countdown or ongoing status for mobile */}
+                {stage.countdown}
+                {stage.ongoing}
+                {showAsCurrent && !stage.ongoing && (
                   <div className="mt-2 inline-block bg-blue-500 text-white px-2 py-1 rounded text-xs font-semibold">
                     Đang diễn ra
                   </div>

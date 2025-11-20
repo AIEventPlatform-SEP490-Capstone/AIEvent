@@ -81,6 +81,10 @@ const EventDetailGuestPage = ({ previewData }) => {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const sidebarState = state === "collapsed" ? "lg:pl-16" : "lg:pl-64";
+  
+  // New state for ticket sale countdown
+  const [timeRemaining, setTimeRemaining] = useState(null);
+  const [saleStarted, setSaleStarted] = useState(false);
 
   //tải danh sách bạn bè khi mở dialog mời
   useEffect(() => {
@@ -146,6 +150,36 @@ const EventDetailGuestPage = ({ previewData }) => {
 
   const { getFavoriteEvents, addFavoriteEvent, removeFavoriteEvent } =
     useFavoriteEvents();
+
+  // Countdown timer effect for ticket sale
+  useEffect(() => {
+    if (!event?.saleStartTime) return;
+
+    const calculateTimeRemaining = () => {
+      const now = new Date();
+      const saleStartTime = new Date(event.saleStartTime);
+      
+      if (now >= saleStartTime) {
+        setSaleStarted(true);
+        setTimeRemaining(null);
+        return;
+      }
+      
+      const diff = saleStartTime - now;
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      setTimeRemaining({ days, hours, minutes, seconds });
+      setSaleStarted(false);
+    };
+
+    calculateTimeRemaining();
+    const timer = setInterval(calculateTimeRemaining, 1000);
+    
+    return () => clearInterval(timer);
+  }, [event?.saleStartTime]);
 
   useEffect(() => {
     if (previewData) {
@@ -417,6 +451,20 @@ const EventDetailGuestPage = ({ previewData }) => {
   const totalAvailableTickets = event.totalTickets - (event.soldQuantity || 0);
   const occupancyPercent = event.soldQuantity ? (event.soldQuantity / event.totalTickets) * 100 : 0;
 
+  // Modify the ticket purchase button
+  const getTicketButtonText = () => {
+    if (!event?.saleStartTime) return "Mua vé ngay";
+    
+    const now = new Date();
+    const saleStartTime = new Date(event.saleStartTime);
+    
+    if (now < saleStartTime) {
+      return "Chưa mở bán";
+    }
+    
+    return "Mua vé ngay";
+  };
+
   return (
     <div className={`min-h-screen bg-background transition-all duration-300 ${sidebarState}`}>
       {/* Header - Simplified */}
@@ -517,7 +565,35 @@ const EventDetailGuestPage = ({ previewData }) => {
                       })}`
                     : "Chưa xác định",
                   icon: <Ticket className="w-5 h-5" />,
-                  color: "bg-blue-500"
+                  color: "bg-blue-500",
+                  // Add countdown display
+                  countdown: timeRemaining && !saleStarted && (
+                    <div className="mt-2 text-center">
+                      <div className="text-xs text-muted-foreground">Bắt đầu sau</div>
+                      <div className="flex justify-center gap-1 mt-1">
+                        <div className="bg-blue-100 text-blue-800 rounded px-2 py-1 text-xs font-bold">
+                          {timeRemaining.days}d
+                        </div>
+                        <div className="bg-blue-100 text-blue-800 rounded px-2 py-1 text-xs font-bold">
+                          {timeRemaining.hours}h
+                        </div>
+                        <div className="bg-blue-100 text-blue-800 rounded px-2 py-1 text-xs font-bold">
+                          {timeRemaining.minutes}m
+                        </div>
+                        <div className="bg-blue-100 text-blue-800 rounded px-2 py-1 text-xs font-bold">
+                          {timeRemaining.seconds}s
+                        </div>
+                      </div>
+                    </div>
+                  ),
+                  // Show "Currently ongoing" when sale has started
+                  ongoing: saleStarted && (
+                    <div className="mt-2 text-center">
+                      <div className="inline-block bg-green-100 text-green-800 rounded-full px-3 py-1 text-xs font-bold">
+                        Đang diễn ra
+                      </div>
+                    </div>
+                  )
                 },
                 {
                   label: "Đóng bán vé",
@@ -560,11 +636,15 @@ const EventDetailGuestPage = ({ previewData }) => {
               ]}
               currentStage={(() => {
                 const now = new Date();
-                if (event.saleStartTime && now < new Date(event.saleStartTime)) return 0;
-                if (event.saleEndTime && now < new Date(event.saleEndTime)) return 1;
-                if (now < new Date(event.startTime)) return 2;
-                if (now < new Date(event.endTime)) return 3;
-                return 3; // Event has ended
+                // Stage 0: Mở bán vé (Ticket sale start)
+                if (event.saleStartTime && now < new Date(event.saleStartTime)) return -1; // Not yet started
+                // Stage 1: Đóng bán vé (Ticket sale end)
+                if (event.saleEndTime && now < new Date(event.saleEndTime)) return 0; // Sale is ongoing
+                // Stage 2: Sự kiện bắt đầu (Event start)
+                if (now < new Date(event.startTime)) return 1;
+                // Stage 3: Sự kiện kết thúc (Event end)
+                if (now < new Date(event.endTime)) return 2;
+                return 2; // Event has ended
               })()}
             />
 
@@ -698,11 +778,16 @@ const EventDetailGuestPage = ({ previewData }) => {
                   </p>
                 </div>
                 <Button 
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold h-12 text-base"
+                  className={`w-full font-semibold h-12 text-base transition-all duration-300 ${
+                    !saleStarted && event?.saleStartTime && new Date() < new Date(event.saleStartTime)
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed hover:bg-gray-300"
+                      : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl"
+                  }`}
                   onClick={handleRegister}
+                  disabled={!saleStarted && event?.saleStartTime && new Date() < new Date(event.saleStartTime)}
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
-                  Mua vé ngay
+                  {getTicketButtonText()}
                 </Button>
                 <Button 
                   variant="outline" 
