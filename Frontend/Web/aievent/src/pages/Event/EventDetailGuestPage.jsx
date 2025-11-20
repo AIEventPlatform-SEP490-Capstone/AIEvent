@@ -661,7 +661,7 @@ const EventDetailGuestPage = ({ previewData }) => {
             {/* Registration Card */}
             <Card className="border border-gray-200 sticky top-24 bg-white shadow-lg">
               <CardHeader className="bg-gradient-to-br from-primary/5 to-primary/10 border-b border-gray-100">
-                <h3 className="text-xl font-bold text-foreground">Đăng ký tham gia</h3>
+                <h3 className="text-xl font-bold text-foreground">Mua vé tham gia</h3>
                 <p className="text-sm text-muted-foreground mt-1">Số lượng có hạn</p>
               </CardHeader>
               <CardContent className="space-y-3 pt-6">
@@ -680,7 +680,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                   onClick={handleRegister}
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
-                  Đăng ký ngay
+                  Mua vé ngay
                 </Button>
                 <Button 
                   variant="outline" 

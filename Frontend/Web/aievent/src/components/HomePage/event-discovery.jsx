@@ -342,7 +342,7 @@ export function EventDiscovery({
                         size="sm"
                         onClick={() => handleRegister(event.eventId || event.id)}
                       >
-                        Đăng ký
+                        Mua vé
                       </Button>
                       <Button
                         variant="outline"
@@ -614,7 +614,7 @@ export function EventDiscovery({
                       size="sm"
                       onClick={() => handleRegister(event.eventId || event.id)}
                     >
-                      Đăng ký
+                      Mua vé
                     </Button>
                     <Button
                       variant="outline"
