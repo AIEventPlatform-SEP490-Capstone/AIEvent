@@ -819,39 +819,39 @@ namespace AIEvent.Application.Services.Implements
                 var response = new SystemReportResponse();
                 var now = DateTimeOffset.UtcNow;
                 var currentMonthStart = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero);
- 
+
                 var adminRoleId = await _unitOfWork.RoleRepository
                     .Query()
                     .AsNoTracking()
                     .Where(r => r.Name == "Admin" && !r.IsDeleted)
                     .Select(r => r.Id)
-                    .FirstOrDefaultAsync(); 
- 
+                    .FirstOrDefaultAsync();
+
                 var monthlyStats = new MonthlyStatistics();
- 
+
                 monthlyStats.NewUsers = await _unitOfWork.UserRepository
                     .Query()
                     .AsNoTracking()
                     .Where(u => !u.IsDeleted && u.RoleId != adminRoleId && u.CreatedAt >= currentMonthStart)
                     .CountAsync();
- 
+
                 monthlyStats.NewEvents = await _unitOfWork.EventRepository
                     .Query()
                     .AsNoTracking()
                     .Where(e => !e.IsDeleted && e.CreatedAt >= currentMonthStart)
                     .CountAsync();
- 
-                 monthlyStats.Revenue = await _unitOfWork.EventRepository
-                    .Query()
-                    .AsNoTracking()
-                    .Where(e => !e.IsDeleted && e.CreatedAt >= currentMonthStart)
-                    .SumAsync(e => e.TotalAmount);
+
+                monthlyStats.Revenue = await _unitOfWork.EventRepository
+                   .Query()
+                   .AsNoTracking()
+                   .Where(e => !e.IsDeleted && e.CreatedAt >= currentMonthStart)
+                   .SumAsync(e => e.TotalAmount);
 
                 response.MonthlyStatistics = monthlyStats;
- 
+
                 var thirtyDaysAgo = now.AddDays(-30);
                 var activities = new List<RecentActivityResponse>();
- 
+
                 var recentUsers = await _unitOfWork.UserRepository
                     .Query()
                     .AsNoTracking()
@@ -861,13 +861,13 @@ namespace AIEvent.Application.Services.Implements
                     .Take(3)
                     .Select(u => new RecentActivityResponse
                     {
-                        Id = u.Id, 
+                        Id = u.Id,
                         Title = $"Người dùng mới: {u.FullName ?? u.Email ?? "Unknown"}",
                         Description = $"Đã đăng ký với vai trò {u.Role.Name}",
                         CreatedAt = u.CreatedAt
                     })
                     .ToListAsync();
- 
+
                 var recentEvents = await _unitOfWork.EventRepository
                     .Query()
                     .AsNoTracking()
@@ -876,13 +876,13 @@ namespace AIEvent.Application.Services.Implements
                     .Take(3)
                     .Select(e => new RecentActivityResponse
                     {
-                        Id = e.Id, 
+                        Id = e.Id,
                         Title = $"Sự kiện mới: {e.Title}",
                         Description = $"Trạng thái: {e.Status}",
                         CreatedAt = e.CreatedAt
                     })
                     .ToListAsync();
- 
+
                 var recentOrganizerRequests = await _unitOfWork.OrganizerProfileRepository
                     .Query()
                     .AsNoTracking()
@@ -891,39 +891,39 @@ namespace AIEvent.Application.Services.Implements
                     .Take(3)
                     .Select(o => new RecentActivityResponse
                     {
-                        Id = o.Id, 
+                        Id = o.Id,
                         Title = $"Đơn đăng ký Organizer: {o.CompanyName ?? o.ContactName}",
                         Description = $"Email: {o.ContactEmail}",
                         CreatedAt = o.CreatedAt
                     })
                     .ToListAsync();
- 
+
                 var approvedEvents = await _unitOfWork.EventRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(e => !e.IsDeleted && e.Status == EventStatus.Approved && 
+                    .Where(e => !e.IsDeleted && e.Status == EventStatus.Approved &&
                                 e.RequireApprovalAt.HasValue && e.RequireApprovalAt >= thirtyDaysAgo)
                     .OrderByDescending(e => e.RequireApprovalAt)
                     .Take(3)
                     .Select(e => new RecentActivityResponse
                     {
-                        Id = e.Id, 
+                        Id = e.Id,
                         Title = $"Sự kiện được duyệt: {e.Title}",
                         Description = $"Đã được phê duyệt",
                         CreatedAt = e.RequireApprovalAt!.Value
                     })
                     .ToListAsync();
- 
+
                 var rejectedEvents = await _unitOfWork.EventRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(e => !e.IsDeleted && e.Status == EventStatus.Rejected && 
+                    .Where(e => !e.IsDeleted && e.Status == EventStatus.Rejected &&
                                 e.RequireApprovalAt.HasValue && e.RequireApprovalAt >= thirtyDaysAgo)
                     .OrderByDescending(e => e.RequireApprovalAt)
                     .Take(3)
                     .Select(e => new RecentActivityResponse
                     {
-                        Id = e.Id, 
+                        Id = e.Id,
                         Title = $"Sự kiện bị từ chối: {e.Title}",
                         Description = e.ReasonReject ?? "Bị từ chối",
                         CreatedAt = e.RequireApprovalAt!.Value
@@ -962,9 +962,9 @@ namespace AIEvent.Application.Services.Implements
                 var totalActivitiesCount = activities.Count;
 
                 response.RecentActivities = new BasePaginated<RecentActivityResponse>(
-                    sortedActivities, 
-                    totalActivitiesCount, 
-                    recentActivitiesPageNumber, 
+                    sortedActivities,
+                    totalActivitiesCount,
+                    recentActivitiesPageNumber,
                     recentActivitiesPageSize);
 
                 return Result<SystemReportResponse>.Success(response);
@@ -974,5 +974,150 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult($"Error getting system report: {ex.Message}", ErrorCodes.InternalServerError);
             }
         }
+
+        public async Task<Result<List<OrganizerStatisticResponse>>> StatisticsOrganizersAsync(int year, OrganizerProfileStatus status)
+        {
+            try
+            {
+                var query = await _unitOfWork.OrganizerProfileRepository
+                    .Query(false)
+                    .AsNoTracking()
+                    .Where(o => o.Status == status &&
+                                o.ConfirmAt.HasValue &&
+                                o.ConfirmAt.Value.Year == year)
+                    .GroupBy(o => o.ConfirmAt!.Value.Month)
+                    .Select(g => new
+                    {
+                        Month = g.Key,
+                        Total = g.Count()
+                    })
+                    .ToListAsync();
+
+                var result = Enumerable.Range(1, 12)
+                    .Select(month => new OrganizerStatisticResponse
+                    {
+                        Month = month,
+                        TotalApproved = query.FirstOrDefault(x => x.Month == month)?.Total ?? 0
+                    })
+                    .ToList();
+
+                return Result<List<OrganizerStatisticResponse>>.Success(result);
+            }
+            catch (Exception ex)
+            {
+                return ErrorResponse.FailureResult(
+                    $"Error getting organizer statistics: {ex.Message}",
+                    ErrorCodes.InternalServerError);
+            }
+        }
+
+
+        public async Task<Result<List<EventStatisticByMonthResponse>>> GetStatisticsEventsByMonthAsync(int year, EventStatus status)
+        {
+            try
+            {
+                var query = await _unitOfWork.EventRepository
+                    .Query(false)
+                    .AsNoTracking()
+                    .Where(e => e.Status == status &&
+                                e.RequireApprovalAt.HasValue &&
+                                e.RequireApprovalAt.Value.Year == year)
+                    .GroupBy(e => e.RequireApprovalAt!.Value.Month)
+                    .Select(g => new
+                    {
+                        Month = g.Key,
+                        Total = g.Count()
+                    })
+                    .ToListAsync();
+
+                var result = Enumerable.Range(1, 12)
+                    .Select(month => new EventStatisticByMonthResponse
+                    {
+                        Month = month,
+                        TotalApproved = query.FirstOrDefault(x => x.Month == month)?.Total ?? 0
+                    })
+                    .ToList();
+
+                return Result<List<EventStatisticByMonthResponse>>.Success(result);
+            }
+            catch (Exception ex)
+            {
+                return ErrorResponse.FailureResult(
+                    $"Error getting event statistics: {ex.Message}",
+                    ErrorCodes.InternalServerError);
+            }
+        }
+
+
+        public async Task<Result<List<OrganizerStatisticResponse>>> GetTotalOrganizersCreatedEventsByMonthAsync(int year)
+        {
+            try
+            {
+                var query = await _unitOfWork.EventRepository
+                    .Query(false)
+                    .AsNoTracking()
+                    .Where(e => e.CreatedAt.Year == year &&
+                                !e.IsDeleted && e.Status == EventStatus.Approved && e.Publish == true)
+                    .GroupBy(e => e.CreatedAt.Month)
+                    .Select(g => new
+                    {
+                        Month = g.Key,
+                        TotalOrganizers = g
+                            .Select(x => x.OrganizerProfileId)
+                            .Distinct()
+                            .Count()
+                    })
+                    .ToListAsync();
+
+                var result = Enumerable.Range(1, 12)
+                    .Select(month => new OrganizerStatisticResponse
+                    {
+                        Month = month,
+                        TotalApproved = query.FirstOrDefault(x => x.Month == month)?.TotalOrganizers ?? 0
+                    })
+                    .ToList();
+
+                return Result<List<OrganizerStatisticResponse>>.Success(result);
+            }
+            catch (Exception ex)
+            {
+                return ErrorResponse.FailureResult(
+                    $"Error getting organizer event statistics: {ex.Message}",
+                    ErrorCodes.InternalServerError
+                );
+            }
+        }
+
+        public async Task<Result<ApprovedSummaryResponse>> GetOrganizerAndEventApprovedSummaryAsync()
+        {
+            try
+            {
+                var totalApprovedOrganizers = await _unitOfWork.OrganizerProfileRepository
+                    .Query(false)
+                    .AsNoTracking()
+                    .CountAsync(o => o.Status == OrganizerProfileStatus.Approved);
+
+                var totalApprovedEvents = await _unitOfWork.EventRepository
+                    .Query(false)
+                    .AsNoTracking()
+                    .CountAsync(e => e.Status == EventStatus.Approved);
+
+                var result = new ApprovedSummaryResponse
+                {
+                    TotalApprovedOrganizers = totalApprovedOrganizers,
+                    TotalApprovedEvents = totalApprovedEvents
+                };
+
+                return Result<ApprovedSummaryResponse>.Success(result);
+            }
+            catch (Exception ex)
+            {
+                return ErrorResponse.FailureResult(
+                    $"Error getting approved summary: {ex.Message}",
+                    ErrorCodes.InternalServerError
+                );
+            }
+        }
+
     }
 }
