@@ -4,6 +4,7 @@ using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Dashboard; 
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
+using AIEvent.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -240,6 +241,74 @@ namespace AIEvent.API.Controllers
                 result.Value!,
                 SuccessCodes.Success,
                 "System report retrieved successfully"));
+        }
+
+        [HttpGet("organizer-approved-statistics")]
+        [Authorize(Roles = "Manager")]
+        public async Task<ActionResult<SuccessResponse<List<OrganizerStatisticResponse>>>> GetStatisticsOrganizer(int year, OrganizerProfileStatus status)
+        {
+            var result = await _dashboardService.StatisticsOrganizersAsync(year, status);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<List<OrganizerStatisticResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Statistics Organizer retrieved successfully"));
+        }
+
+        [HttpGet("event-month-statistics")]
+        [Authorize(Roles = "Manager")]
+        public async Task<ActionResult<SuccessResponse<List<EventStatisticByMonthResponse>>>> GetStatisticsEventByMonth(int year, EventStatus status)
+        {
+            var result = await _dashboardService.GetStatisticsEventsByMonthAsync(year, status);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<List<EventStatisticByMonthResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Statistics Event retrieved successfully"));
+        }
+
+        [HttpGet("organizer-join-statistics")]
+        [Authorize(Roles = "Manager")]
+        public async Task<ActionResult<SuccessResponse<List<OrganizerStatisticResponse>>>> GetTotalOrganizersCreatedEventsByMonth(int year)
+        {
+            var result = await _dashboardService.GetTotalOrganizersCreatedEventsByMonthAsync(year);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<List<OrganizerStatisticResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Organizer retrieved successfully"));
+        }
+
+        [HttpGet("total-organizer-event")]
+        [Authorize(Roles = "Manager")]
+        public async Task<ActionResult<SuccessResponse<ApprovedSummaryResponse>>> GetOrganizerAndEventApprovedSummary()
+        {
+            var result = await _dashboardService.GetOrganizerAndEventApprovedSummaryAsync();
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<ApprovedSummaryResponse>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Organizer retrieved successfully"));
         }
     }
 }
