@@ -24,8 +24,8 @@ namespace AIEvent.Application.DTOs.Event
         public EventStatus Status { get; set; }
         public string? District { get; set; }
         public string? Address { get; set; }
-        public float? Latitude { get; set; }
-        public float? Longitude { get; set; }
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
         public DateTime? SaleStartTime { get; set; } 
         public DateTime? SaleEndTime { get; set; }
         public OrganizerEventResponse OrganizerEvent { get; set; } = default!;
