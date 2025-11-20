@@ -117,8 +117,6 @@ export default function RegisterPage() {
       budgetOption: "Flexible",
       notifications: {
         isEmailNotificationEnabled: true,
-        isPushNotificationEnabled: true,
-        isSmsNotificationEnabled: true,
       },
     },
   });
@@ -130,7 +128,6 @@ export default function RegisterPage() {
     isAuthenticated,
     user,
   } = useSelector((state) => state.auth);
-  const interests = INTERESTS;
   // Effect to handle redirection when user is authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -292,7 +289,10 @@ export default function RegisterPage() {
         interestedDistricts.filter((c) => c !== city)
       );
     } else {
-      handlePreferenceChange("interestedDistricts", [...interestedDistricts, city]);
+      handlePreferenceChange("interestedDistricts", [
+        ...interestedDistricts,
+        city,
+      ]);
     }
   };
 
@@ -357,25 +357,23 @@ export default function RegisterPage() {
     }
 
     const registerPayload = {
-      fullName: formData.fullName,
-      email: formData.email,
+      fullName: formData.fullName.trim(),
+      email: formData.email.trim().toLowerCase(),
       password: formData.password,
       confirmPassword: formData.confirmPassword,
-      phoneNumber: formData.phoneNumber,
-      userInterests: formData.preferences.userInterests.map((name) => ({
-        interestName: name,
+      phoneNumber: formData.phoneNumber.trim(),
+      userInterests: formData.preferences.userInterests.map((interest) => ({
+        interestName: interest,
       })),
-      interestedDistricts: formData.preferences.interestedDistricts.map((city) => ({
-        districtName: city,
-      })),
+      interestedDistricts: formData.preferences.interestedDistricts.map(
+        (district) => ({
+          districtName: district,
+        })
+      ),
       participationFrequency: formData.preferences.participationFrequency,
       budgetOption: formData.preferences.budgetOption,
       isEmailNotificationEnabled:
         formData.preferences.notifications.isEmailNotificationEnabled,
-      isPushNotificationEnabled:
-        formData.preferences.notifications.isPushNotificationEnabled,
-      isSmsNotificationEnabled:
-        formData.preferences.notifications.isSmsNotificationEnabled,
     };
 
     try {
@@ -1071,17 +1069,7 @@ export default function RegisterPage() {
                                 key: "isEmailNotificationEnabled",
                                 label: "Email",
                                 icon: "📧",
-                              },
-                              {
-                                key: "isPushNotificationEnabled",
-                                label: "Push",
-                                icon: "🔔",
-                              },
-                              {
-                                key: "isSmsNotificationEnabled",
-                                label: "SMS",
-                                icon: "📱",
-                              },
+                              }
                             ].map((notif) => {
                               const isChecked =
                                 formData.preferences.notifications[notif.key];
@@ -1188,7 +1176,9 @@ export default function RegisterPage() {
                               Khu vực
                             </h4>
                             <p className="text-gray-600">
-                              {formData.preferences.interestedDistricts.join(", ")}
+                              {formData.preferences.interestedDistricts.join(
+                                ", "
+                              )}
                             </p>
                           </div>
                           <div className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
@@ -1227,20 +1217,7 @@ export default function RegisterPage() {
                                 ? "Bật"
                                 : "Tắt"}
                             </p>
-                            <p>
-                              🔔 Push:{" "}
-                              {formData.preferences.notifications
-                                .isPushNotificationEnabled
-                                ? "Bật"
-                                : "Tắt"}
-                            </p>
-                            <p>
-                              📱 SMS:{" "}
-                              {formData.preferences.notifications
-                                .isSmsNotificationEnabled
-                                ? "Bật"
-                                : "Tắt"}
-                            </p>
+
                           </div>
                         </div>
                       </div>

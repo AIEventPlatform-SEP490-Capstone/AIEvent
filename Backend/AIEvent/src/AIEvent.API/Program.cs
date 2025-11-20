@@ -111,6 +111,7 @@ namespace AIEvent.API
 
             app.UseCors("AllowFrontend");
 
+            app.UseMiddleware<ActivityLogMiddleware>();
             app.UseMiddleware<GlobalExceptionHandlingMiddleware>(); 
 
             app.UseAuthentication();

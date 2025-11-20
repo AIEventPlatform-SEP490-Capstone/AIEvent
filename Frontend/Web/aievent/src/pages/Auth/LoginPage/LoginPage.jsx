@@ -441,7 +441,7 @@ const LoginPage = () => {
                     </div>
                   </label>
                   <Link
-                    to="/forgot-password"
+                    to={PATH.FORGOT_PASSWORD}
                     className="font-medium text-blue-600 hover:text-blue-700 transition-colors"
                   >
                     Quên mật khẩu?

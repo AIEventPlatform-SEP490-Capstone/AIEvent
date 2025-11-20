@@ -46,6 +46,7 @@ import StaffManagePage from "../pages/Organizer/StaffManagePage";
 import ChatPage from "../pages/Chat/ChatPage";
 import HelpPage from "../pages/Shared/HelpPage";
 import AboutPage from "../pages/Shared/AboutPage";
+import ForgotPasswordPage from "../pages/Auth/ForgotPasswordPage/ForgotPasswordPage";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -191,6 +192,7 @@ export default function useRouterElement() {
         { path: "register", element: <RegisterPage /> },
         { path: "verify-otp", element: <VerifyOtpPage /> },
         { path: "google-callback", element: <GoogleCallbackPage /> },
+        { path: "forgot-password", element: <ForgotPasswordPage /> },
       ],
     },
     {
