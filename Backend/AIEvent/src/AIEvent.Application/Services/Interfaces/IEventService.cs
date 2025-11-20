@@ -24,6 +24,7 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result> ReplyReportAsync(string id, ReplyReportRequest request);
         Task<Result<ReportResponse>> GetEventReportOfUserAsync(Guid userId, string id);
         Task<Result<BasePaginated<ListEventResponse>>> GetAllEventForStaff(Guid staffId, string? title, string? eventCategoryId,int pageNumber, int pageSize);
-        Task<Result<BasePaginated<EventsResponse>>> GetAllEventByRadius(Guid userId, int? radius, string? eventCategoryId, int pageNumber, int pageSize);
+        Task<Result<BasePaginated<EventsLocationResponse>>> GetAllEventByRadius(Guid userId, int? radius, string? eventCategoryId,
+                                                                                double latitude, double longitude, int pageNumber, int pageSize);
     }
 }

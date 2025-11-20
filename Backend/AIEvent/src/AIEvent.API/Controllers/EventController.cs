@@ -367,21 +367,23 @@ namespace AIEvent.API.Controllers
 
         [HttpGet("radius")]
         [Authorize(Roles = "User")]
-        public async Task<ActionResult<SuccessResponse<BasePaginated<EventsResponse>>>> GetListEventForStaff(
+        public async Task<ActionResult<SuccessResponse<BasePaginated<EventsLocationResponse>>>> GetListEventForStaff(
                                                                                                           [FromQuery] string? categoryId,
                                                                                                           [FromQuery] int? radius,
+                                                                                                          [FromQuery] double latitude,
+                                                                                                          [FromQuery] double longitude,
                                                                                                           [FromQuery] int pageNumber = 1,
                                                                                                           [FromQuery] int pageSize = 10)
         {
             var userId = User.GetRequiredUserId();
-            var result = await _eventService.GetAllEventByRadius(userId, radius, categoryId, pageNumber, pageSize);
+            var result = await _eventService.GetAllEventByRadius(userId, radius, categoryId, latitude, longitude, pageNumber, pageSize);
 
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
 
-            return Ok(SuccessResponse<BasePaginated<EventsResponse>>.SuccessResult(
+            return Ok(SuccessResponse<BasePaginated<EventsLocationResponse>>.SuccessResult(
                 result.Value!,
                 SuccessCodes.Success,
                 "Event retrieved successfully"));
