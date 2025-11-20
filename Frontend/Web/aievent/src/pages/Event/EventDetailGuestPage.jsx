@@ -449,13 +449,22 @@ const EventDetailGuestPage = ({ previewData }) => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             
             <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
+              {/* Display price badge first */}
+              <Badge className="bg-primary text-primary-foreground border-0 shadow-lg px-3 py-1.5 font-semibold">
+                {formatPrice(event)}
+              </Badge>
+              {/* Display category badge */}
               <Badge className="bg-white/95 text-gray-900 border-0 shadow-lg px-3 py-1.5 font-semibold">
                 <Tag className="w-3 h-3 mr-1" />
                 {event.eventCategory?.eventCategoryName || "Chưa phân loại"}
               </Badge>
-              <Badge className="bg-primary text-primary-foreground border-0 shadow-lg px-3 py-1.5 font-semibold">
-                {formatPrice(event)}
-              </Badge>
+              {/* Display event tags */}
+              {event.eventTags && event.eventTags.map((tag, index) => (
+                <Badge key={index} className="bg-indigo-100 text-indigo-800 border-0 shadow-lg px-3 py-1.5 font-semibold">
+                  <Tag className="w-3 h-3 mr-1" />
+                  {tag.tagName}
+                </Badge>
+              ))}
             </div>
             
             {event.imgListEvent.length > 1 && (
