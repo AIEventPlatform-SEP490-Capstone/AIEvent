@@ -1,6 +1,7 @@
 using AIEvent.Application.DTOs.Dashboard;
 using AIEvent.Application.Helpers;
 using AIEvent.Domain.Bases;
+using AIEvent.Domain.Enums;
 
 namespace AIEvent.Application.Services.Interfaces
 {
@@ -18,6 +19,10 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result<BasePaginated<EventManagementResponse>>> GetEventManagementAsync(string? search = null, int pageNumber = 1, int pageSize = 10);
         Task<Result<BasePaginated<UserManagementResponse>>> GetUserManagementAsync(string? search = null, int pageNumber = 1, int pageSize = 10);
         Task<Result<SystemReportResponse>> GetSystemReportAsync(int recentActivitiesPageNumber = 1, int recentActivitiesPageSize = 10);
+        Task<Result<List<OrganizerStatisticResponse>>> StatisticsOrganizersAsync(int year, OrganizerProfileStatus status);
+        Task<Result<List<EventStatisticByMonthResponse>>> GetStatisticsEventsByMonthAsync(int year, EventStatus status);
+        Task<Result<List<OrganizerStatisticResponse>>> GetTotalOrganizersCreatedEventsByMonthAsync(int year);
+        Task<Result<ApprovedSummaryResponse>> GetOrganizerAndEventApprovedSummaryAsync();
     }
 }
 
