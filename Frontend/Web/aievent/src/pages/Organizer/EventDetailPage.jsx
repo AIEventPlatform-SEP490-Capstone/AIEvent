@@ -32,7 +32,8 @@ import {
   X,
   Sparkles,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Flag
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
@@ -48,6 +49,9 @@ import EventDetailGuestPage from '../Event/EventDetailGuestPage';
 
 // Import EventStatus constants
 import { EventStatus, EventStatusDisplay } from '../../constants/eventConstants';
+
+// Import EventTimeline component
+import { EventTimeline } from '../../components/Event/EventTimeline';
 
 const EventDetailPage = () => {
   const { eventId } = useParams();
@@ -163,11 +167,6 @@ const EventDetailPage = () => {
       style: 'currency',
       currency: 'VND'
     }).format(ticket.ticketPrice);
-  };
-
-  // Format ticket quantity as sold/total
-  const formatTicketQuantity = (ticket) => {
-    return `${ticket.soldQuantity || 0}/${ticket.ticketQuantity}`;
   };
 
   const handleEditEvent = () => {
@@ -341,6 +340,7 @@ Nhấn OK để xác nhận xóa.`;
 
   // Calculate available tickets
   const totalAvailableTickets = event.totalTickets - (event.soldQuantity || 0);
+  const occupancyPercent = event.soldQuantity ? (event.soldQuantity / event.totalTickets) * 100 : 0;
   const status = getEventStatus(event);
   const statusConfig = getStatusBadge(status);
   const StatusIcon = statusConfig.icon;
@@ -348,252 +348,285 @@ Nhấn OK để xác nhận xóa.`;
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
-      <div className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
-          <Button 
-            variant="ghost" 
-            size="sm"
+      <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-200">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <button 
             onClick={() => navigate(-1)}
-            className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 text-sm"
+            className="p-2 hover:bg-gray-100 rounded-lg transition"
           >
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            Quay lại
-          </Button>
-          <h1 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{event.title}</h1>
-          <Button 
-            size="sm"
-            onClick={handleShareEvent}
-            className="bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 text-sm"
-          >
-            <Share2 className="w-4 h-4 mr-1" />
-            Chia sẻ
-          </Button>
+            <ChevronLeft className="w-5 h-5 text-foreground" />
+          </button>
+          <h1 className="text-lg font-semibold text-foreground flex-1 ml-4 truncate">{event.title}</h1>
+          <div className="flex gap-2">
+            <button 
+              onClick={handleShareEvent}
+              className="p-2 hover:bg-gray-100 rounded-lg transition"
+            >
+              <Share2 className="w-5 h-5 text-foreground" />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="relative h-96 w-full overflow-hidden bg-gray-100">
+        {event.imgListEvent && event.imgListEvent.length > 0 ? (
+          <>
+            <img 
+              src={event.imgListEvent[currentImageIndex]} 
+              alt={event.title} 
+              className="w-full h-full object-cover" 
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            
+            <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
+              {/* Display price badge first */}
+              <Badge className="bg-primary text-primary-foreground border-0 shadow-lg px-3 py-1.5 font-semibold">
+                {event.minTicketPrice !== undefined && event.maxTicketPrice !== undefined
+                  ? event.minTicketPrice === 0 && event.maxTicketPrice === 0
+                    ? "Miễn phí"
+                    : event.minTicketPrice === event.maxTicketPrice
+                    ? new Intl.NumberFormat("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                      }).format(event.minTicketPrice)
+                    : `${new Intl.NumberFormat("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                      }).format(event.minTicketPrice)} - ${new Intl.NumberFormat("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                      }).format(event.maxTicketPrice)}`
+                  : event.ticketType === 1 || event.ticketType === "free"
+                  ? "Miễn phí"
+                  : "Có phí"}
+              </Badge>
+              {/* Display category badge */}
+              <Badge className="bg-white/95 text-gray-900 border-0 shadow-lg px-3 py-1.5 font-semibold">
+                <Tag className="w-3 h-3 mr-1" />
+                {event.eventCategory?.eventCategoryName || event.eventCategoryName || "Chưa phân loại"}
+              </Badge>
+              {/* Display event tags */}
+              {event.eventTags && event.eventTags.map((tag, index) => (
+                <Badge key={index} className="bg-indigo-100 text-indigo-800 border-0 shadow-lg px-3 py-1.5 font-semibold">
+                  <Tag className="w-3 h-3 mr-1" />
+                  {tag.tagName}
+                </Badge>
+              ))}
+            </div>
+            
+            {event.imgListEvent.length > 1 && (
+              <div className="absolute bottom-4 right-4 flex gap-2">
+                {event.imgListEvent.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`w-3 h-3 rounded-full transition-all ${
+                      currentImageIndex === index ? "bg-white w-8" : "bg-white/50 hover:bg-white/75"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+            <span className="text-gray-400 font-medium">
+              Không có hình ảnh
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="container mx-auto px-4 py-8">
+        {/* Grid layout with main content and sidebar */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Hero Image with Carousel */}
-            <div className="relative h-[400px] rounded-xl overflow-hidden group">
-              {event.imgListEvent && event.imgListEvent.length > 0 ? (
-                <>
-                  <img 
-                    src={event.imgListEvent[currentImageIndex]} 
-                    alt={`${event.title} - Image ${currentImageIndex + 1}`}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
-                
-                  {/* Category Badge */}
-                  {event.eventCategoryName && (
-                    <div className="absolute bottom-4 left-4">
-                      <Badge className="bg-blue-500/90 backdrop-blur-sm text-white border-0 shadow-lg px-3 py-1.5 text-sm font-medium">
-                        <Tag className="w-3 h-3 mr-1" />
-                        {event.eventCategoryName}
-                      </Badge>
-                    </div>
-                  )}
-                
-                  {/* Carousel Controls */}
-                  {event.imgListEvent.length > 1 && (
-                    <>
-                      <button 
-                        onClick={prevImage}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full transition-all opacity-0 group-hover:opacity-100"
-                      >
-                        <ChevronLeft className="w-5 h-5" />
-                      </button>
-                      <button 
-                        onClick={nextImage}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full transition-all opacity-0 group-hover:opacity-100"
-                      >
-                        <ChevronRight className="w-5 h-5" />
-                      </button>
-                    
-                      {/* Image Indicators */}
-                      <div className="absolute bottom-4 right-4 flex gap-1.5">
-                        {event.imgListEvent.map((_, index) => (
-                          <button
-                            key={index}
-                            onClick={() => setCurrentImageIndex(index)}
-                            className={`w-2.5 h-2.5 rounded-full transition-all ${
-                              currentImageIndex === index 
-                                ? "bg-white w-6" 
-                                : "bg-white/50 hover:bg-white/75"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </>
-              ) : (
-                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                  <span className="text-gray-400 text-sm font-medium">Không có hình ảnh</span>
-                </div>
-              )}
+            <div className="space-y-3">
+              <h1 className="text-4xl font-bold text-foreground leading-tight">{event.title}</h1>
+              <p className="text-lg text-muted-foreground leading-relaxed">{event.description}</p>
             </div>
 
-            <div className="space-y-4">
-              <h1 className="text-4xl font-bold text-gray-900 leading-tight">
-                {event.title}
-              </h1>
-              <p className="text-lg text-gray-600 leading-relaxed">
-                {event.description}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Date & Time */}
-              <div className="bg-white rounded-xl p-6 border border-gray-200 hover:border-blue-300 transition-all shadow-sm">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-blue-50 rounded-xl flex-shrink-0">
-                    <Calendar className="w-6 h-6 text-blue-500" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Ngày diễn ra</p>
-                    <p className="text-lg font-bold text-gray-900">{formatDate(event.startTime)}</p>
-                    <p className="text-gray-600 text-sm mt-1">Bắt đầu lúc {formatTime(event.startTime)}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Duration */}
-              <div className="bg-white rounded-xl p-6 border border-gray-200 hover:border-blue-300 transition-all shadow-sm">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-blue-50 rounded-xl flex-shrink-0">
-                    <Clock className="w-6 h-6 text-blue-500" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Thời lượng</p>
-                    <p className="text-lg font-bold text-gray-900">{formatTime(event.startTime)} - {formatTime(event.endTime)}</p>
-                    {(() => {
-                      const start = new Date(event.startTime);
-                      const end = new Date(event.endTime);
-                      const diffMs = end - start;
-                      const hours = Math.floor(diffMs / (1000 * 60 * 60));
-                      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-                      return (
-                        <p className="text-gray-600 text-sm mt-1">
-                          {hours} giờ {minutes > 0 ? `${minutes} phút` : ''}
-                        </p>
-                      );
-                    })()}
-                  </div>
-                </div>
-              </div>
-
-              {/* Location */}
-              <div className="bg-white rounded-xl p-6 border border-gray-200 hover:border-blue-300 transition-all shadow-sm">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-blue-50 rounded-xl flex-shrink-0">
-                    <MapPin className="w-6 h-6 text-blue-500" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Địa điểm</p>
-                    <p className="text-lg font-bold text-gray-900">
-                      {event.isOnlineEvent ? 'Sự kiện trực tuyến' : (event.locationName || 'Chưa xác định')}
-                    </p>
-                    <p className="text-gray-600 text-sm mt-1">
-                      {event.isOnlineEvent ? 'Trực tuyến' : (event.address || 'Chưa xác định')}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Attendees */}
-              <div className="bg-white rounded-xl p-6 border border-gray-200 hover:border-blue-300 transition-all shadow-sm">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-blue-50 rounded-xl flex-shrink-0">
-                    <Users className="w-6 h-6 text-blue-500" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Người tham gia</p>
-                    <p className="text-lg font-bold text-gray-900">{event.soldQuantity || 0} / {event.totalTickets || 'N/A'}</p>
-                    <p className="text-gray-600 text-sm mt-1">Còn trống {totalAvailableTickets} chỗ</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* Event Timeline */}
+            <EventTimeline 
+              stages={[
+                {
+                  label: "Mở bán vé",
+                  time: event.saleStartTime 
+                    ? `${new Date(event.saleStartTime).toLocaleDateString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit'
+                      })} ${new Date(event.saleStartTime).toLocaleTimeString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}`
+                    : "Chưa xác định",
+                  icon: <Ticket className="w-5 h-5" />,
+                  color: "bg-blue-500"
+                },
+                {
+                  label: "Đóng bán vé",
+                  time: event.saleEndTime 
+                    ? `${new Date(event.saleEndTime).toLocaleDateString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit'
+                      })} ${new Date(event.saleEndTime).toLocaleTimeString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}`
+                    : "Chưa xác định",
+                  icon: <Clock className="w-5 h-5" />,
+                  color: "bg-red-500"
+                },
+                {
+                  label: "Sự kiện bắt đầu",
+                  time: `${new Date(event.startTime).toLocaleDateString('vi-VN', {
+                    day: '2-digit',
+                    month: '2-digit'
+                  })} ${new Date(event.startTime).toLocaleTimeString('vi-VN', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}`,
+                  icon: <Calendar className="w-5 h-5" />,
+                  color: "bg-green-500"
+                },
+                {
+                  label: "Sự kiện kết thúc",
+                  time: `${new Date(event.endTime).toLocaleDateString('vi-VN', {
+                    day: '2-digit',
+                    month: '2-digit'
+                  })} ${new Date(event.endTime).toLocaleTimeString('vi-VN', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}`,
+                  icon: <Flag className="w-5 h-5" />,
+                  color: "bg-purple-500"
+                }
+              ]}
+              currentStage={(() => {
+                const now = new Date();
+                // Stage 0: Mở bán vé (Ticket sale start)
+                if (event.saleStartTime && now < new Date(event.saleStartTime)) return -1; // Not yet started
+                // Stage 1: Đóng bán vé (Ticket sale end)
+                if (event.saleEndTime && now < new Date(event.saleEndTime)) return 0; // Sale is ongoing
+                // Stage 2: Sự kiện bắt đầu (Event start)
+                if (now < new Date(event.startTime)) return 1;
+                // Stage 3: Sự kiện kết thúc (Event end)
+                if (now < new Date(event.endTime)) return 2;
+                return 2; // Event has ended
+              })()}
+            />
 
             {/* Ticket Information */}
             {event.ticketDetails && event.ticketDetails.length > 0 && (
-              <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">Loại vé có sẵn</h2>
+              <div className="bg-white rounded-xl p-6 border border-gray-100">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <Ticket className="w-5 h-5 text-primary" />
+                    Tình trạng vé
+                  </h3>
+                  <span className="text-sm font-medium text-primary">{occupancyPercent.toFixed(0)}% Đã bán</span>
                 </div>
+                <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-500"
+                    style={{ width: `${occupancyPercent}%` }}
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground mt-3">{totalAvailableTickets} chỗ còn lại</p>
+              </div>
+            )}
 
-                <div className="space-y-5">
-                  {event.ticketDetails.map((ticket, index) => {
-                    const availableTickets = ticket.ticketQuantity - (ticket.soldQuantity || 0);
-                    const isAvailable = availableTickets > 0;
-                    const soldPercentage = ((ticket.soldQuantity || 0) / ticket.ticketQuantity) * 100;
+            {/* Ticket Options */}
+            {event.ticketDetails && event.ticketDetails.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-xl font-bold text-foreground">Loại vé có sẵn</h3>
+                {event.ticketDetails.map((ticket, index) => {
+                  const availableTickets = ticket.ticketQuantity - (ticket.soldQuantity || 0);
+                  const isAvailable = availableTickets > 0;
+                  const soldPercentage = ticket.soldQuantity ? (ticket.soldQuantity / ticket.ticketQuantity) * 100 : 0;
 
-                    return (
-                      <div 
-                        key={index}
-                        className={`border rounded-xl p-5 transition-all hover:shadow-md ${
-                          isAvailable 
-                            ? 'border-gray-200 hover:border-blue-300' 
-                            : 'border-gray-100 opacity-60'
-                        }`}
-                      >
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 mb-5">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className="text-xl font-bold text-gray-900">{ticket.ticketName}</h3>
-                              {!isAvailable && (
-                                <Badge variant="destructive" className="text-xs font-semibold">
-                                  Hết vé
-                                </Badge>
-                              )}
-                            </div>
-                            {ticket.ticketDescription && (
-                              <p className="text-gray-600 text-sm mt-1">{ticket.ticketDescription}</p>
-                            )}
-                          </div>
-                          <div className="text-right">
-                            <p className="text-2xl font-bold text-blue-600">
-                              {ticket.ticketPrice === 0 ? "Miễn phí" : formatTicketPrice(ticket)}
-                            </p>
-                          </div>
+                  return (
+                    <div
+                      key={index}
+                      className="bg-white rounded-xl p-6 border border-gray-100 hover:border-primary/30 hover:shadow-md transition"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h4 className="font-semibold text-foreground mb-1">{ticket.ticketName}</h4>
+                          <p className="text-sm text-muted-foreground">{ticket.ticketDescription}</p>
                         </div>
-
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm text-gray-600">
-                            <span>Đã bán: {ticket.soldQuantity || 0} / {ticket.ticketQuantity}</span>
-                            <span>{availableTickets} còn lại</span>
-                          </div>
-                          <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-blue-500 transition-all duration-500 rounded-full"
-                              style={{ width: `${soldPercentage}%` }}
-                            ></div>
-                          </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-primary">
+                            {ticket.ticketPrice === 0 ? "Miễn phí" : formatTicketPrice(ticket)}
+                          </p>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{ticket.soldQuantity || 0} / {ticket.ticketQuantity} đã bán</span>
+                        <span className="font-medium">{availableTickets} còn lại</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
             {/* About Event */}
-            <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-              <h2 className="text-2xl font-bold text-gray-900 mb-5">Về sự kiện</h2>
-              <div className="prose prose-lg max-w-none">
-                <p className="text-gray-700 leading-relaxed">
-                  {event.title} là một sự kiện đặc biệt. 
-                  {event.description || 'Hãy tham gia để trải nghiệm những điều thú vị.'}
-                </p>
+            <div className="bg-white rounded-xl p-8 border border-gray-100">
+              <h2 className="text-2xl font-bold text-foreground mb-6">Về sự kiện</h2>
+              <p className="text-muted-foreground leading-relaxed mb-6">
+                {event.description || "Thông tin chi tiết về sự kiện chưa được cập nhật."}
+              </p>
+              
+              <div className="space-y-4">
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-primary" />
+                  Bạn sẽ nhận được:
+                </h3>
+                <ul className="space-y-2">
+                  {[
+                    "Kiến thức và trải nghiệm quý báu",
+                    "Cơ hội kết nối với những người cùng chí hướng",
+                    "Tài liệu sự kiện (nếu có)",
+                    "Networking và chia sẻ kinh nghiệm",
+                  ].map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-3 text-muted-foreground">
+                      <CheckCircle className="w-4 h-4 text-primary flex-shrink-0 mt-1" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
+
+            {/* Organizer */}
+            {event.organizerEvent && (
+              <div className="bg-white rounded-xl p-8 border border-gray-100">
+                <h2 className="text-xl font-bold text-foreground mb-6">Nhà tổ chức</h2>
+                <div className="flex items-start gap-4">
+                  {event.organizerEvent.imgCompany ? (
+                    <img
+                      src={event.organizerEvent.imgCompany}
+                      alt={event.organizerEvent.companyName || "Organizer"}
+                      className="w-16 h-16 rounded-lg object-cover border border-gray-200"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <User className="h-8 w-8 text-blue-600" />
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="font-semibold text-foreground text-lg">{event.organizerEvent.companyName || "Nhà tổ chức"}</h3>
+                    <p className="text-muted-foreground mt-1">{event.organizerEvent.companyDescription || "Thông tin về nhà tổ chức chưa được cập nhật."}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="lg:col-span-1 space-y-6">
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
               <div className="px-5 py-5 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100">
                 <h3 className="text-lg font-bold text-gray-900">Hành động nhanh</h3>
@@ -681,6 +714,50 @@ Nhấn OK để xác nhận xóa.`;
                 </Button>
               </div>
             </div>
+            {/* Location Card */}
+            {(!event.isOnlineEvent || event.isOnlineEvent === false) &&
+              (event.locationName || event.address || event.district) && (
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                  <div className="px-5 py-5 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100">
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-blue-600" />
+                      Địa điểm
+                    </h3>
+                  </div>
+                  <div className="p-5">
+                    <p className="font-semibold text-gray-900 mb-2">{event.locationName}</p>
+                    <p className="text-sm text-gray-600 mb-4">{event.address}{event.district ? `, ${event.district}` : ''}</p>
+                    <div className="w-full h-48 rounded-lg overflow-hidden border border-gray-200 mb-3">
+                      {event.latitude && event.longitude ? (
+                        <iframe
+                          src={`https://www.google.com/maps?q=${event.latitude},${event.longitude}&hl=vi&z=14&output=embed`}
+                          className="w-full h-full"
+                          frameBorder="0"
+                          allowFullScreen
+                          title="Event Location Map Preview"
+                        ></iframe>
+                      ) : (
+                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                          <div className="text-center">
+                            <MapPin className="h-8 w-8 text-gray-400 mx-auto mb-1" />
+                            <span className="text-sm text-gray-500">
+                              Bản đồ không khả dụng
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      className="w-full font-medium border-gray-200 hover:bg-gray-50"
+                      onClick={() => setIsMapModalOpen(true)}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Xem đường đi
+                    </Button>
+                  </div>
+                </div>
+              )}
 
             {/* Evidence Image Gallery - Moved to sidebar */}
             {event.imgListEvidences && event.imgListEvidences.length > 0 && event.imgListEvidences.some(img => 
@@ -716,7 +793,6 @@ Nhấn OK để xác nhận xóa.`;
                 </div>
               </div>
             )}
-
             {/* Organizer - Moved to sidebar */}
             {event.organizerEvent && (
               <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
@@ -772,8 +848,28 @@ Nhấn OK để xác nhận xóa.`;
             </DialogTitle>
           </DialogHeader>
           <div className="py-3">
-            <div className="bg-gray-100 border-2 border-dashed rounded-xl h-80 flex items-center justify-center">
-              <p>Bản đồ chỉ đường sẽ hiển thị ở đây</p>
+            <div className="w-full h-96 rounded-xl overflow-hidden">
+              {event.latitude && event.longitude ? (
+                <iframe
+                  src={`https://www.google.com/maps?q=${event.latitude},${event.longitude}&hl=vi&z=14&output=embed`}
+                  className="w-full h-full"
+                  frameBorder="0"
+                  allowFullScreen
+                  title="Event Location Map"
+                ></iframe>
+              ) : (
+                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                  <div className="text-center">
+                    <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-500">Không có thông tin bản đồ cho sự kiện này</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+              <h4 className="font-semibold text-gray-900 mb-2">Địa điểm sự kiện</h4>
+              <p className="text-gray-700">{event.locationName || "Chưa cập nhật tên địa điểm"}</p>
+              <p className="text-gray-600 text-sm mt-1">{event.address || "Chưa cập nhật địa chỉ"}{event.district ? `, ${event.district}` : ''}</p>
             </div>
           </div>
         </DialogContent>
