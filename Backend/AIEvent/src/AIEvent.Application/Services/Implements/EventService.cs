@@ -1325,6 +1325,8 @@ namespace AIEvent.Application.Services.Implements
                     AverageRating = e.Event.AverageRating,
                     TotalRatings = e.Event.TotalRatings,
                     Status = e.Event.Status,
+                    Latitude = e.Event.Latitude,
+                    Longitude = e.Event.Longitude,
 
                     Tags = e.Event.EventTags.Select(t => new TagResponse
                     {

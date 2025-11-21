@@ -47,6 +47,7 @@ import ChatPage from "../pages/Chat/ChatPage";
 import HelpPage from "../pages/Shared/HelpPage";
 import AboutPage from "../pages/Shared/AboutPage";
 import ForgotPasswordPage from "../pages/Auth/ForgotPasswordPage/ForgotPasswordPage";
+import NearbyEventsPage from "../pages/Nearby/NearbyEventsPage";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -56,7 +57,7 @@ export default function useRouterElement() {
       children: [
         { index: true, element: <HomePage /> },
         { path: "search", element: <SearchPage /> },
-        { path: "nearby", element: <div>Nearby Events Page</div> },
+        { path: "nearby", element: <NearbyEventsPage /> },
         { path: "timeline", element: <TimelinePage /> },
         { path: "friends", element: <div>Friends Page</div> },
         { path: "friends/search", element: <div>Friend Search Page</div> },

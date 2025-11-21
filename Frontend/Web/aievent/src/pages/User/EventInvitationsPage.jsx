@@ -263,16 +263,6 @@ const EventInvitationsPage = () => {
           <div className="flex items-center justify-between gap-4 flex-wrap">
             {/* Left Section */}
             <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(-1)}
-                className="hover:bg-gray-100 rounded-xl transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Quay lại
-              </Button>
-
               <div className="hidden sm:flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
                   <Mail className="w-6 h-6 text-white" />
@@ -307,7 +297,6 @@ const EventInvitationsPage = () => {
                 className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-lg rounded-xl"
                 onClick={() => navigate(PATH.HOME)}
               >
-                <Sparkles className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline">Khám phá sự kiện</span>
                 <span className="sm:hidden">Khám phá</span>
               </Button>
