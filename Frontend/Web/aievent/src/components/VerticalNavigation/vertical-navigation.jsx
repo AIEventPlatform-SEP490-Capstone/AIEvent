@@ -230,6 +230,12 @@ export function VerticalNavigation() {
         isActive: pathname === "/timeline",
       },
       {
+        title: "Sự kiện gần bạn",
+        url: "/nearby",
+        icon: MapPin,
+        isActive: pathname === "/nearby",
+      },
+      {
         title: "Yêu thích",
         url: "/favorites",
         icon: Heart,
@@ -601,7 +607,7 @@ export function VerticalNavigation() {
                           "flex items-center transition-all duration-200",
                           isCollapsed ? "justify-center w-full" : "gap-3 px-3 py-2.5"
                         )}
-                        title={isCollapsed ? "Hồ sơ cá nhân" : undefined}
+                        title={isCollapsed ? "Cá nhân" : undefined}
                       >
                         <User className={cn(
                           "transition-transform duration-200 group-hover:scale-110",
@@ -609,7 +615,7 @@ export function VerticalNavigation() {
                         )} />
                         {!isCollapsed && (
                           <span className="font-medium text-sm">
-                            Hồ sơ cá nhân
+                            Cá nhân
                           </span>
                         )}
                       </NavLink>
