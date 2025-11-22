@@ -251,6 +251,8 @@ export default function useRouterElement() {
         { path: "profile", element: <ManagerProfile /> },
         { path: "settings", element: <div>Manager Settings Page</div> },
         { path: "support", element: <div>Manager Support Page</div> },
+        { path: "organizers", element: <OrganizerApprovalListPage /> },
+        { path: "organizers/:id", element: <OrganizerApprovalDetailPage /> },
       ],
     },
     {
@@ -265,8 +267,6 @@ export default function useRouterElement() {
         { path: "events", element: <AdminEventManagement /> },
         { path: "users", element: <UserManagement /> },
 
-        { path: "organizers", element: <OrganizerApprovalListPage /> },
-        { path: "organizers/:id", element: <OrganizerApprovalDetailPage /> },
         { path: "profile", element: <AdminProfile /> },
         { path: "settings", element: <div>Admin Settings Page</div> },
         {

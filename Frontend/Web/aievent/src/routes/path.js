@@ -60,6 +60,8 @@ export const PATH = {
   MANAGER_PROFILE: "/manager/profile",
   MANAGER_SETTINGS: "/manager/settings",
   MANAGER_SUPPORT: "/manager/support",
+  MANAGER_ORGANIZERS: "/manager/organizers",
+  MANAGER_ORGANIZERS_DETAILS: "/manager/organizers/:id",
   // MANAGER_END_EVENT_REQUESTS: "/manager/end-event-requests", // Đã tích hợp vào ManagerEventDetailPage
 
   // ADMIN
@@ -67,8 +69,6 @@ export const PATH = {
   ADMIN_DASHBOARD: "/admin/dashboard",
   ADMIN_EVENTS: "/admin/events",
   ADMIN_USERS: "/admin/users",
-  ADMIN_ORGANIZERS: "/admin/organizers",
-  ADMIN_ORGANIZERS_DETAILS: "/admin/organizers/:id",
   ADMIN_PROFILE: "/admin/profile",
   ADMIN_SETTINGS: "/admin/settings",
   ADMIN_SYSTEM_SETTINGS: "/admin/system-settings",
