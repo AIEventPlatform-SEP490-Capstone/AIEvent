@@ -448,72 +448,51 @@ Nhấn OK để xác nhận xóa.`;
             </div>
 
             {/* Event Timeline */}
-            <EventTimeline 
+            <EventTimeline
               stages={[
                 {
                   label: "Mở bán vé",
-                  time: event.saleStartTime 
-                    ? `${new Date(event.saleStartTime).toLocaleDateString('vi-VN', {
-                        day: '2-digit',
-                        month: '2-digit'
-                      })} ${new Date(event.saleStartTime).toLocaleTimeString('vi-VN', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}`
+                  time: event.saleStartTime
+                    ? `${new Date(event.saleStartTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} ${new Date(event.saleStartTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`
                     : "Chưa xác định",
                   icon: <Ticket className="w-5 h-5" />,
                   color: "bg-blue-500"
                 },
                 {
                   label: "Đóng bán vé",
-                  time: event.saleEndTime 
-                    ? `${new Date(event.saleEndTime).toLocaleDateString('vi-VN', {
-                        day: '2-digit',
-                        month: '2-digit'
-                      })} ${new Date(event.saleEndTime).toLocaleTimeString('vi-VN', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}`
+                  time: event.saleEndTime
+                    ? `${new Date(event.saleEndTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} ${new Date(event.saleEndTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`
                     : "Chưa xác định",
                   icon: <Clock className="w-5 h-5" />,
                   color: "bg-red-500"
                 },
                 {
                   label: "Sự kiện bắt đầu",
-                  time: `${new Date(event.startTime).toLocaleDateString('vi-VN', {
-                    day: '2-digit',
-                    month: '2-digit'
-                  })} ${new Date(event.startTime).toLocaleTimeString('vi-VN', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}`,
+                  time: `${new Date(event.startTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} ${new Date(event.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`,
                   icon: <Calendar className="w-5 h-5" />,
                   color: "bg-green-500"
                 },
                 {
                   label: "Sự kiện kết thúc",
-                  time: `${new Date(event.endTime).toLocaleDateString('vi-VN', {
-                    day: '2-digit',
-                    month: '2-digit'
-                  })} ${new Date(event.endTime).toLocaleTimeString('vi-VN', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}`,
+                  time: `${new Date(event.endTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} ${new Date(event.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`,
                   icon: <Flag className="w-5 h-5" />,
                   color: "bg-purple-500"
                 }
               ]}
+              rawTimes={[
+                event.saleStartTime,
+                event.saleEndTime,
+                event.startTime,
+                event.endTime
+              ]}
               currentStage={(() => {
                 const now = new Date();
-                // Stage 0: Mở bán vé (Ticket sale start)
-                if (event.saleStartTime && now < new Date(event.saleStartTime)) return -1; // Not yet started
-                // Stage 1: Đóng bán vé (Ticket sale end)
-                if (event.saleEndTime && now < new Date(event.saleEndTime)) return 0; // Sale is ongoing
-                // Stage 2: Sự kiện bắt đầu (Event start)
+
+                if (event.saleStartTime && now < new Date(event.saleStartTime)) return -1;
+                if (event.saleEndTime && now < new Date(event.saleEndTime)) return 0;
                 if (now < new Date(event.startTime)) return 1;
-                // Stage 3: Sự kiện kết thúc (Event end)
                 if (now < new Date(event.endTime)) return 2;
-                return 2; // Event has ended
+                return 3;
               })()}
             />
 

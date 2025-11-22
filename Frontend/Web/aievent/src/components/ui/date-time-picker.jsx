@@ -1,95 +1,90 @@
-import React, { useState } from 'react';
+// File: src/components/ui/date-time-picker.jsx
+import React, { useState, useEffect } from 'react';
 import { Input } from './input';
 import { Card, CardContent } from './card';
 
 const DateTimePicker = ({ value, onChange, id, className = '', min, label, ...props }) => {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
+  const [error, setError] = useState('');
 
-  // Initialize from value prop
-  React.useEffect(() => {
-    if (value) {
-      // Handle both datetime-local format and ISO string format
-      let dateObj;
-      if (typeof value === 'string' && value.includes('T')) {
-        // ISO string format
-        dateObj = new Date(value);
-      } else if (typeof value === 'string') {
-        // datetime-local format
-        dateObj = new Date(value);
-      } else {
-        dateObj = new Date(value);
-      }
+useEffect(() => {
+  if (value) {
+    const d = new Date(value);
+    if (!isNaN(d.getTime())) {
+      // Format as local date/time strings
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
       
-      // Format date as YYYY-MM-DD
-      const year = dateObj.getFullYear();
-      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-      const day = String(dateObj.getDate()).padStart(2, '0');
       setDate(`${year}-${month}-${day}`);
-      
-      // Format time as HH:MM
-      const hours = String(dateObj.getHours()).padStart(2, '0');
-      const minutes = String(dateObj.getMinutes()).padStart(2, '0');
       setTime(`${hours}:${minutes}`);
-    } else {
-      setDate('');
-      setTime('');
     }
-  }, [value]);
+  } else {
+    setDate('');
+    setTime('');
+  }
+  setError('');
+}, [value]);
 
-  // Handle date change
-  const handleDateChange = (e) => {
-    const newDate = e.target.value;
-    setDate(newDate);
-    if (newDate && time) {
-      const dateTimeString = `${newDate}T${time}`;
-      onChange && onChange(dateTimeString);
-    }
+  const now = new Date();
+  const minDate = min ? new Date(min) : now;
+  const minDateStr = minDate.toISOString().slice(0, 10);
+  const minTimeStr = date === minDateStr ? minDate.toISOString().slice(11, 16) : '00:00';
+
+  const validateAndEmit = (dateVal, timeVal) => {
+  if (!dateVal || !timeVal) {
+    onChange('');
+    return;
+  }
+  
+  // Create date using local time components
+  const [year, month, day] = dateVal.split('-');
+  const [hours, minutes] = timeVal.split(':');
+  
+  const selected = new Date(
+    parseInt(year),
+    parseInt(month) - 1,
+    parseInt(day),
+    parseInt(hours),
+    parseInt(minutes)
+  );
+  
+  // Remove automatic validation
+  setError('');
+  onChange(selected.toISOString());
+};
+
+  const handleDate = (e) => {
+    const val = e.target.value;
+    setDate(val);
+    validateAndEmit(val, time);
   };
 
-  // Handle time change
-  const handleTimeChange = (e) => {
-    const newTime = e.target.value;
-    setTime(newTime);
-    if (date && newTime) {
-      const dateTimeString = `${date}T${newTime}`;
-      onChange && onChange(dateTimeString);
-    }
+  const handleTime = (e) => {
+    const val = e.target.value;
+    setTime(val);
+    validateAndEmit(date, val);
   };
-
-  // Extract date part from min attribute
-  const minDate = min ? min.split('T')[0] : undefined;
 
   return (
     <div className={className}>
       {label && <label className="block text-sm font-medium mb-2">{label}</label>}
-      <Card className="border border-input bg-background rounded-lg shadow-sm hover:shadow-md transition-shadow">
+      <Card className="border border-input bg-background rounded-lg">
         <CardContent className="p-3">
           <div className="flex gap-2">
             <div className="flex-1">
               <div className="text-xs text-muted-foreground mb-1">Ngày</div>
-              <Input
-                type="date"
-                id={`${id}-date`}
-                value={date}
-                onChange={handleDateChange}
-                min={minDate}
-                className="h-10 w-full"
-                {...props}
-              />
+              <Input type="date" value={date} onChange={handleDate} min={minDateStr} {...props} />
             </div>
             <div className="flex-1">
               <div className="text-xs text-muted-foreground mb-1">Giờ</div>
-              <Input
-                type="time"
-                id={`${id}-time`}
-                value={time}
-                onChange={handleTimeChange}
-                className="h-10 w-full"
-                {...props}
-              />
+              <Input type="time" value={time} onChange={handleTime} min={minTimeStr} {...props} />
             </div>
           </div>
+          {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
         </CardContent>
       </Card>
     </div>

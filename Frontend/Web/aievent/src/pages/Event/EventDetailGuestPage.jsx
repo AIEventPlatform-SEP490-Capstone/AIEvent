@@ -634,6 +634,12 @@ const EventDetailGuestPage = ({ previewData }) => {
                   color: "bg-purple-500"
                 }
               ]}
+              rawTimes={[
+                event.saleStartTime,
+                event.saleEndTime,
+                event.startTime,
+                event.endTime
+              ]}
               currentStage={(() => {
                 const now = new Date();
                 // Stage 0: Mở bán vé (Ticket sale start)
