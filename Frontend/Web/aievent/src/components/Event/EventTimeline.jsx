@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
 import DateTimePicker from '../../components/ui/date-time-picker';
 
@@ -39,7 +39,10 @@ export function EventTimeline({
   isEditable = false, 
   rawTimes = [], 
   onTimeChange, 
-  minDateTime 
+  minDateTime,
+  // Thêm props để xử lý validation
+  validationTimes = {},
+  onValidationChange
 }) {
   const internalStages = stages.map((stage, index) => ({
     ...stage,
@@ -56,6 +59,22 @@ export function EventTimeline({
   const progressWidth = effectiveCurrentStage < 0 || effectiveCurrentStage >= stages.length
     ? "0%"
     : `${((effectiveCurrentStage + 1) / stages.length) * 100}%`;
+
+  // State để quản lý lỗi validation cho từng trường
+  const [dateTimeErrors, setDateTimeErrors] = useState({});
+
+  // Hàm xử lý thay đổi lỗi validation
+  const handleDateTimeErrorChange = (index, error) => {
+    setDateTimeErrors(prev => ({
+      ...prev,
+      [index]: error
+    }));
+    
+    // Gọi callback nếu được cung cấp
+    if (onValidationChange) {
+      onValidationChange(index, error);
+    }
+  };
 
   return (
     <div className="bg-white rounded-2xl p-8 border border-border/50 shadow-sm">
@@ -83,6 +102,23 @@ export function EventTimeline({
               const isCurrent = index === effectiveCurrentStage;
               const showAsCurrent = hasAnyTimeDefined && isCurrent;
               const showAsCompleted = hasAnyTimeDefined && isCompleted;
+
+              // Xác định min và max cho từng trường thời gian
+              let minTime = minDateTime;
+              let maxTime = null;
+              
+              // Logic xác định min/max time dựa trên các trường thời gian khác
+              if (index === 0) { // Mở bán vé
+                // Không có min cụ thể, chỉ cần sau thời điểm hiện tại
+                maxTime = validationTimes.startTime || null; // Trước thời gian bắt đầu sự kiện
+              } else if (index === 1) { // Đóng bán vé
+                minTime = validationTimes.saleStartTime || minDateTime; // Sau thời gian mở bán vé
+                maxTime = validationTimes.startTime || null; // Trước thời gian bắt đầu sự kiện
+              } else if (index === 2) { // Sự kiện bắt đầu
+                minTime = validationTimes.saleEndTime || minDateTime; // Sau thời gian đóng bán vé
+              } else if (index === 3) { // Sự kiện kết thúc
+                minTime = validationTimes.startTime || minDateTime; // Sau thời gian bắt đầu sự kiện
+              }
 
               const dotContent = (
                 <div className="relative mb-4">
@@ -125,7 +161,10 @@ export function EventTimeline({
                         <DateTimePicker
                           value={stage.rawTime}
                           onChange={(v) => onTimeChange?.(index, v)}
-                          min={minDateTime}
+                          min={minTime}
+                          max={maxTime}
+                          error={dateTimeErrors[index]}
+                          onErrorChange={(error) => handleDateTimeErrorChange(index, error)}
                         />
                       </PopoverContent>
                     </Popover>
@@ -152,6 +191,21 @@ export function EventTimeline({
           const isCompleted = index < effectiveCurrentStage;
           const isCurrent = index === effectiveCurrentStage;
           const showAsCurrent = hasAnyTimeDefined && isCurrent;
+
+          // Xác định min và max cho từng trường thời gian (mobile)
+          let minTime = minDateTime;
+          let maxTime = null;
+          
+          if (index === 0) { // Mở bán vé
+            maxTime = validationTimes.startTime || null;
+          } else if (index === 1) { // Đóng bán vé
+            minTime = validationTimes.saleStartTime || minDateTime;
+            maxTime = validationTimes.startTime || null;
+          } else if (index === 2) { // Sự kiện bắt đầu
+            minTime = validationTimes.saleEndTime || minDateTime;
+          } else if (index === 3) { // Sự kiện kết thúc
+            minTime = validationTimes.startTime || minDateTime;
+          }
 
           const dotContent = (
             <div className="flex flex-col items-center">
@@ -180,7 +234,14 @@ export function EventTimeline({
                     <div className="cursor-pointer -mt-2">{dotContent}</div>
                   </PopoverTrigger>
                   <PopoverContent className="w-80">
-                    <DateTimePicker value={stage.rawTime} onChange={(v) => onTimeChange?.(index, v)} min={minDateTime} />
+                    <DateTimePicker 
+                      value={stage.rawTime} 
+                      onChange={(v) => onTimeChange?.(index, v)} 
+                      min={minTime}
+                      max={maxTime}
+                      error={dateTimeErrors[index]}
+                      onErrorChange={(error) => handleDateTimeErrorChange(index, error)}
+                    />
                   </PopoverContent>
                 </Popover>
               ) : dotContent}

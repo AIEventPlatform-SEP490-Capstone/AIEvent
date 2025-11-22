@@ -645,7 +645,7 @@ const CreateEventPage = () => {
       description: formData.description || 'Mô tả sự kiện mẫu',
       detailedDescription: formData.detailedDescription || '',
       linkRef: formData.linkRef || '',
-      startTime: formData.startTime || new Date(Date.now() + 86400000).toISOString(), // Tomorrow
+      startTime: formData.startTime || new Date(Date.now() + 866400000).toISOString(), // Tomorrow
       endTime: formData.endTime || new Date(Date.now() + 172800000).toISOString(), // Day after tomorrow
       saleStartTime: formData.saleStartTime || new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
       saleEndTime: formData.saleEndTime || new Date(Date.now() + 82800000).toISOString(), // 23 hours from now
@@ -678,6 +678,15 @@ const CreateEventPage = () => {
   // Handle form submission
   const onSubmit = async (data) => {
     try {
+      // Kiểm tra validation trước khi submit
+      const dateValidationErrors = validateDates();
+      const hasTimelineErrors = Object.values(timelineErrors).some(error => error !== '');
+      
+      if (dateValidationErrors.length > 0 || hasTimelineErrors) {
+        toast.error('Vui lòng kiểm tra lại thông tin thời gian sự kiện');
+        return;
+      }
+      
       showLoading('Đang tạo sự kiện...');
       setIsSubmitting(true);
       // Validate required fields
@@ -924,13 +933,44 @@ const CreateEventPage = () => {
     // Update state with new errors
     setDateErrors(newErrors);
     
+    // Kiểm tra xem có lỗi nào không
+    const hasErrors = Object.values(newErrors).some(error => error !== '');
+    setIsTimelineValid(!hasErrors);
+    
     // Return the errors object for backward compatibility
     return Object.values(newErrors).filter(error => error !== '');
   };
-  // Real-time validation effect
+  
+  // Thêm state để quản lý lỗi validation cho timeline
+  const [timelineErrors, setTimelineErrors] = useState({});
+  
+  // Thêm state để theo dõi validation status
+  const [isTimelineValid, setIsTimelineValid] = useState(true);
+  
+  // Thêm hàm xử lý validation change từ EventTimeline
+  const handleTimelineValidationChange = (index, error) => {
+    const fieldNames = ['saleStartTime', 'saleEndTime', 'startTime', 'endTime'];
+    const fieldName = fieldNames[index];
+    
+    setTimelineErrors(prev => {
+      const newErrors = {
+        ...prev,
+        [fieldName]: error
+      };
+      
+      // Cập nhật trạng thái validation tổng thể
+      const hasErrors = Object.values(newErrors).some(err => err !== '');
+      setIsTimelineValid(!hasErrors);
+      
+      return newErrors;
+    });
+  };
+  
+  // Cập nhật useEffect để theo dõi timeline errors
   useEffect(() => {
-    validateDates();
-  }, [watch('startTime'), watch('endTime'), watch('saleStartTime'), watch('saleEndTime')]);
+    const hasErrors = Object.values(timelineErrors).some(error => error !== '');
+    setIsTimelineValid(!hasErrors);
+  }, [timelineErrors]);
   
   // Ref to track if we're processing a blur event to avoid infinite loops
   const isProcessingBlur = useRef(false);
@@ -1377,6 +1417,14 @@ const CreateEventPage = () => {
               })()}
               isEditable={true}
               minDateTime={minDateTime}
+              // Thêm props để xử lý validation
+              validationTimes={{
+                startTime: watch('startTime'),
+                endTime: watch('endTime'),
+                saleStartTime: watch('saleStartTime'),
+                saleEndTime: watch('saleEndTime')
+              }}
+              onValidationChange={handleTimelineValidationChange}
             />
             {/* Ticket Information */}
             {previewData.ticketTypes && previewData.ticketTypes.length > 0 && (
@@ -1754,8 +1802,19 @@ const CreateEventPage = () => {
                     type="button"
                     variant="outline"
                     className="h-11"
-                    onClick={() => handleSubmit((data) => onSubmit({...data, publish: false}))()}
-                    disabled={isSubmitting || isLoading}
+                    onClick={() => {
+                      // Kiểm tra validation trước khi submit
+                      const dateValidationErrors = validateDates();
+                      const hasTimelineErrors = Object.values(timelineErrors).some(error => error !== '');
+                      
+                      if (dateValidationErrors.length > 0 || hasTimelineErrors) {
+                        toast.error('Vui lòng kiểm tra lại thông tin thời gian sự kiện trước khi lưu nháp');
+                        return;
+                      }
+                      
+                      handleSubmit((data) => onSubmit({...data, publish: false}))();
+                    }}
+                    disabled={isSubmitting || isLoading || !isTimelineValid}
                   >
                     <Save className="w-4 h-4 mr-2" />
                     {isSubmitting || isLoading ? "Đang lưu..." : "Lưu nháp"}
@@ -1763,8 +1822,19 @@ const CreateEventPage = () => {
                   <Button
                     type="button"
                     className="h-11 bg-primary hover:bg-primary/90"
-                    onClick={() => handleSubmit((data) => onSubmit({...data, publish: true}))()}
-                    disabled={isSubmitting || isLoading}
+                    onClick={() => {
+                      // Kiểm tra validation trước khi submit
+                      const dateValidationErrors = validateDates();
+                      const hasTimelineErrors = Object.values(timelineErrors).some(error => error !== '');
+                      
+                      if (dateValidationErrors.length > 0 || hasTimelineErrors) {
+                        toast.error('Vui lòng kiểm tra lại thông tin thời gian sự kiện trước khi xuất bản');
+                        return;
+                      }
+                      
+                      handleSubmit((data) => onSubmit({...data, publish: true}))();
+                    }}
+                    disabled={isSubmitting || isLoading || !isTimelineValid}
                   >
                     <Send className="w-4 h-4 mr-2" />
                     {isSubmitting || isLoading ? "Đang xuất bản..." : "Xuất bản"}
