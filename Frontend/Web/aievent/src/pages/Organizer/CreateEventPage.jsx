@@ -34,9 +34,12 @@ import {
   Sparkles,
   Loader2,
   Pencil,
-  Pen
+  Pen,
+  Upload,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
+
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { Label } from '../../components/ui/label';
@@ -1618,93 +1621,113 @@ const CreateEventPage = () => {
             </div>
           </div>
           {/* Sidebar - Form Controls */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Form Controls Card */}
-            <Card className={`border border-gray-200 sticky top-24 bg-white shadow-lg ${sidebarState}`}>
-              <CardHeader className="bg-gradient-to-br from-primary/5 to-primary/10 border-b border-gray-100">
-                <h3 className="text-xl font-bold text-foreground">Thông tin sự kiện</h3>
-                <p className="text-sm text-muted-foreground mt-1">Nhập thông tin sự kiện</p>
-              </CardHeader>
-              <CardContent className="space-y-6 pt-6">
-                {/* Category Selection */}
-                <div>
-                  <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                    <Tag className="w-4 h-4" />
-                    Danh mục
-                  </h4>
-                  <CategorySelector 
-                    selectedCategories={selectedCategory ? [selectedCategory] : []}
-                    onCategoriesChange={(categories) => {
-                      if (categories.length > 0) {
-                        const category = categories[0];
-                        setSelectedCategory(category);
-                        setValue('eventCategoryId', category.eventCategoryId);
-                      } else {
-                        setSelectedCategory(null);
-                        setValue('eventCategoryId', '');
-                      }
-                    }}
-                  />
-                  {errors.eventCategoryId && <p className="text-red-500 text-xs mt-1">{errors.eventCategoryId.message}</p>}
-                </div>
-                
-                {/* Event Type Selection (Free/Paid) */}
-                <div>
-                  <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                    <CreditCard className="w-4 h-4" />
-                    Loại sự kiện
-                  </h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setValue('ticketPricingType', '1')}
-                      className={`p-4 rounded-xl border-2 transition-all ${
-                        watch('ticketPricingType') === '1' 
-                          ? 'border-primary bg-primary/10' 
-                          : 'border-gray-200 hover:border-primary/50'
-                      }`}
-                    >
-                      <div className="flex flex-col items-center">
-                        <span className="text-2xl mb-2">🎁</span>
-                        <span className="font-medium">Miễn phí</span>
-                        <span className="text-xs text-muted-foreground mt-1">Người tham gia không cần trả tiền</span>
-                      </div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setValue('ticketPricingType', '2')}
-                      className={`p-4 rounded-xl border-2 transition-all ${
-                        watch('ticketPricingType') === '2' 
-                          ? 'border-primary bg-primary/10' 
-                          : 'border-gray-200 hover:border-primary/50'
-                      }`}
-                    >
-                      <div className="flex flex-col items-center">
-                        <span className="text-2xl mb-2">💰</span>
-                        <span className="font-medium">Có phí</span>
-                        <span className="text-xs text-muted-foreground mt-1">Người tham gia phải trả tiền vé</span>
-                      </div>
-                    </button>
+          <div className="lg:col-span-1 space-y-5">
+            {/* Main Card */}
+            <div className="sticky top-24">
+              {/* Header Section */}
+              <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 rounded-t-2xl p-6 text-white shadow-lg">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold mb-1 flex items-center gap-2">
+                      <Sparkles className="w-5 h-5" />
+                      Thông tin sự kiện
+                    </h3>
+                    <p className="text-blue-100 text-sm">Tạo sự kiện của bạn một cách dễ dàng</p>
                   </div>
-                  <input type="hidden" {...register('ticketPricingType')} />
-                  {errors.ticketPricingType && <p className="text-red-500 text-xs mt-1">{errors.ticketPricingType.message}</p>}
                 </div>
-                
-                {/* Location Information */}
-                <div>
-                  <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                    <MapPin className="w-4 h-4" />
-                    Địa điểm
-                  </h4>
-                  
+              </div>
+
+              {/* Form Content */}
+              <Card className="border-0 rounded-t-none shadow-2xl">
+                <CardContent className="space-y-5 pt-6 pb-6">
+                  {/* Category Selection */}
                   <div className="space-y-3">
-                    <div>
-                      <Label className="text-sm font-medium mb-1 block">Quận/Huyện</Label>
+                      <CategorySelector 
+                        selectedCategories={selectedCategory ? [selectedCategory] : []}
+                        onCategoriesChange={(categories) => {
+                          if (categories.length > 0) {
+                            const category = categories[0];
+                            setSelectedCategory(category);
+                            setValue('eventCategoryId', category.eventCategoryId);
+                          } else {
+                            setSelectedCategory(null);
+                            setValue('eventCategoryId', '');
+                          }
+                        }}
+                      />
+                      {errors.eventCategoryId && (
+                        <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {errors.eventCategoryId.message}
+                        </p>
+                      )}
+                  </div>
+
+                  <div className="h-px bg-gradient-to-r from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-900"></div>
+
+                  {/* Event Type Selection (Free/Paid) */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-emerald-100 dark:bg-emerald-900/30 p-2 rounded-lg">
+                        <CreditCard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <h4 className="font-semibold text-foreground">Loại sự kiện</h4>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { value: "1", label: "Miễn phí", icon: "🎁", desc: "Không thu phí vé" },
+                        { value: "2", label: "Có phí", icon: "💳", desc: "Có thu phí vé" },
+                      ].map((type) => (
+                        <button
+                          key={type.value}
+                          type="button"
+                          onClick={() => setValue('ticketPricingType', type.value)}
+                          className={`relative group p-4 rounded-xl border-2 transition-all duration-300 ${
+                            watch('ticketPricingType') === type.value
+                              ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 shadow-lg shadow-emerald-500/20"
+                              : "border-gray-200 dark:border-gray-800 hover:border-emerald-300 dark:hover:border-emerald-700 bg-gray-50 dark:bg-gray-900/50"
+                          }`}
+                        >
+                          <div className="text-3xl mb-2">{type.icon}</div>
+                          <div className="text-left">
+                            <p className="font-semibold text-sm">{type.label}</p>
+                            <p className="text-xs text-muted-foreground">{type.desc}</p>
+                          </div>
+                          {watch('ticketPricingType') === type.value && (
+                            <div className="absolute top-2 right-2 bg-emerald-500 text-white rounded-full p-1">
+                              <CheckCircle2 className="w-3 h-3" />
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                    <input type="hidden" {...register('ticketPricingType')} />
+                    {errors.ticketPricingType && (
+                      <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {errors.ticketPricingType.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="h-px bg-gradient-to-r from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-900"></div>
+
+                  {/* Location Information */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-lg">
+                        <MapPin className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                      </div>
+                      <h4 className="font-semibold text-foreground">Địa điểm</h4>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Quận/Huyện</Label>
                       <Select 
                         value={watch('district')} 
                         onValueChange={(value) => setValue('district', value)}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="rounded-lg h-9 border-gray-200 dark:border-gray-800">
                           <SelectValue placeholder="Chọn quận/huyện" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1715,68 +1738,102 @@ const CreateEventPage = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                      {errors.district && (
+                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {errors.district.message}
+                        </p>
+                      )}
                     </div>
-                    
-                    <div>
-                      <Label className="text-sm font-medium mb-1 block">Tên địa điểm</Label>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        Tên địa điểm
+                      </Label>
                       <Input
-                        placeholder="Nhập tên địa điểm"
+                        placeholder="Ví dụ: Trung tâm hội nghị thành phố"
                         value={watch('locationName') || ''}
                         onChange={(e) => setValue('locationName', e.target.value)}
+                        className="rounded-lg h-9 border-gray-200 dark:border-gray-800 focus:border-blue-400"
                       />
+                      {errors.locationName && (
+                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {errors.locationName.message}
+                        </p>
+                      )}
                     </div>
-                    
-                    <div>
-                      <Label className="text-sm font-medium mb-1 block">Địa chỉ chi tiết</Label>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Địa chỉ chi tiết</Label>
                       <Textarea
-                        placeholder="Nhập địa chỉ"
-                        rows={3}
+                        placeholder="Nhập địa chỉ đầy đủ"
+                        rows={2}
                         value={watch('address') || ''}
                         onChange={(e) => setValue('address', e.target.value)}
+                        className="rounded-lg border-gray-200 dark:border-gray-800 resize-none focus:border-blue-400 text-sm"
                       />
+                      {errors.address && (
+                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {errors.address.message}
+                        </p>
+                      )}
                     </div>
                   </div>
-                </div>
-                
-                {/* Tags Section */}
-                <div>
-                  <h4 className="font-semibold text-foreground mb-3">Tags</h4>
-                  <TagSelector />
-                </div>
-                
-                {/* Evidence Images */}
-                <div>
-                  <h4 className="font-semibold text-foreground mb-3">Hình ảnh bằng chứng</h4>
-                  
-                  <div className="border-2 border-dashed border-indigo-300 rounded-xl p-4 text-center hover:border-indigo-500 transition-colors cursor-pointer bg-indigo-50/50 dark:bg-indigo-950/20">
-                    <Input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={handleEvidenceImageChange}
-                      className="hidden"
-                      id="evidence-image-input"
-                    />
-                    <label htmlFor="evidence-image-input" className="cursor-pointer">
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="text-2xl">📁</div>
-                        <div>
-                          <p className="font-medium text-foreground">
+
+                  <div className="h-px bg-gradient-to-r from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-900"></div>
+
+                  {/* Tags Section */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded-lg">
+                        <Tag className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      </div>
+                      <h4 className="font-semibold text-foreground">Tags</h4>
+                    </div>
+                    <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-200 dark:border-gray-800">
+                      <TagSelector />
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-gradient-to-r from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-900"></div>
+
+                  {/* Evidence Images */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-pink-100 dark:bg-pink-900/30 p-2 rounded-lg">
+                        <Upload className="w-4 h-4 text-pink-600 dark:text-pink-400" />
+                      </div>
+                      <h4 className="font-semibold text-foreground">Hình ảnh bằng chứng</h4>
+                    </div>
+
+                    <div className="relative group">
+                      <label htmlFor="evidence-image-input" className="block cursor-pointer">
+                        <div className="bg-gradient-to-br from-pink-50 to-orange-50 dark:from-pink-950/20 dark:to-orange-950/20 border-2 border-dashed border-pink-200 dark:border-pink-800 rounded-xl p-5 text-center hover:border-pink-400 dark:hover:border-pink-600 transition-colors">
+                          <div className="text-3xl mb-2">📁</div>
+                          <p className="text-sm font-medium text-foreground">
                             Chọn hình ảnh bằng chứng tổ chức
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            PNG, JPG, GIF (tối đa 5 file)
+                            Tối đa 5 hình ảnh (PNG, JPG, GIF)
                           </p>
                         </div>
-                      </div>
-                    </label>
-                  </div>
-                  
-                  {evidenceImagePreview.length > 0 && (
-                    <div className="mt-3">
-                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={handleEvidenceImageChange}
+                          className="hidden"
+                          id="evidence-image-input"
+                        />
+                      </label>
+                    </div>
+
+                    {evidenceImagePreview.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2">
                         {evidenceImagePreview.filter(img => img !== null && img !== undefined && img !== '').map((img, index) => (
-                          <div key={index} className="relative group rounded-lg overflow-hidden bg-muted">
+                          <div key={index} className="relative group rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
                             <img
                               src={img}
                               alt={`Evidence Preview ${index + 1}`}
@@ -1785,63 +1842,65 @@ const CreateEventPage = () => {
                             <button
                               type="button"
                               onClick={() => removeEvidenceImage(index)}
-                              className="absolute top-1 right-1 bg-destructive/90 hover:bg-destructive text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
                             >
-                              <X className="w-3 h-3" />
+                              <X className="w-4 h-4 text-white" />
                             </button>
                           </div>
                         ))}
                       </div>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Action Buttons */}
-                <div className="flex flex-col gap-3 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-11"
-                    onClick={() => {
-                      // Kiểm tra validation trước khi submit
-                      const dateValidationErrors = validateDates();
-                      const hasTimelineErrors = Object.values(timelineErrors).some(error => error !== '');
-                      
-                      if (dateValidationErrors.length > 0 || hasTimelineErrors) {
-                        toast.error('Vui lòng kiểm tra lại thông tin thời gian sự kiện trước khi lưu nháp');
-                        return;
-                      }
-                      
-                      handleSubmit((data) => onSubmit({...data, publish: false}))();
-                    }}
-                    disabled={isSubmitting || isLoading || !isTimelineValid}
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    {isSubmitting || isLoading ? "Đang lưu..." : "Lưu nháp"}
-                  </Button>
-                  <Button
-                    type="button"
-                    className="h-11 bg-primary hover:bg-primary/90"
-                    onClick={() => {
-                      // Kiểm tra validation trước khi submit
-                      const dateValidationErrors = validateDates();
-                      const hasTimelineErrors = Object.values(timelineErrors).some(error => error !== '');
-                      
-                      if (dateValidationErrors.length > 0 || hasTimelineErrors) {
-                        toast.error('Vui lòng kiểm tra lại thông tin thời gian sự kiện trước khi xuất bản');
-                        return;
-                      }
-                      
-                      handleSubmit((data) => onSubmit({...data, publish: true}))();
-                    }}
-                    disabled={isSubmitting || isLoading || !isTimelineValid}
-                  >
-                    <Send className="w-4 h-4 mr-2" />
-                    {isSubmitting || isLoading ? "Đang xuất bản..." : "Xuất bản"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                    )}
+                  </div>
+
+                  <div className="h-px bg-gradient-to-r from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-900"></div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-col gap-3 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-10 rounded-lg font-medium border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 bg-transparent"
+                      onClick={() => {
+                        // Kiểm tra validation trước khi submit
+                        const dateValidationErrors = validateDates();
+                        const hasTimelineErrors = Object.values(timelineErrors).some(error => error !== '');
+                        
+                        if (dateValidationErrors.length > 0 || hasTimelineErrors) {
+                          toast.error('Vui lòng kiểm tra lại thông tin thời gian sự kiện trước khi lưu nháp');
+                          return;
+                        }
+                        
+                        handleSubmit((data) => onSubmit({ ...data, publish: false }))();
+                      }}
+                      disabled={isSubmitting || isLoading || !isTimelineValid}
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      {isSubmitting || isLoading ? "Đang lưu..." : "Lưu nháp"}
+                    </Button>
+                    <Button
+                      type="button"
+                      className="h-10 rounded-lg font-medium bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all"
+                      onClick={() => {
+                        // Kiểm tra validation trước khi submit
+                        const dateValidationErrors = validateDates();
+                        const hasTimelineErrors = Object.values(timelineErrors).some(error => error !== '');
+                        
+                        if (dateValidationErrors.length > 0 || hasTimelineErrors) {
+                          toast.error('Vui lòng kiểm tra lại thông tin thời gian sự kiện trước khi xuất bản');
+                          return;
+                        }
+                        
+                        handleSubmit((data) => onSubmit({ ...data, publish: true }))();
+                      }}
+                      disabled={isSubmitting || isLoading || !isTimelineValid}
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      {isSubmitting || isLoading ? "Đang xuất bản..." : "Xuất bản"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
