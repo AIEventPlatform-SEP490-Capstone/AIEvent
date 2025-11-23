@@ -64,6 +64,8 @@ import { EventStatus } from '../../constants/eventConstants';
 import { uploadImagesToCloudinary } from '../../utils/cloudinary';
 // Import date utility
 import { convertUTC7ToUTC, convertUTCToUTC7 } from '../../utils/dateUtils';
+// Import geocoding utility
+import { geocodeAddress } from '../../utils/geocoding';
 // Import predefined cities
 import { PredefinedCities } from '../../constants/userConstants';
 // Import EventTimeline component
@@ -759,6 +761,16 @@ const CreateEventPage = () => {
         setIsSubmitting(false);
         return;
       }
+      
+      // Geocode the address to get latitude and longitude
+      const geocodeResult = await geocodeAddress(data.locationName, data.district, data.address);
+      if (!geocodeResult) {
+        toast.error('Không thể xác định tọa độ địa chỉ. Vui lòng kiểm tra lại thông tin địa chỉ.');
+        hideLoading();
+        setIsSubmitting(false);
+        return;
+      }
+      
       let imageUrls = [];
       if (imagePreview.length > 0 && selectedImages.length === 0) {
         imageUrls = [...imagePreview];
@@ -803,8 +815,8 @@ const CreateEventPage = () => {
         locationName: data.locationName || '',
         address: data.address || '',
         district: data.district || '',
-        latitude: 0,
-        longitude: 0,
+        latitude: geocodeResult.latitude,
+        longitude: geocodeResult.longitude,
         totalTickets: totalTickets,
         ticketPricingType: data.ticketPricingType && !isNaN(parseInt(data.ticketPricingType)) ? parseInt(data.ticketPricingType) : 1,
         requireApproval: data.requireApproval,

@@ -66,6 +66,8 @@ import { EventStatus } from '../../constants/eventConstants';
 import { uploadImagesToCloudinary } from '../../utils/cloudinary';
 // Import date utility
 import { convertUTC7ToUTC, convertUTCToUTC7 } from '../../utils/dateUtils';
+// Import geocoding utility
+import { geocodeAddress } from '../../utils/geocoding';
 
 // Import predefined cities
 import { PredefinedCities } from '../../constants/userConstants';
@@ -497,23 +499,107 @@ const EditEventPage = () => {
       showLoading('Đang cập nhật sự kiện...');
       setIsSaving(true);
 
-      // Upload new images to Cloudinary and get URLs
+      // Validate required fields
+      if (!data.title?.trim()) {
+        toast.error('Vui lòng nhập tiêu đề sự kiện');
+        hideLoading();
+        setIsSaving(false);
+        return;
+      }
+      
+      // Validate category
+      if (!data.eventCategoryId) {
+        toast.error('Vui lòng chọn danh mục sự kiện');
+        hideLoading();
+        setIsSaving(false);
+        return;
+      }
+      
+      // Validate event images - check for either uploaded or cloned images
+      if (selectedImages.length === 0 && imagePreview.length === 0 && existingImages.length === 0) {
+        toast.error('Vui lòng tải lên ít nhất một hình ảnh sự kiện');
+        hideLoading();
+        setIsSaving(false);
+        return;
+      }
+      
+      // Validate evidence images - check for either uploaded or cloned images
+      if (selectedEvidenceImages.length === 0 && evidenceImagePreview.length === 0 && existingEvidenceImages.length === 0) {
+        toast.error('Vui lòng tải lên ít nhất một hình ảnh bằng chứng');
+        hideLoading();
+        setIsSaving(false);
+        return;
+      }
+
+      // Validate dates
+      const startDate = new Date(data.startTime);
+      const endDate = new Date(data.endTime);
+      const saleStartDate = new Date(data.saleStartTime);
+      const saleEndDate = new Date(data.saleEndTime);
+      
+      // Create now date in the same timezone as the input dates (UTC+7)
+      // Since datetime inputs are in local time (UTC+7), we need to compare with local time
+      const now = new Date();
+
+      if (startDate <= now) {
+        toast.error('Thời gian bắt đầu phải sau thời điểm hiện tại');
+        hideLoading();
+        setIsSaving(false);
+        return;
+      }
+
+      if (endDate <= startDate) {
+        toast.error('Thời gian kết thúc phải sau thời gian bắt đầu');
+        hideLoading();
+        setIsSaving(false);
+        return;
+      }
+
+      if (saleStartDate >= startDate) {
+        toast.error('Thời gian bắt đầu bán vé phải trước thời gian bắt đầu sự kiện');
+        hideLoading();
+        setIsSaving(false);
+        return;
+      }
+
+      if (saleEndDate <= saleStartDate) {
+        toast.error('Thời gian kết thúc bán vé phải sau thời gian bắt đầu bán vé');
+        hideLoading();
+        setIsSaving(false);
+        return;
+      }
+
+      if (saleEndDate >= startDate) {
+        toast.error('Thời gian kết thúc bán vé phải trước thời gian bắt đầu sự kiện');
+        hideLoading();
+        setIsSaving(false);
+        return;
+      }
+      
+      // Geocode the address to get latitude and longitude
+      const geocodeResult = await geocodeAddress(data.locationName, data.district, data.address);
+      if (!geocodeResult) {
+        toast.error('Không thể xác định tọa độ địa chỉ. Vui lòng kiểm tra lại thông tin địa chỉ.');
+        hideLoading();
+        setIsSaving(false);
+        return;
+      }
+
+      // Upload images
       let imageUrls = [];
       if (selectedImages.length > 0) {
         imageUrls = await uploadImagesToCloudinary(selectedImages);
       }
-
-      // Upload new evidence images to Cloudinary and get URLs
+      
       let evidenceImageUrls = [];
       if (selectedEvidenceImages.length > 0) {
         evidenceImageUrls = await uploadImagesToCloudinary(selectedEvidenceImages);
       }
-
+      
       // Calculate total tickets from ticketTypes array
       const totalTickets = data.ticketTypes.reduce((sum, ticket) => sum + parseInt(ticket.ticketQuantity), 0);
-
+      
       // Function to convert datetime-local string (local time) to UTC ISO string
-      // Fixed to properly convert local time to UTC
       const convertToUTCISOString = (dateString) => {
         if (!dateString) return '';
         
@@ -529,11 +615,11 @@ const EditEventPage = () => {
         // Return proper UTC ISO string
         return utcDate.toISOString();
       };
-
-      // Calculate tag changes
+      
+      // Calculate added and removed tag IDs for update
       const { addTagIds, removeTagIds } = calculateTagChanges();
-
-      // Prepare data to send
+      
+      // Prepare event data for update
       const eventDataToSend = {
         eventId: eventId,
         title: data.title,
@@ -547,8 +633,8 @@ const EditEventPage = () => {
         locationName: data.locationName || '',
         address: data.address || '',
         district: data.district || '',
-        latitude: 0,
-        longitude: 0,
+        latitude: geocodeResult.latitude,
+        longitude: geocodeResult.longitude,
         totalTickets: totalTickets,
         ticketPricingType: data.ticketPricingType && !isNaN(parseInt(data.ticketPricingType)) ? parseInt(data.ticketPricingType) : 1,
         publish: data.publish || false,
@@ -575,65 +661,6 @@ const EditEventPage = () => {
         })),
         removeTicketTypeIds: removedTickets,
       };
-
-      // Validate required fields
-      if (!data.title?.trim()) {
-        toast.error('Vui lòng nhập tiêu đề sự kiện');
-        return;
-      }
-      
-      // Validate category
-      if (!data.eventCategoryId) {
-        toast.error('Vui lòng chọn danh mục sự kiện');
-        return;
-      }
-      
-      // Validate event images - check for either uploaded or cloned images
-      if (selectedImages.length === 0 && imagePreview.length === 0 && existingImages.length === 0) {
-        toast.error('Vui lòng tải lên ít nhất một hình ảnh sự kiện');
-        return;
-      }
-      
-      // Validate evidence images - check for either uploaded or cloned images
-      if (selectedEvidenceImages.length === 0 && evidenceImagePreview.length === 0 && existingEvidenceImages.length === 0) {
-        toast.error('Vui lòng tải lên ít nhất một hình ảnh bằng chứng');
-        return;
-      }
-
-      // Validate dates
-      const startDate = new Date(data.startTime);
-      const endDate = new Date(data.endTime);
-      const saleStartDate = new Date(data.saleStartTime);
-      const saleEndDate = new Date(data.saleEndTime);
-      
-      // Create now date in the same timezone as the input dates (UTC+7)
-      // Since datetime inputs are in local time (UTC+7), we need to compare with local time
-      const now = new Date();
-
-      if (startDate <= now) {
-        toast.error('Thời gian bắt đầu phải sau thời điểm hiện tại');
-        return;
-      }
-
-      if (endDate <= startDate) {
-        toast.error('Thời gian kết thúc phải sau thời gian bắt đầu');
-        return;
-      }
-
-      if (saleStartDate >= startDate) {
-        toast.error('Thời gian bắt đầu bán vé phải trước thời gian bắt đầu sự kiện');
-        return;
-      }
-
-      if (saleEndDate <= saleStartDate) {
-        toast.error('Thời gian kết thúc bán vé phải sau thời gian bắt đầu bán vé');
-        return;
-      }
-
-      if (saleEndDate >= startDate) {
-        toast.error('Thời gian kết thúc bán vé phải trước thời gian bắt đầu sự kiện');
-        return;
-      }
 
       const response = await updateEventAPI(eventDataToSend);
       
