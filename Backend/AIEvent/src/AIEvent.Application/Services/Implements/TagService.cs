@@ -5,6 +5,7 @@ using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
+using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -75,6 +76,15 @@ namespace AIEvent.Application.Services.Implements
                 {
                     TagId = p.Id.ToString(),
                     TagName = p.NameTag,
+                    CreatedDate = p.CreatedAt,
+                    UpdatedDate = p.UpdatedAt,
+                    QuantityUsed = _unitOfWork.EventTagRepository.Query(false)
+                        .Count(et =>
+                            et.TagId == p.Id &&
+                            !et.Event.DeletedAt.HasValue &&
+                            et.Event.Status == EventStatus.Approved &&
+                            et.Event.Publish == true
+                        )
                 })
                 .ToListAsync();
 
@@ -99,6 +109,15 @@ namespace AIEvent.Application.Services.Implements
                 {
                     TagId = p.Id.ToString(),
                     TagName = p.NameTag,
+                    CreatedDate = p.CreatedAt,
+                    UpdatedDate = p.UpdatedAt,
+                    QuantityUsed = _unitOfWork.EventTagRepository.Query(false)
+                        .Count(et =>
+                            et.TagId == p.Id &&
+                            !et.Event.DeletedAt.HasValue &&
+                            et.Event.Status == EventStatus.Approved &&
+                            et.Event.Publish == true
+                        )
                 })
                 .ToListAsync();
 
