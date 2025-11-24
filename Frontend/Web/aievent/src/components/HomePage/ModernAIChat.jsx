@@ -1,9 +1,15 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { ScrollArea } from "../ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 import {
   MessageCircle,
   Send,
@@ -16,68 +22,16 @@ import {
   Calendar,
   MapPin,
   Tag,
+  Mic,
+  Square,
+  MoreVertical,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { useAiChat } from "../../hooks/useAiChat";
-
-// Helper function to parse event information from AI response
-export const parseEventFromResponse = (responseText) => {
-  const eventInfo = {
-    title: null,
-    location: null,
-    address: null,
-    date: null,
-    time: null,
-    price: null,
-    tickets: [],
-  };
-
-  // Try to extract event title from quoted text
-  const titleMatch = responseText.match(/"([^"]+)"/);
-  if (titleMatch) {
-    eventInfo.title = titleMatch[1];
-  }
-
-  // Extract location/address
-  const locationMatch = responseText.match(/[-*]\s*\*\*Địa điểm:\*\*\s*([^\n]+)/);
-  if (locationMatch) {
-    eventInfo.address = locationMatch[1].trim();
-    // Try to extract location name (before comma or dash)
-    const parts = eventInfo.address.split(/[,→-]/);
-    eventInfo.location = parts[0]?.trim() || eventInfo.address;
-  }
-
-  // Extract date and time
-  const timeMatch = responseText.match(/[-*]\s*\*\*Thời gian:\*\*\s*([^\n]+)/);
-  if (timeMatch) {
-    const timeText = timeMatch[1].trim();
-    // Try to parse date and time ranges
-    const dateTimeMatch = timeText.match(/(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{2}:\d{2})\s*→\s*(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{2}:\d{2})/);
-    if (dateTimeMatch) {
-      eventInfo.date = dateTimeMatch[1]; // Start date
-      eventInfo.time = `${dateTimeMatch[2]} → ${dateTimeMatch[4]}`;
-    }
-  }
-
-  // Extract price information
-  const priceMatch = responseText.match(/[-*]\s*\*\*Giá vé:\*\*\s*([^\n]+)/);
-  if (priceMatch) {
-    eventInfo.price = priceMatch[1].trim();
-    // Try to extract individual ticket prices
-    const ticketMatches = priceMatch[1].match(/([^:]+):\s*(\d+(?:,\d+)*(?:\s*VND)?)/g);
-    if (ticketMatches) {
-      eventInfo.tickets = ticketMatches.map((ticket) => {
-        const [name, price] = ticket.split(/:\s*/);
-        return {
-          name: name.trim(),
-          price: price.trim(),
-        };
-      });
-    }
-  }
-
-  // Only return event info if we found at least a title or location
-  return eventInfo.title || eventInfo.location ? eventInfo : null;
-};
+import { useSpeechToText } from "../../hooks/useSpeechToText";
+import { useSpeechSynthesis } from "../../hooks/useSpeechSynthesis";
+import { parseEventFromResponse } from "../../utils/aiResponseParser";
 
 export default function ModernAIChat() {
   const navigate = useNavigate();
@@ -92,10 +46,56 @@ export default function ModernAIChat() {
     },
   ]);
   const [inputValue, setInputValue] = useState("");
+  const [speakingMessageId, setSpeakingMessageId] = useState(null);
   const messagesEndRef = useRef(null);
   const scrollAreaRef = useRef(null);
   
-  const { sendMessage, isLoading, currentSessionId, setCurrentSessionId } = useAiChat();
+  const { sendMessage, isLoading } = useAiChat();
+
+  const handleSpeechResult = useCallback((text) => {
+    if (!text) return;
+    setInputValue((prev) => {
+      if (!prev) return text;
+      return `${prev.trim()} ${text}`.trim();
+    });
+  }, []);
+
+  const {
+    isSupported: isSpeechSupported,
+    isRecording,
+    interimTranscript,
+    error: speechError,
+    startRecording,
+    stopRecording,
+  } = useSpeechToText({
+    lang: "vi-VN",
+    onResult: handleSpeechResult,
+  });
+
+  const {
+    isSupported: isSpeechSynthesisSupported,
+    speak,
+    stop,
+  } = useSpeechSynthesis({ lang: "vi-VN" });
+
+  const handleSpeakMessage = useCallback(
+    (messageId, text) => {
+      if (!text) return;
+      speak(text, {
+        onStart: () => setSpeakingMessageId(messageId),
+        onEnd: () =>
+          setSpeakingMessageId((current) => (current === messageId ? null : current)),
+        onError: () =>
+          setSpeakingMessageId((current) => (current === messageId ? null : current)),
+      });
+    },
+    [speak]
+  );
+
+  const handleStopSpeaking = useCallback(() => {
+    stop();
+    setSpeakingMessageId(null);
+  }, [stop]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -234,52 +234,106 @@ export default function ModernAIChat() {
       <CardContent className="relative flex-1 flex flex-col p-6 pt-0 min-h-0 overflow-hidden">
         <ScrollArea className="flex-1 pr-4 overflow-y-auto max-h-full" ref={scrollAreaRef}>
           <div className="space-y-4 pb-2">
-            {messages.map((message) => (
-              <div key={message.id} className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className={`flex gap-3 ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
-                  {message.sender === "ai" && (
-                    <div className="relative flex-shrink-0">
-                      <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-cyan-600 rounded-full blur-sm opacity-30" />
-                      <div className="relative h-9 w-9 rounded-full bg-gradient-to-br from-purple-600 to-cyan-600 flex items-center justify-center">
-                        <Bot className="h-4 w-4 text-white" />
+            {messages.map((message) => {
+              const isUserMessage = message.sender === "user";
+              const isSpeakingThisMessage = speakingMessageId === message.id;
+
+              return (
+                <div key={message.id} className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className={`flex ${isUserMessage ? "justify-end" : "justify-start"}`}>
+                    <div className={`flex items-start gap-2 ${isUserMessage ? "flex-row-reverse" : ""}`}>
+                      {message.sender === "ai" && (
+                        <div className="relative flex-shrink-0">
+                          <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-cyan-600 rounded-full blur-sm opacity-30" />
+                          <div className="relative h-9 w-9 rounded-full bg-gradient-to-br from-purple-600 to-cyan-600 flex items-center justify-center">
+                            <Bot className="h-4 w-4 text-white" />
+                          </div>
+                        </div>
+                      )}
+                      {isUserMessage && (
+                        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0 shadow-lg">
+                          <User className="h-4 w-4 text-white" />
+                        </div>
+                      )}
+                      <div
+                        className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm break-words shadow-lg ${
+                          isUserMessage
+                            ? "bg-gradient-to-br from-purple-600 to-blue-600 text-white rounded-br-md"
+                            : "bg-white dark:bg-gray-800 border border-purple-100 dark:border-purple-900/50 rounded-bl-md"
+                        }`}
+                      >
+                        <div className="whitespace-pre-line leading-relaxed">
+                          {message.content.split("\n").map((line, index) => {
+                            if (line.startsWith("**") && line.endsWith("**")) {
+                              return (
+                                <div key={index} className="font-bold text-base mb-1 flex items-center gap-2">
+                                  <Sparkles className="h-4 w-4 text-yellow-500" />
+                                  {line.slice(2, -2)}
+                                </div>
+                              );
+                            }
+                            if (line.startsWith("• ") || line.startsWith("- ")) {
+                              return (
+                                <div key={index} className="ml-2 flex items-start gap-2 my-1">
+                                  <Zap className="h-3 w-3 mt-1 flex-shrink-0 text-purple-500" />
+                                  <span>{line.slice(2)}</span>
+                                </div>
+                              );
+                            }
+                            return line ? <div key={index} className="my-1">{line}</div> : <div key={index} className="h-2" />;
+                          })}
+                        </div>
+                        {isSpeechSynthesisSupported && isSpeakingThisMessage && (
+                          <div className="mt-3 text-xs text-purple-500 flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-purple-500 animate-pulse" />
+                            <span>Đang đọc câu trả lời...</span>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )}
-                  <div
-                    className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm break-words shadow-lg ${
-                      message.sender === "user"
-                        ? "bg-gradient-to-br from-purple-600 to-blue-600 text-white rounded-br-md"
-                        : "bg-white dark:bg-gray-800 border border-purple-100 dark:border-purple-900/50 rounded-bl-md"
-                    }`}
-                  >
-                    <div className="whitespace-pre-line leading-relaxed">
-                      {message.content.split("\n").map((line, index) => {
-                        if (line.startsWith("**") && line.endsWith("**")) {
-                          return (
-                            <div key={index} className="font-bold text-base mb-1 flex items-center gap-2">
-                              <Sparkles className="h-4 w-4 text-yellow-500" />
-                              {line.slice(2, -2)}
-                            </div>
-                          );
-                        }
-                        if (line.startsWith("• ") || line.startsWith("- ")) {
-                          return (
-                            <div key={index} className="ml-2 flex items-start gap-2 my-1">
-                              <Zap className="h-3 w-3 mt-1 flex-shrink-0 text-purple-500" />
-                              <span>{line.slice(2)}</span>
-                            </div>
-                          );
-                        }
-                        return line ? <div key={index} className="my-1">{line}</div> : <div key={index} className="h-2" />;
-                      })}
+                      {message.sender === "ai" && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-purple-600"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            {isSpeechSynthesisSupported ? (
+                              <DropdownMenuItem
+                                className="gap-2"
+                                onClick={() =>
+                                  isSpeakingThisMessage
+                                    ? handleStopSpeaking()
+                                    : handleSpeakMessage(message.id, message.content)
+                                }
+                              >
+                                {isSpeakingThisMessage ? (
+                                  <>
+                                    <VolumeX className="h-4 w-4 text-red-500" />
+                                    Dừng đọc
+                                  </>
+                                ) : (
+                                  <>
+                                    <Volume2 className="h-4 w-4 text-purple-500" />
+                                    Đọc to
+                                  </>
+                                )}
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem disabled className="gap-2 opacity-70">
+                                <VolumeX className="h-4 w-4" />
+                                Không hỗ trợ đọc
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </div>
                   </div>
-                  {message.sender === "user" && (
-                    <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0 shadow-lg">
-                      <User className="h-4 w-4 text-white" />
-                    </div>
-                  )}
-                </div>
 
                 {/* Event card display if event info is available */}
                 {message.eventInfo && (
@@ -350,7 +404,8 @@ export default function ModernAIChat() {
 )}
 
               </div>
-            ))}
+            );
+            })}
 
             {isLoading && (
               <div className="flex gap-3 justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -389,6 +444,22 @@ export default function ModernAIChat() {
             disabled={isLoading}
             className="flex-1 border-2 border-purple-200 dark:border-purple-900/50 focus:border-purple-400 dark:focus:border-purple-700 rounded-xl bg-white dark:bg-gray-800 transition-colors"
           />
+          {isSpeechSupported && (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={isLoading}
+              className={`rounded-xl border-2 ${
+                isRecording
+                  ? "border-red-400 bg-red-50 text-red-600 hover:bg-red-100"
+                  : "border-purple-200 text-purple-600 hover:bg-purple-50"
+              }`}
+            >
+              {isRecording ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            </Button>
+          )}
           <Button
             onClick={handleSendMessage}
             disabled={isLoading || !inputValue.trim()}
@@ -398,6 +469,20 @@ export default function ModernAIChat() {
             <Send className="h-4 w-4" />
           </Button>
         </div>
+        {isSpeechSupported && (
+          <div className="mt-2 text-xs text-muted-foreground min-h-[1.5rem]">
+            {isRecording && interimTranscript
+              ? `Đang nghe: “${interimTranscript}”`
+              : speechError
+              ? `Không thể thu âm: ${speechError}`
+              : "Nhấn mic để nói câu hỏi của bạn"}
+          </div>
+        )}
+        {!isSpeechSupported && (
+          <div className="mt-2 text-xs text-muted-foreground">
+            Trình duyệt hiện không hỗ trợ ghi âm giọng nói.
+          </div>
+        )}
       </CardContent>
     </Card>
   );
