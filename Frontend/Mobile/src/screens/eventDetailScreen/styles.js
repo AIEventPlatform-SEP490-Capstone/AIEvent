@@ -207,7 +207,7 @@ export const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#F0F3F7',
+    borderColor: Colors.accent, // Changed to light blue accent color for consistency
   },
   sectionTitle: {
     fontSize: Fonts.lg,
@@ -282,7 +282,7 @@ export const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: Colors.accent, // Changed from Colors.border to Colors.accent for consistency
   },
   detailIcon: {
     width: 20,
@@ -302,11 +302,11 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     paddingHorizontal: 16,
-    backgroundColor: Colors.cardBackground,
+    backgroundColor: Colors.white, // Changed from undefined Colors.cardBackground to Colors.white
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#F0F3F7',
+    borderColor: Colors.accent, // Changed to light blue accent color
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.05,
@@ -349,7 +349,12 @@ export const styles = StyleSheet.create({
     fontFamily: Fonts.bold,
   },
   descriptionSection: {
-    marginBottom: 24,
+    marginBottom: 32,
+    backgroundColor: '#FAFBFC',
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: Colors.accent, // Changed to light blue accent color for consistency
   },
   relatedEventsSection: {
     marginBottom: 24,
@@ -412,7 +417,7 @@ export const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#F0F3F7',
+    borderColor: Colors.accent, // Changed to light blue accent color for consistency
   },
 
   // Premium Actions section

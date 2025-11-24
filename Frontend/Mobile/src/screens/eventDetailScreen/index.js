@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useMemo, useCallback} from 'react';
 import {
   View,
   ScrollView,
@@ -45,7 +45,10 @@ const EventDetailScreen = () => {
   const currentEvent = useSelector(selectCurrentEvent);
   const loading = useSelector(selectEventsLoading);
   const error = useSelector(selectEventsError);
-
+  // Simplify auth state selector to prevent potential issues with custom equality function
+  const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
+  const accessToken = useSelector(state => state.auth.accessToken);
+  
   // Use custom hooks
   const {getEventById} = useEvents();
 
@@ -56,7 +59,34 @@ const EventDetailScreen = () => {
   const [shareModalVisible, setShareModalVisible] = useState(false);
 
   const shareUrl = `https://yourapp.com/event/${eventId}`;
-  const handleShareSystem = async () => {
+  
+  // Simplify share options - remove complex memoization that might cause issues
+  const shareOptions = [
+    {
+      title: 'Hệ thống',
+      onPress: handleShareSystem,
+      icon: Images.shareSystem,
+    },
+    {title: 'Sao chép', onPress: handleCopyLink, icon: Images.copy},
+    {title: 'Zalo', onPress: handleShareZalo, icon: Images.zalo},
+    {
+      title: 'Facebook',
+      onPress: handleShareFacebook,
+      icon: Images.facebook,
+    },
+    {
+      title: 'Twitter',
+      onPress: handleShareTwitter,
+      icon: Images.twitter,
+    },
+    {
+      title: 'LinkedIn',
+      onPress: handleShareLinkedIn,
+      icon: Images.linkedin,
+    },
+  ];
+
+  const handleShareSystem = useCallback(async () => {
     try {
       await Share.share({
         message: `${event?.title}\n${shareUrl}`,
@@ -71,17 +101,17 @@ const EventDetailScreen = () => {
         text1: 'Không thể chia sẻ',
       });
     }
-  };
+  }, [event?.title, shareUrl]);
 
-  const handleCopyLink = () => {
+  const handleCopyLink = useCallback(() => {
     Clipboard.setString(shareUrl);
     Toast.show({
       type: 'success',
       text1: 'Đã sao chép link!',
     });
-  };
+  }, [shareUrl]);
 
-  const handleShareZalo = () => {
+  const handleShareZalo = useCallback(() => {
     const url = `zalo://qr/share?url=${encodeURIComponent(shareUrl)}`;
     Linking.openURL(url).catch(() => {
       Toast.show({
@@ -89,9 +119,9 @@ const EventDetailScreen = () => {
         text1: 'Zalo không khả dụng',
       });
     });
-  };
+  }, [shareUrl]);
 
-  const handleShareFacebook = () => {
+  const handleShareFacebook = useCallback(() => {
     const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
     Linking.openURL(url).catch(() => {
       Toast.show({
@@ -99,9 +129,9 @@ const EventDetailScreen = () => {
         text1: 'Facebook không khả dụng',
       });
     });
-  };
+  }, [shareUrl]);
 
-  const handleShareTwitter = () => {
+  const handleShareTwitter = useCallback(() => {
     const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(event?.title || '')}`;
     Linking.openURL(url).catch(() => {
       Toast.show({
@@ -109,9 +139,9 @@ const EventDetailScreen = () => {
         text1: 'Twitter không khả dụng',
       });
     });
-  };
+  }, [shareUrl, event?.title]);
 
-  const handleShareLinkedIn = () => {
+  const handleShareLinkedIn = useCallback(() => {
     const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
     Linking.openURL(url).catch(() => {
       Toast.show({
@@ -119,12 +149,9 @@ const EventDetailScreen = () => {
         text1: 'LinkedIn không khả dụng',
       });
     });
-  };
+  }, [shareUrl]);
 
   useEffect(() => {
-    // Check if user is staff
-    checkUserRole();
-
     // Only load event detail if we have a valid eventId
     if (eventId && typeof eventId === 'string' && eventId.trim() !== '') {
       loadEventDetail();
@@ -145,16 +172,68 @@ const EventDetailScreen = () => {
     }
   }, [currentEvent, eventId]);
 
-  const checkUserRole = async () => {
-    try {
-      const token = await AuthService.getAccessToken();
-      const staffStatus = isStaffUser(token);
-      setIsStaff(staffStatus);
-    } catch (error) {
-      console.error('Error checking user role:', error);
-      setIsStaff(false);
-    }
-  };
+  // Check user role when component mounts and when auth state changes
+  useEffect(() => {
+    let isMounted = true;
+    
+    const checkRole = async () => {
+      if (!isMounted) return;
+      
+      try {
+        // Only check user role if we're logged in
+        if (!isLoggedIn) {
+          // Only update state if it actually changed to prevent unnecessary re-renders
+          setIsStaff(prevIsStaff => {
+            if (prevIsStaff !== false) {
+              return false;
+            }
+            return prevIsStaff;
+          });
+          return;
+        }
+        
+        // Only try to get token if we're still mounted
+        if (!isMounted) return;
+        
+        const token = accessToken || await AuthService.getAccessToken();
+        // Handle case where token is null/undefined after logout
+        if (!token) {
+          if (isMounted) {
+            setIsStaff(false);
+          }
+          return;
+        }
+        
+        const staffStatus = isStaffUser(token);
+        // Only update state if it actually changed to prevent unnecessary re-renders
+        if (isMounted) {
+          setIsStaff(prevIsStaff => {
+            if (prevIsStaff !== staffStatus) {
+              return staffStatus;
+            }
+            return prevIsStaff;
+          });
+        }
+      } catch (error) {
+        console.error('Error checking user role:', error);
+        // Only update state if it actually changed to prevent unnecessary re-renders
+        if (isMounted) {
+          setIsStaff(prevIsStaff => {
+            if (prevIsStaff !== false) {
+              return false;
+            }
+            return prevIsStaff;
+          });
+        }
+      }
+    };
+    
+    checkRole();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [isLoggedIn, accessToken, eventId]);
 
   const loadEventDetail = async () => {
     try {
@@ -986,48 +1065,58 @@ const EventDetailScreen = () => {
           </View>
         </View>
 
-        {/* Share Button */}
-        <TouchableOpacity
-          style={styles.shareButton}
-          onPress={() => setShareModalVisible(true)}
-          activeOpacity={0.8}>
-          <Image
-            source={Images.share}
-            style={{width: 24, height: 24, tintColor: Colors.white}}
-          />
-          <CustomText
-            variant="button"
-            color="white"
-            style={styles.shareButtonText}>
-            Chia sẻ sự kiện
-          </CustomText>
-        </TouchableOpacity>
-
-        {/* Premium Action Buttons */}
-        <View style={styles.actionsSection}>
-          <CustomButton
-            title="Đặt vé ngay"
-            onPress={handleJoinEvent}
-            variant="primary"
-            style={styles.joinButton}
-          />
-
-          <View style={styles.secondaryActions}>
-            <CustomButton
-              title={Strings.SHARE_EVENT}
-              onPress={() => setShareModalVisible(true)}
-              variant="outline"
-              style={styles.actionButton}
+        {/* Share Button - Only visible for non-staff users */}
+        {!isStaff && (
+          <TouchableOpacity
+            style={styles.shareButton}
+            onPress={() => setShareModalVisible(true)}
+            activeOpacity={0.8}>
+            <Image
+              source={Images.share}
+              style={{width: 24, height: 24, tintColor: Colors.white}}
             />
+            <CustomText
+              variant="button"
+              color="white"
+              style={styles.shareButtonText}>
+              Chia sẻ sự kiện
+            </CustomText>
+          </TouchableOpacity>
+        )}
 
-            <CustomButton
-              title={Strings.EVENT_LOCATION_MAP}
-              onPress={handleViewMap}
-              variant="outline"
-              style={styles.actionButton}
-            />
+        {/* Premium Action Buttons - Only visible for non-staff users */}
+        {!isStaff && (
+          <View style={styles.actionsSection}>
+            <TouchableOpacity
+              style={styles.shareButton}
+              onPress={handleJoinEvent}
+              activeOpacity={0.8}>
+              <CustomText
+                variant="button"
+                color="white"
+                style={styles.shareButtonText}>
+                Đặt vé ngay
+              </CustomText>
+            </TouchableOpacity>
+
+            <View style={styles.secondaryActions}>
+              <CustomButton
+                title={Strings.SHARE_EVENT}
+                onPress={() => setShareModalVisible(true)}
+                variant="outline"
+                style={styles.actionButton}
+              />
+
+              <CustomButton
+                title={Strings.EVENT_LOCATION_MAP}
+                onPress={handleViewMap}
+                variant="outline"
+                style={styles.actionButton}
+              />
+            </View>
           </View>
-        </View>
+        )}
+
         {/* Ratings Section */}
         <RatingSectionMobile eventId={eventId} />
       </View>
@@ -1051,30 +1140,7 @@ const EventDetailScreen = () => {
             </View>
 
             <View style={styles.shareGrid}>
-              {[
-                {
-                  title: 'Hệ thống',
-                  onPress: handleShareSystem,
-                  icon: Images.shareSystem,
-                },
-                {title: 'Sao chép', onPress: handleCopyLink, icon: Images.copy},
-                {title: 'Zalo', onPress: handleShareZalo, icon: Images.zalo},
-                {
-                  title: 'Facebook',
-                  onPress: handleShareFacebook,
-                  icon: Images.facebook,
-                },
-                {
-                  title: 'Twitter',
-                  onPress: handleShareTwitter,
-                  icon: Images.twitter,
-                },
-                {
-                  title: 'LinkedIn',
-                  onPress: handleShareLinkedIn,
-                  icon: Images.linkedin,
-                },
-              ].map((item, index) => (
+              {shareOptions.map((item, index) => (
                 <TouchableOpacity
                   key={index}
                   style={styles.shareGridItem}

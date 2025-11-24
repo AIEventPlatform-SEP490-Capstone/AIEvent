@@ -19,6 +19,8 @@ import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
 import Strings from '../../constants/Strings';
 import { BookingService, EventService } from '../../api/services';
+import { useSelector } from 'react-redux';
+import { isStaffUser } from '../../utils/jwtUtils';
 
 const { width } = Dimensions.get('window');
 
@@ -188,6 +190,8 @@ const getDayKey = (date) => {
 };
 
 const TimelineScreen = () => {
+  const { accessToken } = useSelector(state => state.auth);
+  const isStaff = isStaffUser(accessToken);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -225,6 +229,13 @@ const TimelineScreen = () => {
   }, []);
 
   const loadEvents = async () => {
+    // Staff users don't have access to booked events endpoint, so we skip loading
+    if (isStaff) {
+      setLoading(false);
+      setEvents([]);
+      return;
+    }
+    
     try {
       setLoading(true);
       const response = await BookingService.getBookedEvents({ pageNumber: 1, pageSize: 100 });

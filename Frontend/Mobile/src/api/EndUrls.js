@@ -15,6 +15,7 @@ const EndUrls = {
 
   // Events
   EVENTS: `${BASE_URL}/event`,
+  EVENTS_STAFF: `${BASE_URL}/event/staff`,
   EVENT_DETAIL: id => `${BASE_URL}/event/${id}`,
   MY_EVENTS: `${BASE_URL}/event/my-events`,
   JOIN_EVENT: id => `${BASE_URL}/event/${id}/join`,

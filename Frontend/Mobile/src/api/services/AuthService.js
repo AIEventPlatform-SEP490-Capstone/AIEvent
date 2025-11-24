@@ -195,6 +195,7 @@ class AuthService {
         StorageKeys.TOKEN_EXPIRES_AT,
       );
 
+      // Handle case where token or expiration is missing
       if (!accessToken || !expiresAt) {
         return null;
       }
@@ -211,6 +212,7 @@ class AuthService {
 
       return accessToken;
     } catch (error) {
+      console.error('Error getting access token:', error);
       return null;
     }
   }

@@ -3,6 +3,8 @@ import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {createStackNavigator} from '@react-navigation/stack';
 import {CommonActions} from '@react-navigation/native';
 import {Image, View} from 'react-native';
+import { useSelector } from 'react-redux';
+import { isStaffUser } from '../utils/jwtUtils';
 import HomeScreen from '../screens/homeScreen';
 import EventDetailScreen from '../screens/eventDetailScreen';
 import MyEventsScreen from '../screens/myEventsScreen';
@@ -270,6 +272,9 @@ const ProfileStack = () => {
 };
 
 const TabNavigator = () => {
+  const { accessToken } = useSelector(state => state.auth);
+  const isStaff = isStaffUser(accessToken);
+
   return (
     <Tab.Navigator
       screenOptions={({route}) => ({
@@ -312,20 +317,24 @@ const TabNavigator = () => {
           title: 'Trang chủ',
         }}
       />
-      <Tab.Screen
-        name="Timeline"
-        component={TimelineStack}
-        options={{
-          title: 'Timeline',
-        }}
-      />
-      <Tab.Screen
-        name="MyEvents"
-        component={TicketsStack}
-        options={{
-          title: 'Vé của tôi',
-        }}
-      />
+      {!isStaff && (
+        <>
+          <Tab.Screen
+            name="Timeline"
+            component={TimelineStack}
+            options={{
+              title: 'Timeline',
+            }}
+          />
+          <Tab.Screen
+            name="MyEvents"
+            component={TicketsStack}
+            options={{
+              title: 'Vé của tôi',
+            }}
+          />
+        </>
+      )}
       <Tab.Screen
         name="Profile"
         component={ProfileStack}

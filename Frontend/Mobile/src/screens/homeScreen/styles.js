@@ -140,6 +140,7 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
   latestEventsSection: {
+    paddingHorizontal: 20,
     marginBottom: 30,
   },
   aiEventsSection: {

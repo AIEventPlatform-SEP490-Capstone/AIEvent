@@ -18,6 +18,8 @@ import BookingService from '../../api/services/BookingService';
 import {EventService} from '../../api/services';
 import {styles} from './styles';
 import { translateReportEventError } from '../../utility';
+import AuthService from '../../api/services/AuthService';
+import { isStaffUser } from '../../utils/jwtUtils';
 
 const TicketsScreen = () => {
   const [events, setEvents] = useState([]);
@@ -38,6 +40,15 @@ const TicketsScreen = () => {
   const fetchEvents = async () => {
     try {
       setLoading(true);
+      
+      // Check if user is staff - staff users don't have access to booked events
+      const token = await AuthService.getAccessToken();
+      const isStaff = isStaffUser(token);
+      if (isStaff) {
+        setEvents([]);
+        return;
+      }
+      
       const res = await BookingService.getBookedEvents();
       if (res.success) setEvents(res.data);
     } catch (err) {

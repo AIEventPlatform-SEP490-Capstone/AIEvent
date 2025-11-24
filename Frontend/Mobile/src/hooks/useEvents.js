@@ -1,6 +1,7 @@
 import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchEvents,
+  fetchEventsForStaff,
   fetchEventById,
   searchEvents,
   selectEvents,
@@ -29,6 +30,16 @@ export const useEvents = () => {
       return response;
     } catch (err) {
       console.error('Failed to fetch events:', err);
+      return null;
+    }
+  };
+
+  const getEventsForStaff = async (params = {}) => {
+    try {
+      const response = await dispatch(fetchEventsForStaff(params)).unwrap();
+      return response;
+    } catch (err) {
+      console.error('Failed to fetch events for staff:', err);
       return null;
     }
   };
@@ -63,6 +74,7 @@ export const useEvents = () => {
     error,
     totalCount,
     getEvents,
+    getEventsForStaff,
     getEventById,
     searchEvents: searchEventsAPI,
     clearCurrentEvent: clearCurrent,

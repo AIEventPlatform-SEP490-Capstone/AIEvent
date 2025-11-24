@@ -1,6 +1,9 @@
 import {useState, useEffect, useCallback} from 'react';
 import RatingService from '../api/services/RatingService';
 import BookingService from '../api/services/BookingService';
+import AuthService from '../api/services/AuthService';
+import { isStaffUser } from '../utils/jwtUtils';
+import {useSelector} from 'react-redux';
 
 export const useRatings = (eventId, initialPageSize = 5) => {
   const [ratings, setRatings] = useState([]);
@@ -9,6 +12,11 @@ export const useRatings = (eventId, initialPageSize = 5) => {
   const [pageSize] = useState(initialPageSize);
   const [pagination, setPagination] = useState(null);
   const [hasPurchasedTicket, setHasPurchasedTicket] = useState(false);
+  
+  // Get auth state from Redux
+  const auth = useSelector(state => state.auth || {});
+  const isLoggedIn = !!auth.isLoggedIn;
+  const accessToken = auth.accessToken || null;
 
   const loadRatings = useCallback(
     async (page = 1) => {
@@ -97,15 +105,39 @@ export const useRatings = (eventId, initialPageSize = 5) => {
 
   useEffect(() => {
     loadRatings(pageNumber);
-  }, [eventId, loadRatings, pageNumber]);
+  }, [eventId, pageNumber]); // Remove loadRatings from dependencies to prevent infinite loops
 
   // Check if current user has purchased ticket for this event
   useEffect(() => {
+    let isMounted = true;
+    
     const checkPurchased = async () => {
-      if (!eventId) {
+      // Reset purchased ticket status when eventId changes or user logs out
+      if (isMounted) {
         setHasPurchasedTicket(false);
+      }
+      
+      if (!eventId || !isLoggedIn) {
         return;
       }
+      
+      // Check if user is staff - staff users don't have access to booked events
+      try {
+        const token = accessToken || await AuthService.getAccessToken();
+        // Handle case where token is null/undefined after logout
+        if (!token) {
+          return;
+        }
+        
+        const isStaff = isStaffUser(token);
+        if (isStaff) {
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking user role:', error);
+        return;
+      }
+      
       try {
         const result = await BookingService.getBookedEvents({
           pageNumber: 1,
@@ -124,18 +156,21 @@ export const useRatings = (eventId, initialPageSize = 5) => {
             ].filter(Boolean);
             return candidateIds.map(String).includes(String(eventId));
           });
-          setHasPurchasedTicket(found);
-        } else {
-          setHasPurchasedTicket(false);
+          if (isMounted) {
+            setHasPurchasedTicket(found);
+          }
         }
       } catch (err) {
         console.error('useRatings.checkPurchased error:', err);
-        setHasPurchasedTicket(false);
       }
     };
 
     checkPurchased();
-  }, [eventId]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [eventId, isLoggedIn, accessToken]); // Add auth-related dependencies
 
   return {
     ratings,

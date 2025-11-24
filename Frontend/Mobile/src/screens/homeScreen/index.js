@@ -26,11 +26,13 @@ import { useCategories } from '../../hooks/useCategories';
 import { selectEvents, selectEventsLoading, selectEventsError } from '../../redux/slices/eventsSlice';
 import { selectCategories, selectCategoriesLoading } from '../../redux/slices/categoriesSlice';
 import { EventService } from '../../api/services';
+import { isStaffUser } from '../../utils/jwtUtils';
 
 const { width } = Dimensions.get('window');
 
 const HomeScreen = () => {
   const navigation = useNavigation();
+  const { accessToken } = useSelector(state => state.auth);
   
   // Use Redux selectors
   const events = useSelector(selectEvents);
@@ -39,13 +41,14 @@ const HomeScreen = () => {
   const categoriesLoading = useSelector(selectCategoriesLoading);
   
   // Use custom hooks
-  const { getEvents, searchEvents } = useEvents();
+  const { getEvents, getEventsForStaff, searchEvents } = useEvents();
   const { refreshCategories } = useCategories();
   
   const [searchText, setSearchText] = useState('');
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Remove the local loading state since we're using Redux loading states
+  // const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [aiEvents, setAiEvents] = useState([]);
   const [loadingAIEvents, setLoadingAIEvents] = useState(false);
@@ -69,19 +72,35 @@ const HomeScreen = () => {
     }
   }, [searchText, events, selectedCategory]);
 
-  useEffect(() => {
-    // Update loading state based on Redux loading states
-    setLoading(eventsLoading || categoriesLoading);
-  }, [eventsLoading, categoriesLoading]);
+  // Remove this useEffect as it creates a circular dependency
+  // useEffect(() => {
+  //   // Update loading state based on Redux loading states
+  //   setLoading(eventsLoading || categoriesLoading);
+  // }, [eventsLoading, categoriesLoading]);
 
   const loadEvents = async () => {
     try {
-      setLoading(true);
+      // setLoading(true); // Remove manual loading state management
       console.log('Loading events...');
-      const response = await getEvents({
-        pageNumber: 1,
-        pageSize: 20
-      });
+      
+      // Check if user is staff
+      const isStaff = isStaffUser(accessToken);
+      
+      let response;
+      if (isStaff) {
+        // Use staff-specific endpoint for staff users
+        response = await getEventsForStaff({
+          pageNumber: 1,
+          pageSize: 20
+        });
+      } else {
+        // Use regular endpoint for non-staff users
+        response = await getEvents({
+          pageNumber: 1,
+          pageSize: 20
+        });
+      }
+      
       // The data transformation is now handled in the Redux slice
       // We just need to check if the call was successful
       // console.log('Events response:', response);
@@ -96,9 +115,11 @@ const HomeScreen = () => {
     } catch (error) {
       console.error('Error loading events:', error);
       Alert.alert('Error', 'Failed to load events: ' + error.message);
-    } finally {
-      setLoading(false);
     }
+    // Remove finally block since we're relying on Redux loading states
+    // finally {
+    //   setLoading(false);
+    // }
   };
 
   // Calculate display price based on ticket details
@@ -262,10 +283,11 @@ const HomeScreen = () => {
     return id ? id.toString() : Math.random().toString();
   };
 
-  // Get latest events (first 3 events)
-  const latestEvents = filteredEvents.slice(0, 3);
-  // Get remaining events for the list
-  const eventList = filteredEvents.slice(3);
+  // Get latest events (first 3 events) - only show separate section if we have more than 3 events
+  const shouldSplitEvents = filteredEvents.length > 3;
+  const latestEvents = shouldSplitEvents ? filteredEvents.slice(0, 3) : [];
+  // Show all events in the main list instead of splitting them
+  const eventList = filteredEvents;
 
   const renderLatestEventCard = ({ item, index }) => (
     <TouchableOpacity
@@ -498,7 +520,7 @@ const HomeScreen = () => {
         )}
 
         {/* Latest Events Section */}
-        {latestEvents.length > 0 && (
+        {shouldSplitEvents && latestEvents.length > 0 && (
           <View style={styles.latestEventsSection}>
             <View style={styles.sectionHeader}>
               <CustomText variant="h2" color="primary" style={styles.sectionTitle}>
@@ -522,22 +544,15 @@ const HomeScreen = () => {
             <CustomText variant="h2" color="primary" style={styles.sectionTitle}>
               Danh sách sự kiện
             </CustomText>
-            {filteredEvents.length > 3 && (
-              <TouchableOpacity>
-                <CustomText variant="body" color="primary" style={styles.viewAllText}>
-                  Xem tất cả
-                </CustomText>
-              </TouchableOpacity>
-            )}
           </View>
           
-          {loading ? (
+          {eventsLoading || categoriesLoading ? (
             <View style={styles.loadingContainer}>
               <CustomText variant="body" color="secondary" align="center">
                 {Strings.LOADING}
               </CustomText>
             </View>
-          ) : eventList.length === 0 && latestEvents.length === 0 ? (
+          ) : eventList.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Image source={Images.calendar} style={styles.emptyIcon} />
               <CustomText variant="h3" color="secondary" align="center" style={styles.emptyText}>

@@ -5,7 +5,7 @@
  */
 export const decodeJWT = (token) => {
   try {
-    if (!token) return null;
+    if (!token || typeof token !== 'string') return null;
     
     const parts = token.split('.');
     if (parts.length !== 3) return null;
@@ -48,15 +48,18 @@ export const getUserRole = (token) => {
  */
 export const isStaffUser = (token) => {
   try {
+    // Handle null, undefined, or non-string token
+    if (!token || typeof token !== 'string') return false;
+    
     const role = getUserRole(token);
     if (!role) return false;
     
     // Handle both string and array roles
     if (Array.isArray(role)) {
-      return role.some(r => r.toLowerCase() === 'staff');
+      return role.some(r => typeof r === 'string' && r.toLowerCase() === 'staff');
     }
     
-    return role.toLowerCase() === 'staff';
+    return typeof role === 'string' && role.toLowerCase() === 'staff';
   } catch (error) {
     console.error('Error checking staff role:', error);
     return false;

@@ -160,10 +160,11 @@ const RatingSectionMobile = ({eventId}) => {
   }, [eventId]);
 
   // detect if current user already rated this event
-
   useEffect(() => {
+    // Reset user existing rating when auth state changes
+    setUserExistingRating(null);
+    
     if (!isAuthenticated || !user || !ratings || ratings.length === 0) {
-      setUserExistingRating(null);
       return;
     }
 
@@ -215,7 +216,7 @@ const RatingSectionMobile = ({eventId}) => {
     });
 
     setUserExistingRating(existing || null);
-  }, [ratings, isAuthenticated, user]);
+  }, [ratings, isAuthenticated, user?.userId, user?.accountId, user?.email]);
 
   const handleSubmit = async () => {
     if (!isAuthenticated) return; // should prompt login in real app
