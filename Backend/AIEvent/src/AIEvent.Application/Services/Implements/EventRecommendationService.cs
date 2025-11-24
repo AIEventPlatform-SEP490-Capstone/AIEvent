@@ -147,7 +147,7 @@ namespace AIEvent.Application.Services.Implements
                     {
                         UserId = userId.Value,
                         Prompt = userPrompt,
-                        Response = "",  
+                        Response = "Xin lỗi, tôi không thể tạo phản hồi lúc này. Vui lòng thử lại sau.",  
                         Session = finalSessionId,
                         SessionName = sessionName,
                         CreatedAt = DateTime.UtcNow
