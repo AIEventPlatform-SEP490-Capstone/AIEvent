@@ -59,12 +59,16 @@ export const useNotifications = () => {
       return;
     }
 
+    // Determine the base URL based on environment
+    const isVercel = window.location.hostname.includes('vercel.app');
+    const baseUrl = isVercel ? 'https://aievent.duckdns.org' : '';
+
     // Tạo connection mới
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl("/hubs/notification", {
+      .withUrl(`${baseUrl}/hubs/notification`, {
         accessTokenFactory: () => accessToken,
-        // Ưu tiên WebSocket, fallback tự động nếu cần
-        transport: signalR.HttpTransportType.WebSockets
+        // Allow all transports instead of just WebSockets
+        // This enables fallback to Server-Sent Events or Long Polling
       })
       .withAutomaticReconnect({
         nextRetryDelayInMilliseconds: (retryContext) => {
