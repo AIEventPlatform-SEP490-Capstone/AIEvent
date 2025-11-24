@@ -1,9 +1,23 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { ScrollArea } from "../../components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../../components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../../components/ui/dropdown-menu";
 import {
   MessageCircle,
   Send,
@@ -17,18 +31,21 @@ import {
   Trash2,
   Plus,
   Loader2,
-  ChevronRight,
+  Mic,
+  Square,
+  MoreVertical,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { useAiChat } from "../../hooks/useAiChat";
-import { parseEventFromResponse } from "../../components/HomePage/ModernAIChat";
-
-// Re-export parseEventFromResponse for easier access
+import { parseEventFromResponse } from "../../utils/aiResponseParser";
+import { useSpeechToText } from "../../hooks/useSpeechToText";
+import { useSpeechSynthesis } from "../../hooks/useSpeechSynthesis";
 
 export default function ChatPage() {
   const navigate = useNavigate();
   const {
     isLoading,
-    currentSessionId,
     sendMessage,
     getChatHistory,
     getChatSessions,
@@ -43,34 +60,61 @@ export default function ChatPage() {
   const [inputValue, setInputValue] = useState("");
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeletingSession, setIsDeletingSession] = useState(false);
+  const [speakingMessageId, setSpeakingMessageId] = useState(null);
   const messagesEndRef = useRef(null);
   const scrollAreaRef = useRef(null);
 
-  // Load sessions on mount
-  useEffect(() => {
-    loadSessions();
+  const handleSpeechResult = useCallback((text) => {
+    if (!text) return;
+    setInputValue((prev) => {
+      if (!prev) return text;
+      return `${prev.trim()} ${text}`.trim();
+    });
   }, []);
 
-  // Load messages when session changes
-  useEffect(() => {
-    if (selectedSessionId) {
-      loadChatHistory(selectedSessionId);
-      setCurrentSessionId(selectedSessionId);
-    } else {
-      setMessages([]);
-      setCurrentSessionId(null);
-    }
-  }, [selectedSessionId]);
+  const {
+    isSupported: isSpeechSupported,
+    isRecording,
+    interimTranscript,
+    error: speechError,
+    startRecording,
+    stopRecording,
+  } = useSpeechToText({
+    lang: "vi-VN",
+    onResult: handleSpeechResult,
+  });
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const {
+    isSupported: isSpeechSynthesisSupported,
+    speak,
+    stop,
+  } = useSpeechSynthesis({
+    lang: "vi-VN",
+  });
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  const handleSpeakMessage = useCallback(
+    (messageId, text) => {
+      if (!text) return;
+      speak(text, {
+        onStart: () => setSpeakingMessageId(messageId),
+        onEnd: () =>
+          setSpeakingMessageId((current) => (current === messageId ? null : current)),
+        onError: () =>
+          setSpeakingMessageId((current) => (current === messageId ? null : current)),
+      });
+    },
+    [speak]
+  );
 
-  const loadSessions = async () => {
+  const handleStopSpeaking = useCallback(() => {
+    stop();
+    setSpeakingMessageId(null);
+  }, [stop]);
+
+  const loadSessions = useCallback(async () => {
     try {
       setLoadingSessions(true);
       const response = await getChatSessions(1, 50);
@@ -86,23 +130,15 @@ export default function ChatPage() {
     } finally {
       setLoadingSessions(false);
     }
-  };
+  }, [getChatSessions, selectedSessionId]);
 
-  const loadChatHistory = async (sessionId) => {
+  const loadChatHistory = useCallback(
+    async (sessionId) => {
     try {
       setLoadingHistory(true);
       const response = await getChatHistory(sessionId, 1, 100);
       const historyItems = response?.data?.items || response?.items || [];
       
-      // Convert history items to message format
-      const formattedMessages = historyItems.map((item, index) => ({
-        id: item.id || `history-${index}`,
-        content: item.response || "",
-        sender: "ai",
-        timestamp: new Date(item.createdAt),
-        eventInfo: parseEventFromResponse(item.response || ""),
-      }));
-
       // Add user prompts as messages
       const messagesWithPrompts = [];
       historyItems.forEach((item, index) => {
@@ -130,7 +166,33 @@ export default function ChatPage() {
     } finally {
       setLoadingHistory(false);
     }
+    },
+    [getChatHistory]
+  );
+
+  // Load sessions on mount
+  useEffect(() => {
+    loadSessions();
+  }, [loadSessions]);
+
+  // Load messages when session changes
+  useEffect(() => {
+    if (selectedSessionId) {
+      loadChatHistory(selectedSessionId);
+      setCurrentSessionId(selectedSessionId);
+    } else {
+      setMessages([]);
+      setCurrentSessionId(null);
+    }
+  }, [selectedSessionId, loadChatHistory, setCurrentSessionId]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -196,20 +258,36 @@ export default function ChatPage() {
     resetSession();
   };
 
-  const handleDeleteSession = async (sessionId, e) => {
+  const openDeleteDialog = (session, e) => {
     e.stopPropagation();
-    if (!confirm("Bạn có chắc chắn muốn xóa phiên chat này?")) return;
+    setSessionToDelete(session);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteSession = async () => {
+    if (!sessionToDelete) return;
 
     try {
-      await deleteSession(sessionId);
-      if (selectedSessionId === sessionId) {
+      setIsDeletingSession(true);
+      await deleteSession(sessionToDelete.sessionId);
+      if (selectedSessionId === sessionToDelete.sessionId) {
         handleNewChat();
       }
       await loadSessions();
     } catch (error) {
       console.error("Error deleting session:", error);
+    } finally {
+      setIsDeletingSession(false);
+      setIsDeleteDialogOpen(false);
+      setSessionToDelete(null);
     }
   };
+
+  const handleCloseDeleteDialog = useCallback(() => {
+    if (isDeletingSession) return;
+    setIsDeleteDialogOpen(false);
+    setSessionToDelete(null);
+  }, [isDeletingSession]);
 
   const handleEventClick = (eventInfo) => {
     if (eventInfo.title) {
@@ -235,7 +313,8 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-gradient-to-br from-purple-50/50 via-blue-50/50 to-cyan-50/50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <>
+      <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-gradient-to-br from-purple-50/50 via-blue-50/50 to-cyan-50/50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Sessions Sidebar */}
       <div className="w-80 border-r border-purple-200/50 dark:border-purple-900/50 bg-white dark:bg-gray-800 flex flex-col">
         <div className="p-4 border-b border-purple-200/50 dark:border-purple-900/50">
@@ -285,18 +364,30 @@ export default function ChatPage() {
                       <p className="text-xs text-muted-foreground mt-1">
                         {formatDate(session.lastMessageAt || session.createdAt)}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {session.messageCount || 0} tin nhắn
-                      </p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-600"
-                      onClick={(e) => handleDeleteSession(session.sessionId, e)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8 text-muted-foreground hover:text-purple-600"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <MoreVertical className="h-4 w-4" />
+    </Button>
+  </DropdownMenuTrigger>
+
+  <DropdownMenuContent align="end" className="w-40">
+    <DropdownMenuItem
+      className="gap-2 text-red-600 focus:text-red-700"
+      onClick={(e) => openDeleteDialog(session, e)}
+    >
+      <Trash2 className="h-4 w-4" />
+      Xóa 
+    </DropdownMenuItem>
+  </DropdownMenuContent>
+</DropdownMenu>
+
                   </div>
                 </div>
               ))}
@@ -358,66 +449,129 @@ export default function ChatPage() {
                       </div>
                     </div>
                   ) : (
-                    messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300"
-                      >
+                    messages.map((message) => {
+                      const isUserMessage = message.sender === "user";
+                      const isSpeakingThisMessage = speakingMessageId === message.id;
+
+                      return (
                         <div
-                          className={`flex gap-3 ${
-                            message.sender === "user" ? "justify-end" : "justify-start"
-                          }`}
+                          key={message.id}
+                          className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300"
                         >
-                          {message.sender === "ai" && (
-                            <div className="relative flex-shrink-0">
-                              <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-cyan-600 rounded-full blur-sm opacity-30" />
-                              <div className="relative h-10 w-10 rounded-full bg-gradient-to-br from-purple-600 to-cyan-600 flex items-center justify-center">
-                                <Bot className="h-5 w-5 text-white" />
-                              </div>
-                            </div>
-                          )}
+                        <div
+                          className={`flex ${isUserMessage ? "justify-end" : "justify-start"}`}
+                        >
                           <div
-                            className={`max-w-[70%] rounded-2xl px-4 py-3 text-sm break-words shadow-lg ${
-                              message.sender === "user"
-                                ? "bg-gradient-to-br from-purple-600 to-blue-600 text-white rounded-br-md"
-                                : "bg-white dark:bg-gray-800 border border-purple-100 dark:border-purple-900/50 rounded-bl-md"
+                            className={`flex items-start gap-2 ${
+                              isUserMessage ? "flex-row-reverse" : ""
                             }`}
                           >
-                            <div className="whitespace-pre-line leading-relaxed">
-                              {message.content.split("\n").map((line, index) => {
-                                if (line.startsWith("**") && line.endsWith("**")) {
-                                  return (
-                                    <div
-                                      key={index}
-                                      className="font-bold text-base mb-1 flex items-center gap-2"
+                            {message.sender === "ai" && (
+                              <div className="relative flex-shrink-0">
+                                <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-cyan-600 rounded-full blur-sm opacity-30" />
+                                <div className="relative h-10 w-10 rounded-full bg-gradient-to-br from-purple-600 to-cyan-600 flex items-center justify-center">
+                                  <Bot className="h-5 w-5 text-white" />
+                                </div>
+                              </div>
+                            )}
+                            {isUserMessage && (
+                              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0 shadow-lg">
+                                <User className="h-5 w-5 text-white" />
+                              </div>
+                            )}
+                            <div className="flex items-start gap-2">
+                              <div
+                                className={`max-w-[100%] rounded-2xl px-4 py-3 text-sm break-words shadow-lg ${
+                                  isUserMessage
+                                    ? "bg-gradient-to-br from-purple-600 to-blue-600 text-white rounded-br-md"
+                                    : "bg-white dark:bg-gray-800 border border-purple-100 dark:border-purple-900/50 rounded-bl-md"
+                                }`}
+                              >
+                                <div className="whitespace-pre-line leading-relaxed">
+                                  {message.content.split("\n").map((line, index) => {
+                                    if (line.startsWith("**") && line.endsWith("**")) {
+                                      return (
+                                        <div
+                                          key={index}
+                                          className="font-bold text-base mb-1 flex items-center gap-2"
+                                        >
+                                          <Sparkles className="h-4 w-4 text-yellow-500" />
+                                          {line.slice(2, -2)}
+                                        </div>
+                                      );
+                                    }
+                                    if (line.startsWith("• ") || line.startsWith("- ")) {
+                                      return (
+                                        <div
+                                          key={index}
+                                          className="ml-2 flex items-start gap-2 my-1"
+                                        >
+                                          <Zap className="h-3 w-3 mt-1 flex-shrink-0 text-purple-500" />
+                                          <span>{line.slice(2)}</span>
+                                        </div>
+                                      );
+                                    }
+                                    return line ? (
+                                      <div key={index} className="my-1">
+                                        {line}
+                                      </div>
+                                    ) : (
+                                      <div key={index} className="h-2" />
+                                    );
+                                  })}
+                                </div>
+                                {isSpeechSynthesisSupported && isSpeakingThisMessage && (
+                                  <div className="mt-3 text-xs text-purple-500 flex items-center gap-2">
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                    <span>Đang đọc câu trả lời...</span>
+                                  </div>
+                                )}
+                              </div>
+                              {message.sender === "ai" && (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-muted-foreground hover:text-purple-600"
                                     >
-                                      <Sparkles className="h-4 w-4 text-yellow-500" />
-                                      {line.slice(2, -2)}
-                                    </div>
-                                  );
-                                }
-                                if (line.startsWith("• ") || line.startsWith("- ")) {
-                                  return (
-                                    <div key={index} className="ml-2 flex items-start gap-2 my-1">
-                                      <Zap className="h-3 w-3 mt-1 flex-shrink-0 text-purple-500" />
-                                      <span>{line.slice(2)}</span>
-                                    </div>
-                                  );
-                                }
-                                return line ? (
-                                  <div key={index} className="my-1">{line}</div>
-                                ) : (
-                                  <div key={index} className="h-2" />
-                                );
-                              })}
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-44">
+                                    {isSpeechSynthesisSupported ? (
+                                      <DropdownMenuItem
+                                        className="gap-2"
+                                        onClick={() =>
+                                          isSpeakingThisMessage
+                                            ? handleStopSpeaking()
+                                            : handleSpeakMessage(message.id, message.content)
+                                        }
+                                      >
+                                        {isSpeakingThisMessage ? (
+                                          <>
+                                            <VolumeX className="h-4 w-4 text-red-500" />
+                                            Dừng đọc
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Volume2 className="h-4 w-4 text-purple-500" />
+                                            Đọc to
+                                          </>
+                                        )}
+                                      </DropdownMenuItem>
+                                    ) : (
+                                      <DropdownMenuItem disabled className="gap-2 opacity-70">
+                                        <VolumeX className="h-4 w-4" />
+                                        Không hỗ trợ đọc
+                                      </DropdownMenuItem>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              )}
                             </div>
                           </div>
-                          {message.sender === "user" && (
-                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0 shadow-lg">
-                              <User className="h-5 w-5 text-white" />
-                            </div>
-                          )}
-                        </div>
+                          </div>
 
                         {/* Event card display */}
                         {message.eventInfo && (
@@ -479,7 +633,8 @@ export default function ChatPage() {
                           </div>
                         )}
                       </div>
-                    ))
+                    );
+                  })
                   )}
 
                   {isLoading && (
@@ -521,6 +676,22 @@ export default function ChatPage() {
                 disabled={isLoading}
                 className="flex-1 border-2 border-purple-200 dark:border-purple-900/50 focus:border-purple-400 dark:focus:border-purple-700 rounded-xl bg-white dark:bg-gray-800 transition-colors"
               />
+              {isSpeechSupported && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={isRecording ? stopRecording : startRecording}
+                  disabled={isLoading}
+                  className={`rounded-xl border-2 h-10 w-10 ${
+                    isRecording
+                      ? "border-red-400 bg-red-50 text-red-600 hover:bg-red-100"
+                      : "border-purple-200 text-purple-600 hover:bg-purple-50"
+                  }`}
+                >
+                  {isRecording ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                </Button>
+              )}
               <Button
                 onClick={handleSendMessage}
                 disabled={isLoading || !inputValue.trim()}
@@ -530,10 +701,80 @@ export default function ChatPage() {
                 <Send className="h-4 w-4" />
               </Button>
             </div>
+            {isSpeechSupported && (
+              <div className="mt-2 text-xs text-muted-foreground min-h-[1.5rem]">
+                {isRecording && interimTranscript
+                  ? `Đang nghe: “${interimTranscript}”`
+                  : speechError
+                  ? `Không thể thu âm: ${speechError}`
+                  : "Nhấn mic để nói câu hỏi của bạn"}
+              </div>
+            )}
+            {!isSpeechSupported && (
+              <div className="mt-2 text-xs text-muted-foreground">
+                Trình duyệt hiện không hỗ trợ ghi âm giọng nói.
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
-    </div>
+
+      </div>
+
+      <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => !open && handleCloseDeleteDialog()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Xóa cuộc trò chuyện?</DialogTitle>
+            <DialogDescription>
+              Bạn sắp xóa{" "}
+              <span className="font-semibold">
+                {sessionToDelete?.sessionName || "cuộc trò chuyện này"}
+              </span>
+              . Thao tác không thể hoàn tác.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-lg border border-purple-200/50 dark:border-purple-900/40 p-4 bg-purple-50/40 dark:bg-purple-900/20 space-y-2">
+            <div className="text-sm text-muted-foreground flex items-center justify-between">
+              <span>ID phiên</span>
+              <span className="font-semibold text-foreground">
+                {sessionToDelete?.sessionId || "—"}
+              </span>
+            </div>
+            <div className="text-sm text-muted-foreground flex items-center justify-between">
+              <span>Số tin nhắn</span>
+              <span className="font-semibold text-foreground">
+                {sessionToDelete?.messageCount ?? 0}
+              </span>
+            </div>
+          </div>
+
+          <DialogFooter className="mt-6">
+            <Button
+              variant="outline"
+              onClick={handleCloseDeleteDialog}
+              disabled={isDeletingSession}
+            >
+              Giữ lại
+            </Button>
+            <Button
+              onClick={handleDeleteSession}
+              disabled={isDeletingSession}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {isDeletingSession ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Đang xóa...
+                </span>
+              ) : (
+                "Xóa cuộc trò chuyện"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
