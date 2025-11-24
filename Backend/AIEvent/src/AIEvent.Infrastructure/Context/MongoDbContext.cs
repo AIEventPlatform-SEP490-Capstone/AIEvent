@@ -22,10 +22,10 @@ namespace AIEvent.Infrastructure.Context
                 EnabledSslProtocols = SslProtocols.Tls12
             };
 
-            settings.ConnectTimeout = TimeSpan.FromSeconds(10);
-            settings.ServerSelectionTimeout = TimeSpan.FromSeconds(10);
+            settings.RetryWrites = true;
+            settings.RetryReads = true;
 
-            var client = new MongoClient(connectionString);
+            var client = new MongoClient(settings);
             _database = client.GetDatabase("AIEvent");
         }
 
