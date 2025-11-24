@@ -25,7 +25,7 @@ namespace AIEvent.Infrastructure.Context
             settings.ConnectTimeout = TimeSpan.FromSeconds(10);
             settings.ServerSelectionTimeout = TimeSpan.FromSeconds(10);
 
-            var client = new MongoClient(connectionString);
+            var client = new MongoClient(settings);
             _database = client.GetDatabase("AIEvent");
         }
 
