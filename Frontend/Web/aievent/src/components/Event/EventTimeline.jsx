@@ -77,7 +77,7 @@ export function EventTimeline({
   };
 
   return (
-    <div className="bg-white rounded-2xl p-8 border border-border/50 shadow-sm">
+    <div className="bg-white rounded-2xl p-8 border border-border/50 shadow-sm hover:border-blue-300 hover:shadow-md transition-all duration-300">
       <div className="mb-8">
         <h3 className="text-2xl font-bold text-foreground mb-2">Timeline sự kiện</h3>
         <p className="text-sm text-muted-foreground">Theo dõi các giai đoạn quan trọng của sự kiện</p>
@@ -151,7 +151,7 @@ export function EventTimeline({
               );
 
               return (
-                <div key={index} className="flex flex-col items-center flex-1">
+                <div key={index} className="flex flex-col items-center flex-1 group">
                   {isEditable ? (
                     <Popover>
                       <PopoverTrigger asChild>
@@ -170,7 +170,7 @@ export function EventTimeline({
                     </Popover>
                   ) : dotContent}
 
-                  <div className="text-center w-full px-2 mt-4">
+                  <div className="text-center w-full px-2 mt-4 group-hover:bg-blue-50 group-hover:border group-hover:border-blue-300 group-hover:rounded-lg group-hover:py-2 transition-all duration-300">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
                       {stage.label}
                     </p>
@@ -238,7 +238,7 @@ export function EventTimeline({
           );
 
           return (
-            <div key={index} className="flex gap-4 items-start">
+            <div key={index} className="flex gap-4 items-start group">
               {isEditable ? (
                 <Popover>
                   <PopoverTrigger asChild>
@@ -256,7 +256,7 @@ export function EventTimeline({
                   </PopoverContent>
                 </Popover>
               ) : dotContent}
-              <div className={`flex-1 pt-3 ${showAsCurrent ? "bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-xl border border-blue-200" : ""}`}>
+              <div className={`flex-1 pt-3 group-hover:bg-blue-50 group-hover:border group-hover:border-blue-300 group-hover:rounded-lg group-hover:p-4 transition-all duration-300 ${showAsCurrent ? "bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-xl border border-blue-200" : ""}`}>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">{stage.label}</p>
                 <p className={`text-base font-bold ${showAsCurrent || isCompleted ? "text-foreground" : "text-muted-foreground"}`}>
                   <span className="inline-block bg-gray-100 dark:bg-gray-800 rounded-md px-2 py-1 text-foreground">

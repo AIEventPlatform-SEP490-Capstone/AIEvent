@@ -563,7 +563,7 @@ Nhấn OK để xác nhận xóa.`;
 
             {/* Ticket Information */}
             {event.ticketDetails && event.ticketDetails.length > 0 && (
-              <div className="bg-white rounded-xl p-6 border border-gray-100">
+              <div className="bg-white rounded-xl p-6 border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all duration-300">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold text-foreground flex items-center gap-2">
                     <Ticket className="w-5 h-5 text-primary" />
@@ -593,7 +593,7 @@ Nhấn OK để xác nhận xóa.`;
                   return (
                     <div
                       key={index}
-                      className="bg-white rounded-xl p-6 border border-gray-100 hover:border-primary/30 hover:shadow-md transition"
+                      className="bg-white rounded-xl p-6 border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all duration-300"
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div>
@@ -617,7 +617,7 @@ Nhấn OK để xác nhận xóa.`;
             )}
 
             {/* About Event */}
-            <div className="bg-white rounded-xl p-8 border border-gray-100">
+            <div className="bg-white rounded-xl p-8 border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all duration-300">
               <h2 className="text-2xl font-bold text-foreground mb-6">Về sự kiện</h2>
               <p className="text-muted-foreground leading-relaxed mb-6">
                 {event.description || "Thông tin chi tiết về sự kiện chưa được cập nhật."}
@@ -646,7 +646,7 @@ Nhấn OK để xác nhận xóa.`;
 
             {/* Organizer */}
             {event.organizerEvent && (
-              <div className="bg-white rounded-xl p-8 border border-gray-100">
+              <div className="bg-white rounded-xl p-8 border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all duration-300">
                 <h2 className="text-xl font-bold text-foreground mb-6">Nhà tổ chức</h2>
                 <div className="flex items-start gap-4">
                   {event.organizerEvent.imgCompany ? (

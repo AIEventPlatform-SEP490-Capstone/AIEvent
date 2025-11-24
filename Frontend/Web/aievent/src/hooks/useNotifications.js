@@ -24,7 +24,7 @@ export const useNotifications = () => {
     totalItems
   } = useSelector(state => state.notifications);
   
-  // Use ref to persist connection instance
+  // Persist connection across re-renders
   const connectionRef = useRef(null);
 
   // Fetch notifications
@@ -32,103 +32,88 @@ export const useNotifications = () => {
     return dispatch(fetchNotificationsAction({ pageNumber, pageSize }));
   };
 
-  // Mark a notification as read
   const handleMarkAsRead = (notificationId) => {
     return dispatch(markAsRead(notificationId));
   };
 
-  // Mark all notifications as read
   const handleMarkAllAsRead = () => {
     return dispatch(markAllAsRead());
   };
 
-  // Delete read notifications
   const handleDeleteReadNotifications = () => {
     return dispatch(deleteReadNotifications());
   };
 
-  // Initialize SignalR connection for real-time notifications
+  // SignalR Setup - Chỉ chạy 1 lần khi component mount
   useEffect(() => {
-    // Only connect if user is authenticated
+    // Lấy token
     const accessToken = localStorage.getItem("accessToken") || 
-                       document.cookie.replace(/(?:(?:^|.*;\s*)accessToken\s*=\s*([^;]*).*$)|^.*$/, "$1");
-    
+      document.cookie.replace(/(?:(?:^|.*;\s*)accessToken\s*=\s*([^;]*).*$)|^.*$/, "$1");
+
     if (!accessToken) {
       return;
     }
 
-    // Create connection only if it doesn't exist
-    if (!connectionRef.current) {
-      connectionRef.current = new signalR.HubConnectionBuilder()
-        .withUrl("/hubs/notification", {
-          accessTokenFactory: () => {
-            return accessToken;
-          },
-          // Add transport options to handle negotiation issues
-          transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.ServerSentEvents | signalR.HttpTransportType.LongPolling,
-          skipNegotiation: false
-        })
-        .withAutomaticReconnect({
-          nextRetryDelayInMilliseconds: retryContext => {
-            // Exponential backoff with max delay of 30 seconds
-            if (retryContext.elapsedMilliseconds > 120000) {
-              // Stop reconnecting after 2 minutes
-              return null;
-            }
-            return Math.min(1000 * Math.pow(2, retryContext.previousRetryCount), 30000);
-          }
-        })
-        .build();
-      
-      // Register for notifications
-      connectionRef.current.on("ReceiveNotification", (notification) => {
-        dispatch(addNotification(notification));
-        // Update unread count in real-time
-        dispatch(updateUnreadCount(unreadCount + 1));
-      });
+    // Nếu đã có connection rồi thì không tạo lại
+    if (connectionRef.current) {
+      return;
     }
 
+    // Tạo connection mới
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl("/hubs/notification", {
+        accessTokenFactory: () => accessToken,
+        // Ưu tiên WebSocket, fallback tự động nếu cần
+        transport: signalR.HttpTransportType.WebSockets
+      })
+      .withAutomaticReconnect({
+        nextRetryDelayInMilliseconds: (retryContext) => {
+          if (retryContext.elapsedMilliseconds > 120000) return null; // Dừng sau 2 phút
+          return Math.min(1000 * Math.pow(2, retryContext.previousRetryCount + 1), 30000);
+        }
+      })
+      .configureLogging(signalR.LogLevel.Warning) // Giảm log spam
+      .build();
+
+    // Lưu vào ref
+    connectionRef.current = connection;
+
+    // Đăng ký nhận thông báo realtime
+    connection.on("ReceiveNotification", (notification) => {
+      dispatch(addNotification(notification));
+      dispatch(updateUnreadCount(unreadCount + 1));
+    });
+
+    // Bắt đầu kết nối
     const startConnection = async () => {
       try {
-        if (connectionRef.current.state === signalR.HubConnectionState.Disconnected) {
-          await connectionRef.current.start();
-          console.log("SignalR Connected");
-        }
+        await connection.start();
+        console.log("SignalR Connected successfully");
       } catch (err) {
-        console.error("SignalR Connection Error: ", err);
-        // Don't show error for transient negotiation issues
-        if (!err.message.includes("connection was stopped during negotiation") && 
-            !err.message.includes("Failed to start the HttpConnection before stop")) {
-          showError("Failed to connect to notification service. You may not receive real-time notifications.");
+        // Lỗi "stopped during negotiation" là do cleanup cũ → bỏ qua không báo
+        if (err?.message?.includes?.("negotiation") || err?.message?.includes?.("stop")) {
+          console.warn("SignalR connection interrupted during startup (normal on re-mount)");
+          return;
         }
+        console.error("SignalR Connection Failed:", err);
+        showError("Không thể kết nối thông báo thời gian thực");
       }
     };
 
     startConnection();
 
-    // Cleanup on unmount
+    // Cleanup khi component unmount (ví dụ: logout, chuyển trang)
     return () => {
-      const stopConnection = async () => {
-        if (connectionRef.current) {
-          try {
-            // Remove event listeners
-            connectionRef.current.off("ReceiveNotification");
-            
-            // Stop connection if it's not already disconnected
-            if (connectionRef.current.state !== signalR.HubConnectionState.Disconnected) {
-              await connectionRef.current.stop();
-              console.log("SignalR Disconnected");
-            }
-          } catch (err) {
-            console.error("Error stopping SignalR connection:", err);
-          } finally {
-            connectionRef.current = null;
-          }
-        }
-      };
-      stopConnection();
+      if (connectionRef.current) {
+        console.log("SignalR: Cleaning up connection...");
+        connectionRef.current.off("ReceiveNotification");
+        connectionRef.current.stop().catch(() => {}); // Không cần await
+        connectionRef.current = null;
+      }
     };
-  }, [dispatch, unreadCount]);
+  }, []); 
+  // ← Dependency rỗng: Chỉ chạy 1 lần khi mount
+  // → Không còn lỗi "stopped during negotiation" nữa!
 
   return {
     notifications,
