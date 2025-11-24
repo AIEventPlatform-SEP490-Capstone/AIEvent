@@ -8,6 +8,7 @@ using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -15,15 +16,24 @@ namespace AIEvent.Application.Services.Implements
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ITransactionHelper _transactionHelper;
+        private readonly IContentModerationService _contentModerationService;
 
-        public EventCategoryService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper)
+        public EventCategoryService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper, IContentModerationService contentModerationService)
         {
             _transactionHelper = transactionHelper;
             _unitOfWork = unitOfWork;
+            _contentModerationService = contentModerationService;
         }
 
         public async Task<Result> CreateEventCategoryAsync(EventCategoryRequest request)
         {
+            if (!string.IsNullOrWhiteSpace(request.EventCategoryName))
+            {
+                var isSafe = await _contentModerationService.ProfanityChecker(JsonSerializer.Serialize(request));
+                if (!isSafe.IsSuccess)
+                    return ErrorResponse.FailureResult(isSafe.Error!.Message, isSafe.Error.StatusCode);
+            }
+
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
                 if (string.IsNullOrWhiteSpace(request.EventCategoryName))
@@ -126,6 +136,13 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result<EventCategoryResponse>> UpdateEventCategoryAsync(string id, EventCategoryRequest request)
         {
+            if (!string.IsNullOrWhiteSpace(request.EventCategoryName))
+            {
+                var isSafe = await _contentModerationService.ProfanityChecker(JsonSerializer.Serialize(request));
+                if (!isSafe.IsSuccess)
+                    return ErrorResponse.FailureResult(isSafe.Error!.Message, isSafe.Error.StatusCode);
+            }
+
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
                 if (!Guid.TryParse(id, out var categoryId))
