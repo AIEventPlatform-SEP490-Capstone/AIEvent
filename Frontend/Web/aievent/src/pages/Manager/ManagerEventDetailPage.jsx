@@ -34,7 +34,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
-  Flag
+  Flag,
+  Target
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
@@ -55,6 +56,11 @@ import { EventStatus, EventStatusDisplay } from '../../constants/eventConstants'
 
 // Import EventTimeline component
 import { EventTimeline } from '../../components/Event/EventTimeline';
+
+// Import enhanced components
+import { SidebarCard } from '../../components/Event/SidebarCard';
+import { ActionButton } from '../../components/Event/ActionButton';
+import { StatCard } from '../../components/Event/StatCard';
 
 const ManagerEventDetailPage = () => {
   const { eventId } = useParams();
@@ -652,34 +658,22 @@ Nhấn OK để xác nhận xóa.`;
           <div className="lg:col-span-1 space-y-6">
             {/* Approval Actions - Only difference from EventDetailPage.jsx */}
             {event && event.status === EventStatus.PendingApproval && (
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-                <div className="px-5 py-5 border-b border-gray-200 bg-gradient-to-r from-amber-50 to-orange-100">
-                  <h3 className="text-lg font-bold text-gray-900 flex items-center">
-                    <Shield className="w-5 h-5 mr-2 text-amber-600" />
-                    Phê duyệt sự kiện
-                  </h3>
-                </div>
-                
-                <div className="p-5 space-y-3">
-                  <Button 
+              <SidebarCard title="Phê duyệt sự kiện" icon={<Shield className="w-5 h-5 text-amber-600" />} gradient>
+                <div className="space-y-3">
+                  <ActionButton
+                    icon={CheckCircle}
+                    label="Phê duyệt sự kiện"
                     onClick={handleApproveEvent}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl py-5 justify-center shadow-sm hover:shadow-md transition-all"
-                    size="lg"
-                  >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Phê duyệt sự kiện
-                  </Button>
-
+                    variant="primary"
+                  />
+                  
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button 
-                        variant="outline"
-                        className="w-full border-2 border-red-500 text-red-600 hover:bg-red-50 font-semibold rounded-xl py-5 justify-center shadow-sm hover:shadow-md transition-all"
-                        size="lg"
-                      >
-                        <X className="w-4 h-4 mr-2" />
-                        Từ chối sự kiện
-                      </Button>
+                      <ActionButton
+                        icon={X}
+                        label="Từ chối sự kiện"
+                        variant="danger"
+                      />
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
@@ -717,205 +711,255 @@ Nhấn OK để xác nhận xóa.`;
                     </DialogContent>
                   </Dialog>
                 </div>
-              </div>
+              </SidebarCard>
             )}
 
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-              <div className="px-5 py-5 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100">
-                <h3 className="text-lg font-bold text-gray-900">Hành động nhanh</h3>
-              </div>
-              
-              <div className="p-5 space-y-3">
-                <Button 
+            {/* Quick Actions - Enhanced */}
+            <SidebarCard title="Hành động nhanh" gradient>
+              <div className="space-y-3">
+                <ActionButton
+                  icon={Edit}
+                  label="Chỉnh sửa sự kiện"
                   onClick={handleEditEvent}
-                  variant="outline"
-                  className="w-full border-2 border-blue-500 text-blue-600 hover:bg-blue-50 font-semibold rounded-xl py-5 justify-start shadow-sm hover:shadow-md transition-all text-sm"
-                  size="lg"
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Chỉnh sửa sự kiện
-                </Button>
-
-                <Button 
+                  variant="secondary"
+                />
+                
+                <ActionButton
+                  icon={Eye}
+                  label="Xem trang công khai"
                   onClick={handleViewPublicPage}
-                  variant="outline"
-                  className="w-full border-2 border-blue-500 text-blue-600 hover:bg-blue-50 font-semibold rounded-xl py-5 justify-start shadow-sm hover:shadow-md transition-all text-sm"
-                  size="lg"
-                >
-                  <Eye className="w-4 h-4 mr-2" />
-                  Xem trang công khai
-                </Button>
-
-                <Button 
+                  variant="secondary"
+                />
+                
+                <ActionButton
+                  icon={Copy}
+                  label="Sao chép sự kiện"
                   onClick={handleCloneEvent}
-                  variant="outline"
-                  className="w-full border-2 border-blue-500 text-blue-600 hover:bg-blue-50 font-semibold rounded-xl py-5 justify-start shadow-sm hover:shadow-md transition-all text-sm"
-                  size="lg"
-                >
-                  <Copy className="w-4 h-4 mr-2" />
-                  Sao chép sự kiện
-                </Button>
-
+                  variant="secondary"
+                />
+                
                 <div className="border-t border-gray-200 my-2"></div>
-
-                <Button 
+                
+                <ActionButton
+                  icon={Trash2}
+                  label="Xóa sự kiện"
                   onClick={handleDeleteEvent}
-                  variant="outline"
-                  className="w-full border-2 border-red-500 text-red-600 hover:bg-red-50 font-semibold rounded-xl py-5 justify-start shadow-sm hover:shadow-md transition-all text-sm"
-                  size="lg"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Xóa sự kiện
-                </Button>
+                  variant="danger"
+                />
               </div>
-            </div>
+            </SidebarCard>
 
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-              <div className="px-5 py-5 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100">
-                <h3 className="text-lg font-bold text-gray-900">Thống kê đăng ký</h3>
-              </div>
-              
-              <div className="p-6 text-center space-y-5">
-                <div>
-                  <div className="text-4xl font-bold text-blue-600 mb-1">
-                    {event.soldQuantity || 0}
+            {/* Registration Statistics - Enhanced */}
+            <SidebarCard title="Thống kê đăng ký" gradient>
+              <div className="space-y-4">
+                {/* Main Stats Grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  <StatCard
+                    icon={Users}
+                    label="Đã đăng ký"
+                    value={event.soldQuantity || 0}
+                    color="blue"
+                  />
+                  <StatCard
+                    icon={Target}
+                    label="Còn lại"
+                    value={totalAvailableTickets}
+                    color="green"
+                  />
+                </div>
+
+                {/* Progress Bar */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="font-medium text-gray-700">Tiến độ</span>
+                    <span className="font-bold text-primary">{occupancyPercent.toFixed(0)}%</span>
                   </div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Người đã đăng ký</p>
+                  <div className="relative w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+                    <div 
+                      className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-500 shadow-sm"
+                      style={{ width: `${occupancyPercent}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 text-center">
+                    {event.soldQuantity || 0} / {event.totalTickets} vé
+                  </p>
                 </div>
 
-                <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-500 transition-all rounded-full"
-                    style={{ width: `${(event.soldQuantity || 0) / (event.totalTickets || 1) * 100}%` }}
-                  ></div>
+                {/* Action Buttons */}
+                <div className="space-y-2 pt-2">
+                  <Button 
+                    variant="outline"
+                    className="w-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 font-semibold rounded-xl py-5 transition-all group"
+                  >
+                    <Users className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
+                    <span className="truncate">Xem danh sách tham gia</span>
+                  </Button>
+
+                  <Button 
+                    variant="outline"
+                    className="w-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 font-semibold rounded-xl py-5 transition-all group"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
+                    <span className="truncate">Gửi thông báo</span>
+                  </Button>
                 </div>
-
-                <Button 
-                  variant="outline"
-                  className="w-full border-2 border-blue-500 text-blue-600 hover:bg-blue-50 font-semibold rounded-xl py-5 shadow-sm hover:shadow-md transition-all text-sm"
-                >
-                  <Users className="w-4 h-4 mr-1" />
-                  Xem danh sách người tham gia
-                </Button>
-
-                <Button 
-                  variant="outline"
-                  className="w-full border-2 border-blue-500 text-blue-600 hover:bg-blue-50 font-semibold rounded-xl py-5 hover:border-blue-600 transition-all text-sm"
-                >
-                  <MessageCircle className="w-4 h-4 mr-1" />
-                  Gửi thông báo
-                </Button>
               </div>
-            </div>
-            {/* Location Card */}
+            </SidebarCard>
+
+            {/* Location Card - Enhanced */}
             {(!event.isOnlineEvent || event.isOnlineEvent === false) &&
               (event.locationName || event.address || event.district) && (
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-                  <div className="px-5 py-5 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100">
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                      <MapPin className="w-5 h-5 text-blue-600" />
-                      Địa điểm
-                    </h3>
-                  </div>
-                  <div className="p-5">
-                    <p className="font-semibold text-gray-900 mb-2">{event.locationName}</p>
-                    <p className="text-sm text-gray-600 mb-4">{event.address}{event.district ? `, ${event.district}` : ''}</p>
-                    <div className="w-full h-48 rounded-lg overflow-hidden border border-gray-200 mb-3">
+                <SidebarCard title="Địa điểm" icon={<MapPin className="w-4 h-4" />}>
+                  <div className="space-y-4">
+                    {/* Location Info */}
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0 shadow-sm">
+                          <MapPin className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-foreground text-sm mb-1">
+                            {event.locationName}
+                          </h4>
+                          <p className="text-xs text-gray-600 leading-relaxed">
+                            {event.address}
+                            {event.district && `, ${event.district}`}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Map Preview */}
+                    <div className="relative w-full h-40 rounded-xl overflow-hidden border-2 border-gray-100 group hover:border-primary/30 transition-all">
                       {event.latitude && event.longitude ? (
-                        <iframe
-                          src={`https://www.google.com/maps?q=${event.latitude},${event.longitude}&hl=vi&z=14&output=embed`}
-                          className="w-full h-full"
-                          frameBorder="0"
-                          allowFullScreen
-                          title="Event Location Map Preview"
-                        ></iframe>
+                        <>
+                          <iframe
+                            src={`https://www.google.com/maps?q=${event.latitude},${event.longitude}&hl=vi&z=14&output=embed`}
+                            className="w-full h-full"
+                            frameBorder="0"
+                            allowFullScreen
+                            title="Event Location Map Preview"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all pointer-events-none" />
+                        </>
                       ) : (
-                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                        <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
                           <div className="text-center">
-                            <MapPin className="h-8 w-8 text-gray-400 mx-auto mb-1" />
-                            <span className="text-sm text-gray-500">
+                            <MapPin className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                            <span className="text-xs text-gray-400 font-medium">
                               Bản đồ không khả dụng
                             </span>
                           </div>
                         </div>
                       )}
                     </div>
+
+                    {/* View Directions Button */}
                     <Button 
                       variant="outline" 
-                      className="w-full font-medium border-gray-200 hover:bg-gray-50"
+                      className="w-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 font-semibold rounded-xl py-5 transition-all group"
                       onClick={() => setIsMapModalOpen(true)}
                     >
-                      <ExternalLink className="w-4 h-4 mr-2" />
+                      <ExternalLink className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
                       Xem đường đi
                     </Button>
                   </div>
-                </div>
+                </SidebarCard>
               )}
 
-            {/* Evidence Image Gallery - Moved to sidebar */}
+            {/* Evidence Image Gallery - Enhanced */}
             {event.imgListEvidences && event.imgListEvidences.length > 0 && event.imgListEvidences.some(img => 
               img && typeof img === 'string' && img.trim() !== '' && !img.includes('System.Collections.Generic.List')
             ) && (
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-                <div className="px-5 py-5 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100">
-                  <h3 className="text-lg font-bold text-gray-900">Hình ảnh bằng chứng tổ chức</h3>
-                </div>
-                <div className="p-5">
-                  <div className="grid grid-cols-2 gap-3">
-                    {event.imgListEvidences
-                      .filter(img => 
-                        img && typeof img === 'string' && img.trim() !== '' && !img.includes('System.Collections.Generic.List')
-                      )
-                      .map((img, index) => (
-                        <div 
-                          key={index} 
-                          className="rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-                          onClick={() => {
-                            setSelectedImage(img);
-                            setIsImageModalOpen(true);
-                          }}
-                        >
-                          <img
-                            src={img}
-                            alt={`${event.title} - Evidence ${index + 1}`}
-                            className="w-full h-24 object-cover"
-                          />
+              <SidebarCard title="Hình ảnh bằng chứng" icon={<Calendar className="w-4 h-4" />}>
+                <div className="grid grid-cols-2 gap-3">
+                  {event.imgListEvidences
+                    .filter(img => 
+                      img && typeof img === 'string' && img.trim() !== '' && !img.includes('System.Collections.Generic.List')
+                    )
+                    .map((img, index) => (
+                      <div 
+                        key={index} 
+                        className="group relative rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer aspect-square"
+                        onClick={() => {
+                          setSelectedImage(img);
+                          setIsImageModalOpen(true);
+                        }}
+                      >
+                        <img
+                          src={img}
+                          alt={`Evidence ${index + 1}`}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <div className="bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg">
+                            <p className="text-xs font-semibold text-gray-800">Xem ảnh</p>
+                          </div>
                         </div>
-                      ))}
-                  </div>
+                      </div>
+                    ))}
                 </div>
-              </div>
+              </SidebarCard>
             )}
 
-            
-            {/* Organizer - Moved to sidebar */}
+            {/* Organizer - Enhanced */}
             {event.organizerEvent && (
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-                <div className="px-5 py-5 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100">
-                  <h3 className="text-lg font-bold text-gray-900">Nhà tổ chức</h3>
-                </div>
-                <div className="p-5">
-                  <div className="flex items-center gap-3">
+              <SidebarCard title="Nhà tổ chức" icon={<User className="w-4 h-4" />}>
+                <div className="space-y-4">
+                  {/* Organizer Header */}
+                  <div className="flex items-start gap-3">
                     {event.organizerEvent.imgCompany ? (
-                      <img 
-                        src={event.organizerEvent.imgCompany} 
-                        alt={event.organizerEvent.companyName || "Nhà tổ chức"} 
-                        className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border-2 border-white shadow-sm"
-                      />
+                      <div className="relative">
+                        <img 
+                          src={event.organizerEvent.imgCompany} 
+                          alt={event.organizerEvent.companyName || "Nhà tổ chức"} 
+                          className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border-2 border-white shadow-md ring-2 ring-primary/10"
+                        />
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-gradient-to-br from-green-400 to-green-500 rounded-full border-2 border-white shadow-sm" />
+                      </div>
                     ) : (
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-sm">
-                        <User className="h-6 w-6 text-white" />
+                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md flex-shrink-0">
+                        <User className="h-7 w-7 text-white" />
                       </div>
                     )}
-                    <div>
-                      <h3 className="font-bold text-gray-900 text-sm">{event.organizerEvent.companyName || "Nhà tổ chức"}</h3>
-                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-foreground text-sm mb-1 truncate">
+                        {event.organizerEvent.companyName || "Nhà tổ chức"}
+                      </h3>
+                      <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
                         {event.organizerEvent.companyDescription || "Tổ chức sự kiện chuyên nghiệp"}
                       </p>
                     </div>
                   </div>
+
+                  {/* Trust Indicators */}
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
+                    <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-lg">
+                      <div className="text-lg font-bold text-blue-600">
+                        {event.organizerEvent.totalEvents || "15+"}
+                      </div>
+                      <div className="text-xs font-medium text-blue-700 mt-0.5">Sự kiện</div>
+                    </div>
+                    <div className="text-center p-3 bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-lg">
+                      <div className="text-lg font-bold text-purple-600">
+                        {event.organizerEvent.rating || "4.8"}
+                        <span className="text-sm">★</span>
+                      </div>
+                      <div className="text-xs font-medium text-purple-700 mt-0.5">Đánh giá</div>
+                    </div>
+                  </div>
+
+                  {/* Contact Button */}
+                  <Button 
+                    variant="outline"
+                    className="w-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 font-semibold rounded-xl py-5 transition-all group"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
+                    Liên hệ nhà tổ chức
+                  </Button>
                 </div>
-              </div>
+              </SidebarCard>
             )}
           </div>
         </div>

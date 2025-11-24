@@ -27,6 +27,7 @@ import {
   X,
   Link2,
   Flag,
+  Target  // Add Target icon
 } from "lucide-react";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
@@ -60,6 +61,11 @@ import LinkedIn from "../../assets/LinkedIn.png";
 import Tiktok from "../../assets/Tiktok.png";
 import Instagram from "../../assets/Instagram.png";
 import { EventTimeline } from "../../components/Event/EventTimeline";
+
+// Import enhanced components
+import { SidebarCard } from "../../components/Event/SidebarCard";
+import { ActionButton } from "../../components/Event/ActionButton";
+import { StatCard } from "../../components/Event/StatCard";
 
 const EventDetailGuestPage = ({ previewData }) => {
   const { state } = useSidebar();
@@ -764,15 +770,11 @@ const EventDetailGuestPage = ({ previewData }) => {
             <RatingSection eventId={event.eventId || id} />
           </div>
 
-          {/* Sidebar - Simplified */}
+          {/* Sidebar - Enhanced */}
           <div className="lg:col-span-1 space-y-6">
-            {/* Registration Card */}
-            <Card className="border border-gray-200 sticky top-24 bg-white shadow-lg">
-              <CardHeader className="bg-gradient-to-br from-primary/5 to-primary/10 border-b border-gray-100">
-                <h3 className="text-xl font-bold text-foreground">Mua vé tham gia</h3>
-                <p className="text-sm text-muted-foreground mt-1">Số lượng có hạn</p>
-              </CardHeader>
-              <CardContent className="space-y-3 pt-6">
+            {/* Registration Card - Enhanced */}
+            <SidebarCard title="Mua vé tham gia" gradient>
+              <div className="space-y-3">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-foreground mb-1">
                     {getDisplayTicketPrice(event)}
@@ -783,91 +785,98 @@ const EventDetailGuestPage = ({ previewData }) => {
                       : "Bao gồm coffee break & lunch"}
                   </p>
                 </div>
-                <Button 
-                  className={`w-full font-semibold h-12 text-base transition-all duration-300 ${
-                    !saleStarted && event?.saleStartTime && new Date() < new Date(event.saleStartTime)
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed hover:bg-gray-300"
-                      : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl"
-                  }`}
+                
+                <ActionButton
+                  icon={CreditCard}
+                  label={getTicketButtonText()}
                   onClick={handleRegister}
-                  disabled={!saleStarted && event?.saleStartTime && new Date() < new Date(event.saleStartTime)}
-                >
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  {getTicketButtonText()}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full h-11 font-medium border-gray-200 hover:bg-gray-50"
+                  variant={(!saleStarted && event?.saleStartTime && new Date() < new Date(event.saleStartTime)) ? "secondary" : "primary"}
+                  className={`${
+                    !saleStarted && event?.saleStartTime && new Date() < new Date(event.saleStartTime)
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  }`}
+                />
+                
+                <ActionButton
+                  icon={UserPlus}
+                  label="Mời bạn bè"
                   onClick={handleInviteFriends}
-                >
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Mời bạn bè
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full h-11 font-medium border-gray-200 hover:bg-gray-50"
+                  variant="secondary"
+                />
+                
+                <ActionButton
+                  icon={Share2}
+                  label="Chia sẻ sự kiện"
                   onClick={() => setIsShareOpen(true)}
-                >
-                  <Share2 className="w-4 h-4 mr-2" />
-                  Chia sẻ sự kiện
-                </Button>
-              </CardContent>
-            </Card>
+                  variant="secondary"
+                />
+              </div>
+            </SidebarCard>
 
-            {/* Location Card */}
+            {/* Location Card - Enhanced */}
             {(!event.isOnlineEvent || event.isOnlineEvent === false) &&
               (event.locationName || event.address) && (
-                <Card className="border border-gray-200 bg-white">
-                  <CardHeader className="border-b border-gray-100">
-                    <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                      <MapPin className="w-5 h-5 text-primary" />
-                      Địa điểm
-                    </h3>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <p className="font-semibold text-foreground mb-2">{event.locationName}</p>
-                    <p className="text-sm text-muted-foreground mb-4">{event.address}</p>
-                    <div className="w-full h-48 rounded-lg overflow-hidden border border-gray-200 mb-3">
+                <SidebarCard title="Địa điểm" icon={<MapPin className="w-4 h-4" />}>
+                  <div className="space-y-4">
+                    {/* Location Info */}
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0 shadow-sm">
+                          <MapPin className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-foreground text-sm mb-1">
+                            {event.locationName}
+                          </h4>
+                          <p className="text-xs text-gray-600 leading-relaxed">
+                            {event.address}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Map Preview */}
+                    <div className="relative w-full h-40 rounded-xl overflow-hidden border-2 border-gray-100 group hover:border-primary/30 transition-all">
                       {event.latitude && event.longitude ? (
-                        <iframe
-                          src={`https://www.google.com/maps?q=${event.latitude},${event.longitude}&hl=vi&z=14&output=embed`}
-                          className="w-full h-full"
-                          frameBorder="0"
-                          allowFullScreen
-                          title="Event Location Map Preview"
-                        ></iframe>
+                        <>
+                          <iframe
+                            src={`https://www.google.com/maps?q=${event.latitude},${event.longitude}&hl=vi&z=14&output=embed`}
+                            className="w-full h-full"
+                            frameBorder="0"
+                            allowFullScreen
+                            title="Event Location Map Preview"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all pointer-events-none" />
+                        </>
                       ) : (
-                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                        <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
                           <div className="text-center">
-                            <MapPin className="h-8 w-8 text-gray-400 mx-auto mb-1" />
-                            <span className="text-sm text-gray-500">
+                            <MapPin className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                            <span className="text-xs text-gray-400 font-medium">
                               Bản đồ không khả dụng
                             </span>
                           </div>
                         </div>
                       )}
                     </div>
+
+                    {/* View Directions Button */}
                     <Button 
                       variant="outline" 
-                      className="w-full font-medium border-gray-200 hover:bg-gray-50"
+                      className="w-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 font-semibold rounded-xl py-5 transition-all group"
                       onClick={() => setIsMapModalOpen(true)}
                     >
-                      <ExternalLink className="w-4 h-4 mr-2" />
+                      <ExternalLink className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
                       Xem đường đi
                     </Button>
-                  </CardContent>
-                </Card>
+                  </div>
+                </SidebarCard>
               )}
 
-            {/* Related Events */}
-            <Card className="border border-gray-200 bg-white">
-              <CardHeader className="border-b border-gray-100">
-                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-primary" />
-                  Sự kiện tương tự
-                </h3>
-              </CardHeader>
-              <CardContent className="pt-6 space-y-3">
+            {/* Related Events - Enhanced */}
+            <SidebarCard title="Sự kiện cùng danh mục" icon={<Sparkles className="w-4 h-4" />}>
+              <div className="space-y-3">
                 {relatedEvents.length > 0 ? (
                   relatedEvents.map((relatedEvent) => (
                     <div 
@@ -932,8 +941,8 @@ const EventDetailGuestPage = ({ previewData }) => {
                     </p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </SidebarCard>
           </div>
         </div>
       </div>
