@@ -364,6 +364,17 @@ const EventDetailGuestPage = ({ previewData }) => {
   };
 
   const handleRegister = () => {
+    // Check if sale has started before allowing registration
+    if (event?.saleStartTime) {
+      const now = new Date();
+      const saleStartTime = new Date(event.saleStartTime);
+      
+      if (now < saleStartTime) {
+        toast.error("Vé sự kiện chưa mở bán. Vui lòng quay lại sau thời gian mở bán vé.");
+        return;
+      }
+    }
+    
     if (isAuthenticated) {
       navigate(`${PATH.BOOKING.replace(":id", id)}`);
     } else {
@@ -564,10 +575,12 @@ const EventDetailGuestPage = ({ previewData }) => {
                   time: event.saleStartTime 
                     ? `${new Date(event.saleStartTime).toLocaleDateString('vi-VN', {
                         day: '2-digit',
-                        month: '2-digit'
+                        month: '2-digit',
+                        year: '2-digit'
                       })} ${new Date(event.saleStartTime).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
-                        minute: '2-digit'
+                        minute: '2-digit',
+                        hour12: false
                       })}`
                     : "Chưa xác định",
                   icon: <Ticket className="w-5 h-5" />,
@@ -575,18 +588,17 @@ const EventDetailGuestPage = ({ previewData }) => {
                   // Add countdown display
                   countdown: timeRemaining && !saleStarted && (
                     <div className="mt-2 text-center">
-                      <div className="text-xs text-muted-foreground">Bắt đầu sau</div>
-                      <div className="flex justify-center gap-1 mt-1">
-                        <div className="bg-blue-100 text-blue-800 rounded px-2 py-1 text-xs font-bold">
+                      <div className="flex justify-center gap-1">
+                        <div className="bg-blue-500 text-white rounded px-2 py-1 text-xs font-bold">
                           {timeRemaining.days}d
                         </div>
-                        <div className="bg-blue-100 text-blue-800 rounded px-2 py-1 text-xs font-bold">
+                        <div className="bg-blue-500 text-white rounded px-2 py-1 text-xs font-bold">
                           {timeRemaining.hours}h
                         </div>
-                        <div className="bg-blue-100 text-blue-800 rounded px-2 py-1 text-xs font-bold">
+                        <div className="bg-blue-500 text-white rounded px-2 py-1 text-xs font-bold">
                           {timeRemaining.minutes}m
                         </div>
-                        <div className="bg-blue-100 text-blue-800 rounded px-2 py-1 text-xs font-bold">
+                        <div className="bg-blue-500 text-white rounded px-2 py-1 text-xs font-bold">
                           {timeRemaining.seconds}s
                         </div>
                       </div>
@@ -595,7 +607,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                   // Show "Currently ongoing" when sale has started
                   ongoing: saleStarted && (
                     <div className="mt-2 text-center">
-                      <div className="inline-block bg-green-100 text-green-800 rounded-full px-3 py-1 text-xs font-bold">
+                      <div className="inline-block bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">
                         Đang diễn ra
                       </div>
                     </div>
@@ -606,10 +618,12 @@ const EventDetailGuestPage = ({ previewData }) => {
                   time: event.saleEndTime 
                     ? `${new Date(event.saleEndTime).toLocaleDateString('vi-VN', {
                         day: '2-digit',
-                        month: '2-digit'
+                        month: '2-digit',
+                        year: '2-digit'
                       })} ${new Date(event.saleEndTime).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
-                        minute: '2-digit'
+                        minute: '2-digit',
+                        hour12: false
                       })}`
                     : "Chưa xác định",
                   icon: <Clock className="w-5 h-5" />,
@@ -619,10 +633,12 @@ const EventDetailGuestPage = ({ previewData }) => {
                   label: "Sự kiện bắt đầu",
                   time: `${new Date(event.startTime).toLocaleDateString('vi-VN', {
                     day: '2-digit',
-                    month: '2-digit'
+                    month: '2-digit',
+                    year: '2-digit'
                   })} ${new Date(event.startTime).toLocaleTimeString('vi-VN', {
                     hour: '2-digit',
-                    minute: '2-digit'
+                    minute: '2-digit',
+                    hour12: false
                   })}`,
                   icon: <Calendar className="w-5 h-5" />,
                   color: "bg-green-500"
@@ -631,10 +647,12 @@ const EventDetailGuestPage = ({ previewData }) => {
                   label: "Sự kiện kết thúc",
                   time: `${new Date(event.endTime).toLocaleDateString('vi-VN', {
                     day: '2-digit',
-                    month: '2-digit'
+                    month: '2-digit',
+                    year: '2-digit'
                   })} ${new Date(event.endTime).toLocaleTimeString('vi-VN', {
                     hour: '2-digit',
-                    minute: '2-digit'
+                    minute: '2-digit',
+                    hour12: false
                   })}`,
                   icon: <Flag className="w-5 h-5" />,
                   color: "bg-purple-500"

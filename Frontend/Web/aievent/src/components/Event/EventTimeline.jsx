@@ -175,8 +175,19 @@ export function EventTimeline({
                       {stage.label}
                     </p>
                     <p className={`text-sm font-bold ${showAsCurrent || showAsCompleted ? "text-foreground" : "text-muted-foreground"}`}>
-                      {stage.time}
+                      <span className="inline-block bg-gray-100 dark:bg-gray-800 rounded-md px-2 py-1 text-foreground">
+                        {stage.time}
+                      </span>
                     </p>
+                    {/* Move countdown display below the time information */}
+                    {index === 0 && stage.countdown && (
+                      <div className="mt-2">
+                        <div className="text-xs text-muted-foreground mb-1 text-center">Bắt đầu sau</div>
+                        <div className="flex justify-center gap-1">
+                          {stage.countdown}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -248,11 +259,22 @@ export function EventTimeline({
               <div className={`flex-1 pt-3 ${showAsCurrent ? "bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-xl border border-blue-200" : ""}`}>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">{stage.label}</p>
                 <p className={`text-base font-bold ${showAsCurrent || isCompleted ? "text-foreground" : "text-muted-foreground"}`}>
-                  {stage.time}
+                  <span className="inline-block bg-gray-100 dark:bg-gray-800 rounded-md px-2 py-1 text-foreground">
+                    {stage.time}
+                  </span>
                 </p>
                 {showAsCurrent && (
-                  <div className="mt-2 inline-block bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                  <div className="mt-2 inline-block bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
                     Đang diễn ra
+                  </div>
+                )}
+                {/* Add countdown display for ticket sale start time on mobile */}
+                {index === 0 && stage.countdown && (
+                  <div className="mt-3">
+                    <div className="text-xs text-muted-foreground mb-1 text-center">Bắt đầu sau</div>
+                    <div className="flex justify-center gap-1">
+                      {stage.countdown}
+                    </div>
                   </div>
                 )}
               </div>

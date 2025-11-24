@@ -74,6 +74,40 @@ const EventDetailPage = () => {
 
   // Add state for image carousel
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  // Add state for ticket sale countdown
+  const [timeRemaining, setTimeRemaining] = useState(null);
+  const [saleStarted, setSaleStarted] = useState(false);
+
+  // Countdown timer effect for ticket sale
+  useEffect(() => {
+    if (!event?.saleStartTime) return;
+
+    const calculateTimeRemaining = () => {
+      const now = new Date();
+      const saleStartTime = new Date(event.saleStartTime);
+      
+      if (now >= saleStartTime) {
+        setSaleStarted(true);
+        setTimeRemaining(null);
+        return;
+      }
+      
+      const diff = saleStartTime - now;
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      setTimeRemaining({ days, hours, minutes, seconds });
+      setSaleStarted(false);
+    };
+
+    calculateTimeRemaining();
+    const timer = setInterval(calculateTimeRemaining, 1000);
+    
+    return () => clearInterval(timer);
+  }, [event?.saleStartTime]);
 
   // Function to go to next image
   const nextImage = () => {
@@ -459,28 +493,53 @@ Nhấn OK để xác nhận xóa.`;
                 {
                   label: "Mở bán vé",
                   time: event.saleStartTime
-                    ? `${new Date(event.saleStartTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} ${new Date(event.saleStartTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`
+                    ? `${new Date(event.saleStartTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: '2-digit' })} ${new Date(event.saleStartTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}`
                     : "Chưa xác định",
                   icon: <Ticket className="w-5 h-5" />,
-                  color: "bg-blue-500"
+                  color: "bg-blue-500",
+                  // Add countdown display
+                  countdown: timeRemaining && !saleStarted && (
+                    <div className="mt-2 text-center">
+                      <div className="flex justify-center gap-1">
+                        <div className="bg-blue-500 text-white rounded px-2 py-1 text-xs font-bold">
+                          {timeRemaining.days}d
+                        </div>
+                        <div className="bg-blue-500 text-white rounded px-2 py-1 text-xs font-bold">
+                          {timeRemaining.hours}h
+                        </div>
+                        <div className="bg-blue-500 text-white rounded px-2 py-1 text-xs font-bold">
+                          {timeRemaining.minutes}m
+                        </div>
+                        <div className="bg-blue-500 text-white rounded px-2 py-1 text-xs font-bold">
+                          {timeRemaining.seconds}s
+                        </div>
+                      </div>
+                    </div>
+                  ),
+                  // Show "Currently ongoing" when sale has started
+                  ongoing: saleStarted && (
+                    <div className="inline-block bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                      Đang diễn ra
+                    </div>
+                  )
                 },
                 {
                   label: "Đóng bán vé",
                   time: event.saleEndTime
-                    ? `${new Date(event.saleEndTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} ${new Date(event.saleEndTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`
+                    ? `${new Date(event.saleEndTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: '2-digit' })} ${new Date(event.saleEndTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}`
                     : "Chưa xác định",
                   icon: <Clock className="w-5 h-5" />,
                   color: "bg-red-500"
                 },
                 {
                   label: "Sự kiện bắt đầu",
-                  time: `${new Date(event.startTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} ${new Date(event.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`,
+                  time: `${new Date(event.startTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: '2-digit' })} ${new Date(event.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
                   icon: <Calendar className="w-5 h-5" />,
                   color: "bg-green-500"
                 },
                 {
                   label: "Sự kiện kết thúc",
-                  time: `${new Date(event.endTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} ${new Date(event.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`,
+                  time: `${new Date(event.endTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: '2-digit' })} ${new Date(event.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
                   icon: <Flag className="w-5 h-5" />,
                   color: "bg-purple-500"
                 }
