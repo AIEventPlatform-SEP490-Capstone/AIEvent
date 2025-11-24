@@ -1,4 +1,4 @@
-﻿using AIEvent.Application.Helpers;
+using AIEvent.Application.Helpers;
 using AIEvent.Application.Mappings;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
@@ -8,7 +8,9 @@ using AIEvent.Infrastructure.Repositories.Implements;
 using CloudinaryDotNet;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
-using PayOS; 
+using PayOS;
+using MongoDB.Driver;
+using System.Security.Authentication;
 
 namespace AIEvent.API.Extensions
 {
