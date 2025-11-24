@@ -1,7 +1,6 @@
 using MongoDB.Driver;
 using Microsoft.Extensions.Configuration;
-using System.Security.Authentication;
-using System.Net;
+using System.Security.Authentication; 
 
 namespace AIEvent.Infrastructure.Context
 {
@@ -10,10 +9,7 @@ namespace AIEvent.Infrastructure.Context
         private readonly IMongoDatabase _database;
 
         public MongoDbContext(IConfiguration configuration)
-        {
-            AppContext.SetSwitch("System.Net.Security.Protocols.Tls13", true);
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
-
+        {  
             var connectionString = configuration.GetConnectionString("MongoDB");
             
             if (string.IsNullOrEmpty(connectionString))
@@ -23,8 +19,13 @@ namespace AIEvent.Infrastructure.Context
 
             settings.SslSettings = new SslSettings
             {
-                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13
+                EnabledSslProtocols = SslProtocols.Tls12
             };
+
+            settings.ConnectTimeout = TimeSpan.FromSeconds(60);
+            settings.ServerSelectionTimeout = TimeSpan.FromSeconds(120);
+            settings.HeartbeatTimeout = TimeSpan.FromSeconds(60);
+            settings.SocketTimeout = TimeSpan.FromSeconds(60);
 
             var client = new MongoClient(settings);
             _database = client.GetDatabase("AIEvent");
