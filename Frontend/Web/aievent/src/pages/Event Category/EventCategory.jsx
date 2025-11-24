@@ -352,16 +352,18 @@ const EventCategory = () => {
         </div>
       </Card>
 
-      {/* Error Display */}
+      {/* Error Display - Improved error handling */}
       {error && (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-6">
-            <div className="flex items-center space-x-2 text-red-600">
-              <AlertTriangle className="h-4 w-4" />
-              <span>{error}</span>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 flex items-start">
+          <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 mr-2 flex-shrink-0" />
+          <div className="text-red-700 text-sm">{error}</div>
+          <button 
+            onClick={clearCategoriesError}
+            className="ml-auto text-red-500 hover:text-red-700 text-sm font-medium"
+          >
+            Đóng
+          </button>
+        </div>
       )}
 
       {/* Categories Display */}
