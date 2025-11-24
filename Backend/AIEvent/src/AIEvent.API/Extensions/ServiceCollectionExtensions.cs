@@ -8,9 +8,7 @@ using AIEvent.Infrastructure.Repositories.Implements;
 using CloudinaryDotNet;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
-using PayOS;
-using MongoDB.Driver;
-using System.Security.Authentication;
+using PayOS; 
 
 namespace AIEvent.API.Extensions
 {
@@ -70,15 +68,7 @@ namespace AIEvent.API.Extensions
             services.AddDbContext<DatabaseContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
-            services.AddSingleton<IMongoClient>(sp =>
-            {
-                var connectionString = configuration.GetConnectionString("MongoDB")!;
-                var settings = MongoClientSettings.FromConnectionString(connectionString);
-                settings.SslSettings = new SslSettings { EnabledSslProtocols = SslProtocols.Tls12, CheckCertificateRevocation = false };
-                return new MongoClient(settings);
-            });
-
-            services.AddScoped<MongoDbContext>();
+            services.AddSingleton<MongoDbContext>();
 
             return services;
         }
