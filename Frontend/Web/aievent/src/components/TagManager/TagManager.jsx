@@ -3,7 +3,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, AlertTriangle } from 'lucide-react';
 import { useTags } from '../../hooks/useTags';
 
 const TagManager = ({ searchTerm = "", sortConfig = { key: "tagName", direction: "asc" }, userRole = null }) => {
@@ -14,7 +14,8 @@ const TagManager = ({ searchTerm = "", sortConfig = { key: "tagName", direction:
     createNewTag,
     updateExistingTag,
     removeTag,
-    forceRefreshTags
+    forceRefreshTags,
+    clearTagsError
   } = useTags(userRole);
 
   // Clear and reload tags when component mounts
@@ -110,8 +111,6 @@ const TagManager = ({ searchTerm = "", sortConfig = { key: "tagName", direction:
         forceRefreshTags();
       } catch (err) {
         console.error('Error updating tag:', err);
-        // Show error to user
-        alert('Error updating tag: ' + (err.message || 'Unknown error'));
       }
     }
   };
@@ -120,12 +119,22 @@ const TagManager = ({ searchTerm = "", sortConfig = { key: "tagName", direction:
     return <div>Loading tags...</div>;
   }
 
-  if (error) {
-    return <div>Error loading tags: {error}</div>;
-  }
-
   return (
     <div className="space-y-4">
+      {/* Error display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 flex items-start">
+          <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 mr-2 flex-shrink-0" />
+          <div className="text-red-700 text-sm">{error}</div>
+          <button 
+            onClick={clearTagsError}
+            className="ml-auto text-red-500 hover:text-red-700 text-sm font-medium"
+          >
+            Đóng
+          </button>
+        </div>
+      )}
+      
       {/* Add new tag input */}
       <div className="flex gap-2">
         <Input

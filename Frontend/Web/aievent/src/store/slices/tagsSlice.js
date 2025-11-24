@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { tagAPI } from '../../api/tagAPI';
+import { handleApiError } from '../../lib/toastUtils'; // Import the error handler
 
 // Async thunks
 export const fetchTags = createAsyncThunk(
@@ -17,6 +18,7 @@ export const fetchTags = createAsyncThunk(
       }
       return response.data.items || response.data || [];
     } catch (error) {
+      handleApiError(error); // Use our error handler
       return rejectWithValue(error.message);
     }
   }
@@ -30,6 +32,7 @@ export const createTag = createAsyncThunk(
       // Xử lý response structure từ backend
       return response.data || response;
     } catch (error) {
+      handleApiError(error); // Use our error handler
       return rejectWithValue(error.message);
     }
   }
@@ -42,6 +45,7 @@ export const updateTag = createAsyncThunk(
       const response = await tagAPI.updateTag(tagId, tagData);
       return response.data;
     } catch (error) {
+      handleApiError(error); // Use our error handler
       return rejectWithValue(error.message);
     }
   }
@@ -54,6 +58,7 @@ export const deleteTag = createAsyncThunk(
       await tagAPI.deleteTag(tagId);
       return tagId;
     } catch (error) {
+      handleApiError(error); // Use our error handler
       return rejectWithValue(error.message);
     }
   }

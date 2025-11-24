@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { eventCategoryAPI } from "../../api/eventCategoryAPI";
+import { handleApiError } from "../../lib/toastUtils"; // Import the error handler
 
 // Async thunks
 export const fetchCategories = createAsyncThunk(
@@ -9,6 +10,7 @@ export const fetchCategories = createAsyncThunk(
       const response = await eventCategoryAPI.getEventCategories(1, 100);
       return response.data.items || response.data || [];
     } catch (error) {
+      handleApiError(error); // Use our error handler
       return rejectWithValue(error.message);
     }
   }
@@ -21,6 +23,7 @@ export const createCategory = createAsyncThunk(
       const response = await eventCategoryAPI.createEventCategory(categoryData);
       return response.data;
     } catch (error) {
+      handleApiError(error); // Use our error handler
       return rejectWithValue(error.message);
     }
   }
@@ -36,6 +39,7 @@ export const updateCategory = createAsyncThunk(
       );
       return { categoryId, updatedCategory: response.data };
     } catch (error) {
+      handleApiError(error); // Use our error handler
       return rejectWithValue(error.message);
     }
   }
@@ -48,6 +52,7 @@ export const deleteCategory = createAsyncThunk(
       const response = await eventCategoryAPI.deleteEventCategory(categoryId);
       return { categoryId };
     } catch (error) {
+      handleApiError(error); // Use our error handler
       return rejectWithValue(error.message);
     }
   }
@@ -60,6 +65,7 @@ export const fetchCategoryById = createAsyncThunk(
       const response = await eventCategoryAPI.getEventCategoryById(categoryId);
       return { categoryId, category: response.data };
     } catch (error) {
+      handleApiError(error); // Use our error handler
       return rejectWithValue(error.message);
     }
   }
