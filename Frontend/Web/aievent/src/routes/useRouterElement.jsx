@@ -47,6 +47,7 @@ import ChatPage from "../pages/Chat/ChatPage";
 import HelpPage from "../pages/Shared/HelpPage";
 import AboutPage from "../pages/Shared/AboutPage";
 import ForgotPasswordPage from "../pages/Auth/ForgotPasswordPage/ForgotPasswordPage";
+import NearbyEventsPage from "../pages/Nearby/NearbyEventsPage";
 
 export default function useRouterElement() {
   const element = useRoutes([
@@ -56,7 +57,7 @@ export default function useRouterElement() {
       children: [
         { index: true, element: <HomePage /> },
         { path: "search", element: <SearchPage /> },
-        { path: "nearby", element: <div>Nearby Events Page</div> },
+        { path: "nearby", element: <NearbyEventsPage /> },
         { path: "timeline", element: <TimelinePage /> },
         { path: "friends", element: <div>Friends Page</div> },
         { path: "friends/search", element: <div>Friend Search Page</div> },
@@ -250,6 +251,8 @@ export default function useRouterElement() {
         { path: "profile", element: <ManagerProfile /> },
         { path: "settings", element: <div>Manager Settings Page</div> },
         { path: "support", element: <div>Manager Support Page</div> },
+        { path: "organizers", element: <OrganizerApprovalListPage /> },
+        { path: "organizers/:id", element: <OrganizerApprovalDetailPage /> },
       ],
     },
     {
@@ -264,8 +267,6 @@ export default function useRouterElement() {
         { path: "events", element: <AdminEventManagement /> },
         { path: "users", element: <UserManagement /> },
 
-        { path: "organizers", element: <OrganizerApprovalListPage /> },
-        { path: "organizers/:id", element: <OrganizerApprovalDetailPage /> },
         { path: "profile", element: <AdminProfile /> },
         { path: "settings", element: <div>Admin Settings Page</div> },
         {

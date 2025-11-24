@@ -596,6 +596,47 @@ export const eventAPI = {
 
     return response.data?.data || response.data;
   },
+
+  // Get events by radius
+  getEventsByRadius: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    
+    if (params.latitude !== undefined && params.latitude !== null) {
+      queryParams.append('latitude', params.latitude);
+    }
+    if (params.longitude !== undefined && params.longitude !== null) {
+      queryParams.append('longitude', params.longitude);
+    }
+    if (params.radius !== undefined && params.radius !== null) {
+      queryParams.append('radius', params.radius);
+    }
+    if (params.categoryld) {
+      queryParams.append('categoryld', params.categoryld);
+    }
+    if (params.pageNumber) {
+      queryParams.append('pageNumber', params.pageNumber);
+    }
+    if (params.pageSize) {
+      queryParams.append('pageSize', params.pageSize);
+    }
+
+    const response = await fetcher.get(`/event/radius?${queryParams.toString()}`);
+    // Return the actual data from the paginated response
+    let data = response.data?.data || response.data;
+    
+    // Process dates for all events in the response
+    if (data) {
+      if (data.items) {
+        // Paginated response
+        data.items = processEventsArrayForDisplay(data.items);
+      } else if (Array.isArray(data)) {
+        // Array response
+        data = processEventsArrayForDisplay(data);
+      }
+    }
+    
+    return data;
+  },
   
 };
 

@@ -1257,33 +1257,13 @@ namespace AIEvent.Application.Services.Implements
             return new BasePaginated<ListEventResponse>(result, totalCount, pageNumber, pageSize);
         }
 
-        public async Task<Result<BasePaginated<EventsResponse>>> GetAllEventByRadius(Guid userId, int? radius, string? eventCategoryId,
+        public async Task<Result<BasePaginated<EventsLocationResponse>>> GetAllEventByRadius(Guid userId, int? radius, string? eventCategoryId,
+                                                                                        double latitude, double longitude,
                                                                                         int pageNumber, int pageSize)
         {
-            var user = await _unitOfWork.UserRepository
-                .Query(false)
-                .AsNoTracking()
-                .Where(u => u.Id == userId && !u.IsDeleted && u.IsActive)
-                .Select(u => new
-                {
-                    u.Latitude,
-                    u.Longitude,
-                    u.IsTurnOnLocation
-                })
-                .FirstOrDefaultAsync();
-
-            if (user == null)
-                return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
-
-            if (user.IsTurnOnLocation == false)
-                return ErrorResponse.FailureResult("Location not enabled", ErrorCodes.PermissionDenied);
-
-            if (radius == null || radius <= 0)
-                radius = 10;
-
-            double userLat = user.Latitude;
-            double userLon = user.Longitude;
-            double radiusKm = radius.Value;
+            double userLat = latitude;
+            double userLon = longitude;
+            double radiusKm = radius!.Value;
 
             double ToRad(double angle) => Math.PI * angle / 180.0;
 
@@ -1329,7 +1309,7 @@ namespace AIEvent.Application.Services.Implements
                 .OrderBy(x => x.Event.StartTime)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(e => new EventsResponse
+                .Select(e => new EventsLocationResponse
                 {
                     EventId = e.Event.Id,
                     EventCategoryName = e.Event.EventCategory.CategoryName,
@@ -1345,6 +1325,8 @@ namespace AIEvent.Application.Services.Implements
                     AverageRating = e.Event.AverageRating,
                     TotalRatings = e.Event.TotalRatings,
                     Status = e.Event.Status,
+                    Latitude = e.Event.Latitude,
+                    Longitude = e.Event.Longitude,
 
                     Tags = e.Event.EventTags.Select(t => new TagResponse
                     {
@@ -1365,7 +1347,7 @@ namespace AIEvent.Application.Services.Implements
                 })
                 .ToListAsync();
 
-            return new BasePaginated<EventsResponse>(result, totalCount, pageNumber, pageSize);
+            return new BasePaginated<EventsLocationResponse>(result, totalCount, pageNumber, pageSize);
         }
 
     }
