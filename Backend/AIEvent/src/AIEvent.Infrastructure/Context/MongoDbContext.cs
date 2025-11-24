@@ -1,4 +1,4 @@
-using MongoDB.Driver;
+﻿using MongoDB.Driver;
 using Microsoft.Extensions.Configuration;
 
 namespace AIEvent.Infrastructure.Context
@@ -10,10 +10,10 @@ namespace AIEvent.Infrastructure.Context
         public MongoDbContext(IConfiguration configuration)
         {
             var connectionString = configuration.GetConnectionString("MongoDB");
-            
+
             if (string.IsNullOrEmpty(connectionString))
                 throw new ArgumentNullException(nameof(connectionString), "MongoDB ConnectionString is not configured. Please set it in appsettings.json");
-           
+
             var client = new MongoClient(connectionString);
             _database = client.GetDatabase("AIEvent");
         }
@@ -24,4 +24,3 @@ namespace AIEvent.Infrastructure.Context
         }
     }
 }
-

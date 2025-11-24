@@ -3,6 +3,7 @@ using AIEvent.Application.DTOs.EventCategory;
 using AIEvent.Application.DTOs.EventField;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Implements;
+using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using FluentAssertions;
@@ -17,6 +18,7 @@ namespace AIEvent.Application.Test.Services
         private readonly Mock<IUnitOfWork> _unitOfWorkMock;
         private readonly Mock<ITransactionHelper> _transactionHelperMock;
         private readonly Mock<IGenericRepository<EventCategory>> _categoryRepoMock;
+        private readonly Mock<IContentModerationService> _contentModerationServiceMock;
         private readonly EventCategoryService _eventCategoryService;
 
         private static readonly Guid TestCategoryId = Guid.Parse("a3f4a95e-27fb-4d32-b2c1-1f4a5c6e8d9b");
@@ -26,9 +28,10 @@ namespace AIEvent.Application.Test.Services
             _unitOfWorkMock = new Mock<IUnitOfWork>();
             _transactionHelperMock = new Mock<ITransactionHelper>();
             _categoryRepoMock = new Mock<IGenericRepository<EventCategory>>();
+            _contentModerationServiceMock = new Mock<IContentModerationService>();
 
             _unitOfWorkMock.Setup(u => u.EventCategoryRepository).Returns(_categoryRepoMock.Object);
-            _eventCategoryService = new EventCategoryService(_unitOfWorkMock.Object, _transactionHelperMock.Object);
+            _eventCategoryService = new EventCategoryService(_unitOfWorkMock.Object, _transactionHelperMock.Object, _contentModerationServiceMock.Object);
         }
 
 
