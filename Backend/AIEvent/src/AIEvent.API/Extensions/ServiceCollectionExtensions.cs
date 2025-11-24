@@ -9,8 +9,6 @@ using CloudinaryDotNet;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 using PayOS;
-using MongoDB.Driver;
-using System.Security.Authentication;
 
 namespace AIEvent.API.Extensions
 {
