@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using PayOS.Models.V1.Payouts;
 using PayOS.Models.V2.PaymentRequests;
 using PayOS.Models.Webhooks;
+using System.Text.Json;
 
 namespace AIEvent.API.Controllers
 {
@@ -46,6 +47,8 @@ namespace AIEvent.API.Controllers
         [HttpPost("webhook")]
         public async Task<ActionResult<SuccessResponse<object>>> ReceiveWebhook([FromBody] Webhook webhookBody)
         {
+            Console.WriteLine("Received webhook: " + JsonSerializer.Serialize(webhookBody));
+
             if (webhookBody == null)
                 return BadRequest("Webhook payload is null.");
 
