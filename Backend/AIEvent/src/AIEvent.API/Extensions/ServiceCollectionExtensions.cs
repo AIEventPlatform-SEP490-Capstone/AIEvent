@@ -67,8 +67,8 @@ namespace AIEvent.API.Extensions
         {
             services.AddDbContext<DatabaseContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
- 
-            services.AddSingleton<MongoDbContext>();
+
+            services.AddScoped<MongoDbContext>();
 
             return services;
         }

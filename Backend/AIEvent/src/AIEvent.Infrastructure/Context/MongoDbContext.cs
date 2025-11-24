@@ -1,6 +1,7 @@
-using MongoDB.Driver;
+﻿using MongoDB.Driver;
 using Microsoft.Extensions.Configuration;
-using System.Security.Authentication; 
+using System.Security.Authentication;
+using MongoDB.Bson;
 
 namespace AIEvent.Infrastructure.Context
 {
@@ -29,6 +30,15 @@ namespace AIEvent.Infrastructure.Context
 
             var client = new MongoClient(settings);
             _database = client.GetDatabase("AIEvent");
+            try
+            {
+                client.GetDatabase("admin").RunCommand<BsonDocument>(new BsonDocument("ping", 1));
+            }
+            catch (Exception ex)
+            { 
+                Console.WriteLine($"MongoDB connection failed at startup: {ex.Message}");
+                throw;
+            }
         }
 
         public IMongoCollection<T> GetCollection<T>(string collectionName)
