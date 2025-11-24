@@ -20,7 +20,8 @@ namespace AIEvent.Infrastructure.Context
 
             settings.SslSettings = new SslSettings
             {
-                EnabledSslProtocols = SslProtocols.Tls12
+                EnabledSslProtocols = SslProtocols.Tls12,
+                CheckCertificateRevocation = false
             };
 
             settings.ConnectTimeout = TimeSpan.FromSeconds(60);
@@ -30,6 +31,7 @@ namespace AIEvent.Infrastructure.Context
 
             var client = new MongoClient(settings);
             _database = client.GetDatabase("AIEvent");
+
             try
             {
                 client.GetDatabase("admin").RunCommand<BsonDocument>(new BsonDocument("ping", 1));
