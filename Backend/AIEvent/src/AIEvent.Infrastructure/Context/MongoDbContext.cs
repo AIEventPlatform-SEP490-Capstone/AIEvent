@@ -1,6 +1,4 @@
-﻿using MongoDB.Driver;
-using Microsoft.Extensions.Configuration;
-using System.Security.Authentication;
+﻿using MongoDB.Driver; 
 using MongoDB.Bson;
 
 namespace AIEvent.Infrastructure.Context
@@ -9,27 +7,8 @@ namespace AIEvent.Infrastructure.Context
     {
         private readonly IMongoDatabase _database;
 
-        public MongoDbContext(IConfiguration configuration)
+        public MongoDbContext(IMongoClient client)
         {  
-            var connectionString = configuration.GetConnectionString("MongoDB");
-            
-            if (string.IsNullOrEmpty(connectionString))
-                throw new ArgumentNullException(nameof(connectionString), "MongoDB ConnectionString is not configured. Please set it in appsettings.json");
-            
-            var settings = MongoClientSettings.FromConnectionString(connectionString);
-
-            settings.SslSettings = new SslSettings
-            {
-                EnabledSslProtocols = SslProtocols.Tls12,
-                CheckCertificateRevocation = false
-            };
-
-            settings.ConnectTimeout = TimeSpan.FromSeconds(60);
-            settings.ServerSelectionTimeout = TimeSpan.FromSeconds(120);
-            settings.HeartbeatTimeout = TimeSpan.FromSeconds(60);
-            settings.SocketTimeout = TimeSpan.FromSeconds(60);
-
-            var client = new MongoClient(settings);
             _database = client.GetDatabase("AIEvent");
 
             try
