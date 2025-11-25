@@ -18,20 +18,6 @@ const SettingsTab = ({
     setIsLocationEnabled(!!profileData?.isTurnOnLocation);
   }, [profileData?.isTurnOnLocation]);
 
-  const handleToggleLocationSharing = async (checked) => {
-    try {
-      if (isTogglingLocation) return;
-      setIsTogglingLocation(true);
-      await userAPI.toggleLocationSharing(checked);
-      setIsLocationEnabled(checked);
-      showSuccess(checked ? 'Đã bật chia sẻ vị trí' : 'Đã tắt chia sẻ vị trí');
-    } catch (error) {
-      console.error('Toggle location error:', error);
-      showError(error?.response?.data?.message || 'Không thể cập nhật chia sẻ vị trí');
-    } finally {
-      setIsTogglingLocation(false);
-    }
-  };
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -82,30 +68,7 @@ const SettingsTab = ({
                   </Button>
                 </div>
                 
-              </div>
-
-              {/* Location Sharing Toggle - moved to Security tab */}
-              <div className="group/item relative overflow-hidden bg-gradient-to-r from-red-50 to-pink-50 rounded-xl p-5 border border-red-100 hover:border-red-200 transition-all duration-300">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-start space-x-4 flex-1">
-                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm group-hover/item:scale-110 transition-transform duration-300">
-                      <MapPin className="w-5 h-5 text-red-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-1">Chia sẻ vị trí</h4>
-                      <p className="text-xs text-gray-500">Cho phép đề xuất sự kiện gần bạn</p>
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    <Switch
-                      disabled={isTogglingLocation}
-                      checked={isLocationEnabled}
-                      onCheckedChange={handleToggleLocationSharing}
-                      className="data-[state=checked]:bg-rose-600"
-                    />
-                  </div>
-                </div>
-              </div>
+              </div>              
             </div>
           </div>
         </div>
