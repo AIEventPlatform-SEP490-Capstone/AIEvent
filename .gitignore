@@ -145,8 +145,8 @@ project.json
 # =========================
 # Secrets / Environment
 # =========================
-.env
-.env.*.local
+# .env
+# .env.*.local
 *.secret
 secrets.json
 
