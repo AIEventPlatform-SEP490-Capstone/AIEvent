@@ -292,7 +292,7 @@ namespace AIEvent.Application.Services.Implements
                         sb.AppendLine($"<p>Xin chào {userPrefs.FullName ?? userPrefs.Email},</p>")
                           .AppendLine($"<p>Sự kiện <strong>{ev.Title}</strong> sẽ diễn ra vào <strong>{ev.StartTime:HH:mm dd/MM/yyyy}</strong>.</p>")
                           .AppendLine("<p>Đừng quên tham gia sự kiện nhé!</p>")
-                          .AppendLine($"<p><a href=\"http://localhost:5173/event/{ev.Id}\">Xem chi tiết sự kiện</a></p>")
+                          .AppendLine($"<p><a href=\"https://ai-event-alpha.vercel.app/event/{ev.Id}\">Xem chi tiết sự kiện</a></p>")
                           .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
 
                         var message = new MimeMessage
