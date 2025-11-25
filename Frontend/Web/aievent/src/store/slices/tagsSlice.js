@@ -16,7 +16,14 @@ export const fetchTags = createAsyncThunk(
         // For organizers and other roles, show only user's tags
         response = await tagAPI.getUserTags(1, 100);
       }
-      return response.data.items || response.data || [];
+      
+      // Handle the new paginated response structure
+      if (response && response.items) {
+        return response.items;
+      }
+      
+      // Fallback for older response structures
+      return response.data.items || response.data || response || [];
     } catch (error) {
       handleApiError(error); // Use our error handler
       return rejectWithValue(error.message);
@@ -29,7 +36,7 @@ export const createTag = createAsyncThunk(
   async (tagData, { rejectWithValue }) => {
     try {
       const response = await tagAPI.createTag(tagData);
-      // Xử lý response structure từ backend
+      // Handle response structure from backend
       return response.data || response;
     } catch (error) {
       handleApiError(error); // Use our error handler
@@ -43,7 +50,11 @@ export const updateTag = createAsyncThunk(
   async ({ tagId, tagData }, { rejectWithValue }) => {
     try {
       const response = await tagAPI.updateTag(tagId, tagData);
-      return response.data;
+      // Handle the new response structure
+      if (response && response.data) {
+        return response.data;
+      }
+      return response;
     } catch (error) {
       handleApiError(error); // Use our error handler
       return rejectWithValue(error.message);
@@ -130,17 +141,20 @@ const tagsSlice = createSlice({
       })
       .addCase(createTag.fulfilled, (state, action) => {
         state.creating = false;
-        // Đảm bảo tag mới có đúng structure
+        // Ensure the new tag has the correct structure
         const newTag = action.payload;
         if (newTag && (newTag.tagId || newTag.id)) {
           state.items.push({
             tagId: newTag.tagId || newTag.id,
-            tagName: newTag.tagName || newTag.nameTag,
-            nameTag: newTag.nameTag || newTag.tagName,
+            tagName: newTag.tagName || newTag.nameTag || newTag.TagName,
+            nameTag: newTag.nameTag || newTag.tagName || newTag.TagName,
+            createdDate: newTag.createdDate || newTag.CreatedDate,
+            updatedDate: newTag.updatedDate || newTag.UpdatedDate,
+            quantityUsed: newTag.quantityUsed || newTag.QuantityUsed || 0,
             ...newTag
           });
         }
-        // Invalidate cache để force refresh lần sau
+        // Invalidate cache to force refresh next time
         state.lastFetched = null;
         state.error = null;
       })
@@ -158,7 +172,17 @@ const tagsSlice = createSlice({
         state.updating = false;
         const index = state.items.findIndex(tag => tag.tagId === action.payload.tagId);
         if (index !== -1) {
-          state.items[index] = action.payload;
+          // Ensure the updated tag has the correct structure
+          const updatedTag = action.payload;
+          state.items[index] = {
+            tagId: updatedTag.tagId || updatedTag.id,
+            tagName: updatedTag.tagName || updatedTag.nameTag || updatedTag.TagName,
+            nameTag: updatedTag.nameTag || updatedTag.tagName || updatedTag.TagName,
+            createdDate: updatedTag.createdDate || updatedTag.CreatedDate,
+            updatedDate: updatedTag.updatedDate || updatedTag.UpdatedDate,
+            quantityUsed: updatedTag.quantityUsed || updatedTag.QuantityUsed || 0,
+            ...updatedTag
+          };
         }
         state.error = null;
       })

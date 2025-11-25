@@ -1641,7 +1641,7 @@ const CreateEventPage = () => {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">
                     <h3 className="text-2xl font-bold mb-1 flex items-center gap-2">
-                      <Sparkles className="w-5 h-5" />
+                      <Pen className="w-5 h-5" />
                       Thông tin sự kiện
                     </h3>
                     <p className="text-blue-100 text-sm">Tạo sự kiện của bạn một cách dễ dàng</p>
