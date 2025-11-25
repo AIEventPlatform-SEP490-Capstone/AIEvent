@@ -17,13 +17,15 @@ import {
   ChevronDown
 } from "lucide-react";
 import { useFavoriteEvents } from "../../hooks/useFavoriteEvents";
+import { useCategories } from "../../hooks/useCategories"; // Add this import
 import { Input } from "../../components/ui/input";
 import LoadingSpinner from "../../components/LoadingSpinner/LoadingSpinner";
 import { useSelector } from "react-redux";
 
 const FavoriteEventsPage = () => {
   const navigate = useNavigate();
-  const { favoriteEvents, loading, error, getFavoriteEvents, removeFavoriteEvent } = useFavoriteEvents();
+  const { favoriteEvents, loading, error, getFavoriteEvents } = useFavoriteEvents();
+  const { categories, loading: categoriesLoading, refreshCategories } = useCategories(); // Add categories hook
   const { isAuthenticated } = useSelector((state) => state.auth);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -43,6 +45,11 @@ const FavoriteEventsPage = () => {
       getFavoriteEvents();
     }
   }, [isAuthenticated]);
+
+  // Fetch categories once on component mount
+  useEffect(() => {
+    refreshCategories();
+  }, []);
 
   // If user is not authenticated, redirect to login page
   useEffect(() => {
@@ -85,17 +92,30 @@ const FavoriteEventsPage = () => {
     }).format(price);
   };
 
-  // Get unique categories from favorite events
-  const categories = [
-    { id: "all", name: "Tất cả" },
-    ...Array.from(
-      new Set(
-        safeFavoriteEvents
-          .map(event => event.eventCategoryName)
-          .filter(name => name)
-      )
-    ).map(name => ({ id: name, name }))
-  ];
+  // Prepare categories for display with fallback (same as SearchPage.jsx)
+  const displayCategories = categories && categories.length > 0 
+    ? [
+        { id: "all", name: "Tất cả" },
+        ...categories
+          .filter(cat => {
+            // Check for valid category ID and name using various possible property names
+            const categoryId = cat.eventCategoryId || cat.id || cat.EventCategoryId;
+            const categoryName = cat.eventCategoryName || cat.EventCategoryName || cat.name;
+            return categoryId && categoryName;
+          })
+          .map(cat => ({ 
+            id: cat.eventCategoryId || cat.id || cat.EventCategoryId, 
+            name: cat.eventCategoryName || cat.EventCategoryName || cat.name || "Không có tên"
+          }))
+      ]
+     : [
+        { id: "all", name: "Tất cả" },
+        { id: "Technology", name: "Công nghệ" },
+        { id: "Music", name: "Âm nhạc" },
+        { id: "Networking", name: "Giao lưu" },
+        { id: "Workshop", name: "Workshop" },
+        { id: "Conference", name: "Hội nghị" }
+      ];
 
   // Define filter options
   const priceFilters = [
@@ -219,7 +239,7 @@ const FavoriteEventsPage = () => {
     );
   }
 
-  if (loading) {
+  if (loading || categoriesLoading) { // Add categoriesLoading check
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" />
@@ -279,7 +299,7 @@ const FavoriteEventsPage = () => {
             <div className="space-y-2">
               <span className="text-sm text-muted-foreground">Danh mục:</span>
               <div className="flex flex-wrap gap-2">
-                {categories.map((category) => (
+                {displayCategories.map((category) => ( // Use displayCategories instead of categories derived from events
                   <Button
                     key={category.id}
                     variant={selectedCategory === category.id ? "default" : "outline"}
