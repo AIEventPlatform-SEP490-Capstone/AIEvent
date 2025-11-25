@@ -83,7 +83,7 @@ export const eventAPI = {
     if (params.search) queryParams.append('search', params.search);
     if (params.eventCategoryId) queryParams.append('eventCategoryId', params.eventCategoryId);
     if (params.ticketType) queryParams.append('ticketType', params.ticketType);
-    if (params.city) queryParams.append('city', params.city);
+    if (params.district) queryParams.append('district', params.district);
     if (params.timeLine) queryParams.append('timeLine', params.timeLine);
     if (params.pageNumber) queryParams.append('pageNumber', params.pageNumber);
     if (params.pageSize) queryParams.append('pageSize', params.pageSize);

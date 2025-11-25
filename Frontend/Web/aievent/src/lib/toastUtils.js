@@ -163,7 +163,12 @@ export const handleApiError = (
 
     switch (status) {
       case 400:
-        showError(message || "Dữ liệu không hợp lệ.");
+        // Handle inappropriate language detection error
+        if (error.response.data?.statusCode === "AIE40001") {
+          showError("Ngôn ngữ không phù hợp được phát hiện trong tên. Vui lòng sử dụng ngôn ngữ phù hợp.");
+        } else {
+          showError(message || "Dữ liệu không hợp lệ.");
+        }
         break;
       case 401:
         showError(message || apiMessages.unauthorized);

@@ -245,7 +245,7 @@ export default function OrganizerApprovalListPage() {
                 size="sm"
                 variant="default"
                 onClick={() =>
-                  navigate(`/admin/organizers/${org.id}`, {
+                  navigate(`/manager/organizers/${org.id}`, {
                     state: { status: org.status },
                   })
                 }

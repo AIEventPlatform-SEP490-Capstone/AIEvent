@@ -5,8 +5,10 @@ using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
+using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -14,15 +16,23 @@ namespace AIEvent.Application.Services.Implements
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ITransactionHelper _transactionHelper;
-
-        public TagService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper)
+        private readonly IContentModerationService _contentModerationService;
+        public TagService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper, IContentModerationService contentModerationService)
         {
             _transactionHelper = transactionHelper;
             _unitOfWork = unitOfWork;  
+            _contentModerationService = contentModerationService;
         }
 
         public async Task<Result> CreateTagAsync(CreateTagRequest request, string role)
         {
+            if (!string.IsNullOrWhiteSpace(request.NameTag))
+            {
+                var isSafe = await _contentModerationService.ProfanityChecker(JsonSerializer.Serialize(request));
+                if (!isSafe.IsSuccess)
+                    return ErrorResponse.FailureResult(isSafe.Error!.Message, isSafe.Error.StatusCode);
+            }
+
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
                 var existingTag = await _unitOfWork.TagRepository
@@ -66,6 +76,15 @@ namespace AIEvent.Application.Services.Implements
                 {
                     TagId = p.Id.ToString(),
                     TagName = p.NameTag,
+                    CreatedDate = p.CreatedAt,
+                    UpdatedDate = p.UpdatedAt,
+                    QuantityUsed = _unitOfWork.EventTagRepository.Query(false)
+                        .Count(et =>
+                            et.TagId == p.Id &&
+                            !et.Event.DeletedAt.HasValue &&
+                            et.Event.Status == EventStatus.Approved &&
+                            et.Event.Publish == true
+                        )
                 })
                 .ToListAsync();
 
@@ -90,6 +109,15 @@ namespace AIEvent.Application.Services.Implements
                 {
                     TagId = p.Id.ToString(),
                     TagName = p.NameTag,
+                    CreatedDate = p.CreatedAt,
+                    UpdatedDate = p.UpdatedAt,
+                    QuantityUsed = _unitOfWork.EventTagRepository.Query(false)
+                        .Count(et =>
+                            et.TagId == p.Id &&
+                            !et.Event.DeletedAt.HasValue &&
+                            et.Event.Status == EventStatus.Approved &&
+                            et.Event.Publish == true
+                        )
                 })
                 .ToListAsync();
 
@@ -140,6 +168,13 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result<TagResponse>> UpdateTagAsync(string id, UpdateTagRequest request)
         {
+            if (!string.IsNullOrWhiteSpace(request.TagName))
+            {
+                var isSafe = await _contentModerationService.ProfanityChecker(JsonSerializer.Serialize(request));
+                if (!isSafe.IsSuccess)
+                    return ErrorResponse.FailureResult(isSafe.Error!.Message, isSafe.Error.StatusCode);
+            }
+
             return await _transactionHelper.ExecuteInTransactionAsync(async () =>
             {
                 var tagId = Guid.Parse(id);

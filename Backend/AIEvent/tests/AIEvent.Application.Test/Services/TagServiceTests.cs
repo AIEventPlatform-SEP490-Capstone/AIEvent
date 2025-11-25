@@ -2,6 +2,7 @@
 using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Implements;
+using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using FluentAssertions;
@@ -16,16 +17,18 @@ namespace AIEvent.Application.Test.Services
         private readonly Mock<IUnitOfWork> _unitOfWorkMock;
         private readonly Mock<ITransactionHelper> _transactionHelperMock;
         private readonly Mock<IGenericRepository<Tag>> _tagRepoMock;
+        private readonly Mock<IContentModerationService> _contentModerationServiceMock;
         private readonly TagService _tagService;
 
         public TagServiceTests()
         {
             _unitOfWorkMock = new Mock<IUnitOfWork>();
             _transactionHelperMock = new Mock<ITransactionHelper>();
+            _contentModerationServiceMock = new Mock<IContentModerationService>();
             _tagRepoMock = new Mock<IGenericRepository<Tag>>();
 
             _unitOfWorkMock.Setup(u => u.TagRepository).Returns(_tagRepoMock.Object);
-            _tagService = new TagService(_unitOfWorkMock.Object, _transactionHelperMock.Object);
+            _tagService = new TagService(_unitOfWorkMock.Object, _transactionHelperMock.Object, _contentModerationServiceMock.Object);
         }
 
         // ---------- CreateTagAsync ----------

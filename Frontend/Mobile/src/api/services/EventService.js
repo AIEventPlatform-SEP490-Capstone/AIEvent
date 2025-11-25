@@ -153,6 +153,72 @@ class EventService {
   }
 
   /**
+   * Get all events for staff users with pagination support and filtering
+   */
+  static async getEventsForStaff(params = {}) {
+    try {
+      const {
+        title = '',
+        categoryId = '',
+        pageNumber = 1,
+        pageSize = 10,
+      } = params;
+  
+      // Build query parameters
+      const queryParams = new URLSearchParams();
+      if (title) queryParams.append('title', title);
+      if (categoryId) queryParams.append('categoryId', categoryId);
+      if (pageNumber) queryParams.append('pageNumber', pageNumber);
+      if (pageSize) queryParams.append('pageSize', pageSize);
+  
+      // Use the staff-specific endpoint
+      const url = `${EndUrls.EVENTS}/staff?${queryParams.toString()}`;
+      const response = await BaseApiService.get(url);
+        
+      // Extract data from the paginated response
+      // The backend returns SuccessResponse<BasePaginated<EventsResponse>>
+      let data = response;
+        
+      // Handle different response structures
+      if (response.data) {
+        data = response.data;
+      }
+        
+      // If we have a data wrapper, extract the actual data
+      if (data.data) {
+        data = data.data;
+      }
+        
+      // Extract items from paginated response
+      let items = data.items || data.Items || [];
+        
+      // Process dates for all events
+      items = processEventsArray(items);
+        
+      return {
+        success: true,
+        data: items,
+        pagination: {
+          currentPage: data.currentPage || data.CurrentPage || pageNumber,
+          totalPages: data.totalPages || data.TotalPages || 1,
+          totalItems: data.totalItems || data.TotalItems || items.length || 0,
+          pageSize: data.pageSize || data.PageSize || pageSize
+        },
+        message: 'Events fetched successfully',
+      };
+    } catch (error) {
+      console.error('Error fetching events for staff:', error);
+      return {
+        success: false,
+        data: [],
+        pagination: null,
+        message: `Failed to fetch events: ${error.message}`,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
    * Get event by ID
    */
   static async getEventById(id) {

@@ -4,12 +4,14 @@ export const tagAPI = {
   // Get all tags
   getTags: async (pageNumber = 1, pageSize = 50) => {
     const response = await fetcher.get(`/tag?pageNumber=${pageNumber}&pageSize=${pageSize}`);
+    // Return the full response to handle pagination in the slice
     return response.data;
   },
 
   // Get tags created by the current user (organizer/manager)
   getUserTags: async (pageNumber = 1, pageSize = 50) => {
     const response = await fetcher.get(`/tag/user?pageNumber=${pageNumber}&pageSize=${pageSize}`);
+    // Return the full response to handle pagination in the slice
     return response.data;
   },
 

@@ -111,12 +111,6 @@ export function VerticalNavigation() {
         },
 
         {
-          title: "Quản lý Tổ chức",
-          url: "/admin/organizers",
-          icon: User,
-          isActive: pathname === "/admin/organizers",
-        },
-        {
           title: "Quản lí sự kiện",
           url: "/admin/events",
           icon: Calendar,
@@ -192,6 +186,12 @@ export function VerticalNavigation() {
           url: "/manager/events",
           icon: Calendar,
           isActive: pathname === "/manager/events",
+        },
+        {
+          title: "Quản lý Tổ chức",
+          url: "/manager/organizers",
+          icon: User,
+          isActive: pathname === "/manager/organizers",
         },
         {
           title: "Quản lý danh mục",

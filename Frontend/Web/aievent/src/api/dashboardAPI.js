@@ -91,4 +91,42 @@ export const dashboardAPI = {
     });
     return response.data?.data || response.data;
   },
+
+  // GET: Manager - Organizer Approved Statistics
+  getOrganizerApprovedStatistics: async ({ year, status } = {}) => {
+    const response = await fetcher.get("/dashboard/organizer-approved-statistics", {
+      params: {
+        ...(year ? { year } : {}),
+        ...(status ? { status } : {}),
+      },
+    });
+    return response.data?.data || response.data;
+  },
+
+  // GET: Manager - Event Month Statistics
+  getEventMonthStatistics: async ({ year, status } = {}) => {
+    const response = await fetcher.get("/dashboard/event-month-statistics", {
+      params: {
+        ...(year ? { year } : {}),
+        ...(status ? { status } : {}),
+      },
+    });
+    return response.data?.data || response.data;
+  },
+
+  // GET: Manager - Organizer Join Statistics
+  getOrganizerJoinStatistics: async ({ year } = {}) => {
+    const response = await fetcher.get("/dashboard/organizer-join-statistics", {
+      params: {
+        ...(year ? { year } : {}),
+      },
+    });
+    return response.data?.data || response.data;
+  },
+
+  // GET: Manager - Total Organizer Event
+  getTotalOrganizerEvent: async () => {
+    const response = await fetcher.get("/dashboard/total-organizer-event");
+    return response.data?.data || response.data;
+  },
 };

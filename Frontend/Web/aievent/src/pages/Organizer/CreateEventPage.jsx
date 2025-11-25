@@ -19,13 +19,27 @@ import {
   Eye,
   Send,
   CheckCircle2,
+  CheckCircle,
   Circle,
   ChevronRight,
   ChevronLeft,
-  X
+  X,
+  Edit3,
+  MapPin,
+  Tag,
+  Ticket,
+  Flag,
+  CreditCard,
+  User,
+  Sparkles,
+  Loader2,
+  Pencil,
+  Pen,
+  Upload,
+  AlertCircle
 } from 'lucide-react';
-
 import { Button } from '../../components/ui/button';
+
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { Label } from '../../components/ui/label';
@@ -33,30 +47,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Switch } from '../../components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
+import { Badge } from '../../components/ui/badge';
 import DateTimePicker from '../../components/ui/date-time-picker';
-
 import { useEvents } from '../../hooks/useEvents';
 import TagSelector from '../../components/Event/TagSelector';
-
+import CategorySelector from '../../components/Event/CategorySelector'; // Add this import
 // Redux hooks
 import { useCategories } from '../../hooks/useCategories';
 import { useTags } from '../../hooks/useTags';
 import { useApp } from '../../hooks/useApp';
-
 // Import the EventDetailGuestPage component for preview
 import EventDetailGuestPage from '../Event/EventDetailGuestPage';
-
 // Import EventStatus enum
 import { EventStatus } from '../../constants/eventConstants';
-
 // Import Cloudinary utility
 import { uploadImagesToCloudinary } from '../../utils/cloudinary';
 // Import date utility
 import { convertUTC7ToUTC, convertUTCToUTC7 } from '../../utils/dateUtils';
-
+// Import geocoding utility
+import { geocodeAddress } from '../../utils/geocoding';
 // Import predefined cities
 import { PredefinedCities } from '../../constants/userConstants';
-
+// Import EventTimeline component
+import { EventTimeline } from '../../components/Event/EventTimeline';
+import { useSidebar } from '../../components/ui/sidebar'; // Add this import
 // Validation schema
 const createEventSchema = z.object({
   title: z.string().min(1, 'Tiêu đề sự kiện là bắt buộc').max(200, 'Tiêu đề không được vượt quá 200 ký tự'),
@@ -68,7 +82,7 @@ const createEventSchema = z.object({
   address: z.string().optional(),
   district: z.string().optional(),
   linkRef: z.string().optional(),
-  eventCategoryId: z.string().optional(),
+  eventCategoryId: z.string().min(1, 'Danh mục sự kiện là bắt buộc'), // Make this required
   ticketPricingType: z.string().min(1, 'Loại vé là bắt buộc'),
   requireApproval: z.nativeEnum(EventStatus).default(EventStatus.PendingApproval),
   publish: z.boolean().default(false),
@@ -125,17 +139,10 @@ const createEventSchema = z.object({
   message: 'Vui lòng nhập giá vé lớn hơn 0 cho sự kiện có phí',
   path: ['ticketTypes'],
 });
-
-const STEPS = [
-  { id: 1, title: 'Thông tin cơ bản', icon: '📋' },
-  { id: 2, title: 'Thời gian & Địa điểm', icon: '📍' },
-  { id: 3, title: 'Hình ảnh', icon: '🖼️' },
-  { id: 4, title: 'Vé', icon: '🎫' },
-];
-
 const CreateEventPage = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
+  const { state } = useSidebar(); // Add this line to get sidebar state
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
@@ -151,16 +158,32 @@ const CreateEventPage = () => {
     saleStartTime: '',
     saleEndTime: ''
   });
-  // Add state for current step
-  const [currentStep, setCurrentStep] = useState(1);
-
+  
+  // Add state for editing modes
+  const [editingField, setEditingField] = useState(null);
+  const [tempValue, setTempValue] = useState('');
+  
+  // Add state for ticket editing
+  const [editingTicketIndex, setEditingTicketIndex] = useState(null);
+  const [ticketForm, setTicketForm] = useState({
+    ticketName: '',
+    ticketPrice: 0,
+    ticketQuantity: 1,
+    ticketDescription: ''
+  });
+  
+  // Add state for image carousel
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  // Add state for selected category
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  
   // Redux hooks
   const { categories, loading: categoriesLoading } = useCategories();
   const { selectedTags: reduxSelectedTags, clearAllSelectedTags, selectTagForForm } = useTags();
   // const { selectedRules, clearSelectedRefundRules } = useRefundRules();
   const { showLoading, hideLoading, updatePageTitle } = useApp();
   const { createEvent: createEventAPI, loading: eventLoading } = useEvents();
-
   const {
     register,
     control,
@@ -182,11 +205,11 @@ const CreateEventPage = () => {
       district: '',
       linkRef: '',
       eventCategoryId: '',
+      ticketPricingType: '1',
       requireApproval: EventStatus.PendingApproval,
       publish: false,
       saleStartTime: '',
       saleEndTime: '',
-      ticketPricingType: '1',
       ticketTypes: [
         {
           ticketName: 'Vé thường',
@@ -201,14 +224,12 @@ const CreateEventPage = () => {
   
   // Get the getEventById function from the hook
   const { getEventById } = useEvents();
-
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'ticketTypes',
   });
-
   const watchTicketPricingType = watch('ticketPricingType');
-
+  const watchEventCategoryId = watch('eventCategoryId');
   // Set page title and cleanup on mount
   useEffect(() => {
     updatePageTitle('Tạo sự kiện mới');
@@ -240,7 +261,6 @@ const CreateEventPage = () => {
       // clearSelectedRefundRules();
     };
   }, []); // Empty dependency array - only run on mount/unmount
-
   // Populate form with cloned event data
   const populateFormWithCloneData = (cloneData) => {
     // Set basic fields
@@ -351,8 +371,17 @@ const CreateEventPage = () => {
       // Set existing evidence images as previews
       setEvidenceImagePreview([...cloneData.imgListEvidences]);
     }
+    
+    // Set selected category
+    if (cloneData.eventCategory) {
+      setSelectedCategory(cloneData.eventCategory);
+    } else if (cloneData.eventCategoryId) {
+      const category = categories.find(cat => cat.eventCategoryId === cloneData.eventCategoryId);
+      if (category) {
+        setSelectedCategory(category);
+      }
+    }
   };
-
   // Load event data for cloning
   const loadCloneEventData = async (cloneEventId) => {
     try {
@@ -446,6 +475,11 @@ const CreateEventPage = () => {
           });
         }
         
+        // Set selected category
+        if (event.eventCategory) {
+          setSelectedCategory(event.eventCategory);
+        }
+        
         toast.success('Đã tải thông tin sự kiện để sao chép');
       } else {
         toast.error('Không tìm thấy sự kiện để sao chép');
@@ -460,12 +494,10 @@ const CreateEventPage = () => {
       localStorage.removeItem('cloneEventId');
     }
   };
-
   // Real-time validation effect
   useEffect(() => {
     validateDates();
   }, [watch('startTime'), watch('endTime'), watch('saleStartTime'), watch('saleEndTime')]);
-
   // Handle image upload
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
@@ -473,12 +505,10 @@ const CreateEventPage = () => {
       toast.error('Chỉ được tải lên tối đa 5 hình ảnh');
       return;
     }
-
     setSelectedImages(files);
     const previews = files.map(file => URL.createObjectURL(file));
     setImagePreview(previews);
   };
-
   // Handle evidence image upload
   const handleEvidenceImageChange = (e) => {
     const files = Array.from(e.target.files);
@@ -486,12 +516,10 @@ const CreateEventPage = () => {
       toast.error('Chỉ được tải lên tối đa 5 hình ảnh bằng chứng');
       return;
     }
-
     setSelectedEvidenceImageUrls(files);
     const previews = files.map(file => URL.createObjectURL(file));
     setEvidenceImagePreview(previews);
   };
-
   // Remove image
   const removeImage = (index) => {
     const newImages = selectedImages.filter((_, i) => i !== index);
@@ -500,7 +528,6 @@ const CreateEventPage = () => {
     setSelectedImages(newImages);
     setImagePreview(newPreviews);
   };
-
   // Remove evidence image
   const removeEvidenceImage = (index) => {
     const newImages = selectedEvidenceImages.filter((_, i) => i !== index);
@@ -509,7 +536,6 @@ const CreateEventPage = () => {
     setSelectedEvidenceImageUrls(newImages);
     setEvidenceImagePreview(newPreviews);
   };
-
   // Add ticket type
   const addTicketType = () => {
     append({
@@ -520,7 +546,6 @@ const CreateEventPage = () => {
       // ruleRefundRequestId: selectedRules.length > 0 ? selectedRules[0].ruleRefundId : '',
     });
   };
-
   // Remove ticket type
   const removeTicketType = (index) => {
     if (fields.length > 1) {
@@ -530,6 +555,56 @@ const CreateEventPage = () => {
     }
   };
   
+  // Start editing a ticket
+  const startEditingTicket = (index, ticket) => {
+    setEditingTicketIndex(index);
+    setTicketForm({
+      ticketName: ticket.ticketName || '',
+      ticketPrice: ticket.ticketPrice || 0,
+      ticketQuantity: ticket.ticketQuantity || 1,
+      ticketDescription: ticket.ticketDescription || ''
+    });
+  };
+  
+  // Save edited ticket
+  const saveEditingTicket = () => {
+    if (editingTicketIndex !== null) {
+      // Update the ticket in the form
+      setValue(`ticketTypes.${editingTicketIndex}.ticketName`, ticketForm.ticketName);
+      setValue(`ticketTypes.${editingTicketIndex}.ticketPrice`, parseFloat(ticketForm.ticketPrice) || 0);
+      setValue(`ticketTypes.${editingTicketIndex}.ticketQuantity`, parseInt(ticketForm.ticketQuantity) || 1);
+      setValue(`ticketTypes.${editingTicketIndex}.ticketDescription`, ticketForm.ticketDescription);
+      
+      // Reset editing state
+      setEditingTicketIndex(null);
+      setTicketForm({
+        ticketName: '',
+        ticketPrice: 0,
+        ticketQuantity: 1,
+        ticketDescription: ''
+      });
+    }
+  };
+  
+  // Cancel editing ticket
+  const cancelEditingTicket = () => {
+    setEditingTicketIndex(null);
+    setTicketForm({
+      ticketName: '',
+      ticketPrice: 0,
+      ticketQuantity: 1,
+      ticketDescription: ''
+    });
+  };
+  
+  // Handle ticket form change
+  const handleTicketFormChange = (e) => {
+    const { name, value } = e.target;
+    setTicketForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
   // Cập nhật giá vé khi thay đổi loại vé
   useEffect(() => {
     if (watchTicketPricingType === '1') {
@@ -539,7 +614,6 @@ const CreateEventPage = () => {
       });
     }
   }, [watchTicketPricingType, fields]);
-
   // Generate preview data from form values
   const generatePreviewData = (formData) => {
     // Get category name from selected category ID
@@ -576,7 +650,7 @@ const CreateEventPage = () => {
       description: formData.description || 'Mô tả sự kiện mẫu',
       detailedDescription: formData.detailedDescription || '',
       linkRef: formData.linkRef || '',
-      startTime: formData.startTime || new Date(Date.now() + 86400000).toISOString(), // Tomorrow
+      startTime: formData.startTime || new Date(Date.now() + 866400000).toISOString(), // Tomorrow
       endTime: formData.endTime || new Date(Date.now() + 172800000).toISOString(), // Day after tomorrow
       saleStartTime: formData.saleStartTime || new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
       saleEndTime: formData.saleEndTime || new Date(Date.now() + 82800000).toISOString(), // 23 hours from now
@@ -584,8 +658,8 @@ const CreateEventPage = () => {
       locationName: formData.locationName || '',
       address: formData.address || '',
       district: formData.district || '', // Add district field
-      latitude: null,
-      longitude: null,
+      latitude: 0,
+      longitude: 0,
       totalTickets: totalTickets,
       soldQuantity: 0,
       remainingTickets: totalTickets,
@@ -606,13 +680,20 @@ const CreateEventPage = () => {
     
     return previewData;
   };
-
   // Handle form submission
   const onSubmit = async (data) => {
     try {
+      // Kiểm tra validation trước khi submit
+      const dateValidationErrors = validateDates();
+      const hasTimelineErrors = Object.values(timelineErrors).some(error => error !== '');
+      
+      if (dateValidationErrors.length > 0 || hasTimelineErrors) {
+        toast.error('Vui lòng kiểm tra lại thông tin thời gian sự kiện');
+        return;
+      }
+      
       showLoading('Đang tạo sự kiện...');
       setIsSubmitting(true);
-
       // Validate required fields
       if (!data.title?.trim()) {
         toast.error('Vui lòng nhập tiêu đề sự kiện');
@@ -620,7 +701,6 @@ const CreateEventPage = () => {
         setIsSubmitting(false);
         return;
       }
-
       // Validate category
       if (!data.eventCategoryId) {
         toast.error('Vui lòng chọn danh mục sự kiện');
@@ -628,7 +708,6 @@ const CreateEventPage = () => {
         setIsSubmitting(false);
         return;
       }
-
       // Validate event images - check for either uploaded or cloned images
       if (selectedImages.length === 0 && imagePreview.length === 0) {
         toast.error('Vui lòng tải lên ít nhất một hình ảnh sự kiện');
@@ -636,7 +715,6 @@ const CreateEventPage = () => {
         setIsSubmitting(false);
         return;
       }
-
       // Validate evidence images - check for either uploaded or cloned images
       if (selectedEvidenceImages.length === 0 && evidenceImagePreview.length === 0) {
         toast.error('Vui lòng tải lên ít nhất một hình ảnh bằng chứng');
@@ -644,7 +722,6 @@ const CreateEventPage = () => {
         setIsSubmitting(false);
         return;
       }
-
       // Convert datetime strings to Date objects for validation
       const startDate = new Date(data.startTime);
       const endDate = new Date(data.endTime);
@@ -654,68 +731,61 @@ const CreateEventPage = () => {
       // Create now date in the same timezone as the input dates (UTC+7)
       // Since datetime inputs are in local time (UTC+7), we need to compare with local time
       const now = new Date();
-
       if (startDate <= now) {
         toast.error('Thời gian bắt đầu phải sau thời điểm hiện tại');
         hideLoading();
         setIsSubmitting(false);
         return;
       }
-
       if (endDate <= startDate) {
         toast.error('Thời gian kết thúc phải sau thời gian bắt đầu');
         hideLoading();
         setIsSubmitting(false);
         return;
       }
-
       if (saleStartDate >= startDate) {
         toast.error('Thời gian bắt đầu bán vé phải trước thời gian bắt đầu sự kiện');
         hideLoading();
         setIsSubmitting(false);
         return;
       }
-
       if (saleEndDate <= saleStartDate) {
         toast.error('Thời gian kết thúc bán vé phải sau thời gian bắt đầu bán vé');
         hideLoading();
         setIsSubmitting(false);
         return;
       }
-
       if (saleEndDate >= startDate) {
         toast.error('Thời gian kết thúc bán vé phải trước thời gian bắt đầu sự kiện');
         hideLoading();
         setIsSubmitting(false);
         return;
       }
-
-      // Upload images to Cloudinary and get URLs
-      // For cloned events, we may already have image previews
-      let imageUrls = [];
-      if (imagePreview.length > 0 && selectedImages.length === 0) {
-        // This is a cloned event with existing images, use the preview URLs
-        // But we need to distinguish between existing and newly uploaded images
-        // For now, we'll assume cloned images need to be re-uploaded
-        imageUrls = [...imagePreview];
-      } else if (selectedImages.length > 0) {
-        // Upload newly selected images
-        imageUrls = await uploadImagesToCloudinary(selectedImages);
+      
+      // Geocode the address to get latitude and longitude
+      const geocodeResult = await geocodeAddress(data.locationName, data.district, data.address);
+      if (!geocodeResult) {
+        toast.error('Không thể xác định tọa độ địa chỉ. Vui lòng kiểm tra lại thông tin địa chỉ.');
+        hideLoading();
+        setIsSubmitting(false);
+        return;
       }
       
-      // Upload evidence images to Cloudinary and get URLs
+      let imageUrls = [];
+      if (imagePreview.length > 0 && selectedImages.length === 0) {
+        imageUrls = [...imagePreview];
+      } else if (selectedImages.length > 0) {
+        imageUrls = await uploadImagesToCloudinary(selectedImages);
+      }
       let evidenceImageUrls = [];
       if (evidenceImagePreview.length > 0 && selectedEvidenceImages.length === 0) {
-        // This is a cloned event with existing evidence images, use the preview URLs
         evidenceImageUrls = [...evidenceImagePreview];
       } else if (selectedEvidenceImages.length > 0) {
-        // Upload newly selected evidence images
         evidenceImageUrls = await uploadImagesToCloudinary(selectedEvidenceImages);
       }
       
       // Calculate total tickets from ticketTypes array
       const totalTickets = data.ticketTypes.reduce((sum, ticket) => sum + parseInt(ticket.ticketQuantity), 0);
-
       // Function to convert datetime-local string (local time) to UTC ISO string
       // Fixed to properly convert local time to UTC
       const convertToUTCISOString = (dateString) => {
@@ -733,7 +803,6 @@ const CreateEventPage = () => {
         // Return proper UTC ISO string
         return utcDate.toISOString();
       };
-
       const eventData = {
         title: data.title,
         description: data.description,
@@ -746,8 +815,8 @@ const CreateEventPage = () => {
         locationName: data.locationName || '',
         address: data.address || '',
         district: data.district || '',
-        latitude: null,
-        longitude: null,
+        latitude: geocodeResult.latitude,
+        longitude: geocodeResult.longitude,
         totalTickets: totalTickets,
         ticketPricingType: data.ticketPricingType && !isNaN(parseInt(data.ticketPricingType)) ? parseInt(data.ticketPricingType) : 1,
         requireApproval: data.requireApproval,
@@ -800,7 +869,6 @@ const CreateEventPage = () => {
       setIsSubmitting(false);
     }
   };
-
   // Real-time date validation
   const validateDates = () => {
     const startTime = watch('startTime');
@@ -880,18 +948,47 @@ const CreateEventPage = () => {
     // Update state with new errors
     setDateErrors(newErrors);
     
+    // Kiểm tra xem có lỗi nào không
+    const hasErrors = Object.values(newErrors).some(error => error !== '');
+    setIsTimelineValid(!hasErrors);
+    
     // Return the errors object for backward compatibility
     return Object.values(newErrors).filter(error => error !== '');
   };
-
-  // Real-time validation effect
+  
+  // Thêm state để quản lý lỗi validation cho timeline
+  const [timelineErrors, setTimelineErrors] = useState({});
+  
+  // Thêm state để theo dõi validation status
+  const [isTimelineValid, setIsTimelineValid] = useState(true);
+  
+  // Thêm hàm xử lý validation change từ EventTimeline
+  const handleTimelineValidationChange = (index, error) => {
+    const fieldNames = ['saleStartTime', 'saleEndTime', 'startTime', 'endTime'];
+    const fieldName = fieldNames[index];
+    
+    setTimelineErrors(prev => {
+      const newErrors = {
+        ...prev,
+        [fieldName]: error
+      };
+      
+      // Cập nhật trạng thái validation tổng thể
+      const hasErrors = Object.values(newErrors).some(err => err !== '');
+      setIsTimelineValid(!hasErrors);
+      
+      return newErrors;
+    });
+  };
+  
+  // Cập nhật useEffect để theo dõi timeline errors
   useEffect(() => {
-    validateDates();
-  }, [watch('startTime'), watch('endTime'), watch('saleStartTime'), watch('saleEndTime')]);
+    const hasErrors = Object.values(timelineErrors).some(error => error !== '');
+    setIsTimelineValid(!hasErrors);
+  }, [timelineErrors]);
   
   // Ref to track if we're processing a blur event to avoid infinite loops
   const isProcessingBlur = useRef(false);
-
   // Handle field clearing when they lose focus and are invalid
   const handleDateTimeBlur = (fieldName) => {
     // Prevent infinite loop by checking if we're already processing
@@ -937,7 +1034,6 @@ const CreateEventPage = () => {
   };
   
   const minDateTime = getMinDateTime();
-
   // Check if a step is complete
   const isStepComplete = (step) => {
     switch (step) {
@@ -957,10 +1053,90 @@ const CreateEventPage = () => {
         return false;
     }
   };
-
-  // Check if we can proceed to the next step
-  const canProceedToNextStep = isStepComplete(currentStep);
-
+  // Start editing a field
+  const startEditing = (field, value) => {
+    setEditingField(field);
+    setTempValue(value || '');
+  };
+  // Save edited field
+  const saveEditing = () => {
+    if (editingField) {
+      setValue(editingField, tempValue);
+      setEditingField(null);
+      setTempValue('');
+    }
+  };
+  // Cancel editing
+  const cancelEditing = () => {
+    setEditingField(null);
+    setTempValue('');
+  };
+  // Handle key press for editing
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      saveEditing();
+    } else if (e.key === 'Escape') {
+      cancelEditing();
+    }
+  };
+  // Format price for display
+  const formatPrice = (event) => {
+    if (
+      event.minTicketPrice !== undefined &&
+      event.maxTicketPrice !== undefined
+    ) {
+      if (event.minTicketPrice === 0 && event.maxTicketPrice === 0) {
+        return "Miễn phí";
+      } else if (event.minTicketPrice === event.maxTicketPrice) {
+        return new Intl.NumberFormat("vi-VN", {
+          style: "currency",
+          currency: "VND",
+        }).format(event.minTicketPrice);
+      } else {
+        return `${new Intl.NumberFormat("vi-VN", {
+          style: "currency",
+          currency: "VND",
+        }).format(event.minTicketPrice)} - ${new Intl.NumberFormat("vi-VN", {
+          style: "currency",
+          currency: "VND",
+        }).format(event.maxTicketPrice)}`;
+      }
+    }
+    return event.ticketType === 1 || event.ticketType === "free"
+      ? "Miễn phí"
+      : "Có phí";
+  };
+  // Format ticket price
+  const formatTicketPrice = (ticket) => {
+    if (ticket.ticketPrice === 0) {
+      return "Miễn phí";
+    }
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(ticket.ticketPrice);
+  };
+  
+  // Function to go to next image
+  const nextImage = () => {
+    if (imagePreview && imagePreview.length > 0) {
+      setCurrentImageIndex((prevIndex) => 
+        prevIndex === imagePreview.length - 1 ? 0 : prevIndex + 1
+      );
+    }
+  };
+  // Function to go to previous image
+  const prevImage = () => {
+    if (imagePreview && imagePreview.length > 0) {
+      setCurrentImageIndex((prevIndex) => 
+        prevIndex === 0 ? imagePreview.length - 1 : prevIndex - 1
+      );
+    }
+  };
+  // Reset image index when images change
+  useEffect(() => {
+    setCurrentImageIndex(0);
+  }, [imagePreview?.length]);
   if (!user || !['Organizer', 'Admin', 'Manager'].includes(user.role)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -986,114 +1162,61 @@ const CreateEventPage = () => {
       </div>
     );
   }
-
+  
+  // Generate preview data for the WYSIWYG interface
+  const previewData = generatePreviewData(watch());
+   const sidebarState = state === "collapsed" ? "lg:pl-20" : "lg:pl-0.2";
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen bg-background transition-all duration-300 ${sidebarState}`}>
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-balance">Tạo sự kiện mới</h1>
           <p className="text-muted-foreground">Tạo và quản lý sự kiện của bạn</p>
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Step Indicator - Left Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-8 space-y-4">
-              <div className="bg-card rounded-xl p-6 border border-border shadow-sm">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-6">
-                  Tiến độ
-                </h3>
-                <div className="space-y-4">
-                  {STEPS.map((step, index) => (
-                    <div key={step.id}>
-                      <button
-                        onClick={() => isStepComplete(step.id - 1) || step.id === currentStep || index === 0 ? setCurrentStep(step.id) : null}
-                        className="w-full text-left"
-                        disabled={!isStepComplete(step.id - 1) && step.id !== currentStep && index !== 0}
-                      >
-                        <div
-                          className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
-                            currentStep === step.id
-                              ? 'bg-primary text-primary-foreground'
-                              : isStepComplete(step.id)
-                              ? 'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300'
-                              : 'hover:bg-muted'
-                          }`}
-                        >
-                          <div className="text-lg">{step.icon}</div>
-                          <div className="flex-1">
-                            <div className="font-medium text-sm">{step.title}</div>
-                          </div>
-                          {isStepComplete(step.id) && (
-                            <CheckCircle2 className="w-4 h-4" />
-                          )}
-                        </div>
-                      </button>
-                      {index < STEPS.length - 1 && (
-                        <div
-                          className={`h-6 w-0.5 mx-6 my-1 ${
-                            isStepComplete(step.id) ? 'bg-green-500' : 'bg-border'
-                          }`}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Progress Summary */}
-              <Card className="border-primary/20 bg-primary/5">
-                <CardContent className="pt-4">
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-semibold text-foreground">{currentStep}</span> của{' '}
-                    <span className="font-semibold text-foreground">{STEPS.length}</span> bước
-                  </p>
-                  <div className="w-full bg-border rounded-full h-2 mt-3 overflow-hidden">
-                    <div
-                      className="h-full bg-primary transition-all duration-300"
-                      style={{ width: `${(currentStep / STEPS.length) * 100}%` }}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Main Form Content */}
-          <div className="lg:col-span-3">
-            <div className="bg-card rounded-2xl border border-border shadow-lg p-6 lg:p-8">
-              <form onSubmit={handleSubmit(onSubmit)}>
-                {/* Step 1: Basic Information */}
-                {currentStep === 1 && (
-                  <div className="space-y-6 animate-in fade-in duration-300">
-                    <div>
-                      <h2 className="text-2xl font-bold mb-2">Thông tin cơ bản</h2>
-                      <p className="text-muted-foreground">
-                        Bắt đầu với những thông tin cơ bản về sự kiện của bạn
-                      </p>
-                    </div>
-
-                    <div className="space-y-6">
-                      <div>
-                        <Label htmlFor="title" className="text-base font-semibold mb-2 block">
-                          Tên sự kiện *
-                        </Label>
-                        <Input
-                          id="title"
-                          placeholder="Nhập tiêu đề sự kiện"
-                          {...register('title')}
-                          className="h-11"
-                        />
-                        {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>}
-                      </div>
-
-                      <div>
-                        <Label htmlFor="eventCategoryId" className="text-base font-semibold mb-2 block">
-                          Danh mục sự kiện *
-                        </Label>
-                        <Select onValueChange={(value) => setValue('eventCategoryId', value)}>
-                          <SelectTrigger className="h-11">
+        {/* Event Banner with Editable Image */}
+         <div className="relative h-96 w-full overflow-hidden bg-gray-100 mb-6">
+              {imagePreview && imagePreview.length > 0 ? (
+                <>
+                  <img 
+                    src={imagePreview[currentImageIndex]} 
+                    alt="Event Banner" 
+                    className="w-full h-full object-cover" 
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  
+                  {/* Editable Badges */}
+                  <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
+                    {/* Display price badge first */}
+                    <Badge className="bg-primary text-primary-foreground border-0 shadow-lg px-3 py-1.5 font-semibold">
+                      {/* Badge Giá vé - Tối ưu & realtime */}
+                      {watchTicketPricingType === '1' ? (
+                        <><span role="img" aria-label="gift"></span> Miễn phí</>
+                      ) : (
+                      <>
+                        {(() => {
+                          const types = watch('ticketTypes') || [];
+                          const paidPrices = types
+                            .map(t => parseFloat(t.ticketPrice) || 0)
+                            .filter(p => p > 0);
+                          if (paidPrices.length === 0) return "Có phí";
+                          const min = Math.min(...paidPrices);
+                          const max = Math.max(...paidPrices);
+                          const formatter = new Intl.NumberFormat("vi-VN", {
+                            style: "currency",
+                            currency: "VND",
+                          });
+                          return min === max ? formatter.format(min) : `${formatter.format(min)} - ${formatter.format(max)}`;
+                        })()}
+                      </>
+                    )}
+                  </Badge>
+                    {/* Display category badge */}
+                    <Badge className="bg-white/95 text-gray-900 border-0 shadow-lg px-3 py-1.5 font-semibold">
+                      <Tag className="w-3 h-3 mr-1" />
+                      {editingField === 'eventCategoryId' ? (
+                        <Select value={watch('eventCategoryId')} onValueChange={(value) => setValue('eventCategoryId', value)}>
+                          <SelectTrigger className="h-6 w-auto border-0 bg-transparent text-gray-900">
                             <SelectValue placeholder="Chọn danh mục" />
                           </SelectTrigger>
                           <SelectContent>
@@ -1104,343 +1227,348 @@ const CreateEventPage = () => {
                             ))}
                           </SelectContent>
                         </Select>
-                        {errors.eventCategoryId && <p className="text-red-500 text-sm mt-1">{errors.eventCategoryId.message}</p>}
-                      </div>
-
-                      <div>
-                        <Label htmlFor="description" className="text-base font-semibold mb-2 block">
-                          Mô tả ngắn *
-                        </Label>
-                        <Textarea
-                          id="description"
-                          placeholder="Mô tả ngắn gọn về sự kiện"
-                          rows={3}
-                          {...register('description')}
-                          className="resize-none"
-                        />
-                        {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>}
-                      </div>
-
-                      <div>
-                        <Label htmlFor="detailedDescription" className="text-base font-semibold mb-2 block">
-                          Mô tả chi tiết
-                        </Label>
-                        <Textarea
-                          id="detailedDescription"
-                          placeholder="Mô tả chi tiết về sự kiện..."
-                          rows={4}
-                          {...register('detailedDescription')}
-                          className="resize-none"
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="linkRef" className="text-base font-semibold mb-2 block">
-                          Liên kết tham khảo
-                        </Label>
-                        <Input
-                          id="linkRef"
-                          placeholder="https://example.com"
-                          {...register('linkRef')}
-                          className="h-11"
-                        />
-                        {errors.linkRef && <p className="text-red-500 text-sm mt-1">{errors.linkRef.message}</p>}
-                      </div>
-
-                      <div>
-                        <Label className="text-base font-semibold mb-2 block">
-                          Loại vé *
-                        </Label>
-                        <div className="grid grid-cols-2 gap-4">
-                          {[
-                            { value: '1', label: '🎁 Miễn phí' },
-                            { value: '2', label: '💰 Có phí' },
-                          ].map(option => (
-                            <button
-                              key={option.value}
-                              type="button"
-                              onClick={() => setValue('ticketPricingType', option.value)}
-                              className={`p-4 rounded-lg border-2 transition-all font-medium ${
-                                watch('ticketPricingType') === option.value
-                                  ? 'border-primary bg-primary/10 text-primary'
-                                  : 'border-border hover:border-primary/50'
-                              }`}
-                            >
-                              {option.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+                      ) : (
+                        previewData.eventCategoryName || "Chưa phân loại"
+                      )}
+                    </Badge>
+                    {/* Display event tags */}
+                    {previewData.eventTags && previewData.eventTags.map((tag, index) => (
+                      <Badge key={index} className="bg-indigo-100 text-indigo-800 border-0 shadow-lg px-3 py-1.5 font-semibold">
+                        <Tag className="w-3 h-3 mr-1" />
+                        {tag.tagName}
+                      </Badge>
+                    ))}
                   </div>
-                )}
-
-                {/* Step 2: Time & Location */}
-                {currentStep === 2 && (
-                  <div className="space-y-6 animate-in fade-in duration-300">
-                    <div>
-                      <h2 className="text-2xl font-bold mb-2">Thời gian & Địa điểm</h2>
-                      <p className="text-muted-foreground">
-                        Xác định khi nào và ở đâu sự kiện sẽ diễn ra
-                      </p>
-                    </div>
-
-                    <div className="space-y-6">
-                      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-lg p-4">
-                        <p className="text-sm text-blue-900 dark:text-blue-200">
-                          💡 Hãy đảm bảo rằng thời gian bán vé kết thúc trước khi sự kiện bắt đầu
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <DateTimePicker
-                            id="startTime"
-                            label="Thời gian bắt đầu *"
-                            value={watch('startTime')}
-                            onChange={(value) => setValue('startTime', value)}
-                            min={minDateTime}
-                            className={dateErrors.startTime || errors.startTime ? "border-red-500" : ""}
-                            onBlur={() => handleDateTimeBlur('startTime')}
-                          />
-                          {errors.startTime && <p className="text-red-500 text-sm mt-1">{errors.startTime.message}</p>}
-                          {dateErrors.startTime && <p className="text-red-500 text-sm mt-1">{dateErrors.startTime}</p>}
-                        </div>
-                        <div>
-                          <DateTimePicker
-                            id="endTime"
-                            label="Thời gian kết thúc *"
-                            value={watch('endTime')}
-                            onChange={(value) => setValue('endTime', value)}
-                            min={minDateTime}
-                            className={dateErrors.endTime || errors.endTime ? "border-red-500" : ""}
-                            onBlur={() => handleDateTimeBlur('endTime')}
-                          />
-                          {errors.endTime && <p className="text-red-500 text-sm mt-1">{errors.endTime.message}</p>}
-                          {dateErrors.endTime && <p className="text-red-500 text-sm mt-1">{dateErrors.endTime}</p>}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <DateTimePicker
-                            id="saleStartTime"
-                            label="Bắt đầu bán vé *"
-                            value={watch('saleStartTime')}
-                            onChange={(value) => setValue('saleStartTime', value)}
-                            min={minDateTime}
-                            className={dateErrors.saleStartTime || errors.saleStartTime ? "border-red-500" : ""}
-                            onBlur={() => handleDateTimeBlur('saleStartTime')}
-                          />
-                          {errors.saleStartTime && <p className="text-red-500 text-sm mt-1">{errors.saleStartTime.message}</p>}
-                          {dateErrors.saleStartTime && <p className="text-red-500 text-sm mt-1">{dateErrors.saleStartTime}</p>}
-                        </div>
-                        <div>
-                          <DateTimePicker
-                            id="saleEndTime"
-                            label="Kết thúc bán vé *"
-                            value={watch('saleEndTime')}
-                            onChange={(value) => setValue('saleEndTime', value)}
-                            min={minDateTime}
-                            className={dateErrors.saleEndTime || errors.saleEndTime ? "border-red-500" : ""}
-                            onBlur={() => handleDateTimeBlur('saleEndTime')}
-                          />
-                          {errors.saleEndTime && <p className="text-red-500 text-sm mt-1">{errors.saleEndTime.message}</p>}
-                          {dateErrors.saleEndTime && <p className="text-red-500 text-sm mt-1">{dateErrors.saleEndTime}</p>}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="district" className="text-base font-semibold mb-2 block">
-                            Quận/Huyện *
-                          </Label>
-                          <Select onValueChange={(value) => setValue('district', value)} value={watch('district')}>
-                            <SelectTrigger className="h-11">
-                              <SelectValue placeholder="Chọn quận/huyện" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {PredefinedCities.map((city) => (
-                                <SelectItem key={city} value={city}>
-                                  {city}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {errors.district && <p className="text-red-500 text-sm mt-1">{errors.district.message}</p>}
-                        </div>
-                        <div>
-                          <Label htmlFor="locationName" className="text-base font-semibold mb-2 block">
-                            Tên địa điểm *
-                          </Label>
-                          <Input
-                            id="locationName"
-                            placeholder="Nhập tên địa điểm"
-                            {...register('locationName')}
-                            className="h-11"
-                          />
-                          {errors.locationName && <p className="text-red-500 text-sm mt-1">{errors.locationName.message}</p>}
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="address" className="text-base font-semibold mb-2 block">
-                          Địa chỉ chi tiết *
-                        </Label>
-                        <Textarea
-                          id="address"
-                          placeholder="Nhập địa chỉ"
-                          rows={3}
-                          {...register('address')}
-                          className="resize-none"
+                  
+                  {/* Image carousel indicators */}
+                  {imagePreview.length > 1 && (
+                    <div className="absolute bottom-4 right-4 flex gap-2">
+                      {imagePreview.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentImageIndex(index)}
+                          className={`w-3 h-3 rounded-full transition-all ${
+                            currentImageIndex === index ? "bg-white w-8" : "bg-white/50 hover:bg-white/75"
+                          }`}
                         />
-                        {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>}
-                      </div>
+                      ))}
                     </div>
-                  </div>
-                )}
-
-                {/* Step 3: Images */}
-                {currentStep === 3 && (
-                  <div className="space-y-6 animate-in fade-in duration-300">
-                    <div>
-                      <h2 className="text-2xl font-bold mb-2">Hình ảnh sự kiện</h2>
-                      <p className="text-muted-foreground">
-                        Tải lên những hình ảnh đẹp để quảng bá sự kiện của bạn (tối đa 5)
-                      </p>
-                    </div>
-
-                    <div className="space-y-8">
-                      {/* Event Images */}
-                      <div className="space-y-4">
-                        <div className="border-2 border-dashed border-primary/30 rounded-xl p-8 text-center hover:border-primary/60 transition-colors cursor-pointer bg-primary/5">
-                          <Input
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            onChange={handleImageChange}
-                            className="hidden"
-                            id="image-input"
-                          />
-                          <label htmlFor="image-input" className="cursor-pointer">
-                            <div className="flex flex-col items-center gap-3">
-                              <div className="text-5xl">📸</div>
-                              <div>
-                                <p className="font-semibold text-foreground text-lg">
-                                  Chọn hoặc kéo hình ảnh vào đây
-                                </p>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  PNG, JPG, GIF (tối đa 5 file)
-                                </p>
-                              </div>
+                  )}
+                  
+                  {/* Navigation arrows */}
+                  {imagePreview.length > 1 && (
+                    <>
+                      <button 
+                        onClick={prevImage}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full transition-all"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <button 
+                        onClick={nextImage}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full transition-all"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                    </>
+                  )}
+                  
+                  {/* Edit Image Button */}
+                  <label className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full cursor-pointer">
+                    <Image className="w-5 h-5" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageChange}
+                      className="hidden"
+                    />
+                  </label>
+                </>
+              ) : (
+                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                  <label className="cursor-pointer flex flex-col items-center">
+                    <Image className="w-12 h-12 text-gray-400 mb-2" />
+                    <span className="text-gray-400 font-medium">
+                      Nhấn để tải lên hình ảnh
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageChange}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              )}
+          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content - Event Detail Preview */}
+          <div className="lg:col-span-2 space-y-8">
+            <div className="space-y-3">
+              {/* Editable Title */}
+              {editingField === 'title' ? (
+                <Input
+                  value={tempValue}
+                  onChange={(e) => setTempValue(e.target.value)}
+                  onBlur={saveEditing}
+                  onKeyDown={handleKeyPress}
+                  className="text-4xl font-bold text-foreground leading-tight"
+                  autoFocus
+                />
+              ) : (
+                <h1 
+                  className="text-4xl font-bold text-foreground leading-tight cursor-pointer hover:bg-gray-100 p-2 rounded"
+                  onClick={() => startEditing('title', watch('title'))}
+                >
+                  {watch('title') || 'Nhấp để nhập tiêu đề sự kiện'}
+                  <Pencil className="w-4 h-4 inline-block ml-2 text-gray-400" />
+                </h1>
+              )}
+              
+              {/* Editable Description */}
+              {editingField === 'description' ? (
+                <Textarea
+                  value={tempValue}
+                  onChange={(e) => setTempValue(e.target.value)}
+                  onBlur={saveEditing}
+                  onKeyDown={handleKeyPress}
+                  className="text-lg text-muted-foreground leading-relaxed"
+                  rows={3}
+                  autoFocus
+                />
+              ) : (
+                <p 
+                  className="text-lg text-muted-foreground leading-relaxed cursor-pointer hover:bg-gray-100 p-2 rounded"
+                  onClick={() => startEditing('description', watch('description'))}
+                >
+                  {watch('description') || 'Nhấp để nhập mô tả sự kiện'}
+                  <Pencil className="w-4 h-4 inline-block ml-2 text-gray-400" />
+                </p>
+              )}
+            </div>
+            {/* Event Timeline */}
+            <EventTimeline 
+              stages={[
+                {
+                  label: "Mở bán vé",
+                  time: watch('saleStartTime') 
+                    ? `${new Date(watch('saleStartTime')).toLocaleDateString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit'
+                      })} ${new Date(watch('saleStartTime')).toLocaleTimeString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}`
+                    : "Chưa xác định",
+                  icon: <Ticket className="w-5 h-5" />,
+                  color: "bg-blue-500"
+                },
+                {
+                  label: "Đóng bán vé",
+                  time: watch('saleEndTime') 
+                    ? `${new Date(watch('saleEndTime')).toLocaleDateString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit'
+                      })} ${new Date(watch('saleEndTime')).toLocaleTimeString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}`
+                    : "Chưa xác định",
+                  icon: <Clock className="w-5 h-5" />,
+                  color: "bg-red-500"
+                },
+                {
+                  label: "Sự kiện bắt đầu",
+                  time: watch('startTime') 
+                    ? `${new Date(watch('startTime')).toLocaleDateString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit'
+                      })} ${new Date(watch('startTime')).toLocaleTimeString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}`
+                    : "Chưa xác định",
+                  icon: <Calendar className="w-5 h-5" />,
+                  color: "bg-green-500"
+                },
+                {
+                  label: "Sự kiện kết thúc",
+                  time: watch('endTime') 
+                    ? `${new Date(watch('endTime')).toLocaleDateString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit'
+                      })} ${new Date(watch('endTime')).toLocaleTimeString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}`
+                    : "Chưa xác định",
+                  icon: <Flag className="w-5 h-5" />,
+                  color: "bg-purple-500"
+                }
+              ]}
+              rawTimes={[
+                watch('saleStartTime'),
+                watch('saleEndTime'),
+                watch('startTime'),
+                watch('endTime')
+              ]}
+              onTimeChange={(index, value) => {
+                const fields = ['saleStartTime', 'saleEndTime', 'startTime', 'endTime'];
+                setValue(fields[index], value);
+              }}
+              currentStage={(() => {
+                const now = new Date();
+                // Stage 0: Mở bán vé (Ticket sale start)
+                if (watch('saleStartTime') && now < new Date(watch('saleStartTime'))) return -1; // Not yet started
+                // Stage 1: Đóng bán vé (Ticket sale end)
+                if (watch('saleEndTime') && now < new Date(watch('saleEndTime'))) return 0; // Sale is ongoing
+                // Stage 2: Sự kiện bắt đầu (Event start)
+                if (now < new Date(watch('startTime'))) return 1;
+                // Stage 3: Sự kiện kết thúc (Event end)
+                if (now < new Date(watch('endTime'))) return 2;
+                return 2; // Event has ended
+              })()}
+              isEditable={true}
+              minDateTime={minDateTime}
+              // Thêm props để xử lý validation
+              validationTimes={{
+                startTime: watch('startTime'),
+                endTime: watch('endTime'),
+                saleStartTime: watch('saleStartTime'),
+                saleEndTime: watch('saleEndTime')
+              }}
+              onValidationChange={handleTimelineValidationChange}
+            />
+            {/* Ticket Information */}
+            {previewData.ticketTypes && previewData.ticketTypes.length > 0 && (
+              <div className="bg-white rounded-xl p-6 border border-gray-100">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <Ticket className="w-5 h-5 text-primary" />
+                    Tình trạng vé
+                  </h3>
+                  <span className="text-sm font-medium text-primary">
+                    {previewData.ticketTypes.reduce((acc, ticket) => acc + (ticket.soldQuantity || 0), 0) / 
+                     previewData.ticketTypes.reduce((acc, ticket) => acc + (ticket.ticketQuantity || 0), 0) * 100 || 0}% Đã bán
+                  </span>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-500"
+                    style={{ 
+                      width: `${(previewData.ticketTypes.reduce((acc, ticket) => acc + (ticket.soldQuantity || 0), 0) / 
+                                previewData.ticketTypes.reduce((acc, ticket) => acc + (ticket.ticketQuantity || 0), 0) * 100) || 0}%` 
+                    }}
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground mt-3">
+                  {previewData.ticketTypes.reduce((acc, ticket) => acc + (ticket.ticketQuantity - (ticket.soldQuantity || 0)), 0)} chỗ còn lại
+                </p>
+              </div>
+            )}
+            {/* Ticket Options */}
+            {previewData.ticketTypes && previewData.ticketTypes.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-bold text-foreground">Loại vé có sẵn</h3>
+                  <Button 
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addTicketType}
+                    className="flex items-center gap-1"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Thêm vé
+                  </Button>
+                </div>
+                {previewData.ticketTypes.map((ticket, index) => {
+                  const availableTickets = ticket.ticketQuantity - (ticket.soldQuantity || 0);
+                  const isAvailable = availableTickets > 0;
+                  const soldPercentage = ticket.soldQuantity ? (ticket.soldQuantity / ticket.ticketQuantity) * 100 : 0;
+                  return (
+                    <div
+                      key={index}
+                      className="bg-white rounded-xl p-6 border border-gray-100 hover:border-primary/30 hover:shadow-md transition"
+                    >
+                      {/* Ticket Editing Form */}
+                      {editingTicketIndex === index ? (
+                        <div className="space-y-4">
+                          <h4 className="font-semibold text-foreground mb-1">Chỉnh sửa vé</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-sm font-medium mb-1">Tên vé</Label>
+                              <Input
+                                name="ticketName"
+                                value={ticketForm.ticketName}
+                                onChange={handleTicketFormChange}
+                                placeholder="Nhập tên vé"
+                              />
                             </div>
-                          </label>
-                        </div>
-
-                        {imagePreview.length > 0 && (
-                          <div>
-                            <h3 className="font-semibold mb-4">
-                              Hình ảnh đã tải ({imagePreview.filter(img => img !== null && img !== undefined && img !== '').length}/5)
-                            </h3>
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                              {imagePreview.filter(img => img !== null && img !== undefined && img !== '').map((img, index) => (
-                                <div key={index} className="relative group rounded-lg overflow-hidden bg-muted">
-                                  <img
-                                    src={img}
-                                    alt={`Preview ${index + 1}`}
-                                    className="w-full h-32 object-cover"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => removeImage(index)}
-                                    className="absolute top-2 right-2 bg-destructive/90 hover:bg-destructive text-white p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
-                                  {index === 0 && (
-                                    <div className="absolute bottom-2 left-2 bg-primary/90 text-primary-foreground text-xs px-2 py-1 rounded font-semibold">
-                                      Chính
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
+                            <div>
+                              <Label className="text-sm font-medium mb-1">Số lượng</Label>
+                              <Input
+                                type="number"
+                                name="ticketQuantity"
+                                value={ticketForm.ticketQuantity}
+                                onChange={handleTicketFormChange}
+                                min="1"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium mb-1">Giá vé (VND)</Label>
+                              <Input
+                                type="number"
+                                name="ticketPrice"
+                                value={ticketForm.ticketPrice}
+                                onChange={handleTicketFormChange}
+                                min="0"
+                                disabled={watchTicketPricingType === '1'} // Disabled for free events
+                              />
+                            </div>
+                            <div className="md:col-span-2">
+                              <Label className="text-sm font-medium mb-1">Mô tả</Label>
+                              <Textarea
+                                name="ticketDescription"
+                                value={ticketForm.ticketDescription}
+                                onChange={handleTicketFormChange}
+                                placeholder="Mô tả vé (tùy chọn)"
+                                rows={2}
+                              />
                             </div>
                           </div>
-                        )}
-                      </div>
-
-                      {/* Evidence Images */}
-                      <div className="space-y-4">
-                        <div className="border-2 border-dashed border-indigo-300 rounded-xl p-8 text-center hover:border-indigo-500 transition-colors cursor-pointer bg-indigo-50/50 dark:bg-indigo-950/20">
-                          <Input
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            onChange={handleEvidenceImageChange}
-                            className="hidden"
-                            id="evidence-image-input"
-                          />
-                          <label htmlFor="evidence-image-input" className="cursor-pointer">
-                            <div className="flex flex-col items-center gap-3">
-                              <div className="text-5xl">📁</div>
-                              <div>
-                                <p className="font-semibold text-foreground text-lg">
-                                  Chọn hình ảnh bằng chứng tổ chức
-                                </p>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  PNG, JPG, GIF (tối đa 5 file)
+                          <div className="flex justify-end gap-2">
+                            <Button variant="outline" size="sm" onClick={cancelEditingTicket}>
+                              Hủy
+                            </Button>
+                            <Button size="sm" onClick={saveEditingTicket}>
+                              Lưu
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Ticket Display */
+                        <>
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <h4 className="font-semibold text-foreground mb-1">{ticket.ticketName}</h4>
+                              <p className="text-sm text-muted-foreground">{ticket.ticketDescription}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="text-right">
+                                <p className="text-2xl font-bold text-primary">
+                                  {ticket.ticketPrice === 0 ? "Miễn phí" : formatTicketPrice(ticket)}
                                 </p>
                               </div>
-                            </div>
-                          </label>
-                        </div>
-
-                        {evidenceImagePreview.length > 0 && (
-                          <div>
-                            <h3 className="font-semibold mb-4">
-                              Hình ảnh bằng chứng ({evidenceImagePreview.filter(img => img !== null && img !== undefined && img !== '').length}/5)
-                            </h3>
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                              {evidenceImagePreview.filter(img => img !== null && img !== undefined && img !== '').map((img, index) => (
-                                <div key={index} className="relative group rounded-lg overflow-hidden bg-muted">
-                                  <img
-                                    src={img}
-                                    alt={`Evidence Preview ${index + 1}`}
-                                    className="w-full h-32 object-cover"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => removeEvidenceImage(index)}
-                                    className="absolute top-2 right-2 bg-destructive/90 hover:bg-destructive text-white p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Step 4: Tickets */}
-                {currentStep === 4 && (
-                  <div className="space-y-6 animate-in fade-in duration-300">
-                    <div>
-                      <h2 className="text-2xl font-bold mb-2">Thông tin vé</h2>
-                      <p className="text-muted-foreground">
-                        Tạo các loại vé với giá và số lượng khác nhau
-                      </p>
-                    </div>
-
-                    <div className="space-y-4">
-                      {fields.map((field, index) => (
-                        <Card key={field.id} className="bg-muted/50">
-                          <CardContent className="pt-6">
-                            <div className="flex justify-between items-start mb-4">
-                              <h3 className="font-semibold text-lg">Vé #{index + 1}</h3>
+                              <button
+                                type="button"
+                                onClick={() => startEditingTicket(index, ticket)}
+                                className="text-blue-600 hover:bg-blue-100 p-2 rounded"
+                              >
+                                <Pen className="w-4 h-4" />
+                              </button>
                               {fields.length > 1 && (
                                 <button
                                   type="button"
@@ -1451,169 +1579,339 @@ const CreateEventPage = () => {
                                 </button>
                               )}
                             </div>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>{ticket.soldQuantity || 0} / {ticket.ticketQuantity} đã bán</span>
+                            <span className="font-medium">{availableTickets} còn lại</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {/* About Event */}
+            <div className="bg-white rounded-xl p-8 border border-gray-100">
+              <h2 className="text-2xl font-bold text-foreground mb-6">Về sự kiện</h2>
+              <p className="text-muted-foreground leading-relaxed mb-6">
+                {watch('description') || "Thông tin chi tiết về sự kiện chưa được cập nhật."}
+              </p>
+              
+              <div className="space-y-4">
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-primary" />
+                  Bạn sẽ nhận được:
+                </h3>
+                <ul className="space-y-2">
+                  {[
+                    "Kiến thức và trải nghiệm quý báu",
+                    "Cơ hội kết nối với những người cùng chí hướng",
+                    "Tài liệu sự kiện (nếu có)",
+                    "Networking và chia sẻ kinh nghiệm",
+                  ].map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-3 text-muted-foreground">
+                      <CheckCircle className="w-4 h-4 text-primary flex-shrink-0 mt-1" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            {/* Organizer */}
+            <div className="bg-white rounded-xl p-8 border border-gray-100">
+              <h2 className="text-xl font-bold text-foreground mb-6">Nhà tổ chức</h2>
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <User className="h-8 w-8 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground text-lg">{user?.fullName || "Nhà tổ chức"}</h3>
+                  <p className="text-muted-foreground mt-1">Thông tin về nhà tổ chức chưa được cập nhật.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* Sidebar - Form Controls */}
+          <div className="lg:col-span-1 space-y-5">
+            {/* Main Card */}
+            <div className="sticky top-24">
+              {/* Header Section */}
+              <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 rounded-t-2xl p-6 text-white shadow-lg">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold mb-1 flex items-center gap-2">
+                      <Pen className="w-5 h-5" />
+                      Thông tin sự kiện
+                    </h3>
+                    <p className="text-blue-100 text-sm">Tạo sự kiện của bạn một cách dễ dàng</p>
+                  </div>
+                </div>
+              </div>
 
-                            <div className="space-y-4">
-                              <div>
-                                <Label className="text-sm font-semibold mb-2 block">
-                                  Tên vé *
-                                </Label>
-                                <Input
-                                  placeholder="Ví dụ: Vé VIP, Vé thường"
-                                  {...register(`ticketTypes.${index}.ticketName`)}
-                                  className="h-10"
-                                />
-                                {errors.ticketTypes?.[index]?.ticketName && <p className="text-red-500 text-xs mt-1">{errors.ticketTypes[index].ticketName.message}</p>}
-                              </div>
+              {/* Form Content */}
+              <Card className="border-0 rounded-t-none shadow-2xl">
+                <CardContent className="space-y-5 pt-6 pb-6">
+                  {/* Category Selection */}
+                  <div className="space-y-3">
+                      <CategorySelector 
+                        selectedCategories={selectedCategory ? [selectedCategory] : []}
+                        onCategoriesChange={(categories) => {
+                          if (categories.length > 0) {
+                            const category = categories[0];
+                            setSelectedCategory(category);
+                            setValue('eventCategoryId', category.eventCategoryId);
+                          } else {
+                            setSelectedCategory(null);
+                            setValue('eventCategoryId', '');
+                          }
+                        }}
+                      />
+                      {errors.eventCategoryId && (
+                        <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {errors.eventCategoryId.message}
+                        </p>
+                      )}
+                  </div>
 
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <Label className="text-sm font-semibold mb-2 block">
-                                    Số lượng *
-                                  </Label>
-                                  <Input
-                                    type="number"
-                                    min="1"
-                                    {...register(`ticketTypes.${index}.ticketQuantity`, { valueAsNumber: true })}
-                                    className="h-10"
-                                  />
-                                  {errors.ticketTypes?.[index]?.ticketQuantity && <p className="text-red-500 text-xs mt-1">{errors.ticketTypes[index].ticketQuantity.message}</p>}
-                                </div>
-                                <div>
-                                  <Label className="text-sm font-semibold mb-2 block">
-                                    Giá vé {watch('ticketPricingType') === '1' ? '(không dùng)' : '*'}
-                                  </Label>
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    disabled={watch('ticketPricingType') === '1'}
-                                    {...register(`ticketTypes.${index}.ticketPrice`, { valueAsNumber: true })}
-                                    className="h-10"
-                                  />
-                                  {errors.ticketTypes?.[index]?.ticketPrice && <p className="text-red-500 text-xs mt-1">{errors.ticketTypes[index].ticketPrice.message}</p>}
-                                </div>
-                              </div>
+                  <div className="h-px bg-gradient-to-r from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-900"></div>
 
-                              <div>
-                                <Label className="text-sm font-semibold mb-2 block">
-                                  Mô tả vé
-                                </Label>
-                                <Textarea
-                                  placeholder="Mô tả chi tiết về loại vé này"
-                                  {...register(`ticketTypes.${index}.ticketDescription`)}
-                                  rows={2}
-                                  className="resize-none"
-                                />
-                              </div>
+                  {/* Event Type Selection (Free/Paid) */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-emerald-100 dark:bg-emerald-900/30 p-2 rounded-lg">
+                        <CreditCard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <h4 className="font-semibold text-foreground">Loại sự kiện</h4>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { value: "1", label: "Miễn phí", icon: "🎁", desc: "Không thu phí vé" },
+                        { value: "2", label: "Có phí", icon: "💳", desc: "Có thu phí vé" },
+                      ].map((type) => (
+                        <button
+                          key={type.value}
+                          type="button"
+                          onClick={() => setValue('ticketPricingType', type.value)}
+                          className={`relative group p-4 rounded-xl border-2 transition-all duration-300 ${
+                            watch('ticketPricingType') === type.value
+                              ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 shadow-lg shadow-emerald-500/20"
+                              : "border-gray-200 dark:border-gray-800 hover:border-emerald-300 dark:hover:border-emerald-700 bg-gray-50 dark:bg-gray-900/50"
+                          }`}
+                        >
+                          <div className="text-3xl mb-2">{type.icon}</div>
+                          <div className="text-left">
+                            <p className="font-semibold text-sm">{type.label}</p>
+                            <p className="text-xs text-muted-foreground">{type.desc}</p>
+                          </div>
+                          {watch('ticketPricingType') === type.value && (
+                            <div className="absolute top-2 right-2 bg-emerald-500 text-white rounded-full p-1">
+                              <CheckCircle2 className="w-3 h-3" />
                             </div>
-                          </CardContent>
-                        </Card>
+                          )}
+                        </button>
                       ))}
+                    </div>
+                    <input type="hidden" {...register('ticketPricingType')} />
+                    {errors.ticketPricingType && (
+                      <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {errors.ticketPricingType.message}
+                      </p>
+                    )}
+                  </div>
 
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={addTicketType}
-                        className="w-full h-11"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Thêm loại vé
-                      </Button>
+                  <div className="h-px bg-gradient-to-r from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-900"></div>
+
+                  {/* Location Information */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-lg">
+                        <MapPin className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                      </div>
+                      <h4 className="font-semibold text-foreground">Địa điểm</h4>
                     </div>
 
-                    {/* Tags Section */}
-                    <div className="pt-6">
-                      <h3 className="text-lg font-semibold mb-4">Tags</h3>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Quận/Huyện</Label>
+                      <Select 
+                        value={watch('district')} 
+                        onValueChange={(value) => setValue('district', value)}
+                      >
+                        <SelectTrigger className="rounded-lg h-9 border-gray-200 dark:border-gray-800">
+                          <SelectValue placeholder="Chọn quận/huyện" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PredefinedCities.map((city) => (
+                            <SelectItem key={city} value={city}>
+                              {city}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.district && (
+                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {errors.district.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        Tên địa điểm
+                      </Label>
+                      <Input
+                        placeholder="Ví dụ: Trung tâm hội nghị thành phố"
+                        value={watch('locationName') || ''}
+                        onChange={(e) => setValue('locationName', e.target.value)}
+                        className="rounded-lg h-9 border-gray-200 dark:border-gray-800 focus:border-blue-400"
+                      />
+                      {errors.locationName && (
+                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {errors.locationName.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Địa chỉ chi tiết</Label>
+                      <Textarea
+                        placeholder="Nhập địa chỉ đầy đủ"
+                        rows={2}
+                        value={watch('address') || ''}
+                        onChange={(e) => setValue('address', e.target.value)}
+                        className="rounded-lg border-gray-200 dark:border-gray-800 resize-none focus:border-blue-400 text-sm"
+                      />
+                      {errors.address && (
+                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {errors.address.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-gradient-to-r from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-900"></div>
+
+                  {/* Tags Section */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded-lg">
+                        <Tag className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      </div>
+                      <h4 className="font-semibold text-foreground">Tags</h4>
+                    </div>
+                    <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-200 dark:border-gray-800">
                       <TagSelector />
                     </div>
                   </div>
-                )}
 
-                {/* Navigation Buttons */}
-                <div className="flex justify-between items-center mt-10 pt-8 border-t border-border">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setCurrentStep(prev => prev - 1)}
-                    disabled={currentStep === 1}
-                    className="h-11"
-                  >
-                    <ChevronLeft className="w-4 h-4 mr-2" />
-                    Quay lại
-                  </Button>
+                  <div className="h-px bg-gradient-to-r from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-900"></div>
 
-                  <div className="flex gap-3">
-                    <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" disabled={isSubmitting || isLoading} className="h-11">
-                          <Eye className="w-4 h-4 mr-2" />
-                          Xem trước
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto p-0">
-                        <DialogHeader className="p-6 pb-0">
-                          <DialogTitle className="text-2xl">Xem trước sự kiện</DialogTitle>
-                        </DialogHeader>
-                        <div className="p-6">
-                          {isPreviewOpen && (
-                            <EventDetailGuestPage previewData={generatePreviewData(watch())} />
-                          )}
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-
-                    {currentStep === STEPS.length ? (
-                      <div className="flex gap-3">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="h-11"
-                          onClick={() => handleSubmit((data) => onSubmit({...data, publish: false}))()}
-                          disabled={isSubmitting || isLoading}
-                        >
-                          <Save className="w-4 h-4 mr-2" />
-                          {isSubmitting || isLoading ? "Đang lưu..." : "Lưu nháp"}
-                        </Button>
-                        <Button
-                          type="button"
-                          className="h-11 bg-primary hover:bg-primary/90"
-                          onClick={() => handleSubmit((data) => onSubmit({...data, publish: true}))()}
-                          disabled={isSubmitting || isLoading}
-                        >
-                          <Send className="w-4 h-4 mr-2" />
-                          {isSubmitting || isLoading ? "Đang xuất bản..." : "Xuất bản"}
-                        </Button>
+                  {/* Evidence Images */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-pink-100 dark:bg-pink-900/30 p-2 rounded-lg">
+                        <Upload className="w-4 h-4 text-pink-600 dark:text-pink-400" />
                       </div>
-                    ) : (
-                      <Button
-                        type="button"
-                        onClick={() => setCurrentStep(prev => prev + 1)}
-                        disabled={!canProceedToNextStep}
-                        className="h-11 bg-primary hover:bg-primary/90"
-                      >
-                        Tiếp theo
-                        <ChevronRight className="w-4 h-4 ml-2" />
-                      </Button>
+                      <h4 className="font-semibold text-foreground">Hình ảnh bằng chứng</h4>
+                    </div>
+
+                    <div className="relative group">
+                      <label htmlFor="evidence-image-input" className="block cursor-pointer">
+                        <div className="bg-gradient-to-br from-pink-50 to-orange-50 dark:from-pink-950/20 dark:to-orange-950/20 border-2 border-dashed border-pink-200 dark:border-pink-800 rounded-xl p-5 text-center hover:border-pink-400 dark:hover:border-pink-600 transition-colors">
+                          <div className="text-3xl mb-2">📁</div>
+                          <p className="text-sm font-medium text-foreground">
+                            Chọn hình ảnh bằng chứng tổ chức
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Tối đa 5 hình ảnh (PNG, JPG, GIF)
+                          </p>
+                        </div>
+                        <Input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={handleEvidenceImageChange}
+                          className="hidden"
+                          id="evidence-image-input"
+                        />
+                      </label>
+                    </div>
+
+                    {evidenceImagePreview.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {evidenceImagePreview.filter(img => img !== null && img !== undefined && img !== '').map((img, index) => (
+                          <div key={index} className="relative group rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+                            <img
+                              src={img}
+                              alt={`Evidence Preview ${index + 1}`}
+                              className="w-full h-20 object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeEvidenceImage(index)}
+                              className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                            >
+                              <X className="w-4 h-4 text-white" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
-                </div>
-              </form>
-            </div>
 
-            {/* Tips Section */}
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-              {[
-                { icon: '📝', title: 'Mô tả rõ ràng', desc: 'Viết mô tả chi tiết để thu hút khách tham dự' },
-                { icon: '🖼️', title: 'Hình ảnh chất lượng', desc: 'Sử dụng ảnh sắc nét để tăng sự chú ý' },
-                { icon: '⏰', title: 'Lên lịch đúng', desc: 'Đảm bảo thời gian và địa điểm chính xác' },
-              ].map((tip, index) => (
-                <Card key={index} className="bg-card/50">
-                  <CardContent className="pt-6">
-                    <p className="text-3xl mb-2">{tip.icon}</p>
-                    <h4 className="font-semibold mb-1">{tip.title}</h4>
-                    <p className="text-sm text-muted-foreground">{tip.desc}</p>
-                  </CardContent>
-                </Card>
-              ))}
+                  <div className="h-px bg-gradient-to-r from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-900"></div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-col gap-3 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-10 rounded-lg font-medium border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 bg-transparent"
+                      onClick={() => {
+                        // Kiểm tra validation trước khi submit
+                        const dateValidationErrors = validateDates();
+                        const hasTimelineErrors = Object.values(timelineErrors).some(error => error !== '');
+                        
+                        if (dateValidationErrors.length > 0 || hasTimelineErrors) {
+                          toast.error('Vui lòng kiểm tra lại thông tin thời gian sự kiện trước khi lưu nháp');
+                          return;
+                        }
+                        
+                        handleSubmit((data) => onSubmit({ ...data, publish: false }))();
+                      }}
+                      disabled={isSubmitting || isLoading || !isTimelineValid}
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      {isSubmitting || isLoading ? "Đang lưu..." : "Lưu nháp"}
+                    </Button>
+                    <Button
+                      type="button"
+                      className="h-10 rounded-lg font-medium bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all"
+                      onClick={() => {
+                        // Kiểm tra validation trước khi submit
+                        const dateValidationErrors = validateDates();
+                        const hasTimelineErrors = Object.values(timelineErrors).some(error => error !== '');
+                        
+                        if (dateValidationErrors.length > 0 || hasTimelineErrors) {
+                          toast.error('Vui lòng kiểm tra lại thông tin thời gian sự kiện trước khi xuất bản');
+                          return;
+                        }
+                        
+                        handleSubmit((data) => onSubmit({ ...data, publish: true }))();
+                      }}
+                      disabled={isSubmitting || isLoading || !isTimelineValid}
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      {isSubmitting || isLoading ? "Đang xuất bản..." : "Xuất bản"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
@@ -1621,5 +1919,4 @@ const CreateEventPage = () => {
     </div>
   );
 };
-
 export default CreateEventPage;

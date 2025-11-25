@@ -1,4 +1,4 @@
-﻿using AIEvent.Application.Helpers;
+using AIEvent.Application.Helpers;
 using AIEvent.Application.Mappings;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
@@ -67,7 +67,7 @@ namespace AIEvent.API.Extensions
         {
             services.AddDbContext<DatabaseContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
- 
+
             services.AddSingleton<MongoDbContext>();
 
             return services;
