@@ -1195,7 +1195,7 @@ const EditEventPage = () => {
           )}
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
           {/* Main Content - Event Detail Preview */}
           <div className="lg:col-span-2 space-y-8">
             <div className="space-y-3">

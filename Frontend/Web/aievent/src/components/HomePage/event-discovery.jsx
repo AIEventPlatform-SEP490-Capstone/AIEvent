@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader } from "../ui/card";
+import { Badge } from "../ui/badge";
 import {
   Calendar,
   MapPin,
@@ -30,6 +31,7 @@ import {
   SlidersHorizontal,
   ChevronLeft,
   ChevronRight,
+  Clock,
 } from "lucide-react";
 import { useFavoriteEvents } from "../../hooks/useFavoriteEvents";
 import { useSelector } from "react-redux";
@@ -505,128 +507,123 @@ export function EventDiscovery({
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {paginatedEvents.map((event) => (
-              <div 
-                key={event.eventId || event.id}
-                className="card bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 group"
+              <Card 
+                key={event.eventId || event.id} 
+                className="group overflow-hidden hover:shadow-xl transition-all duration-300 border-border/50 hover:border-primary/30 cursor-pointer"
+                onClick={() => handleViewDetail(event.eventId || event.id)}
               >
-                <div className="card-image relative w-full h-40 overflow-hidden">
-                  <img
+                {/* Image Container */}
+                <div className="aspect-[16/10] relative overflow-hidden bg-muted">
+                  <img 
                     src={
                       event.image || 
                       (event.imgListEvent && event.imgListEvent[0]) || 
                       "/placeholder.svg"
-                    }
-                    alt={event.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    } 
+                    alt={event.title} 
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
                   />
-                  <div className="tag absolute top-3 left-3 bg-blue-500 text-white px-3 py-1 rounded-2xl text-sm font-medium">
-                    {event.category || event.eventCategoryName || "Event"}
-                  </div>
-                  <div className="absolute top-3 right-3 flex space-x-2">
-                    <button
-                      className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 hover:bg-white shadow-sm flex items-center justify-center transition-all"
-                      onClick={() => toggleLike(event.eventId || event.id)}
-                    >
-                      <Heart
-                        className={`w-4 h-4 ${
-                          likedEvents.has(event.eventId || event.id)
-                            ? "fill-red-500 text-red-500"
-                            : "text-gray-600"
-                        }`}
-                      />
-                    </button>
-                    <button
-                      className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 hover:bg-white shadow-sm flex items-center justify-center transition-all"
-                      onClick={() => handleViewDetail(event.eventId || event.id)}
-                    >
-                      <MessageCircle className="w-4 h-4 text-gray-600" />
-                    </button>
-                  </div>
-                  <div className="absolute bottom-3 left-3">
-                    <span className="bg-white/90 backdrop-blur-sm text-gray-900 font-bold px-3 py-1 rounded-full text-sm shadow-sm">
-                      {formatPrice(event, event.ticketType === 1)}
-                    </span>
-                  </div>
-                  {isEventPastAndAttended(event) && (
-                    <div className="absolute top-3 left-3">
-                      <span className="bg-green-100 text-green-800 border border-green-200 px-2 py-1 text-xs rounded-full flex items-center">
-                        <Star className="w-3 h-3 mr-1" />
-                        Đã tham gia
-                      </span>
-                    </div>
+                  
+                  {/* Gradient Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0" />
+                  
+                  {/* Free Badge */}
+                  {(event.ticketType === 1 || event.ticketPrice === 0) && (
+                    <Badge className="absolute top-4 left-4 bg-success text-success-foreground shadow-lg">
+                      <Sparkles className="w-3 h-3 mr-1" />
+                      Miễn phí
+                    </Badge>
                   )}
+                  
+                  {/* Category Badge at bottom */}
+                  <Badge 
+                    variant="secondary" 
+                    className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm shadow-md"
+                  >
+                    {event.category || event.eventCategoryName || "Event"}
+                  </Badge>
+                  
+                  {/* Like Button */}
+                  <Button 
+                    variant="secondary" 
+                    size="icon"
+                    className="absolute top-4 right-4 h-9 w-9 rounded-full shadow-lg backdrop-blur-sm bg-card/80 hover:bg-card transition-all hover:scale-110"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleLike(event.eventId || event.id);
+                    }}
+                  >
+                    <Heart 
+                      className={`w-4 h-4 transition-all ${
+                        likedEvents.has(event.eventId || event.id)
+                          ? "fill-red-500 text-red-500 scale-110"
+                          : "text-muted-foreground"
+                      }`} 
+                    />
+                  </Button>
                 </div>
 
-                <div className="card-content p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="title font-semibold text-[17px] leading-tight text-gray-900 line-clamp-2">
-                      {event.title}
-                    </h3>
-                  </div>
-                  <div className="info space-y-2 text-gray-600 text-[13px] leading-relaxed mb-4 line-clamp-2">
-                    <div className="flex items-center">
-                      <Calendar className="w-4 h-4 mr-2 text-blue-500" />
-                      <span>
-                        {new Date(event.startTime || event.date).toLocaleDateString("vi-VN")} •{" "}
-                        {event.time || new Date(event.startTime).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                <CardContent className="p-5">
+                  <h3 className="font-bold text-lg mb-3 line-clamp-2 text-foreground group-hover:text-primary transition-colors">
+                    {event.title}
+                  </h3>
+
+                  <div className="space-y-2.5 text-sm text-muted-foreground mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 flex-1">
+                        <Calendar className="w-4 h-4 text-primary" />
+                        <span>{new Date(event.startTime || event.date).toLocaleDateString("vi-VN")}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-4 h-4 text-secondary" />
+                        <span>
+                          {event.time || new Date(event.startTime).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center">
-                      <MapPin className="w-4 h-4 mr-2 text-blue-500 flex-shrink-0" />
-                      <span className="truncate">
+
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                      <span className="line-clamp-1 text-xs">
                         {event.locationName || event.location}
                       </span>
                     </div>
-                  </div>
 
-                  <div className="card-footer flex justify-between items-center">
-                    <div className="flex items-center">
-                      <div className="logo w-9 h-9 bg-gray-900 text-white rounded-full flex justify-center items-center font-bold text-sm mr-2">
-                        {event.organizerName ? event.organizerName.charAt(0).toUpperCase() : "O"}
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-primary" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium">
+                            {event.soldQuantity || 0}/{event.totalTickets} người
+                          </span>
+                          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all"
+                              style={{ width: `${event.totalTickets ? (event.soldQuantity || 0) / event.totalTickets * 100 : 0}%` }}
+                            />
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-sm font-medium text-gray-900 truncate max-w-[100px]">
-                        {event.organizerName || "Organizer"}
-                      </div>
-                    </div>
-                    <div className="share w-9 h-9 bg-[#e8f7ff] text-[#00aaff] rounded-lg flex justify-center items-center">
-                      <Share2 className="w-4 h-4" />
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-3">
-                    <div className="flex items-center">
-                      <Users className="w-4 h-4 mr-1 text-gray-500" />
-                      <span className="text-sm text-gray-600">
-                        {event.soldQuantity || 0}/{event.totalTickets}
-                      </span>
-                    </div>
-                    <div className="flex items-center">
-                      <Heart className="w-4 h-4 mr-1 text-gray-500" />
-                      <span className="text-sm text-gray-600">
-                        {event.likesCount || 0}
-                      </span>
                     </div>
                   </div>
 
-                  <div className="flex space-x-2 pt-3">
-                    <Button
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm py-2"
+                  <div className="flex items-center justify-between pt-4 border-t border-border">
+                    <div className="text-xl font-bold text-primary">
+                      {formatPrice(event, event.ticketType === 1)}
+                    </div>
+                    <Button 
                       size="sm"
-                      onClick={() => handleRegister(event.eventId || event.id)}
+                      className="shadow-sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewDetail(event.eventId || event.id);
+                      }}
                     >
-                      Mua vé
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold text-sm py-2"
-                      onClick={() => handleViewDetail(event.eventId || event.id)}
-                    >
-                      Chi tiết
+                      Xem chi tiết
                     </Button>
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
           

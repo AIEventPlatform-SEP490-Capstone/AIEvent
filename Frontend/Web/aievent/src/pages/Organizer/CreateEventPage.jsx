@@ -1175,7 +1175,7 @@ const CreateEventPage = () => {
           <p className="text-muted-foreground">Tạo và quản lý sự kiện của bạn</p>
         </div>
         {/* Event Banner with Editable Image */}
-         <div className="relative h-96 w-full overflow-hidden bg-gray-100">
+         <div className="relative h-96 w-full overflow-hidden bg-gray-100 mb-6">
               {imagePreview && imagePreview.length > 0 ? (
                 <>
                   <img 

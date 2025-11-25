@@ -12,7 +12,10 @@ import {
   Clock, 
   Users, 
   Heart,
-  Loader2
+  Loader2,
+  Sparkles,
+  ChevronUp,
+  ChevronDown
 } from "lucide-react";
 import { useEvents } from "../../hooks/useEvents";
 import { useCategories } from "../../hooks/useCategories";
@@ -31,6 +34,8 @@ export default function SearchPage() {
   const [priceFilter, setPriceFilter] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
+  const [showAllLocations, setShowAllLocations] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
   const [events, setEvents] = useState([]);
   const [favoriteEvents, setFavoriteEvents] = useState(new Set());
 
@@ -101,9 +106,9 @@ export default function SearchPage() {
           params.ticketType = filters.priceFilter === "free" ? "free" : "paid"; // "free" = Free, "paid" = Paid
         }
         
-        // Add location filter if not "all"
+        // Add district filter if not "all"
         if (filters.locationFilter !== "all") {
-          params.city = filters.locationFilter;
+          params.district = filters.locationFilter;
         }
         
         // Add date filter if not "all"
@@ -231,11 +236,26 @@ export default function SearchPage() {
     { value: "paid", label: "Có phí" },
   ];
 
-  const locationFilters = [
-    { value: "all", label: "Tất cả địa điểm" },
-    { value: "Hà Nội", label: "Hà Nội" },
-    { value: "TP.HCM", label: "TP.HCM" },
-    { value: "Đà Nẵng", label: "Đà Nẵng" },
+  const allLocationFilters = [
+    { value: "all", label: "Tất cả quận" },
+    { value: "Quận 1", label: "Quận 1" },
+    { value: "Quận 2", label: "Quận 2" },
+    { value: "Quận 3", label: "Quận 3" },
+    { value: "Quận 4", label: "Quận 4" },
+    { value: "Quận 5", label: "Quận 5" },
+    { value: "Quận 6", label: "Quận 6" },
+    { value: "Quận 7", label: "Quận 7" },
+    { value: "Quận 8", label: "Quận 8" },
+    { value: "Quận 9", label: "Quận 9" },
+    { value: "Quận 10", label: "Quận 10" },
+    { value: "Quận 11", label: "Quận 11" },
+    { value: "Quận 12", label: "Quận 12" },
+    { value: "Thủ Đức", label: "Thủ Đức" },
+    { value: "Bình Thạnh", label: "Bình Thạnh" },
+    { value: "Phú Nhuận", label: "Phú Nhuận" },
+    { value: "Tân Bình", label: "Tân Bình" },
+    { value: "Gò Vấp", label: "Gò Vấp" },
+    { value: "Bình Tân", label: "Bình Tân" },
   ];
 
   const dateFilters = [
@@ -271,6 +291,24 @@ export default function SearchPage() {
         { id: "Conference", name: "Hội nghị" }
       ];
 
+  // Move selected location to the top of the list
+  const getLocationFilters = () => {
+    if (locationFilter === "all") {
+      return allLocationFilters;
+    }
+    
+    const selected = allLocationFilters.find(loc => loc.value === locationFilter);
+    const others = allLocationFilters.filter(loc => loc.value !== locationFilter);
+    
+    if (selected) {
+      return [selected, ...others];
+    }
+    
+    return allLocationFilters;
+  };
+  
+  const locationFilters = getLocationFilters();
+  
   // Function to get category name by ID or name
   const getCategoryName = (event) => {
     // Events have EventCategoryName directly
@@ -315,78 +353,109 @@ export default function SearchPage() {
 
         {/* Filters */}
         <div className="space-y-4 mb-6">
-          <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            className="flex items-center gap-2 p-0 hover:bg-transparent"
+            onClick={() => setShowFilters(!showFilters)}
+          >
             <Filter className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm font-medium">Bộ lọc:</span>
-          </div>
+            {showFilters ? (
+              <ChevronUp className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            )}
+          </Button>
 
-          {/* Category Filter */}
-          <div className="space-y-2">
-            <span className="text-sm text-muted-foreground">Danh mục:</span>
-            <div className="flex flex-wrap gap-2">
-              {displayCategories.map((category) => (
-                <Button
-                  key={category.id}
-                  variant={selectedCategory === category.id ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedCategory(category.id)}
-                >
-                  {category.name}
-                </Button>
-              ))}
-            </div>
-          </div>
+          {showFilters && (
+            <>
+              {/* Category Filter */}
+              <div className="space-y-2">
+                <span className="text-sm text-muted-foreground">Danh mục:</span>
+                <div className="flex flex-wrap gap-2">
+                  {displayCategories.map((category) => (
+                    <Button
+                      key={category.id}
+                      variant={selectedCategory === category.id ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedCategory(category.id)}
+                    >
+                      {category.name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
 
-          {/* Price Filter */}
-          <div className="space-y-2">
-            <span className="text-sm text-muted-foreground">Giá vé:</span>
-            <div className="flex gap-2">
-              {priceFilters.map((filter) => (
-                <Button
-                  key={filter.value}
-                  variant={priceFilter === filter.value ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setPriceFilter(filter.value)}
-                >
-                  {filter.label}
-                </Button>
-              ))}
-            </div>
-          </div>
+              {/* Price Filter */}
+              <div className="space-y-2">
+                <span className="text-sm text-muted-foreground">Giá vé:</span>
+                <div className="flex gap-2">
+                  {priceFilters.map((filter) => (
+                    <Button
+                      key={filter.value}
+                      variant={priceFilter === filter.value ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setPriceFilter(filter.value)}
+                    >
+                      {filter.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
 
-          {/* Location Filter */}
-          <div className="space-y-2">
-            <span className="text-sm text-muted-foreground">Địa điểm:</span>
-            <div className="flex gap-2">
-              {locationFilters.map((filter) => (
-                <Button
-                  key={filter.value}
-                  variant={locationFilter === filter.value ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setLocationFilter(filter.value)}
-                >
-                  {filter.label}
-                </Button>
-              ))}
-            </div>
-          </div>
+              {/* Location Filter */}
+              <div className="space-y-2">
+                <span className="text-sm text-muted-foreground">Địa điểm:</span>
+                <div className="flex gap-2 flex-wrap">
+                  {(showAllLocations ? locationFilters : locationFilters.slice(0, 5)).map((filter) => (
+                    <Button
+                      key={filter.value}
+                      variant={locationFilter === filter.value ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setLocationFilter(filter.value)}
+                    >
+                      {filter.label}
+                    </Button>
+                  ))}
+                  {locationFilters.length > 5 && !showAllLocations && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAllLocations(true)}
+                    >
+                      +{locationFilters.length - 5}
+                    </Button>
+                  )}
+                  {showAllLocations && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAllLocations(false)}
+                    >
+                      Thu gọn
+                    </Button>
+                  )}
+                </div>
+              </div>
 
-          {/* Date Filter */}
-          <div className="space-y-2">
-            <span className="text-sm text-muted-foreground">Thời gian:</span>
-            <div className="flex gap-2">
-              {dateFilters.map((filter) => (
-                <Button
-                  key={filter.value}
-                  variant={dateFilter === filter.value ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setDateFilter(filter.value)}
-                >
-                  {filter.label}
-                </Button>
-              ))}
-            </div>
-          </div>
+              {/* Date Filter */}
+              <div className="space-y-2">
+                <span className="text-sm text-muted-foreground">Thời gian:</span>
+                <div className="flex gap-2">
+                  {dateFilters.map((filter) => (
+                    <Button
+                      key={filter.value}
+                      variant={dateFilter === filter.value ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setDateFilter(filter.value)}
+                    >
+                      {filter.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -412,73 +481,109 @@ export default function SearchPage() {
       {!(eventsLoading || categoriesLoading) && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {events.map((event) => (
-            <Card key={event.eventId || event.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-              <div className="aspect-video relative overflow-hidden rounded-t-lg">
+            <Card 
+              key={event.eventId || event.id} 
+              className="group overflow-hidden hover:shadow-xl transition-all duration-300 border-border/50 hover:border-primary/30 cursor-pointer"
+              onClick={() => handleViewDetail(event.eventId || event.id)}
+            >
+              {/* Image Container */}
+              <div className="aspect-[16/10] relative overflow-hidden bg-muted">
                 <img 
                   src={event.image || (event.imgListEvent && event.imgListEvent[0]) || "/placeholder.svg"} 
                   alt={event.title} 
-                  className="w-full h-full object-cover" 
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
                 />
-                <div className="absolute top-3 right-3">
-                  <Button 
-                    variant="secondary" 
-                    size="sm" 
-                    className="h-8 w-8 p-0"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleLike(event.eventId || event.id);
-                    }}
-                  >
-                    <Heart 
-                      className={`w-4 h-4 ${
-                        favoriteEvents.has(event.eventId || event.id)
-                          ? "fill-red-500 text-red-500"
-                          : ""
-                      }`} 
-                    />
-                  </Button>
-                </div>
-                {(event.ticketType === 1 || event.ticketPrice === 0) && <Badge className="absolute top-3 left-3 bg-green-500">Miễn phí</Badge>}
+                
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0" />
+                
+                {/* Free Badge */}
+                {(event.ticketType === 1 || event.ticketPrice === 0) && (
+                  <Badge className="absolute top-4 left-4 bg-success text-success-foreground shadow-lg">
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    Miễn phí
+                  </Badge>
+                )}
+                
+                {/* Category Badge at bottom */}
+                <Badge 
+                  variant="secondary" 
+                  className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm shadow-md"
+                >
+                  {getCategoryName(event)}
+                </Badge>
+                
+                {/* Like Button */}
+                <Button 
+                  variant="secondary" 
+                  size="icon"
+                  className="absolute top-4 right-4 h-9 w-9 rounded-full shadow-lg backdrop-blur-sm bg-card/80 hover:bg-card transition-all hover:scale-110"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleLike(event.eventId || event.id);
+                  }}
+                >
+                  <Heart 
+                    className={`w-4 h-4 transition-all ${
+                      favoriteEvents.has(event.eventId || event.id)
+                        ? "fill-red-500 text-red-500 scale-110"
+                        : "text-muted-foreground"
+                    }`} 
+                  />
+                </Button>
               </div>
 
-              <CardContent className="p-4">
-                <div className="mb-2">
-                  <Badge variant="outline" className="text-xs">
-                    {getCategoryName(event)}
-                  </Badge>
-                </div>
+              <CardContent className="p-5">
+                <h3 className="font-bold text-lg mb-3 line-clamp-2 text-foreground group-hover:text-primary transition-colors">
+                  {event.title}
+                </h3>
 
-                <h3 className="font-semibold text-lg mb-2 line-clamp-2">{event.title}</h3>
-
-                <div className="space-y-2 text-sm text-muted-foreground mb-4">
+                <div className="space-y-2.5 text-sm text-muted-foreground mb-4">
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    <span>{formatDate(event.startTime || event.date)}</span>
-                    <Clock className="w-4 h-4 ml-2" />
-                    <span>{formatTime(event.startTime || event.date)}</span>
+                    <div className="flex items-center gap-1.5 flex-1">
+                      <Calendar className="w-4 h-4 text-primary" />
+                      <span>{formatDate(event.startTime || event.date)}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-secondary" />
+                      <span>
+                        {formatTime(event.startTime || event.date)}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4" />
-                    <span className="line-clamp-1">
-                      {event.locationName || event.location}, {event.address}
+                  <div className="flex items-start gap-2">
+                    <MapPin className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                    <span className="line-clamp-1 text-xs">
+                      {event.locationName || event.location}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    <span>
-                      {event.soldQuantity || 0}/{event.totalTickets || event.maxAttendees} người tham gia
-                    </span>
+                    <Users className="w-4 h-4 text-primary" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium">
+                          {event.soldQuantity || 0}/{event.totalTickets || event.maxAttendees} người
+                        </span>
+                        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all"
+                            style={{ width: `${(event.totalTickets || event.maxAttendees) ? (event.soldQuantity || 0) / (event.totalTickets || event.maxAttendees) * 100 : 0}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="text-lg font-bold text-primary">
+                <div className="flex items-center justify-between pt-4 border-t border-border">
+                  <div className="text-xl font-bold text-primary">
                     {formatPrice(event)}
                   </div>
                   <Button 
                     size="sm"
+                    className="shadow-sm"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleViewDetail(event.eventId || event.id);
