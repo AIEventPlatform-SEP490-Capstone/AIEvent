@@ -10,8 +10,7 @@ using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore; 
 using System.Text.Json;
 
 namespace AIEvent.Application.Services.Implements
