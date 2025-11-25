@@ -798,7 +798,8 @@ const CreateEventPage = () => {
         
         // Create a UTC date using the parsed components
         // Since the user entered local time (UTC+7), we need to subtract 7 hours to get UTC
-        const utcDate = new Date(Date.UTC(year, month - 1, day, hours - 7, minutes));
+        // ĐÚNG: KHÔNG TRỪ 7 TIẾNG
+        const utcDate = new Date(Date.UTC(year, month - 1, day, hours, minutes));
         
         // Return proper UTC ISO string
         return utcDate.toISOString();
