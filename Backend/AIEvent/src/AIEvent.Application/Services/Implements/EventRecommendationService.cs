@@ -88,7 +88,7 @@ namespace AIEvent.Application.Services.Implements
                 meta.TryGetValue("StartTime", out var start);
                 meta.TryGetValue("EndTime", out var end);
                 meta.TryGetValue("Tickets", out var tickets);
-                var eventUrl = eventId != null ? $"http://localhost:5173/event/{eventId}" : "#";
+                var eventUrl = eventId != null ? $"https://ai-event-alpha.vercel.app/event/{eventId}" : "#";
                 return $@"
                     - {title ?? "Sự kiện"} ({category ?? "Không rõ danh mục"})
                       Địa điểm: {(location ?? address ?? "Không rõ")} - {district ?? ""}
@@ -222,7 +222,7 @@ namespace AIEvent.Application.Services.Implements
 
             var embedding = await _voyageEmbeddingService.GetEmbeddingAsync(descriptionText);
 
-            var aiResults = await _pineconeService.QuerySimilarAsync(embedding, isUser: false, topK: 10);
+            var aiResults = await _pineconeService.QuerySimilarAsync(embedding, isUser: false, topK: 6);
 
             var eventIds = aiResults
                 .Select(r => Guid.TryParse(r.Id, out var guid) ? guid : Guid.Empty)
