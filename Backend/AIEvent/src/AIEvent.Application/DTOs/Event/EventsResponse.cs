@@ -23,5 +23,6 @@ namespace AIEvent.Application.DTOs.Event
         public TicketPricingType TicketPricingType { get; set; }
         public double? AverageRating { get; set; }
         public int TotalRatings { get; set; }
+        public string? Reason { get; set; }
     }
 }

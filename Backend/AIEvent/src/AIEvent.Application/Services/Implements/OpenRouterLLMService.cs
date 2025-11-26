@@ -115,5 +115,54 @@ namespace AIEvent.Application.Services.Implements
 
             return sessionName;
         }
+
+        public async Task<string> GenerateShortReasonAsync(string prompt)
+        {
+            var fullPrompt =
+                $"Dựa trên thông tin dưới đây, hãy tạo một lý do tại sao event đó có gì phù hợp với thông tin người dùng NGẮN GỌN dưới 30 từ, súc tích, tự nhiên, không giải thích dài dòng.\n" +
+                $"Ví dụ : Phù hợp với sở thích Âm nhạc, Gần vị trí của bạn, Phù hợp ngân sách,...\n" +
+                $"Không được xuống dòng, không được ghi tiêu đề, không thêm các icon và các kí tự đặc biệt\n" +
+                $"Chỉ trả về đúng 1 câu lý do.\n\n" +
+                $"Thông tin: {prompt}";
+
+            var requestBody = new
+            {
+                model = _model,
+                messages = new[]
+                {
+                    new { role = "system", content = "Bạn là AI chuyên gợi ý sự kiện." },
+                    new { role = "user", content = fullPrompt }
+                },
+                temperature = 0.5,
+                max_tokens = 40
+            };
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://openrouter.ai/api/v1/chat/completions");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+            request.Content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+
+            using var stream = await response.Content.ReadAsStreamAsync();
+            var json = await JsonDocument.ParseAsync(stream);
+
+            var content = json.RootElement
+                .GetProperty("choices")[0]
+                .GetProperty("message")
+                .GetProperty("content")
+                .GetString();
+
+            var clean = content?
+                .Replace("\n", " ")
+                .Replace("\r", " ")
+                .Trim();
+
+            if (string.IsNullOrWhiteSpace(clean))
+                clean = "Phù hợp sở thích và vị trí.";
+
+            return clean;
+        }
+
     }
 }
