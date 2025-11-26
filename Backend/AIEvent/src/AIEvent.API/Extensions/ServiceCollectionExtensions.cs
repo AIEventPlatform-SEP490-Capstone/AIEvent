@@ -75,8 +75,23 @@ namespace AIEvent.API.Extensions
 
         public static IServiceCollection AddExternalServices(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddSingleton<IConnectionMultiplexer>(
-                ConnectionMultiplexer.Connect(configuration["Redis:ConnectionString"]!));
+            services.AddSingleton<IConnectionMultiplexer>(provider =>
+            {
+                var redisConnectionString = configuration["Redis:ConnectionString"]!;
+
+                var configurationOptions = ConfigurationOptions.Parse(redisConnectionString);
+
+                configurationOptions.AbortOnConnectFail = false;     
+                configurationOptions.ConnectTimeout = 10000;      
+                configurationOptions.SyncTimeout = 10000;          
+                configurationOptions.AsyncTimeout = 10000;
+                configurationOptions.ConnectRetry = 5;                
+                configurationOptions.ReconnectRetryPolicy = new ExponentialRetry(500, 10000);  
+                 
+                configurationOptions.ConfigCheckSeconds = 10;
+
+                return ConnectionMultiplexer.Connect(configurationOptions);
+            });
 
             services.AddSingleton(x =>
             {
