@@ -180,7 +180,7 @@ namespace AIEvent.Application.Services.Implements
             return response;
         }
 
-        public async Task<Result<BasePaginated<EventsResponse>>> GetEventAIRecommendAsync(int pageNumber, int pageSize, Guid userId)
+        public async Task<Result<BasePaginated<AiRecommendEventResponse>>> GetEventAIRecommendAsync(int pageNumber, int pageSize, Guid userId)
         {
             var user = await _unitOfWork.UserRepository
                 .Query(false)
@@ -242,7 +242,7 @@ namespace AIEvent.Application.Services.Implements
                 .OrderByDescending(e => e.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(e => new EventsResponse
+                .Select(e => new AiRecommendEventResponse
                 {
                     EventId = e.Id,
                     Title = e.Title,
@@ -281,7 +281,7 @@ namespace AIEvent.Application.Services.Implements
                 ev.Reason = await _llmService.GenerateShortReasonAsync(prompt);
             }
 
-            return new BasePaginated<EventsResponse>(events, totalCount, pageNumber, pageSize);
+            return new BasePaginated<AiRecommendEventResponse>(events, totalCount, pageNumber, pageSize);
         }
 
 
