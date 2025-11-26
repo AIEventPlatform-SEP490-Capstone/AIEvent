@@ -489,7 +489,7 @@ const EditEventPage = () => {
   };
 
   // Handle form submission
-  const onSubmit = async (data) => {
+  const onSubmit = async (data, publishStatus = null) => {
     if (!eventId) {
       toast.error('Không tìm thấy ID sự kiện');
       return;
@@ -610,7 +610,8 @@ const EditEventPage = () => {
         
         // Create a UTC date using the parsed components
         // Since the user entered local time (UTC+7), we need to subtract 7 hours to get UTC
-        const utcDate = new Date(Date.UTC(year, month - 1, day, hours - 7, minutes));
+        // ĐÚNG: KHÔNG TRỪ 7 TIẾNG
+        const utcDate = new Date(Date.UTC(year, month - 1, day, hours, minutes)); 
         
         // Return proper UTC ISO string
         return utcDate.toISOString();
@@ -637,7 +638,7 @@ const EditEventPage = () => {
         longitude: geocodeResult.longitude,
         totalTickets: totalTickets,
         ticketPricingType: data.ticketPricingType && !isNaN(parseInt(data.ticketPricingType)) ? parseInt(data.ticketPricingType) : 1,
-        publish: data.publish || false,
+        publish: publishStatus !== null ? publishStatus : (data.publish || false),
         // Send existing images that are not removed + new images
         images: [...existingImages.filter(img => !removedImages.includes(img)), ...imageUrls],
         // Send existing evidence images that are not removed + new evidence images
@@ -670,7 +671,7 @@ const EditEventPage = () => {
     } catch (error) {
       console.error('Error updating event:', error);
       const errorData = error.response?.data;
-      let errorMessage = data.publish ? 'Có lỗi xảy ra khi cập nhật sự kiện' : 'Có lỗi xảy ra khi lưu nháp sự kiện';
+      let errorMessage = (publishStatus !== null ? publishStatus : (data.publish || false)) ? 'Có lỗi xảy ra khi cập nhật sự kiện' : 'Có lỗi xảy ra khi lưu nháp sự kiện';
       
       if (errorData?.errors === 'Invalid Organizer ID in token' || error.response?.status === 401) {
         errorMessage = 'Tài khoản organizer không hợp lệ hoặc phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.';
@@ -1249,7 +1250,8 @@ const EditEventPage = () => {
                   time: watch('saleStartTime') 
                     ? `${new Date(watch('saleStartTime')).toLocaleDateString('vi-VN', {
                         day: '2-digit',
-                        month: '2-digit'
+                        month: '2-digit',
+                        year: 'numeric'
                       })} ${new Date(watch('saleStartTime')).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -1263,7 +1265,8 @@ const EditEventPage = () => {
                   time: watch('saleEndTime') 
                     ? `${new Date(watch('saleEndTime')).toLocaleDateString('vi-VN', {
                         day: '2-digit',
-                        month: '2-digit'
+                        month: '2-digit',
+                        year: 'numeric'
                       })} ${new Date(watch('saleEndTime')).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -1277,7 +1280,8 @@ const EditEventPage = () => {
                   time: watch('startTime') 
                     ? `${new Date(watch('startTime')).toLocaleDateString('vi-VN', {
                         day: '2-digit',
-                        month: '2-digit'
+                        month: '2-digit',
+                        year: 'numeric'
                       })} ${new Date(watch('startTime')).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -1291,7 +1295,8 @@ const EditEventPage = () => {
                   time: watch('endTime') 
                     ? `${new Date(watch('endTime')).toLocaleDateString('vi-VN', {
                         day: '2-digit',
-                        month: '2-digit'
+                        month: '2-digit',
+                        year: 'numeric'
                       })} ${new Date(watch('endTime')).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -1482,9 +1487,28 @@ const EditEventPage = () => {
             {/* About Event */}
             <div className="bg-white rounded-xl p-8 border border-gray-100">
               <h2 className="text-2xl font-bold text-foreground mb-6">Về sự kiện</h2>
-              <p className="text-muted-foreground leading-relaxed mb-6">
-                {watch('description') || "Thông tin chi tiết về sự kiện chưa được cập nhật."}
-              </p>
+              <div className="space-y-4 mb-6">
+                {/* Editable Detailed Description */}
+                {editingField === 'detailedDescription' ? (
+                  <Textarea
+                    value={tempValue}
+                    onChange={(e) => setTempValue(e.target.value)}
+                    onBlur={saveEditing}
+                    onKeyDown={handleKeyPress}
+                    className="text-muted-foreground leading-relaxed"
+                    rows={6}
+                    autoFocus
+                  />
+                ) : (
+                  <p 
+                    className="text-muted-foreground leading-relaxed cursor-pointer hover:bg-gray-100 p-2 rounded min-h-[100px]"
+                    onClick={() => startEditing('detailedDescription', watch('detailedDescription'))}
+                  >
+                    {watch('detailedDescription') || watch('description') || 'Nhấp để nhập mô tả chi tiết sự kiện'}
+                    <Pencil className="w-4 h-4 inline-block ml-2 text-gray-400" />
+                  </p>
+                )}
+              </div>
               
               <div className="space-y-4">
                 <h3 className="font-semibold text-foreground flex items-center gap-2">
@@ -1785,20 +1809,22 @@ const EditEventPage = () => {
 
                   {/* Action Buttons */}
                   <div className="flex flex-col gap-3 pt-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-10 rounded-lg font-medium border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 bg-transparent"
-                      onClick={() => handleSubmit((data) => onSubmit({ ...data, publish: false }))()}
-                      disabled={isSaving}
-                    >
-                      <Save className="w-4 h-4 mr-2" />
-                      {isSaving ? "Đang lưu..." : "Lưu nháp"}
-                    </Button>
+                    {!watch('publish') && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-10 rounded-lg font-medium border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 bg-transparent"
+                        onClick={handleSubmit((data) => onSubmit(data, false))}
+                        disabled={isSaving}
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        {isSaving ? "Đang lưu..." : "Lưu nháp"}
+                      </Button>
+                    )}
                     <Button
                       type="button"
                       className="h-10 rounded-lg font-medium bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all"
-                      onClick={() => handleSubmit((data) => onSubmit({ ...data, publish: true }))()}
+                      onClick={handleSubmit((data) => onSubmit(data, true))}
                       disabled={isSaving}
                     >
                       <Send className="w-4 h-4 mr-2" />

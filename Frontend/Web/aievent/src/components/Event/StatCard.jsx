@@ -29,6 +29,11 @@ export const StatCard = ({
       bg: "from-orange-500 to-orange-600",
       text: "text-orange-600",
       lightBg: "bg-orange-50"
+    },
+    red: {
+      bg: "from-red-500 to-red-600",
+      text: "text-red-600",
+      lightBg: "bg-red-50"
     }
   };
 

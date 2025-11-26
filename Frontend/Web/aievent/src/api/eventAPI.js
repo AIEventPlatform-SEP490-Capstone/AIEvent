@@ -153,7 +153,7 @@ export const eventAPI = {
       TotalTickets: eventData.totalTickets,
       TicketPricingType: eventData.ticketPricingType,
       RequireApproval: eventData.requireApproval || EventStatus.PendingApproval,
-      Publish: eventData.publish || false,
+      Publish: eventData.publish !== undefined ? eventData.publish : false,
       LocationName: eventData.locationName,
       DetailedDescription: eventData.detailedDescription,
       LinkRef: eventData.linkRef,
@@ -180,126 +180,45 @@ export const eventAPI = {
 
   // Update event (requires Organizer role)
   updateEvent: async (eventData) => {
-    const formData = new FormData();
-    
-    // Add event ID
-    formData.append('EventId', eventData.eventId);
-    
-    // Add basic event fields
-    formData.append('Title', eventData.title);
-    formData.append('Description', eventData.description);
-    formData.append('StartTime', eventData.startTime);
-    formData.append('EndTime', eventData.endTime);
-    formData.append('TotalTickets', eventData.totalTickets);
-    formData.append('TicketPricingType', eventData.ticketPricingType);
-    if (eventData.requireApproval !== undefined) {
-      formData.append('RequireApproval', eventData.requireApproval);
-    }
-    formData.append('Publish', eventData.publish || false);
-    
-    // Optional fields
-    if (eventData.locationName) {
-      formData.append('LocationName', eventData.locationName);
-    }
-    if (eventData.detailedDescription) {
-      formData.append('DetailedDescription', eventData.detailedDescription);
-    }
-    if (eventData.linkRef) {
-      formData.append('LinkRef', eventData.linkRef);
-    }
-    if (eventData.district) {
-      formData.append('District', eventData.district);
-    }
-    if (eventData.address) {
-      formData.append('Address', eventData.address);
-    }
-    if (eventData.latitude) {
-      formData.append('Latitude', eventData.latitude);
-    }
-    if (eventData.longitude) {
-      formData.append('Longitude', eventData.longitude);
-    }
-    if (eventData.saleStartTime) {
-      formData.append('SaleStartTime', eventData.saleStartTime);
-    }
-    if (eventData.saleEndTime) {
-      formData.append('SaleEndTime', eventData.saleEndTime);
-    }
-    if (eventData.eventCategoryId) {
-      formData.append('EventCategoryId', eventData.eventCategoryId);
-    }
+    // Prepare data object for JSON submission
+    const data = {
+      Title: eventData.title,
+      Description: eventData.description,
+      StartTime: eventData.startTime,
+      EndTime: eventData.endTime,
+      TotalTickets: eventData.totalTickets,
+      TicketPricingType: eventData.ticketPricingType,
+      Publish: eventData.publish !== undefined ? eventData.publish : false,
+      LocationName: eventData.locationName,
+      DetailedDescription: eventData.detailedDescription,
+      LinkRef: eventData.linkRef,
+      District: eventData.district,
+      Address: eventData.address,
+      Latitude: eventData.latitude,
+      Longitude: eventData.longitude,
+      SaleStartTime: eventData.saleStartTime,
+      SaleEndTime: eventData.saleEndTime,
+      EventCategoryId: eventData.eventCategoryId,
+      ImgListEvent: eventData.images || [],
+      ImgListEvidences: eventData.evidenceImages || [],
+      RemoveImageUrls: eventData.removeImageUrls || [],
+      RemoveImageEvidenceUrls: eventData.removeEvidenceImageUrls || [],
+      TicketTypes: eventData.ticketTypes?.map(ticket => ({
+        Id: ticket.id || null,
+        TicketName: ticket.ticketName,
+        TicketPrice: ticket.ticketPrice,
+        TicketQuantity: ticket.ticketQuantity,
+        TicketDescription: ticket.ticketDescription || ""
+      })) || [],
+      RemoveTicketTypeIds: eventData.removeTicketTypeIds || [],
+      AddTagIds: eventData.addTagIds || [],
+      RemoveTagIds: eventData.removeTagIds || []
+    };
 
-    // Add new images only (not existing image URLs)
-    if (eventData.images && eventData.images.length > 0) {
-      eventData.images.forEach((image) => {
-        formData.append('ImgListEvent', image);
-      });
-    }
+    // Remove undefined properties
+    Object.keys(data).forEach(key => data[key] === undefined && delete data[key]);
 
-    // Add new evidence images only (not existing image URLs)
-    if (eventData.evidenceImages && eventData.evidenceImages.length > 0) {
-      eventData.evidenceImages.forEach((image) => {
-        formData.append('ImgListEvidences', image);
-      });
-    }
-
-    // Add image URLs to remove
-    if (eventData.removeImageUrls && eventData.removeImageUrls.length > 0) {
-      eventData.removeImageUrls.forEach((imageUrl) => {
-        formData.append('RemoveImageUrls', imageUrl);
-      });
-    }
-
-    // Add evidence image URLs to remove
-    if (eventData.removeEvidenceImageUrls && eventData.removeEvidenceImageUrls.length > 0) {
-      eventData.removeEvidenceImageUrls.forEach((imageUrl) => {
-        formData.append('RemoveImageEvidenceUrls', imageUrl);
-      });
-    }
-
-    // Add ticket types
-    if (eventData.ticketTypes && eventData.ticketTypes.length > 0) {
-      eventData.ticketTypes.forEach((ticket, index) => {
-        // Add ticket ID if it exists (for existing tickets)
-        if (ticket.id) {
-          formData.append(`TicketTypes[${index}].Id`, ticket.id);
-        }
-        formData.append(`TicketTypes[${index}].TicketName`, ticket.ticketName);
-        formData.append(`TicketTypes[${index}].TicketPrice`, ticket.ticketPrice);
-        formData.append(`TicketTypes[${index}].TicketQuantity`, ticket.ticketQuantity);
-        if (ticket.ticketDescription) {
-          formData.append(`TicketTypes[${index}].TicketDescription`, ticket.ticketDescription);
-        }
-      });
-    }
-
-    // Add ticket type IDs to remove
-    if (eventData.removeTicketTypeIds && eventData.removeTicketTypeIds.length > 0) {
-      eventData.removeTicketTypeIds.forEach((id) => {
-        formData.append('RemoveTicketTypeIds', id);
-      });
-    }
-
-    // Add tag IDs to add
-    if (eventData.addTagIds && eventData.addTagIds.length > 0) {
-      eventData.addTagIds.forEach((id) => {
-        formData.append('AddTagIds', id);
-      });
-    }
-
-    // Add tag IDs to remove
-    if (eventData.removeTagIds && eventData.removeTagIds.length > 0) {
-      eventData.removeTagIds.forEach((id) => {
-        formData.append('RemoveTagIds', id);
-      });
-    }
-
-    // Debug FormData contents
-    for (let [key, value] of formData.entries()) {
-      console.log(`${key}:`, value);
-    }
-
-    const response = await fetcher.patch(`/event/${eventData.eventId}`, formData);
+    const response = await fetcher.patch(`/event/${eventData.eventId}`, data);
     // Return the actual response data
     return response.data?.data || response.data;
   },
