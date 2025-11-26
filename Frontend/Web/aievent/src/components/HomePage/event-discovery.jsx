@@ -333,7 +333,7 @@ export function EventDiscovery({
                       <div className="flex items-center">
                         <Heart className="w-4 h-4 mr-1 text-gray-500" />
                         <span className="text-sm text-gray-600">
-                          {event.likesCount || 0}
+                          {event.favoriteCount || event.likesCount || 0}
                         </span>
                       </div>
                     </div>
@@ -604,6 +604,14 @@ export function EventDiscovery({
                           </div>
                         </div>
                       </div>
+                    </div>
+                    
+                    {/* Favorite Count */}
+                    <div className="flex items-center gap-2 pt-2">
+                      <Heart className="w-4 h-4 text-red-500" />
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {event.favoriteCount || 0} lượt yêu thích
+                      </span>
                     </div>
                   </div>
 

@@ -832,6 +832,18 @@ const EventDetailGuestPage = ({ previewData }) => {
               </div>
             </SidebarCard>
 
+            {/* Favorite Count Card */}
+            <SidebarCard title="Lượt yêu thích" icon={<Heart className="w-4 h-4" />} gradient>
+              <div className="text-center py-3">
+                <div className="text-3xl font-bold text-foreground mb-1">
+                  {event.favoriteCount || 0}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  người dùng đã yêu thích sự kiện này
+                </p>
+              </div>
+            </SidebarCard>
+
             {/* Location Card - Enhanced */}
             {(!event.isOnlineEvent || event.isOnlineEvent === false) &&
               (event.locationName || event.address) && (

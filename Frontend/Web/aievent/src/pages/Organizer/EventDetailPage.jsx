@@ -710,7 +710,7 @@ Nhấn OK để xác nhận xóa.`;
             <SidebarCard title="Thống kê đăng ký" icon={<Users className="w-4 h-4" />} gradient>
               <div className="space-y-4">
                 {/* Main Stats Grid */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <StatCard
                     icon={Users}
                     label="Đã đăng ký"
@@ -722,6 +722,12 @@ Nhấn OK để xác nhận xóa.`;
                     label="Còn lại"
                     value={totalAvailableTickets}
                     color="green"
+                  />
+                  <StatCard
+                    icon={Heart}
+                    label="Yêu thích"
+                    value={event.favoriteCount || 0}
+                    color="red"
                   />
                 </div>
 
