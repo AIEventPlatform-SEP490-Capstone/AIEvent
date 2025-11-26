@@ -3,7 +3,7 @@ using AIEvent.Domain.Enums;
 
 namespace AIEvent.Application.DTOs.Event
 {
-    public class EventsLocationResponse
+    public class AiRecommendEventResponse
     {
         public Guid EventId { get; set; }
         public required string EventCategoryName { get; set; }
@@ -23,10 +23,6 @@ namespace AIEvent.Application.DTOs.Event
         public TicketPricingType TicketPricingType { get; set; }
         public double? AverageRating { get; set; }
         public int TotalRatings { get; set; }
-        public int FavoriteCount { get; set; }
-        public DateTime? SaleStartTime { get; set; }
-        public DateTime? SaleEndTime { get; set; }
-        public double Latitude { get; set; } 
-        public double Longitude { get; set; } 
+        public string? Reason { get; set; }
     }
 }

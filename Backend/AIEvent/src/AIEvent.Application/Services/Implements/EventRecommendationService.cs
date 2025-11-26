@@ -10,8 +10,7 @@ using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore; 
 using System.Text.Json;
 
 namespace AIEvent.Application.Services.Implements
@@ -89,7 +88,7 @@ namespace AIEvent.Application.Services.Implements
                 meta.TryGetValue("StartTime", out var start);
                 meta.TryGetValue("EndTime", out var end);
                 meta.TryGetValue("Tickets", out var tickets);
-                var eventUrl = eventId != null ? $"http://localhost:5173/event/{eventId}" : "#";
+                var eventUrl = eventId != null ? $"https://ai-event-alpha.vercel.app/event/{eventId}" : "#";
                 return $@"
                     - {title ?? "Sự kiện"} ({category ?? "Không rõ danh mục"})
                       Địa điểm: {(location ?? address ?? "Không rõ")} - {district ?? ""}
@@ -181,10 +180,10 @@ namespace AIEvent.Application.Services.Implements
             return response;
         }
 
-        public async Task<Result<BasePaginated<EventsResponse>>> GetEventAIRecommendAsync(int pageNumber, int pageSize, Guid userId)
+        public async Task<Result<BasePaginated<AiRecommendEventResponse>>> GetEventAIRecommendAsync(int pageNumber, int pageSize, Guid userId)
         {
             var user = await _unitOfWork.UserRepository
-                .Query()
+                .Query(false)
                 .AsNoTracking()
                 .Where(u => u.Id == userId && !u.IsDeleted && u.IsActive)
                 .Select(u => new
@@ -194,65 +193,64 @@ namespace AIEvent.Application.Services.Implements
                     u.District,
                     u.BudgetOption,
                     u.InterestedDistrictsJson,
-                    u.UserInterestsJson,
+                    u.UserInterestsJson
                 })
                 .FirstOrDefaultAsync();
 
             if (user == null)
-            {
                 return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
-            }
 
-            var userDescription = new List<string>();
+            var parts = new List<string>();
 
-            if (!string.IsNullOrEmpty(user.Address))
-                userDescription.Add($"Address: {user.Address}");
+            if (!string.IsNullOrWhiteSpace(user.Address))
+                parts.Add($"address {user.Address}");
 
-            if (!string.IsNullOrEmpty(user.District))
-                userDescription.Add($"District: {user.District}");
+            if (!string.IsNullOrWhiteSpace(user.District))
+                parts.Add($"district {user.District}");
 
-            if (!string.IsNullOrEmpty(user.UserInterestsJson))
-                userDescription.Add($"Interests: {user.UserInterestsJson}");
+            if (!string.IsNullOrWhiteSpace(user.UserInterestsJson))
+                parts.Add($"interests {user.UserInterestsJson}");
 
-            if (!string.IsNullOrEmpty(user.InterestedDistrictsJson))
-                userDescription.Add($"InterestedDistricts: {user.InterestedDistrictsJson}");
+            if (!string.IsNullOrWhiteSpace(user.InterestedDistrictsJson))
+                parts.Add($"interested districts {user.InterestedDistrictsJson}");
 
-            userDescription.Add($"Budget: {user.BudgetOption}");
+            parts.Add($"budget {user.BudgetOption}");
 
-            var descriptionText = string.Join(", ", userDescription);
+            var userDesc = string.Join(", ", parts);
 
-            var embedding = await _voyageEmbeddingService.GetEmbeddingAsync(descriptionText);
+            var embedding = await _voyageEmbeddingService.GetEmbeddingAsync(userDesc);
 
-            var aiResults = await _pineconeService.QuerySimilarAsync(embedding, isUser: false, topK: 10);
+            var aiResults = await _pineconeService.QuerySimilarAsync(
+                embedding, isUser: false, topK: 6);
 
             var eventIds = aiResults
-                .Select(r => Guid.TryParse(r.Id, out var guid) ? guid : Guid.Empty)
+                .Select(r => Guid.TryParse(r.Id, out var g) ? g : Guid.Empty)
                 .Where(g => g != Guid.Empty)
                 .ToList();
 
-            var events = _unitOfWork.EventRepository
-                .Query()
-                .Where(e => eventIds.Contains(e.Id) && e.IsDeleted == false && e.Publish == true && e.Status == EventStatus.Approved)
-                .AsQueryable();
+            var query = _unitOfWork.EventRepository
+                .Query(false)
+                .Include(e => e.EventCategory)
+                .Where(e => eventIds.Contains(e.Id)
+                            && !e.IsDeleted
+                            && e.Publish == true
+                            && e.Status == EventStatus.Approved);
 
-            int totalCount = await events.CountAsync();
+            var totalCount = await query.CountAsync();
 
-            var result = await events
+            var events = await query
                 .OrderByDescending(e => e.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(e => new EventsResponse
+                .Select(e => new AiRecommendEventResponse
                 {
                     EventId = e.Id,
-                    EventCategoryName = e.EventCategory.CategoryName,
                     Title = e.Title,
+                    Description = e.Description,
+                    EventCategoryName = e.EventCategory.CategoryName,
+                    LocationName = e.LocationName,
                     StartTime = e.StartTime,
                     EndTime = e.EndTime,
-                    Description = e.Description,
-                    TicketPricingType = e.TicketPricingType,
-                    TotalTickets = e.TotalTickets,
-                    SoldQuantity = e.SoldQuantity,
-                    LocationName = e.LocationName,
                     Publish = e.Publish,
                     AverageRating = e.AverageRating,
                     TotalRatings = e.TotalRatings,
@@ -265,15 +263,27 @@ namespace AIEvent.Application.Services.Implements
                     TicketPrice = e.TicketTypes != null
                         ? e.TicketTypes.Min(t => t.TicketPrice)
                         : 0,
-                    IsFavorite = userId != Guid.Empty && e.FavoriteEvents.Any(fe => fe.UserId == userId),
-                    ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
-                        ? new List<string>()
-                        : e.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()
+                    IsFavorite = e.FavoriteEvents.Any(f => f.UserId == userId),
+                    ImgListEvent = string.IsNullOrWhiteSpace(e.ImgListEvent)
+                    ? new List<string>()
+                    : e.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()
                 })
                 .ToListAsync();
 
-            return new BasePaginated<EventsResponse>(result, totalCount, pageNumber, pageSize);
+            foreach (var ev in events)
+            {
+                var eventDesc =
+                    $"{ev.Title}, {ev.Description}, giá vé {ev.TicketPrice}, " +
+                    $"{ev.LocationName}, category {ev.EventCategoryName}";
+
+                var prompt = $"User: {userDesc}. Event: {eventDesc}.";
+
+                ev.Reason = await _llmService.GenerateShortReasonAsync(prompt);
+            }
+
+            return new BasePaginated<AiRecommendEventResponse>(events, totalCount, pageNumber, pageSize);
         }
+
 
         public async Task<Result<BasePaginated<ChatLogResponse>>> GetChatHistoryAsync(Guid userId, Guid? sessionId = null, int pageNumber = 1, int pageSize = 10)
         {

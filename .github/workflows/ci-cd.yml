@@ -3,7 +3,7 @@ name: CI/CD - Deploy .NET API to Windows VPS
 on:
   push:
     branches:
-      - dev
+      - main
     paths:
       - 'Backend/**'              
       - '.github/workflows/ci-cd.yml' 

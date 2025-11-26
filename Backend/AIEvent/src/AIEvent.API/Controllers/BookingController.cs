@@ -91,5 +91,23 @@ namespace AIEvent.API.Controllers
                 SuccessCodes.Success,
                 "Check-in successfully"));
         }
+
+        [HttpGet("check-infor/{qr}")]
+        [Authorize(Roles = "Organizer,Staff")]
+        public async Task<ActionResult<SuccessResponse<CheckInforResponse>>> CheckInfor(string qr)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _bookingService.CheckInforAsync(userId, qr);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<CheckInforResponse>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Get infor successfully"));
+        }
     }
 }

@@ -40,11 +40,12 @@ namespace AIEvent.API.Controllers
         [HttpGet]
         [Authorize]
         public async Task<ActionResult<SuccessResponse<BasePaginated<NotificationResponse>>>> GetNotifications(
+            [FromQuery] bool? isRead,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
         {
             var userId = User.GetRequiredUserId();
-            var result = await _notificationService.GetNotificationsByUserIdAsync(userId, pageNumber, pageSize);
+            var result = await _notificationService.GetNotificationsByUserIdAsync(userId, isRead, pageNumber, pageSize);
 
             if (!result.IsSuccess)
             {
