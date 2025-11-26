@@ -67,29 +67,29 @@ function BookingFlow() {
   // Timer countdown based on SaleEndTime
   useEffect(() => {
     if (!event?.saleEndTime) return;
-    
+
     const calculateTimeRemaining = () => {
       const now = new Date();
       const saleEnd = new Date(event.saleEndTime);
       const difference = saleEnd.getTime() - now.getTime();
-      
+
       // If sale has already ended, return 0
       if (difference <= 0) {
         return 0;
       }
-      
+
       // Convert milliseconds to seconds
       return Math.floor(difference / 1000);
     };
-    
+
     // Set initial time remaining
     setTimeRemaining(calculateTimeRemaining());
-    
+
     // Update timer every second
     const timer = setInterval(() => {
       setTimeRemaining(calculateTimeRemaining());
     }, 1000);
-    
+
     return () => clearInterval(timer);
   }, [event]);
 
@@ -98,7 +98,7 @@ function BookingFlow() {
     const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
     const mins = Math.floor((seconds % (60 * 60)) / 60);
     const secs = seconds % 60;
-    
+
     if (days > 0) {
       return `${days} ngày ${hours} giờ ${mins} phút`;
     } else if (hours > 0) {
@@ -113,7 +113,12 @@ function BookingFlow() {
     const location = eventData.locationName || eventData.district || "";
     const locationUpper = location.toUpperCase();
 
-    if (locationUpper.includes("HCM") || locationUpper.includes("HỒ CHÍ MINH") || locationUpper.includes("TP.HCM") || locationUpper.includes("hcm")) {
+    if (
+      locationUpper.includes("HCM") ||
+      locationUpper.includes("HỒ CHÍ MINH") ||
+      locationUpper.includes("TP.HCM") ||
+      locationUpper.includes("hcm")
+    ) {
       return "HCM";
     }
 
@@ -187,20 +192,20 @@ function BookingFlow() {
       setBookingError("Vui lòng chọn ít nhất một loại vé để đặt.");
       return;
     }
-    
+
     setIsProcessingPayment(true);
     try {
       // Tạo booking và thanh toán khi bấm nút Thanh toán
       const payload = { eventId: event.eventId, ticketTypeRequests };
       const bookingResult = await dispatch(createBooking(payload)).unwrap();
-      
+
       // Lưu thông tin booking sau khi tạo thành công
       setBookingData({
         bookingId: bookingResult?.bookingId,
         totalPrice: totalPrice,
         ticketTypeRequests: ticketTypeRequests,
       });
-      
+
       // Chuyển sang step 3
       setCurrentStep(3);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -214,7 +219,6 @@ function BookingFlow() {
       setIsProcessingPayment(false);
     }
   };
-
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -240,8 +244,8 @@ function BookingFlow() {
                       {user.unique_name
                         ? user.unique_name.charAt(0).toUpperCase()
                         : user.name
-                          ? user.name.charAt(0).toUpperCase()
-                          : "U"}
+                        ? user.name.charAt(0).toUpperCase()
+                        : "U"}
                     </span>
                   )}
                 </div>
@@ -250,10 +254,18 @@ function BookingFlow() {
                 </span>
               </div>
             )}
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-md hover:bg-blue-100 hover:border-blue-300 text-gray-900 hover:text-gray-900">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-md hover:bg-blue-100 hover:border-blue-300 text-gray-900 hover:text-gray-900"
+            >
               <Menu className="w-5 h-5" />
             </Button>
-            <Button variant="ghost" className="h-9 px-2 gap-1 rounded-md hover:bg-blue-100 hover:border-blue-300 text-gray-900 hover:text-gray-900" onClick={() => navigate("/wallet")}>
+            <Button
+              variant="ghost"
+              className="h-9 px-2 gap-1 rounded-md hover:bg-blue-100 hover:border-blue-300 text-gray-900 hover:text-gray-900"
+              onClick={() => navigate("/wallet")}
+            >
               <Wallet className="w-4 h-4" />
               <span className="text-sm">Ví của tôi</span>
             </Button>
@@ -276,18 +288,28 @@ function BookingFlow() {
               }`}
               disabled={currentStep === 1}
             >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
-                currentStep === 1
-                  ? "bg-blue-600 text-white"
-                  : currentStep > 1
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-600"
-              }`}>
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                  currentStep === 1
+                    ? "bg-blue-600 text-white"
+                    : currentStep > 1
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 text-gray-600"
+                }`}
+              >
                 1
               </div>
-              <span className={`text-sm font-medium ${
-                currentStep === 1 ? "text-blue-600" : currentStep > 1 ? "text-blue-600" : "text-gray-600"
-              }`}>Chọn vé</span>
+              <span
+                className={`text-sm font-medium ${
+                  currentStep === 1
+                    ? "text-blue-600"
+                    : currentStep > 1
+                    ? "text-blue-600"
+                    : "text-gray-600"
+                }`}
+              >
+                Chọn vé
+              </span>
             </button>
             <ChevronRight className="w-4 h-4 text-gray-400" />
             <button
@@ -303,31 +325,47 @@ function BookingFlow() {
               }`}
               disabled={currentStep !== 2}
             >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
-                currentStep === 2
-                  ? "bg-blue-600 text-white"
-                  : currentStep > 2
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-600"
-              }`}>
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                  currentStep === 2
+                    ? "bg-blue-600 text-white"
+                    : currentStep > 2
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 text-gray-600"
+                }`}
+              >
                 2
               </div>
-              <span className={`text-sm font-medium ${
-                currentStep === 2 ? "text-blue-600" : currentStep > 2 ? "text-blue-600" : "text-gray-600"
-              }`}>Thanh toán</span>
+              <span
+                className={`text-sm font-medium ${
+                  currentStep === 2
+                    ? "text-blue-600"
+                    : currentStep > 2
+                    ? "text-blue-600"
+                    : "text-gray-600"
+                }`}
+              >
+                Thanh toán
+              </span>
             </button>
             <ChevronRight className="w-4 h-4 text-gray-400" />
             <div className="flex items-center gap-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
-                currentStep === 3
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-600"
-              }`}>
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                  currentStep === 3
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 text-gray-600"
+                }`}
+              >
                 3
               </div>
-              <span className={`text-sm font-medium ${
-                currentStep === 3 ? "text-blue-600" : "text-gray-600"
-              }`}>Hoàn tất</span>
+              <span
+                className={`text-sm font-medium ${
+                  currentStep === 3 ? "text-blue-600" : "text-gray-600"
+                }`}
+              >
+                Hoàn tất
+              </span>
             </div>
           </div>
         </div>
@@ -336,12 +374,13 @@ function BookingFlow() {
       {/* Event Details Bar */}
       <div className="relative text-white overflow-hidden">
         {/* Animated gradient overlay */}
-        <div 
+        <div
           className="absolute inset-0"
           style={{
-            background: 'linear-gradient(90deg, #60a5fa 0%, #3b82f6 20%, #2563eb 40%, #1d4ed8 60%, #1e40af 80%, #60a5fa 100%)',
-            backgroundSize: '300% 100%',
-            animation: 'gradient-flow 8s linear infinite'
+            background:
+              "linear-gradient(90deg, #60a5fa 0%, #3b82f6 20%, #2563eb 40%, #1d4ed8 60%, #1e40af 80%, #60a5fa 100%)",
+            backgroundSize: "300% 100%",
+            animation: "gradient-flow 8s linear infinite",
           }}
         ></div>
         <div className="relative max-w-7xl mx-auto px-4 py-3 z-10">
@@ -365,7 +404,8 @@ function BookingFlow() {
                     month: "2-digit",
                     year: "numeric",
                   })}{" "}
-                  - {new Date(event.startTime).toLocaleTimeString("vi-VN", {
+                  -{" "}
+                  {new Date(event.startTime).toLocaleTimeString("vi-VN", {
                     hour: "2-digit",
                     minute: "2-digit",
                   })}
@@ -409,13 +449,15 @@ function BookingFlow() {
                 Đặt vé thành công!
               </h2>
               <p className="text-gray-600">
-                Vé đã được gửi tới email của bạn. Vui lòng kiểm tra hoặc mở vé dưới
-                đây.
+                Vé đã được gửi tới email của bạn. Vui lòng kiểm tra hoặc mở vé
+                dưới đây.
               </p>
               <div className="mt-3 flex items-center gap-2 text-sm font-semibold text-yellow-600">
                 <CircleAlert className="h-5 w-5" />
                 <span>
-                  Vé điện tử của bạn sẽ được gửi tới email, vui lòng kiểm tra hộp thư, nếu không thấy xin vui lòng chờ trong ít phút và kiểm tra thư spam và thư rác.
+                  Vé điện tử của bạn sẽ được gửi tới email, vui lòng kiểm tra
+                  hộp thư, nếu không thấy xin vui lòng chờ trong ít phút và kiểm
+                  tra thư spam và thư rác.
                 </span>
               </div>
             </div>
@@ -424,7 +466,9 @@ function BookingFlow() {
             <div className="grid grid-cols-1 lg:grid-cols-[60%_40%] gap-6">
               {/* Left Column - Event Information */}
               <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Thông tin sự kiện</h3>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                  Thông tin sự kiện
+                </h3>
                 <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden shadow-md mb-4">
                   <img
                     src={event.imgListEvent?.[0] || "/placeholder.svg"}
@@ -433,9 +477,14 @@ function BookingFlow() {
                   />
                   <div className="absolute inset-0 bg-black/30 p-4 flex flex-col justify-end">
                     <div className="text-white">
-                      <div className="text-sm font-medium mb-2">{event.title?.split(' - ')[0] || event.title}</div>
-                      <div className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#FFD700' }}>
-                        {event.title?.split(' - ')[1] || event.title}
+                      <div className="text-sm font-medium mb-2">
+                        {event.title?.split(" - ")[0] || event.title}
+                      </div>
+                      <div
+                        className="text-3xl md:text-4xl font-bold mb-2"
+                        style={{ color: "#FFD700" }}
+                      >
+                        {event.title?.split(" - ")[1] || event.title}
                       </div>
                     </div>
                   </div>
@@ -452,7 +501,8 @@ function BookingFlow() {
                           month: "2-digit",
                           year: "numeric",
                         })}{" "}
-                        - {new Date(event.startTime).toLocaleTimeString("vi-VN", {
+                        -{" "}
+                        {new Date(event.startTime).toLocaleTimeString("vi-VN", {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
@@ -467,14 +517,18 @@ function BookingFlow() {
                         {event.locationName || "Không xác định"}
                       </div>
                       {event.address && (
-                        <div className="text-sm text-gray-600 mt-1">{event.address}</div>
+                        <div className="text-sm text-gray-600 mt-1">
+                          {event.address}
+                        </div>
                       )}
                     </div>
                   </div>
                   {event.description && (
                     <div className="pt-3 border-t border-gray-200">
                       <div className="text-sm text-gray-500 mb-2">Mô tả</div>
-                      <div className="text-sm text-gray-700 line-clamp-3">{event.description}</div>
+                      <div className="text-sm text-gray-700 line-clamp-3">
+                        {event.description}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -482,60 +536,77 @@ function BookingFlow() {
 
               {/* Right Column - Ticket Information */}
               <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Thông tin vé đã mua</h3>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                  Thông tin vé đã mua
+                </h3>
                 {bookingData && bookingData.ticketTypeRequests && (
                   <div className="space-y-4">
-                    {bookingData.ticketTypeRequests.map((ticketRequest, index) => {
-                      const ticketType = ticketTypes.find(
-                        (t) => t.ticketDetailId === ticketRequest.ticketTypeId
-                      );
-                      if (!ticketType) return null;
-                      
-                      return (
-                        <div
-                          key={index}
-                          className="p-4 rounded-lg border border-gray-200 bg-gray-50"
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex-1">
-                              <div className="font-semibold text-gray-800">
-                                {ticketType.ticketName}
-                              </div>
-                              {ticketType.ticketDescription && (
-                                <div className="text-sm text-gray-600 mt-1">
-                                  {ticketType.ticketDescription}
+                    {bookingData.ticketTypeRequests.map(
+                      (ticketRequest, index) => {
+                        const ticketType = ticketTypes.find(
+                          (t) => t.ticketDetailId === ticketRequest.ticketTypeId
+                        );
+                        if (!ticketType) return null;
+
+                        return (
+                          <div
+                            key={index}
+                            className="p-4 rounded-lg border border-gray-200 bg-gray-50"
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1">
+                                <div className="font-semibold text-gray-800">
+                                  {ticketType.ticketName}
                                 </div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                            <div className="text-sm text-gray-600">
-                              Số lượng: <span className="font-medium text-gray-800">{ticketRequest.quantity}</span>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-sm text-gray-600">Đơn giá</div>
-                              <div className="font-bold text-blue-600">
-                                {ticketType.ticketPrice === 0
-                                  ? "Miễn phí"
-                                  : `${ticketType.ticketPrice.toLocaleString("vi-VN")} VND`}
+                                {ticketType.ticketDescription && (
+                                  <div className="text-sm text-gray-600 mt-1">
+                                    {ticketType.ticketDescription}
+                                  </div>
+                                )}
                               </div>
                             </div>
+                            <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                              <div className="text-sm text-gray-600">
+                                Số lượng:{" "}
+                                <span className="font-medium text-gray-800">
+                                  {ticketRequest.quantity}
+                                </span>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-sm text-gray-600">
+                                  Đơn giá
+                                </div>
+                                <div className="font-bold text-blue-600">
+                                  {ticketType.ticketPrice === 0
+                                    ? "Miễn phí"
+                                    : `${ticketType.ticketPrice.toLocaleString(
+                                        "vi-VN"
+                                      )} VND`}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex justify-between items-center pt-2 mt-2 border-t border-gray-200">
+                              <span className="font-semibold text-gray-800">
+                                Thành tiền:
+                              </span>
+                              <span className="font-bold text-lg text-indigo-600">
+                                {(
+                                  ticketType.ticketPrice *
+                                  ticketRequest.quantity
+                                ).toLocaleString("vi-VN")}{" "}
+                                VND
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex justify-between items-center pt-2 mt-2 border-t border-gray-200">
-                            <span className="font-semibold text-gray-800">Thành tiền:</span>
-                            <span className="font-bold text-lg text-indigo-600">
-                              {(
-                                ticketType.ticketPrice * ticketRequest.quantity
-                              ).toLocaleString("vi-VN")} VND
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    
+                        );
+                      }
+                    )}
+
                     <div className="pt-4 border-t-2 border-gray-300">
                       <div className="flex justify-between items-center">
-                        <span className="text-lg font-semibold text-gray-800">Tổng cộng:</span>
+                        <span className="text-lg font-semibold text-gray-800">
+                          Tổng cộng:
+                        </span>
                         <span className="text-2xl font-bold text-indigo-600">
                           {bookingData.totalPrice.toLocaleString("vi-VN")} VND
                         </span>
@@ -546,7 +617,7 @@ function BookingFlow() {
 
                 {/* Action Buttons */}
                 <div className="grid grid-cols-1 gap-3 mt-6 pt-6 border-t border-gray-200">
-                  <Button 
+                  <Button
                     className="w-full h-12 text-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-xl"
                     onClick={() => navigate("/my-tickets")}
                   >
@@ -576,16 +647,25 @@ function BookingFlow() {
                 {/* Event Info Overlay */}
                 <div className="absolute inset-0 bg-black/30 p-4 flex flex-col justify-end">
                   <div className="text-white">
-                    <div className="text-sm font-medium mb-2">{event.title?.split(' - ')[0] || event.title}</div>
-                    <div className="text-4xl md:text-5xl font-bold mb-2" style={{ color: '#FFD700' }}>
-                      {event.title?.split(' - ')[1] || event.title}
+                    <div className="text-sm font-medium mb-2">
+                      {event.title?.split(" - ")[0] || event.title}
                     </div>
-                    <div className="text-sm mb-1">{event.locationName || "Sự kiện"}</div>
+                    <div
+                      className="text-4xl md:text-5xl font-bold mb-2"
+                      style={{ color: "#FFD700" }}
+                    >
+                      {event.title?.split(" - ")[1] || event.title}
+                    </div>
+                    <div className="text-sm mb-1">
+                      {event.locationName || "Sự kiện"}
+                    </div>
                     <div className="text-xs">
                       {new Date(event.startTime).toLocaleTimeString("vi-VN", {
                         hour: "2-digit",
                         minute: "2-digit",
-                      })} - {new Date(event.startTime).toLocaleDateString("vi-VN", {
+                      })}{" "}
+                      -{" "}
+                      {new Date(event.startTime).toLocaleDateString("vi-VN", {
                         day: "2-digit",
                         month: "2-digit",
                         year: "numeric",
@@ -603,267 +683,357 @@ function BookingFlow() {
                 {/* Timer */}
                 {timeRemaining > 0 ? (
                   <div className="bg-white rounded-lg p-3 border border-gray-200">
-                    <div className="text-sm text-gray-600 mb-1">Thời gian bán vé còn lại</div>
-                    <div className="text-2xl font-bold text-blue-600">{formatTime(timeRemaining)}</div>
+                    <div className="text-sm text-gray-600 mb-1">
+                      Thời gian bán vé còn lại
+                    </div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {formatTime(timeRemaining)}
+                    </div>
                   </div>
                 ) : (
                   <div className="bg-red-50 rounded-lg p-3 border border-red-200">
-                    <div className="text-sm text-red-600 mb-1">Thời gian bán vé đã kết thúc</div>
-                    <div className="text-lg font-bold text-red-700">Không thể mua vé</div>
+                    <div className="text-sm text-red-600 mb-1">
+                      Thời gian bán vé đã kết thúc
+                    </div>
+                    <div className="text-lg font-bold text-red-700">
+                      Không thể mua vé
+                    </div>
                   </div>
                 )}
 
-              {/* Event Details */}
-              <div className="bg-white rounded-lg p-3 border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-700">
-                    <div className="text-sm text-gray-700">Thời gian bắt đầu sự kiện</div>
-                    {new Date(event.startTime).toLocaleDateString("vi-VN", {
-                      weekday: "long",
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })} • {new Date(event.startTime).toLocaleTimeString("vi-VN", {
-                      hour: "2-digit",
-                      minute: "2-digit",
+                {/* Event Details */}
+                <div className="bg-white rounded-lg p-3 border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-700">
+                      <div className="text-sm text-gray-700">
+                        Thời gian bắt đầu sự kiện
+                      </div>
+                      {new Date(event.startTime).toLocaleDateString("vi-VN", {
+                        weekday: "long",
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })}{" "}
+                      •{" "}
+                      {new Date(event.startTime).toLocaleTimeString("vi-VN", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ticket Selection */}
+                <div
+                  className={`bg-white rounded-lg p-4 border border-gray-200 ${
+                    timeRemaining <= 0 ? "opacity-50 pointer-events-none" : ""
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-gray-800">Loại vé</h3>
+                    <h3 className="font-semibold text-gray-800">Số lượng</h3>
+                  </div>
+
+                  <div className="space-y-3">
+                    {ticketTypes.map((t) => {
+                      const selectedQty = Number(
+                        selectedTickets[t.ticketDetailId] || 0
+                      );
+                      const isOver = selectedQty > t.remainingQuantity;
+                      const isSoldOut = (t.remainingQuantity || 0) <= 0;
+
+                      return (
+                        <div
+                          key={t.ticketDetailId}
+                          className={`p-3 rounded-lg border ${
+                            isSoldOut
+                              ? "border-red-200 bg-red-50 opacity-60"
+                              : "border-gray-200 bg-white"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <div className="font-medium text-gray-800 text-sm">
+                                  {t.ticketName}
+                                </div>
+                                {isSoldOut && (
+                                  <span className="px-2 py-0.5 text-xs font-semibold bg-red-500 text-white rounded">
+                                    Hết vé
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-sm font-semibold text-gray-700 mt-1">
+                                {t.ticketPrice === 0
+                                  ? "Miễn phí"
+                                  : `${t.ticketPrice.toLocaleString(
+                                      "vi-VN"
+                                    )} VND`}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                Còn lại:{" "}
+                                <span className="font-medium">
+                                  {t.remainingQuantity || 0}
+                                </span>{" "}
+                                vé
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 rounded-md hover:bg-blue-100 hover:border-blue-300 text-gray-900 hover:text-gray-900"
+                                onClick={() => {
+                                  if (selectedQty > 0) {
+                                    setSelectedTickets((prev) => ({
+                                      ...prev,
+                                      [t.ticketDetailId]: selectedQty - 1,
+                                    }));
+                                  }
+                                }}
+                                disabled={selectedQty === 0 || isSoldOut}
+                              >
+                                <Minus className="w-4 h-4" />
+                              </Button>
+                              <input
+                                type="number"
+                                min="0"
+                                max={t.remainingQuantity || 0}
+                                value={selectedQty || ""} // nếu bằng 0 thì để trống
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+
+                                  // Nếu người dùng xóa hết → để trống tạm thời
+                                  if (raw === "") {
+                                    setSelectedTickets((prev) => ({
+                                      ...prev,
+                                      [t.ticketDetailId]: 0,
+                                    }));
+                                    return;
+                                  }
+
+                                  let value = Number(raw);
+
+                                  // Chặn số âm và vượt quá giới hạn
+                                  if (value < 0) value = 0;
+                                  if (value > (t.remainingQuantity || 0))
+                                    value = t.remainingQuantity || 0;
+
+                                  setSelectedTickets((prev) => ({
+                                    ...prev,
+                                    [t.ticketDetailId]: value,
+                                  }));
+                                }}
+                                //  khi rời khỏi input, nếu là 0 thì để trống, không hiện "0"
+                                onBlur={(e) => {
+                                  if (
+                                    e.target.value === "" ||
+                                    Number(e.target.value) === 0
+                                  ) {
+                                    setSelectedTickets((prev) => ({
+                                      ...prev,
+                                      [t.ticketDetailId]: 0,
+                                    }));
+                                  }
+                                }}
+                                placeholder="0"
+                                className={`w-20 text-center font-semibold text-gray-800 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                                  isSoldOut
+                                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                    : ""
+                                }`}
+                                disabled={isSoldOut}
+                              />
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 rounded-md hover:bg-blue-100 hover:border-blue-300 text-gray-900 hover:text-gray-900"
+                                onClick={() => {
+                                  if (selectedQty < t.remainingQuantity) {
+                                    setSelectedTickets((prev) => ({
+                                      ...prev,
+                                      [t.ticketDetailId]: selectedQty + 1,
+                                    }));
+                                  }
+                                }}
+                                disabled={
+                                  selectedQty >= t.remainingQuantity ||
+                                  isSoldOut
+                                }
+                              >
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          {isOver && !isSoldOut && (
+                            <div className="text-xs text-red-500 mt-1">
+                              Chỉ còn {t.remainingQuantity} vé
+                            </div>
+                          )}
+                          {isSoldOut && (
+                            <div className="text-xs text-red-500 mt-1 font-medium">
+                              Loại vé này đã hết
+                            </div>
+                          )}
+                          {timeRemaining <= 0 && (
+                            <div className="text-xs text-red-500 mt-1 font-medium">
+                              Đã hết thời gian bán vé
+                            </div>
+                          )}
+                        </div>
+                      );
                     })}
                   </div>
-                </div>
-              </div>
 
-              {/* Ticket Selection */}
-              <div className={`bg-white rounded-lg p-4 border border-gray-200 ${timeRemaining <= 0 ? 'opacity-50 pointer-events-none' : ''}`}>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-gray-800">Loại vé</h3>
-                  <h3 className="font-semibold text-gray-800">Số lượng</h3>
-                </div>
-
-                <div className="space-y-3">
-                  {ticketTypes.map((t) => {
-                    const selectedQty = Number(selectedTickets[t.ticketDetailId] || 0);
-                    const isOver = selectedQty > t.remainingQuantity;
-                    const isSoldOut = (t.remainingQuantity || 0) <= 0;
-
-                    return (
-                      <div
-                        key={t.ticketDetailId}
-                        className={`p-3 rounded-lg border ${
-                          isSoldOut
-                            ? "border-red-200 bg-red-50 opacity-60"
-                            : "border-gray-200 bg-white"
-                        }`}
+                  {/* Selected Tickets Summary */}
+                  {ticketTypeRequests.length > 0 && (
+                    <div className="mt-5 pt-5 border-t border-gray-200">
+                      <button
+                        onClick={() =>
+                          setShowSelectedTickets(!showSelectedTickets)
+                        }
+                        className="w-full flex items-center justify-between text-sm font-medium text-gray-700"
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <div className="font-medium text-gray-800 text-sm">
-                                {t.ticketName}
-                              </div>
-                              {isSoldOut && (
-                                <span className="px-2 py-0.5 text-xs font-semibold bg-red-500 text-white rounded">
-                                  Hết vé
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-sm font-semibold text-gray-700 mt-1">
-                              {t.ticketPrice === 0
-                                ? "Miễn phí"
-                                : `${t.ticketPrice.toLocaleString("vi-VN")} VND`}
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              Còn lại: <span className="font-medium">{t.remainingQuantity || 0}</span> vé
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 rounded-md hover:bg-blue-100 hover:border-blue-300 text-gray-900 hover:text-gray-900"
-                              onClick={() => {
-                                if (selectedQty > 0) {
-                                  setSelectedTickets((prev) => ({
-                                    ...prev,
-                                    [t.ticketDetailId]: selectedQty - 1,
-                                  }));
-                                }
-                              }}
-                              disabled={selectedQty === 0 || isSoldOut}
-                            >
-                              <Minus className="w-4 h-4" />
-                            </Button>
-                            <div className={`w-10 text-center font-medium ${
-                              isSoldOut ? "text-gray-400" : "text-gray-800"
-                            }`}>
-                              {selectedQty}
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 rounded-md hover:bg-blue-100 hover:border-blue-300 text-gray-900 hover:text-gray-900"
-                              onClick={() => {
-                                if (selectedQty < t.remainingQuantity) {
-                                  setSelectedTickets((prev) => ({
-                                    ...prev,
-                                    [t.ticketDetailId]: selectedQty + 1,
-                                  }));
-                                }
-                              }}
-                              disabled={selectedQty >= t.remainingQuantity || isSoldOut}
-                            >
-                              <Plus className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                        {isOver && !isSoldOut && (
-                          <div className="text-xs text-red-500 mt-1">
-                            Chỉ còn {t.remainingQuantity} vé
-                          </div>
-                        )}
-                        {isSoldOut && (
-                          <div className="text-xs text-red-500 mt-1 font-medium">
-                            Loại vé này đã hết
-                          </div>
-                        )}
-                        {timeRemaining <= 0 && (
-                          <div className="text-xs text-red-500 mt-1 font-medium">
-                            Đã hết thời gian bán vé
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Selected Tickets Summary */}
-                {ticketTypeRequests.length > 0 && (
-                  <div className="mt-5 pt-5 border-t border-gray-200">
-                    <button
-                      onClick={() => setShowSelectedTickets(!showSelectedTickets)}
-                      className="w-full flex items-center justify-between text-sm font-medium text-gray-700"
-                    >
-                      <span>Vé đã chọn</span>
-                      <ChevronRight
-                        className={`w-4 h-4 transition-transform ${showSelectedTickets ? "rotate-90" : ""
+                        <span>Vé đã chọn</span>
+                        <ChevronRight
+                          className={`w-4 h-4 transition-transform ${
+                            showSelectedTickets ? "rotate-90" : ""
                           }`}
-                      />
-                    </button>
-                    {showSelectedTickets && (
-                      <div className="mt-2 space-y-2">
-                        {ticketTypeRequests.map((t, i) => {
-                          const type = ticketTypes.find(
-                            (x) => x.ticketDetailId === t.ticketTypeId
-                          );
-                          return (
-                            <div
-                              key={i}
-                              className="text-xs text-gray-600 flex justify-between"
-                            >
-                              <span>
-                                {type?.ticketName} x{t.quantity}
-                              </span>
-                              <span className="font-medium">
-                                {(
-                                  (type?.ticketPrice || 0) * t.quantity
-                                ).toLocaleString("vi-VN")} VND
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Continue Button */}
-              <Button
-                onClick={handleContinue}
-                disabled={ticketTypeRequests.length === 0 || timeRemaining <= 0}
-                className="w-full h-12 bg-sky-400 hover:bg-blue-400 text-white font-semibold rounded-lg shadow-md"
-              >
-                {timeRemaining <= 0 ? 'Đã hết thời gian bán vé' : 'Tiếp tục'}
-              </Button>
-
-              {bookingError && (
-                <div className="text-red-600 text-sm text-center bg-red-50 border border-red-200 py-2 px-3 rounded-lg">
-                  {bookingError}
-                </div>
-              )}
-            </div>
-          ) : currentStep === 2 ? (
-            /* Step 2: Payment */
-            <div className="bg-gray-100 rounded-lg p-6 space-y-4">
-              <div className="bg-white rounded-lg p-4 border border-gray-200">
-                <h3 className="font-semibold text-gray-800 mb-4">Thông tin thanh toán</h3>
-                
-                {/* Booking Summary */}
-                {ticketTypeRequests.length > 0 && (
-                  <div className="space-y-3 mb-4">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Tổng tiền vé:</span>
-                      <span className="font-semibold text-gray-800">
-                        {totalPrice.toLocaleString("vi-VN")} VND
-                      </span>
-                    </div>
-                    <div className="border-t border-gray-200 pt-3 flex justify-between">
-                      <span className="font-semibold text-gray-800">Tổng thanh toán:</span>
-                      <span className="font-bold text-lg text-blue-600">
-                        {totalPrice.toLocaleString("vi-VN")} VND
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Wallet Balance */}
-                <div className="bg-blue-50 rounded-lg p-3 mb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Wallet className="w-5 h-5 text-blue-600" />
-                      <span className="text-sm text-gray-700">Số dư ví:</span>
-                    </div>
-                    <span className="font-bold text-blue-600">
-                      {wallet?.balance ? wallet.balance.toLocaleString("vi-VN") : "0"} VND
-                    </span>
-                  </div>
-                  {wallet?.balance < totalPrice && (
-                    <div className="mt-2 text-xs text-red-600">
-                      Số dư không đủ. Vui lòng nạp thêm tiền vào ví.
+                        />
+                      </button>
+                      {showSelectedTickets && (
+                        <div className="mt-2 space-y-2">
+                          {ticketTypeRequests.map((t, i) => {
+                            const type = ticketTypes.find(
+                              (x) => x.ticketDetailId === t.ticketTypeId
+                            );
+                            return (
+                              <div
+                                key={i}
+                                className="text-xs text-gray-600 flex justify-between"
+                              >
+                                <span>
+                                  {type?.ticketName} x{t.quantity}
+                                </span>
+                                <span className="font-medium">
+                                  {(
+                                    (type?.ticketPrice || 0) * t.quantity
+                                  ).toLocaleString("vi-VN")}{" "}
+                                  VND
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
 
-                {/* Payment Button */}
+                {/* Continue Button */}
                 <Button
-                  onClick={handlePayment}
-                  disabled={!wallet || wallet.balance < totalPrice || isProcessingPayment}
+                  onClick={handleContinue}
+                  disabled={
+                    ticketTypeRequests.length === 0 || timeRemaining <= 0
+                  }
                   className="w-full h-12 bg-sky-400 hover:bg-blue-400 text-white font-semibold rounded-lg shadow-md"
                 >
-                  {isProcessingPayment && <Loader2 className="w-5 h-5 mr-2 animate-spin" />}
-                  {isProcessingPayment 
-                    ? "Đang xử lý..." 
-                    : wallet?.balance >= totalPrice 
-                    ? "Thanh toán" 
-                    : "Nạp tiền vào ví"}
+                  {timeRemaining <= 0 ? "Đã hết thời gian bán vé" : "Tiếp tục"}
                 </Button>
 
-                {wallet?.balance < totalPrice && (
-                  <Button
-                    variant="outline"
-                    onClick={() => navigate("/wallet")}
-                    className="w-full h-10 mt-2"
-                  >
-                    Đi đến ví của tôi
-                  </Button>
-                )}
-
                 {bookingError && (
-                  <div className="text-red-600 text-sm text-center bg-red-50 border border-red-200 py-2 px-3 rounded-lg mt-4">
+                  <div className="text-red-600 text-sm text-center bg-red-50 border border-red-200 py-2 px-3 rounded-lg">
                     {bookingError}
                   </div>
                 )}
               </div>
-            </div>
-          ) : null}
+            ) : currentStep === 2 ? (
+              /* Step 2: Payment */
+              <div className="bg-gray-100 rounded-lg p-6 space-y-4">
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <h3 className="font-semibold text-gray-800 mb-4">
+                    Thông tin thanh toán
+                  </h3>
+
+                  {/* Booking Summary */}
+                  {ticketTypeRequests.length > 0 && (
+                    <div className="space-y-3 mb-4">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Tổng tiền vé:</span>
+                        <span className="font-semibold text-gray-800">
+                          {totalPrice.toLocaleString("vi-VN")} VND
+                        </span>
+                      </div>
+                      <div className="border-t border-gray-200 pt-3 flex justify-between">
+                        <span className="font-semibold text-gray-800">
+                          Tổng thanh toán:
+                        </span>
+                        <span className="font-bold text-lg text-blue-600">
+                          {totalPrice.toLocaleString("vi-VN")} VND
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Wallet Balance */}
+                  <div className="bg-blue-50 rounded-lg p-3 mb-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Wallet className="w-5 h-5 text-blue-600" />
+                        <span className="text-sm text-gray-700">Số dư ví:</span>
+                      </div>
+                      <span className="font-bold text-blue-600">
+                        {wallet?.balance
+                          ? wallet.balance.toLocaleString("vi-VN")
+                          : "0"}{" "}
+                        VND
+                      </span>
+                    </div>
+                    {wallet?.balance < totalPrice && (
+                      <div className="mt-2 text-xs text-red-600">
+                        Số dư không đủ. Vui lòng nạp thêm tiền vào ví.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Payment Button */}
+                  <Button
+                    onClick={handlePayment}
+                    disabled={
+                      !wallet ||
+                      wallet.balance < totalPrice ||
+                      isProcessingPayment
+                    }
+                    className="w-full h-12 bg-sky-400 hover:bg-blue-400 text-white font-semibold rounded-lg shadow-md"
+                  >
+                    {isProcessingPayment && (
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    )}
+                    {isProcessingPayment
+                      ? "Đang xử lý..."
+                      : wallet?.balance >= totalPrice
+                      ? "Thanh toán"
+                      : "Nạp tiền vào ví"}
+                  </Button>
+
+                  {wallet?.balance < totalPrice && (
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate("/wallet")}
+                      className="w-full h-10 mt-2"
+                    >
+                      Đi đến ví của tôi
+                    </Button>
+                  )}
+
+                  {bookingError && (
+                    <div className="text-red-600 text-sm text-center bg-red-50 border border-red-200 py-2 px-3 rounded-lg mt-4">
+                      {bookingError}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
       </div>
