@@ -231,7 +231,6 @@ namespace AIEvent.Application.Services.Implements
 
             var eventQuery = await _unitOfWork.EventRepository
                 .Query()
-                .Include(e => e.TicketTypes)
                 .Include(e => e.EventTags)
                 .Where(e => e.Id == eventId && !e.IsDeleted)
                 .FirstOrDefaultAsync();
@@ -254,7 +253,7 @@ namespace AIEvent.Application.Services.Implements
             if (eventQuery.Publish == true && eventQuery.Status != EventStatus.PendingApproval)
                 return ErrorResponse.FailureResult("Cannot update published event that is not in pending approval status", ErrorCodes.InvalidInput);
               
-            if (request.Publish == true && !IsValidForPublish(request, eventQuery))
+            if (request.Publish == true && !await IsValidForPublishAsync(request, eventQuery))
                 return ErrorResponse.FailureResult("Event data is incomplete for publishing", ErrorCodes.InvalidInput);
 
             var result = await _transactionHelper.ExecuteInTransactionAsync(async () =>
@@ -270,8 +269,12 @@ namespace AIEvent.Application.Services.Implements
 
                 if (request.TicketTypes != null && request.TicketTypes.Any() ||
                     request.RemoveTicketTypeIds != null && request.RemoveTicketTypeIds.Any())
-                {
-                    eventQuery.TotalTickets = eventQuery.TicketTypes.Sum(t => t.TicketQuantity);
+                { 
+                    var totalTickets = await _unitOfWork.TicketTypeRepository
+                        .Query()
+                        .Where(t => t.EventId == eventId)
+                        .SumAsync(t => t.TicketQuantity);
+                    eventQuery.TotalTickets = totalTickets;
                     eventQuery.RemainingTickets = eventQuery.TotalTickets;
                 }
                 else if (request.TotalTickets.HasValue)
@@ -379,47 +382,59 @@ namespace AIEvent.Application.Services.Implements
             return Task.CompletedTask;
         }
 
-        private Task HandleTicketDetailsOperationsAsync(Event events, Guid eventId, Guid organizerId, UpdateEventRequest request)
+        private async Task HandleTicketDetailsOperationsAsync(Event events, Guid eventId, Guid organizerId, UpdateEventRequest request)
         {  
             if (request.RemoveTicketTypeIds != null && request.RemoveTicketTypeIds.Any())
             {
-                var ticketsToRemove = events.TicketTypes
-                    .Where(td => request.RemoveTicketTypeIds.Contains(td.Id))
-                    .ToList();
+                var ticketsToRemove = await _unitOfWork.TicketTypeRepository
+                    .Query()
+                    .Where(td => request.RemoveTicketTypeIds.Contains(td.Id) && td.EventId == eventId)
+                    .ToListAsync();
 
                 foreach (var ticket in ticketsToRemove)
-                    events.TicketTypes.Remove(ticket);
-            } 
-             
+                    await _unitOfWork.TicketTypeRepository.DeleteAsync(ticket);
+            }
+
             if (request.TicketTypes != null && request.TicketTypes.Any())
             {
+                var ticketTypeAdds = new List<TicketType>();
+                var ticketTypeUpdates = new List<TicketType>();
                 foreach (var ticketRequest in request.TicketTypes)
                 {
                     if (ticketRequest.Id.HasValue && ticketRequest.Id.Value != Guid.Empty)
-                    {  
-                        var existingTicket = events.TicketTypes.FirstOrDefault(td => td.Id == ticketRequest.Id.Value);
+                    {
+                        var existingTicket = await _unitOfWork.TicketTypeRepository
+                            .Query()
+                            .FirstOrDefaultAsync(t => t.Id == ticketRequest.Id.Value && t.EventId == eventId);
                         if (existingTicket != null)
                         {
                             _mapper.Map(ticketRequest, existingTicket);
                             existingTicket.SoldQuantity = 0;
                             existingTicket.RemainingQuantity = existingTicket.TicketQuantity;
                             existingTicket.SetUpdated(organizerId.ToString());
+                            ticketTypeUpdates.Add(existingTicket);
                         }
                     }
                     else
-                    { 
+                    {
                         var newTicket = _mapper.Map<TicketType>(ticketRequest);
                         newTicket.Id = Guid.NewGuid();
                         newTicket.EventId = eventId;
                         newTicket.SoldQuantity = 0;
                         newTicket.RemainingQuantity = ticketRequest.TicketQuantity;
-                        newTicket.SetCreated(organizerId.ToString()); 
-                        events.TicketTypes.Add(newTicket);
+                        newTicket.SetCreated(organizerId.ToString());
+                        ticketTypeAdds.Add(newTicket);
                     }
                 }
+
+                if(ticketTypeUpdates.Any())
+                    await _unitOfWork.TicketTypeRepository.UpdateRangeAsync(ticketTypeUpdates);
+
+                if (ticketTypeAdds.Any())
+                    await _unitOfWork.TicketTypeRepository.AddRangeAsync(ticketTypeAdds);
             }
-            
-            return Task.CompletedTask;
+
+            await Task.CompletedTask;
         }
 
         private void HandleEventTagsOperations(Event events, Guid eventId, UpdateEventRequest request)
@@ -452,7 +467,7 @@ namespace AIEvent.Application.Services.Implements
             }
         }
 
-        private bool IsValidForPublish(UpdateEventRequest request, Event existingEvent)
+        private async Task<bool> IsValidForPublishAsync(UpdateEventRequest request, Event existingEvent)
         {
             var title = request.Title ?? existingEvent.Title;
             var description = request.Description ?? existingEvent.Description;
@@ -477,12 +492,17 @@ namespace AIEvent.Application.Services.Implements
                 return false;
               
             if (!HasEventImages(request, existingEvent) || !HasEventEvidence(request, existingEvent))
-                return false;
-  
-            var hasTickets = existingEvent.TicketTypes?.Any() == true;
+                return false; 
+
+            var existingTicketCount = await _unitOfWork.TicketTypeRepository
+                .Query()
+                .Where(t => t.EventId == existingEvent.Id)
+                .CountAsync();
+                
+            var hasTickets = existingTicketCount > 0;
             if (request.RemoveTicketTypeIds?.Any() == true)
             {
-                var remainingCount = (existingEvent.TicketTypes?.Count ?? 0) - request.RemoveTicketTypeIds.Count;
+                var remainingCount = existingTicketCount - request.RemoveTicketTypeIds.Count;
                 hasTickets = remainingCount > 0;
             }
             if (request.TicketTypes?.Any(td => !td.Id.HasValue || td.Id.Value == Guid.Empty) == true)

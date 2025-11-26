@@ -283,7 +283,7 @@ namespace AIEvent.Infrastructure.Context
                 entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_Tag_IsDeleted");
             });
 
-            // ----------------- TicketDetail -----------------
+            // ----------------- TicketType -----------------
             builder.Entity<TicketType>(entity =>
             {
                 entity.HasOne(td => td.Event)
