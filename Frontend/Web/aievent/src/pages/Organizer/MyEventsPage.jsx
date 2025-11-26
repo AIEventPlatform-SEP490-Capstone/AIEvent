@@ -33,6 +33,9 @@ import { PATH } from '../../routes/path';
 // Import EventStatus constants
 import { EventStatus, EventStatusDisplay } from '../../constants/eventConstants';
 
+// Import the new SaleCountdown component
+import SaleCountdown from '../../components/Event/SaleCountdown';
+
 const MyEventsPage = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
@@ -912,13 +915,16 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                   >
                     <div className="flex flex-col lg:flex-row gap-0">
                       {/* Event thumbnail */}
-                      <div className="flex-shrink-0 lg:w-48 w-full h-48 lg:h-auto overflow-hidden">
+                      <div className="flex-shrink-0 lg:w-48 w-full h-48 lg:h-auto overflow-hidden relative">
                         {eventImage ? (
-                          <img
-                            src={eventImage}
-                            alt={event.title}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                          />
+                          <>
+                            <img
+                              src={eventImage}
+                              alt={event.title}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            />
+                            <SaleCountdown saleStartTime={event.saleStartTime} variant="thumbnail" />
+                          </>
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
                             <Calendar className="h-12 w-12 text-blue-400" />
@@ -1024,15 +1030,17 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                             <Eye className="w-4 h-4 mr-1" />
                             Xem
                           </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            className="text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-200 rounded-lg transition-colors h-9"
-                            onClick={() => handleEditEvent(event.eventId)}
-                          >
-                            <Edit className="w-4 h-4 mr-1" />
-                            Sửa
-                          </Button>
+                          {eventStatus === EventStatus.PendingApproval && (
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              className="text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-200 rounded-lg transition-colors h-9"
+                              onClick={() => handleEditEvent(event.eventId)}
+                            >
+                              <Edit className="w-4 h-4 mr-1" />
+                              Sửa
+                            </Button>
+                          )}
                           <Button 
                             size="sm" 
                             variant="ghost"

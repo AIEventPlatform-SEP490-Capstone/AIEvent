@@ -1357,7 +1357,8 @@ const CreateEventPage = () => {
                   time: watch('saleStartTime') 
                     ? `${new Date(watch('saleStartTime')).toLocaleDateString('vi-VN', {
                         day: '2-digit',
-                        month: '2-digit'
+                        month: '2-digit',
+                        year: 'numeric'
                       })} ${new Date(watch('saleStartTime')).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -1371,7 +1372,8 @@ const CreateEventPage = () => {
                   time: watch('saleEndTime') 
                     ? `${new Date(watch('saleEndTime')).toLocaleDateString('vi-VN', {
                         day: '2-digit',
-                        month: '2-digit'
+                        month: '2-digit',
+                        year: 'numeric'
                       })} ${new Date(watch('saleEndTime')).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -1385,7 +1387,8 @@ const CreateEventPage = () => {
                   time: watch('startTime') 
                     ? `${new Date(watch('startTime')).toLocaleDateString('vi-VN', {
                         day: '2-digit',
-                        month: '2-digit'
+                        month: '2-digit',
+                        year: 'numeric'
                       })} ${new Date(watch('startTime')).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -1399,7 +1402,8 @@ const CreateEventPage = () => {
                   time: watch('endTime') 
                     ? `${new Date(watch('endTime')).toLocaleDateString('vi-VN', {
                         day: '2-digit',
-                        month: '2-digit'
+                        month: '2-digit',
+                        year: 'numeric'
                       })} ${new Date(watch('endTime')).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -1595,9 +1599,28 @@ const CreateEventPage = () => {
             {/* About Event */}
             <div className="bg-white rounded-xl p-8 border border-gray-100">
               <h2 className="text-2xl font-bold text-foreground mb-6">Về sự kiện</h2>
-              <p className="text-muted-foreground leading-relaxed mb-6">
-                {watch('description') || "Thông tin chi tiết về sự kiện chưa được cập nhật."}
-              </p>
+              <div className="space-y-4 mb-6">
+                {/* Editable Detailed Description */}
+                {editingField === 'detailedDescription' ? (
+                  <Textarea
+                    value={tempValue}
+                    onChange={(e) => setTempValue(e.target.value)}
+                    onBlur={saveEditing}
+                    onKeyDown={handleKeyPress}
+                    className="text-muted-foreground leading-relaxed"
+                    rows={6}
+                    autoFocus
+                  />
+                ) : (
+                  <p 
+                    className="text-muted-foreground leading-relaxed cursor-pointer hover:bg-gray-100 p-2 rounded min-h-[100px]"
+                    onClick={() => startEditing('detailedDescription', watch('detailedDescription'))}
+                  >
+                    {watch('detailedDescription') || watch('description') || 'Nhấp để nhập mô tả chi tiết sự kiện'}
+                    <Pencil className="w-4 h-4 inline-block ml-2 text-gray-400" />
+                  </p>
+                )}
+              </div>
               
               <div className="space-y-4">
                 <h3 className="font-semibold text-foreground flex items-center gap-2">

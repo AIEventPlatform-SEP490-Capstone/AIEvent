@@ -576,7 +576,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                     ? `${new Date(event.saleStartTime).toLocaleDateString('vi-VN', {
                         day: '2-digit',
                         month: '2-digit',
-                        year: '2-digit'
+                        year: 'numeric'
                       })} ${new Date(event.saleStartTime).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
                         minute: '2-digit',
@@ -619,7 +619,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                     ? `${new Date(event.saleEndTime).toLocaleDateString('vi-VN', {
                         day: '2-digit',
                         month: '2-digit',
-                        year: '2-digit'
+                        year: 'numeric'
                       })} ${new Date(event.saleEndTime).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
                         minute: '2-digit',
@@ -634,7 +634,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                   time: `${new Date(event.startTime).toLocaleDateString('vi-VN', {
                     day: '2-digit',
                     month: '2-digit',
-                    year: '2-digit'
+                    year: 'numeric'
                   })} ${new Date(event.startTime).toLocaleTimeString('vi-VN', {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -648,7 +648,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                   time: `${new Date(event.endTime).toLocaleDateString('vi-VN', {
                     day: '2-digit',
                     month: '2-digit',
-                    year: '2-digit'
+                    year: 'numeric'
                   })} ${new Date(event.endTime).toLocaleTimeString('vi-VN', {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -737,7 +737,7 @@ const EventDetailGuestPage = ({ previewData }) => {
             <div className="bg-white rounded-xl p-8 border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all duration-300">
               <h2 className="text-2xl font-bold text-foreground mb-6">Về sự kiện</h2>
               <p className="text-muted-foreground leading-relaxed mb-6">
-                {event.description || "Thông tin chi tiết về sự kiện chưa được cập nhật."}
+                {event.detailedDescription || event.description || "Thông tin chi tiết về sự kiện chưa được cập nhật."}
               </p>
               
               <div className="space-y-4">
@@ -829,6 +829,18 @@ const EventDetailGuestPage = ({ previewData }) => {
                   onClick={() => setIsShareOpen(true)}
                   variant="secondary"
                 />
+              </div>
+            </SidebarCard>
+
+            {/* Favorite Count Card */}
+            <SidebarCard title="Lượt yêu thích" icon={<Heart className="w-4 h-4" />} gradient>
+              <div className="text-center py-3">
+                <div className="text-3xl font-bold text-foreground mb-1">
+                  {event.favoriteCount || 0}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  người dùng đã yêu thích sự kiện này
+                </p>
               </div>
             </SidebarCard>
 

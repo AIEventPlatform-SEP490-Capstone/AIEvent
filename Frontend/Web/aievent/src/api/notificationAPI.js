@@ -2,37 +2,38 @@ import fetcher from "./fetcher";
 
 export const notificationAPI = {
   // Get notifications for the current user
-  getNotifications: async (pageNumber = 1, pageSize = 10) => {
-    const response = await fetcher.get(`/notifications?pageNumber=${pageNumber}&pageSize=${pageSize}`);
-    return response.data;
+  getNotifications: async (isRead = null, pageNumber = 1, pageSize = 10) => {
+    // Build query parameters properly
+    const params = new URLSearchParams();
+    params.append('pageNumber', pageNumber.toString());
+    params.append('pageSize', pageSize.toString());
+    
+    // Only add isRead parameter if it's not null
+    if (isRead !== null) {
+      params.append('isRead', isRead.toString());
+    }
+    
+    const response = await fetcher.get(`/notifications?${params.toString()}`);
+    // Extract the actual data from the SuccessResponse wrapper
+    return response.data.data;
   },
 
   // Get total unread notification count
   getUnreadCount: async () => {
     try {
-      // Skip the direct count endpoint since it doesn't exist
-      // and go straight to fetching notifications to count unread ones
+      // Fetch unread notifications only
+      const response = await fetcher.get('/notifications?isRead=false&pageNumber=1&pageSize=100');
+      // Extract the actual data from the SuccessResponse wrapper
+      const data = response.data.data;
       
-      // Fetch with a larger page size to get more notifications
-      const response = await fetcher.get(`/notifications?pageNumber=1&pageSize=100`);
-      const data = response.data;
-      
-      // Handle different response structures
-      if (typeof data === 'number') {
-        // Direct count returned
-        return data;
-      }
-      
-      // If the response has items directly, filter them
+      // If the response has items directly, count them
       if (Array.isArray(data)) {
-        const count = data.filter(n => !n.isRead).length;
-        return count;
+        return data.length;
       }
       
       // If the response has a paginated structure
       if (data && data.items) {
-        const count = data.items.filter(n => !n.isRead).length;
-        return count;
+        return data.items.length;
       }
 
       return 0;
@@ -42,23 +43,21 @@ export const notificationAPI = {
     }
   },
 
-
-
   // Mark a specific notification as read
   markAsRead: async (notificationId) => {
     const response = await fetcher.patch(`/notifications/${notificationId}/read`);
-    return response.data;
+    return response.data.data;
   },
 
   // Mark all notifications as read
   markAllAsRead: async () => {
     const response = await fetcher.patch(`/notifications/read-all`);
-    return response.data;
+    return response.data.data;
   },
 
   // Delete all read notifications
   deleteReadNotifications: async () => {
     const response = await fetcher.delete(`/notifications/read`);
-    return response.data;
+    return response.data.data;
   }
 };

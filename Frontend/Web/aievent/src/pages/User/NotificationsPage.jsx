@@ -141,16 +141,16 @@ export default function NotificationsPage() {
   const pageSize = 10;
 
   useEffect(() => {
-    fetchNotifications(1, pageSize);
+    fetchNotifications(null, 1, pageSize);
     // Unread count is now handled globally by the App component
   }, []);
 
   const loadMore = () => {
-    fetchNotifications(page + 1, pageSize);
+    fetchNotifications(null, page + 1, pageSize);
   };
 
   const goToPage = (pageNumber) => {
-    fetchNotifications(pageNumber, pageSize);
+    fetchNotifications(null, pageNumber, pageSize);
   };
 
   const handleMarkAllAsRead = async () => {
@@ -202,7 +202,7 @@ export default function NotificationsPage() {
       setNewNotification({ title: "", message: "", type: "System" });
       
       // Refresh notifications
-      fetchNotifications(1, pageSize);
+      fetchNotifications(null, 1, pageSize);
     } catch (err) {
       console.error("Failed to create notification:", err);
       if (err.response && err.response.data && err.response.data.message) {
@@ -247,7 +247,7 @@ export default function NotificationsPage() {
           <h3 className="mt-2 text-lg font-medium text-gray-900">Error loading notifications</h3>
           <p className="mt-1 text-gray-500">{error}</p>
           <Button 
-            onClick={() => fetchNotifications(1, 10)} 
+            onClick={() => fetchNotifications(null, 1, 10)} 
             className="mt-4"
           >
             Retry
@@ -389,36 +389,36 @@ export default function NotificationsPage() {
               <div className="space-y-4">
                 {notifications.map((notification) => (
                   <div
-                    key={notification.notificationId}
+                    key={notification.notificationId || notification.NotificationId}
                     className={`p-4 rounded-lg border transition-all duration-200 ${
-                      notification.isRead
+                      (notification.isRead || notification.IsRead)
                         ? "bg-white border-gray-200"
                         : "bg-blue-50 border-blue-200 shadow-sm"
                     }`}
                   >
                     <div className="flex items-start gap-3">
                       <div className={`p-2 rounded-full ${
-                        notification.isRead 
+                        (notification.isRead || notification.IsRead) 
                           ? "bg-gray-100 text-gray-600" 
                           : "bg-blue-100 text-blue-600"
                       }`}>
-                        <NotificationIcon type={notification.type} />
+                        <NotificationIcon type={notification.type || notification.Type} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <h3 className={`text-sm font-medium ${
-                              notification.isRead ? "text-gray-900" : "text-blue-900"
+                              (notification.isRead || notification.IsRead) ? "text-gray-900" : "text-blue-900"
                             }`}>
-                              {notification.title}
+                              {(notification.title || notification.Title) || 'Untitled Notification'}
                             </h3>
-                            <NotificationTypeBadge type={notification.type} />
+                            <NotificationTypeBadge type={notification.type || notification.Type} />
                           </div>
-                          {!notification.isRead && (
+                          {!notification.isRead && !notification.IsRead && (
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleMarkAsRead(notification.notificationId)}
+                              onClick={() => handleMarkAsRead(notification.notificationId || notification.NotificationId)}
                               className="h-6 px-2 text-xs"
                             >
                               Mark as read
@@ -427,12 +427,12 @@ export default function NotificationsPage() {
                         </div>
                         <p 
                           className="mt-1 text-sm text-gray-600"
-                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(notification.message) }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeHtml((notification.message || notification.Message) || '') }}
                         />
                         <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
-                          <span>{formatDate(notification.createdAt)}</span>
-                          {notification.readAt && (
-                            <span>Read at {formatDate(notification.readAt)}</span>
+                          <span>{(notification.createdTime || notification.CreatedTime) ? formatDate(notification.createdTime || notification.CreatedTime) : ''}</span>
+                          {(notification.readAt || notification.ReadAt) && (
+                            <span>Read at {formatDate(notification.readAt || notification.ReadAt)}</span>
                           )}
                         </div>
                       </div>
