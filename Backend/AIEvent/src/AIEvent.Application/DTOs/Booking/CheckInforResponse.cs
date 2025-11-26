@@ -6,6 +6,7 @@ namespace AIEvent.Application.DTOs.Booking
     {
         public required string FullName { get; set; }
         public required string Email { get; set; }
+        public string? Phone { get; set; }
         public required string EventName { get; set; }
         public required string TicketCode { get; set; }
         public required string TicketTypeName { get; set; }
