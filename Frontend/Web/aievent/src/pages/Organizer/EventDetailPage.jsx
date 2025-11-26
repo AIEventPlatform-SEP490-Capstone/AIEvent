@@ -620,7 +620,7 @@ Nhấn OK để xác nhận xóa.`;
             <div className="bg-white rounded-xl p-8 border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all duration-300">
               <h2 className="text-2xl font-bold text-foreground mb-6">Về sự kiện</h2>
               <p className="text-muted-foreground leading-relaxed mb-6">
-                {event.description || "Thông tin chi tiết về sự kiện chưa được cập nhật."}
+                {event.detailedDescription || event.description || "Thông tin chi tiết về sự kiện chưa được cập nhật."}
               </p>
               
               <div className="space-y-4">
