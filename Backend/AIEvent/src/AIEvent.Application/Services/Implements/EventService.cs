@@ -66,6 +66,7 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("Organizer not found or inactive", ErrorCodes.Unauthorized);
 
             var events = _mapper.Map<Event>(request);
+            events.TicketTypes.ToList().ForEach(tt => tt.SetCreated(organizerId.ToString()));
             if (events == null)
                 return ErrorResponse.FailureResult("Failed to map event", ErrorCodes.InternalServerError);
             
