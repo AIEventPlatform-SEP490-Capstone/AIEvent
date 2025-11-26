@@ -570,20 +570,20 @@ Nhấn OK để xác nhận xóa.`;
                 {
                   label: "Đóng bán vé",
                   time: event.saleEndTime
-                    ? `${new Date(event.saleEndTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: '2-digit' })} ${new Date(event.saleEndTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}`
+                    ? `${new Date(event.saleEndTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${new Date(event.saleEndTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}`
                     : "Chưa xác định",
                   icon: <Clock className="w-5 h-5" />,
                   color: "bg-red-500"
                 },
                 {
                   label: "Sự kiện bắt đầu",
-                  time: `${new Date(event.startTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: '2-digit' })} ${new Date(event.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
+                  time: `${new Date(event.startTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${new Date(event.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
                   icon: <Calendar className="w-5 h-5" />,
                   color: "bg-green-500"
                 },
                 {
                   label: "Sự kiện kết thúc",
-                  time: `${new Date(event.endTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: '2-digit' })} ${new Date(event.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
+                  time: `${new Date(event.endTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${new Date(event.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
                   icon: <Flag className="w-5 h-5" />,
                   color: "bg-purple-500"
                 }

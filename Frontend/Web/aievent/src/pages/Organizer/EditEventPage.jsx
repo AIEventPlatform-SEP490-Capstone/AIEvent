@@ -1250,7 +1250,8 @@ const EditEventPage = () => {
                   time: watch('saleStartTime') 
                     ? `${new Date(watch('saleStartTime')).toLocaleDateString('vi-VN', {
                         day: '2-digit',
-                        month: '2-digit'
+                        month: '2-digit',
+                        year: 'numeric'
                       })} ${new Date(watch('saleStartTime')).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -1264,7 +1265,8 @@ const EditEventPage = () => {
                   time: watch('saleEndTime') 
                     ? `${new Date(watch('saleEndTime')).toLocaleDateString('vi-VN', {
                         day: '2-digit',
-                        month: '2-digit'
+                        month: '2-digit',
+                        year: 'numeric'
                       })} ${new Date(watch('saleEndTime')).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -1278,7 +1280,8 @@ const EditEventPage = () => {
                   time: watch('startTime') 
                     ? `${new Date(watch('startTime')).toLocaleDateString('vi-VN', {
                         day: '2-digit',
-                        month: '2-digit'
+                        month: '2-digit',
+                        year: 'numeric'
                       })} ${new Date(watch('startTime')).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -1292,7 +1295,8 @@ const EditEventPage = () => {
                   time: watch('endTime') 
                     ? `${new Date(watch('endTime')).toLocaleDateString('vi-VN', {
                         day: '2-digit',
-                        month: '2-digit'
+                        month: '2-digit',
+                        year: 'numeric'
                       })} ${new Date(watch('endTime')).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
                         minute: '2-digit'

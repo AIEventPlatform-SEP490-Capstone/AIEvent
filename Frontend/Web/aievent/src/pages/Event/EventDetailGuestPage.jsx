@@ -576,7 +576,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                     ? `${new Date(event.saleStartTime).toLocaleDateString('vi-VN', {
                         day: '2-digit',
                         month: '2-digit',
-                        year: '2-digit'
+                        year: 'numeric'
                       })} ${new Date(event.saleStartTime).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
                         minute: '2-digit',
@@ -619,7 +619,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                     ? `${new Date(event.saleEndTime).toLocaleDateString('vi-VN', {
                         day: '2-digit',
                         month: '2-digit',
-                        year: '2-digit'
+                        year: 'numeric'
                       })} ${new Date(event.saleEndTime).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
                         minute: '2-digit',
@@ -634,7 +634,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                   time: `${new Date(event.startTime).toLocaleDateString('vi-VN', {
                     day: '2-digit',
                     month: '2-digit',
-                    year: '2-digit'
+                    year: 'numeric'
                   })} ${new Date(event.startTime).toLocaleTimeString('vi-VN', {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -648,7 +648,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                   time: `${new Date(event.endTime).toLocaleDateString('vi-VN', {
                     day: '2-digit',
                     month: '2-digit',
-                    year: '2-digit'
+                    year: 'numeric'
                   })} ${new Date(event.endTime).toLocaleTimeString('vi-VN', {
                     hour: '2-digit',
                     minute: '2-digit',

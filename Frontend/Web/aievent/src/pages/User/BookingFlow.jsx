@@ -41,7 +41,7 @@ function BookingFlow() {
   const creating = useSelector((state) => state.booking.creating);
   const [selectedTickets, setSelectedTickets] = useState({});
   const [bookingError, setBookingError] = useState("");
-  const [timeRemaining, setTimeRemaining] = useState(6000);
+  const [timeRemaining, setTimeRemaining] = useState(0);
   const [showSelectedTickets, setShowSelectedTickets] = useState(false);
   const [currentStep, setCurrentStep] = useState(1); // 1: Chọn vé, 2: Thanh toán, 3: Thành công
   const [bookingData, setBookingData] = useState(null); // Lưu thông tin booking sau khi đặt thành công
@@ -64,25 +64,48 @@ function BookingFlow() {
     getWallet(); // Load wallet info
   }, [id, getWallet]);
 
-  // Timer countdown
+  // Timer countdown based on SaleEndTime
   useEffect(() => {
-    if (timeRemaining <= 0) return;
+    if (!event?.saleEndTime) return;
+    
+    const calculateTimeRemaining = () => {
+      const now = new Date();
+      const saleEnd = new Date(event.saleEndTime);
+      const difference = saleEnd.getTime() - now.getTime();
+      
+      // If sale has already ended, return 0
+      if (difference <= 0) {
+        return 0;
+      }
+      
+      // Convert milliseconds to seconds
+      return Math.floor(difference / 1000);
+    };
+    
+    // Set initial time remaining
+    setTimeRemaining(calculateTimeRemaining());
+    
+    // Update timer every second
     const timer = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
+      setTimeRemaining(calculateTimeRemaining());
     }, 1000);
+    
     return () => clearInterval(timer);
-  }, [timeRemaining]);
+  }, [event]);
 
   const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
+    const days = Math.floor(seconds / (24 * 60 * 60));
+    const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
+    const mins = Math.floor((seconds % (60 * 60)) / 60);
     const secs = seconds % 60;
-    return `${String(mins).padStart(2, "0")} : ${String(secs).padStart(2, "0")}`;
+    
+    if (days > 0) {
+      return `${days} ngày ${hours} giờ ${mins} phút`;
+    } else if (hours > 0) {
+      return `${hours} giờ ${mins} phút ${secs} giây`;
+    } else {
+      return `${mins} phút ${secs} giây`;
+    }
   };
 
   const getCityCode = (eventData) => {
@@ -144,6 +167,11 @@ function BookingFlow() {
     // Kiểm tra không chọn vé nào
     if (ticketTypeRequests.length === 0) {
       setBookingError("Vui lòng chọn ít nhất một loại vé để đặt.");
+      return;
+    }
+    // Kiểm tra nếu đã hết thời gian bán vé
+    if (timeRemaining <= 0) {
+      setBookingError("Thời gian bán vé đã kết thúc, không thể đặt vé.");
       return;
     }
     // Chỉ chuyển sang bước thanh toán, chưa tạo booking
@@ -573,15 +601,23 @@ function BookingFlow() {
               /* Step 1: Ticket Selection */
               <div className="bg-gray-100 rounded-lg p-6 space-y-4">
                 {/* Timer */}
-                <div className="bg-white rounded-lg p-3 border border-gray-200">
-                <div className="text-sm text-gray-600 mb-1">Thời gian bán vé còn lại</div>
-                <div className="text-2xl font-bold text-blue-600">{formatTime(timeRemaining)}</div>
-              </div>
+                {timeRemaining > 0 ? (
+                  <div className="bg-white rounded-lg p-3 border border-gray-200">
+                    <div className="text-sm text-gray-600 mb-1">Thời gian bán vé còn lại</div>
+                    <div className="text-2xl font-bold text-blue-600">{formatTime(timeRemaining)}</div>
+                  </div>
+                ) : (
+                  <div className="bg-red-50 rounded-lg p-3 border border-red-200">
+                    <div className="text-sm text-red-600 mb-1">Thời gian bán vé đã kết thúc</div>
+                    <div className="text-lg font-bold text-red-700">Không thể mua vé</div>
+                  </div>
+                )}
 
               {/* Event Details */}
               <div className="bg-white rounded-lg p-3 border border-gray-200">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-gray-700">
+                    <div className="text-sm text-gray-700">Thời gian bắt đầu sự kiện</div>
                     {new Date(event.startTime).toLocaleDateString("vi-VN", {
                       weekday: "long",
                       day: "2-digit",
@@ -596,7 +632,7 @@ function BookingFlow() {
               </div>
 
               {/* Ticket Selection */}
-              <div className="bg-white rounded-lg p-4 border border-gray-200">
+              <div className={`bg-white rounded-lg p-4 border border-gray-200 ${timeRemaining <= 0 ? 'opacity-50 pointer-events-none' : ''}`}>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-gray-800">Loại vé</h3>
                   <h3 className="font-semibold text-gray-800">Số lượng</h3>
@@ -688,6 +724,11 @@ function BookingFlow() {
                             Loại vé này đã hết
                           </div>
                         )}
+                        {timeRemaining <= 0 && (
+                          <div className="text-xs text-red-500 mt-1 font-medium">
+                            Đã hết thời gian bán vé
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -737,10 +778,10 @@ function BookingFlow() {
               {/* Continue Button */}
               <Button
                 onClick={handleContinue}
-                disabled={ticketTypeRequests.length === 0}
+                disabled={ticketTypeRequests.length === 0 || timeRemaining <= 0}
                 className="w-full h-12 bg-sky-400 hover:bg-blue-400 text-white font-semibold rounded-lg shadow-md"
               >
-                Tiếp tục
+                {timeRemaining <= 0 ? 'Đã hết thời gian bán vé' : 'Tiếp tục'}
               </Button>
 
               {bookingError && (

@@ -589,29 +589,29 @@ export function EventDiscovery({
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-primary" />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium">
-                            {event.soldQuantity || 0}/{event.totalTickets} người
-                          </span>
-                          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all"
-                              style={{ width: `${event.totalTickets ? (event.soldQuantity || 0) / event.totalTickets * 100 : 0}%` }}
-                            />
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-primary" />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium">
+                              {event.soldQuantity || 0}/{event.totalTickets} người
+                            </span>
+                            <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all"
+                                style={{ width: `${event.totalTickets ? (event.soldQuantity || 0) / event.totalTickets * 100 : 0}%` }}
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                    
-                    {/* Favorite Count */}
-                    <div className="flex items-center gap-2 pt-2">
-                      <Heart className="w-4 h-4 text-red-500" />
-                      <span className="text-xs font-medium text-muted-foreground">
-                        {event.favoriteCount || 0} lượt yêu thích
-                      </span>
+                      <div className="flex items-center">
+                        <Heart className="w-4 h-4 mr-1 text-gray-500" />
+                        <span className="text-xs font-medium text-gray-600">
+                          {event.favoriteCount || 0}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
