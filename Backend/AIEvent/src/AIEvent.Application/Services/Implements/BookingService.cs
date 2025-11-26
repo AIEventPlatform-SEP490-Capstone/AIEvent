@@ -422,7 +422,7 @@ namespace AIEvent.Application.Services.Implements
                     .Query()
                     .AsNoTracking()
                     .Include(s => s.OrganizerProfile)
-                    .AnyAsync(s => s.UserId == userId && s.OrganizerProfile.UserId == organizerId && !s.IsDeleted);
+                    .AnyAsync(s => s.UserId == userId && s.OrganizerProfile.Id == organizerId && !s.IsDeleted);
 
                 if (!validStaff)
                     return ErrorResponse.FailureResult("No Permission", ErrorCodes.PermissionDenied);
@@ -486,7 +486,7 @@ namespace AIEvent.Application.Services.Implements
                     .Query()
                     .AsNoTracking()
                     .Include(s => s.OrganizerProfile)
-                    .AnyAsync(s => s.UserId == userId && s.OrganizerProfile.UserId == organizerId && !s.IsDeleted);
+                    .AnyAsync(s => s.UserId == userId && s.OrganizerProfile.Id == organizerId && !s.IsDeleted);
 
                 if (!validStaff)
                     return ErrorResponse.FailureResult("No Permission", ErrorCodes.PermissionDenied);
@@ -505,6 +505,7 @@ namespace AIEvent.Application.Services.Implements
                     TicketTypeName = ticket.TicketType.TicketName,
                     Status = ticket.Status,
                     Email = ticket.User.Email!,
+                    Phone = ticket.User.PhoneNumber,
                 });
             }
             catch (Exception ex)
