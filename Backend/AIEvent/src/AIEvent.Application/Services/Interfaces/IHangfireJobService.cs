@@ -1,5 +1,4 @@
-using AIEvent.Application.DTOs.Booking;
-using AIEvent.Application.DTOs.Common;
+using AIEvent.Application.DTOs.Booking; 
 using AIEvent.Application.DTOs.InviteFriend; 
 
 namespace AIEvent.Application.Services.Interfaces

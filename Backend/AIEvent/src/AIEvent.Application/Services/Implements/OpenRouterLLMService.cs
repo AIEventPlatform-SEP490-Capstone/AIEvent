@@ -70,22 +70,22 @@ namespace AIEvent.Application.Services.Implements
             var prompt = $@"
             Người dùng hỏi: ""{query}"".
             {chatHistoryText}
-            Dưới đây là danh sách sự kiện liên quan (ngữ cảnh):
+            Dưới đây là danh sách sự kiện liên quan (ngữ cảnh). Bạn chỉ được sử dụng thông tin trong danh sách này:
             {contextText}
+            Hãy lựa chọn **một hoặc nhiều sự kiện phù hợp nhất** với yêu cầu người dùng.
+            Đối với mỗi sự kiện được chọn, trả về theo định dạng sau:
+            1) Mở đầu bằng **một câu tự nhiên** giải thích lý do sự kiện này phù hợp.
+            2) Sau đó là **form chuẩn**:
 
-            Chọn **1 sự kiện phù hợp nhất** và trả về theo định dạng:
-
-            - Bắt đầu bằng **câu tự nhiên** giải thích lý do vì sao sự kiện này phù hợp với yêu cầu người dùng, ví dụ: 'Với yêu cầu của bạn, tôi cảm thấy sự kiện ""Tên sự kiện"" rất phù hợp vì ...'
-
-            - Tiếp theo là **form chuẩn**:
             - **Địa điểm:** [Địa điểm tổ chức]
             - **Thời gian:** [dd/MM/yyyy HH:mm → dd/MM/yyyy HH:mm]
             - **Giá vé:** [Miễn phí hoặc giá vé]
 
-            - Cuối cùng là link điều hướng:
+            3) Kết thúc bằng:
               Xem chi tiết: [link đã có trong context]
 
-            Hãy gợi ý các sự kiện phù hợp nhất
+            Nếu có nhiều sự kiện phù hợp, hãy trình bày theo từng mục tách biệt.
+            Không được tự tạo hoặc suy diễn bất kỳ thông tin nào ngoài context.
             ";
 
             return await GenerateTextAsync(prompt);
