@@ -18,5 +18,6 @@ namespace AIEvent.Application.Services.Interfaces
             DateTime? endTime);
         Task<Result<List<TicketByEventResponse>>> GetTicketsByEventAsync(Guid userId, string id);
         Task<Result<CheckInResponse>> CheckInTicketAsync(Guid userId, string qrContent);
+        Task<Result<CheckInforResponse>> CheckInforAsync(Guid userId, string qrContent);
     }
 }

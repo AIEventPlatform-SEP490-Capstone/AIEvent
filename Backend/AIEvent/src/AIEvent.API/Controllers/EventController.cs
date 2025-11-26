@@ -93,7 +93,7 @@ namespace AIEvent.API.Controllers
 
         [HttpPatch("{id}")]
         [Authorize(Roles = "Organizer, Manager")]
-        public async Task<ActionResult<SuccessResponse<object>>> UpdateEvent(Guid id, [FromForm] UpdateEventRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> UpdateEvent(Guid id, [FromBody] UpdateEventRequest request)
         {
             Guid organizerId = User.GetRequiredOrganizerId();
 
