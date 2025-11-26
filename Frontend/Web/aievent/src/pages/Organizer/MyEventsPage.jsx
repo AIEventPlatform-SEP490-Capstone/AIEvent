@@ -1024,15 +1024,17 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                             <Eye className="w-4 h-4 mr-1" />
                             Xem
                           </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            className="text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-200 rounded-lg transition-colors h-9"
-                            onClick={() => handleEditEvent(event.eventId)}
-                          >
-                            <Edit className="w-4 h-4 mr-1" />
-                            Sửa
-                          </Button>
+                          {eventStatus === EventStatus.PendingApproval && (
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              className="text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-200 rounded-lg transition-colors h-9"
+                              onClick={() => handleEditEvent(event.eventId)}
+                            >
+                              <Edit className="w-4 h-4 mr-1" />
+                              Sửa
+                            </Button>
+                          )}
                           <Button 
                             size="sm" 
                             variant="ghost"

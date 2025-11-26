@@ -489,7 +489,7 @@ const EditEventPage = () => {
   };
 
   // Handle form submission
-  const onSubmit = async (data) => {
+  const onSubmit = async (data, publishStatus = null) => {
     if (!eventId) {
       toast.error('Không tìm thấy ID sự kiện');
       return;
@@ -638,7 +638,7 @@ const EditEventPage = () => {
         longitude: geocodeResult.longitude,
         totalTickets: totalTickets,
         ticketPricingType: data.ticketPricingType && !isNaN(parseInt(data.ticketPricingType)) ? parseInt(data.ticketPricingType) : 1,
-        publish: data.publish || false,
+        publish: publishStatus !== null ? publishStatus : (data.publish || false),
         // Send existing images that are not removed + new images
         images: [...existingImages.filter(img => !removedImages.includes(img)), ...imageUrls],
         // Send existing evidence images that are not removed + new evidence images
@@ -671,7 +671,7 @@ const EditEventPage = () => {
     } catch (error) {
       console.error('Error updating event:', error);
       const errorData = error.response?.data;
-      let errorMessage = data.publish ? 'Có lỗi xảy ra khi cập nhật sự kiện' : 'Có lỗi xảy ra khi lưu nháp sự kiện';
+      let errorMessage = (publishStatus !== null ? publishStatus : (data.publish || false)) ? 'Có lỗi xảy ra khi cập nhật sự kiện' : 'Có lỗi xảy ra khi lưu nháp sự kiện';
       
       if (errorData?.errors === 'Invalid Organizer ID in token' || error.response?.status === 401) {
         errorMessage = 'Tài khoản organizer không hợp lệ hoặc phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.';
@@ -1786,20 +1786,22 @@ const EditEventPage = () => {
 
                   {/* Action Buttons */}
                   <div className="flex flex-col gap-3 pt-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-10 rounded-lg font-medium border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 bg-transparent"
-                      onClick={() => handleSubmit((data) => onSubmit({ ...data, publish: false }))()}
-                      disabled={isSaving}
-                    >
-                      <Save className="w-4 h-4 mr-2" />
-                      {isSaving ? "Đang lưu..." : "Lưu nháp"}
-                    </Button>
+                    {!watch('publish') && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-10 rounded-lg font-medium border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 bg-transparent"
+                        onClick={handleSubmit((data) => onSubmit(data, false))}
+                        disabled={isSaving}
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        {isSaving ? "Đang lưu..." : "Lưu nháp"}
+                      </Button>
+                    )}
                     <Button
                       type="button"
                       className="h-10 rounded-lg font-medium bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all"
-                      onClick={() => handleSubmit((data) => onSubmit({ ...data, publish: true }))()}
+                      onClick={handleSubmit((data) => onSubmit(data, true))}
                       disabled={isSaving}
                     >
                       <Send className="w-4 h-4 mr-2" />

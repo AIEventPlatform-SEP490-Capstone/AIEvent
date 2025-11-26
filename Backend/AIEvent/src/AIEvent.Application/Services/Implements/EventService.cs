@@ -285,7 +285,11 @@ namespace AIEvent.Application.Services.Implements
                 HandleEventTagsOperations(eventQuery, eventId, request);
                  
                 if (request.Publish == true)
-                    eventQuery.Status = EventStatus.PendingApproval;
+                {
+					eventQuery.Status = EventStatus.PendingApproval;
+                    eventQuery.Publish = true;
+				}
+                    
 
                 await _unitOfWork.EventRepository.UpdateAsync(eventQuery);
                 return Result.Success();
