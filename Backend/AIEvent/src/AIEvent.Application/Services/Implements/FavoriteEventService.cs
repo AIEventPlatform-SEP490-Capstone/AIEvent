@@ -107,6 +107,9 @@ namespace AIEvent.Application.Services.Implements
                         TagName = t.Tag.NameTag
                     }).ToList(),
                     IsFavorite = true,
+                    FavoriteCount = e.FavoriteEvents.Count(),
+                    SaleStartTime = e.SaleStartTime,
+                    SaleEndTime = e.SaleEndTime,
 					ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
 	                    ? new List<string>()
 	                    : e.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()

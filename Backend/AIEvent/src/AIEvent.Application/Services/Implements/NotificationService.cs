@@ -158,12 +158,14 @@ namespace AIEvent.Application.Services.Implements
             return Result.Success();
         }
 
-        public async Task<Result<BasePaginated<NotificationResponse>>> GetNotificationsByUserIdAsync(Guid userId, int pageNumber = 1, int pageSize = 5)
+        public async Task<Result<BasePaginated<NotificationResponse>>> GetNotificationsByUserIdAsync(Guid userId, bool? isRead = false, int pageNumber = 1, int pageSize = 5)
         {
             IQueryable<Notification> notifications = _unitOfWork.NotificationRepository
                                                         .Query()
                                                         .AsNoTracking()
                                                         .Where(n => n.UserId == userId && !n.IsDeleted);
+            if (isRead.HasValue)
+                notifications = notifications.Where(n => n.IsRead == isRead.Value);
 
             int totalCount = await notifications.CountAsync();
 

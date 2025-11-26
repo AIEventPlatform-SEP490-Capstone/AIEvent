@@ -265,6 +265,9 @@ namespace AIEvent.Application.Services.Implements
                         ? e.TicketTypes.Min(t => t.TicketPrice)
                         : 0,
                     IsFavorite = userId != Guid.Empty && e.FavoriteEvents.Any(fe => fe.UserId == userId),
+                    FavoriteCount = e.FavoriteEvents.Count(),
+                    SaleStartTime = e.SaleStartTime,
+                    SaleEndTime = e.SaleEndTime,
                     ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
                         ? new List<string>()
                         : e.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()

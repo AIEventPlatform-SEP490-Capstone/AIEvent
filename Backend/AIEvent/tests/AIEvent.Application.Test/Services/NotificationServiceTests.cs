@@ -512,7 +512,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.NotificationRepository.Query(It.IsAny<bool>())).Returns(notifications.Object);
 
             // Act
-            var result = await _notificationService.GetNotificationsByUserIdAsync(UserId, 1, 10);
+            var result = await _notificationService.GetNotificationsByUserIdAsync(UserId, null, 1, 10);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -546,7 +546,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.NotificationRepository.Query(It.IsAny<bool>())).Returns(notificationsQuery.Object);
 
             // Act
-            var result = await _notificationService.GetNotificationsByUserIdAsync(UserId, 1, 10);
+            var result = await _notificationService.GetNotificationsByUserIdAsync(UserId, null, 1, 10);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -580,7 +580,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.NotificationRepository.Query(It.IsAny<bool>())).Returns(notificationsQuery.Object);
 
             // Act
-            var result = await _notificationService.GetNotificationsByUserIdAsync(UserId, 2, 10);
+            var result = await _notificationService.GetNotificationsByUserIdAsync(UserId, null, 2, 10);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -613,7 +613,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.NotificationRepository.Query(It.IsAny<bool>())).Returns(notificationsQuery.Object);
 
             // Act
-            var result = await _notificationService.GetNotificationsByUserIdAsync(UserId, 3, 10);
+            var result = await _notificationService.GetNotificationsByUserIdAsync(UserId, null, 3, 10);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -631,7 +631,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.NotificationRepository.Query(It.IsAny<bool>())).Returns(notifications.Object);
 
             // Act
-            var result = await _notificationService.GetNotificationsByUserIdAsync(UserId, 1, 10);
+            var result = await _notificationService.GetNotificationsByUserIdAsync(UserId, null, 1, 10);
 
             // Assert
             result.IsSuccess.Should().BeTrue();
@@ -654,7 +654,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.NotificationRepository.Query(It.IsAny<bool>())).Returns(notifications.Object);
 
             // Act
-            var result = await _notificationService.GetNotificationsByUserIdAsync(UserId, 1, 10);
+            var result = await _notificationService.GetNotificationsByUserIdAsync(UserId, null, 1, 10);
 
             // Assert
             result.IsSuccess.Should().BeTrue();

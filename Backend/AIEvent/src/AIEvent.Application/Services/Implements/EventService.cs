@@ -241,8 +241,7 @@ namespace AIEvent.Application.Services.Implements
 
             if (eventQuery.OrganizerProfileId != organizerId)
                 return ErrorResponse.FailureResult("You don't have permission to update this event", ErrorCodes.Unauthorized);
-
-            // Check if event has any bookings - if so, prevent updates
+             
             var hasBookings = await _unitOfWork.EventRepository
                 .Query()
                 .Where(e => e.Id == eventId)
@@ -261,17 +260,28 @@ namespace AIEvent.Application.Services.Implements
             var result = await _transactionHelper.ExecuteInTransactionAsync(async () =>
             { 
                 _mapper.Map(request, eventQuery);
-                  
-                // Always set SoldQuantity to 0 for updates
+                   
                 eventQuery.SoldQuantity = 0;
  
                 await UpdateEventImagesAsync(eventQuery, request);
                 await UpdateEventEvidenceAsync(eventQuery, request);
                  
                 await HandleTicketDetailsOperationsAsync(eventQuery, eventId, organizerId, request);
-                  
-                UpdateTotalTickets(eventQuery, request);
-                 
+
+                if (request.TicketTypes != null && request.TicketTypes.Any() ||
+                    request.RemoveTicketTypeIds != null && request.RemoveTicketTypeIds.Any())
+                {
+                    eventQuery.TotalTickets = eventQuery.TicketTypes.Sum(t => t.TicketQuantity);
+                    eventQuery.RemainingTickets = eventQuery.TotalTickets;
+                }
+                else if (request.TotalTickets.HasValue)
+                {
+                    eventQuery.TotalTickets = request.TotalTickets.Value;
+                    eventQuery.RemainingTickets = eventQuery.TotalTickets;
+                }
+                else
+                    eventQuery.RemainingTickets = eventQuery.TotalTickets;
+
                 HandleEventTagsOperations(eventQuery, eventId, request);
                  
                 if (request.Publish == true)
@@ -438,23 +448,6 @@ namespace AIEvent.Application.Services.Implements
             }
         }
 
-        private void UpdateTotalTickets(Event eventQuery, UpdateEventRequest request)
-        {
-            if (request.TicketTypes != null && request.TicketTypes.Any() || 
-                request.RemoveTicketTypeIds != null && request.RemoveTicketTypeIds.Any())
-            {
-                eventQuery.TotalTickets = eventQuery.TicketTypes.Sum(t => t.TicketQuantity);
-                eventQuery.RemainingTickets = eventQuery.TotalTickets; // SoldQuantity is always 0
-            }
-            else if (request.TotalTickets.HasValue)
-            {
-                eventQuery.TotalTickets = request.TotalTickets.Value;
-                eventQuery.RemainingTickets = eventQuery.TotalTickets; // SoldQuantity is always 0
-            }
-            else
-                eventQuery.RemainingTickets = eventQuery.TotalTickets; // SoldQuantity is always 0
-        }
-
         private bool IsValidForPublish(UpdateEventRequest request, Event existingEvent)
         {
             var title = request.Title ?? existingEvent.Title;
@@ -527,8 +520,6 @@ namespace AIEvent.Application.Services.Implements
             var hasNewEvidence = request.ImgListEvidences != null && request.ImgListEvidences.Any();
             return existingEvidenceList.Any() || hasNewEvidence;
         }
-
-
 
         public async Task<Result<EventDetailResponse>> GetEventByIdAsync(Guid eventId)
         {
