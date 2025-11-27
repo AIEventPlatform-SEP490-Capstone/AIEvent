@@ -33,6 +33,11 @@ const EndUrls = {
   EVENT_CATEGORIES: `${BASE_URL}/event-category`,
   EVENT_CATEGORY_DETAIL: id => `${BASE_URL}/event-category/${id}`,
 
+  // Favorite Events
+  FAVORITE_EVENTS: `${BASE_URL}/favorite-event`,
+  ADD_FAVORITE_EVENT: `${BASE_URL}/favorite-event`,
+  REMOVE_FAVORITE_EVENT: `${BASE_URL}/favorite-event`,
+
   // User
   PROFILE: `${BASE_URL}/user/profile`,
   UPDATE_PROFILE: `${BASE_URL}/user/profile`,
@@ -65,11 +70,10 @@ const EndUrls = {
   EVENT_TICKETS: (eventId) => `${BASE_URL}/booking/event/${eventId}/ticket`,
   TICKET_QR: (ticketId) => `${BASE_URL}/booking/ticket/qr/${ticketId}`,
   CHECK_IN: `${BASE_URL}/booking/check-in`,
+  CHECK_INFOR: (qr) => `${BASE_URL}/booking/check-infor/${qr}`,
   // Ratings
   RATINGS_BY_EVENT: id => `${BASE_URL}/rating/${id}/event`,
   RATING: id => `${BASE_URL}/rating/${id}`,
 };
-
-// console.log('EndUrls:', EndUrls);
 
 export default EndUrls;

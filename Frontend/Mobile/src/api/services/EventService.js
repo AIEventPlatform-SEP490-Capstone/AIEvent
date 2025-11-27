@@ -71,9 +71,7 @@ class EventService {
    */
   static async testConnection() {
     try {
-      console.log('Testing API connection to:', EndUrls.EVENTS);
       const response = await BaseApiService.get(EndUrls.EVENTS);
-      console.log('API Connection Test Response:', response);
       return { success: true, data: response };
     } catch (error) {
       console.error('API Connection Test Error:', error);

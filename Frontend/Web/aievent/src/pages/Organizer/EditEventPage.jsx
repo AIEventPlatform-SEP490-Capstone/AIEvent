@@ -83,12 +83,12 @@ import { useSidebar } from '../../components/ui/sidebar'; // Add this import
 const editEventSchema = z.object({
   title: z.string().min(1, 'Tiêu đề sự kiện là bắt buộc').max(200, 'Tiêu đề không được vượt quá 200 ký tự'),
   description: z.string().min(1, 'Mô tả sự kiện là bắt buộc').max(1000, 'Mô tả không được vượt quá 1000 ký tự'),
-  detailedDescription: z.string().optional(),
+  detailedDescription: z.string().min(1, 'Mô tả chi tiết sự kiện là bắt buộc'),
   startTime: z.string().min(1, 'Thời gian bắt đầu là bắt buộc'),
   endTime: z.string().min(1, 'Thời gian kết thúc là bắt buộc'),
-  locationName: z.string().optional(),
-  address: z.string().optional(),
-  district: z.string().optional(),
+  locationName: z.string().min(1, 'Địa điểm là bắt buộc'),
+  address: z.string().min(1, 'Địa chỉ chi tiết là bắt buộc'),
+  district: z.string().min(1, 'Quận/Huyện là bắt buộc'),
   linkRef: z.string().optional(),
   eventCategoryId: z.string().min(1, 'Danh mục sự kiện là bắt buộc'), // Make this required
   ticketPricingType: z.string().min(1, 'Loại vé là bắt buộc'),
@@ -167,6 +167,9 @@ const EditEventPage = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   // Add state to track original tags
   const [originalTagIds, setOriginalTagIds] = useState([]);
+  // Track if validation has been triggered (to avoid showing errors before user interaction)
+  const [hasValidated, setHasValidated] = useState(false);
+  
   // Add state for individual date validation errors
   const [dateErrors, setDateErrors] = useState({
     startTime: '',
@@ -174,6 +177,16 @@ const EditEventPage = () => {
     saleStartTime: '',
     saleEndTime: ''
   });
+  
+  // Add state for tag validation errors
+  const [tagError, setTagError] = useState('');
+  
+  // Add state for image validation errors
+  const [imageError, setImageError] = useState('');
+  const [evidenceImageError, setEvidenceImageError] = useState('');
+  
+  // Add state for ticket name validation errors
+  const [ticketNameError, setTicketNameError] = useState('');
   
   // Add state for editing modes
   const [editingField, setEditingField] = useState(null);
@@ -496,85 +509,19 @@ const EditEventPage = () => {
     }
 
     try {
+      // Validate all fields at once and show inline errors
+      const hasErrors = validateAllFields();
+      
+      if (hasErrors) {
+        const errorMessage = publishStatus !== null ? 
+          (publishStatus ? 'Vui lòng kiểm tra lại thông tin sự kiện trước khi xuất bản' : 'Vui lòng kiểm tra lại thông tin sự kiện trước khi lưu nháp') : 
+          'Vui lòng kiểm tra lại thông tin sự kiện';
+        toast.error(errorMessage);
+        return;
+      }
+      
       showLoading('Đang cập nhật sự kiện...');
       setIsSaving(true);
-
-      // Validate required fields
-      if (!data.title?.trim()) {
-        toast.error('Vui lòng nhập tiêu đề sự kiện');
-        hideLoading();
-        setIsSaving(false);
-        return;
-      }
-      
-      // Validate category
-      if (!data.eventCategoryId) {
-        toast.error('Vui lòng chọn danh mục sự kiện');
-        hideLoading();
-        setIsSaving(false);
-        return;
-      }
-      
-      // Validate event images - check for either uploaded or cloned images
-      if (selectedImages.length === 0 && imagePreview.length === 0 && existingImages.length === 0) {
-        toast.error('Vui lòng tải lên ít nhất một hình ảnh sự kiện');
-        hideLoading();
-        setIsSaving(false);
-        return;
-      }
-      
-      // Validate evidence images - check for either uploaded or cloned images
-      if (selectedEvidenceImages.length === 0 && evidenceImagePreview.length === 0 && existingEvidenceImages.length === 0) {
-        toast.error('Vui lòng tải lên ít nhất một hình ảnh bằng chứng');
-        hideLoading();
-        setIsSaving(false);
-        return;
-      }
-
-      // Validate dates
-      const startDate = new Date(data.startTime);
-      const endDate = new Date(data.endTime);
-      const saleStartDate = new Date(data.saleStartTime);
-      const saleEndDate = new Date(data.saleEndTime);
-      
-      // Create now date in the same timezone as the input dates (UTC+7)
-      // Since datetime inputs are in local time (UTC+7), we need to compare with local time
-      const now = new Date();
-
-      if (startDate <= now) {
-        toast.error('Thời gian bắt đầu phải sau thời điểm hiện tại');
-        hideLoading();
-        setIsSaving(false);
-        return;
-      }
-
-      if (endDate <= startDate) {
-        toast.error('Thời gian kết thúc phải sau thời gian bắt đầu');
-        hideLoading();
-        setIsSaving(false);
-        return;
-      }
-
-      if (saleStartDate >= startDate) {
-        toast.error('Thời gian bắt đầu bán vé phải trước thời gian bắt đầu sự kiện');
-        hideLoading();
-        setIsSaving(false);
-        return;
-      }
-
-      if (saleEndDate <= saleStartDate) {
-        toast.error('Thời gian kết thúc bán vé phải sau thời gian bắt đầu bán vé');
-        hideLoading();
-        setIsSaving(false);
-        return;
-      }
-
-      if (saleEndDate >= startDate) {
-        toast.error('Thời gian kết thúc bán vé phải trước thời gian bắt đầu sự kiện');
-        hideLoading();
-        setIsSaving(false);
-        return;
-      }
       
       // Geocode the address to get latitude and longitude
       const geocodeResult = await geocodeAddress(data.locationName, data.district, data.address);
@@ -690,6 +637,55 @@ const EditEventPage = () => {
       hideLoading();
       setIsSaving(false);
     }
+  };
+
+  // Function to validate all fields at once
+  const validateAllFields = () => {
+    // Set validation flag to show errors
+    setHasValidated(true);
+    
+    // Validate timeline
+    validateDates();
+    
+    // Validate tags
+    if (!reduxSelectedTags || reduxSelectedTags.length === 0) {
+      setTagError('Vui lòng chọn ít nhất một tag cho sự kiện');
+    } else {
+      setTagError('');
+    }
+    
+    // Validate event images
+    if (selectedImages.length === 0 && imagePreview.length === 0 && existingImages.length === 0) {
+      setImageError('Vui lòng tải lên ít nhất một hình ảnh sự kiện');
+    } else {
+      setImageError('');
+    }
+    
+    // Validate evidence images
+    if (selectedEvidenceImages.length === 0 && evidenceImagePreview.length === 0 && existingEvidenceImages.length === 0) {
+      setEvidenceImageError('Vui lòng tải lên ít nhất một hình ảnh bằng chứng');
+    } else {
+      setEvidenceImageError('');
+    }
+    
+    // Validate ticket names
+    const ticketTypes = watch('ticketTypes') || [];
+    const hasEmptyTicketNames = ticketTypes.some(ticket => !ticket.ticketName || ticket.ticketName.trim() === '');
+    
+    if (hasEmptyTicketNames) {
+      setTicketNameError('Vui lòng nhập đầy đủ tên cho tất cả các loại vé');
+    } else {
+      setTicketNameError('');
+    }
+    
+    // Return true if there are validation errors
+    const hasTagErrors = !reduxSelectedTags || reduxSelectedTags.length === 0;
+    const hasImageErrors = selectedImages.length === 0 && imagePreview.length === 0 && existingImages.length === 0;
+    const hasEvidenceImageErrors = selectedEvidenceImages.length === 0 && evidenceImagePreview.length === 0 && existingEvidenceImages.length === 0;
+    const hasTimelineErrors = Object.values(dateErrors).some(error => error !== '');
+    const hasTicketNameErrors = hasEmptyTicketNames;
+    
+    return hasTagErrors || hasImageErrors || hasEvidenceImageErrors || hasTimelineErrors || hasTicketNameErrors;
   };
 
   // Real-time date validation
@@ -1195,6 +1191,15 @@ const EditEventPage = () => {
             </div>
           )}
         </div>
+        {/* Display event image validation error */}
+        {hasValidated && imageError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-2 mx-4">
+            <p className="text-red-700 text-sm flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {imageError}
+            </p>
+          </div>
+        )}
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
           {/* Main Content - Event Detail Preview */}
@@ -1219,6 +1224,12 @@ const EditEventPage = () => {
                   <Pencil className="w-4 h-4 inline-block ml-2 text-gray-400" />
                 </h1>
               )}
+              {hasValidated && errors.title && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {errors.title.message}
+                </p>
+              )}
               
               {/* Editable Description */}
               {editingField === 'description' ? (
@@ -1238,6 +1249,12 @@ const EditEventPage = () => {
                 >
                   {watch('description') || 'Nhấp để nhập mô tả sự kiện'}
                   <Pencil className="w-4 h-4 inline-block ml-2 text-gray-400" />
+                </p>
+              )}
+              {hasValidated && errors.description && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {errors.description.message}
                 </p>
               )}
             </div>
@@ -1331,6 +1348,17 @@ const EditEventPage = () => {
               isEditable={true}
               minDateTime={minDateTime}
             />
+            {/* Display timeline validation errors */}
+            {hasValidated && (
+              <div className="space-y-2 mt-2">
+                {(!watch('saleStartTime') || !watch('saleEndTime') || !watch('startTime') || !watch('endTime')) && (
+                  <p className="text-red-500 text-xs flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    Thời gian của sự kiện cần nhập đầy đủ
+                  </p>
+                )}
+              </div>
+            )}
             
             {/* Ticket Information */}
             {previewData.ticketTypes && previewData.ticketTypes.length > 0 && (
@@ -1483,6 +1511,15 @@ const EditEventPage = () => {
                 })}
               </div>
             )}
+            {/* Display ticket name validation error */}
+            {hasValidated && ticketNameError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-2">
+                <p className="text-red-700 text-sm flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  {ticketNameError}
+                </p>
+              </div>
+            )}
             
             {/* About Event */}
             <div className="bg-white rounded-xl p-8 border border-gray-100">
@@ -1506,6 +1543,12 @@ const EditEventPage = () => {
                   >
                     {watch('detailedDescription') || watch('description') || 'Nhấp để nhập mô tả chi tiết sự kiện'}
                     <Pencil className="w-4 h-4 inline-block ml-2 text-gray-400" />
+                  </p>
+                )}
+                {hasValidated && errors.detailedDescription && (
+                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {errors.detailedDescription.message}
                   </p>
                 )}
               </div>
@@ -1721,6 +1764,13 @@ const EditEventPage = () => {
                     <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-200 dark:border-gray-800">
                       <TagSelector />
                     </div>
+                    {/* Display tag validation error */}
+                    {hasValidated && tagError && (
+                      <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {tagError}
+                      </p>
+                    )}
                   </div>
 
                   <div className="h-px bg-gradient-to-r from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-900"></div>
@@ -1804,6 +1854,13 @@ const EditEventPage = () => {
                       </div>
                     )}
                   </div>
+                  {/* Display evidence image validation error */}
+                  {hasValidated && evidenceImageError && (
+                    <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {evidenceImageError}
+                    </p>
+                  )}
 
                   <div className="h-px bg-gradient-to-r from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-900"></div>
 
@@ -1814,7 +1871,12 @@ const EditEventPage = () => {
                         type="button"
                         variant="outline"
                         className="h-10 rounded-lg font-medium border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 bg-transparent"
-                        onClick={handleSubmit((data) => onSubmit(data, false))}
+                        onClick={() => {
+                          // Validate all fields at once and show inline errors
+                          validateAllFields();
+                          
+                          handleSubmit((data) => onSubmit(data, false))();
+                        }}
                         disabled={isSaving}
                       >
                         <Save className="w-4 h-4 mr-2" />
@@ -1824,7 +1886,12 @@ const EditEventPage = () => {
                     <Button
                       type="button"
                       className="h-10 rounded-lg font-medium bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all"
-                      onClick={handleSubmit((data) => onSubmit(data, true))}
+                      onClick={() => {
+                        // Validate all fields at once and show inline errors
+                        validateAllFields();
+                        
+                        handleSubmit((data) => onSubmit(data, true))();
+                      }}
                       disabled={isSaving}
                     >
                       <Send className="w-4 h-4 mr-2" />

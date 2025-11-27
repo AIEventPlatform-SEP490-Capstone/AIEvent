@@ -308,6 +308,19 @@ export function EventDiscovery({
                         <p className="text-gray-600 text-sm leading-relaxed mb-4 line-clamp-2">
                           {event.description}
                         </p>
+                        
+                        {/* Display reason for AI recommended events */}
+                        {event.reason && (
+                          <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                            <div className="flex items-start gap-2">
+                              <Sparkles className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-xs font-semibold text-blue-700 mb-1">Lý do đề xuất:</p>
+                                <p className="text-xs text-blue-600 italic">"{event.reason}"</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         <div className="space-y-3">
                           <div className="flex items-center text-gray-600 text-sm">

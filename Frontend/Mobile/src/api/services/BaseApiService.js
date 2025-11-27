@@ -1,17 +1,23 @@
 import AuthService from './AuthService';
 
 class BaseApiService {
-  static async getAuthHeaders() {
+  static async getAuthHeaders(hasBody = true) {
     const accessToken = await AuthService.getAccessToken();
 
     if (!accessToken) {
       throw new Error('User not authenticated. Please login again.');
     }
 
-    return {
-      'Content-Type': 'application/json',
+    const headers = {
       Authorization: `Bearer ${accessToken}`,
     };
+
+    // Only set Content-Type for requests with a body
+    if (hasBody) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    return headers;
   }
 
   static async handleApiResponse(response, retryCallback) {
@@ -93,7 +99,7 @@ class BaseApiService {
 
   static async get(url) {
     try {
-      const headers = await this.getAuthHeaders();
+      const headers = await this.getAuthHeaders(false);
       
       const response = await fetch(url, {
         method: 'GET',
@@ -101,7 +107,7 @@ class BaseApiService {
       });
 
       return await this.handleApiResponse(response, async () => {
-        const newHeaders = await this.getAuthHeaders();
+        const newHeaders = await this.getAuthHeaders(false);
         const retryResponse = await fetch(url, {
           method: 'GET',
           headers: newHeaders,
@@ -114,25 +120,37 @@ class BaseApiService {
     }
   }
 
-  static async post(url, data) {
+  static async post(url, data = null) {
     try {
       console.log('Making POST request to:', url);
       console.log('Request Data:', data);
-      const headers = await this.getAuthHeaders();
+      const headers = await this.getAuthHeaders(data !== null && data !== undefined);
 
-      const response = await fetch(url, {
+      const fetchOptions = {
         method: 'POST',
         headers,
-        body: JSON.stringify(data),
-      });
+      };
+
+      // Only add body if data is provided and not null
+      if (data !== null && data !== undefined) {
+        fetchOptions.body = JSON.stringify(data);
+      }
+
+      const response = await fetch(url, fetchOptions);
 
       return await this.handleApiResponse(response, async () => {
-        const newHeaders = await this.getAuthHeaders();
-        const retryResponse = await fetch(url, {
+        const newHeaders = await this.getAuthHeaders(data !== null && data !== undefined);
+        const retryOptions = {
           method: 'POST',
           headers: newHeaders,
-          body: JSON.stringify(data),
-        });
+        };
+        
+        // Only add body if data is provided and not null
+        if (data !== null && data !== undefined) {
+          retryOptions.body = JSON.stringify(data);
+        }
+        
+        const retryResponse = await fetch(url, retryOptions);
         return await this.handleApiResponse(retryResponse, null);
       });
     } catch (error) {
@@ -211,25 +229,37 @@ class BaseApiService {
     }
   }
 
-  static async put(url, data) {
+  static async put(url, data = null) {
     try {
       console.log('Making PUT request to:', url);
       console.log('Request Data:', data);
-      const headers = await this.getAuthHeaders();
+      const headers = await this.getAuthHeaders(data !== null && data !== undefined);
 
-      const response = await fetch(url, {
+      const fetchOptions = {
         method: 'PUT',
         headers,
-        body: JSON.stringify(data),
-      });
+      };
+
+      // Only add body if data is provided and not null
+      if (data !== null && data !== undefined) {
+        fetchOptions.body = JSON.stringify(data);
+      }
+
+      const response = await fetch(url, fetchOptions);
 
       return await this.handleApiResponse(response, async () => {
-        const newHeaders = await this.getAuthHeaders();
-        const retryResponse = await fetch(url, {
+        const newHeaders = await this.getAuthHeaders(data !== null && data !== undefined);
+        const retryOptions = {
           method: 'PUT',
           headers: newHeaders,
-          body: JSON.stringify(data),
-        });
+        };
+        
+        // Only add body if data is provided and not null
+        if (data !== null && data !== undefined) {
+          retryOptions.body = JSON.stringify(data);
+        }
+        
+        const retryResponse = await fetch(url, retryOptions);
         return await this.handleApiResponse(retryResponse, null);
       });
     } catch (error) {
@@ -241,7 +271,7 @@ class BaseApiService {
   static async delete(url) {
     try {
       console.log('Making DELETE request to:', url);
-      const headers = await this.getAuthHeaders();
+      const headers = await this.getAuthHeaders(false);
 
       const response = await fetch(url, {
         method: 'DELETE',
@@ -249,7 +279,7 @@ class BaseApiService {
       });
 
       return await this.handleApiResponse(response, async () => {
-        const newHeaders = await this.getAuthHeaders();
+        const newHeaders = await this.getAuthHeaders(false);
         const retryResponse = await fetch(url, {
           method: 'DELETE',
           headers: newHeaders,

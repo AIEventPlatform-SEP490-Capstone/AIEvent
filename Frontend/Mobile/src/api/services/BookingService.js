@@ -160,6 +160,31 @@ class BookingService {
     }
   }
 
+  static async checkInfor(qrContent) {
+    try {
+      console.log('Fetching check-in information with QR content:', qrContent);
+      const response = await BaseApiService.get(EndUrls.CHECK_INFOR(qrContent));
+      console.log('Check-in information response:', response);
+      
+      // Handle different response structures: response.data?.data || response.data || response
+      let data = response?.data?.data || response?.data || response;
+      
+      return {
+        success: true,
+        data: data,
+        message: response?.data?.message || 'Check-in information fetched successfully',
+      };
+    } catch (error) {
+      console.error('Error in checkInfor:', error);
+      return {
+        success: false,
+        data: null,
+        message: `Failed to fetch check-in information: ${error.message}`,
+        error: error.message,
+      };
+    }
+  }
+
   static async checkInTicket(qrContent) {
     try {
       console.log('Sending check-in request with QR content:', qrContent);

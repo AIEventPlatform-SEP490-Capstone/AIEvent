@@ -115,16 +115,67 @@ export const login = (email, password) => {
   };
 };
 
+let isLoggingOut = false;
+
 export const logoutUser = () => {
-  return async dispatch => {
+  return async (dispatch, getState) => {
+    // Prevent multiple simultaneous logout attempts
+    if (isLoggingOut) {
+      console.log('Logout already in progress, skipping...');
+      return;
+    }
+    
+    isLoggingOut = true;
+    
     try {
+      console.log('Starting logout process...');
+      // Call logout API
       await AuthService.logout();
+      
+      // Dispatch logout action to update state
       dispatch(logout());
+      console.log('Logout completed successfully');
     } catch (error) {
-      // Logout error occurred
-      dispatch(logout()); // Vẫn logout ngay cả khi có lỗi
+      console.error('Error during logout:', error);
+      // Logout error occurred but still dispatch logout to update state
+      dispatch(logout());
+    } finally {
+      isLoggingOut = false;
     }
   };
+};
+
+// Helper function to check if user is staff (copied from jwtUtils to avoid circular dependencies)
+const isStaffUser = (token) => {
+  try {
+    // Handle null, undefined, or non-string token
+    if (!token || typeof token !== 'string') return false;
+    
+    // Decode JWT token
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+    
+    const payload = parts[1];
+    // Add padding if needed
+    const paddedPayload = payload + '='.repeat((4 - payload.length % 4) % 4);
+    const decodedPayload = atob(paddedPayload);
+    const parsedPayload = JSON.parse(decodeURIComponent(escape(decodedPayload)));
+    
+    // Check for role in different possible locations
+    const role = parsedPayload.role || parsedPayload.Role || parsedPayload.roles || parsedPayload.Roles || null;
+    
+    if (!role) return false;
+    
+    // Handle both string and array roles
+    if (Array.isArray(role)) {
+      return role.some(r => typeof r === 'string' && r.toLowerCase() === 'staff');
+    }
+    
+    return typeof role === 'string' && role.toLowerCase() === 'staff';
+  } catch (error) {
+    console.error('Error checking staff role:', error);
+    return false;
+  }
 };
 
 export const checkAuth = () => {
