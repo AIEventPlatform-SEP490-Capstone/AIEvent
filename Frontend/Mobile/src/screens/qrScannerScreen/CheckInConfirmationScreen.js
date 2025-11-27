@@ -25,28 +25,40 @@ const CheckInConfirmationScreen = ({ route, navigation }) => {
           [
             {
               text: 'OK',
-              onPress: () => navigation.popToTop(), // Return to QR scanner screen
+              onPress: () => navigation.goBack(), // Go back to QR scanner screen
             },
           ]
         );
       } else {
         Alert.alert(
           'Check-in thất bại',
-          response.message || 'Không thể hoàn tất check-in. Vui lòng thử lại.'
+          response.message || 'Không thể hoàn tất check-in. Vui lòng thử lại.',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.goBack(), // Go back to QR scanner screen even on failure
+            },
+          ]
         );
       }
     } catch (error) {
       console.error('Error checking in:', error);
       Alert.alert(
         'Lỗi',
-        'Đã xảy ra lỗi khi thực hiện check-in. Vui lòng thử lại.'
+        'Đã xảy ra lỗi khi thực hiện check-in. Vui lòng thử lại.',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack(), // Go back to QR scanner screen on error
+          },
+        ]
       );
     }
   };
 
   const handleDenyCheckIn = () => {
-    // Return to QR scanner screen
-    navigation.popToTop();
+    // Go back to QR scanner screen
+    navigation.goBack();
   };
 
   return (
@@ -131,14 +143,14 @@ const CheckInConfirmationScreen = ({ route, navigation }) => {
         <CustomButton
           title="Cho phép check-in"
           onPress={handleAllowCheckIn}
-          variant="primary"
-          style={styles.allowButton}
+          variant="secondary"
+          style={{ backgroundColor: "green", marginBottom: 16 }}
         />
         <CustomButton
           title="Từ chối"
           onPress={handleDenyCheckIn}
-          variant="outline"
-          style={styles.denyButton}
+          variant="secondary"
+          style={{ backgroundColor: "red" }}
         />
       </View>
     </ScrollView>
@@ -197,14 +209,10 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     padding: 24,
-    paddingTop: 0,
+    paddingTop: 10,
   },
-  allowButton: {
+  actionButton: {
     marginBottom: 16,
-  },
-  denyButton: {
-    borderWidth: 1,
-    borderColor: Colors.primary,
   },
 });
 
