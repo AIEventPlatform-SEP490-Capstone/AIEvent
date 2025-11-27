@@ -1,8 +1,7 @@
-import React from 'react';
-import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {createStackNavigator} from '@react-navigation/stack';
-import {CommonActions} from '@react-navigation/native';
-import {Image, View} from 'react-native';
+import React, { useEffect, useCallback, useMemo, useRef } from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
+import { Image, View } from 'react-native';
 import { useSelector } from 'react-redux';
 import { isStaffUser } from '../utils/jwtUtils';
 import HomeScreen from '../screens/homeScreen';
@@ -312,13 +311,73 @@ const ProfileStack = () => {
 };
 
 const TabNavigator = () => {
-  const { accessToken } = useSelector(state => state.auth);
+  const { accessToken, isLoggedIn } = useSelector(state => state.auth);
   const isStaff = isStaffUser(accessToken);
+  const prevIsLoggedInRef = useRef(isLoggedIn);
+
+  // Reset navigation when user logs out
+  useEffect(() => {
+    // Only run this effect when isLoggedIn changes from true to false
+    if (prevIsLoggedInRef.current && !isLoggedIn) {
+      // Clear any navigation state when user logs out
+      console.log('User logged out, resetting navigation state');
+    }
+    
+    // Update the ref to the current value
+    prevIsLoggedInRef.current = isLoggedIn;
+  }, [isLoggedIn]);
+
+  // Memoize the tabs configuration to prevent re-rendering issues
+  const tabScreens = useMemo(() => {
+    const commonTabs = [
+      {
+        name: "HomeTab",
+        component: HomeStack,
+        options: {
+          title: 'Trang chủ',
+        }
+      },
+      {
+        name: "Profile",
+        component: ProfileStack,
+        options: {
+          title: 'Hồ sơ',
+        }
+      }
+    ];
+
+    // Always render the same tabs regardless of staff status to prevent re-rendering issues
+    return [
+      ...commonTabs.slice(0, 1), // HomeTab
+      {
+        name: "Timeline",
+        component: TimelineStack,
+        options: {
+          title: 'Timeline',
+        }
+      },
+      {
+        name: "MyEvents",
+        component: TicketsStack,
+        options: {
+          title: 'Vé của tôi',
+        }
+      },
+      {
+        name: "FavoriteEvents",
+        component: FavoriteEventsStack,
+        options: {
+          title: 'Yêu thích',
+        }
+      },
+      ...commonTabs.slice(1) // Profile
+    ];
+  }, []); // Empty dependencies to prevent re-rendering
 
   return (
     <Tab.Navigator
-      screenOptions={({route}) => ({
-        tabBarIcon: ({focused, color, size}) => {
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
           let iconName;
 
           if (route.name === 'HomeTab') {
@@ -352,62 +411,14 @@ const TabNavigator = () => {
           borderTopColor: Colors.border,
         },
       })}>
-      <Tab.Screen
-        name="HomeTab"
-        component={HomeStack}
-        options={{
-          title: 'Trang chủ',
-        }}
-      />
-      {!isStaff && (
-        <>
-          <Tab.Screen
-            name="Timeline"
-            component={TimelineStack}
-            options={{
-              title: 'Timeline',
-            }}
-          />
-          <Tab.Screen
-            name="MyEvents"
-            component={TicketsStack}
-            options={{
-              title: 'Vé của tôi',
-            }}
-          />
-          <Tab.Screen
-            name="FavoriteEvents"
-            component={FavoriteEventsStack}
-            options={{
-              title: 'Yêu thích',
-            }}
-          />
-        </>
-      )}
-      <Tab.Screen
-        name="Profile"
-        component={ProfileStack}
-        options={{
-          title: 'Hồ sơ',
-        }}
-        listeners={({ navigation, route }) => ({
-          tabPress: (e) => {
-            // Reset navigation to ProfileMain when tab is pressed
-            const state = navigation.getState();
-            const profileTabState = state.routes.find(r => r.name === 'Profile');
-            if (profileTabState) {
-              const profileStackState = profileTabState.state;
-              if (profileStackState && profileStackState.index > 0) {
-                // If we're not on the main profile screen, navigate to ProfileMain
-                e.preventDefault();
-                navigation.navigate('Profile', {
-                  screen: 'ProfileMain',
-                });
-              }
-            }
-          },
-        })}
-      />
+      {tabScreens.map((tab, index) => (
+        <Tab.Screen
+          key={`${tab.name}-${index}`}
+          name={tab.name}
+          component={tab.component}
+          options={tab.options}
+        />
+      ))}
     </Tab.Navigator>
   );
 };

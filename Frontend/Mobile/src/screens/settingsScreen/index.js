@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   ScrollView,
@@ -16,8 +16,13 @@ import { logoutUser } from '../../redux/actions/Action';
 
 const SettingsScreen = ({ navigation }) => {
   const dispatch = useDispatch();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
+    if (isLoggingOut) {
+      return;
+    }
+    
     Alert.alert(
       'Đăng xuất',
       'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?',
@@ -31,15 +36,18 @@ const SettingsScreen = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              dispatch(logoutUser());
+              setIsLoggingOut(true);
+              await dispatch(logoutUser());
             } catch (error) {
               Alert.alert('Lỗi', 'Có lỗi xảy ra khi đăng xuất');
+            } finally {
+              setIsLoggingOut(false);
             }
           },
         },
       ]
     );
-  };
+  }, [dispatch, isLoggingOut]);
 
   return (
     <View style={styles.container}>
@@ -172,6 +180,7 @@ const SettingsScreen = ({ navigation }) => {
             style={[styles.settingCard, styles.logoutCard]} 
             onPress={handleLogout}
             activeOpacity={0.7}
+            disabled={isLoggingOut}
           >
             <View style={styles.settingLeft}>
               <CustomText variant="h3" style={styles.logoutIcon}>
@@ -179,7 +188,7 @@ const SettingsScreen = ({ navigation }) => {
               </CustomText>
               <View style={styles.settingContent}>
                 <CustomText variant="body" color="error" style={styles.settingTitle}>
-                  Đăng xuất
+                  {isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
                 </CustomText>
                 <CustomText variant="caption" color="secondary" style={styles.settingDescription}>
                   Đăng xuất khỏi tài khoản hiện tại
@@ -250,4 +259,3 @@ const SettingsScreen = ({ navigation }) => {
 };
 
 export default SettingsScreen;
-
