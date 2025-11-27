@@ -143,12 +143,18 @@ const CreateEventPage = () => {
     saleEndTime: ''
   });
   
+  // Track if validation has been triggered (to avoid showing errors before user interaction)
+  const [hasValidated, setHasValidated] = useState(false);
+  
   // Add state for tag validation errors
   const [tagError, setTagError] = useState('');
   
   // Add state for image validation errors
   const [imageError, setImageError] = useState('');
   const [evidenceImageError, setEvidenceImageError] = useState('');
+  
+  // Add state for ticket name validation errors
+  const [ticketNameError, setTicketNameError] = useState('');
   
   // Add state for editing modes
   const [editingField, setEditingField] = useState(null);
@@ -902,6 +908,20 @@ const CreateEventPage = () => {
       saleEndTime: ''
     };
     
+    // Check for required fields
+    if (!startTime) {
+      newErrors.startTime = 'Thời gian bắt đầu sự kiện là bắt buộc';
+    }
+    if (!endTime) {
+      newErrors.endTime = 'Thời gian kết thúc sự kiện là bắt buộc';
+    }
+    if (!saleStartTime) {
+      newErrors.saleStartTime = 'Thời gian bắt đầu bán vé là bắt buộc';
+    }
+    if (!saleEndTime) {
+      newErrors.saleEndTime = 'Thời gian kết thúc bán vé là bắt buộc';
+    }
+    
     // Create now date in the same timezone as the input dates (UTC+7)
     // Since datetime inputs are in local time (UTC+7), we need to compare with local time
     const now = new Date();
@@ -1179,6 +1199,9 @@ const CreateEventPage = () => {
   
   // Function to validate all fields at once
   const validateAllFields = () => {
+    // Set validation flag to show errors
+    setHasValidated(true);
+    
     // Validate timeline
     validateDates();
     
@@ -1203,13 +1226,25 @@ const CreateEventPage = () => {
       setEvidenceImageError('');
     }
     
+    // Validate ticket names
+    const ticketTypes = watch('ticketTypes') || [];
+    const hasEmptyTicketNames = ticketTypes.some(ticket => !ticket.ticketName || ticket.ticketName.trim() === '');
+    
+    if (hasEmptyTicketNames) {
+      setTicketNameError('Vui lòng nhập đầy đủ tên cho tất cả các loại vé');
+    } else {
+      setTicketNameError('');
+    }
+    
     // Return true if there are validation errors
     const hasTagErrors = !reduxSelectedTags || reduxSelectedTags.length === 0;
     const hasImageErrors = selectedImages.length === 0 && imagePreview.length === 0;
     const hasEvidenceImageErrors = selectedEvidenceImages.length === 0 && evidenceImagePreview.length === 0;
-    const hasTimelineErrors = Object.values(timelineErrors).some(error => error !== '');
+    const hasTimelineErrors = Object.values(timelineErrors).some(error => error !== '') || 
+                            Object.values(dateErrors).some(error => error !== '');
+    const hasTicketNameErrors = hasEmptyTicketNames;
     
-    return hasTagErrors || hasImageErrors || hasEvidenceImageErrors || hasTimelineErrors;
+    return hasTagErrors || hasImageErrors || hasEvidenceImageErrors || hasTimelineErrors || hasTicketNameErrors;
   };
   if (!user || !['Organizer', 'Admin', 'Manager'].includes(user.role)) {
     return (
@@ -1365,6 +1400,13 @@ const CreateEventPage = () => {
                       {errors.images.message}
                     </div>
                   )}
+                  {/* Display custom image error if needed */}
+                  {hasValidated && imageError && (
+                    <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {imageError}
+                    </p>
+                  )}
                 </>
               ) : (
                 <div className="w-full h-full bg-gray-100 flex items-center justify-center">
@@ -1407,7 +1449,7 @@ const CreateEventPage = () => {
                   <Pencil className="w-4 h-4 inline-block ml-2 text-gray-400" />
                 </h1>
               )}
-              {errors.title && (
+              {hasValidated && errors.title && (
                 <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" />
                   {errors.title.message}
@@ -1434,7 +1476,7 @@ const CreateEventPage = () => {
                   <Pencil className="w-4 h-4 inline-block ml-2 text-gray-400" />
                 </p>
               )}
-              {errors.description && (
+              {hasValidated && errors.description && (
                 <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" />
                   {errors.description.message}
@@ -1538,6 +1580,17 @@ const CreateEventPage = () => {
               }}
               onValidationChange={handleTimelineValidationChange}
             />
+            {/* Display timeline validation errors */}
+            {hasValidated && (
+              <div className="space-y-2 mt-2">
+                {(!watch('saleStartTime') || !watch('saleEndTime') || !watch('startTime') || !watch('endTime')) && (
+                  <p className="text-red-500 text-xs flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    Thời gian của sự kiện cần nhập đầy đủ
+                  </p>
+                )}
+              </div>
+            )}
             {/* Ticket Information */}
             {previewData.ticketTypes && previewData.ticketTypes.length > 0 && (
               <div className="bg-white rounded-xl p-6 border border-gray-100">
@@ -1688,6 +1741,15 @@ const CreateEventPage = () => {
                 })}
               </div>
             )}
+            {/* Display ticket name validation error */}
+            {hasValidated && ticketNameError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-2">
+                <p className="text-red-700 text-sm flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  {ticketNameError}
+                </p>
+              </div>
+            )}
             {/* About Event */}
             <div className="bg-white rounded-xl p-8 border border-gray-100">
               <h2 className="text-2xl font-bold text-foreground mb-6">Về sự kiện</h2>
@@ -1712,7 +1774,7 @@ const CreateEventPage = () => {
                     <Pencil className="w-4 h-4 inline-block ml-2 text-gray-400" />
                   </p>
                 )}
-                {errors.detailedDescription && (
+                {hasValidated && errors.detailedDescription && (
                   <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" />
                     {errors.detailedDescription.message}
@@ -1929,7 +1991,7 @@ const CreateEventPage = () => {
                     <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-200 dark:border-gray-800">
                       <TagSelector />
                     </div>
-                    {tagError && (
+                    {hasValidated && tagError && (
                       <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
                         <AlertCircle className="w-3 h-3" />
                         {tagError}
@@ -1991,10 +2053,17 @@ const CreateEventPage = () => {
                       </div>
                     )}
                     {/* Display error for evidence images if needed */}
-                    {errors.evidenceImages && (
+                    {hasValidated && errors.evidenceImages && (
                       <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
                         <AlertCircle className="w-3 h-3" />
                         {errors.evidenceImages.message}
+                      </p>
+                    )}
+                    {/* Display custom evidence image error if needed */}
+                    {hasValidated && evidenceImageError && (
+                      <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {evidenceImageError}
                       </p>
                     )}
                   </div>
