@@ -43,20 +43,26 @@ const SaleCountdown = ({ saleStartTime, variant = 'default' }) => {
   // Thumbnail variant - shows compact countdown overlay on image
   if (variant === 'thumbnail') {
     return (
-      <div className="absolute inset-0 bg-black/30 rounded-lg flex items-center justify-center">
-        <div className="bg-black/70 backdrop-blur-sm rounded-lg p-2">
-          <div className="text-xs text-white font-bold text-center">
-            <div>Bắt đầu sau</div>
-            <div className="flex gap-1 mt-1">
-              <div className="bg-blue-500 rounded px-1 py-0.5">
+      <div className="absolute inset-0 rounded-lg">
+        <div className="absolute bottom-2 left-2 flex flex-col items-start">
+          <div className="bg-black/70 backdrop-blur-lg rounded px-2 py-1 mb-1">
+            <span className="text-lg text-white font-bold">Bắt đầu sau</span>
+          </div>
+          <div className="flex gap-1">
+            <div className="bg-blue-500 rounded px-2 py-1">
+              <span className="text-white font-bold text-base">
                 {timeRemaining.days}d
-              </div>
-              <div className="bg-blue-500 rounded px-1 py-0.5">
+              </span>
+            </div>
+            <div className="bg-blue-500 rounded px-2 py-1">
+              <span className="text-white font-bold text-base">
                 {timeRemaining.hours}h
-              </div>
-              <div className="bg-blue-500 rounded px-1 py-0.5">
+              </span>
+            </div>
+            <div className="bg-blue-500 rounded px-2 py-1">
+              <span className="text-white font-bold text-base">
                 {timeRemaining.minutes}m
-              </div>
+              </span>
             </div>
           </div>
         </div>
@@ -67,7 +73,7 @@ const SaleCountdown = ({ saleStartTime, variant = 'default' }) => {
   // Default variant - shows full countdown below metrics
   return (
     <div className="mt-2">
-      <div className="text-xs text-slate-600 dark:text-slate-400 mb-1 text-center">Bán vé bắt đầu sau</div>
+      <div className="text-lg text-slate-600 dark:text-slate-400 mb-1 text-center">Bán vé bắt đầu sau</div>
       <div className="flex justify-center gap-1">
         <div className="bg-blue-500 text-white rounded px-2 py-1 text-xs font-bold">
           {timeRemaining.days}d

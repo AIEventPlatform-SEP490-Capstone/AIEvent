@@ -1035,7 +1035,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                   >
                     <div className="flex flex-col lg:flex-row gap-0">
                       {/* Event thumbnail */}
-                      <div className="flex-shrink-0 lg:w-48 w-full h-48 lg:h-auto overflow-hidden relative">
+                      <div className="flex-shrink-0 lg:w-100 w-full h-48 lg:h-auto overflow-hidden relative">
                         {eventImage ? (
                           <>
                             <img

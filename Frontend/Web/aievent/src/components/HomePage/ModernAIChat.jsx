@@ -50,6 +50,71 @@ export default function ModernAIChat() {
   const messagesEndRef = useRef(null);
   const scrollAreaRef = useRef(null);
   
+  const renderLineWithLink = (line) => {
+    const parts = [];
+  
+    // 1) Bắt markdown link [text](url)
+    const markdownRegex = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g;
+  
+    // 2) Bắt plain URL (url không có markdown)
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+  
+    let lastIndex = 0;
+    let match;
+  
+    // Ưu tiên markdown link
+    while ((match = markdownRegex.exec(line)) !== null) {
+      const before = line.slice(lastIndex, match.index);
+      if (before) parts.push(before);
+  
+      const text = match[1];
+      const url = match[2];
+  
+      parts.push(
+        <a
+          key={url}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-purple-600 font-medium hover:underline hover:text-purple-700"
+        >
+          {text}
+          <ExternalLink className="h-4 w-4" />
+        </a>
+      );
+  
+      lastIndex = match.index + match[0].length;
+    }
+  
+    // Nếu không có markdown link → kiểm tra plain URL
+    if (parts.length === 0 && urlRegex.test(line)) {
+      return line.split(urlRegex).map((part, index) => {
+        if (part.startsWith("https://") || part.startsWith("http://")) {
+          return (
+            <a
+              key={index}
+              href={part}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-purple-600 font-medium hover:underline hover:text-purple-700"
+            >
+              Xem chi tiết
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          );
+        }
+        return part;
+      });
+    }
+  
+    // Phần còn lại sau markdown
+    const remaining = line.slice(lastIndex);
+    if (remaining) parts.push(remaining);
+  
+    return parts;
+  };
+  
+  
   const { sendMessage, isLoading } = useAiChat();
 
   const handleSpeechResult = useCallback((text) => {
@@ -280,7 +345,7 @@ export default function ModernAIChat() {
                                 </div>
                               );
                             }
-                            return line ? <div key={index} className="my-1">{line}</div> : <div key={index} className="h-2" />;
+                            return line ? <div key={index} className="my-1"> {renderLineWithLink(line)}</div> : <div key={index} className="h-2" />;
                           })}
                         </div>
                         {isSpeechSynthesisSupported && isSpeakingThisMessage && (

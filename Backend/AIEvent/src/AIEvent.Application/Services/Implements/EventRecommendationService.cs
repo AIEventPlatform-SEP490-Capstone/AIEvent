@@ -96,7 +96,7 @@ namespace AIEvent.Application.Services.Implements
                       Mô tả: {description ?? "Không có mô tả"}
                       Thẻ: {tags ?? "Không có"}
                       Vé: {tickets ?? "Không có thông tin vé"}
-                      Xem chi tiết: {eventUrl}
+                      Link: {eventUrl}
                     ";
             }).ToList();
              

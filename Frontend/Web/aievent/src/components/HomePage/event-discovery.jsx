@@ -221,7 +221,7 @@ export function EventDiscovery({
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* AI Recommended Events Section */}
-      {showAIRecommendedSection && recommendedEvents.length > 0 && (
+      {showAIRecommendedSection && (
         <div id="ai-recommended-events-section" className="mb-12">
           <div className="flex items-center gap-3 mb-8">
             <div className="flex items-center gap-2 flex-1">
@@ -254,112 +254,124 @@ export function EventDiscovery({
           </div>
 
           {isAIEventsExpanded && (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {recommendedEvents.map((event) => (
-              <div 
-                key={event.eventId || event.id}
-                className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group"
-              >
-                <div className="relative">
-                  <img
-                    src={
-                      event.image || 
-                      (event.imgListEvent && event.imgListEvent[0]) || 
-                      "/placeholder.svg"
-                    }
-                    alt={event.title}
-                    className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute top-3 right-3 flex space-x-2">
-                    <button
-                      className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 hover:bg-white shadow-sm flex items-center justify-center transition-all"
-                      onClick={() => toggleLike(event.eventId || event.id)}
+            <>
+              {recommendedEvents.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {recommendedEvents.map((event) => (
+                    <div 
+                      key={event.eventId || event.id}
+                      className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group"
                     >
-                      <Heart
-                        className={`w-4 h-4 ${
-                          likedEvents.has(event.eventId || event.id)
-                            ? "fill-red-500 text-red-500"
-                            : "text-gray-600"
-                        }`}
-                      />
-                    </button>
-                    <button
-                      className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 hover:bg-white shadow-sm flex items-center justify-center transition-all"
-                      onClick={() => handleViewDetail(event.eventId || event.id)}
-                    >
-                      <MessageCircle className="w-4 h-4 text-gray-600" />
-                    </button>
-                  </div>
-                  <div className="absolute bottom-3 left-3">
-                    <span className="bg-white/90 backdrop-blur-sm text-gray-900 font-bold px-3 py-1 rounded-full text-sm shadow-sm">
-                      {formatPrice(event, event.ticketPricingType === "Free")}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-5">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-bold text-lg leading-tight text-gray-900 line-clamp-2">
-                      {event.title}
-                    </h3>
-                  </div>
-                  <p className="text-gray-600 text-sm leading-relaxed mb-4 line-clamp-2">
-                    {event.description}
-                  </p>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center text-gray-600 text-sm">
-                      <Calendar className="w-4 h-4 mr-2 text-blue-500" />
-                      <span>
-                        {new Date(event.startTime || event.date).toLocaleDateString("vi-VN")} •{" "}
-                        {event.time || new Date(event.startTime).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center text-gray-600 text-sm">
-                      <MapPin className="w-4 h-4 mr-2 text-blue-500 flex-shrink-0" />
-                      <span className="truncate">
-                        {event.locationName || event.location}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                      <div className="flex items-center">
-                        <Users className="w-4 h-4 mr-1 text-gray-500" />
-                        <span className="text-sm text-gray-600">
-                          {event.soldQuantity || 0}/{event.totalTickets}
-                        </span>
+                      <div className="relative">
+                        <img
+                          src={
+                            event.image || 
+                            (event.imgListEvent && event.imgListEvent[0]) || 
+                            "/placeholder.svg"
+                          }
+                          alt={event.title}
+                          className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute top-3 right-3 flex space-x-2">
+                          <button
+                            className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 hover:bg-white shadow-sm flex items-center justify-center transition-all"
+                            onClick={() => toggleLike(event.eventId || event.id)}
+                          >
+                            <Heart
+                              className={`w-4 h-4 ${
+                                likedEvents.has(event.eventId || event.id)
+                                  ? "fill-red-500 text-red-500"
+                                  : "text-gray-600"
+                              }`}
+                            />
+                          </button>
+                          <button
+                            className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 hover:bg-white shadow-sm flex items-center justify-center transition-all"
+                            onClick={() => handleViewDetail(event.eventId || event.id)}
+                          >
+                            <MessageCircle className="w-4 h-4 text-gray-600" />
+                          </button>
+                        </div>
+                        <div className="absolute bottom-3 left-3">
+                          <span className="bg-white/90 backdrop-blur-sm text-gray-900 font-bold px-3 py-1 rounded-full text-sm shadow-sm">
+                            {formatPrice(event, event.ticketPricingType === "Free")}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center">
-                        <Heart className="w-4 h-4 mr-1 text-gray-500" />
-                        <span className="text-sm text-gray-600">
-                          {event.favoriteCount || event.likesCount || 0}
-                        </span>
+
+                      <div className="p-5">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="font-bold text-lg leading-tight text-gray-900 line-clamp-2">
+                            {event.title}
+                          </h3>
+                        </div>
+                        <p className="text-gray-600 text-sm leading-relaxed mb-4 line-clamp-2">
+                          {event.description}
+                        </p>
+
+                        <div className="space-y-3">
+                          <div className="flex items-center text-gray-600 text-sm">
+                            <Calendar className="w-4 h-4 mr-2 text-blue-500" />
+                            <span>
+                              {new Date(event.startTime || event.date).toLocaleDateString("vi-VN")} •{" "}
+                              {event.time || new Date(event.startTime).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center text-gray-600 text-sm">
+                            <MapPin className="w-4 h-4 mr-2 text-blue-500 flex-shrink-0" />
+                            <span className="truncate">
+                              {event.locationName || event.location}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                            <div className="flex items-center">
+                              <Users className="w-4 h-4 mr-1 text-gray-500" />
+                              <span className="text-sm text-gray-600">
+                                {event.soldQuantity || 0}/{event.totalTickets}
+                              </span>
+                            </div>
+                            <div className="flex items-center">
+                              <Heart className="w-4 h-4 mr-1 text-gray-500" />
+                              <span className="text-sm text-gray-600">
+                                {event.favoriteCount || event.likesCount || 0}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex space-x-2 pt-2">
+                            <Button
+                              className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm py-2"
+                              size="sm"
+                              onClick={() => handleRegister(event.eventId || event.id)}
+                            >
+                              Mua vé
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold text-sm py-2"
+                              onClick={() => handleViewDetail(event.eventId || event.id)}
+                            >
+                              Chi tiết
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="flex space-x-2 pt-2">
-                      <Button
-                        className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm py-2"
-                        size="sm"
-                        onClick={() => handleRegister(event.eventId || event.id)}
-                      >
-                        Mua vé
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold text-sm py-2"
-                        onClick={() => handleViewDetail(event.eventId || event.id)}
-                      >
-                        Chi tiết
-                      </Button>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              </div>
-            ))}
-            </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                    <Bot className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Không có sự kiện được đề xuất</h3>
+                  <p className="text-gray-500">Hãy cập nhật sở thích của bạn để nhận được gợi ý tốt hơn</p>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
