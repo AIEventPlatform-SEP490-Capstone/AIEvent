@@ -176,6 +176,12 @@ export function VerticalNavigation() {
           isActive: pathname === "/manager",
         },
         {
+          title: "Quản lý sự kiện",
+          url: "/manager/events",
+          icon: Calendar,
+          isActive: pathname === "/manager/events",
+        },
+        {
           title: "Quản lý Tổ chức",
           url: "/manager/organizers",
           icon: User,

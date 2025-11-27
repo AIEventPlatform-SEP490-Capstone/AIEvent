@@ -45,7 +45,7 @@ const SaleCountdown = ({ saleStartTime, variant = 'default' }) => {
     return (
       <div className="absolute inset-0 rounded-lg">
         <div className="absolute bottom-2 left-2 flex flex-col items-start">
-          <div className="bg-black/70 backdrop-blur-sm rounded px-2 py-1 mb-1">
+          <div className="bg-black/70 backdrop-blur-lg rounded px-2 py-1 mb-1">
             <span className="text-lg text-white font-bold">Bắt đầu sau</span>
           </div>
           <div className="flex gap-1">
