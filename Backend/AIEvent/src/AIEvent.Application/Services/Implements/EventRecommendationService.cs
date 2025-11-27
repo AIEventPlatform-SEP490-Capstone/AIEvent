@@ -383,8 +383,7 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result<BasePaginated<ListSearchFriend>>> GetFriendAIRecommendAsync(int pageNumber, int pageSize, Guid userId)
         {
-            var user = await _unitOfWork.UserRepository
-                .Query()
+            var user = await _unitOfWork.UserRepository.Query()
                 .AsNoTracking()
                 .Where(u => u.Id == userId && !u.IsDeleted && u.IsActive)
                 .Select(u => new
@@ -409,38 +408,54 @@ namespace AIEvent.Application.Services.Implements
             if (user == null)
                 return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
 
-            var interests = ParseJsonList(user.UserInterestsJson);
-            var districts = ParseJsonList(user.InterestedDistrictsJson);
-            var events = ParseJsonList(user.FavoriteEventTypesJson);
-            var skills = ParseJsonList(user.ProfessionalSkillsJson);
-            var languages = ParseJsonList(user.LanguagesJson);
-
-            var desc = new List<string?>
+            List<string> Parse(string? json)
             {
-                user.District != null ? $"Lives in {user.District}" : null,
-                interests.Count != 0 ? $"Interests: {string.Join(", ", interests)}" : null,
-                events.Count != 0 ? $"Events: {string.Join(", ", events)}" : null,
-                districts.Count != 0 ? $"Explore: {string.Join(", ", districts)}" : null,
-                $"Budget: {user.BudgetOption}",
-                $"Frequency: {user.ParticipationFrequency}",
-                user.Occupation != null ? $"Works as: {user.Occupation}" : null,
-                user.JobTitle != null ? $"Job: {user.JobTitle}" : null,
-                user.CareerGoal != null ? $"Goal: {user.CareerGoal}" : null,
-                skills.Count != 0 ? $"Skills: {string.Join(", ", skills)}" : null,
-                languages.Count != 0 ? $"Speaks: {string.Join(", ", languages)}" : null,
-                user.Introduction != null ? $"About: {user.Introduction}" : null
-            }
-            .Where(s => s != null)
-            .Select(s => s!)
-            .ToList();
+                if (string.IsNullOrWhiteSpace(json))
+                    return new List<string>();
 
-            var descriptionText = desc.Any() ? string.Join(". ", desc) : "A user with flexible preferences.";
+                try
+                {
+                    return JsonSerializer.Deserialize<List<string>>(json!) ?? new List<string>();
+                }
+                catch
+                {
+                    return new List<string>();
+                }
+            }
+
+            var interests = Parse(user.UserInterestsJson);
+            var districts = Parse(user.InterestedDistrictsJson);
+            var events = Parse(user.FavoriteEventTypesJson);
+            var skills = Parse(user.ProfessionalSkillsJson);
+            var languages = Parse(user.LanguagesJson);
+
+            var desc = new List<string>(15);
+
+            if (!string.IsNullOrEmpty(user.District)) desc.Add($"Lives in {user.District}");
+            if (interests.Any()) desc.Add($"Interests: {string.Join(", ", interests)}");
+            if (events.Any()) desc.Add($"Events: {string.Join(", ", events)}");
+            if (districts.Any()) desc.Add($"Explore: {string.Join(", ", districts)}");
+
+            desc.Add($"Budget: {user.BudgetOption}");
+            desc.Add($"Frequency: {user.ParticipationFrequency}");
+
+            if (!string.IsNullOrEmpty(user.Occupation)) desc.Add($"Works as: {user.Occupation}");
+            if (!string.IsNullOrEmpty(user.JobTitle)) desc.Add($"Job: {user.JobTitle}");
+            if (!string.IsNullOrEmpty(user.CareerGoal)) desc.Add($"Goal: {user.CareerGoal}");
+            if (skills.Any()) desc.Add($"Skills: {string.Join(", ", skills)}");
+            if (languages.Any()) desc.Add($"Speaks: {string.Join(", ", languages)}");
+            if (!string.IsNullOrEmpty(user.Introduction)) desc.Add($"About: {user.Introduction}");
+
+            var descriptionText = desc.Count > 0
+                ? string.Join(". ", desc)
+                : "A user with flexible preferences.";
 
             var embedding = await _voyageEmbeddingService.GetEmbeddingAsync(descriptionText);
-            if (embedding?.Length == 0)
+            if (embedding == null || embedding.Length == 0)
                 return ErrorResponse.FailureResult("Embedding failed", ErrorCodes.InternalServerError);
 
-            var pineconeResults = await _pineconeService.QuerySimilarAsync(embedding!, isUser: true, topK: 11);
+            var pineconeResults = await _pineconeService.QuerySimilarAsync(
+                embedding, isUser: true, topK: 11);
 
             var candidates = pineconeResults
                 .Where(r => r.Id != userId.ToString())
@@ -448,20 +463,25 @@ namespace AIEvent.Application.Services.Implements
                 .ToList();
 
             if (!candidates.Any())
-                return new BasePaginated<ListSearchFriend>(new List<ListSearchFriend>(), 0, pageNumber, pageSize);
+                return new BasePaginated<ListSearchFriend>([], 0, pageNumber, pageSize);
 
             var userIds = candidates
-                .Select(r => Guid.TryParse(r.Id, out var g) ? g : (Guid?)null)
-                .Where(g => g.HasValue)
-                .Select(g => g.Value)
+                .Select(r => Guid.TryParse(r.Id, out var g) ? g : Guid.Empty)
+                .Where(g => g != Guid.Empty)
                 .ToList();
 
-            var query = _unitOfWork.UserRepository
-                .Query()
+            var idSet = new HashSet<Guid>(userIds);
+
+            var users = await _unitOfWork.UserRepository.Query()
                 .AsNoTracking()
                 .Include(u => u.Role)
-                .Where(u => userIds.Contains(u.Id) && !u.IsDeleted && u.IsActive && u.Role.Name == "User")
+                .Where(u => idSet.Contains(u.Id) && !u.IsDeleted && u.IsActive && u.Role.Name == "User")
+                .ToListAsync();
+
+            var ordered = users
                 .OrderBy(u => userIds.IndexOf(u.Id))
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .Select(u => new ListSearchFriend
                 {
                     Id = u.Id,
@@ -469,16 +489,15 @@ namespace AIEvent.Application.Services.Implements
                     District = u.District ?? "",
                     Image = u.AvatarImgUrl ?? "",
                     InterestsJson = u.UserInterestsJson ?? "[]"
-                });
+                })
+                .ToList();
 
-            var totalCount = userIds.Count;
-
-            var result = await query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            return new BasePaginated<ListSearchFriend>(result, totalCount, pageNumber, pageSize);
+            return new BasePaginated<ListSearchFriend>(
+                ordered,
+                userIds.Count,
+                pageNumber,
+                pageSize
+            );
         }
     }
 }

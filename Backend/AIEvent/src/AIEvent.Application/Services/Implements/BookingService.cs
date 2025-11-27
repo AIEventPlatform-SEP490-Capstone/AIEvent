@@ -397,7 +397,7 @@ namespace AIEvent.Application.Services.Implements
                 if (string.IsNullOrWhiteSpace(qrContent))
                     return ErrorResponse.FailureResult("QR content is empty", ErrorCodes.InvalidInput);
 
-                var parts = qrContent.Split('|');
+                var parts = qrContent.Split('.');
                 if (parts.Length != 2)
                     return ErrorResponse.FailureResult("Invalid QR format", ErrorCodes.InvalidInput);
 
@@ -461,7 +461,7 @@ namespace AIEvent.Application.Services.Implements
                 if (string.IsNullOrWhiteSpace(qrContent))
                     return ErrorResponse.FailureResult("QR content is empty", ErrorCodes.InvalidInput);
 
-                var parts = qrContent.Split('|');
+                var parts = qrContent.Split('.');
                 if (parts.Length != 2)
                     return ErrorResponse.FailureResult("Invalid QR format", ErrorCodes.InvalidInput);
 
