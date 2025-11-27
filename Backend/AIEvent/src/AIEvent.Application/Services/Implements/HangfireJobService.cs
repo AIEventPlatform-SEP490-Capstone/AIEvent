@@ -91,7 +91,7 @@ namespace AIEvent.Application.Services.Implements
                 foreach (var ticket in request.Tickets)
                 {
                     var signature = _ticketSignatureService.CreateSignature(ticket.TicketCode);
-                    qrContents[ticket.TicketCode] = $"{ticket.TicketCode}|{signature}";
+                    qrContents[ticket.TicketCode] = $"{ticket.TicketCode}.{signature}";
                 }
 
                 var qrBytesDict = _qrCodeService.GenerateQrBytes(qrContents.Values.ToList());
