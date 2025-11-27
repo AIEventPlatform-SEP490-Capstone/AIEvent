@@ -18,7 +18,15 @@ namespace AIEvent.Application.Services.Implements
         {
             using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_secretKey));
             var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(ticketCode));
-            return Convert.ToBase64String(hash);
+            return Base64UrlEncode(hash);
+        }
+
+        private string Base64UrlEncode(byte[] bytes)
+        {
+            return Convert.ToBase64String(bytes)
+                .TrimEnd('=')       
+                .Replace('+', '-')  
+                .Replace('/', '_'); 
         }
 
         public bool ValidateSignature(string ticketCode, string signature)
