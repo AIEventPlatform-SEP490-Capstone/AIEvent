@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { View, TouchableOpacity, Image } from 'react-native';
 import { useDispatch } from 'react-redux';
 import Toast from 'react-native-toast-message';
-import { styles } from './styles';
+import { styles } from '../EventCard/styles';
 import CustomText from '../../common/customTextRN';
 import Images from '../../../constants/Images';
 import Colors from '../../../constants/Colors';
 import Fonts from '../../../constants/Fonts';
 import { addFavoriteEvent, removeFavoriteEvent } from '../../../redux/slices/favoriteEventsSlice';
 
-const EventCard = ({ event, onPress, isRecommended = false }) => {
+const EventCardWithFavorite = ({ event, onPress, isRecommended = false }) => {
   const dispatch = useDispatch();
   const [isFavorite, setIsFavorite] = useState(event.isFavorite || false);
 
@@ -122,6 +122,8 @@ const EventCard = ({ event, onPress, isRecommended = false }) => {
         text1: 'Error',
         text2: errorMessage,
       });
+      
+      console.log('Favorite toggle error:', errorMessage);
     }
   };
 
@@ -142,16 +144,6 @@ const EventCard = ({ event, onPress, isRecommended = false }) => {
       {/* Image Section with Overlay */}
       <View style={styles.imageContainer}>
         <Image source={getEventImage()} style={styles.eventImage} />
-        
-        {/* Date Badge
-        <View style={styles.dateBadge}>
-          <CustomText variant="caption" color="primary" style={styles.dateBadgeText}>
-            {day}
-          </CustomText>
-          <CustomText variant="caption" color="secondary" style={styles.dateBadgeSubtext}>
-            {month}
-          </CustomText>
-        </View> */}
         
         {/* AI Recommendation Badge */}
         {isRecommended && (
@@ -267,4 +259,4 @@ const EventCard = ({ event, onPress, isRecommended = false }) => {
   );
 };
 
-export default EventCard;
+export default EventCardWithFavorite;

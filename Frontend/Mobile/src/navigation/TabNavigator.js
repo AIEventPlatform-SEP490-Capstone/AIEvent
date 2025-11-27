@@ -16,6 +16,7 @@ import ChangePasswordScreen from '../screens/changePasswordScreen';
 import SettingsScreen from '../screens/settingsScreen';
 import TicketsScreen from '../screens/ticketsScreen';
 import LikesScreen from '../screens/likesScreen';
+import FavoriteEventsScreen from '../screens/favoriteEventsScreen';
 import FriendsScreen from '../screens/friendsScreen';
 import FriendDetailScreen from '../screens/friendDetailScreen';
 import TimelineScreen from '../screens/timelineScreen';
@@ -169,6 +170,45 @@ const TicketsStack = () => {
   );
 };
 
+// Stack Navigator cho Favorite Events tab
+const FavoriteEventsStack = () => {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}>
+      <Stack.Screen name="FavoriteEventsMain" component={FavoriteEventsScreen} />
+      <Stack.Screen
+        name={ScreenNames.EVENT_DETAIL_SCREEN}
+        component={EventDetailScreen}
+        options={{
+          headerShown: true,
+          title: 'Chi tiết sự kiện',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
+        }}
+      />
+      <Stack.Screen 
+        name={ScreenNames.QR_SCANNER_SCREEN} 
+        component={QrScannerScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+    </Stack.Navigator>
+  );
+};
+
 // Stack Navigator cho Profile tab
 const ProfileStack = () => {
   return (
@@ -287,6 +327,8 @@ const TabNavigator = () => {
             iconName = Images.calendar;
           } else if (route.name === 'MyEvents') {
             iconName = Images.ticket;
+          } else if (route.name === 'FavoriteEvents') {
+            iconName = Images.heart;
           } else if (route.name === 'Profile') {
             iconName = Images.profile;
           }
@@ -331,6 +373,13 @@ const TabNavigator = () => {
             component={TicketsStack}
             options={{
               title: 'Vé của tôi',
+            }}
+          />
+          <Tab.Screen
+            name="FavoriteEvents"
+            component={FavoriteEventsStack}
+            options={{
+              title: 'Yêu thích',
             }}
           />
         </>
