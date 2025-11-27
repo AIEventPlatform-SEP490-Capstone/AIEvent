@@ -33,6 +33,9 @@ const ScreenNames = {
   // QR Scanner Screen
   QR_SCANNER_SCREEN: 'QrScannerScreen',
   
+  // Check In Confirmation Screen
+  CHECK_IN_CONFIRMATION_SCREEN: 'CheckInConfirmationScreen',
+  
   // Navigation
   TAB_NAVIGATOR: 'TabNavigator',
   AUTH_NAVIGATOR: 'AuthNavigator',

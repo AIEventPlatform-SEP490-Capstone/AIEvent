@@ -20,6 +20,7 @@ import FriendsScreen from '../screens/friendsScreen';
 import FriendDetailScreen from '../screens/friendDetailScreen';
 import TimelineScreen from '../screens/timelineScreen';
 import QrScannerScreen from '../screens/qrScannerScreen';
+import CheckInConfirmationScreen from '../screens/qrScannerScreen/CheckInConfirmationScreen';
 import ScreenNames from '../constants/ScreenNames';
 import Images from '../constants/Images';
 import Colors from '../constants/Colors';
@@ -61,6 +62,26 @@ const HomeStack = () => {
         component={QrScannerScreen}
         options={{
           headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name={ScreenNames.CHECK_IN_CONFIRMATION_SCREEN}
+        component={CheckInConfirmationScreen}
+        options={{
+          headerShown: true,
+          title: 'Xác nhận Check-in',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
         }}
       />
       <Stack.Screen
@@ -126,6 +147,26 @@ const TimelineStack = () => {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name={ScreenNames.CHECK_IN_CONFIRMATION_SCREEN}
+        component={CheckInConfirmationScreen}
+        options={{
+          headerShown: true,
+          title: 'Xác nhận Check-in',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
+        }}
+      />
     </Stack.Navigator>
   );
 };
@@ -165,6 +206,26 @@ const TicketsStack = () => {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name={ScreenNames.CHECK_IN_CONFIRMATION_SCREEN}
+        component={CheckInConfirmationScreen}
+        options={{
+          headerShown: true,
+          title: 'Xác nhận Check-in',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
+        }}
+      />
     </Stack.Navigator>
   );
 };
@@ -202,6 +263,26 @@ const FavoriteEventsStack = () => {
         component={QrScannerScreen}
         options={{
           headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name={ScreenNames.CHECK_IN_CONFIRMATION_SCREEN}
+        component={CheckInConfirmationScreen}
+        options={{
+          headerShown: true,
+          title: 'Xác nhận Check-in',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
         }}
       />
     </Stack.Navigator>
@@ -304,6 +385,26 @@ const ProfileStack = () => {
         component={QrScannerScreen}
         options={{
           headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name={ScreenNames.CHECK_IN_CONFIRMATION_SCREEN}
+        component={CheckInConfirmationScreen}
+        options={{
+          headerShown: true,
+          title: 'Xác nhận Check-in',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
         }}
       />
     </Stack.Navigator>
