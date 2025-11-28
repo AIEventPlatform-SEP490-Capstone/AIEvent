@@ -552,13 +552,13 @@ export function EventDiscovery({
                   {/* Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0" />
                   
-                  {/* Free Badge */}
+                  {/* Free Badge
                   {(event.ticketType === 1 || event.ticketPrice === 0) && (
                     <Badge className="absolute top-4 left-4 bg-success text-success-foreground shadow-lg">
                       <Sparkles className="w-3 h-3 mr-1" />
                       Miễn phí
                     </Badge>
-                  )}
+                  )} */}
                   
                   {/* Category Badge at bottom */}
                   <Badge 
