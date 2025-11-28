@@ -62,6 +62,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [selectedSessionId, setSelectedSessionId] = useState(null);
+  const [autoSelectEnabled, setAutoSelectEnabled] = useState(true);
   const [inputValue, setInputValue] = useState("");
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -71,12 +72,13 @@ export default function ChatPage() {
   const [speakingMessageId, setSpeakingMessageId] = useState(null);
   const messagesEndRef = useRef(null);
   const scrollAreaRef = useRef(null);
+  const newChatPendingRef = useRef(false);
 
   const renderLineWithLink = (line) => {
     const parts = [];
 
     // 1) Bắt markdown link [text](url)
-    const markdownRegex = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g;
+    const markdownRegex = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
 
     // 2) Bắt plain URL (url không có markdown)
     const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -187,23 +189,56 @@ export default function ChatPage() {
     setSpeakingMessageId(null);
   }, [stop]);
 
-  const loadSessions = useCallback(async () => {
-    try {
-      setLoadingSessions(true);
-      const response = await getChatSessions(1, 50);
-      const sessionsList = response?.data?.items || response?.items || [];
-      setSessions(sessionsList);
+  const loadSessions = useCallback(
+    async (options = {}) => {
+      const { disableAutoSelect = false, silent = false } = options;
+      try {
+        if (!silent) {
+          setLoadingSessions(true);
+        }
+        const response = await getChatSessions(1, 50);
+        const sessionsList = response?.data?.items || response?.items || [];
+        setSessions(sessionsList);
 
-      // Auto-select first session if available
-      if (sessionsList.length > 0 && !selectedSessionId) {
-        setSelectedSessionId(sessionsList[0].sessionId);
+        // Auto-select first session if available
+        if (
+          sessionsList.length > 0 &&
+          !selectedSessionId &&
+          autoSelectEnabled &&
+          !disableAutoSelect
+        ) {
+          setSelectedSessionId(sessionsList[0].sessionId);
+        }
+        return sessionsList;
+      } catch (error) {
+        console.error("Error loading sessions:", error);
+        return [];
+      } finally {
+        if (!silent) {
+          setLoadingSessions(false);
+        }
       }
-    } catch (error) {
-      console.error("Error loading sessions:", error);
-    } finally {
-      setLoadingSessions(false);
-    }
-  }, [getChatSessions, selectedSessionId]);
+    },
+    [getChatSessions, selectedSessionId, autoSelectEnabled]
+  );
+
+  const upsertSession = useCallback((session) => {
+    if (!session?.sessionId) return;
+    setSessions((prev) => {
+      const existingIndex = prev.findIndex(
+        (item) => item.sessionId === session.sessionId
+      );
+      if (existingIndex !== -1) {
+        const updated = [...prev];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          ...session,
+        };
+        return updated;
+      }
+      return [session, ...prev];
+    });
+  }, []);
 
   const loadChatHistory = useCallback(
     async (sessionId) => {
@@ -253,9 +288,13 @@ export default function ChatPage() {
     if (selectedSessionId) {
       loadChatHistory(selectedSessionId);
       setCurrentSessionId(selectedSessionId);
+      newChatPendingRef.current = false;
     } else {
-      setMessages([]);
       setCurrentSessionId(null);
+      if (newChatPendingRef.current) {
+        return;
+      }
+      setMessages([]);
     }
   }, [selectedSessionId, loadChatHistory, setCurrentSessionId]);
 
@@ -281,6 +320,9 @@ export default function ChatPage() {
     const userPrompt = inputValue;
     setInputValue("");
 
+    const wasNewSession = !selectedSessionId;
+    const nowIso = new Date().toISOString();
+
     try {
       const response = await sendMessage(userPrompt, selectedSessionId);
 
@@ -297,14 +339,59 @@ export default function ChatPage() {
 
       setMessages((prev) => [...prev, aiMessage]);
 
-      // Update session ID and refresh sessions list
-      if (response?.data?.sessionId || response?.sessionId) {
-        const newSessionId = response?.data?.sessionId || response?.sessionId;
-        if (!selectedSessionId) {
-          setSelectedSessionId(newSessionId);
+      const sessionPayload =
+        response?.session ||
+        response?.data?.session ||
+        response?.data?.data?.session ||
+        response?.data?.sessionInfo ||
+        null;
+
+      const sessionIdFromResponse =
+        sessionPayload?.sessionId ||
+        response?.sessionId ||
+        response?.data?.sessionId ||
+        response?.data?.data?.sessionId ||
+        null;
+
+      if (wasNewSession) {
+        if (sessionIdFromResponse) {
+          const sessionName =
+            sessionPayload?.sessionName ||
+            sessionPayload?.name ||
+            (userPrompt.length > 40
+              ? `${userPrompt.slice(0, 40)}...`
+              : userPrompt) ||
+            "Cuộc trò chuyện mới";
+          const optimisticSession = {
+            sessionId: sessionIdFromResponse,
+            sessionName,
+            lastMessageAt:
+              sessionPayload?.lastMessageAt ||
+              sessionPayload?.updatedAt ||
+              nowIso,
+            createdAt: sessionPayload?.createdAt || nowIso,
+          };
+          upsertSession(optimisticSession);
+          setSelectedSessionId(sessionIdFromResponse);
+          setAutoSelectEnabled(true);
         }
-        await loadSessions();
+      } else if (sessionIdFromResponse || selectedSessionId) {
+        const updatedSession = {
+          sessionId: sessionIdFromResponse || selectedSessionId,
+          lastMessageAt:
+            sessionPayload?.lastMessageAt ||
+            sessionPayload?.updatedAt ||
+            nowIso,
+        };
+        upsertSession(updatedSession);
       }
+
+      loadSessions({
+        disableAutoSelect: true,
+        silent: true,
+      }).catch((refreshError) =>
+        console.error("Error refreshing sessions:", refreshError)
+      );
     } catch (error) {
       console.error("Error sending message:", error);
       const errorMessage = {
@@ -319,6 +406,8 @@ export default function ChatPage() {
   };
 
   const handleNewChat = () => {
+    newChatPendingRef.current = true;
+    setAutoSelectEnabled(false);
     setSelectedSessionId(null);
     setMessages([
       {
@@ -330,6 +419,11 @@ export default function ChatPage() {
       },
     ]);
     resetSession();
+  };
+
+  const handleSelectSession = (sessionId) => {
+    setAutoSelectEnabled(true);
+    setSelectedSessionId(sessionId);
   };
 
   const openDeleteDialog = (session, e) => {
@@ -423,7 +517,7 @@ export default function ChatPage() {
                 {sessions.map((session) => (
                   <div
                     key={session.sessionId}
-                    onClick={() => setSelectedSessionId(session.sessionId)}
+                    onClick={() => handleSelectSession(session.sessionId)}
                     className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
                       selectedSessionId === session.sessionId
                         ? "bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/50 dark:to-blue-900/50 border-2 border-purple-300 dark:border-purple-700"
