@@ -32,6 +32,7 @@ import { useAiChat } from "../../hooks/useAiChat";
 import { useSpeechToText } from "../../hooks/useSpeechToText";
 import { useSpeechSynthesis } from "../../hooks/useSpeechSynthesis";
 import { parseEventFromResponse } from "../../utils/aiResponseParser";
+import aiChatGif from "../../assets/ai-chat-2.gif";
 
 export default function ModernAIChat() {
   const navigate = useNavigate();
@@ -54,7 +55,7 @@ export default function ModernAIChat() {
     const parts = [];
   
     // 1) Bắt markdown link [text](url)
-    const markdownRegex = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g;
+    const markdownRegex = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
   
     // 2) Bắt plain URL (url không có markdown)
     const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -229,12 +230,14 @@ export default function ModernAIChat() {
       <div className="fixed bottom-8 right-8 z-50">
         <Button
           onClick={() => setIsOpen(true)}
-          className="h-16 w-16 rounded-full bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-600 hover:from-purple-700 hover:via-blue-700 hover:to-cyan-700 shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/70 transition-all duration-300 hover:scale-110 group relative overflow-hidden"
+          className="p-0 h-auto w-auto bg-transparent hover:bg-transparent shadow-none focus-visible:ring-0"
           size="icon"
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <MessageCircle className="h-7 w-7 text-white relative z-10" />
-          <div className="absolute top-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white animate-pulse" />
+          <img
+            src={aiChatGif}
+            alt="Modern AI Chat trigger"
+            className="relative z-10 h-40 w-40 rounded-full object-cover"
+          />
         </Button>
       </div>
     );
