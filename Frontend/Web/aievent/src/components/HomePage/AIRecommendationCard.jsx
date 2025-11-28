@@ -295,7 +295,7 @@ export function AIRecommendationCard({ recommendedEvents = [], userProfile = nul
           )}
 
           {/* Display reasons for recommended events */}
-          {recommendedEvents.length > 0 && (
+          {/* {recommendedEvents.length > 0 && (
             <div className="mt-8">
               <h3 className="text-xl font-bold text-gray-800 mb-4">Lý do đề xuất:</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -323,7 +323,7 @@ export function AIRecommendationCard({ recommendedEvents = [], userProfile = nul
                 ))}
               </div>
             </div>
-          )}
+          )} */}
         </div>
       </div>
     </div>
