@@ -28,8 +28,8 @@ export const useNotifications = () => {
   const connectionRef = useRef(null);
 
   // Fetch notifications
-  const fetchNotifications = (pageNumber = 1, pageSize = 10) => {
-    return dispatch(fetchNotificationsAction({ pageNumber, pageSize }));
+  const fetchNotifications = (isRead = null, pageNumber = 1, pageSize = 10) => {
+    return dispatch(fetchNotificationsAction({ isRead, pageNumber, pageSize }));
   };
 
   const handleMarkAsRead = (notificationId) => {
@@ -96,6 +96,11 @@ export const useNotifications = () => {
       } catch (err) {
         // Lỗi "stopped during negotiation" là do cleanup cũ → bỏ qua không báo
         if (err?.message?.includes?.("negotiation") || err?.message?.includes?.("stop")) {
+          console.warn("SignalR connection interrupted during startup (normal on re-mount)");
+          return;
+        }
+        // Lỗi "Failed to start the connection" cũng là do cleanup → bỏ qua không báo
+        if (err?.message?.includes?.("Failed to start the connection")) {
           console.warn("SignalR connection interrupted during startup (normal on re-mount)");
           return;
         }

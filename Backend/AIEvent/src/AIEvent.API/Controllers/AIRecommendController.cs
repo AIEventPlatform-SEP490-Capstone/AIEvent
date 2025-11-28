@@ -50,7 +50,7 @@ namespace AIEvent.API.Controllers
 
         [HttpGet("event")]
         [Authorize(Roles = "User")]
-        public async Task<ActionResult<SuccessResponse<BasePaginated<EventsResponse>>>> GetEventAIRecommend([FromQuery] int pageNumber = 1,
+        public async Task<ActionResult<SuccessResponse<BasePaginated<AiRecommendEventResponse>>>> GetEventAIRecommend([FromQuery] int pageNumber = 1,
                                                                                                             [FromQuery] int pageSize = 5)
         {
             Guid userId = User.GetRequiredUserId();
@@ -60,7 +60,7 @@ namespace AIEvent.API.Controllers
                 return BadRequest(result.Error!);
             }
 
-            return Ok(SuccessResponse<BasePaginated<EventsResponse>>.SuccessResult(
+            return Ok(SuccessResponse<BasePaginated<AiRecommendEventResponse>>.SuccessResult(
                 result.Value!,
                 SuccessCodes.Success,
                 "Event retrieved successfully"));

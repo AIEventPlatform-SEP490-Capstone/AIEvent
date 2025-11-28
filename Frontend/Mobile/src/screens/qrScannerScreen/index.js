@@ -64,24 +64,28 @@ const QrScannerScreen = () => {
     console.log('QR Scanned:', data.substring(0, 30) + '...');
 
     try {
-      const response = await BookingService.checkInTicket(data);
-      console.log('Check-in response:', response);
+      // First, get ticket information
+      const response = await BookingService.checkInfor(data);
+      console.log('Check-in information response:', response);
+      
       if (response.success) {
-        await playSuccessSound();
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-        Alert.alert(
-          'Check-in thành công',
-          response.message || 'Vé đã được xác nhận check-in thành công!',
-          [{ text: 'OK', onPress: resetProcessing }],
-          { cancelable: false }
-        );
+        // Navigate to confirmation screen with ticket info
+        navigation.navigate('CheckInConfirmationScreen', {
+          ticketInfo: response.data,
+          qrContent: data
+        });
       } else {
-        showErrorAlert(response.message || 'Check-in thất bại');
+        showErrorAlert(response.message || 'Không thể lấy thông tin vé');
       }
     } catch (error) {
-      console.error('Error checking in:', error);
+      console.error('Error getting check-in information:', error);
       showErrorAlert(error.message || 'Lỗi không xác định');
+    } finally {
+      // Reset processing state after a delay to allow navigation
+      setTimeout(() => {
+        isProcessingRef.current = false;
+        setShowLoading(false);
+      }, 1500);
     }
   };
 
@@ -97,11 +101,13 @@ const QrScannerScreen = () => {
       errorMessage = 'Không tìm thấy thông tin vé. Vui lòng kiểm tra lại.';
     } else if (msg.includes('already') || msg.includes('used') || msg.includes('checked in')) {
       errorMessage = 'Vé này đã được sử dụng trước đó.';
+    } else if (msg.includes('permission')) {
+      errorMessage = 'Bạn không có quyền thực hiện check-in cho vé này.';
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
-    Alert.alert('Check-in thất bại', errorMessage, [
+    Alert.alert('Lỗi', errorMessage, [
       { text: 'OK', onPress: resetProcessing },
     ]);
   };

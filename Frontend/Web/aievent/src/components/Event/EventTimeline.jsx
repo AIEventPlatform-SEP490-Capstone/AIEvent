@@ -154,19 +154,21 @@ export function EventTimeline({
                 <div key={index} className="flex flex-col items-center flex-1 group">
                   {isEditable ? (
                     <Popover>
-                      <PopoverTrigger asChild>
-                        <div className="cursor-pointer">{dotContent}</div>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-80">
-                        <DateTimePicker
-                          value={stage.rawTime}
-                          onChange={(v) => onTimeChange?.(index, v)}
-                          min={minTime}
-                          max={maxTime}
-                          error={dateTimeErrors[index]}
-                          onErrorChange={(error) => handleDateTimeErrorChange(index, error)}
-                        />
-                      </PopoverContent>
+                      <div className="flex flex-col items-center">
+                        <PopoverContent className="w-80 mb-2" align="center" side="top">
+                          <DateTimePicker 
+                            value={stage.rawTime} 
+                            onChange={(v) => onTimeChange?.(index, v)} 
+                            min={minTime}
+                            max={maxTime}
+                            error={dateTimeErrors[index]}
+                            onErrorChange={(error) => handleDateTimeErrorChange(index, error)}
+                          />
+                        </PopoverContent>
+                        <PopoverTrigger asChild>
+                          <div className="cursor-pointer mt-2">{dotContent}</div>
+                        </PopoverTrigger>
+                      </div>
                     </Popover>
                   ) : dotContent}
 
@@ -241,19 +243,21 @@ export function EventTimeline({
             <div key={index} className="flex gap-4 items-start group">
               {isEditable ? (
                 <Popover>
-                  <PopoverTrigger asChild>
-                    <div className="cursor-pointer -mt-2">{dotContent}</div>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80">
-                    <DateTimePicker 
-                      value={stage.rawTime} 
-                      onChange={(v) => onTimeChange?.(index, v)} 
-                      min={minTime}
-                      max={maxTime}
-                      error={dateTimeErrors[index]}
-                      onErrorChange={(error) => handleDateTimeErrorChange(index, error)}
-                    />
-                  </PopoverContent>
+                  <div className="flex flex-col items-center">
+                    <PopoverContent className="w-80 mb-2" align="center" side="top">
+                      <DateTimePicker 
+                        value={stage.rawTime} 
+                        onChange={(v) => onTimeChange?.(index, v)} 
+                        min={minTime}
+                        max={maxTime}
+                        error={dateTimeErrors[index]}
+                        onErrorChange={(error) => handleDateTimeErrorChange(index, error)}
+                      />
+                    </PopoverContent>
+                    <PopoverTrigger asChild>
+                      <div className="cursor-pointer mt-2">{dotContent}</div>
+                    </PopoverTrigger>
+                  </div>
                 </Popover>
               ) : dotContent}
               <div className={`flex-1 pt-3 group-hover:bg-blue-50 group-hover:border group-hover:border-blue-300 group-hover:rounded-lg group-hover:p-4 transition-all duration-300 ${showAsCurrent ? "bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-xl border border-blue-200" : ""}`}>

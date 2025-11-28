@@ -45,6 +45,7 @@ namespace AIEvent.Application.Mappings
             CreateMap<Event, EventDetailResponse>()
                 .ForMember(dest => dest.EventId, opt => opt.MapFrom(src => src.Id))
                 .ForMember(dest => dest.OrganizerEvent, opt => opt.MapFrom(src => src.OrganizerProfile))
+                .ForMember(dest => dest.FavoriteCount, opt => opt.MapFrom(src => src.FavoriteEvents.Count))
                 .ForMember(dest => dest.ImgListEvent,
                     opt => opt.MapFrom(src =>
                         !string.IsNullOrEmpty(src.ImgListEvent)

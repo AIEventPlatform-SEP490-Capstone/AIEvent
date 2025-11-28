@@ -392,60 +392,126 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result<CheckInResponse>> CheckInTicketAsync(Guid userId, string qrContent)
         {
-            if (string.IsNullOrWhiteSpace(qrContent))
-                return ErrorResponse.FailureResult("QR content is empty", ErrorCodes.InvalidInput);
-
-            var parts = qrContent.Split('|');
-            if (parts.Length != 2)
-                return ErrorResponse.FailureResult("Invalid QR format", ErrorCodes.InvalidInput);
-
-            var ticketCode = parts[0];
-            var signature = parts[1];
-
-            //Xác minh chữ ký
-            if (!_ticketSignatureService.ValidateSignature(ticketCode, signature))
-                return ErrorResponse.FailureResult("Invalid or tampered QR code", ErrorCodes.InvalidInput);
-
-            var ticket = await _unitOfWork.TicketRepository
-                .Query()
-                .Include(t => t.User)
-                .Include(t => t.TicketType)
-                .FirstOrDefaultAsync(t => t.TicketCode == ticketCode && !t.DeletedAt.HasValue);
-
-            if (ticket == null)
-                return ErrorResponse.FailureResult("Ticket not found", ErrorCodes.NotFound);
-
-            var organizerId = Guid.Parse(ticket.TicketType.CreatedBy!);
-            var validStaff = await _unitOfWork.StaffProfileRepository
-                .Query()
-                .AsNoTracking()
-                .Include(s => s.OrganizerProfile)
-                .AnyAsync(s => s.UserId == userId && s.OrganizerProfile.UserId == organizerId && !s.IsDeleted);
-
-            if(!validStaff)
-                return ErrorResponse.FailureResult("No Permission", ErrorCodes.PermissionDenied);
-
-            if (ticket.Status != TicketStatus.Valid)
-                return ErrorResponse.FailureResult("Ticket already checked in", ErrorCodes.InvalidInput);
-
-            if (ticket.EndTime < DateTime.UtcNow)
-                return ErrorResponse.FailureResult("Event already ended", ErrorCodes.InvalidInput);
-
-            ticket.Status = TicketStatus.Used;
-
-            await _unitOfWork.TicketRepository.UpdateAsync(ticket);
-            await _unitOfWork.SaveChangesAsync();
-
-            return Result<CheckInResponse>.Success(new CheckInResponse()
+            try
             {
-                TicketCode = ticketCode,
-                FullName = ticket.User.FullName!,
-                EventName = ticket.EventName,
-                TicketTypeName = ticket.TicketType.TicketName,
-                Status = ticket.Status,
-                CheckInAt = DateTime.UtcNow,
-            });
+                if (string.IsNullOrWhiteSpace(qrContent))
+                    return ErrorResponse.FailureResult("QR content is empty", ErrorCodes.InvalidInput);
+
+                var parts = qrContent.Split('.');
+                if (parts.Length != 2)
+                    return ErrorResponse.FailureResult("Invalid QR format", ErrorCodes.InvalidInput);
+
+                var ticketCode = parts[0];
+                var signature = parts[1];
+
+                //Xác minh chữ ký
+                if (!_ticketSignatureService.ValidateSignature(ticketCode, signature))
+                    return ErrorResponse.FailureResult("Invalid or tampered QR code", ErrorCodes.InvalidInput);
+
+                var ticket = await _unitOfWork.TicketRepository
+                    .Query()
+                    .Include(t => t.User)
+                    .Include(t => t.TicketType)
+                    .FirstOrDefaultAsync(t => t.TicketCode == ticketCode && !t.DeletedAt.HasValue);
+
+                if (ticket == null)
+                    return ErrorResponse.FailureResult("Ticket not found", ErrorCodes.NotFound);
+
+                var organizerId = Guid.Parse(ticket.TicketType.CreatedBy!);
+                var validStaff = await _unitOfWork.StaffProfileRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Include(s => s.OrganizerProfile)
+                    .AnyAsync(s => s.UserId == userId && s.OrganizerProfile.Id == organizerId && !s.IsDeleted);
+
+                if (!validStaff)
+                    return ErrorResponse.FailureResult("No Permission", ErrorCodes.PermissionDenied);
+
+                if (ticket.Status != TicketStatus.Valid)
+                    return ErrorResponse.FailureResult("Ticket already checked in", ErrorCodes.InvalidInput);
+
+                if (ticket.EndTime < DateTime.UtcNow)
+                    return ErrorResponse.FailureResult("Event already ended", ErrorCodes.InvalidInput);
+
+                ticket.Status = TicketStatus.Used;
+
+                await _unitOfWork.TicketRepository.UpdateAsync(ticket);
+                await _unitOfWork.SaveChangesAsync();
+
+                return Result<CheckInResponse>.Success(new CheckInResponse()
+                {
+                    TicketCode = ticketCode,
+                    FullName = ticket.User.FullName!,
+                    EventName = ticket.EventName,
+                    TicketTypeName = ticket.TicketType.TicketName,
+                    Status = ticket.Status,
+                    CheckInAt = DateTime.UtcNow,
+                });
+            }
+            catch (Exception ex)
+            {
+                return ErrorResponse.FailureResult($"Error : {ex}", ErrorCodes.InternalServerError);
+            }
         }
 
+        public async Task<Result<CheckInforResponse>> CheckInforAsync(Guid userId, string qrContent)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(qrContent))
+                    return ErrorResponse.FailureResult("QR content is empty", ErrorCodes.InvalidInput);
+
+                var parts = qrContent.Split('.');
+                if (parts.Length != 2)
+                    return ErrorResponse.FailureResult("Invalid QR format", ErrorCodes.InvalidInput);
+
+                var ticketCode = parts[0];
+                var signature = parts[1];
+
+                //Xác minh chữ ký
+                if (!_ticketSignatureService.ValidateSignature(ticketCode, signature))
+                    return ErrorResponse.FailureResult("Invalid or tampered QR code", ErrorCodes.InvalidInput);
+
+                var ticket = await _unitOfWork.TicketRepository
+                    .Query()
+                    .Include(t => t.User)
+                    .Include(t => t.TicketType)
+                    .FirstOrDefaultAsync(t => t.TicketCode == ticketCode && !t.DeletedAt.HasValue);
+
+                if (ticket == null)
+                    return ErrorResponse.FailureResult("Ticket not found", ErrorCodes.NotFound);
+
+                var organizerId = Guid.Parse(ticket.TicketType.CreatedBy!);
+                var validStaff = await _unitOfWork.StaffProfileRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Include(s => s.OrganizerProfile)
+                    .AnyAsync(s => s.UserId == userId && s.OrganizerProfile.Id == organizerId && !s.IsDeleted);
+
+                if (!validStaff)
+                    return ErrorResponse.FailureResult("No Permission", ErrorCodes.PermissionDenied);
+
+                if (ticket.Status != TicketStatus.Valid)
+                    return ErrorResponse.FailureResult("Ticket already checked in", ErrorCodes.InvalidInput);
+
+                if (ticket.EndTime < DateTime.UtcNow)
+                    return ErrorResponse.FailureResult("Event already ended", ErrorCodes.InvalidInput);
+
+                return Result<CheckInforResponse>.Success(new CheckInforResponse()
+                {
+                    TicketCode = ticketCode,
+                    FullName = ticket.User.FullName!,
+                    EventName = ticket.EventName,
+                    TicketTypeName = ticket.TicketType.TicketName,
+                    Status = ticket.Status,
+                    Email = ticket.User.Email!,
+                    Phone = ticket.User.PhoneNumber,
+                });
+            }
+            catch (Exception ex)
+            {
+                return ErrorResponse.FailureResult($"Error : {ex}", ErrorCodes.InternalServerError);
+            }
+        }
     }
 }

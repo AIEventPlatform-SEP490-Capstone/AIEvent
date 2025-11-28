@@ -31,6 +31,7 @@ namespace AIEvent.Infrastructure.Data
             SeedTicketDetail(modelBuilder);
             SeedWallet(modelBuilder);
             SeedSystemSetting(modelBuilder);
+            SeedStaffProfile(modelBuilder);
         }
 
         private static void SeedRoles(ModelBuilder modelBuilder)
@@ -412,6 +413,7 @@ namespace AIEvent.Infrastructure.Data
                     TicketQuantity = 100,
                     RemainingQuantity = 1,
                     SoldQuantity = 99,
+                    CreatedBy = organizerUserId.ToString(),
                 },
                 new TicketType
                 {
@@ -421,6 +423,7 @@ namespace AIEvent.Infrastructure.Data
                     TicketPrice = 15000,
                     TicketQuantity = 100,
                     RemainingQuantity = 100,
+                    CreatedBy = organizerUserId.ToString(),
                 },
                 new TicketType
                 {
@@ -430,6 +433,7 @@ namespace AIEvent.Infrastructure.Data
                     TicketPrice = 15000,
                     TicketQuantity = 250,
                     RemainingQuantity = 250,
+                    CreatedBy = organizerUserId.ToString(),
                 },
                 new TicketType
                 {
@@ -439,6 +443,7 @@ namespace AIEvent.Infrastructure.Data
                     TicketPrice = 20000,
                     TicketQuantity = 250,
                     RemainingQuantity = 250,
+                    CreatedBy = organizerUserId.ToString(),
                 },
                 new TicketType
                 {
@@ -448,6 +453,7 @@ namespace AIEvent.Infrastructure.Data
                     TicketPrice = 5000,
                     TicketQuantity = 100,
                     RemainingQuantity = 100,
+                    CreatedBy = organizerUserId.ToString(),
                 },
                 new TicketType
                 {
@@ -457,6 +463,7 @@ namespace AIEvent.Infrastructure.Data
                     TicketPrice = 0,
                     TicketQuantity = 100,
                     RemainingQuantity = 100,
+                    CreatedBy = organizerUserId.ToString(),
                 }
             );
         }
@@ -491,6 +498,18 @@ namespace AIEvent.Infrastructure.Data
             );
         }
 
+        private static void SeedStaffProfile(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<StaffProfile>().HasData(
+                new StaffProfile
+                {
+                    UserId = staffUserId,
+                    OrganizerProfileId = organizerProfileId,
+                    CreatedBy = "System",
+                    CreatedAt = DateTime.Now,
+                }
+            );
+        }
 
     }
 }

@@ -66,6 +66,7 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("Organizer not found or inactive", ErrorCodes.Unauthorized);
 
             var events = _mapper.Map<Event>(request);
+            events.TicketTypes.ToList().ForEach(tt => tt.SetCreated(organizerId.ToString()));
             if (events == null)
                 return ErrorResponse.FailureResult("Failed to map event", ErrorCodes.InternalServerError);
             
@@ -212,6 +213,9 @@ namespace AIEvent.Application.Services.Implements
                         ? e.TicketTypes.Min(t => t.TicketPrice)
                         : 0,
                     IsFavorite = userId.HasValue && userId != Guid.Empty && e.FavoriteEvents.Any(fe => fe.UserId == userId),
+                    FavoriteCount = e.FavoriteEvents.Count(),
+                    SaleStartTime = e.SaleStartTime,
+                    SaleEndTime = e.SaleEndTime,
                     ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
                         ? new List<string>()
                         : e.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()
@@ -228,7 +232,6 @@ namespace AIEvent.Application.Services.Implements
 
             var eventQuery = await _unitOfWork.EventRepository
                 .Query()
-                .Include(e => e.TicketTypes)
                 .Include(e => e.EventTags)
                 .Where(e => e.Id == eventId && !e.IsDeleted)
                 .FirstOrDefaultAsync();
@@ -238,75 +241,61 @@ namespace AIEvent.Application.Services.Implements
 
             if (eventQuery.OrganizerProfileId != organizerId)
                 return ErrorResponse.FailureResult("You don't have permission to update this event", ErrorCodes.Unauthorized);
+             
+            var hasBookings = await _unitOfWork.EventRepository
+                .Query()
+                .Where(e => e.Id == eventId)
+                .SelectMany(e => e.Bookings)
+                .AnyAsync(b => b.Status == BookingStatus.Completed);
 
-            if (eventQuery.Publish == true)
-            {
-                var hasActiveBookings = await _unitOfWork.EventRepository
-                    .Query()
-                    .Where(e => e.Id == eventId)
-                    .SelectMany(e => e.Bookings)
-                    .AnyAsync(b => b.Status == BookingStatus.Completed);
-
-                if (hasActiveBookings)
-                {
-                    return ErrorResponse.FailureResult(
-                        "Cannot update published event that has existing bookings",
-                        ErrorCodes.InvalidInput
-                    );
-                }
-            }
-
-            if (request.Publish == true)
-            {
-                var validationResult = ValidateEventForPublish(request, eventQuery);
-                if (!validationResult.IsSuccess)
-                    return validationResult;
-            }
+            if (hasBookings)
+                return ErrorResponse.FailureResult("Cannot update event that has existing bookings", ErrorCodes.InvalidInput);
+              
+            if (eventQuery.Publish == true && eventQuery.Status != EventStatus.PendingApproval)
+                return ErrorResponse.FailureResult("Cannot update published event that is not in pending approval status", ErrorCodes.InvalidInput);
+              
+            if (request.Publish == true && !await IsValidForPublishAsync(request, eventQuery))
+                return ErrorResponse.FailureResult("Event data is incomplete for publishing", ErrorCodes.InvalidInput);
 
             var result = await _transactionHelper.ExecuteInTransactionAsync(async () =>
             { 
-                var originalSoldQuantity = eventQuery.SoldQuantity;
-
                 _mapper.Map(request, eventQuery);
-                
-                if (eventQuery.SoldQuantity == 0 && originalSoldQuantity > 0)
-                    eventQuery.SoldQuantity = originalSoldQuantity;
-
-                var updateImagesResult = await UpdateEventImagesAsync(eventQuery, request);
-                if (!updateImagesResult.IsSuccess)
-                    return updateImagesResult;
-                
-                var updateEvidenceResult = await UpdateEventEvidenceAsync(eventQuery, request);
-                if (!updateEvidenceResult.IsSuccess)
-                    return updateEvidenceResult;
-
-                var handleTicketsResult = await HandleTicketDetailsOperationsAsync(eventQuery, eventId, organizerId, request);
-                if (!handleTicketsResult.IsSuccess)
-                    return handleTicketsResult;
+                   
+                eventQuery.SoldQuantity = 0;
+ 
+                await UpdateEventImagesAsync(eventQuery, request);
+                await UpdateEventEvidenceAsync(eventQuery, request);
                  
-                if (request.TicketTypes != null && request.TicketTypes.Any() || 
+                await HandleTicketDetailsOperationsAsync(eventQuery, eventId, organizerId, request);
+
+                if (request.TicketTypes != null && request.TicketTypes.Any() ||
                     request.RemoveTicketTypeIds != null && request.RemoveTicketTypeIds.Any())
-                {
-                    eventQuery.TotalTickets = eventQuery.TicketTypes.Sum(t => t.TicketQuantity);
-                    eventQuery.RemainingTickets = eventQuery.TotalTickets - eventQuery.SoldQuantity;
+                { 
+                    var totalTickets = await _unitOfWork.TicketTypeRepository
+                        .Query()
+                        .Where(t => t.EventId == eventId)
+                        .SumAsync(t => t.TicketQuantity);
+                    eventQuery.TotalTickets = totalTickets;
+                    eventQuery.RemainingTickets = eventQuery.TotalTickets;
                 }
                 else if (request.TotalTickets.HasValue)
                 {
                     eventQuery.TotalTickets = request.TotalTickets.Value;
-                    eventQuery.RemainingTickets = eventQuery.TotalTickets - eventQuery.SoldQuantity;
+                    eventQuery.RemainingTickets = eventQuery.TotalTickets;
                 }
                 else
-                    eventQuery.RemainingTickets = eventQuery.TotalTickets - eventQuery.SoldQuantity;
+                    eventQuery.RemainingTickets = eventQuery.TotalTickets;
 
-                var handleTagsResult = HandleEventTagsOperations(eventQuery, eventId, request);
-                if (!handleTagsResult.IsSuccess)
-                    return handleTagsResult;
-
+                HandleEventTagsOperations(eventQuery, eventId, request);
+                 
                 if (request.Publish == true)
-                    eventQuery.Status = EventStatus.PendingApproval;
+                {
+					eventQuery.Status = EventStatus.PendingApproval;
+                    eventQuery.Publish = true;
+				}
+                    
 
                 await _unitOfWork.EventRepository.UpdateAsync(eventQuery);
-
                 return Result.Success();
             });
 
@@ -344,136 +333,87 @@ namespace AIEvent.Application.Services.Implements
             return result;
         }
 
-        private Task<Result> UpdateEventImagesAsync(Event events, UpdateEventRequest request)
+        private Task UpdateEventImagesAsync(Event events, UpdateEventRequest request)
         {
             if ((request.RemoveImageUrls == null || !request.RemoveImageUrls.Any()) 
                 && (request.ImgListEvent == null || !request.ImgListEvent.Any()))
-                return Task.FromResult(Result.Success());
+                return Task.CompletedTask;
 
             var existingImages = string.IsNullOrEmpty(events.ImgListEvent)
-                                    ? new List<string>()
-                                    : events.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList();
-
+                ? new List<string>()
+                : events.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList();
+             
             if (request.RemoveImageUrls != null && request.RemoveImageUrls.Any())
-            {
-                var imagesToRemove = request.RemoveImageUrls.Where(url => existingImages.Contains(url)).ToList();
-                var remainingImagesCount = existingImages.Count - imagesToRemove.Count;
-                var willAddNewImages = request.ImgListEvent != null && request.ImgListEvent.Any();
-                
-                if (remainingImagesCount <= 0 && !willAddNewImages)
-                    return Task.FromResult(Result.Failure(ErrorResponse.FailureResult(
-                            "Cannot remove all images. Event must have at least 1 image.",
-                            ErrorCodes.InvalidInput
-                        )));
-
                 existingImages = existingImages.Where(img => !request.RemoveImageUrls.Contains(img)).ToList();
-            }
-
+             
             if (request.ImgListEvent != null && request.ImgListEvent.Any())
             {
                 var newImageUrls = request.ImgListEvent
                     .Where(url => !string.IsNullOrWhiteSpace(url) && !existingImages.Contains(url))
                     .ToList();
-                
                 existingImages.AddRange(newImageUrls);
             }
 
             events.ImgListEvent = existingImages.Any() ? string.Join(", ", existingImages) : null;
-            return Task.FromResult(Result.Success());
+            return Task.CompletedTask;
         }
 
-        private Task<Result> UpdateEventEvidenceAsync(Event events, UpdateEventRequest request)
+        private Task UpdateEventEvidenceAsync(Event events, UpdateEventRequest request)
         {
             if ((request.RemoveImageEvidenceUrls == null || !request.RemoveImageEvidenceUrls.Any()) 
                 && (request.ImgListEvidences == null || !request.ImgListEvidences.Any()))
-                return Task.FromResult(Result.Success());
+                return Task.CompletedTask;
 
             var existingEvidence = string.IsNullOrEmpty(events.ImgListEvidences)
                 ? new List<string>()
                 : events.ImgListEvidences.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList();
-
+             
             if (request.RemoveImageEvidenceUrls != null && request.RemoveImageEvidenceUrls.Any())
-            {
-                var evidenceToRemove = request.RemoveImageEvidenceUrls.Where(url => existingEvidence.Contains(url)).ToList();
-                var remainingEvidenceCount = existingEvidence.Count - evidenceToRemove.Count;
-                var willAddNewEvidence = request.ImgListEvidences != null && request.ImgListEvidences.Any();
-                
-                if (remainingEvidenceCount <= 0 && !willAddNewEvidence)
-                    return Task.FromResult(Result.Failure(ErrorResponse.FailureResult(
-                            "Cannot remove all evidence images. At least one evidence is required when publishing.",
-                            ErrorCodes.InvalidInput
-                        )));
-
                 existingEvidence = existingEvidence.Where(ev => !request.RemoveImageEvidenceUrls.Contains(ev)).ToList();
-            }
-
+             
             if (request.ImgListEvidences != null && request.ImgListEvidences.Any())
             {
                 var newEvidenceUrls = request.ImgListEvidences
                     .Where(url => !string.IsNullOrWhiteSpace(url) && !existingEvidence.Contains(url))
                     .ToList();
-                
                 existingEvidence.AddRange(newEvidenceUrls);
             }
 
             events.ImgListEvidences = existingEvidence.Any() ? string.Join(", ", existingEvidence) : null;
-            return Task.FromResult(Result.Success());
+            return Task.CompletedTask;
         }
 
-        private async Task<Result> HandleTicketDetailsOperationsAsync(Event events, Guid eventId, Guid organizerId, UpdateEventRequest request)
-        { 
+        private async Task HandleTicketDetailsOperationsAsync(Event events, Guid eventId, Guid organizerId, UpdateEventRequest request)
+        {  
             if (request.RemoveTicketTypeIds != null && request.RemoveTicketTypeIds.Any())
             {
-                var remainingTicketsCount = events.TicketTypes.Count - request.RemoveTicketTypeIds.Count;
-                var willAddNewTickets = request.TicketTypes != null && 
-                                       request.TicketTypes.Any(td => !td.Id.HasValue || td.Id.Value == Guid.Empty);
-                
-                if (remainingTicketsCount <= 0 && !willAddNewTickets)
-                    return ErrorResponse.FailureResult(
-                            "Cannot remove all ticket details. Event must have at least 1 ticket type.",
-                            ErrorCodes.InvalidInput
-                        );
-
-                var ticketsToRemove = events.TicketTypes
-                    .Where(td => request.RemoveTicketTypeIds.Contains(td.Id))
-                    .ToList();
+                var ticketsToRemove = await _unitOfWork.TicketTypeRepository
+                    .Query()
+                    .Where(td => request.RemoveTicketTypeIds.Contains(td.Id) && td.EventId == eventId)
+                    .ToListAsync();
 
                 foreach (var ticket in ticketsToRemove)
-                { 
-                    var hasSoldTickets = await _unitOfWork.EventRepository
-                        .Query()
-                        .Where(e => e.Id == eventId)
-                        .SelectMany(e => e.TicketTypes)
-                        .Where(td => td.Id == ticket.Id)
-                        .AnyAsync(td => td.SoldQuantity > 0);
+                    await _unitOfWork.TicketTypeRepository.DeleteAsync(ticket);
+            }
 
-                    if (hasSoldTickets)
-                        return ErrorResponse.FailureResult(
-                                $"Cannot remove ticket '{ticket.TicketName}' because it has already been sold",
-                                ErrorCodes.InvalidInput
-                            );
-
-                    events.TicketTypes.Remove(ticket);
-                }
-            } 
             if (request.TicketTypes != null && request.TicketTypes.Any())
             {
+                var ticketTypeAdds = new List<TicketType>();
+                var ticketTypeUpdates = new List<TicketType>();
                 foreach (var ticketRequest in request.TicketTypes)
                 {
                     if (ticketRequest.Id.HasValue && ticketRequest.Id.Value != Guid.Empty)
-                    { 
-                        var existingTicket = events.TicketTypes.FirstOrDefault(td => td.Id == ticketRequest.Id.Value);
-                        
+                    {
+                        var existingTicket = await _unitOfWork.TicketTypeRepository
+                            .Query()
+                            .FirstOrDefaultAsync(t => t.Id == ticketRequest.Id.Value && t.EventId == eventId);
                         if (existingTicket != null)
                         {
-                            if (existingTicket.SoldQuantity > 0 && ticketRequest.TicketQuantity < existingTicket.SoldQuantity)
-                                return ErrorResponse.FailureResult(
-                                        $"Cannot reduce quantity below sold quantity ({existingTicket.SoldQuantity}) for ticket '{existingTicket.TicketName}'",
-                                        ErrorCodes.InvalidInput
-                                    );
                             _mapper.Map(ticketRequest, existingTicket);
-                            existingTicket.RemainingQuantity = existingTicket.TicketQuantity - existingTicket.SoldQuantity;
+                            existingTicket.SoldQuantity = 0;
+                            existingTicket.RemainingQuantity = existingTicket.TicketQuantity;
                             existingTicket.SetUpdated(organizerId.ToString());
+                            ticketTypeUpdates.Add(existingTicket);
                         }
                     }
                     else
@@ -483,39 +423,33 @@ namespace AIEvent.Application.Services.Implements
                         newTicket.EventId = eventId;
                         newTicket.SoldQuantity = 0;
                         newTicket.RemainingQuantity = ticketRequest.TicketQuantity;
-                        newTicket.SetCreated(organizerId.ToString()); 
-                        
-                        events.TicketTypes.Add(newTicket);
+                        newTicket.SetCreated(organizerId.ToString());
+                        ticketTypeAdds.Add(newTicket);
                     }
                 }
+
+                if(ticketTypeUpdates.Any())
+                    await _unitOfWork.TicketTypeRepository.UpdateRangeAsync(ticketTypeUpdates);
+
+                if (ticketTypeAdds.Any())
+                    await _unitOfWork.TicketTypeRepository.AddRangeAsync(ticketTypeAdds);
             }
-            
-            return Result.Success();
+
+            await Task.CompletedTask;
         }
 
-        private Result HandleEventTagsOperations(Event events, Guid eventId, UpdateEventRequest request)
-        {
+        private void HandleEventTagsOperations(Event events, Guid eventId, UpdateEventRequest request)
+        { 
             if (request.RemoveTagIds != null && request.RemoveTagIds.Any())
             {
-                var remainingTagsCount = events.EventTags.Count - request.RemoveTagIds.Count;
-                var willAddNewTags = request.AddTagIds != null && request.AddTagIds.Any();
-                
-                if (remainingTagsCount <= 0 && !willAddNewTags)
-                    return ErrorResponse.FailureResult(
-                            "Cannot remove all tags. Event must have at least 1 tag.",
-                            ErrorCodes.InvalidInput
-                        );
-
                 var tagsToRemove = events.EventTags
                     .Where(et => request.RemoveTagIds.Contains(et.TagId))
                     .ToList();
 
                 foreach (var tag in tagsToRemove)
-                {
                     events.EventTags.Remove(tag);
-                }
             }
-
+             
             if (request.AddTagIds != null && request.AddTagIds.Any())
             {
                 var existingTagIds = events.EventTags.Select(et => et.TagId).ToList();
@@ -532,97 +466,50 @@ namespace AIEvent.Application.Services.Implements
                     }
                 }
             }
-            
-            return Result.Success();
         }
 
-        private Result ValidateEventForPublish(UpdateEventRequest request, Event existingEvent)
+        private async Task<bool> IsValidForPublishAsync(UpdateEventRequest request, Event existingEvent)
         {
-            var errors = new List<string>();
-
             var title = request.Title ?? existingEvent.Title;
             var description = request.Description ?? existingEvent.Description;
             var startTime = request.StartTime ?? existingEvent.StartTime;
             var endTime = request.EndTime ?? existingEvent.EndTime;
             var saleStartTime = request.SaleStartTime ?? existingEvent.SaleStartTime;
-            var saleEndTime = request.SaleEndTime ?? existingEvent.SaleEndTime; 
-            var totalTickets = request.TotalTickets ?? existingEvent.TotalTickets;
-            var ticketPricingType = request.TicketPricingType.HasValue 
-                ? request.TicketPricingType.Value 
-                : existingEvent.TicketPricingType;
-
-            if (string.IsNullOrWhiteSpace(title))
-                errors.Add("Title is required");
-
-            if (string.IsNullOrWhiteSpace(description))
-                errors.Add("Description is required");
-
-            if (startTime == default || endTime == default)
-                errors.Add("StartTime and EndTime are required");
-            else if (endTime < startTime)
-                errors.Add("EndTime must be after StartTime");
-
-            if (!saleStartTime.HasValue || !saleEndTime.HasValue)
-                errors.Add("SaleStartTime and SaleEndTime are required");
-            else
-            {
-                if (saleEndTime < saleStartTime)
-                    errors.Add("SaleEndTime must be after SaleStartTime");
-
-                if (saleEndTime > startTime)
-                    errors.Add("SaleEndTime cannot be after event StartTime");
-            }
-
+            var saleEndTime = request.SaleEndTime ?? existingEvent.SaleEndTime;
             var locationName = request.LocationName ?? existingEvent.LocationName;
-                var district = request.District ?? existingEvent.District;
-                var address = request.Address ?? existingEvent.Address;
-
-                if (string.IsNullOrWhiteSpace(locationName))
-                    errors.Add("LocationName is required");
-                if (string.IsNullOrWhiteSpace(district))
-                    errors.Add("District is required");
-                if (string.IsNullOrWhiteSpace(address))
-                    errors.Add("Address is required");
-
-            var hasImages = HasEventImages(request, existingEvent);
-            if (!hasImages)
-                errors.Add("At least one event image is required");
-
-            var hasEvidence = HasEventEvidence(request, existingEvent);
-            if (!hasEvidence)
-                errors.Add("Evidence is required when publishing an event");
-              
-            var hasTicketDetailsAfterOperations = existingEvent.TicketTypes != null && existingEvent.TicketTypes.Any();
-            
-            if (request.RemoveTicketTypeIds != null && request.RemoveTicketTypeIds.Any())
-            {
-                var remainingTicketsCount = (existingEvent.TicketTypes?.Count ?? 0) - request.RemoveTicketTypeIds.Count;
-                hasTicketDetailsAfterOperations = remainingTicketsCount > 0;
-            }
-            
-            if (request.TicketTypes != null && request.TicketTypes.Any(td => !td.Id.HasValue || td.Id.Value == Guid.Empty))
-                hasTicketDetailsAfterOperations = true;
-
-            if (!hasTicketDetailsAfterOperations)
-                errors.Add("At least one ticket type is required");
-            
-            if (totalTickets <= 0)
-                errors.Add("TotalTickets must be greater than 0");
-
+            var district = request.District ?? existingEvent.District;
+            var address = request.Address ?? existingEvent.Address;
             var eventCategoryId = request.EventCategoryId ?? existingEvent.EventCategoryId;
+            var totalTickets = request.TotalTickets ?? existingEvent.TotalTickets;
+             
+            if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(description) ||
+                string.IsNullOrWhiteSpace(locationName) || string.IsNullOrWhiteSpace(district) ||
+                string.IsNullOrWhiteSpace(address) || eventCategoryId == Guid.Empty || totalTickets <= 0)
+                return false;
+             
+            if (startTime == default || endTime == default || endTime < startTime ||
+                !saleStartTime.HasValue || !saleEndTime.HasValue ||
+                saleEndTime < saleStartTime || saleEndTime > startTime)
+                return false;
+              
+            if (!HasEventImages(request, existingEvent) || !HasEventEvidence(request, existingEvent))
+                return false; 
 
-            if (eventCategoryId == Guid.Empty)
-                errors.Add("EventCategoryId is required");
-
-            if (errors.Any())
+            var existingTicketCount = await _unitOfWork.TicketTypeRepository
+                .Query()
+                .Where(t => t.EventId == existingEvent.Id)
+                .CountAsync();
+                
+            var hasTickets = existingTicketCount > 0;
+            if (request.RemoveTicketTypeIds?.Any() == true)
             {
-                return ErrorResponse.FailureResult(
-                    string.Join("; ", errors),
-                    ErrorCodes.InvalidInput
-                );
+                var remainingCount = existingTicketCount - request.RemoveTicketTypeIds.Count;
+                hasTickets = remainingCount > 0;
             }
+            if (request.TicketTypes?.Any(td => !td.Id.HasValue || td.Id.Value == Guid.Empty) == true)
+                hasTickets = true;
 
-            return Result.Success();
+            return hasTickets;
         }
 
         private bool HasEventImages(UpdateEventRequest request, Event existingEvent)
@@ -658,8 +545,6 @@ namespace AIEvent.Application.Services.Implements
             var hasNewEvidence = request.ImgListEvidences != null && request.ImgListEvidences.Any();
             return existingEvidenceList.Any() || hasNewEvidence;
         }
-
-
 
         public async Task<Result<EventDetailResponse>> GetEventByIdAsync(Guid eventId)
         {
@@ -830,6 +715,9 @@ namespace AIEvent.Application.Services.Implements
                         : string.Empty,
                     TotalPerson = e.TotalTickets,
                     TotalPersonJoin = e.SoldQuantity,
+                    FavoriteCount = e.FavoriteEvents.Count(),
+                    SaleStartTime = e.SaleStartTime,
+                    SaleEndTime = e.SaleEndTime,
                     ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
                         ? new List<string>()
                         : e.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()
@@ -885,6 +773,9 @@ namespace AIEvent.Application.Services.Implements
                     TotalPerson = e.TotalTickets,
                     TotalPersonJoin = e.SoldQuantity,
                     TotalAmount = e.TotalAmount,
+                    FavoriteCount = e.FavoriteEvents.Count(),
+                    SaleStartTime = e.SaleStartTime,
+                    SaleEndTime = e.SaleEndTime,
                     ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
                         ? new List<string>()
                         : e.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()
@@ -1340,6 +1231,9 @@ namespace AIEvent.Application.Services.Implements
 
                     IsFavorite = userId != Guid.Empty
                         && e.Event.FavoriteEvents.Any(fe => fe.UserId == userId),
+                    FavoriteCount = e.Event.FavoriteEvents.Count(),
+                    SaleStartTime = e.Event.SaleStartTime,
+                    SaleEndTime = e.Event.SaleEndTime,
 
                     ImgListEvent = string.IsNullOrEmpty(e.Event.ImgListEvent)
                         ? new List<string>()

@@ -10,8 +10,7 @@ using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore; 
 using System.Text.Json;
 
 namespace AIEvent.Application.Services.Implements
@@ -89,7 +88,7 @@ namespace AIEvent.Application.Services.Implements
                 meta.TryGetValue("StartTime", out var start);
                 meta.TryGetValue("EndTime", out var end);
                 meta.TryGetValue("Tickets", out var tickets);
-                var eventUrl = eventId != null ? $"http://localhost:5173/event/{eventId}" : "#";
+                var eventUrl = eventId != null ? $"https://ai-event-alpha.vercel.app/event/{eventId}" : "#";
                 return $@"
                     - {title ?? "Sự kiện"} ({category ?? "Không rõ danh mục"})
                       Địa điểm: {(location ?? address ?? "Không rõ")} - {district ?? ""}
@@ -97,7 +96,7 @@ namespace AIEvent.Application.Services.Implements
                       Mô tả: {description ?? "Không có mô tả"}
                       Thẻ: {tags ?? "Không có"}
                       Vé: {tickets ?? "Không có thông tin vé"}
-                      Xem chi tiết: {eventUrl}
+                      Link: {eventUrl}
                     ";
             }).ToList();
              
@@ -181,10 +180,10 @@ namespace AIEvent.Application.Services.Implements
             return response;
         }
 
-        public async Task<Result<BasePaginated<EventsResponse>>> GetEventAIRecommendAsync(int pageNumber, int pageSize, Guid userId)
+        public async Task<Result<BasePaginated<AiRecommendEventResponse>>> GetEventAIRecommendAsync(int pageNumber, int pageSize, Guid userId)
         {
             var user = await _unitOfWork.UserRepository
-                .Query()
+                .Query(false)
                 .AsNoTracking()
                 .Where(u => u.Id == userId && !u.IsDeleted && u.IsActive)
                 .Select(u => new
@@ -194,65 +193,64 @@ namespace AIEvent.Application.Services.Implements
                     u.District,
                     u.BudgetOption,
                     u.InterestedDistrictsJson,
-                    u.UserInterestsJson,
+                    u.UserInterestsJson
                 })
                 .FirstOrDefaultAsync();
 
             if (user == null)
-            {
                 return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
-            }
 
-            var userDescription = new List<string>();
+            var parts = new List<string>();
 
-            if (!string.IsNullOrEmpty(user.Address))
-                userDescription.Add($"Address: {user.Address}");
+            if (!string.IsNullOrWhiteSpace(user.Address))
+                parts.Add($"address {user.Address}");
 
-            if (!string.IsNullOrEmpty(user.District))
-                userDescription.Add($"District: {user.District}");
+            if (!string.IsNullOrWhiteSpace(user.District))
+                parts.Add($"district {user.District}");
 
-            if (!string.IsNullOrEmpty(user.UserInterestsJson))
-                userDescription.Add($"Interests: {user.UserInterestsJson}");
+            if (!string.IsNullOrWhiteSpace(user.UserInterestsJson))
+                parts.Add($"interests {user.UserInterestsJson}");
 
-            if (!string.IsNullOrEmpty(user.InterestedDistrictsJson))
-                userDescription.Add($"InterestedDistricts: {user.InterestedDistrictsJson}");
+            if (!string.IsNullOrWhiteSpace(user.InterestedDistrictsJson))
+                parts.Add($"interested districts {user.InterestedDistrictsJson}");
 
-            userDescription.Add($"Budget: {user.BudgetOption}");
+            parts.Add($"budget {user.BudgetOption}");
 
-            var descriptionText = string.Join(", ", userDescription);
+            var userDesc = string.Join(", ", parts);
 
-            var embedding = await _voyageEmbeddingService.GetEmbeddingAsync(descriptionText);
+            var embedding = await _voyageEmbeddingService.GetEmbeddingAsync(userDesc);
 
-            var aiResults = await _pineconeService.QuerySimilarAsync(embedding, isUser: false, topK: 10);
+            var aiResults = await _pineconeService.QuerySimilarAsync(
+                embedding, isUser: false, topK: 6);
 
             var eventIds = aiResults
-                .Select(r => Guid.TryParse(r.Id, out var guid) ? guid : Guid.Empty)
+                .Select(r => Guid.TryParse(r.Id, out var g) ? g : Guid.Empty)
                 .Where(g => g != Guid.Empty)
                 .ToList();
 
-            var events = _unitOfWork.EventRepository
-                .Query()
-                .Where(e => eventIds.Contains(e.Id) && e.IsDeleted == false && e.Publish == true && e.Status == EventStatus.Approved)
-                .AsQueryable();
+            var query = _unitOfWork.EventRepository
+                .Query(false)
+                .Include(e => e.EventCategory)
+                .Where(e => eventIds.Contains(e.Id)
+                            && !e.IsDeleted
+                            && e.Publish == true
+                            && e.Status == EventStatus.Approved);
 
-            int totalCount = await events.CountAsync();
+            var totalCount = await query.CountAsync();
 
-            var result = await events
+            var events = await query
                 .OrderByDescending(e => e.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(e => new EventsResponse
+                .Select(e => new AiRecommendEventResponse
                 {
                     EventId = e.Id,
-                    EventCategoryName = e.EventCategory.CategoryName,
                     Title = e.Title,
+                    Description = e.Description,
+                    EventCategoryName = e.EventCategory.CategoryName,
+                    LocationName = e.LocationName,
                     StartTime = e.StartTime,
                     EndTime = e.EndTime,
-                    Description = e.Description,
-                    TicketPricingType = e.TicketPricingType,
-                    TotalTickets = e.TotalTickets,
-                    SoldQuantity = e.SoldQuantity,
-                    LocationName = e.LocationName,
                     Publish = e.Publish,
                     AverageRating = e.AverageRating,
                     TotalRatings = e.TotalRatings,
@@ -265,15 +263,27 @@ namespace AIEvent.Application.Services.Implements
                     TicketPrice = e.TicketTypes != null
                         ? e.TicketTypes.Min(t => t.TicketPrice)
                         : 0,
-                    IsFavorite = userId != Guid.Empty && e.FavoriteEvents.Any(fe => fe.UserId == userId),
-                    ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
-                        ? new List<string>()
-                        : e.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()
+                    IsFavorite = e.FavoriteEvents.Any(f => f.UserId == userId),
+                    ImgListEvent = string.IsNullOrWhiteSpace(e.ImgListEvent)
+                    ? new List<string>()
+                    : e.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()
                 })
                 .ToListAsync();
 
-            return new BasePaginated<EventsResponse>(result, totalCount, pageNumber, pageSize);
+            foreach (var ev in events)
+            {
+                var eventDesc =
+                    $"{ev.Title}, {ev.Description}, giá vé {ev.TicketPrice}, " +
+                    $"{ev.LocationName}, category {ev.EventCategoryName}";
+
+                var prompt = $"User: {userDesc}. Event: {eventDesc}.";
+
+                ev.Reason = await _llmService.GenerateShortReasonAsync(prompt);
+            }
+
+            return new BasePaginated<AiRecommendEventResponse>(events, totalCount, pageNumber, pageSize);
         }
+
 
         public async Task<Result<BasePaginated<ChatLogResponse>>> GetChatHistoryAsync(Guid userId, Guid? sessionId = null, int pageNumber = 1, int pageSize = 10)
         {
@@ -373,8 +383,7 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result<BasePaginated<ListSearchFriend>>> GetFriendAIRecommendAsync(int pageNumber, int pageSize, Guid userId)
         {
-            var user = await _unitOfWork.UserRepository
-                .Query()
+            var user = await _unitOfWork.UserRepository.Query()
                 .AsNoTracking()
                 .Where(u => u.Id == userId && !u.IsDeleted && u.IsActive)
                 .Select(u => new
@@ -399,38 +408,54 @@ namespace AIEvent.Application.Services.Implements
             if (user == null)
                 return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
 
-            var interests = ParseJsonList(user.UserInterestsJson);
-            var districts = ParseJsonList(user.InterestedDistrictsJson);
-            var events = ParseJsonList(user.FavoriteEventTypesJson);
-            var skills = ParseJsonList(user.ProfessionalSkillsJson);
-            var languages = ParseJsonList(user.LanguagesJson);
-
-            var desc = new List<string?>
+            List<string> Parse(string? json)
             {
-                user.District != null ? $"Lives in {user.District}" : null,
-                interests.Count != 0 ? $"Interests: {string.Join(", ", interests)}" : null,
-                events.Count != 0 ? $"Events: {string.Join(", ", events)}" : null,
-                districts.Count != 0 ? $"Explore: {string.Join(", ", districts)}" : null,
-                $"Budget: {user.BudgetOption}",
-                $"Frequency: {user.ParticipationFrequency}",
-                user.Occupation != null ? $"Works as: {user.Occupation}" : null,
-                user.JobTitle != null ? $"Job: {user.JobTitle}" : null,
-                user.CareerGoal != null ? $"Goal: {user.CareerGoal}" : null,
-                skills.Count != 0 ? $"Skills: {string.Join(", ", skills)}" : null,
-                languages.Count != 0 ? $"Speaks: {string.Join(", ", languages)}" : null,
-                user.Introduction != null ? $"About: {user.Introduction}" : null
-            }
-            .Where(s => s != null)
-            .Select(s => s!)
-            .ToList();
+                if (string.IsNullOrWhiteSpace(json))
+                    return new List<string>();
 
-            var descriptionText = desc.Any() ? string.Join(". ", desc) : "A user with flexible preferences.";
+                try
+                {
+                    return JsonSerializer.Deserialize<List<string>>(json!) ?? new List<string>();
+                }
+                catch
+                {
+                    return new List<string>();
+                }
+            }
+
+            var interests = Parse(user.UserInterestsJson);
+            var districts = Parse(user.InterestedDistrictsJson);
+            var events = Parse(user.FavoriteEventTypesJson);
+            var skills = Parse(user.ProfessionalSkillsJson);
+            var languages = Parse(user.LanguagesJson);
+
+            var desc = new List<string>(15);
+
+            if (!string.IsNullOrEmpty(user.District)) desc.Add($"Lives in {user.District}");
+            if (interests.Any()) desc.Add($"Interests: {string.Join(", ", interests)}");
+            if (events.Any()) desc.Add($"Events: {string.Join(", ", events)}");
+            if (districts.Any()) desc.Add($"Explore: {string.Join(", ", districts)}");
+
+            desc.Add($"Budget: {user.BudgetOption}");
+            desc.Add($"Frequency: {user.ParticipationFrequency}");
+
+            if (!string.IsNullOrEmpty(user.Occupation)) desc.Add($"Works as: {user.Occupation}");
+            if (!string.IsNullOrEmpty(user.JobTitle)) desc.Add($"Job: {user.JobTitle}");
+            if (!string.IsNullOrEmpty(user.CareerGoal)) desc.Add($"Goal: {user.CareerGoal}");
+            if (skills.Any()) desc.Add($"Skills: {string.Join(", ", skills)}");
+            if (languages.Any()) desc.Add($"Speaks: {string.Join(", ", languages)}");
+            if (!string.IsNullOrEmpty(user.Introduction)) desc.Add($"About: {user.Introduction}");
+
+            var descriptionText = desc.Count > 0
+                ? string.Join(". ", desc)
+                : "A user with flexible preferences.";
 
             var embedding = await _voyageEmbeddingService.GetEmbeddingAsync(descriptionText);
-            if (embedding?.Length == 0)
+            if (embedding == null || embedding.Length == 0)
                 return ErrorResponse.FailureResult("Embedding failed", ErrorCodes.InternalServerError);
 
-            var pineconeResults = await _pineconeService.QuerySimilarAsync(embedding!, isUser: true, topK: 11);
+            var pineconeResults = await _pineconeService.QuerySimilarAsync(
+                embedding, isUser: true, topK: 11);
 
             var candidates = pineconeResults
                 .Where(r => r.Id != userId.ToString())
@@ -438,20 +463,25 @@ namespace AIEvent.Application.Services.Implements
                 .ToList();
 
             if (!candidates.Any())
-                return new BasePaginated<ListSearchFriend>(new List<ListSearchFriend>(), 0, pageNumber, pageSize);
+                return new BasePaginated<ListSearchFriend>([], 0, pageNumber, pageSize);
 
             var userIds = candidates
-                .Select(r => Guid.TryParse(r.Id, out var g) ? g : (Guid?)null)
-                .Where(g => g.HasValue)
-                .Select(g => g.Value)
+                .Select(r => Guid.TryParse(r.Id, out var g) ? g : Guid.Empty)
+                .Where(g => g != Guid.Empty)
                 .ToList();
 
-            var query = _unitOfWork.UserRepository
-                .Query()
+            var idSet = new HashSet<Guid>(userIds);
+
+            var users = await _unitOfWork.UserRepository.Query()
                 .AsNoTracking()
                 .Include(u => u.Role)
-                .Where(u => userIds.Contains(u.Id) && !u.IsDeleted && u.IsActive && u.Role.Name == "User")
+                .Where(u => idSet.Contains(u.Id) && !u.IsDeleted && u.IsActive && u.Role.Name == "User")
+                .ToListAsync();
+
+            var ordered = users
                 .OrderBy(u => userIds.IndexOf(u.Id))
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .Select(u => new ListSearchFriend
                 {
                     Id = u.Id,
@@ -459,16 +489,15 @@ namespace AIEvent.Application.Services.Implements
                     District = u.District ?? "",
                     Image = u.AvatarImgUrl ?? "",
                     InterestsJson = u.UserInterestsJson ?? "[]"
-                });
+                })
+                .ToList();
 
-            var totalCount = userIds.Count;
-
-            var result = await query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            return new BasePaginated<ListSearchFriend>(result, totalCount, pageNumber, pageSize);
+            return new BasePaginated<ListSearchFriend>(
+                ordered,
+                userIds.Count,
+                pageNumber,
+                pageSize
+            );
         }
     }
 }

@@ -133,7 +133,7 @@ const HomePage = () => {
       <Hero />
 
       <div className="container mx-auto px-4 py-12 max-w-7xl">
-        {isAuthenticated && recommendedEvents.length > 0 && (
+        {isAuthenticated && (
           <AIRecommendationCard 
             recommendedEvents={recommendedEvents}
             userProfile={profile}

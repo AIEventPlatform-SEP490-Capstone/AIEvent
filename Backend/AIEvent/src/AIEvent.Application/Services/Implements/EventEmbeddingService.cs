@@ -75,7 +75,7 @@ namespace AIEvent.Application.Services.Implements
                         Values = embedding,
                         Metadata = new Dictionary<string, object>
                         {
-                            ["EventId"] = e.Id,
+                            ["EventId"] = e.Id.ToString(),
                             ["Title"] = e.Title,
                             ["Description"] = e.Description,
                             ["CategoryName"] = categoryName,

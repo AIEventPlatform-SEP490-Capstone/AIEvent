@@ -44,6 +44,9 @@ import EventReportManager from '../../components/Manager/EventReportManager';
 // Import EventStatus constants
 import { EventStatus, EventStatusDisplay } from '../../constants/eventConstants';
 
+// Import the new SaleCountdown component
+import SaleCountdown from '../../components/Event/SaleCountdown';
+
 const ManagerEventsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -1032,13 +1035,16 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                   >
                     <div className="flex flex-col lg:flex-row gap-0">
                       {/* Event thumbnail */}
-                      <div className="flex-shrink-0 lg:w-48 w-full h-48 lg:h-auto overflow-hidden">
+                      <div className="flex-shrink-0 lg:w-100 w-full h-48 lg:h-auto overflow-hidden relative">
                         {eventImage ? (
-                          <img
-                            src={eventImage}
-                            alt={event.title}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                          />
+                          <>
+                            <img
+                              src={eventImage}
+                              alt={event.title}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            />
+                            <SaleCountdown saleStartTime={event.saleStartTime} variant="thumbnail" />
+                          </>
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
                             <Calendar className="h-12 w-12 text-blue-400" />

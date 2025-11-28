@@ -3,6 +3,8 @@ import StorageKeys from '../../constants/StorageKeys';
 import EndUrls from '../EndUrls';
 import {NETWORK_CONFIG} from '../../config/NetworkConfig';
 
+let isLoggingOut = false;
+
 class AuthService {
   //Login method
   static async login(email, password) {
@@ -131,23 +133,45 @@ class AuthService {
   }
 
   static async logout() {
+    // Prevent multiple simultaneous logout attempts
+    if (isLoggingOut) {
+      console.log('Logout already in progress in AuthService, skipping...');
+      return;
+    }
+    
+    isLoggingOut = true;
+    
     try {
+      console.log('AuthService logout started...');
       const accessToken = await AsyncStorage.getItem(StorageKeys.ACCESS_TOKEN);
 
       if (accessToken) {
-        // Gọi API revoke token
-        await fetch(EndUrls.REVOKE_TOKEN, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
+        // Gọi API revoke token with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
+        try {
+          await fetch(EndUrls.REVOKE_TOKEN, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`,
+            },
+            signal: controller.signal,
+          });
+        } catch (fetchError) {
+          // Ignore fetch errors during logout
+          console.warn('Failed to revoke token:', fetchError);
+        } finally {
+          clearTimeout(timeoutId);
+        }
       }
     } catch (error) {
       // Revoke token error occurred
+      console.warn('Error during token revocation:', error);
     } finally {
       // Xóa tất cả auth data khỏi storage
+      console.log('Clearing auth data from AsyncStorage...');
       await AsyncStorage.multiRemove([
         StorageKeys.ACCESS_TOKEN,
         StorageKeys.REFRESH_TOKEN,
@@ -155,6 +179,9 @@ class AuthService {
         StorageKeys.IS_LOGGED_IN,
         StorageKeys.TOKEN_EXPIRES_AT,
       ]);
+      
+      isLoggingOut = false;
+      console.log('AuthService logout completed');
     }
   }
 
