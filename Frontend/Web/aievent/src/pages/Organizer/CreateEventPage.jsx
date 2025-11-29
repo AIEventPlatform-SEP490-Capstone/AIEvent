@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'react-hot-toast';
 import { z } from "zod";
 import { PATH } from "../../routes/path";
+import RichTextEditor from '../../components/RichTextEditor';
 import {
   Calendar,
   Image,
@@ -1754,26 +1755,18 @@ const CreateEventPage = () => {
             <div className="bg-white rounded-xl p-8 border border-gray-100">
               <h2 className="text-2xl font-bold text-foreground mb-6">Về sự kiện</h2>
               <div className="space-y-4 mb-6">
-                {/* Editable Detailed Description */}
-                {editingField === 'detailedDescription' ? (
-                  <Textarea
-                    value={tempValue}
-                    onChange={(e) => setTempValue(e.target.value)}
-                    onBlur={saveEditing}
-                    onKeyDown={handleKeyPress}
-                    className="text-muted-foreground leading-relaxed"
-                    rows={6}
-                    autoFocus
-                  />
-                ) : (
-                  <p 
-                    className="text-muted-foreground leading-relaxed cursor-pointer hover:bg-gray-100 p-2 rounded min-h-[100px]"
-                    onClick={() => startEditing('detailedDescription', watch('detailedDescription'))}
-                  >
-                    {watch('detailedDescription') || watch('description') || 'Nhấp để nhập mô tả chi tiết sự kiện'}
-                    <Pencil className="w-4 h-4 inline-block ml-2 text-gray-400" />
-                  </p>
-                )}
+                <h3 className="text-lg font-semibold text-foreground">Mô tả chi tiết</h3>
+                <RichTextEditor
+                  value={watch('detailedDescription')}
+                  onChange={(value) => {
+                    setValue('detailedDescription', value);
+                    // Clear any existing errors when user starts typing
+                    if (hasValidated && errors.detailedDescription) {
+                      clearErrors('detailedDescription');
+                    }
+                  }}
+                  placeholder="Nhập mô tả chi tiết sự kiện..."
+                />
                 {hasValidated && errors.detailedDescription && (
                   <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" />
