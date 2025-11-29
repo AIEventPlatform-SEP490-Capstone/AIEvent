@@ -214,6 +214,19 @@ const customStyles = `
     color: #3b82f6;
     text-decoration: underline;
   }
+  
+  /* Alignment styles for view mode */
+  .ql-align-center {
+    text-align: center;
+  }
+  
+  .ql-align-right {
+    text-align: right;
+  }
+  
+  .ql-align-justify {
+    text-align: justify;
+  }
 `;
 
 const RichTextEditor = ({ 
@@ -365,7 +378,7 @@ const RichTextEditor = ({
         
         {localValue ? (
           <div 
-            className="prose prose-sm max-w-none text-gray-700"
+            className="prose prose-sm max-w-none text-gray-700 ql-editor"
             dangerouslySetInnerHTML={{ __html: localValue }}
           />
         ) : (
