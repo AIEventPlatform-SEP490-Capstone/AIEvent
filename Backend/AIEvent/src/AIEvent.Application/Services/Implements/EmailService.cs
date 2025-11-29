@@ -98,7 +98,7 @@ namespace AIEvent.Application.Services.Implements
                     eventTimeRows += $@"
                                 <div class='info-row'>
                                     <span class='info-label'>Thời gian bắt đầu:&nbsp;</span>
-                                    <span class='info-value'>{eventStartTime.Value:dd/MM/yyyy HH:mm}</span>
+                                    <span class='info-value'>{eventStartTime.Value.AddHours(7):dd/MM/yyyy HH:mm}</span>
                                 </div>";
                 }
                 if (eventEndTime.HasValue)
@@ -106,7 +106,7 @@ namespace AIEvent.Application.Services.Implements
                     eventTimeRows += $@"
                                 <div class='info-row'>
                                     <span class='info-label'>Thời gian kết thúc:&nbsp;</span>
-                                    <span class='info-value'>{eventEndTime.Value:dd/MM/yyyy HH:mm}</span>
+                                    <span class='info-value'>{eventEndTime.Value.AddHours(7):dd/MM/yyyy HH:mm}</span>
                                 </div>";
                 }
                 eventTimeSection = $@"
