@@ -46,12 +46,14 @@ const SystemSettings = () => {
   const [systemFormData, setSystemFormData] = useState({
     flatformFee: 0.07,
     fixFee: 45000,
-    datePayout: 7
+    datePayout: 7,
+    eventReminderHours: 2
   });
   const [systemInitialData, setSystemInitialData] = useState({
     flatformFee: 0.07,
     fixFee: 45000,
-    datePayout: 7
+    datePayout: 7,
+    eventReminderHours: 2
   });
   
   // Example revenue for calculation
@@ -72,7 +74,8 @@ const SystemSettings = () => {
         const settings = {
           flatformFee: systemData.flatformFee || 0.07,
           fixFee: systemData.fixFee || 45000,
-          datePayout: systemData.datePayout || 7
+          datePayout: systemData.datePayout || 7,
+          eventReminderHours: systemData.eventReminderHours || 2
         };
         setSystemFormData(settings);
         setSystemInitialData(settings);
@@ -173,8 +176,13 @@ const SystemSettings = () => {
       processedValue = parseInt(value) || 0;
       if (processedValue < 0) processedValue = 0;
     } else if (field === 'datePayout') {
-      processedValue = parseInt(value) || 0;
-      if (processedValue < 0) processedValue = 0;
+      processedValue = parseInt(value) || 1;
+      if (processedValue < 1) processedValue = 1;
+      if (processedValue > 7) processedValue = 7;
+    } else if (field === 'eventReminderHours') {
+      processedValue = parseInt(value) || 1;
+      if (processedValue < 1) processedValue = 1;
+      if (processedValue > 4) processedValue = 4;
     }
 
     setSystemFormData(prev => ({
@@ -187,6 +195,20 @@ const SystemSettings = () => {
     try {
       setIsSaving(true);
       setError(null);
+      
+      // Validate datePayout (1-7 days)
+      if (systemFormData.datePayout < 1 || systemFormData.datePayout > 7) {
+        showError('Số ngày thanh toán phải từ 1 đến 7 ngày');
+        setIsSaving(false);
+        return;
+      }
+      
+      // Validate eventReminderHours (1-4 hours)
+      if (systemFormData.eventReminderHours < 1 || systemFormData.eventReminderHours > 4) {
+        showError('Thời gian nhắc nhở sự kiện phải từ 1 đến 4 giờ');
+        setIsSaving(false);
+        return;
+      }
       
       await dashboardAPI.updateSystemSettings(systemFormData);
       setSystemInitialData({ ...systemFormData });
@@ -210,7 +232,8 @@ const SystemSettings = () => {
     return (
       systemFormData.flatformFee !== systemInitialData.flatformFee ||
       systemFormData.fixFee !== systemInitialData.fixFee ||
-      systemFormData.datePayout !== systemInitialData.datePayout
+      systemFormData.datePayout !== systemInitialData.datePayout ||
+      systemFormData.eventReminderHours !== systemInitialData.eventReminderHours
     );
   };
 
@@ -632,26 +655,26 @@ const SystemSettings = () => {
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="datePayout" className="text-sm font-medium text-gray-700 mb-2 block">
-                        Số ngày chờ thanh toán
+                        Số ngày chờ thanh toán (1-7 ngày)
                       </Label>
                       {/* Range Slider */}
                       <div className="space-y-2 mb-4">
                         <input
                           type="range"
-                          min="0"
-                          max="30"
+                          min="1"
+                          max="7"
                           step="1"
                           value={systemFormData.datePayout}
                           onChange={(e) => handleSystemInputChange('datePayout', e.target.value)}
                           className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                           style={{
-                            background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${(systemFormData.datePayout / 30) * 100}%, rgb(229, 231, 235) ${(systemFormData.datePayout / 30) * 100}%, rgb(229, 231, 235) 100%)`
+                            background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${((systemFormData.datePayout - 1) / 6) * 100}%, rgb(229, 231, 235) ${((systemFormData.datePayout - 1) / 6) * 100}%, rgb(229, 231, 235) 100%)`
                           }}
                         />
                         <div className="flex justify-between text-xs text-gray-500">
-                          <span>0</span>
-                          <span>15</span>
-                          <span>30</span>
+                          <span>1</span>
+                          <span>4</span>
+                          <span>7</span>
                         </div>
                       </div>
                       {/* Input số */}
@@ -659,8 +682,8 @@ const SystemSettings = () => {
                         <Input
                           id="datePayout"
                           type="number"
-                          min="0"
-                          max="30"
+                          min="1"
+                          max="7"
                           value={systemFormData.datePayout}
                           onChange={(e) => handleSystemInputChange('datePayout', e.target.value)}
                           className="h-11 text-base border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-16"
@@ -671,8 +694,8 @@ const SystemSettings = () => {
                         </div>
                       </div>
                       {/* Quick select buttons */}
-                      <div className="grid grid-cols-5 gap-2 mt-3">
-                        {[3, 5, 7, 10, 14].map((days) => (
+                      <div className="grid grid-cols-4 gap-2 mt-3">
+                        {[1, 3, 5, 7].map((days) => (
                           <button
                             key={days}
                             onClick={() => handleSystemInputChange('datePayout', days)}
@@ -683,6 +706,88 @@ const SystemSettings = () => {
                             }`}
                           >
                             {days}d
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Event Reminder Hours Card */}
+              <Card className="border border-gray-200 shadow-sm">
+                <CardHeader className="border-b border-gray-100 pb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <Clock className="h-5 w-5 text-gray-700" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg font-semibold text-gray-900">Thời gian nhắc nhở sự kiện</CardTitle>
+                        <CardDescription className="text-xs text-gray-500 mt-0.5">Gửi thông báo trước khi sự kiện bắt đầu</CardDescription>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-gray-900">{systemFormData.eventReminderHours}</div>
+                      <div className="text-xs text-gray-500">giờ</div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="eventReminderHours" className="text-sm font-medium text-gray-700 mb-2 block">
+                        Số giờ nhắc nhở trước sự kiện (1-4 giờ)
+                      </Label>
+                      {/* Range Slider */}
+                      <div className="space-y-2 mb-4">
+                        <input
+                          type="range"
+                          min="1"
+                          max="4"
+                          step="1"
+                          value={systemFormData.eventReminderHours}
+                          onChange={(e) => handleSystemInputChange('eventReminderHours', e.target.value)}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                          style={{
+                            background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${((systemFormData.eventReminderHours - 1) / 3) * 100}%, rgb(229, 231, 235) ${((systemFormData.eventReminderHours - 1) / 3) * 100}%, rgb(229, 231, 235) 100%)`
+                          }}
+                        />
+                        <div className="flex justify-between text-xs text-gray-500">
+                          <span>1</span>
+                          <span>2.5</span>
+                          <span>4</span>
+                        </div>
+                      </div>
+                      {/* Input số */}
+                      <div className="relative">
+                        <Input
+                          id="eventReminderHours"
+                          type="number"
+                          min="1"
+                          max="4"
+                          value={systemFormData.eventReminderHours}
+                          onChange={(e) => handleSystemInputChange('eventReminderHours', e.target.value)}
+                          className="h-11 text-base border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-16"
+                          placeholder="2"
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <span className="text-gray-600 font-medium text-sm">giờ</span>
+                        </div>
+                      </div>
+                      {/* Quick select buttons */}
+                      <div className="grid grid-cols-4 gap-2 mt-3">
+                        {[1, 2, 3, 4].map((hours) => (
+                          <button
+                            key={hours}
+                            onClick={() => handleSystemInputChange('eventReminderHours', hours)}
+                            className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                              systemFormData.eventReminderHours === hours
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                          >
+                            {hours}h
                           </button>
                         ))}
                       </div>
