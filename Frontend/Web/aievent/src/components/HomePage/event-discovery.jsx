@@ -552,13 +552,13 @@ export function EventDiscovery({
                   {/* Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0" />
                   
-                  {/* Free Badge */}
+                  {/* Free Badge
                   {(event.ticketType === 1 || event.ticketPrice === 0) && (
                     <Badge className="absolute top-4 left-4 bg-success text-success-foreground shadow-lg">
                       <Sparkles className="w-3 h-3 mr-1" />
                       Miễn phí
                     </Badge>
-                  )}
+                  )} */}
                   
                   {/* Category Badge at bottom */}
                   <Badge 
@@ -595,31 +595,31 @@ export function EventDiscovery({
 
                   <div className="space-y-2.5 text-sm text-muted-foreground mb-4">
                     <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1.5 flex-1">
+                      <div className="flex items-center gap-1.5 flex-1 text-gray-600 text-sm">
                         <Calendar className="w-4 h-4 text-primary" />
                         <span>{new Date(event.startTime || event.date).toLocaleDateString("vi-VN")}</span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-secondary" />
-                        <span>
+                      <div className="flex items-center text-gray-600 text-sm">
+                        <Clock className="w-4 h-4 mr-2 text-blue-500 flex-shrink-0"/>
+                        <span className="truncate">
                           {event.time || new Date(event.startTime).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex items-start gap-2">
-                      <MapPin className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-                      <span className="line-clamp-1 text-xs">
+                    <div className="flex items-center text-gray-600 text-sm">
+                      <MapPin className="w-4 h-4 mr-2 text-blue-500 flex-shrink-0" />
+                      <span className="truncate">
                         {event.locationName || event.location}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-primary" />
+                      <div className="flex items-center text-gray-600 text-sm">
+                        <Users className="w-4 h-4 mr-2 text-blue-500 flex-shrink-0" />
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium">
+                            <span className="truncate">
                               {event.soldQuantity || 0}/{event.totalTickets} người
                             </span>
                             <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">

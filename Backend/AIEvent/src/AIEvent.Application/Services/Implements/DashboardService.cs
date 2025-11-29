@@ -381,6 +381,7 @@ namespace AIEvent.Application.Services.Implements
                 systemSetting.FlatformFee = request.FlatformFee;
                 systemSetting.FixFee = request.FixFee;
                 systemSetting.DatePayout = request.DatePayout;
+                systemSetting.EventReminderHours = request.EventReminderHours;
 
                 await _unitOfWork.SystemSettingRepository.UpdateAsync(systemSetting);
                 await _unitOfWork.SaveChangesAsync();
@@ -409,6 +410,7 @@ namespace AIEvent.Application.Services.Implements
                 DatePayout = systemSetting.DatePayout,
                 FixFee = systemSetting.FixFee,
                 FlatformFee = systemSetting.FlatformFee,
+                EventReminderHours = systemSetting.EventReminderHours,
                 UpdateAt = systemSetting.UpdatedAt,
             };
 

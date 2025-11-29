@@ -43,6 +43,8 @@ namespace AIEvent.Application.Services.Implements
                 Message = request.Message,
                 ImageUrl = request.ImageUrl,
                 EventId = request.EventId,
+                EventInvitationId = request.EventInvitationId,
+                OrganizerProfileId = request.OrganizerProfileId,
                 Type = request.Type, 
                 IsRead = false,
                 ReadAt = null,
@@ -97,6 +99,8 @@ namespace AIEvent.Application.Services.Implements
                 Message = request.Message,
                 ImageUrl = request.ImageUrl,
                 EventId = request.EventId,
+                EventInvitationId = request.EventInvitationId,
+                OrganizerProfileId = request.OrganizerProfileId,
                 Type = request.Type, 
                 IsRead = false,
                 ReadAt = null,
@@ -227,12 +231,20 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result> SendEventBookingReminderAsync()
         {
+            var systemSetting = await _unitOfWork.SystemSettingRepository
+                .Query()
+                .FirstOrDefaultAsync(s => !s.IsDeleted);
+
+            if (systemSetting == null)
+                return ErrorResponse.FailureResult("SystemSetting not found", ErrorCodes.NotFound);
+
+            var reminderHours = systemSetting.EventReminderHours > 0 ? systemSetting.EventReminderHours : 3;
             var upcomingEvents = await _unitOfWork.EventRepository
                                         .Query()
                                         .Where(e => !e.IsDeleted
                                                     && e.Status ==  EventStatus.Approved
                                                     && e.StartTime > DateTime.UtcNow
-                                                    && e.StartTime <= DateTime.UtcNow.AddHours(3))
+                                                    && e.StartTime <= DateTime.UtcNow.AddHours(reminderHours))
                                         .Include(e => e.Bookings)
                                         .ToListAsync();
             if (!upcomingEvents.Any())

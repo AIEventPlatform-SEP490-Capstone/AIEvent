@@ -10,6 +10,8 @@ namespace AIEvent.Domain.Entities
         public string Message { get; set; } = default!;
         public NotificationType Type { get; set; } 
         public Guid? EventId { get; set; }
+        public Guid? EventInvitationId { get; set; }
+        public Guid? OrganizerProfileId { get; set; }
         public string? ImageUrl { get; set; } 
         public bool IsRead { get; set; } = false;
         public DateTime? ReadAt { get; set; }

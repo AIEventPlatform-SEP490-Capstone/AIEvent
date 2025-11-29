@@ -75,20 +75,25 @@ namespace AIEvent.Application.Services.Implements
             var usersToInvite = invitedUsers
                 .Where(u => !existingInvitedIds.Contains(u.Id))
                 .ToList();
-
-            var invitations = new List<EventInvitation>();
+              
             var firstImage = !string.IsNullOrEmpty(eventEntity.ImgListEvent) ? eventEntity.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() : string.Empty;
 
-            foreach (var user in usersToInvite)
+            var invitations = usersToInvite.Select(user => new EventInvitation
             {
-                invitations.Add(new EventInvitation
-                {
-                    EventId = eventId,
-                    InviterId = userId,
-                    Status = InvitationStatus.Pending,
-                    InvitedUserId = user.Id,
-                    Message = request.Message,
-                });
+                EventId = eventId,
+                InviterId = userId,
+                Status = InvitationStatus.Pending,
+                InvitedUserId = user.Id,
+                Message = request.Message
+            }).ToList();
+
+            await _unitOfWork.EventInvitationRepository.AddRangeAsync(invitations);
+            await _unitOfWork.SaveChangesAsync();
+
+            for (int i = 0; i < invitations.Count; i++)
+            {
+                var user = usersToInvite[i];
+                var invitation = invitations[i];
 
                 if (user.IsEmailNotificationEnabled == true && !string.IsNullOrEmpty(user.Email))
                 {
@@ -114,14 +119,12 @@ namespace AIEvent.Application.Services.Implements
                     Message = $"<strong>{userInviter.FullName ?? "Người dùng"}</strong> đã mời bạn tham gia sự kiện <strong>{eventEntity.Title}</strong>.{(string.IsNullOrEmpty(request.Message) ? "" : $" \"{request.Message}\"")}",
                     Type = NotificationType.EventInvitation, 
                     EventId = eventEntity.Id,
+                    EventInvitationId = invitation.Id,
                     ImageUrl = firstImage
                 };
 
                 await _notificationService.CreateNotificationAsync(notificationRequest);
             }
-
-            await _unitOfWork.EventInvitationRepository.AddRangeAsync(invitations);
-            await _unitOfWork.SaveChangesAsync();
 
             return Result.Success();
         }
@@ -189,6 +192,7 @@ namespace AIEvent.Application.Services.Implements
                         ? NotificationType.EventInvitationAccepted 
                         : NotificationType.EventInvitationRejected, 
                     EventId = invitation.Event.Id,
+                    EventInvitationId = invitation.Id,
                     ImageUrl = firstImage
                 };
 

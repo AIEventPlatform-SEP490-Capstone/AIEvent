@@ -263,7 +263,7 @@ export function VerticalNavigation() {
     <Sidebar
       variant="inset"
       collapsible="icon"
-      className="border-r border-border/40 bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 z-50 shadow-sm overflow-x-hidden"
+      className="border-r border-border/40 bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 z-50 shadow-sm"
     >
       <SidebarHeader className={cn(
         "border-b border-border/40 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm",
@@ -503,17 +503,18 @@ export function VerticalNavigation() {
                           "transition-transform duration-200 group-hover:scale-110",
                           isCollapsed ? "w-5 h-5" : "w-4 h-4"
                         )} />
-                        {!isCollapsed && (
+                        {!isCollapsed ? (
                           <>
                             <span className="font-medium text-sm">Thông báo</span>
                             <div className="ml-auto">
                               <NotificationBadge />
                             </div>
                           </>
-                        )}
-                        {isCollapsed && (
-                          <div className="absolute -top-1 -right-1">
-                            <NotificationBadge />
+                        ) : (
+                          <div className="absolute -top-1 right-0 z-20">
+                            <div className="bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center">
+                              9
+                            </div>
                           </div>
                         )}
                       </NavLink>
@@ -542,7 +543,7 @@ export function VerticalNavigation() {
                             "transition-transform duration-200 group-hover:scale-110",
                             isCollapsed ? "w-5 h-5" : "w-4 h-4"
                           )} />
-                          {!isCollapsed && (
+                          {!isCollapsed ? (
                             <>
                               <span className="font-medium text-sm">
                                 Lời mời sự kiện
@@ -551,6 +552,12 @@ export function VerticalNavigation() {
                                 2
                               </div>
                             </>
+                          ) : (
+                            <div className="absolute -top-1 right-0 z-20">
+                              <div className="bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center">
+                                2
+                              </div>
+                            </div>
                           )}
                         </NavLink>
                       </SidebarMenuButton>
