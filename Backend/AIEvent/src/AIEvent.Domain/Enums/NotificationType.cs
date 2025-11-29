@@ -18,6 +18,7 @@
         PayoutCompleted,
         PayoutFailed,
         EventReminder,
+        ReportEvent,
         System = 99
     }
 }
