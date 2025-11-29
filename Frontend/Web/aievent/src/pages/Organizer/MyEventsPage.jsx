@@ -325,6 +325,25 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       minute: '2-digit',
     });
   };
+  const formatCurrency = (amount) => {
+  if (!amount || amount === 0) return '0đ';
+
+  const absAmount = Math.abs(amount);
+
+  if (absAmount >= 1_000_000_000) {
+    // Tỷ
+    return `${(amount / 1_000_000_000).toFixed(1).replace('.0', '')} tỷ`;
+  } else if (absAmount >= 1_000_000) {
+    // Triệu
+    return `${(amount / 1_000_000).toFixed(1).replace('.0', '')}M`;
+  } else if (absAmount >= 1_000) {
+    // Nghìn
+    return `${(amount / 1_000).toFixed(0)}K`;
+  } else {
+    // Dưới 1 nghìn thì hiển thị đầy đủ
+    return `${amount.toLocaleString('vi-VN')}đ`;
+  }
+};
 
   const getTicketTypeLabel = (ticketType) => {
     // Handle both string enum names and number values
@@ -355,6 +374,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       default: return tab;
     }
   };
+  
 
   const getEventStatus = (event) => {
     const now = new Date();
@@ -635,13 +655,13 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                       <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-center hover:bg-white/20 transition-colors">
                         <p className="text-xs text-white/70 mb-0.5">Doanh thu</p>
                         <p className="text-lg font-bold text-white">
-                          {heroEvent.totalAmount ? `${(heroEvent.totalAmount / 1000000).toFixed(1)}M` : '0đ'}
+                          {formatCurrency(heroEvent.totalAmount)}
                         </p>
                       </div>
                       <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-center hover:bg-white/20 transition-colors">
                         <p className="text-xs text-white/70 mb-0.5">Thanh toán</p>
                         <p className="text-lg font-bold text-white">
-                          {heroEvent.payoutAmount ? `${(heroEvent.payoutAmount / 1000000).toFixed(1)}M` : '0đ'}
+                          {formatCurrency(heroEvent.payoutAmount)}
                         </p>
                       </div>
                       <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-center hover:bg-white/20 transition-colors">
@@ -1004,13 +1024,13 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                           <div className="backdrop-blur-sm bg-gradient-to-br from-green-100/50 to-green-50/30 dark:from-green-900/50 dark:to-green-800/30 rounded-xl p-3 text-center hover:scale-105 transition-transform">
                             <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Doanh thu</p>
                             <p className="text-base font-bold text-green-700 dark:text-green-400">
-                              {event.totalAmount ? `${(event.totalAmount / 1000000).toFixed(1)}M` : '0đ'}
+                              {formatCurrency(event.totalAmount)}
                             </p>
                           </div>
                           <div className="backdrop-blur-sm bg-gradient-to-br from-emerald-100/50 to-emerald-50/30 dark:from-emerald-900/50 dark:to-emerald-800/30 rounded-xl p-3 text-center hover:scale-105 transition-transform">
                             <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Thanh toán</p>
                             <p className="text-base font-bold text-emerald-700 dark:text-emerald-400">
-                              {event.payoutAmount ? `${(event.payoutAmount / 1000000).toFixed(1)}M` : '0đ'}
+                              {formatCurrency(event.payoutAmount)}
                             </p>
                           </div>
                           <div className="backdrop-blur-sm bg-gradient-to-br from-purple-100/50 to-purple-50/30 dark:from-purple-900/50 dark:to-purple-800/30 rounded-xl p-3 text-center hover:scale-105 transition-transform">

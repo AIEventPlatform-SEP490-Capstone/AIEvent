@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import bookingAPI from "../../api/bookingAPI";
 import { useNavigate } from "react-router-dom";
 import loginPanelImage from "../../assets/loginpanel.jpg";
-
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
@@ -68,7 +67,6 @@ export default function MyTickets() {
   // Pagination for ticket types
   const [ticketTypePage, setTicketTypePage] = useState(1);
   const [ticketTypeItemsPerPage, setTicketTypeItemsPerPage] = useState(6);
-
 
   // Active filters
   const [activeFilters, setActiveFilters] = useState([]);
@@ -164,9 +162,12 @@ export default function MyTickets() {
       });
     }
     if (dateFilter) {
+      // Convert dateFilter to UTC+7 for display
+      const utc7Date = new Date(dateFilter);
+      utc7Date.setHours(utc7Date.getHours() + 7);
       filters.push({
         key: "date",
-        label: `ngày: ${new Date(dateFilter).toLocaleDateString("vi-VN")}`,
+        label: `ngày: ${utc7Date.toLocaleDateString("vi-VN")}`,
         value: dateFilter,
       });
     }
@@ -300,8 +301,13 @@ export default function MyTickets() {
         if (!ev.title?.toLowerCase().includes(q)) return false;
       }
       if (dateFilter) {
+        // Convert both dates to UTC+7 for comparison
         const eventDate = new Date(ev.startTime);
+        eventDate.setHours(eventDate.getHours() + 7);
+        
         const filterDate = new Date(dateFilter);
+        filterDate.setHours(filterDate.getHours() + 7);
+        
         if (
           eventDate.getDate() !== filterDate.getDate() ||
           eventDate.getMonth() !== filterDate.getMonth() ||
@@ -311,7 +317,10 @@ export default function MyTickets() {
         }
       }
       if (timeFilter) {
-        const eventTime = new Date(ev.startTime).toLocaleTimeString("vi-VN", {
+        // Convert event time to UTC+7 for comparison
+        const eventDate = new Date(ev.startTime);
+        eventDate.setHours(eventDate.getHours() + 7);
+        const eventTime = eventDate.toLocaleTimeString("vi-VN", {
           hour: "2-digit",
           minute: "2-digit",
         });
@@ -356,7 +365,11 @@ export default function MyTickets() {
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
+    
+    // Convert UTC date to UTC+7
     const date = new Date(dateString);
+    date.setHours(date.getHours() + 7); // Add 7 hours for UTC+7
+    
     const days = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
     const months = [
       "Tháng 1",
@@ -372,6 +385,7 @@ export default function MyTickets() {
       "Tháng 11",
       "Tháng 12",
     ];
+    
     return {
       day: days[date.getDay()],
       date: date.getDate(),
@@ -410,7 +424,9 @@ export default function MyTickets() {
             </div>
           ) : (
             userReports.map((report, idx) => {
+              // Convert createdAt to UTC+7
               const createdAt = new Date(report.createdAt);
+              createdAt.setHours(createdAt.getHours() + 7);
               const dateStr = createdAt.toLocaleDateString("vi-VN");
               const timeStr = createdAt.toLocaleTimeString("vi-VN", {
                 hour: "2-digit",
@@ -784,7 +800,10 @@ export default function MyTickets() {
                 ) : (
                   paginatedTicketTypes.map((type) => {
                     const eventDate = formatDate(selectedEvent.startTime);
-                    const isOnSale = new Date(selectedEvent.startTime) > new Date();
+                    // Convert selectedEvent.startTime to UTC+7 for comparison
+                    const eventStartTime = new Date(selectedEvent.startTime);
+                    eventStartTime.setHours(eventStartTime.getHours() + 7);
+                    const isOnSale = eventStartTime > new Date();
 
                     return (
                       <Card key={type.name} className="overflow-hidden rounded-none shadow-lg hover:shadow-xl transition-shadow bg-transparent border-0">
@@ -1304,7 +1323,10 @@ export default function MyTickets() {
                   ) : (
                     paginatedEvents.map((event, idx) => {
                       const eventDate = formatDate(event.startTime);
-                      const isUpcoming = new Date(event.startTime) > new Date();
+                      // Convert event.startTime to UTC+7 for comparison
+                      const eventStartTime = new Date(event.startTime);
+                      eventStartTime.setHours(eventStartTime.getHours() + 7);
+                      const isUpcoming = eventStartTime > new Date();
                       return (
                         <tr
                           key={event.eventId}
