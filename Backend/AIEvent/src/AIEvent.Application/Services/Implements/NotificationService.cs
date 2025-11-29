@@ -59,6 +59,8 @@ namespace AIEvent.Application.Services.Implements
                 Title = notification.Title,
                 Message = notification.Message,
                 ImageUrl = notification.ImageUrl,
+                OrganizerProfileId = notification.OrganizerProfileId,
+                EventInvitationId = notification.EventInvitationId,
                 Type = notification.Type,
                 EventId = notification.EventId,
                 IsRead = notification.IsRead,
@@ -115,6 +117,8 @@ namespace AIEvent.Application.Services.Implements
                 Title = n.Title,
                 Message = n.Message,
                 ImageUrl = n.ImageUrl,
+                EventInvitationId = n.EventInvitationId,
+                OrganizerProfileId = n.OrganizerProfileId,
                 Type = n.Type,
                 EventId = n.EventId,
                 IsRead = n.IsRead,
@@ -129,6 +133,8 @@ namespace AIEvent.Application.Services.Implements
                 Message = n.Message,
                 ImageUrl = n.ImageUrl,
                 Type = n.Type,
+                OrganizerProfileId = n.OrganizerProfileId,
+                EventInvitationId = n.EventInvitationId,
                 EventId = n.EventId,
                 IsRead = n.IsRead,
                 ReadAt = n.ReadAt,
@@ -187,7 +193,9 @@ namespace AIEvent.Application.Services.Implements
                     ReadAt = n.ReadAt,
                     Title = n.Title,
                     EventId = n.EventId,
-                    CreatedTime = n.CreatedAt
+                    CreatedTime = n.CreatedAt,
+                    EventInvitationId = n.EventInvitationId,
+                    OrganizerProfileId = n.OrganizerProfileId,
                 })
                 .ToListAsync();
 
