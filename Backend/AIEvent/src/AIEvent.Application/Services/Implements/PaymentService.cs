@@ -388,7 +388,7 @@ namespace AIEvent.Application.Services.Implements
                     return;
                 }
 
-                var payoutDeadline = DateTime.UtcNow.AddDays(-systemSetting.DatePayout);
+                var payoutDeadline = DateTime.UtcNow.AddMinutes(-systemSetting.DatePayout);
                 var pendingEvents = await _unitOfWork.EventRepository
                     .Query()
                     .Include(e => e.OrganizerProfile)
