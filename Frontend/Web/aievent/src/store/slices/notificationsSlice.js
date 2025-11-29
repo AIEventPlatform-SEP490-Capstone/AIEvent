@@ -91,7 +91,9 @@ const notificationsSlice = createSlice({
         imageUrl: action.payload.imageUrl || action.payload.ImageUrl,
         type: action.payload.type || action.payload.Type,
         createdTime: action.payload.createdTime || action.payload.CreatedTime,
-        eventId: action.payload.eventId || action.payload.EventId
+        eventId: action.payload.eventId || action.payload.EventId,
+        eventInvitationId: action.payload.eventInvitationId || action.payload.EventInvitationId,
+        organizerProfileId: action.payload.organizerProfileId || action.payload.OrganizerProfileId
       };
       
       // Add new notification to the beginning of the list
@@ -162,7 +164,9 @@ const notificationsSlice = createSlice({
           imageUrl: item.imageUrl || item.ImageUrl,
           type: item.type || item.Type,
           createdTime: item.createdTime || item.CreatedTime,
-          eventId: item.eventId || item.EventId
+          eventId: item.eventId || item.EventId,
+          eventInvitationId: item.eventInvitationId || item.EventInvitationId,
+          organizerProfileId: item.organizerProfileId || item.OrganizerProfileId
         }));
         
         if (currentPage === 1) {
