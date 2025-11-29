@@ -111,21 +111,6 @@ namespace AIEvent.Application.Services.Implements
             await _unitOfWork.NotificationRepository.AddRangeAsync(notifications);
             await _unitOfWork.SaveChangesAsync();
 
-            var response = notifications.Select(n => new NotificationResponse
-            {
-                NotificationId = n.Id,
-                Title = n.Title,
-                Message = n.Message,
-                ImageUrl = n.ImageUrl,
-                EventInvitationId = n.EventInvitationId,
-                OrganizerProfileId = n.OrganizerProfileId,
-                Type = n.Type,
-                EventId = n.EventId,
-                IsRead = n.IsRead,
-                ReadAt = n.ReadAt,
-                CreatedTime = n.CreatedAt
-            }).ToList();
-
             var notificationMap = notifications.ToDictionary(n => n.UserId, n => new NotificationResponse
             {
                 NotificationId = n.Id,

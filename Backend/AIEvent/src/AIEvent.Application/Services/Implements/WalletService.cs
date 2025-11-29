@@ -73,6 +73,7 @@ namespace AIEvent.Application.Services.Implements
                     Direction = e.Direction,
                     OrderCode = e.OrderCode,
                     Status = e.Status,
+                    PaymentUrl = e.PaymentUrl,
                     Type = e.Type
                 })
                 .ToListAsync();

@@ -113,6 +113,7 @@ namespace AIEvent.Application.Services.Implements
                     Status = TransactionStatus.Pending,
                     Description = description,
                     ReferenceId = userId,
+                    PaymentUrl = result.CheckoutUrl,
                     ReferenceType = referenceType
                 });
                 await _unitOfWork.SaveChangesAsync();
