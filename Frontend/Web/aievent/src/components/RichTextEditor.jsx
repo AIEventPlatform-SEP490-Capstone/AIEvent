@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import ReactQuill from 'react-quill-new';
-import 'react-quill/dist/quill.snow.css';
+import 'quill/dist/quill.snow.css';
 import { Pencil, Image as ImageIcon } from 'lucide-react';
 import { Button } from './ui/button';
 import { cn } from '../lib/utils';
@@ -97,17 +97,79 @@ const customStyles = `
     background-color: #e2e8f0;
   }
   
-  .ql-toolbar .ql-picker-item {
-    padding: 0.25rem 0.5rem;
+  /* Color picker styles */
+  .ql-toolbar .ql-picker-options {
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    z-index: 20; /* Ensure color picker appears above other elements */
   }
   
-  .ql-toolbar .ql-picker-item:hover {
-    background-color: #f1f5f9;
+  /* Fix for color picker */
+  .ql-color-picker,
+  .ql-background {
+    width: 28px;
+    height: 28px;
   }
   
-  .ql-toolbar .ql-picker-item.ql-selected {
-    background-color: #3b82f6;
-    color: white;
+  .ql-color-picker .ql-picker-label,
+  .ql-background .ql-picker-label {
+    padding: 2px 4px;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .ql-color-picker .ql-picker-label svg,
+  .ql-background .ql-picker-label svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .ql-color-picker .ql-picker-options,
+  .ql-background .ql-picker-options {
+    padding: 8px;
+    width: 148px;
+  }
+  
+  .ql-color-picker .ql-picker-item,
+  .ql-background .ql-picker-item {
+    border: 1px solid transparent;
+    float: left;
+    height: 16px;
+    margin: 2px;
+    padding: 0;
+    width: 16px;
+  }
+  
+  /* Style for color picker swatches */
+  .ql-color-picker .ql-picker-options [class^="ql-color-"],
+  .ql-background .ql-picker-options [class^="ql-color-"] {
+    width: 20px;
+    height: 20px;
+    margin: 2px;
+    border-radius: 2px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    float: left;
+  }
+  
+  /* Custom color for the text color picker label */
+  .ql-color-picker .ql-picker-label,
+  .ql-background .ql-picker-label {
+    color: #374151;
+  }
+  
+  /* Ensure color picker buttons have proper spacing */
+  .ql-toolbar .ql-color-picker,
+  .ql-toolbar .ql-background {
+    margin-right: 8px;
+  }
+  
+  .ql-color-picker .ql-picker-item {
+    border-radius: 0.25rem;
+    margin: 0.125rem;
   }
   
   .ql-snow .ql-tooltip {
@@ -240,6 +302,7 @@ const RichTextEditor = ({
         [{ 'align': [] }],
         ['link'],
         ['image'],
+        [{ 'color': [] }, { 'background': [] }], // Color and background color pickers
         ['clean']
       ],
       handlers: {
@@ -257,7 +320,8 @@ const RichTextEditor = ({
     'list',
     'indent',
     'link', 'image',
-    'align'
+    'align',
+    'color', 'background'  // Add color and background formats
   ];
 
   const handleEditorChange = (content) => {
