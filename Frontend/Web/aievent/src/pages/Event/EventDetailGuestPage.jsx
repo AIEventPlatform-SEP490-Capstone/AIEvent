@@ -66,6 +66,7 @@ import { EventTimeline } from "../../components/Event/EventTimeline";
 import { SidebarCard } from "../../components/Event/SidebarCard";
 import { ActionButton } from "../../components/Event/ActionButton";
 import { StatCard } from "../../components/Event/StatCard";
+import LoadingSpinner from "../../components/LoadingSpinner/LoadingSpinner";
 
 const EventDetailGuestPage = ({ previewData }) => {
   const { state } = useSidebar();
@@ -472,7 +473,7 @@ const EventDetailGuestPage = ({ previewData }) => {
         <div className="flex flex-col items-center space-y-4">
           <div className="relative">
             <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-blue-600"></div>
-            <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-blue-600 animate-pulse" />
+            <LoadingSpinner className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-blue-600 animate-pulse" />
           </div>
           <p className="text-gray-600 font-medium">
             Đang tải thông tin sự kiện...

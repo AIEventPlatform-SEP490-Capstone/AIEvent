@@ -188,19 +188,26 @@ const TransactionDetailModal = ({ isOpen, onClose, transaction }) => {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
-                  <div className="p-3 bg-purple-100 rounded-xl">
-                    <div className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-bold text-white">ID</span>
+                {(transaction.checkoutUrl || transaction.paymentUrl) && (
+                  <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
+                    <div className="p-3 bg-blue-100 rounded-xl">
+                      <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                        <span className="text-xs font-bold text-white">URL</span>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">URL Payment</label>
+                      <a 
+                        href={transaction.checkoutUrl || transaction.paymentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-lg font-mono text-blue-600 hover:text-blue-800 break-all mt-1 block underline"
+                      >
+                        {transaction.checkoutUrl || transaction.paymentUrl}
+                      </a>
                     </div>
                   </div>
-                  <div className="flex-1">
-                    <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Wallet ID</label>
-                    <p className="text-lg font-mono text-gray-900 break-all mt-1">
-                      {transaction.walletId}
-                    </p>
-                  </div>
-                </div>
+                )}
               </div>
             </Card>
 

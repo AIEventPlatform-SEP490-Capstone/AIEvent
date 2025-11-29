@@ -133,6 +133,14 @@ const WalletDashboard = () => {
     }
   };
 
+  const handleTransactionClick = (transaction) => {
+    // Open checkoutUrl or paymentUrl if available
+    const url = transaction.checkoutUrl || transaction.paymentUrl;
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const getAmountDisplay = (direction, balance) => {
     const sign = direction === 'In' ? '+' : '-';
     return `${sign}${formatCurrency(balance)}`;
@@ -358,7 +366,7 @@ const WalletDashboard = () => {
 
                 <div className="text-right">
                   <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mb-3 backdrop-blur-sm">
-                    <Sparkles className="h-10 w-10 text-white" />
+                    <Wallet className="h-10 w-10 text-white" />
                   </div>
                   <p className="text-white/90 text-sm font-medium">AIEvent - Ví của tôi</p>
                 </div>
@@ -524,9 +532,29 @@ const WalletDashboard = () => {
                     <p className="text-gray-500">Bắt đầu với giao dịch đầu tiên của bạn</p>
                   </div>
                 ) : (
-                  sortedTransactions.map((transaction, idx) => (
-                    <div key={transaction.orderCode || `transaction-${transaction.createdAt}-${idx}`} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200 hover:border-blue-300">
-                      <div className="flex items-center justify-between">
+                  sortedTransactions.map((transaction, idx) => {
+                    const hasCheckoutUrl = !!(transaction.checkoutUrl || transaction.paymentUrl);
+                    const isClickable = hasCheckoutUrl && (transaction.status === 'Pending' || transaction.status === 'Processing');
+                    
+                    return (
+                      <div 
+                        key={transaction.orderCode || `transaction-${transaction.createdAt}-${idx}`} 
+                        className={`bg-white border border-gray-200 rounded-xl p-6 transition-all duration-200 ${
+                          isClickable 
+                            ? 'hover:shadow-lg hover:border-blue-300 cursor-pointer' 
+                            : 'hover:shadow-md'
+                        }`}
+                        onClick={() => isClickable && handleTransactionClick(transaction)}
+                        role={isClickable ? 'button' : undefined}
+                        tabIndex={isClickable ? 0 : undefined}
+                        onKeyDown={(e) => {
+                          if (isClickable && (e.key === 'Enter' || e.key === ' ')) {
+                            e.preventDefault();
+                            handleTransactionClick(transaction);
+                          }
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
                           <div className={`p-3 rounded-xl ${transaction.direction === 'In'
                             ? 'bg-green-100'
@@ -554,7 +582,8 @@ const WalletDashboard = () => {
                         </div>
                       </div>
                     </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             )}
