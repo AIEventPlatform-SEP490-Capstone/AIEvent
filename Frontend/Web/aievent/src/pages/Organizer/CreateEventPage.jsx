@@ -1760,12 +1760,12 @@ const CreateEventPage = () => {
                   value={watch('detailedDescription')}
                   onChange={(value) => {
                     setValue('detailedDescription', value);
-                    // Clear any existing errors when user starts typing
                     if (hasValidated && errors.detailedDescription) {
                       clearErrors('detailedDescription');
                     }
                   }}
                   placeholder="Nhập mô tả chi tiết sự kiện..."
+                  viewMode={true}
                 />
                 {hasValidated && errors.detailedDescription && (
                   <p className="text-red-500 text-xs mt-1 flex items-center gap-1">

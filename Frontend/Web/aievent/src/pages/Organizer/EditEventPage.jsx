@@ -1545,6 +1545,7 @@ const EditEventPage = () => {
                     }
                   }}
                   placeholder="Nhập mô tả chi tiết sự kiện..."
+                  viewMode={true}
                 />
                 {hasValidated && errors.detailedDescription && (
                   <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
