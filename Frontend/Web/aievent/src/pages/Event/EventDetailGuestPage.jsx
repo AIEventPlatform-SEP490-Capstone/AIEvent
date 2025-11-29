@@ -163,7 +163,7 @@ const EventDetailGuestPage = ({ previewData }) => {
     if (!showAiRecommendations) {
       setIsLoadingAiFriends(true);
       try {
-        const res = await friendAPI.getAIRecommendedFriends(1, 10);
+        const res = await eventAPI.getAIRecommendedFriendsByEvent(id, 1, 10);
         setAiRecommendedFriends(Array.isArray(res) ? res : res.items || []);
       } catch (err) {
         console.error("Error loading AI recommended friends:", err);
@@ -175,7 +175,6 @@ const EventDetailGuestPage = ({ previewData }) => {
     }
     setShowAiRecommendations(!showAiRecommendations);
   };
-
   // Add friend function
   const handleAddFriend = async (userId) => {
     try {
