@@ -22,6 +22,7 @@ namespace AIEvent.Domain.Entities
         public TransactionDirection Direction { get; set; }
         public TransactionStatus Status { get; set; }
         public string? Description { get; set; }
+        public string? PaymentUrl { get; set; }
         public Guid? ReferenceId { get; set; }
         public ReferenceType? ReferenceType { get; set; }
     }
