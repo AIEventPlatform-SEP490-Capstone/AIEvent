@@ -454,8 +454,14 @@ namespace AIEvent.Application.Services.Implements
             if (embedding == null || embedding.Length == 0)
                 return ErrorResponse.FailureResult("Embedding failed", ErrorCodes.InternalServerError);
 
-            var pineconeResults = await _pineconeService.QuerySimilarAsync(
-                embedding, isUser: true, topK: 11);
+            var friendIds = await _unitOfWork.FriendshipRepository
+                .Query()
+                .Where(f => (f.SenderId == userId || f.ReceiverId == userId) && f.Status == FriendshipStatus.Accepted && !f.IsDeleted)
+                .Select(f => f.SenderId == userId ? f.ReceiverId.ToString() : f.SenderId.ToString())
+                .ToListAsync();
+
+            var pineconeResults = await _pineconeService.QuerySimilarFriendAsync(
+                embedding, isUser: true, topK: 11, excludeIds: friendIds);
 
             var candidates = pineconeResults
                 .Where(r => r.Id != userId.ToString())
@@ -492,6 +498,24 @@ namespace AIEvent.Application.Services.Implements
                 })
                 .ToList();
 
+            foreach (var f in ordered)
+            {
+                var otherUser = users.First(u => u.Id == f.Id);
+
+                var fDesc =
+                    $"{otherUser.FullName}, " +
+                    $"District: {otherUser.District}, " +
+                    $"Interests: {otherUser.UserInterestsJson}, " +
+                    $"Skills: {otherUser.ProfessionalSkillsJson}, " +
+                    $"Job: {otherUser.JobTitle}, " +
+                    $"CareerGoal: {otherUser.CareerGoal}, " +
+                    $"Intro: {otherUser.Introduction}";
+
+                var prompt = $"User: {descriptionText}. Friend: {fDesc}.";
+
+                f.Reason = await _llmService.GenerateReasonFriendAsync(prompt);
+            }
+
             return new BasePaginated<ListSearchFriend>(
                 ordered,
                 userIds.Count,
@@ -499,5 +523,165 @@ namespace AIEvent.Application.Services.Implements
                 pageSize
             );
         }
+
+
+        public async Task<Result<BasePaginated<ListSearchFriend>>> GetFriendsByEventAsync(int pageNumber, int pageSize, Guid userId, string id)
+        {
+            var user = await _unitOfWork.UserRepository.Query()
+                .AsNoTracking()
+                .Where(u => u.Id == userId && !u.IsDeleted && u.IsActive)
+                .Select(u => new
+                {
+                    u.Id,
+                    u.District,
+                    u.BudgetOption,
+                    u.InterestedDistrictsJson,
+                    u.UserInterestsJson,
+                    u.Occupation,
+                    u.ProfessionalSkillsJson,
+                    u.JobTitle,
+                    u.CareerGoal,
+                    u.ParticipationFrequency,
+                    u.Experience,
+                    u.FavoriteEventTypesJson,
+                    u.LanguagesJson,
+                    u.Introduction
+                })
+                .FirstOrDefaultAsync();
+
+            if (user == null)
+                return ErrorResponse.FailureResult("User not found", ErrorCodes.NotFound);
+
+            List<string> Parse(string? json)
+            {
+                if (string.IsNullOrWhiteSpace(json))
+                    return new List<string>();
+
+                try
+                {
+                    return JsonSerializer.Deserialize<List<string>>(json!) ?? new List<string>();
+                }
+                catch
+                {
+                    return new List<string>();
+                }
+            }
+
+            var interests = Parse(user.UserInterestsJson);
+            var districts = Parse(user.InterestedDistrictsJson);
+            var events = Parse(user.FavoriteEventTypesJson);
+            var skills = Parse(user.ProfessionalSkillsJson);
+            var languages = Parse(user.LanguagesJson);
+
+            var desc = new List<string>(15);
+
+            if (!string.IsNullOrEmpty(user.District)) desc.Add($"Lives in {user.District}");
+            if (interests.Any()) desc.Add($"Interests: {string.Join(", ", interests)}");
+            if (events.Any()) desc.Add($"Events: {string.Join(", ", events)}");
+            if (districts.Any()) desc.Add($"Explore: {string.Join(", ", districts)}");
+
+            desc.Add($"Budget: {user.BudgetOption}");
+            desc.Add($"Frequency: {user.ParticipationFrequency}");
+
+            if (!string.IsNullOrEmpty(user.Occupation)) desc.Add($"Works as: {user.Occupation}");
+            if (!string.IsNullOrEmpty(user.JobTitle)) desc.Add($"Job: {user.JobTitle}");
+            if (!string.IsNullOrEmpty(user.CareerGoal)) desc.Add($"Goal: {user.CareerGoal}");
+            if (skills.Any()) desc.Add($"Skills: {string.Join(", ", skills)}");
+            if (languages.Any()) desc.Add($"Speaks: {string.Join(", ", languages)}");
+            if (!string.IsNullOrEmpty(user.Introduction)) desc.Add($"About: {user.Introduction}");
+
+            var descriptionText = desc.Count > 0
+                ? string.Join(". ", desc)
+                : "A user with flexible preferences.";
+
+            var embedding = await _voyageEmbeddingService.GetEmbeddingAsync(descriptionText);
+            if (embedding == null || embedding.Length == 0)
+                return ErrorResponse.FailureResult("Embedding failed", ErrorCodes.InternalServerError);
+
+            var friendIds = await _unitOfWork.FriendshipRepository.Query()
+                .Where(f => (f.SenderId == userId || f.ReceiverId == userId)
+                            && f.Status == FriendshipStatus.Accepted
+                            && !f.IsDeleted)
+                .Select(f => f.SenderId == userId ? f.ReceiverId.ToString() : f.SenderId.ToString())
+                .ToListAsync();
+
+            var friendSet = new HashSet<string>(friendIds);
+
+            if (!Guid.TryParse(id, out var eventId))
+                return ErrorResponse.FailureResult("Invalid ticket ID format", ErrorCodes.InvalidInput);
+            var participantIds = await _unitOfWork.BookingRepository.Query()
+                .Where(b => b.EventId == eventId && b.UserId != userId && b.Status == BookingStatus.Completed && b.PaymentStatus == PaymentStatus.Paid)
+                .Select(b => b.UserId)
+                .Distinct()         
+                .ToListAsync();
+
+            var candidateIds = participantIds
+                .Where(id => !friendSet.Contains(id.ToString()))
+                .Select(id => id.ToString()) 
+                .ToList();
+            if (!candidateIds.Any())
+                return new BasePaginated<ListSearchFriend>(new List<ListSearchFriend>(), 0, pageNumber, pageSize);
+
+            var pineconeResults = await _pineconeService.QuerySimilarFriendInEventAsync(
+                embedding, isUser: true, topK: 11,
+                includeIds: candidateIds,   
+                excludeIds: friendIds       
+            );
+
+            var topCandidates = pineconeResults
+                .Where(r => r.Id != userId.ToString())
+                .Take(pageSize)
+                .ToList();
+
+            if (!topCandidates.Any())
+                return new BasePaginated<ListSearchFriend>(new List<ListSearchFriend>(), 0, pageNumber, pageSize);
+
+            var userIds = topCandidates
+                .Select(r => Guid.TryParse(r.Id, out var g) ? g : Guid.Empty)
+                .Where(g => g != Guid.Empty)
+                .ToList();
+
+            var users = await _unitOfWork.UserRepository.Query()
+                .AsNoTracking()
+                .Include(u => u.Role)
+                .Where(u => userIds.Contains(u.Id) && !u.IsDeleted && u.IsActive && u.Role.Name == "User")
+                .ToListAsync();
+
+            var ordered = users
+                .OrderBy(u => userIds.IndexOf(u.Id))
+                .Select(u => new ListSearchFriend
+                {
+                    Id = u.Id,
+                    FriendName = u.FullName!,
+                    District = u.District ?? "",
+                    Image = u.AvatarImgUrl ?? "",
+                    InterestsJson = u.UserInterestsJson ?? "[]"
+                })
+                .ToList();
+
+            foreach (var f in ordered)
+            {
+                var otherUser = users.First(u => u.Id == f.Id);
+                var fDesc =
+                    $"{otherUser.FullName}, " +
+                    $"District: {otherUser.District}, " +
+                    $"Interests: {otherUser.UserInterestsJson}, " +
+                    $"Skills: {otherUser.ProfessionalSkillsJson}, " +
+                    $"Job: {otherUser.JobTitle}, " +
+                    $"CareerGoal: {otherUser.CareerGoal}, " +
+                    $"Intro: {otherUser.Introduction}";
+
+                var prompt = $"User: {descriptionText}. Friend: {fDesc}.";
+                f.Reason = await _llmService.GenerateReasonFriendAsync(prompt);
+            }
+
+            return new BasePaginated<ListSearchFriend>(
+                ordered,
+                userIds.Count,
+                pageNumber,
+                pageSize
+            );
+        }
+
     }
 }

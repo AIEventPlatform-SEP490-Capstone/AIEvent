@@ -14,5 +14,6 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result<BasePaginated<SessionResponse>>> GetSessionsAsync(Guid userId, int pageNumber = 1, int pageSize = 10);
         Task<Result> DeleteSessionAsync(Guid userId, Guid sessionId);
         Task<Result<BasePaginated<ListSearchFriend>>> GetFriendAIRecommendAsync(int pageNumber, int pageSize, Guid userId);
+        Task<Result<BasePaginated<ListSearchFriend>>> GetFriendsByEventAsync(int pageNumber, int pageSize, Guid userId, string eventId);
     }
 }

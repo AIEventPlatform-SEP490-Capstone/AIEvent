@@ -90,6 +90,110 @@ namespace AIEvent.Application.Services.Implements
             return matches;
         }
 
+        public async Task<List<(string Id, double Score, Dictionary<string, object>? Metadata)>> QuerySimilarFriendAsync(
+            float[] vector,
+            bool isUser,
+            int topK = 5,
+            List<string>? excludeIds = null)
+        {
+            Dictionary<string, object>? filter = null;
+            if (excludeIds != null && excludeIds.Count > 0)
+            {
+                filter = new Dictionary<string, object>
+                {
+                    ["userId"] = new Dictionary<string, object>
+                    {
+                        ["$nin"] = excludeIds
+                    }
+                };
+            }
+
+            var payload = new
+            {
+                vector,
+                topK,
+                includeMetadata = true,
+                filter
+            };
+
+            var content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
+            var url = $"{GetHost(isUser)}/query";
+            var response = await _httpClient.PostAsync(url, content);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+            var result = JsonConvert.DeserializeObject<PineconeQueryResponse>(json)!;
+
+            var matches = result.Matches?
+                .Select(m => (m.Id, m.Score, m.Metadata))
+                .ToList() ?? new List<(string, double, Dictionary<string, object>?)>();
+
+            return matches;
+        }
+
+        public async Task<List<(string Id, double Score, Dictionary<string, object>? Metadata)>> QuerySimilarFriendInEventAsync(
+            float[] vector,
+            bool isUser,
+            int topK = 5,
+            List<string>? excludeIds = null,
+            List<string>? includeIds = null)
+        {
+            Dictionary<string, object>? filter = null;
+
+            if ((excludeIds != null && excludeIds.Count > 0) || (includeIds != null && includeIds.Count > 0))
+            {
+                filter = new Dictionary<string, object>();
+
+                if (excludeIds != null && excludeIds.Count > 0)
+                {
+                    filter["userId"] = new Dictionary<string, object>
+                    {
+                        ["$nin"] = excludeIds
+                    };
+                }
+
+                if (includeIds != null && includeIds.Count > 0)
+                {
+                    if (filter.ContainsKey("userId"))
+                    {
+                        var existing = (Dictionary<string, object>)filter["userId"];
+                        existing["$in"] = includeIds;
+                        filter["userId"] = existing;
+                    }
+                    else
+                    {
+                        filter["userId"] = new Dictionary<string, object>
+                        {
+                            ["$in"] = includeIds
+                        };
+                    }
+                }
+            }
+
+            var payload = new
+            {
+                vector,
+                topK,
+                includeMetadata = true,
+                filter
+            };
+
+            var content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
+            var url = $"{GetHost(isUser)}/query";
+            var response = await _httpClient.PostAsync(url, content);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+            var result = JsonConvert.DeserializeObject<PineconeQueryResponse>(json)!;
+
+            var matches = result.Matches?
+                .Select(m => (m.Id, m.Score, m.Metadata))
+                .ToList() ?? new List<(string, double, Dictionary<string, object>?)>();
+
+            return matches;
+        }
+
+
         public async Task DeleteVectorAsync(string id, bool isUser)
         {
             var payload = new { ids = new[] { id } };
