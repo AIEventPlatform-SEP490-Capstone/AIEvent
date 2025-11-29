@@ -776,9 +776,16 @@ const EventDetailGuestPage = ({ previewData }) => {
             {/* About Event */}
             <div className="bg-white rounded-xl p-8 border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all duration-300">
               <h2 className="text-2xl font-bold text-foreground mb-6">Về sự kiện</h2>
-              <p className="text-muted-foreground leading-relaxed mb-6">
-                {event.detailedDescription || event.description || "Thông tin chi tiết về sự kiện chưa được cập nhật."}
-              </p>
+              {event.detailedDescription || event.description ? (
+                <div 
+                  className="prose max-w-none text-muted-foreground leading-relaxed mb-6"
+                  dangerouslySetInnerHTML={{ __html: event.detailedDescription || event.description }} 
+                />
+              ) : (
+                <p className="text-muted-foreground italic">
+                  Thông tin chi tiết về sự kiện chưa được cập nhật.
+                </p>
+              )}
               
               <div className="space-y-4">
                 <h3 className="font-semibold text-foreground flex items-center gap-2">
