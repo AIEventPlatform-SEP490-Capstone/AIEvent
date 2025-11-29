@@ -1058,7 +1058,15 @@ const EditEventPage = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-balance">Chỉnh sửa sự kiện</h1>
+          <div className="flex items-center gap-4 mb-4">
+            <button 
+              onClick={() => navigate(-1)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition"
+            >
+              <ChevronLeft className="w-5 h-5 text-foreground" />
+            </button>
+            <h1 className="text-3xl font-bold text-balance">Chỉnh sửa sự kiện</h1>
+          </div>
           <p className="text-muted-foreground">Cập nhật thông tin sự kiện của bạn</p>
         </div>
         
