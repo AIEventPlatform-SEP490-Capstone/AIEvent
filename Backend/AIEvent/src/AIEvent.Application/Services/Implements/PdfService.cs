@@ -27,6 +27,7 @@ namespace AIEvent.Application.Services.Implements
 
             var pdf = Document.Create(container =>
             {
+
                 // Tạo mỗi vé riêng lẻ
                 foreach (var ticket in tickets)
                 {
@@ -96,11 +97,13 @@ namespace AIEvent.Application.Services.Implements
                                 // Các thông tin thời gian và giá vé trong các hộp
                                 rightCol.Item().PaddingTop(8).Row(infoRow =>
                                 {
+                                    var startTimeUtc7 = ticket.StartTime.AddHours(7);
+
                                     // Ngày
                                     infoRow.AutoItem().Border(2).BorderColor(Colors.Black)
                                         .PaddingVertical(8)
                                         .PaddingHorizontal(14)
-                                        .Text(ticket.StartTime.ToString("MMM dd").ToUpper())
+                                        .Text(startTimeUtc7.ToString("MMM dd").ToUpper())
                                         .FontSize(14)
                                         .Bold()
                                         .FontColor(Colors.Black);
@@ -111,10 +114,11 @@ namespace AIEvent.Application.Services.Implements
                                     infoRow.AutoItem().Border(2).BorderColor(Colors.Black)
                                         .PaddingVertical(8)
                                         .PaddingHorizontal(14)
-                                        .Text(ticket.StartTime.ToString("hh:mm tt").ToUpper())
+                                        .Text(startTimeUtc7.ToString("hh:mm tt").ToUpper())
                                         .FontSize(14)
                                         .Bold()
                                         .FontColor(Colors.Black);
+
 
                                     infoRow.ConstantItem(10);
 
