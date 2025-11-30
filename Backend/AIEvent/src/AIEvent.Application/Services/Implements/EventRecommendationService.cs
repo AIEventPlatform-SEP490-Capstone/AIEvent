@@ -356,30 +356,7 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("Failed to delete session", ErrorCodes.InternalServerError);
 
             return Result.Success();
-        }
-
-        private static List<string> ParseJsonList(string? json)
-        {
-            if (string.IsNullOrWhiteSpace(json))
-                return new List<string>();
-
-            try
-            {
-                var objList = JsonSerializer.Deserialize<List<UserInterest>>(json);
-                if (objList == null)
-                    return new List<string>();
-
-                return objList
-                    .Where(i => !string.IsNullOrWhiteSpace(i.InterestName))
-                    .Select(i => i.InterestName!.Trim())
-                    .Distinct()
-                    .ToList();
-            }
-            catch
-            {
-                return new List<string>();
-            }
-        }
+        } 
 
         public async Task<Result<BasePaginated<ListSearchFriend>>> GetFriendAIRecommendAsync(int pageNumber, int pageSize, Guid userId)
         {

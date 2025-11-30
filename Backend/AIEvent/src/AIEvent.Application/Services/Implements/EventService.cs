@@ -876,7 +876,7 @@ namespace AIEvent.Application.Services.Implements
             {
                 var totalRevenue = ev.TotalAmount;
                 
-                if (totalRevenue > 0)
+                if (totalRevenue >= 50000)
                 {
                     decimal platformFee = totalRevenue * systemSetting.FlatformFee + systemSetting.FixFee;
                     decimal netRevenue = totalRevenue - platformFee;
