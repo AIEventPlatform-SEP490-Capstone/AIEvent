@@ -100,7 +100,7 @@ export default function ChatPage() {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-purple-600 font-medium hover:underline hover:text-purple-700"
+          className="inline-flex items-center gap-1 text-blue-600 font-medium hover:underline hover:text-blue-700"
         >
           {text}
           <ExternalLink className="h-4 w-4" />
@@ -120,7 +120,7 @@ export default function ChatPage() {
               href={part}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-purple-600 font-medium hover:underline hover:text-purple-700"
+              className="inline-flex items-center gap-1 text-blue-600 font-medium hover:underline hover:text-blue-700"
             >
               Xem chi tiết
               <ExternalLink className="h-4 w-4" />
@@ -413,7 +413,7 @@ export default function ChatPage() {
       {
         id: "1",
         content:
-          "Xin chào! 👋 Tôi là AI Assistant của AIEvent. Tôi có thể giúp bạn tìm kiếm sự kiện, đặt vé, hoặc trả lời các câu hỏi về nền tảng. Bạn cần hỗ trợ gì?",
+          "Xin chào! 👋 Tôi là AI Assistant của AIEvent. Tôi có thể giúp bạn tìm kiếm sự kiện theo nhu cầu của bạn, hoặc trả lời các câu hỏi về sự kiện bạn quan tâm. Bạn cần hỗ trợ gì?",
         sender: "ai",
         timestamp: new Date(),
       },
@@ -482,18 +482,18 @@ export default function ChatPage() {
 
   return (
     <>
-      <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-gradient-to-br from-purple-50/50 via-blue-50/50 to-cyan-50/50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-gradient-to-br from-blue-50/50 via-blue-50/50 to-cyan-50/50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         {/* Sessions Sidebar */}
-        <div className="w-80 border-r border-purple-200/50 dark:border-purple-900/50 bg-white dark:bg-gray-800 flex flex-col">
-          <div className="p-4 border-b border-purple-200/50 dark:border-purple-900/50">
+        <div className="w-80 border-r border-blue-200/50 dark:border-blue-900/50 bg-white dark:bg-gray-800 flex flex-col">
+          <div className="p-4 border-b border-blue-200/50 dark:border-blue-900/50">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 bg-clip-text text-transparent">
+              <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 via-blue-600 to-cyan-600 bg-clip-text text-transparent">
                 Cuộc trò chuyện
               </h2>
               <Button
                 onClick={handleNewChat}
                 size="sm"
-                className="bg-gradient-to-br from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                className="bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Mới
@@ -504,7 +504,7 @@ export default function ChatPage() {
           <ScrollArea className="flex-1">
             {loadingSessions ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
+                <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
               </div>
             ) : sessions.length === 0 ? (
               <div className="p-4 text-center text-muted-foreground">
@@ -520,7 +520,7 @@ export default function ChatPage() {
                     onClick={() => handleSelectSession(session.sessionId)}
                     className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
                       selectedSessionId === session.sessionId
-                        ? "bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/50 dark:to-blue-900/50 border-2 border-purple-300 dark:border-purple-700"
+                        ? "bg-gradient-to-r from-blue-100 to-blue-100 dark:from-blue-900/50 dark:to-blue-900/50 border-2 border-blue-300 dark:border-blue-700"
                         : "hover:bg-gray-100 dark:hover:bg-gray-700 border-2 border-transparent"
                     }`}
                   >
@@ -540,7 +540,7 @@ export default function ChatPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-purple-600"
+                            className="h-8 w-8 text-muted-foreground hover:text-blue-600"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <MoreVertical className="h-4 w-4" />
@@ -567,18 +567,18 @@ export default function ChatPage() {
 
         {/* Chat Area */}
         <div className="flex-1 flex flex-col min-w-0">
-          <Card className="flex-1 flex flex-col m-4 shadow-xl border-2 border-purple-200/50 dark:border-purple-900/50 overflow-hidden bg-white dark:bg-gray-800 p-0 relative">
+          <Card className="flex-1 flex flex-col m-4 shadow-xl border-2 border-blue-200/50 dark:border-blue-900/50 overflow-hidden bg-white dark:bg-gray-800 p-0 relative">
             {/* Header */}
-            <CardHeader className="relative flex flex-row items-center justify-between py-4 border-b border-purple-200/50 dark:border-purple-900/50 bg-gradient-to-r from-purple-600/10 via-blue-600/10 to-cyan-600/10">
+            <CardHeader className="relative flex flex-row items-center justify-between py-4 border-b border-blue-200/50 dark:border-blue-900/50 bg-gradient-to-r from-blue-600/10 via-blue-600/10 to-cyan-600/10">
               <CardTitle className="text-xl font-bold flex items-center gap-3 m-0">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-cyan-600 rounded-full blur-md opacity-50" />
-                  <div className="relative bg-gradient-to-br from-purple-600 to-cyan-600 rounded-full p-2">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-full blur-md opacity-50" />
+                  <div className="relative bg-gradient-to-br from-blue-600 to-cyan-600 rounded-full p-2">
                     <Bot className="h-6 w-6 text-white" />
                   </div>
                 </div>
                 <div className="flex flex-col gap-0 leading-tight">
-                  <span className="bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                  <span className="bg-gradient-to-r from-blue-600 via-blue-600 to-cyan-600 bg-clip-text text-transparent">
                     AI Assistant
                   </span>
                   <span className="text-xs text-muted-foreground font-normal">
@@ -601,7 +601,7 @@ export default function ChatPage() {
             <CardContent className="flex-1 flex flex-col p-6 pt-0 min-h-0 overflow-hidden">
               {loadingHistory ? (
                 <div className="flex items-center justify-center h-full">
-                  <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                 </div>
               ) : (
                 <ScrollArea
@@ -645,14 +645,14 @@ export default function ChatPage() {
                               >
                                 {message.sender === "ai" && (
                                   <div className="relative flex-shrink-0">
-                                    <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-cyan-600 rounded-full blur-sm opacity-30" />
-                                    <div className="relative h-10 w-10 rounded-full bg-gradient-to-br from-purple-600 to-cyan-600 flex items-center justify-center">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-full blur-sm opacity-30" />
+                                    <div className="relative h-10 w-10 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center">
                                       <Bot className="h-5 w-5 text-white" />
                                     </div>
                                   </div>
                                 )}
                                 {isUserMessage && (
-                                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0 shadow-lg">
+                                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg">
                                     <User className="h-5 w-5 text-white" />
                                   </div>
                                 )}
@@ -660,8 +660,8 @@ export default function ChatPage() {
                                   <div
                                     className={`max-w-[100%] rounded-2xl px-4 py-3 text-sm break-words shadow-lg ${
                                       isUserMessage
-                                        ? "bg-gradient-to-br from-purple-600 to-blue-600 text-white rounded-br-md"
-                                        : "bg-white dark:bg-gray-800 border border-purple-100 dark:border-purple-900/50 rounded-bl-md"
+                                        ? "bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-br-md"
+                                        : "bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-900/50 rounded-bl-md"
                                     }`}
                                   >
                                     <div className="whitespace-pre-line leading-relaxed">
@@ -691,7 +691,7 @@ export default function ChatPage() {
                                                 key={index}
                                                 className="ml-2 flex items-start gap-2 my-1"
                                               >
-                                                <Zap className="h-3 w-3 mt-1 flex-shrink-0 text-purple-500" />
+                                                <Zap className="h-3 w-3 mt-1 flex-shrink-0 text-blue-500" />
                                                 <span>{line.slice(2)}</span>
                                               </div>
                                             );
@@ -707,7 +707,7 @@ export default function ChatPage() {
                                     </div>
                                     {isSpeechSynthesisSupported &&
                                       isSpeakingThisMessage && (
-                                        <div className="mt-3 text-xs text-purple-500 flex items-center gap-2">
+                                        <div className="mt-3 text-xs text-blue-500 flex items-center gap-2">
                                           <Loader2 className="h-3 w-3 animate-spin" />
                                           <span>Đang đọc câu trả lời...</span>
                                         </div>
@@ -719,7 +719,7 @@ export default function ChatPage() {
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="h-8 w-8 text-muted-foreground hover:text-purple-600"
+                                          className="h-8 w-8 text-muted-foreground hover:text-blue-600"
                                         >
                                           <MoreVertical className="h-4 w-4" />
                                         </Button>
@@ -747,7 +747,7 @@ export default function ChatPage() {
                                               </>
                                             ) : (
                                               <>
-                                                <Volume2 className="h-4 w-4 text-purple-500" />
+                                                <Volume2 className="h-4 w-4 text-blue-500" />
                                                 Đọc to
                                               </>
                                             )}
@@ -768,74 +768,6 @@ export default function ChatPage() {
                               </div>
                             </div>
 
-                            {/* Event card display */}
-                            {message.eventInfo && (
-                              <div className="ml-14 space-y-2">
-                                <div
-                                  className="group bg-white dark:bg-gray-800 border-2 border-purple-100 dark:border-purple-900/50 rounded-xl p-4 hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300 cursor-pointer hover:shadow-xl hover:shadow-purple-500/10 hover:-translate-y-1"
-                                  onClick={() =>
-                                    handleEventClick(message.eventInfo)
-                                  }
-                                >
-                                  <div className="flex items-start justify-between">
-                                    <div className="flex-1 min-w-0">
-                                      {message.eventInfo.title && (
-                                        <h4 className="font-semibold text-base mb-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors line-clamp-2">
-                                          {message.eventInfo.title}
-                                        </h4>
-                                      )}
-                                      <div className="flex flex-col gap-2">
-                                        {(message.eventInfo.date ||
-                                          message.eventInfo.time) && (
-                                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                            <Calendar className="h-3.5 w-3.5 text-purple-500" />
-                                            <span>
-                                              {message.eventInfo.date &&
-                                                `${message.eventInfo.date} `}
-                                              {message.eventInfo.time}
-                                            </span>
-                                          </div>
-                                        )}
-                                        {(message.eventInfo.location ||
-                                          message.eventInfo.address) && (
-                                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                            <MapPin className="h-3.5 w-3.5 text-blue-500" />
-                                            <span>
-                                              {message.eventInfo.location ||
-                                                message.eventInfo.address}
-                                            </span>
-                                          </div>
-                                        )}
-                                        {message.eventInfo.price && (
-                                          <div className="mt-3 pt-3 border-t border-purple-100 dark:border-purple-900/30">
-                                            <span className="text-base font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                                              {message.eventInfo.price}
-                                            </span>
-                                            {message.eventInfo.tickets.length >
-                                              0 && (
-                                              <div className="mt-2 space-y-1">
-                                                {message.eventInfo.tickets.map(
-                                                  (ticket, idx) => (
-                                                    <div
-                                                      key={idx}
-                                                      className="text-xs text-muted-foreground"
-                                                    >
-                                                      {ticket.name}:{" "}
-                                                      {ticket.price}
-                                                    </div>
-                                                  )
-                                                )}
-                                              </div>
-                                            )}
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                    <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-purple-600 dark:group-hover:text-purple-400 ml-3 flex-shrink-0 transition-colors" />
-                                  </div>
-                                </div>
-                              </div>
-                            )}
                           </div>
                         );
                       })
@@ -844,20 +776,20 @@ export default function ChatPage() {
                     {isLoading && (
                       <div className="flex gap-3 justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
                         <div className="relative flex-shrink-0">
-                          <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-cyan-600 rounded-full blur-sm opacity-30" />
-                          <div className="relative h-10 w-10 rounded-full bg-gradient-to-br from-purple-600 to-cyan-600 flex items-center justify-center">
+                          <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-full blur-sm opacity-30" />
+                          <div className="relative h-10 w-10 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center">
                             <Bot className="h-5 w-5 text-white" />
                           </div>
                         </div>
-                        <div className="bg-white dark:bg-gray-800 border border-purple-100 dark:border-purple-900/50 rounded-2xl rounded-bl-md px-5 py-3 shadow-lg">
+                        <div className="bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-900/50 rounded-2xl rounded-bl-md px-5 py-3 shadow-lg">
                           <div className="flex gap-1.5">
-                            <div className="w-2 h-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full animate-bounce"></div>
                             <div
                               className="w-2 h-2 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full animate-bounce"
                               style={{ animationDelay: "0.1s" }}
                             ></div>
                             <div
-                              className="w-2 h-2 bg-gradient-to-r from-cyan-600 to-purple-600 rounded-full animate-bounce"
+                              className="w-2 h-2 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-full animate-bounce"
                               style={{ animationDelay: "0.2s" }}
                             ></div>
                           </div>
@@ -871,7 +803,7 @@ export default function ChatPage() {
 
               {/* Input */}
               <div className="flex gap-2 mt-4 flex-shrink-0 relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 via-blue-600/20 to-cyan-600/20 rounded-lg blur-xl -z-10" />
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-blue-600/20 to-cyan-600/20 rounded-lg blur-xl -z-10" />
                 <Input
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
@@ -880,7 +812,7 @@ export default function ChatPage() {
                     e.key === "Enter" && !isLoading && handleSendMessage()
                   }
                   disabled={isLoading}
-                  className="flex-1 border-2 border-purple-200 dark:border-purple-900/50 focus:border-purple-400 dark:focus:border-purple-700 rounded-xl bg-white dark:bg-gray-800 transition-colors"
+                  className="flex-1 border-2 border-blue-200 dark:border-blue-900/50 focus:border-blue-400 dark:focus:border-blue-700 rounded-xl bg-white dark:bg-gray-800 transition-colors"
                 />
                 {isSpeechSupported && (
                   <Button
@@ -892,7 +824,7 @@ export default function ChatPage() {
                     className={`rounded-xl border-2 h-10 w-10 ${
                       isRecording
                         ? "border-red-400 bg-red-50 text-red-600 hover:bg-red-100"
-                        : "border-purple-200 text-purple-600 hover:bg-purple-50"
+                        : "border-blue-200 text-blue-600 hover:bg-blue-50"
                     }`}
                   >
                     {isRecording ? (
@@ -906,7 +838,7 @@ export default function ChatPage() {
                   onClick={handleSendMessage}
                   disabled={isLoading || !inputValue.trim()}
                   size="icon"
-                  className="rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed h-10 w-10"
+                  className="rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed h-10 w-10"
                 >
                   <Send className="h-4 w-4" />
                 </Button>
@@ -946,7 +878,7 @@ export default function ChatPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="rounded-lg border border-purple-200/50 dark:border-purple-900/40 p-4 bg-purple-50/40 dark:bg-purple-900/20 space-y-2">
+          <div className="rounded-lg border border-blue-200/50 dark:border-blue-900/40 p-4 bg-blue-50/40 dark:bg-blue-900/20 space-y-2">
             <div className="text-sm text-muted-foreground flex items-center justify-between">
               <span>ID phiên</span>
               <span className="font-semibold text-foreground">
