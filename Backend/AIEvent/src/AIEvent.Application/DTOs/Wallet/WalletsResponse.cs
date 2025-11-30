@@ -10,6 +10,7 @@ namespace AIEvent.Application.DTOs.Wallet
         public TransactionType Type { get; set; }
         public decimal Balance { get; set; }
         public TransactionStatus Status { get; set; }
+        public string? PaymentUrl { get; set; }
         public TransactionDirection Direction { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
     }

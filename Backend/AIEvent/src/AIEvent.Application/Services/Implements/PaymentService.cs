@@ -113,6 +113,7 @@ namespace AIEvent.Application.Services.Implements
                     Status = TransactionStatus.Pending,
                     Description = description,
                     ReferenceId = userId,
+                    PaymentUrl = result.CheckoutUrl,
                     ReferenceType = referenceType
                 });
                 await _unitOfWork.SaveChangesAsync();
@@ -388,7 +389,7 @@ namespace AIEvent.Application.Services.Implements
                     return;
                 }
 
-                var payoutDeadline = DateTime.UtcNow.AddDays(-systemSetting.DatePayout);
+                var payoutDeadline = DateTime.UtcNow.AddMinutes(-systemSetting.DatePayout);
                 var pendingEvents = await _unitOfWork.EventRepository
                     .Query()
                     .Include(e => e.OrganizerProfile)
@@ -524,6 +525,58 @@ namespace AIEvent.Application.Services.Implements
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in ProcessPendingPayoutsAsync job");
+                throw;
+            }
+        }
+
+        public async Task ProcessExpiredPendingTransactionsAsync()
+        {
+            try
+            {
+                var expiredTime = DateTime.UtcNow.AddMinutes(-15);
+                var pendingTransactions = await _unitOfWork.WalletTransactionRepository
+                    .Query()
+                    .Where(t => t.Status == TransactionStatus.Pending
+                                && t.CreatedAt <= expiredTime
+                                && !t.IsDeleted)
+                    .ToListAsync();
+
+                if (!pendingTransactions.Any())
+                {
+                    _logger.LogInformation("No expired pending transactions found.");
+                    return;
+                }
+
+                var transactionUpdate = new List<WalletTransaction>();
+                foreach (var transaction in pendingTransactions)
+                {
+                    try
+                    {
+                        transaction.Status = TransactionStatus.Failed;
+                        if (string.IsNullOrEmpty(transaction.Description))
+                            transaction.Description = "Giao dịch đã hết hạn (quá 15 phút)";
+                        else
+                            transaction.Description += "<br>Giao dịch đã hết hạn (quá 15 phút)";
+
+                        transaction.PaymentUrl += "-cancel";
+                        transactionUpdate.Add(transaction);
+                        _logger.LogInformation("Expired pending transaction {TransactionId} marked as Failed", transaction.Id);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to update expired transaction {TransactionId}", transaction.Id);
+                    }
+                }
+                if(transactionUpdate.Any())
+                    await _unitOfWork.WalletTransactionRepository.UpdateRangeAsync(transactionUpdate);
+
+                await _unitOfWork.SaveChangesAsync();
+
+                _logger.LogInformation("Processed {Count} expired pending transactions", pendingTransactions.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in ProcessExpiredPendingTransactionsAsync job");
                 throw;
             }
         }

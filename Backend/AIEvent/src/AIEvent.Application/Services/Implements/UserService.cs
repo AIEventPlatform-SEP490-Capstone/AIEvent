@@ -22,19 +22,22 @@ namespace AIEvent.Application.Services.Implements
         private readonly ICloudinaryService _cloudinaryService;
         private readonly IHasherHelper _hasherHelper;
         private readonly IEmailService _emailService;
+        private readonly IHangfireJobService _hangfireJobService;
 
         public UserService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
             ICloudinaryService loudinaryService,
             IHasherHelper hasherHelper,
-            IEmailService emailService)
+            IEmailService emailService,
+            IHangfireJobService hangfireJobService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _cloudinaryService = loudinaryService;
             _hasherHelper = hasherHelper;
             _emailService = emailService;
+            _hangfireJobService = hangfireJobService;
         }
 
         public async Task<Result<UserDetailResponse>> GetUserByIdAsync(Guid userId)
@@ -87,6 +90,8 @@ namespace AIEvent.Application.Services.Implements
 
             await _unitOfWork.UserRepository.UpdateAsync(user);
             await _unitOfWork.SaveChangesAsync();
+
+            await _hangfireJobService.EnqueueUserEmbeddingJobAsync(user.Id);
 
             return Result.Success();
         }

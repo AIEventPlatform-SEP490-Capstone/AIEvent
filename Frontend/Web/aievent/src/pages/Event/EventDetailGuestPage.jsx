@@ -66,6 +66,7 @@ import { EventTimeline } from "../../components/Event/EventTimeline";
 import { SidebarCard } from "../../components/Event/SidebarCard";
 import { ActionButton } from "../../components/Event/ActionButton";
 import { StatCard } from "../../components/Event/StatCard";
+import LoadingSpinner from "../../components/LoadingSpinner/LoadingSpinner";
 
 const EventDetailGuestPage = ({ previewData }) => {
   const { state } = useSidebar();
@@ -162,7 +163,7 @@ const EventDetailGuestPage = ({ previewData }) => {
     if (!showAiRecommendations) {
       setIsLoadingAiFriends(true);
       try {
-        const res = await friendAPI.getAIRecommendedFriends(1, 10);
+        const res = await eventAPI.getAIRecommendedFriendsByEvent(id, 1, 10);
         setAiRecommendedFriends(Array.isArray(res) ? res : res.items || []);
       } catch (err) {
         console.error("Error loading AI recommended friends:", err);
@@ -174,7 +175,6 @@ const EventDetailGuestPage = ({ previewData }) => {
     }
     setShowAiRecommendations(!showAiRecommendations);
   };
-
   // Add friend function
   const handleAddFriend = async (userId) => {
     try {
@@ -472,7 +472,7 @@ const EventDetailGuestPage = ({ previewData }) => {
         <div className="flex flex-col items-center space-y-4">
           <div className="relative">
             <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 border-t-blue-600"></div>
-            <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-blue-600 animate-pulse" />
+            <LoadingSpinner className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-blue-600 animate-pulse" />
           </div>
           <p className="text-gray-600 font-medium">
             Đang tải thông tin sự kiện...
@@ -776,9 +776,16 @@ const EventDetailGuestPage = ({ previewData }) => {
             {/* About Event */}
             <div className="bg-white rounded-xl p-8 border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all duration-300">
               <h2 className="text-2xl font-bold text-foreground mb-6">Về sự kiện</h2>
-              <p className="text-muted-foreground leading-relaxed mb-6">
-                {event.detailedDescription || event.description || "Thông tin chi tiết về sự kiện chưa được cập nhật."}
-              </p>
+              {event.detailedDescription || event.description ? (
+                <div 
+                  className="prose max-w-none text-muted-foreground leading-relaxed mb-6 ql-editor"
+                  dangerouslySetInnerHTML={{ __html: event.detailedDescription || event.description }} 
+                />
+              ) : (
+                <p className="text-muted-foreground italic">
+                  Thông tin chi tiết về sự kiện chưa được cập nhật.
+                </p>
+              )}
               
               <div className="space-y-4">
                 <h3 className="font-semibold text-foreground flex items-center gap-2">
@@ -872,15 +879,99 @@ const EventDetailGuestPage = ({ previewData }) => {
               </div>
             </SidebarCard>
 
-            {/* Favorite Count Card */}
-            <SidebarCard title="Lượt yêu thích" icon={<Heart className="w-4 h-4" />} gradient>
-              <div className="text-center py-3">
-                <div className="text-3xl font-bold text-foreground mb-1">
-                  {event.favoriteCount || 0}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  người dùng đã yêu thích sự kiện này
-                </p>
+            {/* AI Friend Recommendations */}
+            <SidebarCard title="Bạn bè thông minh" icon={<Sparkles className="w-4 h-4" />}>
+              <div className="space-y-3">
+                <Button 
+                  variant="outline" 
+                  onClick={loadAiRecommendedFriends}
+                  className="w-full border border-blue-300 hover:bg-blue-50 flex items-center justify-center"
+                >
+                  <Sparkles className="w-4 h-4 mr-2 text-blue-500" />
+                  {showAiRecommendations ? "Ẩn đề xuất bạn bè" : "Xem đề xuất bạn bè thông minh"}
+                </Button>
+
+                {showAiRecommendations && (
+                  <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 className="text-base font-bold text-gray-900 mb-3 flex items-center">
+                      <Sparkles className="w-4 h-4 mr-2 text-blue-600" />
+                      Bạn bè được đề xuất bởi AI
+                    </h3>
+
+                    {isLoadingAiFriends ? (
+                      <div className="flex justify-center items-center py-8 text-gray-500">
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Đang tải danh sách bạn bè được đề xuất...
+                      </div>
+                    ) : aiRecommendedFriends.length === 0 ? (
+                      <div className="text-center py-6">
+                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                          <User className="w-6 h-6 text-gray-400" />
+                        </div>
+                        <p className="text-gray-500 text-sm">
+                          Không tìm thấy bạn bè được đề xuất.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-3 max-h-72 overflow-y-auto pr-1">
+                        {aiRecommendedFriends.map((friend) => (
+                          <div
+                            key={friend.id}
+                            className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg bg-white"
+                          >
+                            <div className="relative flex-shrink-0">
+                              <img
+                                src={friend.image || userAvt || "/default-avatar.png"}
+                                alt={friend.friendName || friend.name}
+                                className="w-14 h-14 rounded-lg object-cover border border-gray-200"
+                              />
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold truncate text-gray-900">
+                                {friend.friendName || friend.name || "Người dùng"}
+                              </p>
+
+                              <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-gray-400" />
+                                {friend.district || "Chưa cập nhật khu vực"}
+                              </p>
+
+                              <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                                <Activity className="w-3 h-3 text-gray-400" />
+                                {friend.eventNumber > 0
+                                  ? `${friend.eventNumber} sự kiện đã tham gia` 
+                                  : "Chưa tham gia sự kiện nào"}
+                              </div>
+
+                              <div className="mt-2">
+                                {!friend.friendRequestSent ? (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleAddFriend(friend.id)}
+                                    className="h-7 text-xs bg-blue-600 hover:bg-blue-700"
+                                  >
+                                    <UserPlus className="w-3 h-3 mr-1" />
+                                    Kết bạn
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    disabled
+                                    className="h-7 text-xs bg-gray-300 cursor-not-allowed"
+                                  >
+                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                    Đã gửi
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </SidebarCard>
 
