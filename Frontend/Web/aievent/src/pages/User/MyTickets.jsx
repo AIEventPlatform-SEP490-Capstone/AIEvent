@@ -1279,6 +1279,9 @@ export default function MyTickets() {
                       Địa điểm
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Số lượng vé
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Trạng thái
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -1321,7 +1324,10 @@ export default function MyTickets() {
                             {eventDate.day} {eventDate.date} {eventDate.month}, {eventDate.time}
                           </td>
                           <td className="px-4 py-4 text-sm text-gray-600">
-                            {event.address || "-"}
+                            {event.address || "-"} 
+                          </td>
+                          <td className="px-4 py-4 text-sm text-gray-600">
+                            {event.totalTickets || 0} vé
                           </td>
                           <td className="px-4 py-4">
                             <Badge variant={isUpcoming ? "default" : "secondary"}>
