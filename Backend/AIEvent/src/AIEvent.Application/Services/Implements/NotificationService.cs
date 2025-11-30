@@ -281,7 +281,7 @@ namespace AIEvent.Application.Services.Implements
                     {
                         UserId = booking.UserId,
                         Title = $"Sắp diễn ra: {ev.Title}",
-                        Message = $"Sự kiện {ev.Title} sẽ diễn ra vào {ev.StartTime:HH:mm dd/MM/yyyy}",
+                        Message = $"Sự kiện {ev.Title} sẽ diễn ra vào {ev.StartTime.AddHours(7):HH:mm dd/MM/yyyy}",
                         Type = NotificationType.EventReminder, 
                         EventId = ev.Id,
                         ImageUrl = firstImage
@@ -297,7 +297,7 @@ namespace AIEvent.Application.Services.Implements
                             sb.AppendLine($"<img src='{firstImage}' alt='Event' style='width:100%;max-width:600px;border-radius:8px;margin-bottom:20px;'/>");
 
                         sb.AppendLine($"<p>Xin chào {userPrefs.FullName ?? userPrefs.Email},</p>")
-                          .AppendLine($"<p>Sự kiện <strong>{ev.Title}</strong> sẽ diễn ra vào <strong>{ev.StartTime:HH:mm dd/MM/yyyy}</strong>.</p>")
+                          .AppendLine($"<p>Sự kiện <strong>{ev.Title}</strong> sẽ diễn ra vào <strong>{ev.StartTime.AddHours(7):HH:mm dd/MM/yyyy}</strong>.</p>")
                           .AppendLine("<p>Đừng quên tham gia sự kiện nhé!</p>")
                           .AppendLine($"<p><a href=\"https://ai-event-alpha.vercel.app/event/{ev.Id}\">Xem chi tiết sự kiện</a></p>")
                           .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
