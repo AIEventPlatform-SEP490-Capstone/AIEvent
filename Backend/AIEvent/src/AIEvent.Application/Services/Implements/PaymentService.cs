@@ -557,8 +557,7 @@ namespace AIEvent.Application.Services.Implements
                             transaction.Description = "Giao dịch đã hết hạn (quá 15 phút)";
                         else
                             transaction.Description += "<br>Giao dịch đã hết hạn (quá 15 phút)";
-
-                        transaction.PaymentUrl += "-cancel";
+  
                         transactionUpdate.Add(transaction);
                         _logger.LogInformation("Expired pending transaction {TransactionId} marked as Failed", transaction.Id);
                     }
