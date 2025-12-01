@@ -14,7 +14,9 @@ import {
   Github,
   Twitter,
   Instagram,
-  Facebook
+  Book,
+  Facebook,
+  Heart
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
@@ -896,7 +898,7 @@ const SkillsSection = ({ formData, onChange }) => {
       {/* Languages */}
       <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center">
-          <Sparkles className="w-5 h-5 mr-2 text-orange-600" />
+          <Book className="w-5 h-5 mr-2 text-orange-600" />
           Ngôn ngữ
         </h3>
 
@@ -931,8 +933,10 @@ const SkillsSection = ({ formData, onChange }) => {
 
       {/* Event Interests */}
       <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-6">
-        <h3 className="text-lg font-semibold mb-4">Sở thích sự kiện</h3>
-        <h4 className="text-md font-medium mb-3 text-gray-700">Sở thích chung</h4>
+        <h3 className="text-lg font-semibold mb-4 flex items-center">
+          <Heart className="w-5 h-5 mr-2 text-blue-600" />
+          Sở thích chung
+        </h3>
 
         <div className="flex flex-wrap gap-3 mb-4">
           {(formData.interests || []).map((interest, index) => (
