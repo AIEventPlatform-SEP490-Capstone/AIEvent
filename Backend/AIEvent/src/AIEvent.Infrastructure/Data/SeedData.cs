@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
 
@@ -326,7 +326,6 @@ namespace AIEvent.Infrastructure.Data
                     TotalTickets = 200,
                     SoldQuantity = 99,
                     RemainingTickets = 101,
-                    TicketPricingType = TicketPricingType.Paid,
                     Publish = true,
                     Status = EventStatus.Approved,
                     CreatedAt = DateTime.UtcNow,
@@ -345,7 +344,6 @@ namespace AIEvent.Infrastructure.Data
                     Address = "Nhà hát Hòa Bình",
                     TotalTickets = 500,
                     RemainingTickets = 500,
-                    TicketPricingType = TicketPricingType.Paid,
                     Publish = true,
                     Status = EventStatus.Approved,
                     CreatedAt = DateTime.UtcNow,
@@ -365,7 +363,6 @@ namespace AIEvent.Infrastructure.Data
                     Address = "Tòa nhà Innovation Hub",
                     TotalTickets = 100,
                     RemainingTickets = 100,
-                    TicketPricingType = TicketPricingType.Paid,
                     Publish = false, // chưa publish
                     Status = EventStatus.PendingApproval,
                     CreatedAt = DateTime.UtcNow,
@@ -385,7 +382,6 @@ namespace AIEvent.Infrastructure.Data
                     Address = "Tòa nhà Innovation Hub 1111111",
                     TotalTickets = 100,
                     RemainingTickets = 100,
-                    TicketPricingType = TicketPricingType.Free,
                     Publish = true, 
                     Status = EventStatus.Approved,
                     CreatedAt = DateTime.UtcNow,

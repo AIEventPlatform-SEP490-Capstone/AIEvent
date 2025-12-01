@@ -1,4 +1,4 @@
-﻿using AIEvent.Domain.Enums;
+using AIEvent.Domain.Enums;
 
 namespace AIEvent.Application.DTOs.Event
 {
@@ -15,7 +15,6 @@ namespace AIEvent.Application.DTOs.Event
         public int? TotalPerson { get; set; }
         public int? TotalPersonJoin { get; set; }
         public List<string>? ImgListEvent { get; set; }
-        public TicketPricingType TicketPricingType { get; set; }
         public EventStatus? Status { get; set; }
         public string? OrganizedBy { get; set; }
         public decimal? TotalAmount { get; set; } = 0;

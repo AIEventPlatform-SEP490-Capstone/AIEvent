@@ -47,6 +47,7 @@ import {
   FolderOpen,
   X,
   MoreVertical,
+  Loader2,
 } from "lucide-react";
 import { showSuccess, showError } from "../../lib/toastUtils";
 
@@ -77,6 +78,8 @@ const EventCategory = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [isSubmittingCreate, setIsSubmittingCreate] = useState(false);
+  const [isSubmittingUpdate, setIsSubmittingUpdate] = useState(false);
   // Form data
   const [formData, setFormData] = useState({
     eventCategoryName: "",
@@ -152,16 +155,19 @@ const EventCategory = () => {
       return;
     }
     try {
+      setIsSubmittingCreate(true);
       await createNewCategory({
         eventCategoryName: formData.eventCategoryName,
       });
-      await refreshCategories(); // 🔥 Refresh ngay sau khi tạo
+      await refreshCategories(); //  Refresh ngay sau khi tạo
       showSuccess("Tạo danh mục sự kiện thành công!");
       setIsCreateDialogOpen(false);
       resetForm();
     } catch (err) {
       showError("Lỗi khi tạo danh mục: " + (err.message || "Unknown error"));
       clearCategoriesError();
+    } finally {
+      setIsSubmittingCreate(false);
     }
   };
 
@@ -172,6 +178,7 @@ const EventCategory = () => {
       return;
     }
     try {
+      setIsSubmittingUpdate(true);
       await updateExistingCategory(selectedCategory.eventCategoryId, {
         eventCategoryName: formData.eventCategoryName,
       });
@@ -184,6 +191,8 @@ const EventCategory = () => {
         "Lỗi khi cập nhật danh mục: " + (err.message || "Unknown error")
       );
       clearCategoriesError();
+    } finally {
+      setIsSubmittingUpdate(false);
     }
   };
 
@@ -335,10 +344,16 @@ const EventCategory = () => {
                 <Button
                   variant="outline"
                   onClick={() => setIsCreateDialogOpen(false)}
+                  disabled={isSubmittingCreate}
                 >
                   Hủy
                 </Button>
-                <Button onClick={handleCreate}>Tạo Danh Mục</Button>
+                <Button onClick={handleCreate} disabled={isSubmittingCreate}>
+                  {isSubmittingCreate && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {isSubmittingCreate ? "Đang tạo..." : "Tạo Danh Mục"}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -479,14 +494,6 @@ const EventCategory = () => {
                             {category.eventCategoryName}
                           </h3>
                         </div>
-
-                        {/* Status Badge */}
-                        <Badge
-                          variant="default"
-                          className="bg-green-100 text-green-800 border-green-200 text-xs"
-                        >
-                          ● Đang hoạt động
-                        </Badge>
                       </div>
 
                       {/* Hover Effect Border */}
@@ -598,10 +605,16 @@ const EventCategory = () => {
                 setIsEditDialogOpen(false);
                 setSelectedCategory(null);
               }}
+              disabled={isSubmittingUpdate}
             >
               Hủy
             </Button>
-            <Button onClick={handleUpdate}>Cập nhật</Button>
+            <Button onClick={handleUpdate} disabled={isSubmittingUpdate}>
+              {isSubmittingUpdate && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {isSubmittingUpdate ? "Đang cập nhật..." : "Cập nhật"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

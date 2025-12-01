@@ -104,9 +104,12 @@ export default function OrganizerApprovalDetailPage() {
   const handleConfirm = async (status) => {
     if (!id) return;
     setIsSubmitting(true);
-    await confirmOrganizer(id, { status, reason });
-    setIsSubmitting(false);
-    navigate("/admin/organizers");
+    try {
+      await confirmOrganizer(id, { status, reason });
+      navigate("/admin/organizers");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const translate = (type, value) =>
@@ -327,13 +330,23 @@ export default function OrganizerApprovalDetailPage() {
                     disabled={isSubmitting}
                     onClick={() => handleConfirm("Rejected")}
                   >
-                    <XCircle className="w-4 h-4 mr-1" /> Từ chối
+                    {isSubmitting ? (
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    ) : (
+                      <XCircle className="w-4 h-4 mr-1" />
+                    )}
+                    {isSubmitting ? "Đang xử lý..." : "Từ chối"}
                   </Button>
                   <Button
                     disabled={isSubmitting}
                     onClick={() => handleConfirm("Approved")}
                   >
-                    <CheckCircle className="w-4 h-4 mr-1" /> Duyệt
+                    {isSubmitting ? (
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    ) : (
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                    )}
+                    {isSubmitting ? "Đang xử lý..." : "Duyệt"}
                   </Button>
                 </div>
               </CardContent>

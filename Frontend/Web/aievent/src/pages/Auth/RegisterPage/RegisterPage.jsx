@@ -103,6 +103,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [isHandlingEmailError, setIsHandlingEmailError] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -128,12 +129,13 @@ export default function RegisterPage() {
     isAuthenticated,
     user,
   } = useSelector((state) => state.auth);
-  // Effect to handle redirection when user is authenticated
+  // Xử lý chuyển hướng khi người dùng đã xác thực
+  // NHƯNG: Không chuyển hướng nếu đang xử lý lỗi email
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && !isHandlingEmailError) {
       navigate(PATH.HOME, { replace: true });
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, navigate, isHandlingEmailError]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -210,10 +212,10 @@ export default function RegisterPage() {
       [name]: value,
     }));
 
-    // Clear error on change
+    // Xóa lỗi khi người dùng thay đổi
     setErrors((prev) => ({ ...prev, [name]: null }));
 
-    // Real-time validation for specific fields
+    // Xác thực theo thời gian thực cho các trường cụ thể
     let newErrors = { ...errors };
     if (name === "email") {
       newErrors.email = validateEmail(value);
@@ -235,7 +237,7 @@ export default function RegisterPage() {
       password: value,
     }));
 
-    // Clear password error and update confirm error
+    // Xóa lỗi mật khẩu và cập nhật lỗi xác nhận
     let newErrors = { ...errors, password: null };
     if (formData.confirmPassword) {
       newErrors.confirmPassword = validateConfirmPassword(
@@ -304,7 +306,7 @@ export default function RegisterPage() {
   const validateForm = () => {
     const newErrors = {};
 
-    // Basic info validation
+    // Xác thực thông tin cơ bản
     if (currentStep === REGISTRATION_STEPS.BASIC_INFO) {
       if (!formData.fullName.trim()) {
         newErrors.fullName = "Vui lòng nhập họ và tên.";
@@ -332,7 +334,7 @@ export default function RegisterPage() {
         newErrors.agreeTerms = "Bạn phải đồng ý với điều khoản dịch vụ.";
       }
     }
-    // Preferences validation
+    // Xác thực sở thích
     if (currentStep === REGISTRATION_STEPS.PREFERENCES) {
       if (formData.preferences.userInterests.length < 3) {
         newErrors.userInterests = "Vui lòng chọn ít nhất 3 sở thích.";
@@ -404,21 +406,68 @@ export default function RegisterPage() {
       navigate(PATH.VERIFY_OTP || "/verify-otp");
     } catch (err) {
       console.error("Register error:", err);
-      if (err.response?.status === 409) {
-        showError(authMessages.registerEmailExists);
-      } else if (err.response?.status === 400) {
-        showError(authMessages.registerWeakPassword);
-      } else if (err.response?.status >= 500) {
-        showError(authMessages.registerError);
-      } else if (
-        err.code === "ECONNABORTED" ||
-        err.message?.includes("Network Error")
+      
+      // Khi register thunk reject, nó trả về error.response.data (response body) hoặc error.message
+      // Vậy err sẽ là object dữ liệu lỗi trực tiếp: { statusCode, message, errors }
+      // KHÔNG phải error.response.data, mà là dữ liệu chính nó
+      // rejectWithValue trả về: error.response ? error.response.data : error.message
+      // Vậy err có thể là { statusCode, message, errors } hoặc string
+      
+      // Kiểm tra xem err có phải là object với statusCode không (response body)
+      const statusCode = typeof err === 'object' && err !== null ? err.statusCode : null;
+      const errorMessage = typeof err === 'object' && err !== null ? err.message : (typeof err === 'string' ? err : null);
+      
+      console.log("Parsed error:", { statusCode, errorMessage, err, errType: typeof err });
+      
+      // Kiểm tra lỗi email trùng bằng statusCode hoặc message
+      // API trả về: { statusCode: "AIE40001", message: "Email address is already registered", errors: null }
+      if (
+        statusCode === "AIE40001" ||
+        errorMessage === "Email address is already registered"
       ) {
-        showError("Lỗi kết nối. Vui lòng kiểm tra mạng và thử lại.");
-      } else if (err?.message || err?.data?.message) {
-        showError(err.message || err.data?.message);
+     
+        const displayMessage = "Email này đã được đăng ký. Vui lòng sử dụng email khác.";
+        
+        // Đặt cờ để ngăn chặn mọi chuyển hướng
+        setIsHandlingEmailError(true);
+        
+        // Hiển thị thông báo lỗi
+        showError(displayMessage);
+        
+        // Đặt lỗi trên trường email
+        setErrors((prev) => ({
+          ...prev,
+          email: displayMessage,
+        }));
+        
+        // Quay về bước 1 ngay lập tức (đồng bộ)
+        setCurrentStep(REGISTRATION_STEPS.BASIC_INFO);
+        
+        // Focus vào trường email sau khi component re-render
+        setTimeout(() => {
+          const emailInput = document.getElementById("email");
+          if (emailInput) {
+            emailInput.focus();
+            emailInput.select();
+          }
+          // Đặt lại cờ sau khi xử lý
+          setIsHandlingEmailError(false);
+        }, 150);
+        
+        // QUAN TRỌNG: Return sớm để ngăn chặn xử lý lỗi hoặc chuyển hướng khác
+        return;
+      }
+      
+      // Xử lý các lỗi khác (nhưng không chuyển hướng)
+      // Lưu ý: Khi thunk reject, chúng ta không có httpStatus, chỉ có dữ liệu lỗi
+      if (errorMessage) {
+        showError(errorMessage);
+        // Với các lỗi khác, cũng quay về bước 1 nếu chưa ở đó
+        if (currentStep !== REGISTRATION_STEPS.BASIC_INFO) {
+          setCurrentStep(REGISTRATION_STEPS.BASIC_INFO);
+        }
       } else {
-        showError(authMessages.registerError);
+        showError(authMessages.registerError || "Đã xảy ra lỗi. Vui lòng thử lại.");
       }
     }
   };
@@ -440,7 +489,7 @@ export default function RegisterPage() {
     }
   };
 
-  // If user is authenticated, show loading while redirecting
+  // Nếu người dùng đã xác thực, hiển thị loading khi đang chuyển hướng
   if (isAuthenticated) {
     return (
       <div className="min-h-[100svh] w-full bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-100 flex items-center justify-center">
@@ -573,7 +622,7 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {/* Right side - Form */}
+        {/* Bên phải - Form */}
         <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12">
           <div className="w-full max-w-md">
             {/* Mobile logo */}
@@ -600,7 +649,7 @@ export default function RegisterPage() {
                 <div className="flex justify-center mt-4 text-sm font-medium text-gray-600">
                   <span>
                     {currentStep === 1 && "Thông tin cơ bản"}
-                    {currentStep === 2 && "Sở thích & Preferences"}
+                    {currentStep === 2 && "Sở thích & Khu vực"}
                     {currentStep === 3 && "Xác nhận"}
                   </span>
                 </div>
@@ -640,7 +689,7 @@ export default function RegisterPage() {
 
               <CardContent className="p-0 pt-6">
                 <form onSubmit={handleRegister}>
-                  {/* Step 1: Basic Information */}
+                  {/* Bước 1: Thông tin cơ bản */}
                   {currentStep === REGISTRATION_STEPS.BASIC_INFO && (
                     <div className="space-y-5">
                       <div>
@@ -925,7 +974,7 @@ export default function RegisterPage() {
                     </div>
                   )}
 
-                  {/* Step 2: Preferences */}
+                  {/* Bước 2: Sở thích */}
                   {currentStep === REGISTRATION_STEPS.PREFERENCES && (
                     <div className="space-y-6">
                       <>
@@ -1107,7 +1156,7 @@ export default function RegisterPage() {
                     </div>
                   )}
 
-                  {/* Step 3: Confirmation */}
+                  {/* Bước 3: Xác nhận */}
                   {currentStep === REGISTRATION_STEPS.CONFIRMATION && (
                     <div className="space-y-6">
                       <div className="text-center">

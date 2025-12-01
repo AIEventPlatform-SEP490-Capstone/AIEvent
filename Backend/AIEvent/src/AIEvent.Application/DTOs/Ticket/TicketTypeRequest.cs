@@ -10,7 +10,7 @@ namespace AIEvent.Application.DTOs.Ticket
         public required string TicketName { get; set; }
 
         [Required(ErrorMessage = "TicketPrice is required")]
-        [Range(0, double.MaxValue, ErrorMessage = "TicketPrice must be greater than or equal to 0")]
+        [Range(10000, double.MaxValue, ErrorMessage = "TicketPrice must be greater than or equal to 10000")]
         public required decimal TicketPrice { get; set; }
 
         [Required(ErrorMessage = "TicketQuantity is required")]

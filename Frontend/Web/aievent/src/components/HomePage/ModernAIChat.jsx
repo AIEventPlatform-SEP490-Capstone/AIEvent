@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { Button } from "../ui/button";
 import userAvt from "../../assets/user.png";
@@ -37,14 +36,14 @@ import { parseEventFromResponse } from "../../utils/aiResponseParser";
 import aiChatGif from "../../assets/ai-chat-2.gif";
 
 export default function ModernAIChat() {
-  const navigate = useNavigate();
+
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
       id: "1",
       content:
-        "Xin chào! 👋 Tôi là AI Assistant của AIEvent. Tôi có thể giúp bạn tìm kiếm sự kiện, đặt vé, hoặc trả lời các câu hỏi về nền tảng. Bạn cần hỗ trợ gì?",
+        "Xin chào! 👋 Tôi là AI Assistant của AIEvent. Tôi có thể giúp bạn tìm kiếm sự kiện theo nhu cầu của bạn, hoặc trả lời các câu hỏi về sự kiện bạn quan tâm. Bạn cần hỗ trợ gì?",
       sender: "ai",
       timestamp: new Date(),
     },
@@ -233,14 +232,6 @@ export default function ModernAIChat() {
     }
   };
 
-  const handleEventClick = (eventInfo) => {
-    // Navigate to search page with event title or location as query
-    if (eventInfo.title) {
-      navigate(`/search?q=${encodeURIComponent(eventInfo.title)}`);
-    } else if (eventInfo.location) {
-      navigate(`/search?q=${encodeURIComponent(eventInfo.location)}`);
-    }
-  };
 
   // Không hiển thị icon nếu user chưa đăng nhập
   if (!isAuthenticated) {
@@ -268,34 +259,35 @@ export default function ModernAIChat() {
   return (
 <Card className="fixed bottom-6 right-6 w-[360px] h-[520px] shadow-xl z-50 flex flex-col border border-slate-200/60 dark:border-slate-700/60 overflow-hidden p-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl">
   {/* Header */}
-  <CardHeader className="px-4 py-3 border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-r from-slate-50/50 to-blue-50/30 dark:from-gray-800/50 dark:to-gray-700/30">
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2.5">
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl blur-md opacity-20" />
-          <div className="relative bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl p-2 shadow-sm">
-            <Bot className="h-4 w-4 text-white" />
-          </div>
-        </div>
-        <div className="flex flex-col">
-          <span className="text-base font-semibold text-slate-800 dark:text-slate-100 leading-tight">
-            AI Assistant
-          </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 leading-tight">
-            Luôn sẵn sàng hỗ trợ
-          </span>
+  <CardHeader className="px-4 py-3 !pb-3 border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-r from-slate-50/50 to-blue-50/30 dark:from-gray-800/50 dark:to-gray-700/30">
+  <div className="flex h-12 items-center justify-between">
+    <div className="flex items-center gap-2.5">
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl blur-md opacity-20" />
+        <div className="relative bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl p-2 shadow-sm">
+          <Bot className="h-5 w-5 text-white" />
         </div>
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setIsOpen(false)}
-        className="h-7 w-7 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
-      >
-        <X className="h-3.5 w-3.5" />
-      </Button>
+      <div className="flex flex-col justify-center">
+        <span className="text-base font-semibold text-slate-800 dark:text-slate-100 leading-tight">
+          AI Assistant
+        </span>
+        <span className="text-xs text-slate-500 dark:text-slate-400 leading-tight">
+          Luôn sẵn sàng hỗ trợ
+        </span>
+      </div>
     </div>
-  </CardHeader>
+
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => setIsOpen(false)}
+      className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+    >
+      <X className="h-4 w-4" />
+    </Button>
+  </div>
+</CardHeader>
       <CardContent className="relative flex-1 flex flex-col p-4 min-h-0 overflow-hidden">
         <ScrollArea className="flex-1 pr-2 overflow-y-auto max-h-full" ref={scrollAreaRef}>
           <div className="space-y-4 pb-2">
@@ -353,7 +345,8 @@ export default function ModernAIChat() {
                           )}
                         </div>
                       )}
-                      <div className="flex-1 space-y-1.5">
+                      <div className="flex flex-col gap-1">
+                         <div className="flex items-start gap-2">
                         <div
                           className={`rounded-xl break-words shadow-sm relative overflow-hidden ${
                             isUserMessage
@@ -439,56 +432,9 @@ export default function ModernAIChat() {
                         )}
                       </div>
                     </div>
-                  </div>
-
-                {/* Event card display if event info is available */}
-                {message.eventInfo && (
-                  <div className={`${isUserMessage ? "mr-10" : "ml-10"} mt-1.5`}>
-                    <div
-                      className="group bg-white dark:bg-gray-800 border border-slate-200/60 dark:border-slate-700/60 rounded-lg p-3 
-                      hover:border-blue-300/60 dark:hover:border-blue-600/60 transition-all duration-300 cursor-pointer 
-                      hover:shadow-md"
-                      onClick={() => handleEventClick(message.eventInfo)}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          {message.eventInfo.title && (
-                            <h4 className="font-semibold text-sm text-slate-800 dark:text-slate-100 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
-                              {message.eventInfo.title}
-                            </h4>
-                          )}
-                          <div className="space-y-1.5">
-                            {(message.eventInfo.date || message.eventInfo.time) && (
-                              <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
-                                <Calendar className="h-3 w-3 text-blue-500 flex-shrink-0" />
-                                <span>
-                                  {message.eventInfo.date}
-                                  {message.eventInfo.time ? ` – ${message.eventInfo.time}` : ""}
-                                </span>
-                              </div>
-                            )}
-                            {(message.eventInfo.location || message.eventInfo.address) && (
-                              <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
-                                <MapPin className="h-3 w-3 text-cyan-500 flex-shrink-0" />
-                                <span>
-                                  {message.eventInfo.location || message.eventInfo.address}
-                                </span>
-                              </div>
-                            )}
-                            {message.eventInfo.price && (
-                              <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
-                                <span className="text-base font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                                  {message.eventInfo.price}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <ExternalLink className="h-3.5 w-3.5 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 flex-shrink-0 transition-colors" />
-                      </div>
                     </div>
                   </div>
-                )}
+
 
               </div>
             );
@@ -527,7 +473,14 @@ export default function ModernAIChat() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="Nhập câu hỏi..."
-              onKeyPress={(e) => e.key === "Enter" && !isLoading && handleSendMessage()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  if (!isLoading) {
+                    handleSendMessage();
+                  }
+                }
+              }}
               disabled={isLoading}
               className="flex-1 h-9 px-3 rounded-lg border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-gray-800 focus:border-blue-400 dark:focus:border-blue-600 focus:ring-1 focus:ring-blue-100 dark:focus:ring-blue-900/50 outline-none transition-all text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
             />
@@ -548,7 +501,12 @@ export default function ModernAIChat() {
               </Button>
             )}
             <Button
-              onClick={handleSendMessage}
+              type="button"
+              onClick={() => {
+                if (!isLoading) {
+                  handleSendMessage();
+                }
+              }}
               disabled={isLoading || !inputValue.trim()}
               size="icon"
               className="h-9 w-9 rounded-lg bg-gradient-to-br from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-md hover:shadow-lg transition-all flex items-center justify-center flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
