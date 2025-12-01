@@ -98,10 +98,18 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result<BasePaginated<UserResponse>>> GetAllUsersAsync(int pageNumber, int pageSize, string? email, string? name, string? role)
         {
+            var roleAdmin = await _unitOfWork.RoleRepository
+                .Query()
+                .AsNoTracking()
+                .Select(r => new { r.Id, r.Name, r.IsDeleted })
+                .FirstOrDefaultAsync(r => r.Name == "Admin" && !r.IsDeleted);
+            if (roleAdmin == null)
+                return ErrorResponse.FailureResult("Role Admin not found", ErrorCodes.NotFound);
+
             IQueryable<User> userQuery = _unitOfWork.UserRepository
                 .Query()
                 .AsNoTracking()
-                .Where(u => u.IsActive && !u.IsDeleted)
+                .Where(u => u.IsActive && !u.IsDeleted && u.Id != roleAdmin.Id)
                 .OrderByDescending(s => s.CreatedAt);
 
             if (!string.IsNullOrEmpty(email))

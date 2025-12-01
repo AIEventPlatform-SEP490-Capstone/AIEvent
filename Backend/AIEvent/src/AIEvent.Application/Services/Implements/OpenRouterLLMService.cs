@@ -77,6 +77,7 @@ namespace AIEvent.Application.Services.Implements
             1) Mở đầu bằng **một câu tự nhiên** giải thích lý do sự kiện này phù hợp.
             2) Sau đó là **form chuẩn**:
 
+            - **Tiêu đề:** [Tiêu đề sự kiện]
             - **Địa điểm:** [Địa điểm tổ chức]
             - **Thời gian:** [dd/MM/yyyy HH:mm → dd/MM/yyyy HH:mm]
             - **Giá vé:** [Miễn phí hoặc giá vé]

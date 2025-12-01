@@ -111,7 +111,6 @@ namespace AIEvent.Application.Services.Implements
                                                                                 string? search, 
                                                                                 string? eventCategoryId, 
                                                                                 List<EventTagRequest> tags, 
-                                                                                TicketPricingType? ticketType, 
                                                                                 string? district, 
                                                                                 TimeLine? timeLine, 
                                                                                 int pageNumber = 1, 
@@ -139,10 +138,6 @@ namespace AIEvent.Application.Services.Implements
                 events = events
                             .Where(e => e.EventTags.Any(et => tagIds.Contains(et.TagId)));
             }
-
-            if (ticketType.HasValue)
-                events = events
-                                .Where(e => e.TicketPricingType == ticketType);
 
             if (!string.IsNullOrEmpty(district))
                 events = events
@@ -196,7 +191,6 @@ namespace AIEvent.Application.Services.Implements
                     StartTime = e.StartTime,
                     EndTime = e.EndTime,
                     Description = e.Description,
-                    TicketPricingType = e.TicketPricingType,
                     TotalTickets = e.TotalTickets,
                     SoldQuantity = e.SoldQuantity,
                     LocationName = e.LocationName,
@@ -704,7 +698,6 @@ namespace AIEvent.Application.Services.Implements
                     PlatformFee = e.PlatformFee,
                     Status = e.Status,
                     Description = e.Description,
-                    TicketPricingType = e.TicketPricingType,
                     LocationName = e.LocationName,
                     TotalAmount = e.TotalAmount,
                     Price = e.TicketTypes != null && e.TicketTypes.Any()
@@ -762,7 +755,6 @@ namespace AIEvent.Application.Services.Implements
                     PlatformFee = e.PlatformFee,
                     Status = e.Status,
                     Description = e.Description,
-                    TicketPricingType = e.TicketPricingType,
                     LocationName = e.LocationName,
                     Price = e.TicketTypes != null && e.TicketTypes.Any()
                         ? e.TicketTypes.Min(t => t.TicketPrice)
@@ -876,7 +868,7 @@ namespace AIEvent.Application.Services.Implements
             {
                 var totalRevenue = ev.TotalAmount;
                 
-                if (totalRevenue >= 50000)
+                if (totalRevenue >= systemSetting.FlatformFee + 10000)
                 {
                     decimal platformFee = totalRevenue * systemSetting.FlatformFee + systemSetting.FixFee;
                     decimal netRevenue = totalRevenue - platformFee;
@@ -1252,7 +1244,6 @@ namespace AIEvent.Application.Services.Implements
                     StartTime = e.Event.StartTime,
                     EndTime = e.Event.EndTime,
                     Description = e.Event.Description,
-                    TicketPricingType = e.Event.TicketPricingType,
                     TotalTickets = e.Event.TotalTickets,
                     SoldQuantity = e.Event.SoldQuantity,
                     LocationName = e.Event.LocationName,

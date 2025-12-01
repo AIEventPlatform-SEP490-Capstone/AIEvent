@@ -803,10 +803,6 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
               <h1 className="text-3xl font-bold text-foreground">Quản lý sự kiện</h1>
               <p className="text-muted-foreground">Quản lý và phê duyệt các sự kiện trong hệ thống</p>
             </div>
-            <Badge variant="secondary" className="px-3 py-1">
-              <Shield className="w-4 h-4 mr-2" />
-              Administrator
-            </Badge>
           </div>
 
           {/* Filters Section */}

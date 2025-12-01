@@ -118,6 +118,17 @@ namespace AIEvent.Application.Services.Implements
 
                     await _notificationService.CreateNotificationToAllAsync(notificationRequest);
                 }
+
+                var notificationUser = new CreateNotificationRequest
+                {
+                    UserId = userId,
+                    Title = "Đơn đăng kí trở thành organizer",
+                    Message = $"Bạn đã gửi đơn đăng kí organizer thành công.",
+                    Type = NotificationType.OrganizerRegistrationPending,
+                    OrganizerProfileId = organizer.Id
+                };
+
+                await _notificationService.CreateNotificationAsync(notificationUser);
             }
 
             return result;
