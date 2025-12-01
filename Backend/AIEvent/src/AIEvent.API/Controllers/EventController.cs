@@ -1,4 +1,4 @@
-﻿﻿using AIEvent.API.Extensions;
+using AIEvent.API.Extensions;
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
@@ -46,7 +46,6 @@ namespace AIEvent.API.Controllers
         public async Task<ActionResult<SuccessResponse<BasePaginated<EventsResponse>>>> GetEvent([FromQuery]string? search,
                                                                                                  [FromQuery] string? eventCategoryId,
                                                                                                  [FromQuery] List<EventTagRequest> tags,
-                                                                                                 [FromQuery] TicketPricingType? ticketType, 
                                                                                                  [FromQuery] string? district, 
                                                                                                  [FromQuery] TimeLine? timeLine,
                                                                                                  [FromQuery] int pageNumber = 1,
@@ -59,7 +58,7 @@ namespace AIEvent.API.Controllers
                 userId = User.GetRequiredUserId();
             }
 
-            var result = await _eventService.GetEventAsync(userId, search, eventCategoryId, tags, ticketType, district, timeLine, pageNumber, pageSize);
+            var result = await _eventService.GetEventAsync(userId, search, eventCategoryId, tags, district, timeLine, pageNumber, pageSize);
             
             if (!result.IsSuccess)
             {
