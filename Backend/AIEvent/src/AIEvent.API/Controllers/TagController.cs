@@ -21,7 +21,7 @@ namespace AIEvent.API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Admin,Organizer")]
+        [Authorize(Roles = "Admin,Organizer,Manager")]
         public async Task<ActionResult<SuccessResponse<object>>> CreateTag([FromBody] CreateTagRequest request)
         {
             var role = User.GetRoleFromClaim();
@@ -72,7 +72,7 @@ namespace AIEvent.API.Controllers
 
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin, Organizer")]
+        [Authorize(Roles = "Admin,Organizer,Manager")]
         public async Task<ActionResult<SuccessResponse<object>>> DeleteTag(string id)
         {
             var result = await _tagService.DeleteTagAsync(id);
