@@ -17,7 +17,6 @@ namespace AIEvent.Domain.Entities
         public int TotalTickets { get; set; }
         public int SoldQuantity { get; set; } = 0;
         public int RemainingTickets { get; set; }
-        public TicketPricingType TicketPricingType { get; set; }
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalAmount { get; set; } = 0;
         [Column(TypeName = "decimal(18,2)")]

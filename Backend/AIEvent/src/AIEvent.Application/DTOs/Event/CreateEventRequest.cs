@@ -20,8 +20,6 @@ namespace AIEvent.Application.DTOs.Event
         public string? DetailedDescription { get; set; }
         public string? LinkRef { get; set; }
         public int TotalTickets { get; set; }
-        [Required(ErrorMessage = "Ticket type is required")]
-        public TicketPricingType TicketPricingType { get; set; }
         [MinLength(1, ErrorMessage = "Please upload at least one image")]
         [Required(ErrorMessage = "Please upload at least one image")]
         public List<string>? ImgListEvent { get; set; }

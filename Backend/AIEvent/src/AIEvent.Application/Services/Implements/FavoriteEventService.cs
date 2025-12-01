@@ -1,4 +1,4 @@
-﻿using AIEvent.Application.Constants;
+using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
 using AIEvent.Application.DTOs.Tag;
@@ -90,7 +90,6 @@ namespace AIEvent.Application.Services.Implements
                     StartTime = e.StartTime,
                     EndTime = e.EndTime,
                     Description = e.Description,
-                    TicketPricingType = e.TicketPricingType,
                     TotalTickets = e.TotalTickets,
                     SoldQuantity = e.SoldQuantity,
                     LocationName = e.LocationName,

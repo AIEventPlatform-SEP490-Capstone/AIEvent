@@ -19,7 +19,6 @@ namespace AIEvent.Application.DTOs.Event
         public DateTime? SaleStartTime { get; set; }
         public DateTime? SaleEndTime { get; set; }
         public bool? Publish { get; set; } = false;
-        public TicketPricingType? TicketPricingType { get; set; }
         public int? TotalTickets { get; set; }
         public string? LinkRef { get; set; }
         public List<string>? ImgListEvent { get; set; }
