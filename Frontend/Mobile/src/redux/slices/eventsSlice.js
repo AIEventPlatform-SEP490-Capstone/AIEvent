@@ -59,7 +59,7 @@ export const searchEvents = createAsyncThunk(
 const calculateDisplayPrice = (eventData) => {
   // If we have ticket details, calculate from them
   if (eventData.ticketDetails && eventData.ticketDetails.length > 0) {
-    const prices = eventData.ticketDetails.map(ticket => ticket.ticketPrice || 0);
+    const prices = eventData.ticketDetails.map(ticket => ticket.ticketPrice !== undefined ? ticket.ticketPrice : 0);
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
     
@@ -70,11 +70,6 @@ const calculateDisplayPrice = (eventData) => {
     } else {
       return `${minPrice.toLocaleString('vi-VN')}đ - ${maxPrice.toLocaleString('vi-VN')}đ`;
     }
-  }
-  
-  // Fallback to direct ticketPrice property
-  if (eventData.ticketPrice !== undefined && eventData.ticketPrice > 0) {
-    return `${eventData.ticketPrice.toLocaleString('vi-VN')}đ`;
   }
   
   // Check ticketPricingType
@@ -231,22 +226,27 @@ const eventsSlice = createSlice({
               'Chưa xác định',
             location: eventData.locationName || eventData.LocationName || 'Chưa xác định',
             address: eventData.address || eventData.Address || '',
-            rating: eventData.averageRating || 4.5,
+            rating: eventData.averageRating !== undefined ? eventData.averageRating : 4.5,
             attendees: eventData.soldQuantity || eventData.SoldQuantity || 0,
-            ticketPrice: eventData.ticketPrice !== undefined ? eventData.ticketPrice : 0,
+            ticketPrice: eventData.ticketDetails && eventData.ticketDetails.length > 0 ? 
+              Math.min(...eventData.ticketDetails.map(t => t.ticketPrice || 0)) : 0,
             ticketPricingType: eventData.ticketPricingType || 'Free',
             image: eventData.imgListEvent && eventData.imgListEvent.length > 0 ? 
               { uri: eventData.imgListEvent[0] } : 
               'card1',
-            category: eventData.eventCategoryName || eventData.EventCategoryName || 
-              (eventData.eventCategory ? eventData.eventCategory.eventCategoryName : '') || 'Chưa phân loại',
-            categoryId: eventData.eventCategoryId || eventData.EventCategoryId || null,
+            category: eventData.eventCategory ? 
+              (eventData.eventCategory.eventCategoryName || eventData.eventCategory.EventCategoryName) : 
+              (eventData.eventCategoryName || eventData.EventCategoryName || 'Chưa phân loại'),
+            categoryId: eventData.eventCategory ? 
+              (eventData.eventCategory.eventCategoryId || eventData.eventCategory.EventCategoryId) : 
+              (eventData.eventCategoryId || eventData.EventCategoryId || null),
             organizer: eventData.organizerEvent ? 
               (eventData.organizerEvent.companyName || eventData.organizerEvent.CompanyName || 'Nhà tổ chức') : 
               'Chưa xác định',
             isFavorite: eventData.isFavorite || false,
             totalTickets: eventData.totalTickets || eventData.TotalTickets || 0,
-            tags: eventData.tags || eventData.Tags || eventData.eventTags || [],
+            remainingTickets: eventData.remainingTickets || 0,
+            tags: eventData.eventTags || eventData.EventTags || eventData.tags || [],
             ticketDetails: eventData.ticketDetails || eventData.TicketDetails || []
           };
           

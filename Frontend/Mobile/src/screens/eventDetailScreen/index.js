@@ -9,9 +9,11 @@ import {
   Linking,
   Modal,
   StyleSheet,
+  Dimensions,
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
+import RenderHtml from 'react-native-render-html';
 import styles from './styles.js';
 import CustomText from '../../components/common/customTextRN';
 import CustomButton from '../../components/common/customButtonRN';
@@ -32,6 +34,8 @@ import {isStaffUser} from '../../utils/jwtUtils';
 // import Clipboard from '@react-native-clipboard/clipboard';
 import * as Clipboard from 'expo-clipboard';
 import Toast from 'react-native-toast-message';
+
+const {width} = Dimensions.get('window');
 
 const EventDetailScreen = () => {
   const navigation = useNavigation();
@@ -278,7 +282,7 @@ const EventDetailScreen = () => {
       if (!tags || !Array.isArray(tags)) return [];
       return tags.map(tag => {
         if (typeof tag === 'object') {
-          return tag.tagName || tag.name || tag.tagId || 'Tag';
+          return tag.tagName || tag.TagName || tag.tagId || tag.TagId || 'Tag';
         }
         return tag;
       });
@@ -286,6 +290,7 @@ const EventDetailScreen = () => {
 
     return {
       id: eventId,
+      eventId: eventId,
       title: eventData.title || eventData.Title || 'Chưa có tiêu đề',
       description:
         eventData.description || eventData.Description || 'Chưa có mô tả',
@@ -313,9 +318,10 @@ const EventDetailScreen = () => {
       location:
         eventData.locationName || eventData.LocationName || 'Chưa xác định',
       address: eventData.address || eventData.Address || '',
-      rating: eventData.averageRating || 4.5, // Use actual rating if available, otherwise mock
+      rating: eventData.averageRating !== undefined ? eventData.averageRating : 4.5,
       attendees: eventData.soldQuantity || eventData.SoldQuantity || 0,
       totalTickets: eventData.totalTickets || eventData.TotalTickets || 0,
+      remainingTickets: eventData.remainingTickets || 0,
       // Fix the price calculation logic
       price: calculateDisplayPrice(eventData),
       image:
@@ -323,20 +329,15 @@ const EventDetailScreen = () => {
           ? {uri: eventData.imgListEvent[0]}
           : 'card1', // Use actual image if available
       category:
-        eventData.eventCategoryName ||
-        eventData.EventCategoryName ||
-        (eventData.eventCategory
-          ? eventData.eventCategory.eventCategoryName
-          : '') ||
-        'Chưa phân loại',
+        eventData.eventCategory ?
+          (eventData.eventCategory.eventCategoryName || eventData.eventCategory.EventCategoryName) :
+          (eventData.eventCategoryName || eventData.EventCategoryName || 'Chưa phân loại'),
       organizer: eventData.organizerEvent
-        ? eventData.organizerEvent.companyName ||
-          eventData.organizerEvent.CompanyName ||
-          'Nhà tổ chức'
+        ? (eventData.organizerEvent.companyName || eventData.organizerEvent.CompanyName || 'Nhà tổ chức')
         : 'Chưa xác định',
       isFavorite: eventData.isFavorite || false,
       tags: transformTags(
-        eventData.tags || eventData.Tags || eventData.eventTags || [],
+        eventData.eventTags || eventData.EventTags || eventData.tags || [],
       ),
       ticketDetails: eventData.ticketDetails || eventData.TicketDetails || [],
     };
@@ -347,7 +348,7 @@ const EventDetailScreen = () => {
     // If we have ticket details, calculate from them
     if (eventData.ticketDetails && eventData.ticketDetails.length > 0) {
       const prices = eventData.ticketDetails.map(
-        ticket => ticket.ticketPrice || 0,
+        ticket => ticket.ticketPrice !== undefined ? ticket.ticketPrice : 0,
       );
       const minPrice = Math.min(...prices);
       const maxPrice = Math.max(...prices);
@@ -359,11 +360,6 @@ const EventDetailScreen = () => {
       } else {
         return `${minPrice.toLocaleString('vi-VN')}đ - ${maxPrice.toLocaleString('vi-VN')}đ`;
       }
-    }
-
-    // Fallback to direct ticketPrice property
-    if (eventData.ticketPrice !== undefined && eventData.ticketPrice > 0) {
-      return `${eventData.ticketPrice.toLocaleString('vi-VN')}đ`;
     }
 
     // Check ticketPricingType
@@ -484,7 +480,7 @@ const EventDetailScreen = () => {
   }
 
   // Calculate available tickets
-  const totalAvailableTickets = event.totalTickets - (event.attendees || 0);
+  const totalAvailableTickets = event.remainingTickets || event.totalTickets - (event.attendees || 0);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -978,7 +974,7 @@ const EventDetailScreen = () => {
                       variant="body"
                       color="primary"
                       style={styles.ticketPrice}>
-                      {ticket.ticketPrice === 0
+                      {ticket.ticketPrice === 0 || ticket.ticketPrice === undefined
                         ? 'Miễn phí'
                         : `${ticket.ticketPrice.toLocaleString('vi-VN')}đ`}
                     </CustomText>
@@ -994,18 +990,29 @@ const EventDetailScreen = () => {
           <CustomText variant="h3" color="primary" style={styles.sectionTitle}>
             {Strings.EVENT_DESCRIPTION}
           </CustomText>
-          <CustomText
-            variant="body"
-            color="secondary"
-            style={{
-              fontSize: Fonts.md,
-              lineHeight: 24,
-              fontFamily: Fonts.regular,
-            }}>
-            {event.description ||
-              event.detailedDescription ||
-              'Chưa có mô tả cho sự kiện này.'}
-          </CustomText>
+          {event.detailedDescription ? (
+            <RenderHtml
+              contentWidth={width}
+              source={{html: event.detailedDescription}}
+              baseStyle={{
+                fontSize: Fonts.md,
+                lineHeight: 24,
+                fontFamily: Fonts.regular,
+                color: Colors.textSecondary,
+              }}
+            />
+          ) : (
+            <CustomText
+              variant="body"
+              color="secondary"
+              style={{
+                fontSize: Fonts.md,
+                lineHeight: 24,
+                fontFamily: Fonts.regular,
+              }}>
+              {event.description || 'Chưa có mô tả cho sự kiện này.'}
+            </CustomText>
+          )}
         </View>
 
         {/* Related Events Section */}
