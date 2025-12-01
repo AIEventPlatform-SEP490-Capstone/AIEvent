@@ -497,13 +497,13 @@ export default function SearchPage() {
                 {/* Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0" />
                 
-                {/* Free Badge */}
+                {/* Free Badge
                 {(event.ticketType === 1 || event.ticketPrice === 0) && (
                   <Badge className="absolute top-4 left-4 bg-success text-success-foreground shadow-lg">
                     <Sparkles className="w-3 h-3 mr-1" />
                     Miễn phí
                   </Badge>
-                )}
+                )} */}
                 
                 {/* Category Badge at bottom */}
                 <Badge 
@@ -559,20 +559,28 @@ export default function SearchPage() {
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-primary" />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium">
-                          {event.soldQuantity || 0}/{event.totalTickets || event.maxAttendees} người
-                        </span>
-                        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all"
-                            style={{ width: `${(event.totalTickets || event.maxAttendees) ? (event.soldQuantity || 0) / (event.totalTickets || event.maxAttendees) * 100 : 0}%` }}
-                          />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-primary" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium">
+                            {event.soldQuantity || 0}/{event.totalTickets || event.maxAttendees} người
+                          </span>
+                          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all"
+                              style={{ width: `${(event.totalTickets || event.maxAttendees) ? (event.soldQuantity || 0) / (event.totalTickets || event.maxAttendees) * 100 : 0}%` }}
+                            />
+                          </div>
                         </div>
                       </div>
+                    </div>
+                    <div className="flex items-center">
+                      <Heart className="w-4 h-4 mr-1 text-gray-500" />
+                      <span className="text-xs font-medium text-gray-600">
+                        {event.favoriteCount || 0}
+                      </span>
                     </div>
                   </div>
                 </div>

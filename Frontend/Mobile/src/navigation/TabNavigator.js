@@ -1,8 +1,7 @@
-import React from 'react';
-import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {createStackNavigator} from '@react-navigation/stack';
-import {CommonActions} from '@react-navigation/native';
-import {Image, View} from 'react-native';
+import React, { useEffect, useCallback, useMemo, useRef } from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
+import { Image, View } from 'react-native';
 import { useSelector } from 'react-redux';
 import { isStaffUser } from '../utils/jwtUtils';
 import HomeScreen from '../screens/homeScreen';
@@ -16,10 +15,12 @@ import ChangePasswordScreen from '../screens/changePasswordScreen';
 import SettingsScreen from '../screens/settingsScreen';
 import TicketsScreen from '../screens/ticketsScreen';
 import LikesScreen from '../screens/likesScreen';
+import FavoriteEventsScreen from '../screens/favoriteEventsScreen';
 import FriendsScreen from '../screens/friendsScreen';
 import FriendDetailScreen from '../screens/friendDetailScreen';
 import TimelineScreen from '../screens/timelineScreen';
 import QrScannerScreen from '../screens/qrScannerScreen';
+import CheckInConfirmationScreen from '../screens/qrScannerScreen/CheckInConfirmationScreen';
 import ScreenNames from '../constants/ScreenNames';
 import Images from '../constants/Images';
 import Colors from '../constants/Colors';
@@ -61,6 +62,26 @@ const HomeStack = () => {
         component={QrScannerScreen}
         options={{
           headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name={ScreenNames.CHECK_IN_CONFIRMATION_SCREEN}
+        component={CheckInConfirmationScreen}
+        options={{
+          headerShown: true,
+          title: 'Xác nhận Check-in',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
         }}
       />
       <Stack.Screen
@@ -126,6 +147,26 @@ const TimelineStack = () => {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name={ScreenNames.CHECK_IN_CONFIRMATION_SCREEN}
+        component={CheckInConfirmationScreen}
+        options={{
+          headerShown: true,
+          title: 'Xác nhận Check-in',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
+        }}
+      />
     </Stack.Navigator>
   );
 };
@@ -163,6 +204,85 @@ const TicketsStack = () => {
         component={QrScannerScreen}
         options={{
           headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name={ScreenNames.CHECK_IN_CONFIRMATION_SCREEN}
+        component={CheckInConfirmationScreen}
+        options={{
+          headerShown: true,
+          title: 'Xác nhận Check-in',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
+        }}
+      />
+    </Stack.Navigator>
+  );
+};
+
+// Stack Navigator cho Favorite Events tab
+const FavoriteEventsStack = () => {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}>
+      <Stack.Screen name="FavoriteEventsMain" component={FavoriteEventsScreen} />
+      <Stack.Screen
+        name={ScreenNames.EVENT_DETAIL_SCREEN}
+        component={EventDetailScreen}
+        options={{
+          headerShown: true,
+          title: 'Chi tiết sự kiện',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
+        }}
+      />
+      <Stack.Screen 
+        name={ScreenNames.QR_SCANNER_SCREEN} 
+        component={QrScannerScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name={ScreenNames.CHECK_IN_CONFIRMATION_SCREEN}
+        component={CheckInConfirmationScreen}
+        options={{
+          headerShown: true,
+          title: 'Xác nhận Check-in',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
         }}
       />
     </Stack.Navigator>
@@ -267,18 +387,98 @@ const ProfileStack = () => {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name={ScreenNames.CHECK_IN_CONFIRMATION_SCREEN}
+        component={CheckInConfirmationScreen}
+        options={{
+          headerShown: true,
+          title: 'Xác nhận Check-in',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
+        }}
+      />
     </Stack.Navigator>
   );
 };
 
 const TabNavigator = () => {
-  const { accessToken } = useSelector(state => state.auth);
+  const { accessToken, isLoggedIn } = useSelector(state => state.auth);
   const isStaff = isStaffUser(accessToken);
+  const prevIsLoggedInRef = useRef(isLoggedIn);
+
+  // Reset navigation when user logs out
+  useEffect(() => {
+    // Only run this effect when isLoggedIn changes from true to false
+    if (prevIsLoggedInRef.current && !isLoggedIn) {
+      // Clear any navigation state when user logs out
+      console.log('User logged out, resetting navigation state');
+    }
+    
+    // Update the ref to the current value
+    prevIsLoggedInRef.current = isLoggedIn;
+  }, [isLoggedIn]);
+
+  // Memoize the tabs configuration to prevent re-rendering issues
+  const tabScreens = useMemo(() => {
+    const commonTabs = [
+      {
+        name: "HomeTab",
+        component: HomeStack,
+        options: {
+          title: 'Trang chủ',
+        }
+      },
+      {
+        name: "Profile",
+        component: ProfileStack,
+        options: {
+          title: 'Hồ sơ',
+        }
+      }
+    ];
+
+    // Always render the same tabs regardless of staff status to prevent re-rendering issues
+    return [
+      ...commonTabs.slice(0, 1), // HomeTab
+      {
+        name: "Timeline",
+        component: TimelineStack,
+        options: {
+          title: 'Timeline',
+        }
+      },
+      {
+        name: "MyEvents",
+        component: TicketsStack,
+        options: {
+          title: 'Vé của tôi',
+        }
+      },
+      {
+        name: "FavoriteEvents",
+        component: FavoriteEventsStack,
+        options: {
+          title: 'Yêu thích',
+        }
+      },
+      ...commonTabs.slice(1) // Profile
+    ];
+  }, []); // Empty dependencies to prevent re-rendering
 
   return (
     <Tab.Navigator
-      screenOptions={({route}) => ({
-        tabBarIcon: ({focused, color, size}) => {
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
           let iconName;
 
           if (route.name === 'HomeTab') {
@@ -287,6 +487,8 @@ const TabNavigator = () => {
             iconName = Images.calendar;
           } else if (route.name === 'MyEvents') {
             iconName = Images.ticket;
+          } else if (route.name === 'FavoriteEvents') {
+            iconName = Images.heart;
           } else if (route.name === 'Profile') {
             iconName = Images.profile;
           }
@@ -310,55 +512,14 @@ const TabNavigator = () => {
           borderTopColor: Colors.border,
         },
       })}>
-      <Tab.Screen
-        name="HomeTab"
-        component={HomeStack}
-        options={{
-          title: 'Trang chủ',
-        }}
-      />
-      {!isStaff && (
-        <>
-          <Tab.Screen
-            name="Timeline"
-            component={TimelineStack}
-            options={{
-              title: 'Timeline',
-            }}
-          />
-          <Tab.Screen
-            name="MyEvents"
-            component={TicketsStack}
-            options={{
-              title: 'Vé của tôi',
-            }}
-          />
-        </>
-      )}
-      <Tab.Screen
-        name="Profile"
-        component={ProfileStack}
-        options={{
-          title: 'Hồ sơ',
-        }}
-        listeners={({ navigation, route }) => ({
-          tabPress: (e) => {
-            // Reset navigation to ProfileMain when tab is pressed
-            const state = navigation.getState();
-            const profileTabState = state.routes.find(r => r.name === 'Profile');
-            if (profileTabState) {
-              const profileStackState = profileTabState.state;
-              if (profileStackState && profileStackState.index > 0) {
-                // If we're not on the main profile screen, navigate to ProfileMain
-                e.preventDefault();
-                navigation.navigate('Profile', {
-                  screen: 'ProfileMain',
-                });
-              }
-            }
-          },
-        })}
-      />
+      {tabScreens.map((tab, index) => (
+        <Tab.Screen
+          key={`${tab.name}-${index}`}
+          name={tab.name}
+          component={tab.component}
+          options={tab.options}
+        />
+      ))}
     </Tab.Navigator>
   );
 };

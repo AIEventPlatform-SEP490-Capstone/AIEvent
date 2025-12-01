@@ -493,7 +493,7 @@ Nhấn OK để xác nhận xóa.`;
                 {
                   label: "Mở bán vé",
                   time: event.saleStartTime
-                    ? `${new Date(event.saleStartTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: '2-digit' })} ${new Date(event.saleStartTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}`
+                    ? `${new Date(event.saleStartTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${new Date(event.saleStartTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}`
                     : "Chưa xác định",
                   icon: <Ticket className="w-5 h-5" />,
                   color: "bg-blue-500",
@@ -526,20 +526,20 @@ Nhấn OK để xác nhận xóa.`;
                 {
                   label: "Đóng bán vé",
                   time: event.saleEndTime
-                    ? `${new Date(event.saleEndTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: '2-digit' })} ${new Date(event.saleEndTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}`
+                    ? `${new Date(event.saleEndTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${new Date(event.saleEndTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}`
                     : "Chưa xác định",
                   icon: <Clock className="w-5 h-5" />,
                   color: "bg-red-500"
                 },
                 {
                   label: "Sự kiện bắt đầu",
-                  time: `${new Date(event.startTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: '2-digit' })} ${new Date(event.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
+                  time: `${new Date(event.startTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${new Date(event.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
                   icon: <Calendar className="w-5 h-5" />,
                   color: "bg-green-500"
                 },
                 {
                   label: "Sự kiện kết thúc",
-                  time: `${new Date(event.endTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: '2-digit' })} ${new Date(event.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
+                  time: `${new Date(event.endTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${new Date(event.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
                   icon: <Flag className="w-5 h-5" />,
                   color: "bg-purple-500"
                 }
@@ -619,9 +619,16 @@ Nhấn OK để xác nhận xóa.`;
             {/* About Event */}
             <div className="bg-white rounded-xl p-8 border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all duration-300">
               <h2 className="text-2xl font-bold text-foreground mb-6">Về sự kiện</h2>
-              <p className="text-muted-foreground leading-relaxed mb-6">
-                {event.description || "Thông tin chi tiết về sự kiện chưa được cập nhật."}
-              </p>
+              {event.detailedDescription || event.description ? (
+                <div 
+                  className="prose max-w-none text-muted-foreground leading-relaxed mb-6 ql-editor"
+                  dangerouslySetInnerHTML={{ __html: event.detailedDescription || event.description }} 
+                />
+              ) : (
+                <p className="text-muted-foreground italic">
+                  Thông tin chi tiết về sự kiện chưa được cập nhật.
+                </p>
+              )}
               
               <div className="space-y-4">
                 <h3 className="font-semibold text-foreground flex items-center gap-2">
@@ -674,13 +681,14 @@ Nhấn OK để xác nhận xóa.`;
             {/* Quick Actions - Enhanced */}
             <SidebarCard title="Hành động nhanh" icon={<Activity className="w-4 h-4" />} gradient>
               <div className="space-y-3">
-                <ActionButton
-                  icon={Edit}
-                  label="Chỉnh sửa sự kiện"
-                  onClick={handleEditEvent}
-                  variant="primary"
-                />
-                
+                {event?.status === EventStatus.PendingApproval && (
+                  <ActionButton
+                    icon={Edit}
+                    label="Chỉnh sửa sự kiện"
+                    onClick={handleEditEvent}
+                    variant="primary"
+                  />
+                )}
                 <ActionButton
                   icon={Eye}
                   label="Xem trang công khai"
@@ -710,7 +718,7 @@ Nhấn OK để xác nhận xóa.`;
             <SidebarCard title="Thống kê đăng ký" icon={<Users className="w-4 h-4" />} gradient>
               <div className="space-y-4">
                 {/* Main Stats Grid */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <StatCard
                     icon={Users}
                     label="Đã đăng ký"
@@ -722,6 +730,12 @@ Nhấn OK để xác nhận xóa.`;
                     label="Còn lại"
                     value={totalAvailableTickets}
                     color="green"
+                  />
+                  <StatCard
+                    icon={Heart}
+                    label="Yêu thích"
+                    value={event.favoriteCount || 0}
+                    color="red"
                   />
                 </div>
 

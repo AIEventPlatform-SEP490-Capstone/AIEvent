@@ -43,6 +43,8 @@ namespace AIEvent.Application.Services.Implements
                 Message = request.Message,
                 ImageUrl = request.ImageUrl,
                 EventId = request.EventId,
+                EventInvitationId = request.EventInvitationId,
+                OrganizerProfileId = request.OrganizerProfileId,
                 Type = request.Type, 
                 IsRead = false,
                 ReadAt = null,
@@ -57,6 +59,8 @@ namespace AIEvent.Application.Services.Implements
                 Title = notification.Title,
                 Message = notification.Message,
                 ImageUrl = notification.ImageUrl,
+                OrganizerProfileId = notification.OrganizerProfileId,
+                EventInvitationId = notification.EventInvitationId,
                 Type = notification.Type,
                 EventId = notification.EventId,
                 IsRead = notification.IsRead,
@@ -97,6 +101,8 @@ namespace AIEvent.Application.Services.Implements
                 Message = request.Message,
                 ImageUrl = request.ImageUrl,
                 EventId = request.EventId,
+                EventInvitationId = request.EventInvitationId,
+                OrganizerProfileId = request.OrganizerProfileId,
                 Type = request.Type, 
                 IsRead = false,
                 ReadAt = null,
@@ -105,19 +111,6 @@ namespace AIEvent.Application.Services.Implements
             await _unitOfWork.NotificationRepository.AddRangeAsync(notifications);
             await _unitOfWork.SaveChangesAsync();
 
-            var response = notifications.Select(n => new NotificationResponse
-            {
-                NotificationId = n.Id,
-                Title = n.Title,
-                Message = n.Message,
-                ImageUrl = n.ImageUrl,
-                Type = n.Type,
-                EventId = n.EventId,
-                IsRead = n.IsRead,
-                ReadAt = n.ReadAt,
-                CreatedTime = n.CreatedAt
-            }).ToList();
-
             var notificationMap = notifications.ToDictionary(n => n.UserId, n => new NotificationResponse
             {
                 NotificationId = n.Id,
@@ -125,6 +118,8 @@ namespace AIEvent.Application.Services.Implements
                 Message = n.Message,
                 ImageUrl = n.ImageUrl,
                 Type = n.Type,
+                OrganizerProfileId = n.OrganizerProfileId,
+                EventInvitationId = n.EventInvitationId,
                 EventId = n.EventId,
                 IsRead = n.IsRead,
                 ReadAt = n.ReadAt,
@@ -183,7 +178,9 @@ namespace AIEvent.Application.Services.Implements
                     ReadAt = n.ReadAt,
                     Title = n.Title,
                     EventId = n.EventId,
-                    CreatedTime = n.CreatedAt
+                    CreatedTime = n.CreatedAt,
+                    EventInvitationId = n.EventInvitationId,
+                    OrganizerProfileId = n.OrganizerProfileId,
                 })
                 .ToListAsync();
 
@@ -227,92 +224,86 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result> SendEventBookingReminderAsync()
         {
-            var upcomingEvents = await _unitOfWork.EventRepository
-                                        .Query()
-                                        .Where(e => !e.IsDeleted
-                                                    && e.Status ==  EventStatus.Approved
-                                                    && e.StartTime > DateTime.UtcNow
-                                                    && e.StartTime <= DateTime.UtcNow.AddHours(3))
-                                        .Include(e => e.Bookings)
-                                        .ToListAsync();
-            if (!upcomingEvents.Any())
-                return ErrorResponse.FailureResult("Upcoming events not found", ErrorCodes.NotFound);
-
-            var allUserIds = upcomingEvents
-                            .SelectMany(e => e.Bookings.Select(b => b.UserId))
-                            .Distinct()
-                            .ToList();
-             
-            var userNotificationPrefs = await _unitOfWork.UserRepository
+            var systemSetting = await _unitOfWork.SystemSettingRepository
                 .Query()
-                .Where(u => allUserIds.Contains(u.Id) && !u.IsDeleted)
-                .Select(u => new { u.Id, u.IsEmailNotificationEnabled, u.Email, u.FullName })
-                .ToDictionaryAsync(x => x.Id, x => new { x.IsEmailNotificationEnabled, x.Email, x.FullName });
+                .FirstOrDefaultAsync(s => !s.IsDeleted);
+
+            if (systemSetting == null)
+                return ErrorResponse.FailureResult("SystemSetting not found", ErrorCodes.NotFound);
+
+            var reminderHours = systemSetting.EventReminderHours > 0 ? systemSetting.EventReminderHours : 3;
+
+            var bookingsToNotify = await _unitOfWork.BookingRepository
+                    .Query()
+                    .Where(b => !b.IsDeleted
+                                && b.IsNotification == false
+                                && b.Status == BookingStatus.Completed       
+                                && b.Event.Status == EventStatus.Approved
+                                && !b.Event.IsDeleted
+                                && b.Event.StartTime > DateTime.UtcNow
+                                && b.Event.StartTime <= DateTime.UtcNow.AddHours(reminderHours))
+                    .Include(b => b.Event)
+                    .Include(b => b.User)                         
+                    .Select(b => new
+                    {
+                        Booking = b,
+                        Event = b.Event,
+                        User = b.User
+                    })
+                    .ToListAsync();
+
+            if (!bookingsToNotify.Any())
+                return ErrorResponse.FailureResult("Upcoming events not found", ErrorCodes.NotFound);
 
             var bookingsToUpdate = new List<Booking>();
 
-            foreach (var ev in upcomingEvents)
+            foreach (var item in bookingsToNotify)
             {
-                if (!ev.Bookings.Any())
-                    continue;
+                var booking = item.Booking;
+                var eventItem = item.Event;
+                var user = item.User;
 
-                var firstImage = !string.IsNullOrEmpty(ev.ImgListEvent) 
-                    ? ev.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() 
+                if (user == null || user.IsDeleted) continue;
+
+                var firstImage = !string.IsNullOrEmpty(eventItem.ImgListEvent) 
+                    ? eventItem.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() 
                     : string.Empty;
 
-                foreach (var booking in ev.Bookings)
+                var notificationRequest = new CreateNotificationRequest
                 {
-                    if(booking.Status != BookingStatus.Completed)
-                        continue;
+                    UserId = booking.UserId,
+                    Title = $"Sắp diễn ra: {eventItem.Title}",
+                    Message = $"Sự kiện {eventItem.Title} sẽ diễn ra vào {eventItem.StartTime.AddHours(7):HH:mm dd/MM/yyyy}",
+                    Type = NotificationType.EventReminder,
+                    EventId = eventItem.Id,
+                    ImageUrl = firstImage
+                };
 
-                    if (booking.IsNotification == true)
-                        continue; 
+                await CreateNotificationAsync(notificationRequest);
 
-                    if (!userNotificationPrefs.TryGetValue(booking.UserId, out var userPrefs))
-                        continue;
- 
-                    var notificationSent = false;
-                    var notificationRequest = new CreateNotificationRequest
+                if (user.IsEmailNotificationEnabled == true && !string.IsNullOrEmpty(user.Email))
+                {
+                    var sb = new StringBuilder();
+                    if (!string.IsNullOrEmpty(firstImage))
+                        sb.AppendLine($"<img src='{firstImage}' alt='Event' style='width:100%;max-width:600px;border-radius:8px;margin-bottom:20px;'/>");
+
+                    sb.AppendLine($"<p>Xin chào {user.FullName ?? user.Email},</p>")
+                      .AppendLine($"<p>Sự kiện <strong>{eventItem.Title}</strong> sẽ diễn ra vào <strong>{eventItem.StartTime.AddHours(7):HH:mm dd/MM/yyyy}</strong>.</p>")
+                      .AppendLine("<p>Đừng quên tham gia sự kiện nhé!</p>")
+                      .AppendLine($"<p><a href=\"https://ai-event-alpha.vercel.app/event/{eventItem.Id}\">Xem chi tiết sự kiện</a></p>")
+                      .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
+
+                    var message = new MimeMessage
                     {
-                        UserId = booking.UserId,
-                        Title = $"Sắp diễn ra: {ev.Title}",
-                        Message = $"Sự kiện {ev.Title} sẽ diễn ra vào {ev.StartTime:HH:mm dd/MM/yyyy}",
-                        Type = NotificationType.EventReminder, 
-                        EventId = ev.Id,
-                        ImageUrl = firstImage
+                        Subject = $"Nhắc nhở: {eventItem.Title} sắp diễn ra",
+                        Body = new TextPart("html") { Text = sb.ToString() }
                     };
 
-                    await CreateNotificationAsync(notificationRequest);
-                    notificationSent = true;
-
-                    if (userPrefs.IsEmailNotificationEnabled == true && !string.IsNullOrEmpty(userPrefs.Email))
-                    {
-                        var sb = new StringBuilder();
-                        if (!string.IsNullOrEmpty(firstImage))
-                            sb.AppendLine($"<img src='{firstImage}' alt='Event' style='width:100%;max-width:600px;border-radius:8px;margin-bottom:20px;'/>");
-
-                        sb.AppendLine($"<p>Xin chào {userPrefs.FullName ?? userPrefs.Email},</p>")
-                          .AppendLine($"<p>Sự kiện <strong>{ev.Title}</strong> sẽ diễn ra vào <strong>{ev.StartTime:HH:mm dd/MM/yyyy}</strong>.</p>")
-                          .AppendLine("<p>Đừng quên tham gia sự kiện nhé!</p>")
-                          .AppendLine($"<p><a href=\"https://ai-event-alpha.vercel.app/event/{ev.Id}\">Xem chi tiết sự kiện</a></p>")
-                          .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
-
-                        var message = new MimeMessage
-                        {
-                            Subject = $"Nhắc nhở: {ev.Title} sắp diễn ra",
-                            Body = new TextPart("html") { Text = sb.ToString() }
-                        };
-
-                        await _emailService.SendEmailAsync(userPrefs.Email, message);
-                        notificationSent = true;
-                    } 
-                    
-                    if (notificationSent)
-                    {
-                        booking.IsNotification = true;
-                        bookingsToUpdate.Add(booking);
-                    }
+                    await _emailService.SendEmailAsync(user.Email, message);
                 }
+
+                booking.IsNotification = true;
+                bookingsToUpdate.Add(booking);
             }
             
             if (bookingsToUpdate.Any())

@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'react-hot-toast';
 import { z } from "zod";
 import { PATH } from "../../routes/path";
+import RichTextEditor from '../../components/RichTextEditor';
 import {
   Calendar,
   Image,
@@ -75,12 +76,12 @@ import { useSidebar } from '../../components/ui/sidebar'; // Add this import
 const createEventSchema = z.object({
   title: z.string().min(1, 'Tiêu đề sự kiện là bắt buộc').max(200, 'Tiêu đề không được vượt quá 200 ký tự'),
   description: z.string().min(1, 'Mô tả sự kiện là bắt buộc').max(1000, 'Mô tả không được vượt quá 1000 ký tự'),
-  detailedDescription: z.string().optional(),
+  detailedDescription: z.string().min(1, 'Mô tả chi tiết sự kiện là bắt buộc'),
   startTime: z.string().min(1, 'Thời gian bắt đầu là bắt buộc'),
   endTime: z.string().min(1, 'Thời gian kết thúc là bắt buộc'),
-  locationName: z.string().optional(),
-  address: z.string().optional(),
-  district: z.string().optional(),
+  locationName: z.string().min(1, 'Địa điểm là bắt buộc'),
+  address: z.string().min(1, 'Địa chỉ chi tiết là bắt buộc'),
+  district: z.string().min(1, 'Quận/Huyện là bắt buộc'),
   linkRef: z.string().optional(),
   eventCategoryId: z.string().min(1, 'Danh mục sự kiện là bắt buộc'), // Make this required
   ticketPricingType: z.string().min(1, 'Loại vé là bắt buộc'),
@@ -95,22 +96,6 @@ const createEventSchema = z.object({
     ticketDescription: z.string().optional(),
     // ruleRefundRequestId: z.string().min(1, 'Quy tắc hoàn tiền là bắt buộc'),
   })).min(1, 'Phải có ít nhất một loại vé')
-}).refine((data) => {
-  if (!data.locationName) {
-    return false;
-  }
-  return true;
-}, {
-  message: 'Địa điểm là bắt buộc',
-  path: ['locationName'],
-}).refine((data) => {
-  if (!data.district) {
-    return false;
-  }
-  return true;
-}, {
-  message: 'Quận/Huyện là bắt buộc',
-  path: ['district'],
 }).refine((data) => {
   const saleStart = new Date(data.saleStartTime);
   const saleEnd = new Date(data.saleEndTime);
@@ -158,6 +143,19 @@ const CreateEventPage = () => {
     saleStartTime: '',
     saleEndTime: ''
   });
+  
+  // Track if validation has been triggered (to avoid showing errors before user interaction)
+  const [hasValidated, setHasValidated] = useState(false);
+  
+  // Add state for tag validation errors
+  const [tagError, setTagError] = useState('');
+  
+  // Add state for image validation errors
+  const [imageError, setImageError] = useState('');
+  const [evidenceImageError, setEvidenceImageError] = useState('');
+  
+  // Add state for ticket name validation errors
+  const [ticketNameError, setTicketNameError] = useState('');
   
   // Add state for editing modes
   const [editingField, setEditingField] = useState(null);
@@ -508,6 +506,10 @@ const CreateEventPage = () => {
     setSelectedImages(files);
     const previews = files.map(file => URL.createObjectURL(file));
     setImagePreview(previews);
+    // Clear image error when images are selected
+    if (files.length > 0) {
+      setImageError('');
+    }
   };
   // Handle evidence image upload
   const handleEvidenceImageChange = (e) => {
@@ -519,6 +521,10 @@ const CreateEventPage = () => {
     setSelectedEvidenceImageUrls(files);
     const previews = files.map(file => URL.createObjectURL(file));
     setEvidenceImagePreview(previews);
+    // Clear evidence image error when images are selected
+    if (files.length > 0) {
+      setEvidenceImageError('');
+    }
   };
   // Remove image
   const removeImage = (index) => {
@@ -527,6 +533,11 @@ const CreateEventPage = () => {
     
     setSelectedImages(newImages);
     setImagePreview(newPreviews);
+    
+    // Set error if no images left
+    if (newImages.length === 0 && newPreviews.length === 0) {
+      setImageError('Vui lòng tải lên ít nhất một hình ảnh sự kiện');
+    }
   };
   // Remove evidence image
   const removeEvidenceImage = (index) => {
@@ -535,6 +546,11 @@ const CreateEventPage = () => {
     
     setSelectedEvidenceImageUrls(newImages);
     setEvidenceImagePreview(newPreviews);
+    
+    // Set error if no evidence images left
+    if (newImages.length === 0 && newPreviews.length === 0) {
+      setEvidenceImageError('Vui lòng tải lên ít nhất một hình ảnh bằng chứng');
+    }
   };
   // Add ticket type
   const addTicketType = () => {
@@ -683,12 +699,14 @@ const CreateEventPage = () => {
   // Handle form submission
   const onSubmit = async (data) => {
     try {
-      // Kiểm tra validation trước khi submit
-      const dateValidationErrors = validateDates();
-      const hasTimelineErrors = Object.values(timelineErrors).some(error => error !== '');
+      // Validate all fields at once and show inline errors
+      const hasErrors = validateAllFields();
       
-      if (dateValidationErrors.length > 0 || hasTimelineErrors) {
-        toast.error('Vui lòng kiểm tra lại thông tin thời gian sự kiện');
+      if (hasErrors) {
+        const errorMessage = data.publish 
+          ? 'Vui lòng kiểm tra lại thông tin sự kiện trước khi xuất bản' 
+          : 'Vui lòng kiểm tra lại thông tin sự kiện trước khi lưu nháp';
+        toast.error(errorMessage);
         return;
       }
       
@@ -710,17 +728,23 @@ const CreateEventPage = () => {
       }
       // Validate event images - check for either uploaded or cloned images
       if (selectedImages.length === 0 && imagePreview.length === 0) {
+        setImageError('Vui lòng tải lên ít nhất một hình ảnh sự kiện');
         toast.error('Vui lòng tải lên ít nhất một hình ảnh sự kiện');
         hideLoading();
         setIsSubmitting(false);
         return;
+      } else {
+        setImageError('');
       }
       // Validate evidence images - check for either uploaded or cloned images
       if (selectedEvidenceImages.length === 0 && evidenceImagePreview.length === 0) {
+        setEvidenceImageError('Vui lòng tải lên ít nhất một hình ảnh bằng chứng');
         toast.error('Vui lòng tải lên ít nhất một hình ảnh bằng chứng');
         hideLoading();
         setIsSubmitting(false);
         return;
+      } else {
+        setEvidenceImageError('');
       }
       // Convert datetime strings to Date objects for validation
       const startDate = new Date(data.startTime);
@@ -798,7 +822,8 @@ const CreateEventPage = () => {
         
         // Create a UTC date using the parsed components
         // Since the user entered local time (UTC+7), we need to subtract 7 hours to get UTC
-        const utcDate = new Date(Date.UTC(year, month - 1, day, hours - 7, minutes));
+        // ĐÚNG: KHÔNG TRỪ 7 TIẾNG
+        const utcDate = new Date(Date.UTC(year, month - 1, day, hours, minutes));
         
         // Return proper UTC ISO string
         return utcDate.toISOString();
@@ -883,6 +908,20 @@ const CreateEventPage = () => {
       saleStartTime: '',
       saleEndTime: ''
     };
+    
+    // Check for required fields
+    if (!startTime) {
+      newErrors.startTime = 'Thời gian bắt đầu sự kiện là bắt buộc';
+    }
+    if (!endTime) {
+      newErrors.endTime = 'Thời gian kết thúc sự kiện là bắt buộc';
+    }
+    if (!saleStartTime) {
+      newErrors.saleStartTime = 'Thời gian bắt đầu bán vé là bắt buộc';
+    }
+    if (!saleEndTime) {
+      newErrors.saleEndTime = 'Thời gian kết thúc bán vé là bắt buộc';
+    }
     
     // Create now date in the same timezone as the input dates (UTC+7)
     // Since datetime inputs are in local time (UTC+7), we need to compare with local time
@@ -1137,6 +1176,77 @@ const CreateEventPage = () => {
   useEffect(() => {
     setCurrentImageIndex(0);
   }, [imagePreview?.length]);
+  
+  // Clear tag error when tags are selected
+  useEffect(() => {
+    if (reduxSelectedTags && reduxSelectedTags.length > 0) {
+      setTagError('');
+    }
+  }, [reduxSelectedTags]);
+  
+  // Clear image errors when images are selected
+  useEffect(() => {
+    if (selectedImages.length > 0 || imagePreview.length > 0) {
+      setImageError('');
+    }
+  }, [selectedImages, imagePreview]);
+  
+  // Clear evidence image errors when evidence images are selected
+  useEffect(() => {
+    if (selectedEvidenceImages.length > 0 || evidenceImagePreview.length > 0) {
+      setEvidenceImageError('');
+    }
+  }, [selectedEvidenceImages, evidenceImagePreview]);
+  
+  // Function to validate all fields at once
+  const validateAllFields = () => {
+    // Set validation flag to show errors
+    setHasValidated(true);
+    
+    // Validate timeline
+    validateDates();
+    
+    // Validate tags
+    if (!reduxSelectedTags || reduxSelectedTags.length === 0) {
+      setTagError('Vui lòng chọn ít nhất một tag cho sự kiện');
+    } else {
+      setTagError('');
+    }
+    
+    // Validate event images
+    if (selectedImages.length === 0 && imagePreview.length === 0) {
+      setImageError('Vui lòng tải lên ít nhất một hình ảnh sự kiện');
+    } else {
+      setImageError('');
+    }
+    
+    // Validate evidence images
+    if (selectedEvidenceImages.length === 0 && evidenceImagePreview.length === 0) {
+      setEvidenceImageError('Vui lòng tải lên ít nhất một hình ảnh bằng chứng');
+    } else {
+      setEvidenceImageError('');
+    }
+    
+    // Validate ticket names
+    const ticketTypes = watch('ticketTypes') || [];
+    const hasEmptyTicketNames = ticketTypes.some(ticket => !ticket.ticketName || ticket.ticketName.trim() === '');
+    
+    if (hasEmptyTicketNames) {
+      setTicketNameError('Vui lòng nhập đầy đủ tên cho tất cả các loại vé');
+    } else {
+      setTicketNameError('');
+    }
+    
+    // Return true if there are validation errors
+    const hasTagErrors = !reduxSelectedTags || reduxSelectedTags.length === 0;
+    const hasImageErrors = selectedImages.length === 0 && imagePreview.length === 0;
+    const hasEvidenceImageErrors = selectedEvidenceImages.length === 0 && evidenceImagePreview.length === 0;
+    const hasTimelineErrors = Object.values(timelineErrors).some(error => error !== '') || 
+                            Object.values(dateErrors).some(error => error !== '');
+    const hasTicketNameErrors = hasEmptyTicketNames;
+    
+    return hasTagErrors || hasImageErrors || hasEvidenceImageErrors || hasTimelineErrors || hasTicketNameErrors;
+  };
   if (!user || !['Organizer', 'Admin', 'Manager'].includes(user.role)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -1284,6 +1394,20 @@ const CreateEventPage = () => {
                       className="hidden"
                     />
                   </label>
+                  {/* Display error for event images if needed */}
+                  {errors.images && (
+                    <div className="absolute bottom-4 right-1/2 transform translate-x-1/2 bg-red-500 text-white px-3 py-1 rounded text-xs flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {errors.images.message}
+                    </div>
+                  )}
+                  {/* Display custom image error if needed */}
+                  {hasValidated && imageError && (
+                    <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {imageError}
+                    </p>
+                  )}
                 </>
               ) : (
                 <div className="w-full h-full bg-gray-100 flex items-center justify-center">
@@ -1326,6 +1450,12 @@ const CreateEventPage = () => {
                   <Pencil className="w-4 h-4 inline-block ml-2 text-gray-400" />
                 </h1>
               )}
+              {hasValidated && errors.title && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {errors.title.message}
+                </p>
+              )}
               
               {/* Editable Description */}
               {editingField === 'description' ? (
@@ -1347,6 +1477,12 @@ const CreateEventPage = () => {
                   <Pencil className="w-4 h-4 inline-block ml-2 text-gray-400" />
                 </p>
               )}
+              {hasValidated && errors.description && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {errors.description.message}
+                </p>
+              )}
             </div>
             {/* Event Timeline */}
             <EventTimeline 
@@ -1356,7 +1492,8 @@ const CreateEventPage = () => {
                   time: watch('saleStartTime') 
                     ? `${new Date(watch('saleStartTime')).toLocaleDateString('vi-VN', {
                         day: '2-digit',
-                        month: '2-digit'
+                        month: '2-digit',
+                        year: 'numeric'
                       })} ${new Date(watch('saleStartTime')).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -1370,7 +1507,8 @@ const CreateEventPage = () => {
                   time: watch('saleEndTime') 
                     ? `${new Date(watch('saleEndTime')).toLocaleDateString('vi-VN', {
                         day: '2-digit',
-                        month: '2-digit'
+                        month: '2-digit',
+                        year: 'numeric'
                       })} ${new Date(watch('saleEndTime')).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -1384,7 +1522,8 @@ const CreateEventPage = () => {
                   time: watch('startTime') 
                     ? `${new Date(watch('startTime')).toLocaleDateString('vi-VN', {
                         day: '2-digit',
-                        month: '2-digit'
+                        month: '2-digit',
+                        year: 'numeric'
                       })} ${new Date(watch('startTime')).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -1398,7 +1537,8 @@ const CreateEventPage = () => {
                   time: watch('endTime') 
                     ? `${new Date(watch('endTime')).toLocaleDateString('vi-VN', {
                         day: '2-digit',
-                        month: '2-digit'
+                        month: '2-digit',
+                        year: 'numeric'
                       })} ${new Date(watch('endTime')).toLocaleTimeString('vi-VN', {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -1441,6 +1581,17 @@ const CreateEventPage = () => {
               }}
               onValidationChange={handleTimelineValidationChange}
             />
+            {/* Display timeline validation errors */}
+            {hasValidated && (
+              <div className="space-y-2 mt-2">
+                {(!watch('saleStartTime') || !watch('saleEndTime') || !watch('startTime') || !watch('endTime')) && (
+                  <p className="text-red-500 text-xs flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    Thời gian của sự kiện cần nhập đầy đủ
+                  </p>
+                )}
+              </div>
+            )}
             {/* Ticket Information */}
             {previewData.ticketTypes && previewData.ticketTypes.length > 0 && (
               <div className="bg-white rounded-xl p-6 border border-gray-100">
@@ -1591,12 +1742,38 @@ const CreateEventPage = () => {
                 })}
               </div>
             )}
+            {/* Display ticket name validation error */}
+            {hasValidated && ticketNameError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-2">
+                <p className="text-red-700 text-sm flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  {ticketNameError}
+                </p>
+              </div>
+            )}
             {/* About Event */}
             <div className="bg-white rounded-xl p-8 border border-gray-100">
               <h2 className="text-2xl font-bold text-foreground mb-6">Về sự kiện</h2>
-              <p className="text-muted-foreground leading-relaxed mb-6">
-                {watch('description') || "Thông tin chi tiết về sự kiện chưa được cập nhật."}
-              </p>
+              <div className="space-y-4 mb-6">
+                <h3 className="text-lg font-semibold text-foreground">Mô tả chi tiết</h3>
+                <RichTextEditor
+                  value={watch('detailedDescription')}
+                  onChange={(value) => {
+                    setValue('detailedDescription', value);
+                    if (hasValidated && errors.detailedDescription) {
+                      clearErrors('detailedDescription');
+                    }
+                  }}
+                  placeholder="Nhập mô tả chi tiết sự kiện..."
+                  viewMode={true}
+                />
+                {hasValidated && errors.detailedDescription && (
+                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {errors.detailedDescription.message}
+                  </p>
+                )}
+              </div>
               
               <div className="space-y-4">
                 <h3 className="font-semibold text-foreground flex items-center gap-2">
@@ -1807,6 +1984,12 @@ const CreateEventPage = () => {
                     <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-200 dark:border-gray-800">
                       <TagSelector />
                     </div>
+                    {hasValidated && tagError && (
+                      <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {tagError}
+                      </p>
+                    )}
                   </div>
 
                   <div className="h-px bg-gradient-to-r from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-900"></div>
@@ -1862,6 +2045,20 @@ const CreateEventPage = () => {
                         ))}
                       </div>
                     )}
+                    {/* Display error for evidence images if needed */}
+                    {hasValidated && errors.evidenceImages && (
+                      <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {errors.evidenceImages.message}
+                      </p>
+                    )}
+                    {/* Display custom evidence image error if needed */}
+                    {hasValidated && evidenceImageError && (
+                      <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {evidenceImageError}
+                      </p>
+                    )}
                   </div>
 
                   <div className="h-px bg-gradient-to-r from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-900"></div>
@@ -1873,14 +2070,8 @@ const CreateEventPage = () => {
                       variant="outline"
                       className="h-10 rounded-lg font-medium border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 bg-transparent"
                       onClick={() => {
-                        // Kiểm tra validation trước khi submit
-                        const dateValidationErrors = validateDates();
-                        const hasTimelineErrors = Object.values(timelineErrors).some(error => error !== '');
-                        
-                        if (dateValidationErrors.length > 0 || hasTimelineErrors) {
-                          toast.error('Vui lòng kiểm tra lại thông tin thời gian sự kiện trước khi lưu nháp');
-                          return;
-                        }
+                        // Validate all fields at once and show inline errors
+                        validateAllFields();
                         
                         handleSubmit((data) => onSubmit({ ...data, publish: false }))();
                       }}
@@ -1893,14 +2084,8 @@ const CreateEventPage = () => {
                       type="button"
                       className="h-10 rounded-lg font-medium bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all"
                       onClick={() => {
-                        // Kiểm tra validation trước khi submit
-                        const dateValidationErrors = validateDates();
-                        const hasTimelineErrors = Object.values(timelineErrors).some(error => error !== '');
-                        
-                        if (dateValidationErrors.length > 0 || hasTimelineErrors) {
-                          toast.error('Vui lòng kiểm tra lại thông tin thời gian sự kiện trước khi xuất bản');
-                          return;
-                        }
+                        // Validate all fields at once and show inline errors
+                        validateAllFields();
                         
                         handleSubmit((data) => onSubmit({ ...data, publish: true }))();
                       }}

@@ -9,14 +9,14 @@ import {
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
-import { styles } from './styles';
+import styles from './styles';
 import CustomText from '../../components/common/customTextRN';
 import { LinearGradient } from 'expo-linear-gradient';
 import EventCard from '../../components/presentation/EventCard';
 import Colors from '../../constants/Colors';
 import { fetchFavoriteEvents, selectFavoriteEvents, selectFavoriteEventsLoading, selectFavoriteEventsError } from '../../redux/slices/favoriteEventsSlice';
 
-const LikesScreen = () => {
+const FavoriteEventsScreen = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
   
@@ -77,8 +77,6 @@ const LikesScreen = () => {
     const id = item.id || item.eventId || item.EventId || index.toString();
     return id ? id.toString() : Math.random().toString();
   };
-  
-  const likedEvents = favoriteEvents;
 
   return (
     <View style={styles.container}>
@@ -103,10 +101,10 @@ const LikesScreen = () => {
           </CustomText>
         </LinearGradient>
 
-        {likedEvents.length > 0 ? (
+        {favoriteEvents.length > 0 ? (
           <View style={styles.content}>
             <FlatList
-              data={likedEvents}
+              data={favoriteEvents}
               renderItem={renderEventCard}
               keyExtractor={keyExtractor}
               showsVerticalScrollIndicator={false}
@@ -137,5 +135,4 @@ const LikesScreen = () => {
   );
 };
 
-export default LikesScreen;
-
+export default FavoriteEventsScreen;

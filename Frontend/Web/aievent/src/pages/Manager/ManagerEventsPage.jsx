@@ -44,6 +44,9 @@ import EventReportManager from '../../components/Manager/EventReportManager';
 // Import EventStatus constants
 import { EventStatus, EventStatusDisplay } from '../../constants/eventConstants';
 
+// Import the new SaleCountdown component
+import SaleCountdown from '../../components/Event/SaleCountdown';
+
 const ManagerEventsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -220,7 +223,25 @@ const ManagerEventsPage = () => {
       setIsLoading(false);
     }
   };
+  const formatCurrency = (amount) => {
+    if (!amount || amount === 0) return '0đ';
 
+    const absAmount = Math.abs(amount);
+
+    if (absAmount >= 1_000_000_000) {
+      // Tỷ
+      return `${(amount / 1_000_000_000).toFixed(1).replace('.0', '')} tỷ`;
+    } else if (absAmount >= 1_000_000) {
+      // Triệu
+      return `${(amount / 1_000_000).toFixed(1).replace('.0', '')}M`;
+    } else if (absAmount >= 1_000) {
+      // Nghìn
+      return `${(amount / 1_000).toFixed(0)}K`;
+    } else {
+      // Dưới 1 nghìn thì hiển thị đầy đủ
+      return `${amount.toLocaleString('vi-VN')}đ`;
+    }
+  };
   // With server-side pagination, we no longer need client-side filtering
   // The filtering and sorting should be handled by the API
   const applyFiltersAndSearch = () => {
@@ -1032,13 +1053,16 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                   >
                     <div className="flex flex-col lg:flex-row gap-0">
                       {/* Event thumbnail */}
-                      <div className="flex-shrink-0 lg:w-48 w-full h-48 lg:h-auto overflow-hidden">
+                      <div className="flex-shrink-0 lg:w-100 w-full h-48 lg:h-auto overflow-hidden relative">
                         {eventImage ? (
-                          <img
-                            src={eventImage}
-                            alt={event.title}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                          />
+                          <>
+                            <img
+                              src={eventImage}
+                              alt={event.title}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            />
+                            <SaleCountdown saleStartTime={event.saleStartTime} variant="thumbnail" />
+                          </>
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
                             <Calendar className="h-12 w-12 text-blue-400" />
@@ -1126,13 +1150,13 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                           <div className="backdrop-blur-sm bg-gradient-to-br from-green-100/50 to-green-50/30 dark:from-green-900/50 dark:to-green-800/30 rounded-xl p-3 text-center hover:scale-105 transition-transform">
                             <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Doanh thu</p>
                             <p className="text-base font-bold text-green-700 dark:text-green-400">
-                              {event.totalAmount ? `${(event.totalAmount / 1000000).toFixed(1)}M` : '0đ'}
+                              {formatCurrency(event.totalAmount)}
                             </p>
                           </div>
                           <div className="backdrop-blur-sm bg-gradient-to-br from-emerald-100/50 to-emerald-50/30 dark:from-emerald-900/50 dark:to-emerald-800/30 rounded-xl p-3 text-center hover:scale-105 transition-transform">
                             <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Thanh toán</p>
                             <p className="text-base font-bold text-emerald-700 dark:text-emerald-400">
-                              {event.payoutAmount ? `${(event.payoutAmount / 1000000).toFixed(1)}M` : '0đ'}
+                              {formatCurrency(event.payoutAmount)}
                             </p>
                           </div>
                           <div className="backdrop-blur-sm bg-gradient-to-br from-purple-100/50 to-purple-50/30 dark:from-purple-900/50 dark:to-purple-800/30 rounded-xl p-3 text-center hover:scale-105 transition-transform">

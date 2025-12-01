@@ -17,5 +17,6 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result<BasePaginated<PaymentInformationResponse>>> GetPaymendInformationsAsync(Guid userId, int pageNumber = 1, int pageSize = 5);
         Task<Result<Payout>> WithdrawAsync(Guid userId, OnlyPayOutRequest request);
         Task ProcessPendingPayoutsAsync();
+        Task ProcessExpiredPendingTransactionsAsync();
     }
 }

@@ -184,7 +184,7 @@ export function AIRecommendationCard({ recommendedEvents = [], userProfile = nul
               <span className="text-3xl sm:text-4xl lg:text-5xl bg-gradient-to-r from-sky-600 via-sky-500 to-sky-600 bg-clip-text text-transparent animate-gradient-x">
                 AI
               </span>{" "}
-              đã tìm thấy sự kiện phù hợp với bạn!
+              đề xuất sự kiện phù hợp với bạn!
             </p>
           </div>
 
@@ -293,6 +293,37 @@ export function AIRecommendationCard({ recommendedEvents = [], userProfile = nul
               <span className="text-gray-600"> của bạn!</span>
             </div>
           )}
+
+          {/* Display reasons for recommended events */}
+          {/* {recommendedEvents.length > 0 && (
+            <div className="mt-8">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Lý do đề xuất:</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {recommendedEvents.map((event, index) => (
+                  <div 
+                    key={event.eventId || index} 
+                    className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-gray-200/60 shadow-sm hover:shadow-md transition-all duration-300"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">{index + 1}</span>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-1">
+                          {event.title}
+                        </h4>
+                        {event.reason && (
+                          <p className="text-gray-600 text-xs italic">
+                            "{event.reason}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )} */}
         </div>
       </div>
     </div>
@@ -300,4 +331,3 @@ export function AIRecommendationCard({ recommendedEvents = [], userProfile = nul
 }
 
 export default AIRecommendationCard;
-

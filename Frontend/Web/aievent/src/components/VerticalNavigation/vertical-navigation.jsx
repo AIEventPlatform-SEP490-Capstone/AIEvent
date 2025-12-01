@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useEffect, useMemo } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { logout } from "../../store/slices/authSlice";
 import { showSuccess, showError, authMessages } from "../../lib/toastUtils";
+import { fetchInvitationsStatus, selectInvitations } from "../../store/slices/eventsSlice";
 import AIEventLogo from "../../assets/AIEventLogo.png";
 
 import {
@@ -65,10 +66,34 @@ export function VerticalNavigation() {
 
   // Get user data from Redux store
   const { user, isAuthenticated } = useSelector((state) => state.auth);
+  const invitations = useSelector(selectInvitations);
   const pathname = location.pathname;
 
   const isOrganizerRoute = pathname.startsWith("/organizer");
   const isAdminRoute = pathname.startsWith("/admin");
+
+  // Fetch invitations when authenticated
+  useEffect(() => {
+    if (isAuthenticated && user?.email) {
+      dispatch(fetchInvitationsStatus({
+        pageNumber: 1,
+        pageSize: 100,
+      }));
+    }
+  }, [isAuthenticated, user?.email, dispatch]);
+
+  // Calculate pending received invitations count
+  const pendingInvitationsCount = useMemo(() => {
+    if (!isAuthenticated || !user?.email || !invitations || invitations.length === 0) {
+      return 0;
+    }
+    
+    return invitations.filter((inv) => {
+      const isReceived = (inv.invitedUserEmail || inv.invitedEmail) === user.email;
+      const isPending = (inv.status || "Pending") === "Pending";
+      return isReceived && isPending;
+    }).length;
+  }, [invitations, user?.email, isAuthenticated]);
 
   const handleLogout = async () => {
     try {
@@ -151,12 +176,6 @@ export function VerticalNavigation() {
           url: "/organizer/create",
           icon: Plus,
           isActive: pathname === "/organizer/create",
-        },
-        {
-          title: "Quản lý sự kiện",
-          url: "/organizer/events",
-          icon: CheckSquare,
-          isActive: pathname === "/organizer/events",
         },
         {
           title: "Quản lý Tags",
@@ -269,7 +288,7 @@ export function VerticalNavigation() {
     <Sidebar
       variant="inset"
       collapsible="icon"
-      className="border-r border-border/40 bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 z-50 shadow-sm overflow-x-hidden"
+      className="border-r border-border/40 bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 z-50 shadow-sm"
     >
       <SidebarHeader className={cn(
         "border-b border-border/40 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm",
@@ -509,17 +528,18 @@ export function VerticalNavigation() {
                           "transition-transform duration-200 group-hover:scale-110",
                           isCollapsed ? "w-5 h-5" : "w-4 h-4"
                         )} />
-                        {!isCollapsed && (
+                        {!isCollapsed ? (
                           <>
                             <span className="font-medium text-sm">Thông báo</span>
                             <div className="ml-auto">
                               <NotificationBadge />
                             </div>
                           </>
-                        )}
-                        {isCollapsed && (
-                          <div className="absolute -top-1 -right-1">
-                            <NotificationBadge />
+                        ) : (
+                          <div className="absolute -top-1 right-0 z-20">
+                            <div className="bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center">
+                              9
+                            </div>
                           </div>
                         )}
                       </NavLink>
@@ -548,15 +568,28 @@ export function VerticalNavigation() {
                             "transition-transform duration-200 group-hover:scale-110",
                             isCollapsed ? "w-5 h-5" : "w-4 h-4"
                           )} />
-                          {!isCollapsed && (
+                          {!isCollapsed ? (
                             <>
                               <span className="font-medium text-sm">
                                 Lời mời sự kiện
                               </span>
-                              <div className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                              {pendingInvitationsCount > 0 && (
+                                <div className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                  {pendingInvitationsCount}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="absolute -top-1 right-0 z-20">
+                              <div className="bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center">
                                 2
                               </div>
-                            </>
+                            </div>
+                          )}
+                          {isCollapsed && pendingInvitationsCount > 0 && (
+                            <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                              {pendingInvitationsCount}
+                            </div>
                           )}
                         </NavLink>
                       </SidebarMenuButton>

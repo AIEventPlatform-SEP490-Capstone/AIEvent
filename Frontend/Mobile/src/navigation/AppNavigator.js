@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { checkAuth } from '../redux/actions/Action';
@@ -14,9 +14,14 @@ const Stack = createStackNavigator();
 const AppNavigator = () => {
   const dispatch = useDispatch();
   const { isLoggedIn, isLoading } = useSelector(state => state.auth);
+  const hasCheckedAuth = useRef(false);
 
   useEffect(() => {
-    dispatch(checkAuth());
+    // Only check auth status once on component mount
+    if (!hasCheckedAuth.current) {
+      hasCheckedAuth.current = true;
+      dispatch(checkAuth());
+    }
   }, [dispatch]);
 
   if (isLoading) {

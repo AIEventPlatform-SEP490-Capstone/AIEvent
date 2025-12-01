@@ -141,6 +141,14 @@ const TransactionHistoryModal = ({ isOpen, onClose, walletId }) => {
     }
   };
 
+  const handleTransactionClick = (transaction) => {
+    // Open checkoutUrl or paymentUrl if available
+    const url = transaction.checkoutUrl || transaction.paymentUrl;
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const filteredTransactions = transactions.items?.filter(transaction => {
     // Search filter
     if (searchTerm) {
@@ -350,9 +358,29 @@ const TransactionHistoryModal = ({ isOpen, onClose, walletId }) => {
                   <p className="text-gray-500 text-lg">Bắt đầu với giao dịch đầu tiên của bạn</p>
                 </div>
               ) : (
-                paginatedTransactions.map((transaction, idx) => (
-                  <Card key={transaction.orderCode || `transaction-${transaction.createdAt}-${idx}`} className="p-8 hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-blue-300 hover:-translate-y-1">
-                    <div className="flex items-center justify-between">
+                paginatedTransactions.map((transaction, idx) => {
+                  const hasCheckoutUrl = !!(transaction.checkoutUrl || transaction.paymentUrl);
+                  const isClickable = hasCheckoutUrl && (transaction.status === 'Pending' || transaction.status === 'Processing');
+                  
+                  return (
+                    <Card 
+                      key={transaction.orderCode || `transaction-${transaction.createdAt}-${idx}`} 
+                      className={`p-8 transition-all duration-300 border border-gray-200 ${
+                        isClickable 
+                          ? 'hover:shadow-xl hover:border-blue-300 hover:-translate-y-1 cursor-pointer' 
+                          : 'hover:shadow-lg'
+                      }`}
+                      onClick={() => isClickable && handleTransactionClick(transaction)}
+                      role={isClickable ? 'button' : undefined}
+                      tabIndex={isClickable ? 0 : undefined}
+                      onKeyDown={(e) => {
+                        if (isClickable && (e.key === 'Enter' || e.key === ' ')) {
+                          e.preventDefault();
+                          handleTransactionClick(transaction);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-6">
                         <div className={`p-4 rounded-2xl ${
                           transaction.direction === 'In' 
@@ -399,7 +427,10 @@ const TransactionHistoryModal = ({ isOpen, onClose, walletId }) => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleViewDetail(transaction)}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent event from bubbling to card
+                            handleViewDetail(transaction);
+                          }}
                           className="flex items-center space-x-3 border-blue-300 text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
                         >
                           <Eye className="h-5 w-5" />
@@ -408,7 +439,8 @@ const TransactionHistoryModal = ({ isOpen, onClose, walletId }) => {
                       </div>
                     </div>
                   </Card>
-                ))
+                  );
+                })
               )}
             </div>
           )}

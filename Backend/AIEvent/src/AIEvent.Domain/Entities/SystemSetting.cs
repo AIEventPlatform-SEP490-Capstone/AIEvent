@@ -10,5 +10,6 @@ namespace AIEvent.Domain.Entities
         [Column(TypeName = "decimal(18,2)")]
         public decimal FixFee { get; set;}
         public int DatePayout { get; set;}
+        public int EventReminderHours { get; set; } = 3;
     }
 }

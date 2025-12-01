@@ -492,6 +492,7 @@ namespace AIEvent.Infrastructure.Data
                     FlatformFee = 0.066m,
                     FixFee = 45000m,
                     DatePayout = 7,
+                    EventReminderHours = 3,
                     CreatedBy = adminUserId.ToString(),
                     CreatedAt = DateTime.Now,
                 }

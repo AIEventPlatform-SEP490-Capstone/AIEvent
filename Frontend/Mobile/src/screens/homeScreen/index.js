@@ -15,6 +15,7 @@ import { styles } from './styles';
 import CustomText from '../../components/common/customTextRN';
 import { LinearGradient } from 'expo-linear-gradient';
 import EventCard from '../../components/presentation/EventCard';
+import EventCardWithFavorite from '../../components/presentation/EventCardWithFavorite';
 import CompactEventCard from '../../components/presentation/CompactEventCard';
 import Images from '../../constants/Images';
 import Colors from '../../constants/Colors';
@@ -23,6 +24,7 @@ import Strings from '../../constants/Strings';
 import ScreenNames from '../../constants/ScreenNames';
 import { useEvents } from '../../hooks/useEvents';
 import { useCategories } from '../../hooks/useCategories';
+import { useFavoriteEvents } from '../../hooks/useFavoriteEvents';
 import { selectEvents, selectEventsLoading, selectEventsError } from '../../redux/slices/eventsSlice';
 import { selectCategories, selectCategoriesLoading } from '../../redux/slices/categoriesSlice';
 import { EventService } from '../../api/services';
@@ -43,6 +45,7 @@ const HomeScreen = () => {
   // Use custom hooks
   const { getEvents, getEventsForStaff, searchEvents } = useEvents();
   const { refreshCategories } = useCategories();
+  const { addFavoriteEvent, removeFavoriteEvent } = useFavoriteEvents();
   
   const [searchText, setSearchText] = useState('');
   const [filteredEvents, setFilteredEvents] = useState([]);
@@ -341,7 +344,7 @@ const HomeScreen = () => {
   };
 
   const renderEventCard = ({ item }) => (
-    <EventCard event={item} onPress={handleEventPress} />
+    <EventCardWithFavorite event={item} onPress={handleEventPress} />
   );
 
   const renderCategoryButton = (category, index) => {

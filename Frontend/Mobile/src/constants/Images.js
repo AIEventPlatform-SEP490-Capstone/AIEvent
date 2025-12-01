@@ -21,6 +21,8 @@ const Images = {
   pushpin: require('../assets/icons/pushpin.png'),
   qrCode: require('../assets/icons/qr-code.png'),
   ticket: require('../assets/icons/document.png'), // Using document icon as ticket icon
+  heart: require('../assets/icons/heart.png'),
+  heartOutline: require('../assets/icons/heartoutline.png'),
 
   // Event images (using existing card images)
   event1: require('../assets/images/card1.png'),

@@ -523,12 +523,16 @@ const AdminDashboard = () => {
                 <div className="sm:col-span-2">
                   <p className="text-sm font-semibold mb-2 text-gray-700">Người dùng mới gần đây</p>
                   <div className="max-h-48 overflow-auto border rounded-md">
-                    {(recentUsers || []).slice(0, 6).map(u => (
-                      <div key={u.id} className="px-3 py-2 text-sm flex justify-between border-b last:border-b-0">
-                        <span className="text-gray-700">{u.fullName}</span>
-                        <span className="text-gray-500">{u.email}</span>
-                      </div>
-                    ))}
+                    {(recentUsers || []).slice(0, 6).map((u, idx) => {
+                      // Create unique key by combining id with index to avoid duplicates
+                      const uniqueKey = u.id ? `${u.id}-${idx}` : `user-${idx}`;
+                      return (
+                        <div key={uniqueKey} className="px-3 py-2 text-sm flex justify-between border-b last:border-b-0">
+                          <span className="text-gray-700">{u.fullName}</span>
+                          <span className="text-gray-500">{u.email}</span>
+                        </div>
+                      );
+                    })}
                     {((recentUsers || []).length === 0) && (
                       <div className="px-3 py-6 text-sm text-gray-500 text-center">Chưa có dữ liệu</div>
                     )}
@@ -600,8 +604,10 @@ const AdminDashboard = () => {
                     cancelled: 'bg-rose-100 text-rose-700',
                   }[status] || 'bg-gray-100 text-gray-700';
                   const code = act.trackingId || act.id || `EV-${String(i + 1).padStart(3, '0')}`;
+                  // Create unique key by combining id with index to avoid duplicates
+                  const uniqueKey = act.id ? `${act.id}-${i}` : `activity-${i}`;
                   return (
-                    <div key={act.id || i} className="grid grid-cols-4 items-center bg-white">
+                    <div key={uniqueKey} className="grid grid-cols-4 items-center bg-white">
                       <div className="py-4 px-4 flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-700 text-xs font-semibold flex items-center justify-center">
                           {initials.toUpperCase()}
