@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import {
@@ -46,9 +47,11 @@ import { useAiChat } from "../../hooks/useAiChat";
 import { parseEventFromResponse } from "../../utils/aiResponseParser";
 import { useSpeechToText } from "../../hooks/useSpeechToText";
 import { useSpeechSynthesis } from "../../hooks/useSpeechSynthesis";
+import userAvt from "../../assets/user.png";
 
 export default function ChatPage() {
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
   const {
     isLoading,
     sendMessage,
@@ -73,6 +76,16 @@ export default function ChatPage() {
   const messagesEndRef = useRef(null);
   const scrollAreaRef = useRef(null);
   const newChatPendingRef = useRef(false);
+
+  // Suggested questions
+  const suggestedQuestions = [
+    "Tìm các sự kiện âm nhạc sắp diễn ra ở TP.HCM",
+    "Các sự kiện công nghệ tháng này",
+    "Hướng dẫn đặt vé sự kiện",
+    "Sự kiện miễn phí cuối tuần này",
+    "Tìm sự kiện gần khu vực Thủ Đức",
+    "Các workshop sắp tới",
+  ];
 
   const renderLineWithLink = (line) => {
     const parts = [];
@@ -100,7 +113,7 @@ export default function ChatPage() {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-blue-600 font-medium hover:underline hover:text-blue-700"
+          className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium hover:underline hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
         >
           {text}
           <ExternalLink className="h-4 w-4" />
@@ -120,7 +133,7 @@ export default function ChatPage() {
               href={part}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-blue-600 font-medium hover:underline hover:text-blue-700"
+              className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium hover:underline hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
             >
               Xem chi tiết
               <ExternalLink className="h-4 w-4" />
@@ -306,18 +319,24 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || isLoading) return;
+  const handleSuggestedQuestion = async (question) => {
+    if (isLoading) return;
+    await handleSendMessage(question);
+  };
+
+  const handleSendMessage = async (customPrompt = null) => {
+    const promptToSend = customPrompt || inputValue;
+    if (!promptToSend.trim() || isLoading) return;
 
     const userMessage = {
       id: Date.now().toString(),
-      content: inputValue,
+      content: promptToSend,
       sender: "user",
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    const userPrompt = inputValue;
+    const userPrompt = promptToSend;
     setInputValue("");
 
     const wasNewSession = !selectedSessionId;
@@ -413,7 +432,7 @@ export default function ChatPage() {
       {
         id: "1",
         content:
-          "Xin chào! 👋 Tôi là AI Assistant của AIEvent. Tôi có thể giúp bạn tìm kiếm sự kiện theo nhu cầu của bạn, hoặc trả lời các câu hỏi về sự kiện bạn quan tâm. Bạn cần hỗ trợ gì?",
+          "Xin chào! 👋 Tôi là AI Assistant của AIEvent. Tôi có thể giúp bạn tìm kiếm sự kiện, đặt vé, hoặc trả lời các câu hỏi về nền tảng. Bạn cần hỗ trợ gì?",
         sender: "ai",
         timestamp: new Date(),
       },
@@ -482,20 +501,20 @@ export default function ChatPage() {
 
   return (
     <>
-      <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-gradient-to-br from-blue-50/50 via-blue-50/50 to-cyan-50/50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         {/* Sessions Sidebar */}
-        <div className="w-80 border-r border-blue-200/50 dark:border-blue-900/50 bg-white dark:bg-gray-800 flex flex-col">
-          <div className="p-4 border-b border-blue-200/50 dark:border-blue-900/50">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 via-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                Cuộc trò chuyện
+        <div className="w-64 border-r border-slate-200/60 dark:border-slate-700/60 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl flex flex-col shadow-sm">
+          <div className="p-3 border-b border-slate-200/60 dark:border-slate-700/60">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+                Tin nhắn
               </h2>
               <Button
                 onClick={handleNewChat}
                 size="sm"
-                className="bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                className="h-8 px-3 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-base font-medium shadow-sm hover:shadow-md transition-all flex items-center gap-1.5"
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-3.5 w-3.5" />
                 Mới
               </Button>
             </div>
@@ -507,29 +526,37 @@ export default function ChatPage() {
                 <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
               </div>
             ) : sessions.length === 0 ? (
-              <div className="p-4 text-center text-muted-foreground">
+              <div className="p-4 text-center text-slate-500 dark:text-slate-400">
                 <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
                 <p>Chưa có cuộc trò chuyện nào</p>
-                <p className="text-sm mt-1">Bắt đầu cuộc trò chuyện mới!</p>
+                <p className="text-base mt-1">Bắt đầu cuộc trò chuyện mới!</p>
               </div>
             ) : (
-              <div className="p-2 space-y-1">
+              <div className="p-2 space-y-1.5">
                 {sessions.map((session) => (
                   <div
                     key={session.sessionId}
                     onClick={() => handleSelectSession(session.sessionId)}
-                    className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                    className={`p-2.5 rounded-lg cursor-pointer transition-all ${
                       selectedSessionId === session.sessionId
-                        ? "bg-gradient-to-r from-blue-100 to-blue-100 dark:from-blue-900/50 dark:to-blue-900/50 border-2 border-blue-300 dark:border-blue-700"
-                        : "hover:bg-gray-100 dark:hover:bg-gray-700 border-2 border-transparent"
+                        ? "bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30 border border-blue-200/50 dark:border-blue-700/50 shadow-sm"
+                        : "hover:bg-slate-50 dark:hover:bg-slate-700/50 border border-transparent hover:border-slate-200/50 dark:hover:border-slate-600/50"
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start justify-between gap-1.5">
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate">
+                        <p className={`font-medium text-sm truncate mb-0.5 ${
+                          selectedSessionId === session.sessionId
+                            ? "text-slate-800 dark:text-slate-100"
+                            : "text-slate-700 dark:text-slate-300"
+                        }`}>
                           {session.sessionName || "Cuộc trò chuyện mới"}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className={`text-xs ${
+                          selectedSessionId === session.sessionId
+                            ? "text-slate-500 dark:text-slate-400"
+                            : "text-slate-400 dark:text-slate-500"
+                        }`}>
                           {formatDate(
                             session.lastMessageAt || session.createdAt
                           )}
@@ -537,19 +564,17 @@ export default function ChatPage() {
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-blue-600"
+                          <button
+                            className="h-6 w-6 rounded-lg hover:bg-white/60 dark:hover:bg-slate-600 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors flex items-center justify-center"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
+                            <MoreVertical className="h-3.5 w-3.5" />
+                          </button>
                         </DropdownMenuTrigger>
 
                         <DropdownMenuContent align="end" className="w-40">
                           <DropdownMenuItem
-                            className="gap-2 text-red-600 focus:text-red-700"
+                            className="gap-2 text-red-600 focus:text-red-700 text-base"
                             onClick={(e) => openDeleteDialog(session, e)}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -567,104 +592,103 @@ export default function ChatPage() {
 
         {/* Chat Area */}
         <div className="flex-1 flex flex-col min-w-0">
-          <Card className="flex-1 flex flex-col m-4 shadow-xl border-2 border-blue-200/50 dark:border-blue-900/50 overflow-hidden bg-white dark:bg-gray-800 p-0 relative">
+          <Card className="flex-1 flex flex-col m-3 rounded-xl shadow-xl border border-slate-200/60 dark:border-slate-700/60 overflow-hidden bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm p-0 relative">
             {/* Header */}
-            <CardHeader className="relative flex flex-row items-center justify-between py-4 border-b border-blue-200/50 dark:border-blue-900/50 bg-gradient-to-r from-blue-600/10 via-blue-600/10 to-cyan-600/10">
-              <CardTitle className="text-xl font-bold flex items-center gap-3 m-0">
+            <CardHeader className="px-4 py-3 border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-blue-100 to-cyan-50 dark:from-gray-800/50 dark:to-gray-700/30">
+              <div className="flex items-center gap-2.5">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-full blur-md opacity-50" />
-                  <div className="relative bg-gradient-to-br from-blue-600 to-cyan-600 rounded-full p-2">
-                    <Bot className="h-6 w-6 text-white" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl blur-md opacity-20" />
+                  <div className="relative bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl p-2 shadow-sm">
+                    <Bot className="h-5 w-5 text-white" />
                   </div>
                 </div>
-                <div className="flex flex-col gap-0 leading-tight">
-                  <span className="bg-gradient-to-r from-blue-600 via-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                <div className="flex flex-col">
+                  <span className="text-base font-semibold text-slate-800 dark:text-slate-100 leading-tight">
                     AI Assistant
                   </span>
-                  <span className="text-xs text-muted-foreground font-normal">
-                    Luôn sẵn sàng hỗ trợ bạn
-                  </span>
-                </div>
-              </CardTitle>
-
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/10 border border-green-500/20">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  <span className="text-xs text-green-600 dark:text-green-400 font-medium">
-                    Online
+                  <span className="text-xs text-slate-500 dark:text-slate-400 leading-tight">
+                    Luôn sẵn sàng hỗ trợ
                   </span>
                 </div>
               </div>
             </CardHeader>
 
             {/* Messages */}
-            <CardContent className="flex-1 flex flex-col p-6 pt-0 min-h-0 overflow-hidden">
+            <CardContent className="flex-1 flex flex-col p-4 min-h-0 overflow-hidden">
               {loadingHistory ? (
                 <div className="flex items-center justify-center h-full">
-                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                  <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
                 </div>
               ) : (
                 <ScrollArea
-                  className="flex-1 pr-4 overflow-y-auto max-h-full"
+                  className="flex-1 pr-2 overflow-y-auto max-h-full"
                   ref={scrollAreaRef}
                 >
                   <div className="space-y-4 pb-2">
-                    {messages.length === 0 ? (
-                      <div className="flex items-center justify-center h-full text-center text-muted-foreground">
-                        <div>
-                          <MessageCircle className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                          <p className="text-lg font-semibold">
-                            Chào mừng đến với AI Chat!
-                          </p>
-                          <p className="text-sm mt-2">
-                            Bắt đầu cuộc trò chuyện mới hoặc chọn một cuộc trò
-                            chuyện từ danh sách
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      messages.map((message) => {
-                        const isUserMessage = message.sender === "user";
-                        const isSpeakingThisMessage =
-                          speakingMessageId === message.id;
+                    {/* Show messages if any */}
+                    {messages.length > 0 && messages.map((message) => {
+                      const isUserMessage = message.sender === "user";
+                      const isSpeakingThisMessage =
+                        speakingMessageId === message.id;
 
-                        return (
+                      return (
+                        <div
+                          key={message.id}
+                          className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300"
+                        >
                           <div
-                            key={message.id}
-                            className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300"
+                            className={`flex ${
+                              isUserMessage ? "justify-end" : "justify-start"
+                            }`}
                           >
                             <div
-                              className={`flex ${
-                                isUserMessage ? "justify-end" : "justify-start"
-                              }`}
+                              className={`flex items-start gap-2 ${
+                                isUserMessage ? "flex-row-reverse" : ""
+                              } max-w-[85%]`}
                             >
-                              <div
-                                className={`flex items-start gap-2 ${
-                                  isUserMessage ? "flex-row-reverse" : ""
-                                }`}
-                              >
-                                {message.sender === "ai" && (
-                                  <div className="relative flex-shrink-0">
-                                    <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-full blur-sm opacity-30" />
-                                    <div className="relative h-10 w-10 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center">
-                                      <Bot className="h-5 w-5 text-white" />
-                                    </div>
+                              {message.sender === "ai" && (
+                                <div className="relative flex-shrink-0">
+                                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full blur-md opacity-20" />
+                                  <div className="relative h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 via-blue-400 to-cyan-500 flex items-center justify-center shadow-md ring-2 ring-blue-200/50 dark:ring-blue-800/50">
+                                    <Bot className="h-5 w-5 text-white drop-shadow-sm" />
                                   </div>
-                                )}
-                                {isUserMessage && (
-                                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg">
-                                    <User className="h-5 w-5 text-white" />
-                                  </div>
-                                )}
-                                <div className="flex items-start gap-2">
-                                  <div
-                                    className={`max-w-[100%] rounded-2xl px-4 py-3 text-sm break-words shadow-lg ${
-                                      isUserMessage
-                                        ? "bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-br-md"
-                                        : "bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-900/50 rounded-bl-md"
-                                    }`}
-                                  >
-                                    <div className="whitespace-pre-line leading-relaxed">
+                                </div>
+                              )}
+                              {isUserMessage && (
+                                <div className="h-10 w-10 rounded-full overflow-hidden flex-shrink-0 shadow-sm ring-2 ring-slate-200/50 dark:ring-slate-700/50">
+                                  {user?.avatar || user?.avatarImgUrl ? (
+                                    <img
+                                      src={user.avatar || user.avatarImgUrl}
+                                      alt={user.name || user.fullName || "User"}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.src = userAvt;
+                                      }}
+                                    />
+                                  ) : (
+                                    <img
+                                      src={userAvt}
+                                      alt="User"
+                                      className="w-full h-full object-cover"
+                                    />
+                                  )}
+                                </div>
+                              )}
+                              <div className="flex-1 space-y-1.5">
+                                <div
+                                  className={`rounded-xl break-words shadow-sm relative overflow-hidden ${
+                                    isUserMessage
+                                      ? "bg-gradient-to-br from-blue-600 to-cyan-600 text-white rounded-tr-md px-3 py-2.5"
+                                      : "bg-gradient-to-br from-white to-blue-50/30 dark:from-gray-800 dark:to-blue-950/20 border border-blue-100/60 dark:border-blue-900/40 rounded-tl-md px-3.5 py-2.5 shadow-md backdrop-blur-sm"
+                                  }`}
+                                >
+                                  {/* Subtle gradient overlay for AI messages */}
+                                  {!isUserMessage && (
+                                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5 pointer-events-none" />
+                                  )}
+                                  <div className={`relative ${isUserMessage ? "text-white" : "text-slate-700 dark:text-slate-200"}`}>
+                                    <div className="text-sm leading-relaxed space-y-1.5">
                                       {message.content
                                         .split("\n")
                                         .map((line, index) => {
@@ -675,10 +699,10 @@ export default function ChatPage() {
                                             return (
                                               <div
                                                 key={index}
-                                                className="font-bold text-base mb-1 flex items-center gap-2"
+                                                className="font-bold text-base mb-1.5 flex items-center gap-2 text-blue-700 dark:text-blue-300"
                                               >
-                                                <Sparkles className="h-4 w-4 text-yellow-500" />
-                                                {line.slice(2, -2)}
+                                                <Sparkles className="h-3.5 w-3.5 text-yellow-500 dark:text-yellow-400 flex-shrink-0" />
+                                                <span>{line.slice(2, -2)}</span>
                                               </div>
                                             );
                                           }
@@ -689,15 +713,17 @@ export default function ChatPage() {
                                             return (
                                               <div
                                                 key={index}
-                                                className="ml-2 flex items-start gap-2 my-1"
+                                                className="flex items-start gap-2 my-1.5 pl-1"
                                               >
-                                                <Zap className="h-3 w-3 mt-1 flex-shrink-0 text-blue-500" />
-                                                <span>{line.slice(2)}</span>
+                                                <div className="mt-1.5 flex-shrink-0">
+                                                  <div className="h-1.5 w-1.5 rounded-full bg-blue-500 dark:bg-blue-400" />
+                                                </div>
+                                                <span className="flex-1">{line.slice(2)}</span>
                                               </div>
                                             );
                                           }
                                           return line ? (
-                                            <div key={index} className="my-1">
+                                            <div key={index} className="my-1.5 first:mt-0 last:mb-0">
                                               {renderLineWithLink(line)}
                                             </div>
                                           ) : (
@@ -705,24 +731,15 @@ export default function ChatPage() {
                                           );
                                         })}
                                     </div>
-                                    {isSpeechSynthesisSupported &&
-                                      isSpeakingThisMessage && (
-                                        <div className="mt-3 text-xs text-blue-500 flex items-center gap-2">
-                                          <Loader2 className="h-3 w-3 animate-spin" />
-                                          <span>Đang đọc câu trả lời...</span>
-                                        </div>
-                                      )}
                                   </div>
-                                  {message.sender === "ai" && (
+                                </div>
+                                {message.sender === "ai" && (
+                                  <button className="h-6 w-6 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors flex items-center justify-center">
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-8 w-8 text-muted-foreground hover:text-blue-600"
-                                        >
-                                          <MoreVertical className="h-4 w-4" />
-                                        </Button>
+                                        <button className="h-6 w-6 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors flex items-center justify-center">
+                                          <MoreVertical className="h-3 w-3" />
+                                        </button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent
                                         align="end"
@@ -730,7 +747,7 @@ export default function ChatPage() {
                                       >
                                         {isSpeechSynthesisSupported ? (
                                           <DropdownMenuItem
-                                            className="gap-2"
+                                            className="gap-2 text-base"
                                             onClick={() =>
                                               isSpeakingThisMessage
                                                 ? handleStopSpeaking()
@@ -755,7 +772,7 @@ export default function ChatPage() {
                                         ) : (
                                           <DropdownMenuItem
                                             disabled
-                                            className="gap-2 opacity-70"
+                                            className="gap-2 opacity-70 text-base"
                                           >
                                             <VolumeX className="h-4 w-4" />
                                             Không hỗ trợ đọc
@@ -763,33 +780,145 @@ export default function ChatPage() {
                                         )}
                                       </DropdownMenuContent>
                                     </DropdownMenu>
-                                  )}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Event card display */}
+                          {message.eventInfo && (
+                            <div className={`${isUserMessage ? "mr-10" : "ml-10"} mt-1.5`}>
+                              <div
+                                className="group bg-white dark:bg-gray-800 border border-slate-200/60 dark:border-slate-700/60 rounded-lg p-3 
+                                hover:border-blue-300/60 dark:hover:border-blue-600/60 transition-all duration-300 cursor-pointer 
+                                hover:shadow-md"
+                                onClick={() =>
+                                  handleEventClick(message.eventInfo)
+                                }
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    {message.eventInfo.title && (
+                                      <h4 className="font-semibold text-sm text-slate-800 dark:text-slate-100 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+                                        {message.eventInfo.title}
+                                      </h4>
+                                    )}
+                                    <div className="space-y-1.5">
+                                      {(message.eventInfo.date ||
+                                        message.eventInfo.time) && (
+                                        <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                                          <Calendar className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                                          <span>
+                                            {message.eventInfo.date &&
+                                              `${message.eventInfo.date} `}
+                                            {message.eventInfo.time}
+                                          </span>
+                                        </div>
+                                      )}
+                                      {(message.eventInfo.location ||
+                                        message.eventInfo.address) && (
+                                        <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                                          <MapPin className="h-3 w-3 text-cyan-500 flex-shrink-0" />
+                                          <span>
+                                            {message.eventInfo.location ||
+                                              message.eventInfo.address}
+                                          </span>
+                                        </div>
+                                      )}
+                                      {message.eventInfo.price && (
+                                        <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+                                          <span className="text-base font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                                            {message.eventInfo.price}
+                                          </span>
+                                          {message.eventInfo.tickets?.length >
+                                            0 && (
+                                            <div className="mt-1.5 space-y-0.5">
+                                              {message.eventInfo.tickets.map(
+                                                (ticket, idx) => (
+                                                  <div
+                                                    key={idx}
+                                                    className="text-xs text-slate-500 dark:text-slate-400"
+                                                  >
+                                                    {ticket.name}:{" "}
+                                                    {ticket.price}
+                                                  </div>
+                                                )
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <ExternalLink className="h-3.5 w-3.5 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 flex-shrink-0 transition-colors" />
                                 </div>
                               </div>
                             </div>
+                          )}
+                        </div>
+                      );
+                    })}
 
+                    {/* Show suggested questions when no messages or only welcome message */}
+                    {(messages.length === 0 || (messages.length === 1 && messages[0].sender === "ai")) && (
+                      <div className="flex flex-col items-center justify-center px-4 py-6">
+                        {messages.length === 0 ? (
+                          <div className="mb-6 text-center">
+                            <MessageCircle className="h-16 w-16 mx-auto mb-4 opacity-50 text-slate-400" />
+                            <p className="text-xl font-semibold text-slate-700 dark:text-slate-200">
+                              Chào mừng đến với AI Chat!
+                            </p>
+                            <p className="text-base mt-2 text-slate-600 dark:text-slate-400">
+                              Bắt đầu cuộc trò chuyện mới hoặc chọn một cuộc trò
+                              chuyện từ danh sách
+                            </p>
                           </div>
-                        );
-                      })
+                        ) : (
+                          <div className="mb-4 text-center">
+                            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                              Ví dụ như:
+                            </p>
+                          </div>
+                        )}
+                        {/* Suggested Questions */}
+                        <div className="w-full max-w-2xl">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {suggestedQuestions.map((question, index) => (
+                              <button
+                                key={index}
+                                onClick={() => handleSuggestedQuestion(question)}
+                                disabled={isLoading}
+                                className="text-left px-4 py-2.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-950/20 hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-200 text-sm text-slate-700 dark:text-slate-200 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed group"
+                              >
+                                <div className="flex items-start gap-2">
+                                  <span className="text-blue-500 dark:text-blue-400 mt-0.5 flex-shrink-0">💡</span>
+                                  <span className="flex-1">{question}</span>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
                     )}
 
                     {isLoading && (
-                      <div className="flex gap-3 justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <div className="flex gap-2 justify-start">
                         <div className="relative flex-shrink-0">
-                          <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-full blur-sm opacity-30" />
-                          <div className="relative h-10 w-10 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center">
+                          <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full blur-sm opacity-15" />
+                          <div className="relative h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-sm">
                             <Bot className="h-5 w-5 text-white" />
                           </div>
                         </div>
-                        <div className="bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-900/50 rounded-2xl rounded-bl-md px-5 py-3 shadow-lg">
-                          <div className="flex gap-1.5">
-                            <div className="w-2 h-2 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full animate-bounce"></div>
+                        <div className="bg-slate-50 dark:bg-gray-800 border border-slate-200/60 dark:border-slate-700/60 rounded-xl rounded-tl-md px-3 py-2 shadow-sm">
+                          <div className="flex gap-1">
+                            <div className="w-1.5 h-1.5 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full animate-bounce"></div>
                             <div
-                              className="w-2 h-2 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full animate-bounce"
+                              className="w-1.5 h-1.5 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full animate-bounce"
                               style={{ animationDelay: "0.1s" }}
                             ></div>
                             <div
-                              className="w-2 h-2 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-full animate-bounce"
+                              className="w-1.5 h-1.5 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full animate-bounce"
                               style={{ animationDelay: "0.2s" }}
                             ></div>
                           </div>
@@ -802,61 +931,62 @@ export default function ChatPage() {
               )}
 
               {/* Input */}
-              <div className="flex gap-2 mt-4 flex-shrink-0 relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-blue-600/20 to-cyan-600/20 rounded-lg blur-xl -z-10" />
-                <Input
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="Nhập câu hỏi của bạn..."
-                  onKeyPress={(e) =>
-                    e.key === "Enter" && !isLoading && handleSendMessage()
-                  }
-                  disabled={isLoading}
-                  className="flex-1 border-2 border-blue-200 dark:border-blue-900/50 focus:border-blue-400 dark:focus:border-blue-700 rounded-xl bg-white dark:bg-gray-800 transition-colors"
-                />
-                {isSpeechSupported && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={isRecording ? stopRecording : startRecording}
+              <div className="p-3 border-t border-slate-200/60 dark:border-slate-700/60 bg-slate-50/50 dark:bg-gray-800/50 flex-shrink-0">
+                <div className="flex gap-1.5 items-center">
+                  <Input
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder="Nhập câu hỏi..."
+                    onKeyPress={(e) =>
+                      e.key === "Enter" && !isLoading && handleSendMessage()
+                    }
                     disabled={isLoading}
-                    className={`rounded-xl border-2 h-10 w-10 ${
-                      isRecording
-                        ? "border-red-400 bg-red-50 text-red-600 hover:bg-red-100"
-                        : "border-blue-200 text-blue-600 hover:bg-blue-50"
-                    }`}
+                    className="flex-1 h-9 px-3 rounded-lg border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-gray-800 focus:border-blue-400 dark:focus:border-blue-600 focus:ring-1 focus:ring-blue-100 dark:focus:ring-blue-900/50 outline-none transition-all text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                  />
+                  {isSpeechSupported && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={isRecording ? stopRecording : startRecording}
+                      disabled={isLoading}
+                      className={`h-9 w-9 rounded-lg border border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all flex-shrink-0 ${
+                        isRecording
+                          ? "border-red-400 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-600"
+                          : ""
+                      }`}
+                    >
+                      {isRecording ? (
+                        <Square className="h-3.5 w-3.5" />
+                      ) : (
+                        <Mic className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                  )}
+                  <Button
+                    onClick={handleSendMessage}
+                    disabled={isLoading || !inputValue.trim()}
+                    size="icon"
+                    className="h-9 w-9 rounded-lg bg-gradient-to-br from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-md hover:shadow-lg transition-all flex items-center justify-center flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isRecording ? (
-                      <Square className="h-4 w-4" />
-                    ) : (
-                      <Mic className="h-4 w-4" />
-                    )}
+                    <Send className="h-3.5 w-3.5" />
                   </Button>
+                </div>
+                {isSpeechSupported && (
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">
+                    {isRecording && interimTranscript
+                      ? `Đang nghe: "${interimTranscript}"`
+                      : speechError
+                      ? `Không thể thu âm: ${speechError}`
+                      : "Nhấn mic để nói câu hỏi của bạn"}
+                  </p>
                 )}
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={isLoading || !inputValue.trim()}
-                  size="icon"
-                  className="rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed h-10 w-10"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
+                {!isSpeechSupported && (
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">
+                    Trình duyệt hiện không hỗ trợ ghi âm giọng nói.
+                  </p>
+                )}
               </div>
-              {isSpeechSupported && (
-                <div className="mt-2 text-xs text-muted-foreground min-h-[1.5rem]">
-                  {isRecording && interimTranscript
-                    ? `Đang nghe: “${interimTranscript}”`
-                    : speechError
-                    ? `Không thể thu âm: ${speechError}`
-                    : "Nhấn mic để nói câu hỏi của bạn"}
-                </div>
-              )}
-              {!isSpeechSupported && (
-                <div className="mt-2 text-xs text-muted-foreground">
-                  Trình duyệt hiện không hỗ trợ ghi âm giọng nói.
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>
@@ -868,7 +998,7 @@ export default function ChatPage() {
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl">Xóa cuộc trò chuyện?</DialogTitle>
+            <DialogTitle className="text-2xl">Xóa cuộc trò chuyện?</DialogTitle>
             <DialogDescription>
               Bạn sắp xóa{" "}
               <span className="font-semibold">
@@ -878,14 +1008,8 @@ export default function ChatPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="rounded-lg border border-blue-200/50 dark:border-blue-900/40 p-4 bg-blue-50/40 dark:bg-blue-900/20 space-y-2">
-            <div className="text-sm text-muted-foreground flex items-center justify-between">
-              <span>ID phiên</span>
-              <span className="font-semibold text-foreground">
-                {sessionToDelete?.sessionId || "—"}
-              </span>
-            </div>
-            <div className="text-sm text-muted-foreground flex items-center justify-between">
+          <div className="rounded-lg border border-purple-200/50 dark:border-purple-900/40 p-4 bg-purple-50/40 dark:bg-purple-900/20 space-y-2">   
+            <div className="text-base text-muted-foreground flex items-center justify-between">
               <span>Số tin nhắn</span>
               <span className="font-semibold text-foreground">
                 {sessionToDelete?.messageCount ?? 0}
@@ -898,13 +1022,14 @@ export default function ChatPage() {
               variant="outline"
               onClick={handleCloseDeleteDialog}
               disabled={isDeletingSession}
+              className="text-base"
             >
               Giữ lại
             </Button>
             <Button
               onClick={handleDeleteSession}
               disabled={isDeletingSession}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-red-600 hover:bg-red-700 text-white text-sm"
             >
               {isDeletingSession ? (
                 <span className="flex items-center gap-2">
