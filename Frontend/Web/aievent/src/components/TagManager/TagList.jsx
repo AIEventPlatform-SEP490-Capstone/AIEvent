@@ -200,14 +200,6 @@ const TagList = ({ tags, searchTerm, sortConfig, onEditTag, onDeleteTag, activeF
                     <span className="font-medium text-foreground">{quantityUsed}</span>
                     <span>sự kiện</span>
                   </div>
-                  
-                  {/* Status Badge - Using light green color */}
-                  <Badge
-                    variant="default"
-                    className="bg-green-100 text-green-800 border-green-200 text-xs"
-                  >
-                    ● Đang hoạt động
-                  </Badge>
                 </div>
 
                 {/* Footer Info */}

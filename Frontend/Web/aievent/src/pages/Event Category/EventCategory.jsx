@@ -81,6 +81,11 @@ const EventCategory = () => {
   const [formData, setFormData] = useState({
     eventCategoryName: "",
   });
+  
+  // Loading states for form submissions
+  const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Filter and sort categories
   const filteredAndSortedCategories = useMemo(() => {
@@ -147,10 +152,12 @@ const EventCategory = () => {
 
   // Handle create new category
   const handleCreate = async () => {
-    if (!formData.eventCategoryName.trim()) {
-      showError("Tên danh mục là bắt buộc");
+    // Prevent multiple submissions
+    if (isCreating || !formData.eventCategoryName.trim()) {
       return;
     }
+    
+    setIsCreating(true);
     try {
       await createNewCategory({
         eventCategoryName: formData.eventCategoryName,
@@ -162,15 +169,19 @@ const EventCategory = () => {
     } catch (err) {
       showError("Lỗi khi tạo danh mục: " + (err.message || "Unknown error"));
       clearCategoriesError();
+    } finally {
+      setIsCreating(false);
     }
   };
 
   // Handle update category
   const handleUpdate = async () => {
-    if (!formData.eventCategoryName.trim()) {
-      showError("Tên danh mục là bắt buộc");
+    // Prevent multiple submissions
+    if (isUpdating || !formData.eventCategoryName.trim()) {
       return;
     }
+    
+    setIsUpdating(true);
     try {
       await updateExistingCategory(selectedCategory.eventCategoryId, {
         eventCategoryName: formData.eventCategoryName,
@@ -184,17 +195,27 @@ const EventCategory = () => {
         "Lỗi khi cập nhật danh mục: " + (err.message || "Unknown error")
       );
       clearCategoriesError();
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   // Handle delete category
   const handleDelete = async (categoryId) => {
+    // Prevent multiple submissions
+    if (isDeleting) {
+      return;
+    }
+    
+    setIsDeleting(true);
     try {
       await deleteExistingCategory(categoryId);
       showSuccess("Xóa danh mục sự kiện thành công!");
     } catch (err) {
       showError("Lỗi khi xóa danh mục: " + (err.message || "Unknown error"));
       clearCategoriesError();
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -338,7 +359,9 @@ const EventCategory = () => {
                 >
                   Hủy
                 </Button>
-                <Button onClick={handleCreate}>Tạo Danh Mục</Button>
+                <Button onClick={handleCreate} disabled={isCreating}>
+                  {isCreating ? 'Đang tạo...' : 'Tạo Danh Mục'}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -479,14 +502,6 @@ const EventCategory = () => {
                             {category.eventCategoryName}
                           </h3>
                         </div>
-
-                        {/* Status Badge */}
-                        <Badge
-                          variant="default"
-                          className="bg-green-100 text-green-800 border-green-200 text-xs"
-                        >
-                          ● Đang hoạt động
-                        </Badge>
                       </div>
 
                       {/* Hover Effect Border */}
@@ -601,7 +616,9 @@ const EventCategory = () => {
             >
               Hủy
             </Button>
-            <Button onClick={handleUpdate}>Cập nhật</Button>
+            <Button onClick={handleUpdate} disabled={isUpdating}>
+              {isUpdating ? 'Đang cập nhật...' : 'Cập nhật'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -665,8 +682,9 @@ const EventCategory = () => {
                 await handleDelete(deleteTargetId);
                 setIsDeleteDialogOpen(false);
               }}
+              disabled={isDeleting}
             >
-              Xóa
+              {isDeleting ? 'Đang xóa...' : 'Xóa'}
             </Button>
           </DialogFooter>
         </DialogContent>

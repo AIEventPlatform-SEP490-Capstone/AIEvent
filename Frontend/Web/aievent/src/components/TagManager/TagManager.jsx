@@ -25,14 +25,24 @@ const TagManager = ({ searchTerm = "", sortConfig = { key: "tagName", direction:
   const [editingTag, setEditingTag] = useState(null);
   const [editTagInput, setEditTagInput] = useState('');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false); // Add loading state for tag updates
+  const [isDeleting, setIsDeleting] = useState(false); // Add loading state for tag deletions
 
   // Handle deleting a tag
   const handleDeleteTag = async (tagId) => {
+    // Prevent multiple submissions
+    if (isDeleting) {
+      return;
+    }
+    
+    setIsDeleting(true);
     try {
       await removeTag(tagId);
       forceRefreshTags();
     } catch (err) {
       console.error('Error deleting tag:', err);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -45,24 +55,30 @@ const TagManager = ({ searchTerm = "", sortConfig = { key: "tagName", direction:
 
   // Handle updating a tag
   const handleUpdateTag = async () => {
-    if (editTagInput.trim() && editingTag) {
-      try {
-        // Create a complete tag object with all fields from the original tag
-        const tagData = {
-          ...editingTag, // Include all original fields
-          nameTag: editTagInput.trim(),
-          tagName: editTagInput.trim()
-        };
-        
-        // Send the complete tag object for update
-        await updateExistingTag(editingTag.tagId, tagData);
-        setIsEditDialogOpen(false);
-        setEditingTag(null);
-        setEditTagInput('');
-        forceRefreshTags();
-      } catch (err) {
-        console.error('Error updating tag:', err);
-      }
+    // Prevent multiple submissions
+    if (isUpdating || !editTagInput.trim() || !editingTag) {
+      return;
+    }
+    
+    setIsUpdating(true);
+    try {
+      // Create a complete tag object with all fields from the original tag
+      const tagData = {
+        ...editingTag, // Include all original fields
+        nameTag: editTagInput.trim(),
+        tagName: editTagInput.trim()
+      };
+      
+      // Send the complete tag object for update
+      await updateExistingTag(editingTag.tagId, tagData);
+      setIsEditDialogOpen(false);
+      setEditingTag(null);
+      setEditTagInput('');
+      forceRefreshTags();
+    } catch (err) {
+      console.error('Error updating tag:', err);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -128,8 +144,8 @@ const TagManager = ({ searchTerm = "", sortConfig = { key: "tagName", direction:
               <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="text-foreground border-foreground/30">
                 Hủy
               </Button>
-              <Button onClick={handleUpdateTag}>
-                Cập nhật
+              <Button onClick={handleUpdateTag} disabled={isUpdating}>
+                {isUpdating ? 'Đang cập nhật...' : 'Cập nhật'}
               </Button>
             </div>
           </div>
