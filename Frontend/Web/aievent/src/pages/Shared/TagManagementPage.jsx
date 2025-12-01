@@ -123,7 +123,7 @@ const TagManagementPage = ({ userRole }) => {
             </Button>
             <Button variant="outline" className="border-primary/20 hover:bg-primary/5">
               <Tag className="h-4 w-4 mr-2 text-primary" />
-              Quản Lý Nhóm
+              Tạo tag mới để sử dụng cho sự kiện
             </Button>
           </div>
         </div>
