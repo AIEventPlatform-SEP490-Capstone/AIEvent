@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -50,7 +49,6 @@ import { useSpeechSynthesis } from "../../hooks/useSpeechSynthesis";
 import userAvt from "../../assets/user.png";
 
 export default function ChatPage() {
-  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const {
     isLoading,
@@ -432,7 +430,7 @@ export default function ChatPage() {
       {
         id: "1",
         content:
-          "Xin chào! 👋 Tôi là AI Assistant của AIEvent. Tôi có thể giúp bạn tìm kiếm sự kiện, đặt vé, hoặc trả lời các câu hỏi về nền tảng. Bạn cần hỗ trợ gì?",
+          "Xin chào! 👋 Tôi là AI Assistant của AIEvent. Tôi có thể giúp bạn tìm kiếm sự kiện theo nhu cầu của bạn, hoặc trả lời các câu hỏi về sự kiện bạn quan tâm. Bạn cần hỗ trợ gì?",
         sender: "ai",
         timestamp: new Date(),
       },
@@ -476,13 +474,6 @@ export default function ChatPage() {
     setSessionToDelete(null);
   }, [isDeletingSession]);
 
-  const handleEventClick = (eventInfo) => {
-    if (eventInfo.title) {
-      navigate(`/search?q=${encodeURIComponent(eventInfo.title)}`);
-    } else if (eventInfo.location) {
-      navigate(`/search?q=${encodeURIComponent(eventInfo.location)}`);
-    }
-  };
 
   const formatDate = (date) => {
     const d = new Date(date);
@@ -594,24 +585,26 @@ export default function ChatPage() {
         <div className="flex-1 flex flex-col min-w-0">
           <Card className="flex-1 flex flex-col m-3 rounded-xl shadow-xl border border-slate-200/60 dark:border-slate-700/60 overflow-hidden bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm p-0 relative">
             {/* Header */}
-            <CardHeader className="px-4 py-3 border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-blue-100 to-cyan-50 dark:from-gray-800/50 dark:to-gray-700/30">
-              <div className="flex items-center gap-2.5">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl blur-md opacity-20" />
-                  <div className="relative bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl p-2 shadow-sm">
-                    <Bot className="h-5 w-5 text-white" />
-                  </div>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-base font-semibold text-slate-800 dark:text-slate-100 leading-tight">
-                    AI Assistant
-                  </span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 leading-tight">
-                    Luôn sẵn sàng hỗ trợ
-                  </span>
-                </div>
-              </div>
-            </CardHeader>
+            <CardHeader className="px-4 py-3 !pb-3 border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-blue-100 to-cyan-50 dark:from-gray-800/50 dark:to-gray-700/30">
+  <div className="flex h-12 items-center">
+    <div className="flex items-center gap-2.5">
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl blur-md opacity-20" />
+        <div className="relative bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl p-2 shadow-sm">
+          <Bot className="h-5 w-5 text-white" />
+        </div>
+      </div>
+      <div className="flex flex-col justify-center">
+        <span className="text-base font-semibold text-slate-800 dark:text-slate-100 leading-tight">
+          AI Assistant
+        </span>
+        <span className="text-xs text-slate-500 dark:text-slate-400 leading-tight">
+          Luôn sẵn sàng hỗ trợ
+        </span>
+      </div>
+    </div>
+  </div>
+</CardHeader>
 
             {/* Messages */}
             <CardContent className="flex-1 flex flex-col p-4 min-h-0 overflow-hidden">
@@ -675,7 +668,8 @@ export default function ChatPage() {
                                   )}
                                 </div>
                               )}
-                              <div className="flex-1 space-y-1.5">
+                              <div className="flex flex-col gap-1">
+                              <div className="flex items-start gap-2">
                                 <div
                                   className={`rounded-xl break-words shadow-sm relative overflow-hidden ${
                                     isUserMessage
@@ -784,78 +778,9 @@ export default function ChatPage() {
                                 )}
                               </div>
                             </div>
+                            </div>
                           </div>
 
-                          {/* Event card display */}
-                          {message.eventInfo && (
-                            <div className={`${isUserMessage ? "mr-10" : "ml-10"} mt-1.5`}>
-                              <div
-                                className="group bg-white dark:bg-gray-800 border border-slate-200/60 dark:border-slate-700/60 rounded-lg p-3 
-                                hover:border-blue-300/60 dark:hover:border-blue-600/60 transition-all duration-300 cursor-pointer 
-                                hover:shadow-md"
-                                onClick={() =>
-                                  handleEventClick(message.eventInfo)
-                                }
-                              >
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    {message.eventInfo.title && (
-                                      <h4 className="font-semibold text-sm text-slate-800 dark:text-slate-100 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
-                                        {message.eventInfo.title}
-                                      </h4>
-                                    )}
-                                    <div className="space-y-1.5">
-                                      {(message.eventInfo.date ||
-                                        message.eventInfo.time) && (
-                                        <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
-                                          <Calendar className="h-3 w-3 text-blue-500 flex-shrink-0" />
-                                          <span>
-                                            {message.eventInfo.date &&
-                                              `${message.eventInfo.date} `}
-                                            {message.eventInfo.time}
-                                          </span>
-                                        </div>
-                                      )}
-                                      {(message.eventInfo.location ||
-                                        message.eventInfo.address) && (
-                                        <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
-                                          <MapPin className="h-3 w-3 text-cyan-500 flex-shrink-0" />
-                                          <span>
-                                            {message.eventInfo.location ||
-                                              message.eventInfo.address}
-                                          </span>
-                                        </div>
-                                      )}
-                                      {message.eventInfo.price && (
-                                        <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
-                                          <span className="text-base font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                                            {message.eventInfo.price}
-                                          </span>
-                                          {message.eventInfo.tickets?.length >
-                                            0 && (
-                                            <div className="mt-1.5 space-y-0.5">
-                                              {message.eventInfo.tickets.map(
-                                                (ticket, idx) => (
-                                                  <div
-                                                    key={idx}
-                                                    className="text-xs text-slate-500 dark:text-slate-400"
-                                                  >
-                                                    {ticket.name}:{" "}
-                                                    {ticket.price}
-                                                  </div>
-                                                )
-                                              )}
-                                            </div>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <ExternalLink className="h-3.5 w-3.5 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 flex-shrink-0 transition-colors" />
-                                </div>
-                              </div>
-                            </div>
-                          )}
                         </div>
                       );
                     })}
@@ -937,9 +862,14 @@ export default function ChatPage() {
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     placeholder="Nhập câu hỏi..."
-                    onKeyPress={(e) =>
-                      e.key === "Enter" && !isLoading && handleSendMessage()
-                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        if (!isLoading) {
+                          handleSendMessage();
+                        }
+                      }
+                    }}
                     disabled={isLoading}
                     className="flex-1 h-9 px-3 rounded-lg border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-gray-800 focus:border-blue-400 dark:focus:border-blue-600 focus:ring-1 focus:ring-blue-100 dark:focus:ring-blue-900/50 outline-none transition-all text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   />
@@ -964,7 +894,12 @@ export default function ChatPage() {
                     </Button>
                   )}
                   <Button
-                    onClick={handleSendMessage}
+                    type="button"
+                    onClick={() => {
+                      if (!isLoading) {
+                        handleSendMessage();
+                      }
+                    }}
                     disabled={isLoading || !inputValue.trim()}
                     size="icon"
                     className="h-9 w-9 rounded-lg bg-gradient-to-br from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-md hover:shadow-lg transition-all flex items-center justify-center flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
