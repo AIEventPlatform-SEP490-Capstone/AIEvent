@@ -73,7 +73,6 @@ namespace AIEvent.Application.Test.Services
                District = "Test District",
                Address = "Test Address",
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                Status = EventStatus.PendingApproval,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
@@ -149,7 +148,6 @@ namespace AIEvent.Application.Test.Services
                District = "Test District",
                Address = "Test Address",
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" }
            };
@@ -196,7 +194,6 @@ namespace AIEvent.Application.Test.Services
                SaleStartTime = DateTime.UtcNow.AddDays(1),
                SaleEndTime = DateTime.UtcNow.AddDays(4),
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid()
            };
 
@@ -224,7 +221,6 @@ namespace AIEvent.Application.Test.Services
                SaleStartTime = DateTime.UtcNow.AddDays(1),
                SaleEndTime = DateTime.UtcNow.AddDays(4),
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid()
            };
 
@@ -255,7 +251,6 @@ namespace AIEvent.Application.Test.Services
                District = "Test District",
                Address = "Test Address",
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Paid,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                ImgListEvidences = new List<string> { "https://cloudinary.com/test.jpg" },
@@ -297,7 +292,6 @@ namespace AIEvent.Application.Test.Services
                District = "Test District",
                Address = "Test Address",
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                ImgListEvidences = new List<string> { "https://cloudinary.com/test.jpg" },
@@ -339,7 +333,6 @@ namespace AIEvent.Application.Test.Services
                District = "Test District",
                Address = "Test Address",
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                ImgListEvidences = new List<string> { "https://cloudinary.com/test.jpg" },
@@ -381,7 +374,6 @@ namespace AIEvent.Application.Test.Services
                District = "Test District",
                Address = "Test Address",
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                ImgListEvidences = new List<string> { "https://cloudinary.com/test.jpg" },
@@ -423,7 +415,6 @@ namespace AIEvent.Application.Test.Services
                District = "Test District",
                Address = "Test Address",
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                ImgListEvidences = new List<string> { "https://cloudinary.com/test.jpg" },
@@ -469,7 +460,6 @@ namespace AIEvent.Application.Test.Services
                District = "Test District",
                Address = "Test Address",
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                ImgListEvidences = new List<string> { "https://cloudinary.com/test.jpg" },
@@ -530,7 +520,6 @@ namespace AIEvent.Application.Test.Services
                District = "Test District",
                Address = "Test Address",
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                ImgListEvidences = new List<string> { "https://cloudinary.com/test.jpg" },
@@ -590,7 +579,6 @@ namespace AIEvent.Application.Test.Services
                District = "Test District",
                Address = "Test Address",
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                ImgListEvidences = new List<string> { "https://cloudinary.com/test.jpg" },
@@ -655,7 +643,6 @@ namespace AIEvent.Application.Test.Services
                District = "Test District",
                Address = "Test Address",
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test1.jpg", "https://cloudinary.com/test2.jpg" },
                ImgListEvidences = new List<string> { "https://cloudinary.com/test.jpg" },
@@ -730,7 +717,6 @@ namespace AIEvent.Application.Test.Services
                District = "Test District",
                Address = "Test Address",
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                ImgListEvidences = new List<string> { "https://cloudinary.com/test.jpg" },
@@ -802,7 +788,6 @@ namespace AIEvent.Application.Test.Services
                District = "Test District",
                Address = "Test Address",
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Paid,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                TicketTypes = new List<TicketTypeRequest>
@@ -880,7 +865,6 @@ namespace AIEvent.Application.Test.Services
                SaleStartTime = DateTime.UtcNow.AddDays(1),
                SaleEndTime = DateTime.UtcNow.AddDays(4),
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Paid,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                TicketTypes = new List<TicketTypeRequest>
@@ -921,7 +905,6 @@ namespace AIEvent.Application.Test.Services
                LocationName = "Test Location",
                District = "Test District",
                Address = "Test Address",
-               TicketPricingType = TicketPricingType.Paid,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                TicketTypes = new List<TicketTypeRequest>
@@ -962,7 +945,6 @@ namespace AIEvent.Application.Test.Services
                District = "Test District",
                Address = "Test Address",
                TotalTickets = 1,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                TicketTypes = new List<TicketTypeRequest>
@@ -1033,7 +1015,6 @@ namespace AIEvent.Application.Test.Services
                District = "Test District",
                Address = "Test Address",
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string>(),
                TicketTypes = new List<TicketTypeRequest>
@@ -1070,7 +1051,6 @@ namespace AIEvent.Application.Test.Services
                SaleStartTime = DateTime.UtcNow.AddDays(1),
                SaleEndTime = DateTime.UtcNow.AddDays(4),
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                TicketTypes = new List<TicketTypeRequest>(),
@@ -1105,7 +1085,6 @@ namespace AIEvent.Application.Test.Services
                District = null, // Missing District
                Address = "Test Address",
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                TicketTypes = new List<TicketTypeRequest>
@@ -1147,7 +1126,6 @@ namespace AIEvent.Application.Test.Services
                District = "Test District",
                Address = "", // Missing Address
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                TicketTypes = new List<TicketTypeRequest>
@@ -1189,7 +1167,6 @@ namespace AIEvent.Application.Test.Services
                District = "Test District",
                Address = "Test Address",
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                Publish = true, // Publishing
@@ -1233,7 +1210,6 @@ namespace AIEvent.Application.Test.Services
                District = "Test District",
                Address = "Test Address",
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                Publish = true, // Publishing
@@ -1277,7 +1253,6 @@ namespace AIEvent.Application.Test.Services
                District = "Test District",
                Address = "Test Address",
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                ImgListEvidences = new List<string> { "https://cloudinary.com/evidence.jpg" },
@@ -1369,7 +1344,6 @@ namespace AIEvent.Application.Test.Services
                District = "Test District",
                Address = "Test Address",
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                Publish = false, // Not publishing
@@ -1444,7 +1418,6 @@ namespace AIEvent.Application.Test.Services
                District = "Test District",
                Address = "Test Address",
                TotalTickets = 100,
-               TicketPricingType = TicketPricingType.Free,
                EventCategoryId = Guid.NewGuid(),
                ImgListEvent = new List<string> { "https://cloudinary.com/test.jpg" },
                TicketTypes = new List<TicketTypeRequest>
@@ -1519,7 +1492,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location 1",
@@ -1538,7 +1510,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -1574,7 +1546,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location 1",
@@ -1595,7 +1566,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
 
            // Act
-           var result = await _eventService.GetEventAsync(userId, null, null, null!, null, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(userId, null, null, null!, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -1624,7 +1595,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location 1",
@@ -1642,7 +1612,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(userId, null, null, null!, null, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(userId, null, null, null!, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -1670,7 +1640,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location 1",
@@ -1691,7 +1660,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 50,
                    SoldQuantity = 0,
                    LocationName = "Location 2",
@@ -1706,7 +1674,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, "music", null, null!, null, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, "music", null, null!, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -1737,7 +1705,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = categoryId1,
                    EventCategory = eventCategory1,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location 1",
@@ -1758,7 +1725,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = categoryId2,
                    EventCategory = eventCategory2,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 50,
                    SoldQuantity = 0,
                    LocationName = "Location 2",
@@ -1773,7 +1739,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, categoryId1.ToString(), null!, null, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, categoryId1.ToString(), null!, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -1805,7 +1771,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location 1",
@@ -1829,7 +1794,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 50,
                    SoldQuantity = 0,
                    LocationName = "Location 2",
@@ -1849,7 +1813,7 @@ namespace AIEvent.Application.Test.Services
            var tagRequest = new List<EventTagRequest> { new EventTagRequest { TagId = tagId1 } };
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, tagRequest, null, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, tagRequest, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -1883,7 +1847,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location 1",
@@ -1907,7 +1870,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 50,
                    SoldQuantity = 0,
                    LocationName = "Location 2",
@@ -1931,7 +1893,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 75,
                    SoldQuantity = 0,
                    LocationName = "Location 3",
@@ -1955,7 +1916,7 @@ namespace AIEvent.Application.Test.Services
            };
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, tagRequest, null, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, tagRequest, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -1982,7 +1943,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location 1",
@@ -2003,7 +1963,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Paid,
                    TotalTickets = 50,
                    SoldQuantity = 0,
                    LocationName = "Location 2",
@@ -2018,12 +1977,11 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, TicketPricingType.Free, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
            result.Value!.Items.Should().HaveCount(1);
-           result.Value.Items.First().TicketPricingType.Should().Be(TicketPricingType.Free);
        }
 
        [Fact]
@@ -2046,7 +2004,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location 1",
@@ -2067,7 +2024,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Paid,
                    TotalTickets = 50,
                    SoldQuantity = 0,
                    LocationName = "Location 2",
@@ -2082,12 +2038,11 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, TicketPricingType.Paid, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
            result.Value!.Items.Should().HaveCount(1);
-           result.Value.Items.First().TicketPricingType.Should().Be(TicketPricingType.Paid);
        }
 
        [Fact]
@@ -2111,7 +2066,6 @@ namespace AIEvent.Application.Test.Services
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
                    District = "Ho Chi Minh",
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location 1",
@@ -2133,7 +2087,6 @@ namespace AIEvent.Application.Test.Services
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
                     District = "Quận 1",
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 50,
                    SoldQuantity = 0,
                    LocationName = "Location 2",
@@ -2148,7 +2101,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, "ho chi", null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, "ho chi", null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2177,7 +2130,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location 1",
@@ -2198,7 +2150,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 50,
                    SoldQuantity = 0,
                    LocationName = "Location 2",
@@ -2242,7 +2193,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location 1",
@@ -2263,7 +2213,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 50,
                    SoldQuantity = 0,
                    LocationName = "Location 2",
@@ -2313,7 +2262,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location 1",
@@ -2334,7 +2282,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 50,
                    SoldQuantity = 0,
                    LocationName = "Location 2",
@@ -2379,7 +2326,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location 1",
@@ -2400,7 +2346,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 50,
                    SoldQuantity = 0,
                    LocationName = "Location 2",
@@ -2444,7 +2389,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location 1",
@@ -2465,7 +2409,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 50,
                    SoldQuantity = 0,
                    LocationName = "Location 2",
@@ -2480,7 +2423,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2508,7 +2451,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = DateTime.UtcNow.AddDays(-1), // Deleted
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location 1",
@@ -2523,7 +2465,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2550,7 +2492,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location 1",
@@ -2571,7 +2512,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 50,
                    SoldQuantity = 0,
                    LocationName = "Location 2",
@@ -2592,7 +2532,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 75,
                    SoldQuantity = 0,
                    LocationName = "Location 3",
@@ -2607,7 +2546,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2639,7 +2578,6 @@ namespace AIEvent.Application.Test.Services
                    EventCategoryId = categoryId,
                    EventCategory = eventCategory,
                    District = "Ho Chi Minh",
-                   TicketPricingType = TicketPricingType.Paid,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location 1",
@@ -2661,7 +2599,6 @@ namespace AIEvent.Application.Test.Services
                    EventCategoryId = categoryId,
                    EventCategory = eventCategory,
                    District = "Quận 1",
-                   TicketPricingType = TicketPricingType.Paid,
                    TotalTickets = 50,
                    SoldQuantity = 0,
                    LocationName = "Location 2",
@@ -2678,7 +2615,7 @@ namespace AIEvent.Application.Test.Services
            var tagRequest = new List<EventTagRequest> { new EventTagRequest { TagId = tagId } };
 
            // Act
-           var result = await _eventService.GetEventAsync(null, "rock", categoryId.ToString(), tagRequest, TicketPricingType.Paid, "chi minh", null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, "rock", categoryId.ToString(), tagRequest, "chi minh", null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2706,7 +2643,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location 1",
@@ -2727,7 +2663,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 50,
                    SoldQuantity = 0,
                    LocationName = "Location 2",
@@ -2742,7 +2677,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, 1, 1);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, 1, 1);
 
            // Assert
            result.Should().NotBeNull();
@@ -2773,7 +2708,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location",
@@ -2788,7 +2722,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(userId, null, null, null!, null, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(userId, null, null, null!, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2817,7 +2751,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location",
@@ -2832,7 +2765,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2861,7 +2794,6 @@ namespace AIEvent.Application.Test.Services
                    DeletedAt = null,
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 0,
                    LocationName = "Location",
@@ -2877,7 +2809,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2910,7 +2842,6 @@ namespace AIEvent.Application.Test.Services
                    EventCategoryId = eventCategory.Id,
                    EventCategory = eventCategory,
                    OrganizerProfileId = Guid.NewGuid(),
-                   TicketPricingType = TicketPricingType.Free,
                    TotalTickets = 100,
                    SoldQuantity = 20,
                    LocationName = "Test Location",
@@ -3409,7 +3340,6 @@ namespace AIEvent.Application.Test.Services
                Address = "Test Address",
                ImgListEvent = "image1.jpg",
                ImgListEvidences = "", // Missing evidence
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                EventCategoryId = Guid.NewGuid(),
                TicketTypes = new List<TicketType>
@@ -3464,7 +3394,6 @@ namespace AIEvent.Application.Test.Services
                Address = "Test Address",
                ImgListEvent = "", // Missing images
                ImgListEvidences = "evidence1.jpg",
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                EventCategoryId = Guid.NewGuid(),
                TicketTypes = new List<TicketType>
@@ -3519,7 +3448,6 @@ namespace AIEvent.Application.Test.Services
                Address = "Test Address",
                ImgListEvent = "image1.jpg",
                ImgListEvidences = "evidence1.jpg",
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                EventCategoryId = Guid.NewGuid(),
                TicketTypes = new List<TicketType>(),
@@ -3572,7 +3500,6 @@ namespace AIEvent.Application.Test.Services
                Address = "Test Address",
                ImgListEvent = "image1.jpg",
                ImgListEvidences = "evidence1.jpg",
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                EventCategoryId = Guid.NewGuid(),
                TicketTypes = new List<TicketType>
@@ -4049,7 +3976,6 @@ namespace AIEvent.Application.Test.Services
                Address = "Test Address",
                ImgListEvent = "image1.jpg",
                ImgListEvidences = "evidence1.jpg",
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 0,
                EventCategoryId = Guid.NewGuid(),
                TicketTypes = new List<TicketType>
@@ -4105,7 +4031,6 @@ namespace AIEvent.Application.Test.Services
                Address = "Test Address",
                ImgListEvent = "image1.jpg",
                ImgListEvidences = "evidence1.jpg",
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                EventCategoryId = Guid.Empty,
                TicketTypes = new List<TicketType>
@@ -4336,7 +4261,6 @@ namespace AIEvent.Application.Test.Services
                Address = "Address",
                ImgListEvent = "image.jpg",
                ImgListEvidences = "evidence.jpg",
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                EventCategoryId = Guid.NewGuid(),
                TicketTypes = new List<TicketType> { new TicketType { Id = Guid.NewGuid(), TicketName = "Standard", TicketQuantity = 100 } },
@@ -4379,7 +4303,6 @@ namespace AIEvent.Application.Test.Services
                Address = "Address",
                ImgListEvent = "image.jpg",
                ImgListEvidences = "evidence.jpg",
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 1,
                EventCategoryId = Guid.NewGuid(),
                TicketTypes = new List<TicketType> { new TicketType { Id = Guid.NewGuid(), TicketName = "Standard", TicketQuantity = 100 } },
@@ -4540,7 +4463,6 @@ namespace AIEvent.Application.Test.Services
                EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                DeletedAt = null,
@@ -4637,7 +4559,6 @@ namespace AIEvent.Application.Test.Services
                EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                DeletedAt = DateTime.UtcNow.AddDays(-1),
@@ -4678,7 +4599,6 @@ namespace AIEvent.Application.Test.Services
                EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = actualOrganizerId,
                EventCategoryId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                DeletedAt = null,
@@ -4718,7 +4638,6 @@ namespace AIEvent.Application.Test.Services
                EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Paid,
                TotalTickets = 100,
                SoldQuantity = 10,
                DeletedAt = null,
@@ -4810,7 +4729,6 @@ namespace AIEvent.Application.Test.Services
                EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Paid,
                TotalTickets = 100,
                SoldQuantity = 10,
                DeletedAt = null,
@@ -4912,7 +4830,6 @@ namespace AIEvent.Application.Test.Services
                EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Paid,
                TotalTickets = 100,
                SoldQuantity = 10,
                DeletedAt = null,
@@ -4991,7 +4908,6 @@ namespace AIEvent.Application.Test.Services
                EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 10,
                DeletedAt = null,
@@ -5077,7 +4993,6 @@ namespace AIEvent.Application.Test.Services
                EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Paid,
                TotalTickets = 100,
                SoldQuantity = 10,
                DeletedAt = null,
@@ -5162,7 +5077,6 @@ namespace AIEvent.Application.Test.Services
                EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Paid,
                TotalTickets = 100,
                SoldQuantity = 10,
                DeletedAt = null,
@@ -5247,7 +5161,6 @@ namespace AIEvent.Application.Test.Services
                EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 10,
                DeletedAt = null,
@@ -5323,7 +5236,6 @@ namespace AIEvent.Application.Test.Services
                EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Paid,
                TotalTickets = 100,
                SoldQuantity = 10,
                DeletedAt = null,
@@ -5415,7 +5327,6 @@ namespace AIEvent.Application.Test.Services
                EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
                OrganizerProfileId = organizerId,
                EventCategoryId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                DeletedAt = null,
@@ -5483,7 +5394,6 @@ namespace AIEvent.Application.Test.Services
                Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -5506,7 +5416,6 @@ namespace AIEvent.Application.Test.Services
                Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Paid,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -5556,7 +5465,6 @@ namespace AIEvent.Application.Test.Services
                Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -5581,7 +5489,6 @@ namespace AIEvent.Application.Test.Services
                Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Paid,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -5632,7 +5539,6 @@ namespace AIEvent.Application.Test.Services
                Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -5654,7 +5560,6 @@ namespace AIEvent.Application.Test.Services
                Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Paid,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -5702,7 +5607,6 @@ namespace AIEvent.Application.Test.Services
                Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -5724,7 +5628,6 @@ namespace AIEvent.Application.Test.Services
                Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Paid,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -5766,7 +5669,6 @@ namespace AIEvent.Application.Test.Services
                Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location 1",
@@ -5787,7 +5689,6 @@ namespace AIEvent.Application.Test.Services
                Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Paid,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -5830,7 +5731,6 @@ namespace AIEvent.Application.Test.Services
                Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -5850,7 +5750,6 @@ namespace AIEvent.Application.Test.Services
                Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -5891,7 +5790,6 @@ namespace AIEvent.Application.Test.Services
                Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -5911,7 +5809,6 @@ namespace AIEvent.Application.Test.Services
                Status = EventStatus.Approved,
                DeletedAt = DateTime.UtcNow, // Deleted
                OrganizerProfileId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -5952,7 +5849,6 @@ namespace AIEvent.Application.Test.Services
                Status = EventStatus.Approved,
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -5972,7 +5868,6 @@ namespace AIEvent.Application.Test.Services
                Status = EventStatus.PendingApproval, // Not approved
                DeletedAt = null,
                OrganizerProfileId = Guid.NewGuid(),
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -6051,7 +5946,6 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile,
                Publish = false, // Draft
                IsDeleted = false,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location 1",
@@ -6073,7 +5967,6 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile,
                Publish = false, // Draft
                IsDeleted = false,
-               TicketPricingType = TicketPricingType.Paid,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -6180,7 +6073,6 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile,
                Publish = false, // Draft
                IsDeleted = false,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -6201,7 +6093,6 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile,
                Publish = true, // Published - should be excluded
                IsDeleted = false,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -6260,7 +6151,6 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile,
                Publish = false, // Draft
                IsDeleted = false,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -6281,7 +6171,6 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile,
                Publish = false, // Draft
                IsDeleted = true, // Deleted - should be excluded
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -6358,7 +6247,6 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile1,
                Publish = false,
                IsDeleted = false,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -6379,7 +6267,6 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfile = organizerProfile2,
                Publish = false,
                IsDeleted = false,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -6460,7 +6347,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.PendingApproval,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -6482,7 +6368,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved, // Should be excluded
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -6559,7 +6444,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -6581,7 +6465,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.PendingApproval, // Should be excluded
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -6658,7 +6541,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Rejected,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -6680,7 +6562,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved, // Should be excluded
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -6758,7 +6639,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -6780,7 +6660,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -6821,7 +6700,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -6841,7 +6719,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -6880,7 +6757,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -6900,7 +6776,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -6941,7 +6816,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -6962,7 +6836,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -7002,7 +6875,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -7022,7 +6894,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -7062,7 +6933,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -7082,7 +6952,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -7121,7 +6990,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -7141,7 +7009,6 @@ namespace AIEvent.Application.Test.Services
                Publish = false, // Unpublished - should be excluded
                IsDeleted = false,
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -7181,7 +7048,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -7201,7 +7067,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = true, // Deleted - should be excluded
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -7242,7 +7107,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -7262,7 +7126,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -7282,7 +7145,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved, // Same organizer but different title
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 75,
                SoldQuantity = 0,
                LocationName = "Location 3",
@@ -7322,7 +7184,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -7342,7 +7203,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Rejected,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -7362,7 +7222,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.PendingApproval,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 75,
                SoldQuantity = 0,
                LocationName = "Location 3",
@@ -7406,7 +7265,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 100,
                SoldQuantity = 0,
                LocationName = "Location",
@@ -7426,7 +7284,6 @@ namespace AIEvent.Application.Test.Services
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved,
-               TicketPricingType = TicketPricingType.Free,
                TotalTickets = 50,
                SoldQuantity = 0,
                LocationName = "Location 2",
@@ -7462,7 +7319,6 @@ namespace AIEvent.Application.Test.Services
                EndTime = DateTime.UtcNow.AddDays(2),
                TotalTickets = 10,
                RemainingTickets = 10,
-               TicketPricingType = TicketPricingType.Free,
                Status = EventStatus.PendingApproval,
                IsDeleted = false,
                ImgListEvent = "image1.jpg, image2.jpg",
