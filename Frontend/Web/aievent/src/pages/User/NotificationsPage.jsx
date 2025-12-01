@@ -65,6 +65,7 @@ const NotificationIcon = ({ type }) => {
     PayoutCompleted: CreditCard,
     PayoutFailed: AlertCircle,
     EventReminder: Clock,
+    ReportEvent: AlertCircle,
     System: Info
   };
 
@@ -90,6 +91,7 @@ const NotificationTypeBadge = ({ type }) => {
     PayoutCompleted: "Thanh toán hoàn tất",
     PayoutFailed: "Thanh toán thất bại",
     EventReminder: "Nhắc nhở sự kiện",
+    ReportEvent: "Báo cáo sự kiện",
     System: "Hệ thống"
   };
 
@@ -110,6 +112,7 @@ const NotificationTypeBadge = ({ type }) => {
     PayoutCompleted: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
     PayoutFailed: "bg-rose-500/10 text-rose-700 border-rose-200",
     EventReminder: "bg-orange-500/10 text-orange-700 border-orange-200",
+    ReportEvent: "bg-rose-500/10 text-rose-700 border-rose-200",
     System: "bg-slate-500/10 text-slate-700 border-slate-200"
   };
 
@@ -213,6 +216,15 @@ export default function NotificationsPage() {
         return PATH.EVENT_DETAIL.replace(":id", eventId);
       }
     }
+
+    if (type === "ReportEvent") {
+      if (userRole === "manager") {
+        return PATH.MANAGER_EVENTS;
+      }
+      if (userRole === "user") {
+        return PATH.MY_TICKETS;
+      }
+    }
   
     if (type === "EventApproved" || type === "EventRejected") {
       if (userRole === "organizer") {
@@ -259,7 +271,7 @@ export default function NotificationsPage() {
     if (["EventInvitation", "EventInvitationAccepted", "EventInvitationRejected"].includes(type)) {
       return PATH.EVENT_INVITATIONS;
     }
-  
+
     if (type === "System") return null;
   
     if (eventId) {
