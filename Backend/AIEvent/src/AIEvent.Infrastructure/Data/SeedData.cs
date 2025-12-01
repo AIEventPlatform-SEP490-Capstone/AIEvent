@@ -413,7 +413,7 @@ namespace AIEvent.Infrastructure.Data
                     TicketQuantity = 100,
                     RemainingQuantity = 1,
                     SoldQuantity = 99,
-                    CreatedBy = organizerUserId.ToString(),
+                    CreatedBy = organizerProfileId.ToString(),
                 },
                 new TicketType
                 {
@@ -423,7 +423,7 @@ namespace AIEvent.Infrastructure.Data
                     TicketPrice = 15000,
                     TicketQuantity = 100,
                     RemainingQuantity = 100,
-                    CreatedBy = organizerUserId.ToString(),
+                    CreatedBy = organizerProfileId.ToString(),
                 },
                 new TicketType
                 {
@@ -433,7 +433,7 @@ namespace AIEvent.Infrastructure.Data
                     TicketPrice = 15000,
                     TicketQuantity = 250,
                     RemainingQuantity = 250,
-                    CreatedBy = organizerUserId.ToString(),
+                    CreatedBy = organizerProfileId.ToString(),
                 },
                 new TicketType
                 {
@@ -443,7 +443,7 @@ namespace AIEvent.Infrastructure.Data
                     TicketPrice = 20000,
                     TicketQuantity = 250,
                     RemainingQuantity = 250,
-                    CreatedBy = organizerUserId.ToString(),
+                    CreatedBy = organizerProfileId.ToString(),
                 },
                 new TicketType
                 {
@@ -453,7 +453,7 @@ namespace AIEvent.Infrastructure.Data
                     TicketPrice = 5000,
                     TicketQuantity = 100,
                     RemainingQuantity = 100,
-                    CreatedBy = organizerUserId.ToString(),
+                    CreatedBy = organizerProfileId.ToString(),
                 },
                 new TicketType
                 {
@@ -463,7 +463,7 @@ namespace AIEvent.Infrastructure.Data
                     TicketPrice = 0,
                     TicketQuantity = 100,
                     RemainingQuantity = 100,
-                    CreatedBy = organizerUserId.ToString(),
+                    CreatedBy = organizerProfileId.ToString(),
                 }
             );
         }
