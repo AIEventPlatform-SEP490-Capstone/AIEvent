@@ -113,6 +113,7 @@ namespace AIEvent.Application.Services.Implements
                     Status = TransactionStatus.Pending,
                     Description = description,
                     ReferenceId = userId,
+                    PaymentUrl = result.CheckoutUrl,
                     ReferenceType = referenceType
                 });
                 await _unitOfWork.SaveChangesAsync();
@@ -388,7 +389,7 @@ namespace AIEvent.Application.Services.Implements
                     return;
                 }
 
-                var payoutDeadline = DateTime.UtcNow.AddDays(-systemSetting.DatePayout);
+                var payoutDeadline = DateTime.UtcNow.AddMinutes(-systemSetting.DatePayout);
                 var pendingEvents = await _unitOfWork.EventRepository
                     .Query()
                     .Include(e => e.OrganizerProfile)
@@ -556,7 +557,7 @@ namespace AIEvent.Application.Services.Implements
                             transaction.Description = "Giao dịch đã hết hạn (quá 15 phút)";
                         else
                             transaction.Description += "<br>Giao dịch đã hết hạn (quá 15 phút)";
-
+  
                         transactionUpdate.Add(transaction);
                         _logger.LogInformation("Expired pending transaction {TransactionId} marked as Failed", transaction.Id);
                     }

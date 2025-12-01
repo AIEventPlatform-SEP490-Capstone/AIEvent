@@ -402,6 +402,16 @@ export const eventAPI = {
     return data;
   },
 
+  // Get AI recommended friends by event
+  getAIRecommendedFriendsByEvent: async (eventId, pageNumber = 1, pageSize = 5) => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('pageNumber', pageNumber);
+    queryParams.append('pageSize', pageSize);
+
+    const response = await fetcher.get(`/ai/friend/event/${eventId}?${queryParams.toString()}`);
+    // Return the actual data from the paginated response
+    return response.data?.data || response.data;
+  },
   // Invite friends to event
   inviteFriends: async (eventId, invitationData) => {
     const response = await fetcher.post(`/event/${eventId}/invite-friends`, invitationData, {

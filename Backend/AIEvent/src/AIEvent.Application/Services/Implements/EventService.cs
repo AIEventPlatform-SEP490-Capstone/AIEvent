@@ -876,7 +876,7 @@ namespace AIEvent.Application.Services.Implements
             {
                 var totalRevenue = ev.TotalAmount;
                 
-                if (totalRevenue > 0)
+                if (totalRevenue >= 50000)
                 {
                     decimal platformFee = totalRevenue * systemSetting.FlatformFee + systemSetting.FixFee;
                     decimal netRevenue = totalRevenue - platformFee;
@@ -927,7 +927,7 @@ namespace AIEvent.Application.Services.Implements
                     .Query()
                     .AsNoTracking()
                     .Where(e => e.Id == eventId && !e.IsDeleted && e.Publish == true && e.Status != EventStatus.Cancelled)
-                    .Select(e => new { e.Id, e.EndTime })
+                    .Select(e => new { e.Id, e.EndTime, e.Title })
                     .FirstOrDefaultAsync();
 
                 if (eventEntity == null)
@@ -962,6 +962,33 @@ namespace AIEvent.Application.Services.Implements
                 };
 
                 await _unitOfWork.EventReportRepository.AddAsync(report);
+
+                var managerRole = await _unitOfWork.RoleRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Select(r => new { r.Id, r.Name, r.IsDeleted })
+                    .FirstOrDefaultAsync(r => !r.IsDeleted && r.Name == "Manager");
+                if (managerRole == null)
+                    return ErrorResponse.FailureResult("Role 'Manager' not found", ErrorCodes.NotFound);
+
+                var managerUsers = await _unitOfWork.UserRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(u => u.RoleId == managerRole.Id)
+                    .Select(u => u.Id)
+                    .ToListAsync();
+
+                var notifications = managerUsers.Select(managerId => new Notification
+                {
+                    EventId = eventId,
+                    UserId = managerId,
+                    Title = $"Báo cáo mới về sự kiện '{eventEntity.Title}'",
+                    Message = $"Một người dùng vừa báo cáo sự kiện '{eventEntity.Title}' về vấn đề '{report.Type.GetDescription()}'",
+                    Type = NotificationType.ReportEvent,
+                    IsRead = false,
+                }).ToList();
+
+                await _unitOfWork.NotificationRepository.AddRangeAsync(notifications);
                 await _unitOfWork.SaveChangesAsync();
 
                 return Result.Success();
@@ -1059,6 +1086,23 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("Report not found", ErrorCodes.NotFound);
 
             report.Reply = request.Reply;
+
+            var eventEntity = await _unitOfWork.EventRepository
+                .Query()
+                .Select(e => new {e.Title, e.Id, e.IsDeleted})
+                .FirstOrDefaultAsync(e => e.Id == report.EventId && !e.IsDeleted);
+            if (eventEntity == null)
+                return ErrorResponse.FailureResult("Event not found", ErrorCodes.NotFound);
+
+            await _unitOfWork.NotificationRepository.AddAsync(new Notification
+            {
+                EventId = report.EventId,
+                UserId = report.UserId,
+                Title = $"Báo cáo sự kiện '{eventEntity.Title}'",
+                Message = $"Báo cáo sự kiện '{eventEntity.Title}' về vấn đề '{report.Type.GetDescription()}' của bạn đã được phản hồi",
+                Type = NotificationType.ReportEvent,
+                IsRead = false,
+            });
 
             await _unitOfWork.EventReportRepository.UpdateAsync(report);
             await _unitOfWork.SaveChangesAsync();

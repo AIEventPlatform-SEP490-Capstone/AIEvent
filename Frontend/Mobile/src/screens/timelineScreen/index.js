@@ -24,8 +24,16 @@ import { isStaffUser } from '../../utils/jwtUtils';
 
 const { width } = Dimensions.get('window');
 
-const formatDate = (date) => {
+// Convert UTC+0 to UTC+7
+const toUTCP7 = (date) => {
   const d = new Date(date);
+  // Add 7 hours to convert from UTC+0 to UTC+7
+  d.setHours(d.getHours() + 7);
+  return d;
+};
+
+const formatDate = (date) => {
+  const d = toUTCP7(date);
   const day = String(d.getDate()).padStart(2, '0');
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
@@ -33,7 +41,7 @@ const formatDate = (date) => {
 };
 
 const formatDateTime = (date) => {
-  const d = new Date(date);
+  const d = toUTCP7(date);
   const day = String(d.getDate()).padStart(2, '0');
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
@@ -43,14 +51,14 @@ const formatDateTime = (date) => {
 };
 
 const formatTime = (date) => {
-  const d = new Date(date);
+  const d = toUTCP7(date);
   const hours = String(d.getHours()).padStart(2, '0');
   const minutes = String(d.getMinutes()).padStart(2, '0');
   return `${hours}:${minutes}`;
 };
 
 const formatDateWithDayName = (date) => {
-  const d = new Date(date);
+  const d = toUTCP7(date);
   const dayNames = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
   const dayName = dayNames[d.getDay()];
   const day = d.getDate();
@@ -60,14 +68,14 @@ const formatDateWithDayName = (date) => {
 };
 
 const formatMonthYear = (date) => {
-  const d = new Date(date);
+  const d = toUTCP7(date);
   const month = d.getMonth() + 1;
   const year = d.getFullYear();
   return `Tháng ${month} Năm ${year}`;
 };
 
 const getDayName = (date) => {
-  const d = new Date(date);
+  const d = toUTCP7(date);
   const dayNames = ['CHỦ NHẬT', 'THỨ HAI', 'THỨ BA', 'THỨ TƯ', 'THỨ NĂM', 'THỨ SÁU', 'THỨ BẢY'];
   return dayNames[d.getDay()];
 };

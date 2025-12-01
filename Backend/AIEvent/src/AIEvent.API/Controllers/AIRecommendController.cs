@@ -138,5 +138,22 @@ namespace AIEvent.API.Controllers
                 SuccessCodes.Success,
                 "Friend retrieved successfully"));
         }
+
+        [HttpGet("friend/event/{id}")]
+        [Authorize(Roles = "User")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<ListSearchFriend>>>> GetFriendByEvent(string id, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 5)
+        {
+            Guid userId = User.GetRequiredUserId();
+            var result = await _eventRecommendationService.GetFriendsByEventAsync(pageNumber, pageSize, userId, id);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<ListSearchFriend>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Friend retrieved successfully"));
+        }
     }
 }

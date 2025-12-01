@@ -145,6 +145,12 @@ const TicketsScreen = () => {
       setLoadingReports(false);
     }
   };
+  const add7Hours = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+  // Cộng thêm 7 giờ (7 * 60 * 60 * 1000 ms)
+  return new Date(date.getTime() + 7 * 60 * 60 * 1000);
+  };
 
   useEffect(() => {
     if (showReports && selectedEvent) {
@@ -212,7 +218,7 @@ const TicketsScreen = () => {
                     {event.title}
                   </CustomText>
                   <CustomText style={styles.eventSubtitle}>
-                    📅 {new Date(event.startTime).toLocaleDateString('vi-VN')} |
+                    📅 {add7Hours(event.startTime)?.toLocaleDateString('vi-VN')} |
                     📍 {event.address || 'Đang cập nhật'}
                   </CustomText>
                 </View>
@@ -252,7 +258,7 @@ const TicketsScreen = () => {
                     </CustomText>
                     <CustomText variant="body" style={styles.eventDetailValue}>
                       {selectedEvent?.startTime 
-                        ? new Date(selectedEvent.startTime).toLocaleDateString('vi-VN', {
+                        ? add7Hours(selectedEvent.startTime)?.toLocaleString('vi-VN', {
                             weekday: 'long',
                             year: 'numeric',
                             month: 'long',
