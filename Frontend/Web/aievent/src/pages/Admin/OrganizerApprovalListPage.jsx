@@ -49,18 +49,24 @@ const StatCard = ({ title, value, color, icon }) => {
   const config = colorConfigs[color] || colorConfigs.blue;
 
   return (
-    <Card className="border-primary/10 shadow-lg backdrop-blur-sm bg-card/95 hover:shadow-xl transition-all duration-300 group">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-4">
-          <div className={`p-3 ${config.bg} rounded-lg shadow-md group-hover:scale-110 transition-transform`}>
-            {React.cloneElement(icon, { className: "h-6 w-6 text-white drop-shadow-md" })}
-          </div>
-        </div>
+    <Card className="group relative overflow-hidden rounded-xl border border-primary/10 bg-gradient-to-br from-card to-muted/40 shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">
+      {/* subtle glow background */}
+      <div className={`pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity bg-gradient-to-br from-primary/40 via-transparent to-transparent`} />
+      <CardContent className="relative flex items-center justify-between h-24 p-4">
         <div>
-          <h3 className="text-sm font-medium text-foreground mb-1">{title}</h3>
-          <p className={`text-3xl font-bold ${config.text} group-hover:text-primary transition-colors`}>
+          <h3 className="text-xs font-medium text-foreground/80 mb-1 uppercase tracking-wide">
+            {title}
+          </h3>
+          <p className={`text-2xl font-bold ${config.text} group-hover:text-primary transition-colors`}>
             {value}
           </p>
+        </div>
+        <div
+          className={`flex items-center justify-center p-2 ${config.bg} rounded-xl shadow-md group-hover:scale-110 transition-transform`}
+        >
+          {React.cloneElement(icon, {
+            className: "h-5 w-5 text-white drop-shadow-md",
+          })}
         </div>
       </CardContent>
     </Card>
@@ -244,17 +250,29 @@ export default function OrganizerApprovalListPage() {
 
               {/* Filter Tabs */}
               <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-full lg:w-auto">
-                <TabsList className="h-12 bg-muted/50">
-                  <TabsTrigger value="All" className="data-[state=active]:bg-primary data-[state=active]:text-white">
+                <TabsList className="h-12 bg-muted/50 rounded-xl p-1 flex gap-1">
+                  <TabsTrigger
+                    value="All"
+                    className="h-12 px-6 text-sm font-medium rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white"
+                  >
                     Tất cả
                   </TabsTrigger>
-                  <TabsTrigger value="Pending" className="data-[state=active]:bg-primary data-[state=active]:text-white">
+                  <TabsTrigger
+                    value="Pending"
+                    className="h-12 px-6 text-sm font-medium rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white"
+                  >
                     Chờ duyệt
                   </TabsTrigger>
-                  <TabsTrigger value="Approved" className="data-[state=active]:bg-primary data-[state=active]:text-white">
+                  <TabsTrigger
+                    value="Approved"
+                    className="h-12 px-6 text-sm font-medium rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white"
+                  >
                     Đã duyệt
                   </TabsTrigger>
-                  <TabsTrigger value="Rejected" className="data-[state=active]:bg-primary data-[state=active]:text-white">
+                  <TabsTrigger
+                    value="Rejected"
+                    className="h-12 px-6 text-sm font-medium rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white"
+                  >
                     Từ chối
                   </TabsTrigger>
                 </TabsList>
