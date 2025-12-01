@@ -546,7 +546,7 @@ export function VerticalNavigation() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   {/* Only show "Lời mời sự kiện" for regular users, not for admin and manager */}
-                  {!["admin", "manager"].includes(user?.role?.toLowerCase()) && (
+                  {!["admin", "manager", "organizer"].includes(user?.role?.toLowerCase()) && (
                     <SidebarMenuItem>
                       <SidebarMenuButton
                         asChild
