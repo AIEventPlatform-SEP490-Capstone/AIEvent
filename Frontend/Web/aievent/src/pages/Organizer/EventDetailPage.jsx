@@ -629,26 +629,6 @@ Nhấn OK để xác nhận xóa.`;
                   Thông tin chi tiết về sự kiện chưa được cập nhật.
                 </p>
               )}
-              
-              <div className="space-y-4">
-                <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-primary" />
-                  Bạn sẽ nhận được:
-                </h3>
-                <ul className="space-y-2">
-                  {[
-                    "Kiến thức và trải nghiệm quý báu",
-                    "Cơ hội kết nối với những người cùng chí hướng",
-                    "Tài liệu sự kiện (nếu có)",
-                    "Networking và chia sẻ kinh nghiệm",
-                  ].map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-3 text-muted-foreground">
-                      <CheckCircle className="w-4 h-4 text-primary flex-shrink-0 mt-1" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
             </div>
 
             {/* Organizer */}

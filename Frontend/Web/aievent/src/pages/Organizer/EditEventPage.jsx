@@ -1534,7 +1534,6 @@ const EditEventPage = () => {
             <div className="bg-white rounded-xl p-8 border border-gray-100">
               <h2 className="text-2xl font-bold text-foreground mb-6">Về sự kiện</h2>
               <div className="space-y-4 mb-6">
-                <h3 className="text-lg font-semibold text-foreground">Mô tả chi tiết</h3>
                 <RichTextEditor
                   value={watch('detailedDescription')}
                   onChange={(value) => {
@@ -1553,26 +1552,6 @@ const EditEventPage = () => {
                     {errors.detailedDescription.message}
                   </p>
                 )}
-              </div>
-              
-              <div className="space-y-4">
-                <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-primary" />
-                  Bạn sẽ nhận được:
-                </h3>
-                <ul className="space-y-2">
-                  {[
-                    "Kiến thức và trải nghiệm quý báu",
-                    "Cơ hội kết nối với những người cùng chí hướng",
-                    "Tài liệu sự kiện (nếu có)",
-                    "Networking và chia sẻ kinh nghiệm",
-                  ].map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-3 text-muted-foreground">
-                      <CheckCircle className="w-4 h-4 text-primary flex-shrink-0 mt-1" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
               </div>
             </div>
             
