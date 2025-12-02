@@ -1142,7 +1142,7 @@ namespace AIEvent.Application.Services.Implements
             IQueryable<Event> events = _unitOfWork.EventRepository
                                                 .Query()
                                                 .AsNoTracking()
-                                                .Where(e => e.EndTime >= DateTime.Now
+                                                .Where(e => e.EndTime >= DateTime.UtcNow
                                                         && !e.DeletedAt.HasValue
                                                         && e.Status == EventStatus.Approved && e.Publish == true
                                                         && e.OrganizerProfileId == staffProfile.OrganizerProfileId);

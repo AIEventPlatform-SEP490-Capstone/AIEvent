@@ -511,14 +511,12 @@ namespace AIEvent.Application.Services.Implements
                 {
                     u.Id,
                     u.District,
-                    u.BudgetOption,
                     u.InterestedDistrictsJson,
                     u.UserInterestsJson,
                     u.Occupation,
                     u.ProfessionalSkillsJson,
                     u.JobTitle,
                     u.CareerGoal,
-                    u.ParticipationFrequency,
                     u.Experience,
                     u.FavoriteEventTypesJson,
                     u.LanguagesJson,
@@ -556,10 +554,6 @@ namespace AIEvent.Application.Services.Implements
             if (interests.Any()) desc.Add($"Interests: {string.Join(", ", interests)}");
             if (events.Any()) desc.Add($"Events: {string.Join(", ", events)}");
             if (districts.Any()) desc.Add($"Explore: {string.Join(", ", districts)}");
-
-            desc.Add($"Budget: {user.BudgetOption}");
-            desc.Add($"Frequency: {user.ParticipationFrequency}");
-
             if (!string.IsNullOrEmpty(user.Occupation)) desc.Add($"Works as: {user.Occupation}");
             if (!string.IsNullOrEmpty(user.JobTitle)) desc.Add($"Job: {user.JobTitle}");
             if (!string.IsNullOrEmpty(user.CareerGoal)) desc.Add($"Goal: {user.CareerGoal}");
@@ -645,6 +639,7 @@ namespace AIEvent.Application.Services.Implements
                     $"Interests: {otherUser.UserInterestsJson}, " +
                     $"Skills: {otherUser.ProfessionalSkillsJson}, " +
                     $"Job: {otherUser.JobTitle}, " +
+                    $"Occupation: {otherUser.Occupation}, " +
                     $"CareerGoal: {otherUser.CareerGoal}, " +
                     $"Intro: {otherUser.Introduction}";
 
