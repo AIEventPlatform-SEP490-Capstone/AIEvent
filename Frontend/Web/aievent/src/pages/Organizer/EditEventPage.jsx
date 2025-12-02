@@ -881,8 +881,6 @@ const EditEventPage = () => {
         if (event.eventCategory) {
           setSelectedCategory(event.eventCategory);
         }
-
-        toast.success('Đã tải thông tin sự kiện');
       } else {
         toast.error('Không tìm thấy sự kiện');
         navigate(PATH.ORGANIZER_MY_EVENTS);

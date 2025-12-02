@@ -466,8 +466,6 @@ const CreateEventPage = () => {
         if (event.eventCategory) {
           setSelectedCategory(event.eventCategory);
         }
-        
-        toast.success('Đã tải thông tin sự kiện để sao chép');
       } else {
         toast.error('Không tìm thấy sự kiện để sao chép');
       }
