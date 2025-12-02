@@ -947,7 +947,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                             >
                               {event.title}
                             </h3>
-                            {eventStatus && (
+                            {eventStatus && activeTab !== 'draft' && (
                               <Badge
                                 className={`${statusConfig.badge} border-0 whitespace-nowrap flex-shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-all group-hover:shadow-lg group-hover:${statusConfig.glow}`}
                               >
