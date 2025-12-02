@@ -138,44 +138,11 @@ namespace AIEvent.Application.Services.Implements
             List<string>? excludeIds = null,
             List<string>? includeIds = null)
         {
-            Dictionary<string, object>? filter = null;
-
-            if ((excludeIds != null && excludeIds.Count > 0) || (includeIds != null && includeIds.Count > 0))
-            {
-                filter = new Dictionary<string, object>();
-
-                if (excludeIds != null && excludeIds.Count > 0)
-                {
-                    filter["userId"] = new Dictionary<string, object>
-                    {
-                        ["$nin"] = excludeIds
-                    };
-                }
-
-                if (includeIds != null && includeIds.Count > 0)
-                {
-                    if (filter.ContainsKey("userId"))
-                    {
-                        var existing = (Dictionary<string, object>)filter["userId"];
-                        existing["$in"] = includeIds;
-                        filter["userId"] = existing;
-                    }
-                    else
-                    {
-                        filter["userId"] = new Dictionary<string, object>
-                        {
-                            ["$in"] = includeIds
-                        };
-                    }
-                }
-            }
-
             var payload = new
             {
                 vector,
-                topK,
-                includeMetadata = true,
-                filter
+                topK = 20,
+                includeMetadata = true
             };
 
             var content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
@@ -186,12 +153,32 @@ namespace AIEvent.Application.Services.Implements
             var json = await response.Content.ReadAsStringAsync();
             var result = JsonConvert.DeserializeObject<PineconeQueryResponse>(json)!;
 
-            var matches = result.Matches?
+            var rawMatches = result.Matches?
                 .Select(m => (m.Id, m.Score, m.Metadata))
                 .ToList() ?? new List<(string, double, Dictionary<string, object>?)>();
 
-            return matches;
+
+            if (excludeIds != null && excludeIds.Count > 0)
+            {
+                rawMatches = rawMatches
+                    .Where(r => !excludeIds.Contains(r.Id))
+                    .ToList();
+            }
+
+            if (includeIds != null && includeIds.Count > 0)
+            {
+                rawMatches = rawMatches
+                    .Where(r => includeIds.Contains(r.Id))
+                    .ToList();
+            }
+
+            var finalMatches = rawMatches
+                .Take(topK)
+                .ToList();
+
+            return finalMatches;
         }
+
 
 
         public async Task DeleteVectorAsync(string id, bool isUser)
