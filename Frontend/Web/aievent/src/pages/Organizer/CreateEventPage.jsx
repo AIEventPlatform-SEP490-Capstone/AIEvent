@@ -1255,12 +1255,12 @@ const CreateEventPage = () => {
                         .map(t => Number(t.ticketPrice) || 0)
                         .filter(p => p > 0);
 
-                      // 1️⃣ Nếu tất cả vé giá = 0 → Miễn phí
+                      // Nếu tất cả vé giá = 0 → Miễn phí
                       if (paidPrices.length === 0) {
                         return "Chưa có thông tin giá vé";
                       }
 
-                      // 2️⃣ Ngược lại → Có phí + hiển thị khoảng giá
+                      // Ngược lại → Có phí + hiển thị khoảng giá
                       const min = Math.min(...paidPrices);
                       const max = Math.max(...paidPrices);
 

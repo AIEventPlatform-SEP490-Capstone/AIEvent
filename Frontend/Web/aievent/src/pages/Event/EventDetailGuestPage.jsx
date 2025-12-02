@@ -349,7 +349,7 @@ const EventDetailGuestPage = ({ previewData }) => {
     const min = Math.min(...prices);
     const max = Math.max(...prices);
 
-    if (min === 0 && max === 0) return "Miễn phí";
+    if (min === 0 && max === 0) return "0đ";
     const formatVND = (price) =>
       new Intl.NumberFormat("vi-VN", {
         style: "currency",
@@ -366,7 +366,7 @@ const EventDetailGuestPage = ({ previewData }) => {
       event.maxTicketPrice !== undefined
     ) {
       if (event.minTicketPrice === 0 && event.maxTicketPrice === 0) {
-        return "Miễn phí";
+        return "0đ";
       } else if (event.minTicketPrice === event.maxTicketPrice) {
         return new Intl.NumberFormat("vi-VN", {
           style: "currency",
@@ -382,14 +382,11 @@ const EventDetailGuestPage = ({ previewData }) => {
         }).format(event.maxTicketPrice)}`;
       }
     }
-    return event.ticketType === 1 || event.ticketType === "free"
-      ? "Miễn phí"
-      : "Có phí";
   };
 
   const formatTicketPrice = (ticket) => {
     if (ticket.ticketPrice === 0) {
-      return "Miễn phí";
+      return "0đ";
     }
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -1047,7 +1044,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                           relatedEvent.maxTicketPrice !== undefined
                             ? relatedEvent.minTicketPrice === 0 &&
                               relatedEvent.maxTicketPrice === 0
-                              ? "Miễn phí"
+                              ? "0đ"
                               : relatedEvent.minTicketPrice ===
                                 relatedEvent.maxTicketPrice
                               ? new Intl.NumberFormat("vi-VN", {
@@ -1065,7 +1062,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                                 }).format(relatedEvent.maxTicketPrice)}`
                             : relatedEvent.ticketType === 1 ||
                               relatedEvent.ticketType === "free"
-                            ? "Miễn phí"
+                            ? "0đ"
                             : "Có phí"}
                         </p>
                       </div>

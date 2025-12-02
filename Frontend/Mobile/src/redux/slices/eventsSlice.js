@@ -64,21 +64,14 @@ const calculateDisplayPrice = (eventData) => {
     const maxPrice = Math.max(...prices);
     
     if (minPrice === 0 && maxPrice === 0) {
-      return 'Miễn phí';
+      return '0đ';
     } else if (minPrice === maxPrice) {
       return `${minPrice.toLocaleString('vi-VN')}đ`;
     } else {
       return `${minPrice.toLocaleString('vi-VN')}đ - ${maxPrice.toLocaleString('vi-VN')}đ`;
     }
   }
-  
-  // Check ticketPricingType
-  if (eventData.ticketPricingType === 'Free' || eventData.ticketPricingType === 'free') {
-    return 'Miễn phí';
-  }
-  
-  // Default to Miễn phí if no price information
-  return 'Miễn phí';
+  return '0đ';
 };
 
 // Initial state
@@ -129,7 +122,6 @@ const eventsSlice = createSlice({
             rating: event.averageRating || 4.5,
             attendees: event.soldQuantity || event.SoldQuantity || 0,
             ticketPrice: event.ticketPrice !== undefined ? event.ticketPrice : 0,
-            ticketPricingType: event.ticketPricingType || 'Free',
             price: calculateDisplayPrice(event), // Add calculated price
             image: event.imgListEvent && event.imgListEvent.length > 0 ? 
               { uri: event.imgListEvent[0] } : 

@@ -352,7 +352,6 @@ Nhấn OK để xác nhận xóa.`;
       });
       
       if (response) {
-        toast.success('Sự kiện đã được phê duyệt thành công!');
         // Reload the event details to reflect the new status
         loadEventDetail();
       }
@@ -375,7 +374,6 @@ Nhấn OK để xác nhận xóa.`;
       });
       
       if (response) {
-        toast.success('Sự kiện đã bị từ chối!');
         setRejectionReason('');
         // Reload the event details to reflect the new status
         loadEventDetail();

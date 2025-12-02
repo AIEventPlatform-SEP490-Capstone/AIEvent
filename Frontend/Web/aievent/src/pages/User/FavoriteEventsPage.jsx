@@ -79,11 +79,10 @@ const FavoriteEventsPage = () => {
   };
 
   const formatPrice = (event) => {
-    const ticketType = event.ticketType;
     const price = event.ticketPrice || 0;
     
-    if (ticketType === 1 || ticketType === "free" || price === 0) {
-      return "Miễn phí";
+    if (price === 0) {
+      return "0đ";
     }
     
     return new Intl.NumberFormat("vi-VN", {

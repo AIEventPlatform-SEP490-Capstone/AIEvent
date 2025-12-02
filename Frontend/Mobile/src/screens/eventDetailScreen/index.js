@@ -354,24 +354,15 @@ const EventDetailScreen = () => {
       const maxPrice = Math.max(...prices);
 
       if (minPrice === 0 && maxPrice === 0) {
-        return 'Miễn phí';
+        return '0đ';
       } else if (minPrice === maxPrice) {
         return `${minPrice.toLocaleString('vi-VN')}đ`;
       } else {
         return `${minPrice.toLocaleString('vi-VN')}đ - ${maxPrice.toLocaleString('vi-VN')}đ`;
       }
     }
-
-    // Check ticketPricingType
-    if (
-      eventData.ticketPricingType === 'Free' ||
-      eventData.ticketPricingType === 'free'
-    ) {
-      return 'Miễn phí';
-    }
-
     // Default to Miễn phí if no price information
-    return 'Miễn phí';
+    return '0đ';
   };
 
   const handleJoinEvent = () => {
@@ -975,7 +966,7 @@ const EventDetailScreen = () => {
                       color="primary"
                       style={styles.ticketPrice}>
                       {ticket.ticketPrice === 0 || ticket.ticketPrice === undefined
-                        ? 'Miễn phí'
+                        ? '0đ'
                         : `${ticket.ticketPrice.toLocaleString('vi-VN')}đ`}
                     </CustomText>
                   </View>

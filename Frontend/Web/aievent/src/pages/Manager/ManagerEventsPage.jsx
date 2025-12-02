@@ -388,7 +388,6 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       });
 
       if (response) {
-        toast.success('Sự kiện đã bị từ chối!');
         setRejectionReason('');
         loadEvents();
       }
