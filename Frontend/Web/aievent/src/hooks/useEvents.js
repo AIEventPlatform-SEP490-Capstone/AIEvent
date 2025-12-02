@@ -143,7 +143,6 @@ export const useEvents = () => {
       const response = await dispatch(
         deleteEvent({ eventId, reasonCancel })
       ).unwrap();
-      toast.success("Xóa sự kiện thành công!");
       return response;
     } catch (err) {
       console.error("Delete event error:", err);

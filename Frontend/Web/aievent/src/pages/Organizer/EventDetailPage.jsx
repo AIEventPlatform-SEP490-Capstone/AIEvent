@@ -240,7 +240,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
         toast.dismiss(loadingToast);
         
         if (response !== null) {
-          toast.success('✅ Xóa sự kiện thành công!', {
+          toast.success('Xóa sự kiện thành công!', {
             duration: 3000,
           });
           navigate(PATH.ORGANIZER_EVENTS || '/events');
@@ -280,7 +280,7 @@ Nhấn OK để xác nhận xóa.`;
         toast.dismiss(loadingToast);
         
         if (response !== null) {
-          toast.success('✅ Xóa sự kiện thành công!', {
+          toast.success('Xóa sự kiện thành công!', {
             duration: 3000,
           });
           navigate(PATH.ORGANIZER_EVENTS || '/events');
