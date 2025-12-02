@@ -1363,10 +1363,11 @@ export default function MyTickets() {
                                 variant="outline"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setSelectedEvent(event);
+                                  navigate(`/event/${event.eventId}`);
                                 }}
+                                className="bg-blue-500 hover:bg-blue-300 text-white"
                               >
-                                Xem vé
+                                Xem chi tiết sự kiện
                               </Button>
                               <Button
                                 size="sm"

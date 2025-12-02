@@ -35,18 +35,18 @@ const { width } = Dimensions.get('window');
 const HomeScreen = () => {
   const navigation = useNavigation();
   const { accessToken } = useSelector(state => state.auth);
-  
+
   // Use Redux selectors
   const events = useSelector(selectEvents);
   const eventsLoading = useSelector(selectEventsLoading);
   const categories = useSelector(selectCategories);
   const categoriesLoading = useSelector(selectCategoriesLoading);
-  
+
   // Use custom hooks
   const { getEvents, getEventsForStaff, searchEvents } = useEvents();
   const { refreshCategories } = useCategories();
   const { addFavoriteEvent, removeFavoriteEvent } = useFavoriteEvents();
-  
+
   const [searchText, setSearchText] = useState('');
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -85,10 +85,10 @@ const HomeScreen = () => {
     try {
       // setLoading(true); // Remove manual loading state management
       console.log('Loading events...');
-      
+
       // Check if user is staff
       const isStaff = isStaffUser(accessToken);
-      
+
       let response;
       if (isStaff) {
         // Use staff-specific endpoint for staff users
@@ -103,7 +103,7 @@ const HomeScreen = () => {
           pageSize: 20
         });
       }
-      
+
       // The data transformation is now handled in the Redux slice
       // We just need to check if the call was successful
       // console.log('Events response:', response);
@@ -132,7 +132,7 @@ const HomeScreen = () => {
       const prices = eventData.ticketDetails.map(ticket => ticket.ticketPrice || 0);
       const minPrice = Math.min(...prices);
       const maxPrice = Math.max(...prices);
-      
+
       if (minPrice === 0 && maxPrice === 0) {
         return '0đ';
       } else if (minPrice === maxPrice) {
@@ -141,7 +141,7 @@ const HomeScreen = () => {
         return `${minPrice.toLocaleString('vi-VN')}đ - ${maxPrice.toLocaleString('vi-VN')}đ`;
       }
     }
-    
+
     // Fallback to direct ticketPrice property
     if (eventData.ticketPrice !== undefined && eventData.ticketPrice > 0) {
       return `${eventData.ticketPrice.toLocaleString('vi-VN')}đ`;
@@ -162,7 +162,7 @@ const HomeScreen = () => {
         return tag;
       });
     };
-    
+
     return {
       ...eventData,
       price: calculateDisplayPrice(eventData),
@@ -172,23 +172,23 @@ const HomeScreen = () => {
 
   const filterEvents = () => {
     let result = events.map(event => transformEventData(event));
-    
+
     // Filter by search text
     if (searchText.trim() !== '') {
-      result = result.filter(event => 
+      result = result.filter(event =>
         (event.title && event.title.toLowerCase().includes(searchText.toLowerCase())) ||
         (event.description && event.description.toLowerCase().includes(searchText.toLowerCase()))
       );
     }
-    
+
     // Filter by category
     if (selectedCategory) {
-      result = result.filter(event => 
+      result = result.filter(event =>
         (event.categoryId && event.categoryId === selectedCategory.eventCategoryId) ||
         (event.category && event.category === selectedCategory.eventCategoryName)
       );
     }
-    
+
     setFilteredEvents(result);
   };
 
@@ -212,10 +212,10 @@ const HomeScreen = () => {
   const handleEventPress = (event) => {
     // Use the correct ID property - events have eventId, not id
     const eventId = event.eventId || event.EventId || event.id;
-    
+
     // Only navigate if we have a valid eventId
     if (eventId) {
-      navigation.navigate(ScreenNames.EVENT_DETAIL_SCREEN, { 
+      navigation.navigate(ScreenNames.EVENT_DETAIL_SCREEN, {
         eventId: eventId,
       });
     } else {
@@ -256,7 +256,7 @@ const HomeScreen = () => {
         pageNumber: 1,
         pageSize: 5
       });
-      
+
       if (response && response.success && response.data) {
         const transformedEvents = response.data.map(event => transformEventData(event));
         setAiEvents(transformedEvents);
@@ -292,8 +292,8 @@ const HomeScreen = () => {
       onPress={() => handleEventPress(item)}
       activeOpacity={0.9}
     >
-      <Image 
-        source={getEventImage(item)} 
+      <Image
+        source={getEventImage(item)}
         style={styles.latestEventImage}
       />
       <LinearGradient
@@ -351,7 +351,7 @@ const HomeScreen = () => {
       { bg: '#FCE4EC', icon: '#E91E63' },
     ];
     const colorIndex = index % categoryColors.length;
-    const colors = isSelected 
+    const colors = isSelected
       ? { bg: Colors.primary, icon: Colors.white }
       : categoryColors[colorIndex];
 
@@ -367,13 +367,13 @@ const HomeScreen = () => {
         activeOpacity={0.8}
       >
         <View style={[styles.categoryIconContainer, { backgroundColor: colors.icon + '20' }]}>
-          <Image 
-            source={Images.calendar} 
-            style={[styles.categoryIcon, { tintColor: colors.icon }]} 
+          <Image
+            source={Images.calendar}
+            style={[styles.categoryIcon, { tintColor: colors.icon }]}
           />
         </View>
-        <CustomText 
-          variant="caption" 
+        <CustomText
+          variant="caption"
           style={[
             styles.categoryButtonText,
             { color: colors.icon },
@@ -416,27 +416,31 @@ const HomeScreen = () => {
           value={searchText}
           onChangeText={setSearchText}
         />
-        <TouchableOpacity 
-          onPress={handleAISuggestionPress}
-          style={styles.aiIconButton}
-          activeOpacity={0.7}
-          disabled={loadingAIEvents || aiRequestCount >= 2}
-        >
-          <Image 
-            source={Images.robotCycle} 
-            style={[
-              styles.aiIcon, 
-              showAIEvents && styles.aiIconActive,
-              (loadingAIEvents || aiRequestCount >= 2) && styles.aiIconDisabled
-            ]} 
-          />
-        </TouchableOpacity>
+
+        {/* Chỉ hiện nút AI với user thường */}
+        {!isStaffUser(accessToken) && (
+          <TouchableOpacity
+            onPress={handleAISuggestionPress}
+            style={styles.aiIconButton}
+            activeOpacity={0.7}
+            disabled={loadingAIEvents || aiRequestCount >= 2}
+          >
+            <Image
+              source={Images.robotCycle}
+              style={[
+                styles.aiIcon,
+                showAIEvents && styles.aiIconActive,
+                (loadingAIEvents || aiRequestCount >= 2) && styles.aiIconDisabled
+              ]}
+            />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Category Section */}
       <View style={styles.categorySection}>
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoryScrollContent}
         >
@@ -449,19 +453,19 @@ const HomeScreen = () => {
             activeOpacity={0.8}
           >
             <View style={[
-              styles.categoryIconContainer, 
+              styles.categoryIconContainer,
               { backgroundColor: selectedCategory ? Colors.primary + '20' : Colors.white + '40' }
             ]}>
-              <Image 
-                source={Images.calendar} 
+              <Image
+                source={Images.calendar}
                 style={[
-                  styles.categoryIcon, 
+                  styles.categoryIcon,
                   { tintColor: selectedCategory ? Colors.primary : Colors.white }
-                ]} 
+                ]}
               />
             </View>
-            <CustomText 
-              variant="caption" 
+            <CustomText
+              variant="caption"
               style={[
                 styles.categoryButtonText,
                 { color: selectedCategory ? Colors.primary : Colors.white }
@@ -470,14 +474,14 @@ const HomeScreen = () => {
               Tất cả
             </CustomText>
           </TouchableOpacity>
-          
+
           {categories.map((category, index) => renderCategoryButton(category, index))}
         </ScrollView>
       </View>
 
       {/* Main Content */}
-      <ScrollView 
-        style={styles.content} 
+      <ScrollView
+        style={styles.content}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.contentContainer}
       >
@@ -542,7 +546,7 @@ const HomeScreen = () => {
               Danh sách sự kiện
             </CustomText>
           </View>
-          
+
           {eventsLoading || categoriesLoading ? (
             <View style={styles.loadingContainer}>
               <CustomText variant="body" color="secondary" align="center">

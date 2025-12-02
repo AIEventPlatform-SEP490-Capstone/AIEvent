@@ -7,6 +7,7 @@ import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
+import { dashboardAPI } from "../../api/dashboardAPI";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import {
   User,
@@ -90,7 +91,7 @@ export default function OrganizerProfilePage() {
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
-  
+
   // Payment information states
   const [paymentInformations, setPaymentInformations] = useState([]);
   const [isLoadingPaymentInfo, setIsLoadingPaymentInfo] = useState(false);
@@ -105,6 +106,13 @@ export default function OrganizerProfilePage() {
   const [isAddPaymentModalOpen, setIsAddPaymentModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const hasFetchedPaymentInfo = useRef(false);
+
+  const [quickStats, setQuickStats] = useState({
+    totalEvents: 0,
+    totalAttendees: 0,
+    mostPopularCategory: null,
+    loading: true
+  });
 
   // store ref to last focused element id and caret positions to restore after setState
   const lastFocusRef = useRef({ id: null, start: null, end: null });
@@ -121,11 +129,45 @@ export default function OrganizerProfilePage() {
     fetchProfile();
   }, []);
 
+  // Fetch quick stats (chỉ cần chạy 1 lần)
+  useEffect(() => {
+    const fetchQuickStats = async () => {
+      try {
+        const [eventStats, buyerStats] = await Promise.all([
+          dashboardAPI.getEventStatistics({}),
+          dashboardAPI.getBuyerStatistics({})
+        ]);
+
+        // Tính danh mục có nhiều sự kiện nhất
+        let mostFrequent = { name: "Chưa có", count: 0 };
+        if (eventStats?.eventsByCategory && eventStats.eventsByCategory.length > 0) {
+          const sorted = [...eventStats.eventsByCategory].sort((a, b) => (b.count || 0) - (a.count || 0));
+          mostFrequent = {
+            name: sorted[0].categoryName || "Không xác định",
+            count: sorted[0].count || 0
+          };
+        }
+
+        setQuickStats({
+          totalEvents: eventStats?.totalEvents || 0,
+          totalAttendees: buyerStats?.totalBuyers || 0,
+          mostFrequentCategory: mostFrequent,
+          loading: false
+        });
+      } catch (err) {
+        console.error("Lỗi tải thống kê nhanh:", err);
+        setQuickStats(prev => ({ ...prev, loading: false }));
+      }
+    };
+
+    fetchQuickStats();
+  }, []);
+
   // Fetch payment information
   const fetchPaymentInformations = useCallback(async (pageNumber = 1) => {
     setIsLoadingPaymentInfo(true);
     setPaymentInfoError(null);
-    
+
     try {
       const response = await walletAPI.getPaymentInformations({ pageNumber, pageSize: 10 });
       if (response.data) {
@@ -269,11 +311,11 @@ export default function OrganizerProfilePage() {
       for (const key of editableFields) {
         const val = profile[key];
         if (val === undefined || val === null || val === '') continue;
-        
+
         // Nếu là File thì append trực tiếp
         if (val instanceof File) {
           formData.append(key, val);
-        } 
+        }
         // Nếu có preview_* và không có file mới, bỏ qua (giữ nguyên ảnh cũ)
         else if (key.startsWith('img') && profile[`preview_${key}`] && !(val instanceof File)) {
           // Bỏ qua - giữ nguyên ảnh cũ trên server
@@ -286,7 +328,7 @@ export default function OrganizerProfilePage() {
       }
 
       await updateOrganizer(formData);
-      
+
       // Reload lại dữ liệu từ API sau khi save thành công
       const updatedData = await getOrganizerProfile();
       setProfile(updatedData || {});
@@ -423,21 +465,20 @@ export default function OrganizerProfilePage() {
               <Icon size={18} />
             </div>
           )}
-        <input
-          id={id}
-          name={id}
-          type={type}
-          value={value ?? ""}
+          <input
+            id={id}
+            name={id}
+            type={type}
+            value={value ?? ""}
             disabled={!editMode || !isEditable}
-          onChange={handleLocalChange}
-          onFocus={handleFocus}
-          onSelect={handleSelect}
-            className={`block w-full ${Icon ? 'pl-10' : 'pl-3'} pr-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-              editMode && isEditable
-                ? "border-gray-300 bg-white text-gray-900"
-                : "border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
-          }`}
-        />
+            onChange={handleLocalChange}
+            onFocus={handleFocus}
+            onSelect={handleSelect}
+            className={`block w-full ${Icon ? 'pl-10' : 'pl-3'} pr-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${editMode && isEditable
+              ? "border-gray-300 bg-white text-gray-900"
+              : "border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
+              }`}
+          />
         </div>
       </div>
     );
@@ -470,8 +511,8 @@ export default function OrganizerProfilePage() {
       <div className="space-y-2">
         {label && (
           <label className="block text-xs font-semibold text-gray-700">
-          {label}
-        </label>
+            {label}
+          </label>
         )}
         <div className="relative">
           {Icon && (
@@ -479,20 +520,19 @@ export default function OrganizerProfilePage() {
               <Icon size={18} />
             </div>
           )}
-        <textarea
-          id={id}
-          name={id}
+          <textarea
+            id={id}
+            name={id}
             rows={6}
-          value={value ?? ""}
+            value={value ?? ""}
             disabled={!editMode || !isEditable}
-          onChange={handleLocalChange}
-          onFocus={handleFocus}
-            className={`block w-full ${Icon ? 'pl-10' : 'pl-3'} pr-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-y ${
-              editMode && isEditable
-                ? "border-gray-300 bg-white text-gray-900"
-                : "border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
-          }`}
-        />
+            onChange={handleLocalChange}
+            onFocus={handleFocus}
+            className={`block w-full ${Icon ? 'pl-10' : 'pl-3'} pr-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-y ${editMode && isEditable
+              ? "border-gray-300 bg-white text-gray-900"
+              : "border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
+              }`}
+          />
         </div>
       </div>
     );
@@ -532,11 +572,10 @@ export default function OrganizerProfilePage() {
             disabled={!editMode || !isEditable}
             onChange={handleLocalChange}
             onFocus={handleFocus}
-            className={`block w-full ${Icon ? 'pl-10' : 'pl-3'} pr-10 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all appearance-none bg-white ${
-              editMode && isEditable
-                ? "border-gray-300 bg-white text-gray-900"
-                : "border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
-            }`}
+            className={`block w-full ${Icon ? 'pl-10' : 'pl-3'} pr-10 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all appearance-none bg-white ${editMode && isEditable
+              ? "border-gray-300 bg-white text-gray-900"
+              : "border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
+              }`}
           >
             <option value="">-- Chọn --</option>
             {Object.entries(options).map(([k, v]) => (
@@ -548,6 +587,86 @@ export default function OrganizerProfilePage() {
           <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
             <ChevronDown size={18} />
           </div>
+        </div>
+      </div>
+    );
+  };
+
+  const UrlInput = ({ label, id, value, onChange, isEditable = true, icon: Icon }) => {
+    const handleLocalChange = (e) => {
+      const v = e.target.value;
+      lastFocusRef.current = { id, start: e.target.selectionStart, end: e.target.selectionEnd };
+      onChange(v);
+      restoreFocusForId(id);
+    };
+
+    const handleCopy = () => {
+      navigator.clipboard.writeText(value || "");
+      setCopiedAccountNumber(id); // tái sử dụng state copiedAccountNumber đã có sẵn
+      setTimeout(() => setCopiedAccountNumber(null), 2000);
+    };
+
+    return (
+      <div className="space-y-2">
+        <label className="block text-xs font-semibold text-gray-700">{label}</label>
+        <div className="relative group">
+          {/* Icon bên trái */}
+          {Icon && (
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+              <Icon size={18} />
+            </div>
+          )}
+
+          {/* Input thật – chỉ hiển thị khi đang edit */}
+          <input
+            id={id}
+            type="url"
+            value={value ?? ""}
+            disabled={!editMode || !isEditable}
+            onChange={handleLocalChange}
+            placeholder="https://example.com"
+            className={`block w-full ${Icon ? "pl-10" : "pl-3"} pr-12 py-2.5 rounded-lg border 
+            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all
+            ${editMode && isEditable
+                ? "border-gray-300 bg-white text-gray-900"
+                : "border-transparent bg-transparent text-gray-500 cursor-default"
+              }`}
+          />
+
+          {/* Overlay hiển thị link đẹp khi KHÔNG edit */}
+          {!editMode && value && (
+            <>
+              <a
+                href={value}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`absolute inset-0 ${Icon ? "pl-10" : "pl-3"} pr-12 py-2.5 
+                flex items-center text-blue-600 hover:underline text-sm truncate pointer-events-auto`}
+              >
+                {value.replace(/^https?:\/\//, "").replace(/^www\./, "")}
+              </a>
+
+              {/* Nút copy */}
+              <button
+                onClick={handleCopy}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded hover:bg-gray-100 transition"
+                title="Sao chép liên kết"
+              >
+                {copiedAccountNumber === id ? (
+                  <CheckCircle2 size={16} className="text-green-600" />
+                ) : (
+                  <Copy size={16} className="text-gray-500" />
+                )}
+              </button>
+            </>
+          )}
+
+          {/* Khi không có dữ liệu và không edit → hiển thị placeholder xám */}
+          {!editMode && !value && (
+            <div className={`absolute inset-0 ${Icon ? "pl-10" : "pl-3"} flex items-center text-gray-400 text-sm`}>
+              Chưa có
+            </div>
+          )}
         </div>
       </div>
     );
@@ -594,7 +713,7 @@ export default function OrganizerProfilePage() {
         {/* Decorative Elements */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-300/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-400/20 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl"></div>
-        </div>
+      </div>
 
       {/* Content Container - Overlapping background */}
       <div className="container mx-auto px-4 pb-8 max-w-7xl -mt-72 relative z-20">
@@ -602,32 +721,32 @@ export default function OrganizerProfilePage() {
         <div className="mb-8">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold text-white">Hồ sơ của tôi</h1>
-                  {!editMode ? (
-                    <Button
-                      onClick={() => setEditMode(true)}
+            {!editMode ? (
+              <Button
+                onClick={() => setEditMode(true)}
                 className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white border border-white/30 backdrop-blur-sm"
-                    >
+              >
                 <Edit3 size={18} /> Chỉnh sửa
-                    </Button>
-                  ) : (
+              </Button>
+            ) : (
               <div className="flex gap-2">
-                      <Button
-                        onClick={handleSave}
-                        disabled={saving}
+                <Button
+                  onClick={handleSave}
+                  disabled={saving}
                   className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
-                      >
-                        <Save size={18} /> {saving ? "Đang lưu..." : "Lưu"}
-                      </Button>
-                      <Button
-                        onClick={handleCancel}
-                        variant="outline"
+                >
+                  <Save size={18} /> {saving ? "Đang lưu..." : "Lưu"}
+                </Button>
+                <Button
+                  onClick={handleCancel}
+                  variant="outline"
                   className="flex items-center gap-2"
-                      >
-                        <X size={18} /> Hủy
-                      </Button>
+                >
+                  <X size={18} /> Hủy
+                </Button>
               </div>
-                  )}
-                </div>
+            )}
+          </div>
         </div>
 
         {/* Tabs */}
@@ -639,21 +758,20 @@ export default function OrganizerProfilePage() {
               ["social", "Mạng xã hội", Globe],
               ["documents", "Giấy tờ xác minh", FileBadge],
             ].map(([tab, label, Icon]) => (
-            <button
-              key={tab}
-              onClick={() => handleTabChange(tab)}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200 ${
-                activeTab === tab
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-105"
-                    : "text-gray-600 hover:text-gray-800 hover:bg-white/50"
-              }`}
-            >
+              <button
+                key={tab}
+                onClick={() => handleTabChange(tab)}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200 ${activeTab === tab
+                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-105"
+                  : "text-gray-600 hover:text-gray-800 hover:bg-white/50"
+                  }`}
+              >
                 <Icon size={18} />
-              {label}
-            </button>
-          ))}
+                {label}
+              </button>
+            ))}
           </div>
-      </div>
+        </div>
 
         {/* Two Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -669,32 +787,32 @@ export default function OrganizerProfilePage() {
                     </h2>
                   </div>
                   <div className="p-6 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Input
                         label="Họ và tên"
-                id="contactName"
+                        id="contactName"
                         value={profile.contactName || ""}
-                onChange={(v) => handleChange("contactName", v)}
-                isEditable={isFieldEditable("contactName")}
-                icon={User}
-              />
-              <Input
-                label="Email"
-                id="contactEmail"
-                type="email"
+                        onChange={(v) => handleChange("contactName", v)}
+                        isEditable={isFieldEditable("contactName")}
+                        icon={User}
+                      />
+                      <Input
+                        label="Email"
+                        id="contactEmail"
+                        type="email"
                         value={profile.contactEmail || ""}
-                onChange={(v) => handleChange("contactEmail", v)}
-                isEditable={isFieldEditable("contactEmail")}
-                icon={Mail}
-              />
-              <Input
-                label="Số điện thoại"
-                id="contactPhone"
+                        onChange={(v) => handleChange("contactEmail", v)}
+                        isEditable={isFieldEditable("contactEmail")}
+                        icon={Mail}
+                      />
+                      <Input
+                        label="Số điện thoại"
+                        id="contactPhone"
                         value={profile.contactPhone || ""}
-                onChange={(v) => handleChange("contactPhone", v)}
-                isEditable={isFieldEditable("contactPhone")}
-                icon={Phone}
-              />
+                        onChange={(v) => handleChange("contactPhone", v)}
+                        isEditable={isFieldEditable("contactPhone")}
+                        icon={Phone}
+                      />
                       <Input
                         label="Số CMND/CCCD"
                         id="identityNumber"
@@ -714,15 +832,15 @@ export default function OrganizerProfilePage() {
                     </h2>
                   </div>
                   <div className="p-6 space-y-4">
-              <Input
-                label="Địa chỉ"
-                id="address"
+                    <Input
+                      label="Địa chỉ"
+                      id="address"
                       value={profile.address || ""}
-                onChange={(v) => handleChange("address", v)}
-                isEditable={isFieldEditable("address")}
-                icon={MapPin}
-              />
-            </div>
+                      onChange={(v) => handleChange("address", v)}
+                      isEditable={isFieldEditable("address")}
+                      icon={MapPin}
+                    />
+                  </div>
                 </Card>
 
                 <Card className="bg-white shadow-md rounded-lg border border-gray-200">
@@ -732,14 +850,14 @@ export default function OrganizerProfilePage() {
                     </h2>
                   </div>
                   <div className="p-6">
-            <Textarea
+                    <Textarea
                       label=""
-              id="experienceDescription"
+                      id="experienceDescription"
                       value={profile.experienceDescription || ""}
-              onChange={(v) => handleChange("experienceDescription", v)}
-              isEditable={isFieldEditable("experienceDescription")}
-              icon={FileText}
-            />
+                      onChange={(v) => handleChange("experienceDescription", v)}
+                      isEditable={isFieldEditable("experienceDescription")}
+                      icon={FileText}
+                    />
                   </div>
                 </Card>
 
@@ -802,7 +920,7 @@ export default function OrganizerProfilePage() {
                                 <div className="absolute top-0 right-0 w-48 h-48 bg-gray-300 rounded-full -mr-24 -mt-24"></div>
                                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-gray-300 rounded-full -ml-16 -mb-16"></div>
                               </div>
-                              
+
                               {/* Card Content */}
                               <div className="relative p-5">
                                 {/* Top Section */}
@@ -847,7 +965,7 @@ export default function OrganizerProfilePage() {
                                     </button>
                                   </div>
                                 </div>
-                                
+
                                 {/* Account Number Section */}
                                 <div className="mb-3">
                                   <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Số tài khoản</p>
@@ -868,7 +986,7 @@ export default function OrganizerProfilePage() {
                                     </button>
                                   </div>
                                 </div>
-                                
+
                                 {/* Account Holder Section */}
                                 <div>
                                   <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Chủ tài khoản</p>
@@ -881,7 +999,7 @@ export default function OrganizerProfilePage() {
                                     </p>
                                   </div>
                                 </div>
-                                
+
                                 {/* Bottom Decoration */}
                                 <div className="absolute bottom-3 right-3 opacity-10">
                                   <div className="grid grid-cols-4 gap-1">
@@ -894,7 +1012,7 @@ export default function OrganizerProfilePage() {
                             </div>
                           ))}
                         </div>
-                        
+
                         {/* Pagination */}
                         {paymentPagination.totalPages > 1 && (
                           <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
@@ -922,11 +1040,10 @@ export default function OrganizerProfilePage() {
                                         key={page}
                                         onClick={() => fetchPaymentInformations(page)}
                                         disabled={isLoadingPaymentInfo}
-                                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                                          paymentPagination.currentPage === page
-                                            ? 'bg-blue-600 text-white'
-                                            : 'border border-gray-300 hover:bg-gray-50'
-                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${paymentPagination.currentPage === page
+                                          ? 'bg-blue-600 text-white'
+                                          : 'border border-gray-300 hover:bg-gray-50'
+                                          } disabled:opacity-50 disabled:cursor-not-allowed`}
                                       >
                                         {page}
                                       </button>
@@ -1000,7 +1117,7 @@ export default function OrganizerProfilePage() {
                       onChange={(v) => handleChange("companyDescription", v)}
                       isEditable={isFieldEditable("companyDescription")}
                       icon={FileText}
-              />
+                    />
                   </div>
                 </Card>
 
@@ -1012,16 +1129,16 @@ export default function OrganizerProfilePage() {
                   </div>
                   <div className="p-6 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Select
-                label="Loại Organizer"
-                id="organizerType"
+                      <Select
+                        label="Loại Organizer"
+                        id="organizerType"
                         value={profile.organizerType || ""}
-                options={dictionaries.organizerType}
-                onChange={(v) => handleChange("organizerType", v)}
-                isEditable={isFieldEditable("organizerType")}
-                icon={Briefcase}
-              />
-              <Select
+                        options={dictionaries.organizerType}
+                        onChange={(v) => handleChange("organizerType", v)}
+                        isEditable={isFieldEditable("organizerType")}
+                        icon={Briefcase}
+                      />
+                      <Select
                         label="Loại hình tổ chức"
                         id="organizationType"
                         value={profile.organizationType || ""}
@@ -1029,25 +1146,25 @@ export default function OrganizerProfilePage() {
                         onChange={(v) => handleChange("organizationType", v)}
                         isEditable={isFieldEditable("organizationType")}
                         icon={Building2}
-              />
-              <Select
-                label="Tần suất tổ chức sự kiện"
-                id="eventFrequency"
+                      />
+                      <Select
+                        label="Tần suất tổ chức sự kiện"
+                        id="eventFrequency"
                         value={profile.eventFrequency || ""}
-                options={dictionaries.eventFrequency}
-                onChange={(v) => handleChange("eventFrequency", v)}
-                isEditable={isFieldEditable("eventFrequency")}
-                icon={Calendar}
-              />
-              <Select
-                label="Quy mô sự kiện"
-                id="eventSize"
+                        options={dictionaries.eventFrequency}
+                        onChange={(v) => handleChange("eventFrequency", v)}
+                        isEditable={isFieldEditable("eventFrequency")}
+                        icon={Calendar}
+                      />
+                      <Select
+                        label="Quy mô sự kiện"
+                        id="eventSize"
                         value={profile.eventSize || ""}
-                options={dictionaries.eventSize}
-                onChange={(v) => handleChange("eventSize", v)}
-                isEditable={isFieldEditable("eventSize")}
-                icon={Users}
-              />
+                        options={dictionaries.eventSize}
+                        onChange={(v) => handleChange("eventSize", v)}
+                        isEditable={isFieldEditable("eventSize")}
+                        icon={Users}
+                      />
                       <Select
                         label="Kinh nghiệm tổ chức"
                         id="eventExperienceLevel"
@@ -1056,12 +1173,12 @@ export default function OrganizerProfilePage() {
                         onChange={(v) => handleChange("eventExperienceLevel", v)}
                         isEditable={isFieldEditable("eventExperienceLevel")}
                         icon={Award}
-              />
-            </div>
-        </div>
+                      />
+                    </div>
+                  </div>
                 </Card>
               </>
-      )}
+            )}
 
             {/* TAB: MẠNG XÃ HỘI */}
             {activeTab === "social" && (
@@ -1072,31 +1189,46 @@ export default function OrganizerProfilePage() {
                   </h2>
                 </div>
                 <div className="p-6 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Website – trong tab "business" */}
+                    <UrlInput
+                      label="Website"
+                      id="website"
+                      value={profile.website || ""}
+                      onChange={(v) => handleChange("website", v)}
+                      isEditable={isFieldEditable("website")}
+                      icon={Globe}
+                    />
+
+                    {/* Facebook – trong tab "social" */}
+                    <UrlInput
                       label="Facebook"
                       id="urlFacebook"
                       value={profile.urlFacebook || ""}
                       onChange={(v) => handleChange("urlFacebook", v)}
                       isEditable={isFieldEditable("urlFacebook")}
                       icon={Facebook}
-              />
-              <Input
+                    />
+
+                    {/* Instagram – trong tab "social" */}
+                    <UrlInput
                       label="Instagram"
                       id="urlInstagram"
                       value={profile.urlInstagram || ""}
                       onChange={(v) => handleChange("urlInstagram", v)}
                       isEditable={isFieldEditable("urlInstagram")}
                       icon={Instagram}
-            />
-            <Input
+                    />
+
+                    {/* LinkedIn – trong tab "social" */}
+                    <UrlInput
                       label="LinkedIn"
                       id="urlLinkedIn"
                       value={profile.urlLinkedIn || ""}
                       onChange={(v) => handleChange("urlLinkedIn", v)}
                       isEditable={isFieldEditable("urlLinkedIn")}
                       icon={Linkedin}
-            />
+                    />
                   </div>
                 </div>
               </Card>
@@ -1111,20 +1243,20 @@ export default function OrganizerProfilePage() {
                   </h2>
                 </div>
                 <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                ["imgFrontIdentity", "Ảnh mặt trước CCCD"],
-                ["imgBackIdentity", "Ảnh mặt sau CCCD"],
-                ["imgBusinessLicense", "Giấy phép kinh doanh"],
-              ].map(([key, label]) => (
-                <div key={key} className="text-center">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {[
+                      ["imgFrontIdentity", "Ảnh mặt trước CCCD"],
+                      ["imgBackIdentity", "Ảnh mặt sau CCCD"],
+                      ["imgBusinessLicense", "Giấy phép kinh doanh"],
+                    ].map(([key, label]) => (
+                      <div key={key} className="text-center">
                         <p className="text-sm mb-2 font-medium text-gray-700">{label}</p>
-                  <div className="relative w-full h-48 rounded-lg overflow-hidden border border-gray-200 shadow-sm bg-gray-50">
-                    <img
+                        <div className="relative w-full h-48 rounded-lg overflow-hidden border border-gray-200 shadow-sm bg-gray-50">
+                          <img
                             src={profile[`preview_${key}`] || profile[key] || "/placeholder.svg"}
-                      alt={label}
-                      className="object-cover w-full h-full"
-                    />
+                            alt={label}
+                            className="object-cover w-full h-full"
+                          />
                           {editMode && isFieldEditable(key) && (
                             <label className="absolute inset-0 bg-black/50 flex items-center justify-center cursor-pointer hover:bg-black/60 transition-all">
                               <Camera size={24} className="text-white" />
@@ -1138,13 +1270,13 @@ export default function OrganizerProfilePage() {
                               />
                             </label>
                           )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
-        </div>
               </Card>
-      )}
+            )}
           </div>
 
           {/* Right Column - Profile Card (1/3 width) */}
@@ -1175,31 +1307,51 @@ export default function OrganizerProfilePage() {
                       />
                     </label>
                   )}
-            </div>
+                </div>
               </div>
 
               {/* Statistics */}
               <div className="px-6 pb-6 border-b border-gray-200">
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div>
-                    <div className="text-2xl font-bold text-gray-800">
-                      {stats.totalEvents}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">Sự kiện</div>
+                {quickStats.loading ? (
+                  <div className="text-center py-4">
+                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                   </div>
-                  <div>
-                    <div className="text-2xl font-bold text-gray-800">
-                      {stats.totalAttendees}
+                ) : (
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    {/* Tổng sự kiện */}
+                    <div className="flex flex-col items-center">
+                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2">
+                        <Calendar className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div className="text-2xl font-bold text-gray-800">
+                        {quickStats.totalEvents}
+                      </div>
+                      <div className="text-xs text-gray-500">Sự kiện</div>
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">Người tham gia</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-gray-800">
-                      {stats.averageRating.toFixed(1)}
+
+                    {/* Tổng người tham gia */}
+                    <div className="flex flex-col items-center">
+                      <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-2">
+                        <Users className="w-6 h-6 text-green-600" />
+                      </div>
+                      <div className="text-2xl font-bold text-gray-800">
+                        {quickStats.totalAttendees.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-gray-500">Người tham gia</div>
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">Đánh giá</div>
+
+                    {/* Danh mục phổ biến nhất */}
+                    <div className="flex flex-col items-center">
+                      <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mb-2">
+                        <Star className="w-6 h-6 text-yellow-600" />
+                      </div>
+                      <div className="text-lg font-bold text-gray-800 max-w-[100px] truncate" title={quickStats.mostFrequentCategory?.name}>
+                        {quickStats.mostFrequentCategory?.name || "Chưa có"}
+                      </div>
+                      <div className="text-xs text-gray-500">Danh mục phổ biến nhất</div>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Name and Location */}
@@ -1222,8 +1374,8 @@ export default function OrganizerProfilePage() {
                       <span>
                         {dictionaries.organizerType[profile.organizerType] || profile.organizerType}
                       </span>
-        </div>
-      )}
+                    </div>
+                  )}
                   {profile.organizationType && (
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Building2 size={16} />
@@ -1274,10 +1426,16 @@ export default function OrganizerProfilePage() {
                       </div>
                     )}
                     {profile.website && (
-                      <div className="text-sm text-gray-600">
-                        <span className="font-medium">Website: </span>
-                        <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                          {profile.website}
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <span className="font-medium whitespace-nowrap">Website:</span>
+                        <a
+                          href={profile.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline truncate flex-1 min-w-0"
+                          title={profile.website}
+                        >
+                          {profile.website.replace(/^https?:\/\//, "").replace(/^www\./, "")}
                         </a>
                       </div>
                     )}
@@ -1287,9 +1445,9 @@ export default function OrganizerProfilePage() {
                 {/* About Section */}
                 <div className="pt-4 border-t border-gray-200">
                   <p className="text-sm text-gray-600 leading-relaxed">
-                    {profile.experienceDescription || 
-                     profile.companyDescription || 
-                     "Một tổ chức chuyên nghiệp trong việc tổ chức các sự kiện đa dạng. Chúng tôi cam kết mang đến những trải nghiệm tuyệt vời cho người tham gia."}
+                    {profile.experienceDescription ||
+                      profile.companyDescription ||
+                      "Một tổ chức chuyên nghiệp trong việc tổ chức các sự kiện đa dạng. Chúng tôi cam kết mang đến những trải nghiệm tuyệt vời cho người tham gia."}
                   </p>
                 </div>
 
@@ -1413,19 +1571,19 @@ const AddPaymentModal = ({ onClose, onSuccess }) => {
 
     setIsSubmitting(true);
     setError(null);
-    
+
     try {
       await walletAPI.createPaymentInformation(formData);
       toast.success('Thêm thông tin thẻ thành công');
       onSuccess();
     } catch (error) {
       console.error('Error creating payment information:', error);
-      
+
       let errorMessage = 'Không thể thêm thông tin thanh toán';
-      
+
       if (error.response?.data) {
         const errorData = error.response.data;
-        
+
         if (errorData.errors && typeof errorData.errors === 'object') {
           const firstError = Object.values(errorData.errors)[0];
           if (Array.isArray(firstError) && firstError.length > 0) {
@@ -1484,7 +1642,7 @@ const AddPaymentModal = ({ onClose, onSuccess }) => {
           errorMessage = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại';
         }
       }
-      
+
       setError(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -1707,7 +1865,7 @@ const AddPaymentModal = ({ onClose, onSuccess }) => {
                   <div className="absolute top-0 right-0 w-48 h-48 bg-gray-300 rounded-full -mr-24 -mt-24"></div>
                   <div className="absolute bottom-0 left-0 w-32 h-32 bg-gray-300 rounded-full -ml-16 -mb-16"></div>
                 </div>
-                
+
                 {/* Card Content */}
                 <div className="relative p-5">
                   {/* Top Section */}
@@ -1744,7 +1902,7 @@ const AddPaymentModal = ({ onClose, onSuccess }) => {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Account Number Section */}
                   <div className="mb-3">
                     <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Số tài khoản</p>
@@ -1754,7 +1912,7 @@ const AddPaymentModal = ({ onClose, onSuccess }) => {
                       </p>
                     </div>
                   </div>
-                  
+
                   {/* Account Holder Section */}
                   <div>
                     <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Chủ tài khoản</p>
@@ -1767,7 +1925,7 @@ const AddPaymentModal = ({ onClose, onSuccess }) => {
                       </p>
                     </div>
                   </div>
-                  
+
                   {/* Bottom Decoration */}
                   <div className="absolute bottom-3 right-3 opacity-10">
                     <div className="grid grid-cols-4 gap-1">
