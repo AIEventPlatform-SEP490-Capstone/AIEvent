@@ -92,7 +92,6 @@ const editEventSchema = z.object({
   district: z.string().min(1, 'Quận/Huyện là bắt buộc'),
   linkRef: z.string().optional(),
   eventCategoryId: z.string().min(1, 'Danh mục sự kiện là bắt buộc'), // Make this required
-  ticketPricingType: z.string().min(1, 'Loại vé là bắt buộc'),
   publish: z.boolean().default(false),
   saleStartTime: z.string().min(1, 'Thời gian bắt đầu bán vé là bắt buộc'),
   saleEndTime: z.string().min(1, 'Thời gian kết thúc bán vé là bắt buộc'),
@@ -137,14 +136,9 @@ const editEventSchema = z.object({
   message: 'Thời gian bán vé phải kết thúc trước thời gian bắt đầu sự kiện và thời gian bắt đầu bán vé phải trước thời gian kết thúc bán vé',
   path: ['saleEndTime'],
 }).refine((data) => {
-  // Kiểm tra điều kiện giá vé khi chọn loại vé có phí
-  if (data.ticketPricingType === '2') {
-    const hasPaidTicket = data.ticketTypes.some(ticket => ticket.ticketPrice > 0);
-    return hasPaidTicket;
-  }
-  return true;
+  return data.ticketTypes.some(ticket => ticket.ticketPrice > 0);
 }, {
-  message: 'Vui lòng nhập giá vé lớn hơn 0 cho sự kiện có phí',
+  message: 'Phải có ít nhất một loại vé có giá > 0',
   path: ['ticketTypes'],
 });
 
@@ -239,11 +233,10 @@ const EditEventPage = () => {
       publish: false,
       saleStartTime: '',
       saleEndTime: '',
-      ticketPricingType: '1',
       ticketTypes: [
         {
           ticketName: 'Vé thường',
-          ticketPrice: 0,
+          ticketPrice: 1,
           ticketQuantity: 1,
           ticketDescription: '',
           // ruleRefundRequestId: '',
@@ -257,7 +250,6 @@ const EditEventPage = () => {
     name: 'ticketTypes',
   });
 
-  const watchTicketPricingType = watch('ticketPricingType');
   const watchEventCategoryId = watch('eventCategoryId');
 
   // Set page title and load event data
@@ -340,7 +332,7 @@ const EditEventPage = () => {
   const addTicketType = () => {
     append({
       ticketName: '',
-      ticketPrice: watchTicketPricingType === '1' ? 0 : 0,
+      ticketPrice: 1,
       ticketQuantity: 1,
       ticketDescription: '',
       // ruleRefundRequestId: selectedRules.length > 0 ? selectedRules[0].ruleRefundId : '',
@@ -412,16 +404,6 @@ const EditEventPage = () => {
     }));
   };
 
-  // Cập nhật giá vé khi thay đổi loại vé
-  useEffect(() => {
-    if (watchTicketPricingType === '1') {
-      // Khi chọn miễn phí, đặt tất cả giá vé về 0
-      fields.forEach((_, index) => {
-        setValue(`ticketTypes.${index}.ticketPrice`, 0);
-      });
-    }
-  }, [watchTicketPricingType, fields]);
-
   // Generate preview data from form values
   const generatePreviewData = (formData) => {
     // Get category name from selected category ID
@@ -440,8 +422,7 @@ const EditEventPage = () => {
         ticketPrice: parseFloat(ticket.ticketPrice) || 0,
         ticketQuantity: parseInt(ticket.ticketQuantity) || 0,
         soldQuantity: 0, // Default for preview
-        remainingQuantity: parseInt(ticket.ticketQuantity) || 0, // Default for preview
-        // ruleRefundRequestName: refundRule ? refundRule.ruleName : ''
+        remainingQuantity: parseInt(ticket.ticketQuantity) || 0,
       };
     });
     
@@ -471,7 +452,6 @@ const EditEventPage = () => {
       totalTickets: totalTickets,
       soldQuantity: 0,
       remainingTickets: totalTickets,
-      ticketPricingType: parseInt(formData.ticketPricingType) || 1,
       imgListEvent: imgListEvent,
       requireApproval: formData.requireApproval === EventStatus.Approve ? 1 : 
                      formData.requireApproval === EventStatus.Reject ? -1 : 0,
@@ -585,7 +565,6 @@ const EditEventPage = () => {
         latitude: geocodeResult.latitude,
         longitude: geocodeResult.longitude,
         totalTickets: totalTickets,
-        ticketPricingType: data.ticketPricingType && !isNaN(parseInt(data.ticketPricingType)) ? parseInt(data.ticketPricingType) : 1,
         publish: publishStatus !== null ? publishStatus : (data.publish || false),
         // Send existing images that are not removed + new images
         images: [...existingImages.filter(img => !removedImages.includes(img)), ...imageUrls],
@@ -831,9 +810,6 @@ const EditEventPage = () => {
           district: event.district || '',
           eventCategoryId: event.eventCategoryId || event.eventCategory?.eventCategoryId || '',
           publish: event.publish || false,
-          ticketPricingType: (event.ticketPricingType !== undefined && event.ticketPricingType !== null) ? 
-          (event.ticketPricingType === 'Free' || event.ticketPricingType === 1 ? '1' : 
-           event.ticketPricingType === 'Paid' || event.ticketPricingType === 2 ? '2' : '1') : '1',
           ticketTypes: event.ticketDetails && event.ticketDetails.length > 0 
             ? event.ticketDetails.map(ticket => ({
                 ticketName: ticket.ticketName || '',
@@ -951,39 +927,8 @@ const EditEventPage = () => {
     }
   };
 
-  // Format price for display
-  const formatPrice = (event) => {
-    if (
-      event.minTicketPrice !== undefined &&
-      event.maxTicketPrice !== undefined
-    ) {
-      if (event.minTicketPrice === 0 && event.maxTicketPrice === 0) {
-        return "Miễn phí";
-      } else if (event.minTicketPrice === event.maxTicketPrice) {
-        return new Intl.NumberFormat("vi-VN", {
-          style: "currency",
-          currency: "VND",
-        }).format(event.minTicketPrice);
-      } else {
-        return `${new Intl.NumberFormat("vi-VN", {
-          style: "currency",
-          currency: "VND",
-        }).format(event.minTicketPrice)} - ${new Intl.NumberFormat("vi-VN", {
-          style: "currency",
-          currency: "VND",
-        }).format(event.maxTicketPrice)}`;
-      }
-    }
-    return event.ticketType === 1 || event.ticketType === "free"
-      ? "Miễn phí"
-      : "Có phí";
-  };
-
   // Format ticket price
   const formatTicketPrice = (ticket) => {
-    if (ticket.ticketPrice === 0) {
-      return "Miễn phí";
-    }
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
@@ -1086,28 +1031,33 @@ const EditEventPage = () => {
               <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
                 {/* Display price badge first */}
                 <Badge className="bg-primary text-primary-foreground border-0 shadow-lg px-3 py-1.5 font-semibold">
-                  {/* Badge Giá vé - Tối ưu & realtime */}
-                  {watchTicketPricingType === '1' ? (
-                    <><span role="img" aria-label="gift"></span> Miễn phí</>
-                  ) : (
-                  <>
                     {(() => {
-                      const types = watch('ticketTypes') || [];
+                      const types = watch("ticketTypes") || [];
+
                       const paidPrices = types
-                        .map(t => parseFloat(t.ticketPrice) || 0)
+                        .map(t => Number(t.ticketPrice) || 0)
                         .filter(p => p > 0);
-                      if (paidPrices.length === 0) return "Có phí";
+
+                      // 1️⃣ Nếu tất cả vé giá = 0 → Miễn phí
+                      if (paidPrices.length === 0) {
+                        return "Miễn phí";
+                      }
+
+                      // 2️⃣ Ngược lại → Có phí + hiển thị khoảng giá
                       const min = Math.min(...paidPrices);
                       const max = Math.max(...paidPrices);
+
                       const formatter = new Intl.NumberFormat("vi-VN", {
                         style: "currency",
                         currency: "VND",
                       });
-                      return min === max ? formatter.format(min) : `${formatter.format(min)} - ${formatter.format(max)}`;
+
+                      return min === max
+                        ? formatter.format(min)
+                        : `${formatter.format(min)} - ${formatter.format(max)}`;
                     })()}
-                  </>
-                )}
-              </Badge>
+                  </Badge>
+
                 {/* Display category badge */}
                 <Badge className="bg-white/95 text-gray-900 border-0 shadow-lg px-3 py-1.5 font-semibold">
                   <Tag className="w-3 h-3 mr-1" />
@@ -1454,7 +1404,6 @@ const EditEventPage = () => {
                                 value={ticketForm.ticketPrice}
                                 onChange={handleTicketFormChange}
                                 min="0"
-                                disabled={watchTicketPricingType === '1'} // Disabled for free events
                               />
                             </div>
                             <div className="md:col-span-2">
@@ -1488,7 +1437,7 @@ const EditEventPage = () => {
                             <div className="flex items-center gap-2">
                               <div className="text-right">
                                 <p className="text-2xl font-bold text-primary">
-                                  {ticket.ticketPrice === 0 ? "Miễn phí" : formatTicketPrice(ticket)}
+                                  {ticket.ticketPrice === 0 ? "" : formatTicketPrice(ticket)}
                                 </p>
                               </div>
                               <button
@@ -1614,52 +1563,6 @@ const EditEventPage = () => {
                   </div>
 
                   <div className="h-px bg-gradient-to-r from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-900"></div>
-
-                  {/* Event Type Selection (Free/Paid) */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <div className="bg-emerald-100 dark:bg-emerald-900/30 p-2 rounded-lg">
-                        <CreditCard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                      </div>
-                      <h4 className="font-semibold text-foreground">Loại sự kiện</h4>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { value: "1", label: "Miễn phí", icon: "🎁", desc: "Không thu phí vé" },
-                        { value: "2", label: "Có phí", icon: "💳", desc: "Có thu phí vé" },
-                      ].map((type) => (
-                        <button
-                          key={type.value}
-                          type="button"
-                          onClick={() => setValue('ticketPricingType', type.value)}
-                          className={`relative group p-4 rounded-xl border-2 transition-all duration-300 ${
-                            watch('ticketPricingType') === type.value
-                              ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 shadow-lg shadow-emerald-500/20"
-                              : "border-gray-200 dark:border-gray-800 hover:border-emerald-300 dark:hover:border-emerald-700 bg-gray-50 dark:bg-gray-900/50"
-                          }`}
-                        >
-                          <div className="text-3xl mb-2">{type.icon}</div>
-                          <div className="text-left">
-                            <p className="font-semibold text-sm">{type.label}</p>
-                            <p className="text-xs text-muted-foreground">{type.desc}</p>
-                          </div>
-                          {watch('ticketPricingType') === type.value && (
-                            <div className="absolute top-2 right-2 bg-emerald-500 text-white rounded-full p-1">
-                              <CheckCircle2 className="w-3 h-3" />
-                            </div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                    <input type="hidden" {...register('ticketPricingType')} />
-                    {errors.ticketPricingType && (
-                      <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" />
-                        {errors.ticketPricingType.message}
-                      </p>
-                    )}
-                  </div>
-
                   <div className="h-px bg-gradient-to-r from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-900"></div>
 
                   {/* Location Information */}

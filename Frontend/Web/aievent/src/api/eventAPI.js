@@ -82,7 +82,6 @@ export const eventAPI = {
     
     if (params.search) queryParams.append('search', params.search);
     if (params.eventCategoryId) queryParams.append('eventCategoryId', params.eventCategoryId);
-    if (params.ticketType) queryParams.append('ticketType', params.ticketType);
     if (params.district) queryParams.append('district', params.district);
     if (params.timeLine) queryParams.append('timeLine', params.timeLine);
     if (params.pageNumber) queryParams.append('pageNumber', params.pageNumber);
@@ -151,7 +150,6 @@ export const eventAPI = {
       StartTime: eventData.startTime,
       EndTime: eventData.endTime,
       TotalTickets: eventData.totalTickets,
-      TicketPricingType: eventData.ticketPricingType,
       RequireApproval: eventData.requireApproval || EventStatus.PendingApproval,
       Publish: eventData.publish !== undefined ? eventData.publish : false,
       LocationName: eventData.locationName,
@@ -187,7 +185,6 @@ export const eventAPI = {
       StartTime: eventData.startTime,
       EndTime: eventData.endTime,
       TotalTickets: eventData.totalTickets,
-      TicketPricingType: eventData.ticketPricingType,
       Publish: eventData.publish !== undefined ? eventData.publish : false,
       LocationName: eventData.locationName,
       DetailedDescription: eventData.detailedDescription,

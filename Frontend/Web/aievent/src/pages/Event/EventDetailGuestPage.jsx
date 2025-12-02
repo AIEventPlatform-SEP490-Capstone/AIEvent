@@ -344,9 +344,7 @@ const EventDetailGuestPage = ({ previewData }) => {
   };
 
   const getDisplayTicketPrice = (event) => {
-    if (!event?.ticketDetails || event.ticketDetails.length === 0) {
-      return "Miễn phí";
-    }
+
     const prices = event.ticketDetails.map((t) => t.ticketPrice || 0);
     const min = Math.min(...prices);
     const max = Math.max(...prices);
@@ -759,7 +757,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-primary">
-                            {ticket.ticketPrice === 0 ? "Miễn phí" : formatTicketPrice(ticket)}
+                            {ticket.ticketPrice === 0 ? "" : formatTicketPrice(ticket)}
                           </p>
                         </div>
                       </div>

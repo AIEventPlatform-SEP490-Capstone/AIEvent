@@ -200,9 +200,6 @@ const EventDetailPage = () => {
 
   // Format ticket price for individual tickets
   const formatTicketPrice = (ticket) => {
-    if (ticket.ticketPrice === 0) {
-      return 'Miễn phí';
-    }
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND'
@@ -419,27 +416,6 @@ Nhấn OK để xác nhận xóa.`;
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             
             <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
-              {/* Display price badge first */}
-              <Badge className="bg-primary text-primary-foreground border-0 shadow-lg px-3 py-1.5 font-semibold">
-                {event.minTicketPrice !== undefined && event.maxTicketPrice !== undefined
-                  ? event.minTicketPrice === 0 && event.maxTicketPrice === 0
-                    ? "Miễn phí"
-                    : event.minTicketPrice === event.maxTicketPrice
-                    ? new Intl.NumberFormat("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      }).format(event.minTicketPrice)
-                    : `${new Intl.NumberFormat("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      }).format(event.minTicketPrice)} - ${new Intl.NumberFormat("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      }).format(event.maxTicketPrice)}`
-                  : event.ticketType === 1 || event.ticketType === "free"
-                  ? "Miễn phí"
-                  : "Có phí"}
-              </Badge>
               {/* Display category badge */}
               <Badge className="bg-white/95 text-gray-900 border-0 shadow-lg px-3 py-1.5 font-semibold">
                 <Tag className="w-3 h-3 mr-1" />
@@ -602,7 +578,7 @@ Nhấn OK để xác nhận xóa.`;
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-primary">
-                            {ticket.ticketPrice === 0 ? "Miễn phí" : formatTicketPrice(ticket)}
+                            {ticket.ticketPrice === 0 ? "" : formatTicketPrice(ticket)}
                           </p>
                         </div>
                       </div>

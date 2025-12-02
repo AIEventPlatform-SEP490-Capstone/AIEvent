@@ -80,7 +80,6 @@ export default function ChatPage() {
     "Tìm các sự kiện âm nhạc sắp diễn ra ở TP.HCM",
     "Các sự kiện công nghệ tháng này",
     "Hướng dẫn đặt vé sự kiện",
-    "Sự kiện miễn phí cuối tuần này",
     "Tìm sự kiện gần khu vực Thủ Đức",
     "Các workshop sắp tới",
   ];
