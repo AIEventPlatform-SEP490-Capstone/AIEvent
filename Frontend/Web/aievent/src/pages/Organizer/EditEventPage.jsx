@@ -497,6 +497,50 @@ const EditEventPage = () => {
       // Validate all fields at once and show inline errors
       const hasErrors = validateAllFields();
       
+      // Additional validation for datetime fields to ensure they're still valid
+      const currentValidationTime = new Date();
+      const validationSaleStartTime = new Date(data.saleStartTime);
+      const validationSaleEndTime = new Date(data.saleEndTime);
+      const validationEventStartTime = new Date(data.startTime);
+      const validationEventEndTime = new Date(data.endTime);
+      
+      // Check if any datetime has become invalid since form was filled
+      if (validationSaleStartTime <= currentValidationTime) {
+        setDateErrors(prev => ({
+          ...prev,
+          saleStartTime: 'Thời gian bắt đầu bán vé phải sau thời điểm hiện tại'
+        }));
+        toast.error('Thời gian bắt đầu bán vé phải sau thời điểm hiện tại');
+        return;
+      }
+      
+      if (validationSaleEndTime <= currentValidationTime) {
+        setDateErrors(prev => ({
+          ...prev,
+          saleEndTime: 'Thời gian kết thúc bán vé phải sau thời điểm hiện tại'
+        }));
+        toast.error('Thời gian kết thúc bán vé phải sau thời điểm hiện tại');
+        return;
+      }
+      
+      if (validationEventStartTime <= currentValidationTime) {
+        setDateErrors(prev => ({
+          ...prev,
+          startTime: 'Thời gian bắt đầu sự kiện phải sau thời điểm hiện tại'
+        }));
+        toast.error('Thời gian bắt đầu sự kiện phải sau thời điểm hiện tại');
+        return;
+      }
+      
+      if (validationEventEndTime <= currentValidationTime) {
+        setDateErrors(prev => ({
+          ...prev,
+          endTime: 'Thời gian kết thúc sự kiện phải sau thời điểm hiện tại'
+        }));
+        toast.error('Thời gian kết thúc sự kiện phải sau thời điểm hiện tại');
+        return;
+      }
+      
       if (hasErrors) {
         const errorMessage = publishStatus !== null ? 
           (publishStatus ? 'Vui lòng kiểm tra lại thông tin sự kiện trước khi xuất bản' : 'Vui lòng kiểm tra lại thông tin sự kiện trước khi lưu nháp') : 
@@ -531,22 +575,10 @@ const EditEventPage = () => {
       // Calculate total tickets from ticketTypes array
       const totalTickets = data.ticketTypes.reduce((sum, ticket) => sum + parseInt(ticket.ticketQuantity), 0);
       
-      // Function to convert datetime-local string (local time) to UTC ISO string
-      const convertToUTCISOString = (dateString) => {
-        if (!dateString) return '';
-        
-        // Parse the datetime string manually to avoid timezone issues
-        const [datePart, timePart] = dateString.split('T');
-        const [year, month, day] = datePart.split('-').map(Number);
-        const [hours, minutes] = timePart.split(':').map(Number);
-        
-        // Create a UTC date using the parsed components
-        // Since the user entered local time (UTC+7), we need to subtract 7 hours to get UTC
-        // ĐÚNG: KHÔNG TRỪ 7 TIẾNG
-        const utcDate = new Date(Date.UTC(year, month - 1, day, hours, minutes)); 
-        
-        // Return proper UTC ISO string
-        return utcDate.toISOString();
+      const convertToUTCISOString = (localDateTimeString) => {
+        // "2025-12-02T14:00" → JS tự hiểu là giờ local → tự trừ 7h khi chuyển sang UTC
+        const date = new Date(localDateTimeString);
+        return date.toISOString(); // ĐÚNG: ra 2025-12-02T07:00:00.000Z
       };
       
       // Calculate added and removed tag IDs for update
@@ -671,6 +703,8 @@ const EditEventPage = () => {
     const hasEvidenceImageErrors = selectedEvidenceImages.length === 0 && evidenceImagePreview.length === 0 && existingEvidenceImages.length === 0;
     const hasTimelineErrors = Object.values(dateErrors).some(error => error !== '');
     const hasTicketNameErrors = hasEmptyTicketNames;
+    
+    // Force re-render of timeline errors by updating state
     
     return hasTagErrors || hasImageErrors || hasEvidenceImageErrors || hasTimelineErrors || hasTicketNameErrors;
   };
@@ -1321,6 +1355,18 @@ const EditEventPage = () => {
                     Thời gian của sự kiện cần nhập đầy đủ
                   </p>
                 )}
+                {/* Display individual field errors */}
+                {Object.entries(dateErrors).map(([field, error]) => {
+                  if (error) {
+                    return (
+                      <p key={field} className="text-red-500 text-xs flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {error}
+                      </p>
+                    );
+                  }
+                  return null;
+                })}
               </div>
             )}
             
