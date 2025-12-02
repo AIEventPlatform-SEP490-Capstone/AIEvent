@@ -72,6 +72,9 @@ import { PredefinedCities } from '../../constants/userConstants';
 // Import EventTimeline component
 import { EventTimeline } from '../../components/Event/EventTimeline';
 import { useSidebar } from '../../components/ui/sidebar'; // Add this import
+// Import datetime validation utility
+import datetimeValidation from '../../utils/datetimeValidation';
+
 // Validation schema
 const createEventSchema = z.object({
   title: z.string().min(1, 'Tiêu đề sự kiện là bắt buộc').max(200, 'Tiêu đề không được vượt quá 200 ký tự'),
@@ -90,7 +93,7 @@ const createEventSchema = z.object({
   saleEndTime: z.string().min(1, 'Thời gian kết thúc bán vé là bắt buộc'),
   ticketTypes: z.array(z.object({
     ticketName: z.string().min(1, 'Tên vé là bắt buộc'),
-    ticketPrice: z.number().min(0, 'Giá vé không được âm'),
+    ticketPrice: z.number().min(10000, 'Giá vé phải lớn hơn 10.000 VND'),
     ticketQuantity: z.number().min(1, 'Số lượng vé phải lớn hơn 0'),
     ticketDescription: z.string().optional(),
     // ruleRefundRequestId: z.string().min(1, 'Quy tắc hoàn tiền là bắt buộc'),
@@ -113,9 +116,9 @@ const createEventSchema = z.object({
   message: 'Thời gian bán vé phải kết thúc trước thời gian bắt đầu sự kiện và thời gian bắt đầu bán vé phải trước thời gian kết thúc bán vé',
   path: ['saleEndTime'],
 }).refine((data) => {
-  return data.ticketTypes.some(ticket => ticket.ticketPrice > 0);
+  return data.ticketTypes.some(ticket => ticket.ticketPrice > 10000);
 }, {
-  message: 'Phải có ít nhất một loại vé có giá > 0',
+  message: 'Phải có ít nhất một loại vé có giá > 10.000 VND',
   path: ['ticketTypes'],
 });
 
@@ -160,7 +163,7 @@ const CreateEventPage = () => {
   const [editingTicketIndex, setEditingTicketIndex] = useState(null);
   const [ticketForm, setTicketForm] = useState({
     ticketName: '',
-    ticketPrice: 0,
+    ticketPrice: 10000,
     ticketQuantity: 1,
     ticketDescription: ''
   });
@@ -205,7 +208,7 @@ const CreateEventPage = () => {
       ticketTypes: [
         {
           ticketName: 'Vé thường',
-          ticketPrice: 0,
+          ticketPrice: 10000,
           ticketQuantity: 1,
           ticketDescription: '',
           // ruleRefundRequestId: '',
@@ -301,7 +304,7 @@ const CreateEventPage = () => {
       cloneData.ticketTypes.forEach((ticket, index) => {
         append({
           ticketName: ticket.ticketName,
-          ticketPrice: ticket.ticketPrice || 0,
+          ticketPrice: ticket.ticketPrice || 10000,
           ticketQuantity: ticket.ticketQuantity || 1,
           ticketDescription: ticket.ticketDescription || '',
           // ruleRefundRequestId: ticket.ruleRefundRequestId || '',
@@ -313,7 +316,7 @@ const CreateEventPage = () => {
       cloneData.ticketDetails.forEach((ticket, index) => {
         append({
           ticketName: ticket.ticketName || ticket.TicketName || '',
-          ticketPrice: ticket.ticketPrice || ticket.TicketPrice || 0,
+          ticketPrice: ticket.ticketPrice || ticket.TicketPrice || 10000,
           ticketQuantity: ticket.ticketQuantity || ticket.TicketQuantity || 1,
           ticketDescription: ticket.ticketDescription || ticket.TicketDescription || '',
         });
@@ -403,7 +406,7 @@ const CreateEventPage = () => {
           ticketTypes: event.ticketDetails && event.ticketDetails.length > 0 
             ? event.ticketDetails.map(ticket => ({
                 ticketName: ticket.ticketName || '',
-                ticketPrice: ticket.ticketPrice || 0,
+                ticketPrice: ticket.ticketPrice || 10000,
                 ticketQuantity: ticket.ticketQuantity || 1,
                 ticketDescription: ticket.ticketDescription || '',
                 // ruleRefundRequestId: ticket.ruleRefundRequestId || '',
@@ -411,7 +414,7 @@ const CreateEventPage = () => {
             : [
                 {
                   ticketName: 'Vé thường',
-                  ticketPrice: 0,
+                  ticketPrice: 10000,
                   ticketQuantity: event.totalTickets || 1,
                   ticketDescription: '',
                   // ruleRefundRequestId: '',
@@ -543,7 +546,7 @@ const CreateEventPage = () => {
   const addTicketType = () => {
     append({
       ticketName: '',
-      ticketPrice: 1,
+      ticketPrice: 10000,
       ticketQuantity: 1,
       ticketDescription: '',
       // ruleRefundRequestId: selectedRules.length > 0 ? selectedRules[0].ruleRefundId : '',
@@ -563,7 +566,7 @@ const CreateEventPage = () => {
     setEditingTicketIndex(index);
     setTicketForm({
       ticketName: ticket.ticketName || '',
-      ticketPrice: ticket.ticketPrice || 0,
+      ticketPrice: ticket.ticketPrice || 10000,
       ticketQuantity: ticket.ticketQuantity || 1,
       ticketDescription: ticket.ticketDescription || ''
     });
@@ -574,7 +577,8 @@ const CreateEventPage = () => {
     if (editingTicketIndex !== null) {
       // Update the ticket in the form
       setValue(`ticketTypes.${editingTicketIndex}.ticketName`, ticketForm.ticketName);
-      setValue(`ticketTypes.${editingTicketIndex}.ticketPrice`, parseFloat(ticketForm.ticketPrice) || 0);
+      const ticketPrice = parseFloat(ticketForm.ticketPrice);
+      setValue(`ticketTypes.${editingTicketIndex}.ticketPrice`, isNaN(ticketPrice) ? 10000 : ticketPrice);
       setValue(`ticketTypes.${editingTicketIndex}.ticketQuantity`, parseInt(ticketForm.ticketQuantity) || 1);
       setValue(`ticketTypes.${editingTicketIndex}.ticketDescription`, ticketForm.ticketDescription);
       
@@ -582,7 +586,7 @@ const CreateEventPage = () => {
       setEditingTicketIndex(null);
       setTicketForm({
         ticketName: '',
-        ticketPrice: 0,
+        ticketPrice: 10000,
         ticketQuantity: 1,
         ticketDescription: ''
       });
@@ -594,7 +598,7 @@ const CreateEventPage = () => {
     setEditingTicketIndex(null);
     setTicketForm({
       ticketName: '',
-      ticketPrice: 0,
+      ticketPrice: 10000,
       ticketQuantity: 1,
       ticketDescription: ''
     });
@@ -624,7 +628,10 @@ const CreateEventPage = () => {
     const ticketTypes = formData.ticketTypes.map(ticket => {
       return {
         ...ticket,
-        ticketPrice: parseFloat(ticket.ticketPrice) || 0,
+        ticketPrice: (() => {
+          const price = parseFloat(ticket.ticketPrice);
+          return isNaN(price) ? 10000 : price;
+        })(),
         ticketQuantity: parseInt(ticket.ticketQuantity) || 0,
         soldQuantity: 0, // Default for preview
         remainingQuantity: parseInt(ticket.ticketQuantity) || 0, // Default for preview
@@ -832,7 +839,10 @@ const CreateEventPage = () => {
         // refundRules: selectedRules.map(rule => ({ ruleRefundId: rule.ruleRefundId })),
         ticketTypes: data.ticketTypes.map(ticket => ({
           ticketName: ticket.ticketName,
-          ticketPrice: parseFloat(ticket.ticketPrice),
+          ticketPrice: (() => {
+            const price = parseFloat(ticket.ticketPrice);
+            return isNaN(price) ? 0 : price;
+          })(),
           ticketQuantity: parseInt(ticket.ticketQuantity),
           ticketDescription: ticket.ticketDescription || '',
           // ruleRefundRequestId: ticket.ruleRefundRequestId,
@@ -871,7 +881,7 @@ const CreateEventPage = () => {
       setIsSubmitting(false);
     }
   };
-  // Real-time date validation
+  // Real-time date validation using the new utility
   const validateDates = () => {
     const startTime = watch('startTime');
     const endTime = watch('endTime');
@@ -933,31 +943,24 @@ const CreateEventPage = () => {
       }
     }
     
-    // Check relationships between dates (only if all relevant fields have values)
+    // Check relationships between dates using the new validation utility
     if (startTime && endTime) {
-      const start = new Date(startTime);
-      const end = new Date(endTime);
-      
-      if (end <= start) {
+      if (!datetimeValidation.validateEventTimeRange(startTime, endTime)) {
         newErrors.endTime = 'Thời gian kết thúc phải sau thời gian bắt đầu';
       }
     }
     
     if (saleStartTime && saleEndTime && startTime) {
-      const start = new Date(startTime);
-      const saleStart = new Date(saleStartTime);
-      const saleEnd = new Date(saleEndTime);
-      
-      if (saleStart >= start) {
-        newErrors.saleStartTime = 'Thời gian bắt đầu bán vé phải trước thời gian bắt đầu sự kiện';
-      }
-      
-      if (saleEnd <= saleStart) {
-        newErrors.saleEndTime = 'Thời gian kết thúc bán vé phải sau thời gian bắt đầu bán vé';
-      }
-      
-      if (saleEnd >= start) {
-        newErrors.saleEndTime = 'Thời gian kết thúc bán vé phải trước thời gian bắt đầu sự kiện';
+      const saleTimeErrors = datetimeValidation.validateSaleTimeRange(saleStartTime, saleEndTime, startTime);
+      if (saleTimeErrors.length > 0) {
+        // Assign the first error to the appropriate field
+        if (saleTimeErrors[0].includes('bán vé phải trước thời gian kết thúc bán vé')) {
+          newErrors.saleEndTime = saleTimeErrors[0];
+        } else if (saleTimeErrors[0].includes('bán vé phải trước thời gian bắt đầu sự kiện')) {
+          newErrors.saleStartTime = saleTimeErrors[0];
+        } else if (saleTimeErrors[0].includes('kết thúc bán vé phải trước thời gian bắt đầu sự kiện')) {
+          newErrors.saleEndTime = saleTimeErrors[0];
+        }
       }
     }
     
@@ -1626,7 +1629,7 @@ const CreateEventPage = () => {
                                 name="ticketPrice"
                                 value={ticketForm.ticketPrice}
                                 onChange={handleTicketFormChange}
-                                min="1"
+                                min="10000"
                               />
                             </div>
                             <div className="md:col-span-2">
@@ -1648,6 +1651,27 @@ const CreateEventPage = () => {
                               Lưu
                             </Button>
                           </div>
+                          {/* Display ticket validation errors */}
+                          {hasValidated && errors.ticketTypes && errors.ticketTypes[index] && (
+                            <>
+                              {errors.ticketTypes[index].ticketPrice && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-2 mt-2">
+                                  <p className="text-red-700 text-xs flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                    {errors.ticketTypes[index].ticketPrice.message}
+                                  </p>
+                                </div>
+                              )}
+                              {errors.ticketTypes[index].ticketQuantity && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-2 mt-2">
+                                  <p className="text-red-700 text-xs flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                    {errors.ticketTypes[index].ticketQuantity.message}
+                                  </p>
+                                </div>
+                              )}
+                            </>
+                          )}
                         </div>
                       ) : (
                         /* Ticket Display */
@@ -1701,6 +1725,15 @@ const CreateEventPage = () => {
                 </p>
               </div>
             )}
+            {/* Display ticket types validation error */}
+            {hasValidated && errors.ticketTypes && errors.ticketTypes.message && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-2">
+                <p className="text-red-700 text-sm flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  {errors.ticketTypes.message}
+                </p>
+              </div>
+            )}
             {/* About Event */}
             <div className="bg-white rounded-xl p-8 border border-gray-100">
               <h2 className="text-2xl font-bold text-foreground mb-6">Về sự kiện</h2>
@@ -1740,7 +1773,6 @@ const CreateEventPage = () => {
           </div>
           {/* Sidebar - Form Controls */}
           <div className="lg:col-span-1 space-y-5">
-            {/* Main Card */}
             <div className="sticky top-24">
               {/* Header Section */}
               <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 rounded-t-2xl p-6 text-white shadow-lg">
@@ -1985,4 +2017,5 @@ const CreateEventPage = () => {
     </div>
   );
 };
+
 export default CreateEventPage;
