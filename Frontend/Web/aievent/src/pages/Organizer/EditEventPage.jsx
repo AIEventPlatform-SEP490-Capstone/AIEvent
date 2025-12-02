@@ -576,9 +576,8 @@ const EditEventPage = () => {
       const totalTickets = data.ticketTypes.reduce((sum, ticket) => sum + parseInt(ticket.ticketQuantity), 0);
       
       const convertToUTCISOString = (localDateTimeString) => {
-        // "2025-12-02T14:00" → JS tự hiểu là giờ local → tự trừ 7h khi chuyển sang UTC
         const date = new Date(localDateTimeString);
-        return date.toISOString(); // ĐÚNG: ra 2025-12-02T07:00:00.000Z
+        return date.toISOString();
       };
       
       // Calculate added and removed tag IDs for update
