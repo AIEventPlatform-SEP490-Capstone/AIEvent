@@ -14,6 +14,7 @@ const TagManagementPage = ({ userRole }) => {
   const [activeFilter, setActiveFilter] = useState("all"); // "all" or "popular"
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newTagInput, setNewTagInput] = useState('');
+  const [isCreating, setIsCreating] = useState(false); // Add loading state for tag creation
   
   // Get user role from auth state if not passed as prop
   const { user } = useSelector((state) => state.auth);
@@ -24,15 +25,21 @@ const TagManagementPage = ({ userRole }) => {
 
   // Handle creating a new tag
   const handleCreateTag = async () => {
-    if (newTagInput.trim()) {
-      try {
-        await createNewTag({ nameTag: newTagInput.trim() });
-        setNewTagInput('');
-        setIsCreateDialogOpen(false);
-        forceRefreshTags();
-      } catch (err) {
-        console.error('Error creating tag:', err);
-      }
+    // Prevent multiple submissions
+    if (isCreating || !newTagInput.trim()) {
+      return;
+    }
+    
+    setIsCreating(true);
+    try {
+      await createNewTag({ nameTag: newTagInput.trim() });
+      setNewTagInput('');
+      setIsCreateDialogOpen(false);
+      forceRefreshTags();
+    } catch (err) {
+      console.error('Error creating tag:', err);
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -267,8 +274,8 @@ const TagManagementPage = ({ userRole }) => {
                 >
                   Hủy
                 </Button>
-                <Button onClick={handleCreateTag}>
-                  Tạo Tag
+                <Button onClick={handleCreateTag} disabled={isCreating}>
+                  {isCreating ? 'Đang tạo...' : 'Tạo Tag'}
                 </Button>
               </div>
             </div>

@@ -84,6 +84,11 @@ const EventCategory = () => {
   const [formData, setFormData] = useState({
     eventCategoryName: "",
   });
+  
+  // Loading states for form submissions
+  const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Filter and sort categories
   const filteredAndSortedCategories = useMemo(() => {
@@ -150,10 +155,12 @@ const EventCategory = () => {
 
   // Handle create new category
   const handleCreate = async () => {
-    if (!formData.eventCategoryName.trim()) {
-      showError("Tên danh mục là bắt buộc");
+    // Prevent multiple submissions
+    if (isCreating || !formData.eventCategoryName.trim()) {
       return;
     }
+    
+    setIsCreating(true);
     try {
       setIsSubmittingCreate(true);
       await createNewCategory({
@@ -173,10 +180,12 @@ const EventCategory = () => {
 
   // Handle update category
   const handleUpdate = async () => {
-    if (!formData.eventCategoryName.trim()) {
-      showError("Tên danh mục là bắt buộc");
+    // Prevent multiple submissions
+    if (isUpdating || !formData.eventCategoryName.trim()) {
       return;
     }
+    
+    setIsUpdating(true);
     try {
       setIsSubmittingUpdate(true);
       await updateExistingCategory(selectedCategory.eventCategoryId, {
@@ -198,12 +207,20 @@ const EventCategory = () => {
 
   // Handle delete category
   const handleDelete = async (categoryId) => {
+    // Prevent multiple submissions
+    if (isDeleting) {
+      return;
+    }
+    
+    setIsDeleting(true);
     try {
       await deleteExistingCategory(categoryId);
       showSuccess("Xóa danh mục sự kiện thành công!");
     } catch (err) {
       showError("Lỗi khi xóa danh mục: " + (err.message || "Unknown error"));
       clearCategoriesError();
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -678,8 +695,9 @@ const EventCategory = () => {
                 await handleDelete(deleteTargetId);
                 setIsDeleteDialogOpen(false);
               }}
+              disabled={isDeleting}
             >
-              Xóa
+              {isDeleting ? 'Đang xóa...' : 'Xóa'}
             </Button>
           </DialogFooter>
         </DialogContent>

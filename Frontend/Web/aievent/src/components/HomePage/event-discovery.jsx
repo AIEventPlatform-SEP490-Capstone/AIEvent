@@ -169,12 +169,9 @@ export function EventDiscovery({
     }
   };
 
-  const formatPrice = (price, isFree) => {
+  const formatPrice = (price) => {
     // Handle both mock data and API data structure
-    const ticketType = isFree !== undefined ? (isFree ? 1 : 2) : price?.ticketType;
     const actualPrice = price?.ticketPrice !== undefined ? price.ticketPrice : price;
-    
-    if (ticketType === 1 || actualPrice === 0) return "Miễn phí";
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
@@ -294,7 +291,7 @@ export function EventDiscovery({
                         </div>
                         <div className="absolute bottom-3 left-3">
                           <span className="bg-white/90 backdrop-blur-sm text-gray-900 font-bold px-3 py-1 rounded-full text-sm shadow-sm">
-                            {formatPrice(event, event.ticketPricingType === "Free")}
+                            {formatPrice(event)}
                           </span>
                         </div>
                       </div>
@@ -550,16 +547,7 @@ export function EventDiscovery({
                   />
                   
                   {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0" />
-                  
-                  {/* Free Badge
-                  {(event.ticketType === 1 || event.ticketPrice === 0) && (
-                    <Badge className="absolute top-4 left-4 bg-success text-success-foreground shadow-lg">
-                      <Sparkles className="w-3 h-3 mr-1" />
-                      Miễn phí
-                    </Badge>
-                  )} */}
-                  
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0" />      
                   {/* Category Badge at bottom */}
                   <Badge 
                     variant="secondary" 
@@ -642,7 +630,7 @@ export function EventDiscovery({
 
                   <div className="flex items-center justify-between pt-4 border-t border-border">
                     <div className="text-xl font-bold text-primary">
-                      {formatPrice(event, event.ticketType === 1)}
+                      {formatPrice(event)}
                     </div>
                     <Button 
                       size="sm"

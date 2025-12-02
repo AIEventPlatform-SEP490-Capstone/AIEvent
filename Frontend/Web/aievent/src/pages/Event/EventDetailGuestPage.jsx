@@ -344,14 +344,12 @@ const EventDetailGuestPage = ({ previewData }) => {
   };
 
   const getDisplayTicketPrice = (event) => {
-    if (!event?.ticketDetails || event.ticketDetails.length === 0) {
-      return "Miễn phí";
-    }
+
     const prices = event.ticketDetails.map((t) => t.ticketPrice || 0);
     const min = Math.min(...prices);
     const max = Math.max(...prices);
 
-    if (min === 0 && max === 0) return "Miễn phí";
+    if (min === 0 && max === 0) return "0đ";
     const formatVND = (price) =>
       new Intl.NumberFormat("vi-VN", {
         style: "currency",
@@ -368,7 +366,7 @@ const EventDetailGuestPage = ({ previewData }) => {
       event.maxTicketPrice !== undefined
     ) {
       if (event.minTicketPrice === 0 && event.maxTicketPrice === 0) {
-        return "Miễn phí";
+        return "0đ";
       } else if (event.minTicketPrice === event.maxTicketPrice) {
         return new Intl.NumberFormat("vi-VN", {
           style: "currency",
@@ -384,14 +382,11 @@ const EventDetailGuestPage = ({ previewData }) => {
         }).format(event.maxTicketPrice)}`;
       }
     }
-    return event.ticketType === 1 || event.ticketType === "free"
-      ? "Miễn phí"
-      : "Có phí";
   };
 
   const formatTicketPrice = (ticket) => {
     if (ticket.ticketPrice === 0) {
-      return "Miễn phí";
+      return "0đ";
     }
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -759,7 +754,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-primary">
-                            {ticket.ticketPrice === 0 ? "Miễn phí" : formatTicketPrice(ticket)}
+                            {ticket.ticketPrice === 0 ? "" : formatTicketPrice(ticket)}
                           </p>
                         </div>
                       </div>
@@ -787,25 +782,6 @@ const EventDetailGuestPage = ({ previewData }) => {
                 </p>
               )}
               
-              <div className="space-y-4">
-                <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-primary" />
-                  Bạn sẽ nhận được:
-                </h3>
-                <ul className="space-y-2">
-                  {[
-                    "Kiến thức và trải nghiệm quý báu",
-                    "Cơ hội kết nối với những người cùng chí hướng",
-                    "Tài liệu sự kiện (nếu có)",
-                    "Networking và chia sẻ kinh nghiệm",
-                  ].map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-3 text-muted-foreground">
-                      <CheckCircle className="w-4 h-4 text-primary flex-shrink-0 mt-1" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
             </div>
 
             {/* Organizer */}
@@ -1068,7 +1044,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                           relatedEvent.maxTicketPrice !== undefined
                             ? relatedEvent.minTicketPrice === 0 &&
                               relatedEvent.maxTicketPrice === 0
-                              ? "Miễn phí"
+                              ? "0đ"
                               : relatedEvent.minTicketPrice ===
                                 relatedEvent.maxTicketPrice
                               ? new Intl.NumberFormat("vi-VN", {
@@ -1086,7 +1062,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                                 }).format(relatedEvent.maxTicketPrice)}`
                             : relatedEvent.ticketType === 1 ||
                               relatedEvent.ticketType === "free"
-                            ? "Miễn phí"
+                            ? "0đ"
                             : "Có phí"}
                         </p>
                       </div>

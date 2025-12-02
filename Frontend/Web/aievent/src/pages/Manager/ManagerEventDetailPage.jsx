@@ -203,9 +203,6 @@ const ManagerEventDetailPage = () => {
 
   // Format ticket price for individual tickets
   const formatTicketPrice = (ticket) => {
-    if (ticket.ticketPrice === 0) {
-      return 'Miễn phí';
-    }
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND'
@@ -355,7 +352,6 @@ Nhấn OK để xác nhận xóa.`;
       });
       
       if (response) {
-        toast.success('Sự kiện đã được phê duyệt thành công!');
         // Reload the event details to reflect the new status
         loadEventDetail();
       }
@@ -378,7 +374,6 @@ Nhấn OK để xác nhận xóa.`;
       });
       
       if (response) {
-        toast.success('Sự kiện đã bị từ chối!');
         setRejectionReason('');
         // Reload the event details to reflect the new status
         loadEventDetail();
@@ -463,27 +458,6 @@ Nhấn OK để xác nhận xóa.`;
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             
             <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
-              {/* Display price badge first */}
-              <Badge className="bg-primary text-primary-foreground border-0 shadow-lg px-3 py-1.5 font-semibold">
-                {event.minTicketPrice !== undefined && event.maxTicketPrice !== undefined
-                  ? event.minTicketPrice === 0 && event.maxTicketPrice === 0
-                    ? "Miễn phí"
-                    : event.minTicketPrice === event.maxTicketPrice
-                    ? new Intl.NumberFormat("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      }).format(event.minTicketPrice)
-                    : `${new Intl.NumberFormat("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      }).format(event.minTicketPrice)} - ${new Intl.NumberFormat("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      }).format(event.maxTicketPrice)}`
-                  : event.ticketType === 1 || event.ticketType === "free"
-                  ? "Miễn phí"
-                  : "Có phí"}
-              </Badge>
               {/* Display category badge */}
               <Badge className="bg-white/95 text-gray-900 border-0 shadow-lg px-3 py-1.5 font-semibold">
                 <Tag className="w-3 h-3 mr-1" />
@@ -646,7 +620,7 @@ Nhấn OK để xác nhận xóa.`;
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-primary">
-                            {ticket.ticketPrice === 0 ? "Miễn phí" : formatTicketPrice(ticket)}
+                            {ticket.ticketPrice === 0 ? "" : formatTicketPrice(ticket)}
                           </p>
                         </div>
                       </div>
@@ -674,25 +648,6 @@ Nhấn OK để xác nhận xóa.`;
                 </p>
               )}
               
-              <div className="space-y-4">
-                <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-primary" />
-                  Bạn sẽ nhận được:
-                </h3>
-                <ul className="space-y-2">
-                  {[
-                    "Kiến thức và trải nghiệm quý báu",
-                    "Cơ hội kết nối với những người cùng chí hướng",
-                    "Tài liệu sự kiện (nếu có)",
-                    "Networking và chia sẻ kinh nghiệm",
-                  ].map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-3 text-muted-foreground">
-                      <CheckCircle className="w-4 h-4 text-primary flex-shrink-0 mt-1" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
             </div>
 
             {/* Organizer */}
@@ -783,13 +738,6 @@ Nhấn OK để xác nhận xóa.`;
             {/* Quick Actions - Enhanced */}
             <SidebarCard title="Hành động nhanh" gradient>
               <div className="space-y-3">
-                <ActionButton
-                  icon={Edit}
-                  label="Chỉnh sửa sự kiện"
-                  onClick={handleEditEvent}
-                  variant="secondary"
-                />
-                
                 <ActionButton
                   icon={Eye}
                   label="Xem trang công khai"

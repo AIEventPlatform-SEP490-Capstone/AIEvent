@@ -388,7 +388,6 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       });
 
       if (response) {
-        toast.success('Sự kiện đã bị từ chối!');
         setRejectionReason('');
         loadEvents();
       }
@@ -425,23 +424,6 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       minute: '2-digit',
     });
   };
-
-  const getTicketTypeLabel = (ticketType) => {
-    // Handle both string enum names and number values
-    if (ticketType === 1 || ticketType === "Free" || ticketType === "free" || ticketType === "Miễn phí") return 'Miễn phí';
-    if (ticketType === 2 || ticketType === "Paid" || ticketType === "paid" || ticketType === "Có phí") return 'Có phí';
-
-    // Additional check for string values (case insensitive)
-    if (typeof ticketType === 'string') {
-      const lowerTicketType = ticketType.toLowerCase();
-      if (lowerTicketType === 'free') return 'Miễn phí';
-      if (lowerTicketType === 'paid') return 'Có phí';
-    }
-
-    // Default fallback
-    return 'Không xác định';
-  };
-
   const getTabDisplayName = (tab) => {
     switch (tab) {
       case 'all': return 'Tất cả sự kiện';
@@ -1119,16 +1101,13 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                           </div>
                         )}
 
-                        {/* Event category and ticket type badges */}
+                        {/* Event category badges */}
                         <div className="flex items-center gap-2 mb-4">
                           {event.eventCategoryName && (
                             <Badge variant="outline" className="text-xs bg-white/50 dark:bg-white/10 border-white/20">
                               {event.eventCategoryName}
                             </Badge>
                           )}
-                          <Badge variant="outline" className="text-xs bg-white/50 dark:bg-white/10 border-white/20">
-                            {getTicketTypeLabel(event.ticketPricingType || event.ticketType)}
-                          </Badge>
                         </div>
 
                         {/* Metrics grid */}

@@ -89,7 +89,6 @@ class EventService {
         eventCategoryId = '',
         pageNumber = 1,
         pageSize = 10,
-        ticketType = null,
         district = '',
         timeLine = null
       } = params;
@@ -100,7 +99,6 @@ class EventService {
       if (eventCategoryId) queryParams.append('eventCategoryId', eventCategoryId);
       if (pageNumber) queryParams.append('pageNumber', pageNumber);
       if (pageSize) queryParams.append('pageSize', pageSize);
-      if (ticketType !== null) queryParams.append('ticketType', ticketType);
       if (district) queryParams.append('district', district);
       if (timeLine !== null) queryParams.append('timeLine', timeLine);
 

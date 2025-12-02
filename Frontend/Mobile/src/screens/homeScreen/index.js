@@ -134,7 +134,7 @@ const HomeScreen = () => {
       const maxPrice = Math.max(...prices);
       
       if (minPrice === 0 && maxPrice === 0) {
-        return 'Miễn phí';
+        return '0đ';
       } else if (minPrice === maxPrice) {
         return `${minPrice.toLocaleString('vi-VN')}đ`;
       } else {
@@ -146,14 +146,8 @@ const HomeScreen = () => {
     if (eventData.ticketPrice !== undefined && eventData.ticketPrice > 0) {
       return `${eventData.ticketPrice.toLocaleString('vi-VN')}đ`;
     }
-    
-    // Check ticketPricingType
-    if (eventData.ticketPricingType === 'Free' || eventData.ticketPricingType === 'free') {
-      return 'Miễn phí';
-    }
-    
     // Default to Miễn phí if no price information
-    return 'Miễn phí';
+    return '0đ';
   };
 
   // Transform event data to ensure consistent structure

@@ -205,12 +205,10 @@ export default function SearchPage() {
   };
 
   const formatPrice = (event) => {
-    // Handle different data structures for ticket information
-    const ticketType = event.ticketType;
     const price = event.ticketPrice || 0;
     
-    if (ticketType === 1 || ticketType === "free" || price === 0) {
-      return "Miễn phí";
+    if (price === 0) {
+      return "0đ";
     }
     
     return new Intl.NumberFormat("vi-VN", {
@@ -386,7 +384,7 @@ export default function SearchPage() {
                 </div>
               </div>
 
-              {/* Price Filter */}
+              {/* Price Filter
               <div className="space-y-2">
                 <span className="text-sm text-muted-foreground">Giá vé:</span>
                 <div className="flex gap-2">
@@ -401,7 +399,7 @@ export default function SearchPage() {
                     </Button>
                   ))}
                 </div>
-              </div>
+              </div> */}
 
               {/* Location Filter */}
               <div className="space-y-2">

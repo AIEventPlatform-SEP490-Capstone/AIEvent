@@ -128,7 +128,7 @@ const EventCard = ({ event, onPress, isRecommended = false }) => {
   // Format price display
   const formatPrice = (price) => {
     if (!price || price === 'Miễn phí') {
-      return 'Miễn phí';
+      return '0đ';
     }
     return price;
   };
