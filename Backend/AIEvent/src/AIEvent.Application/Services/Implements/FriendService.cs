@@ -268,7 +268,7 @@ namespace AIEvent.Application.Services.Implements
                 .FirstOrDefaultAsync(f =>
                     ((f.SenderId == userId && f.ReceiverId == friendId) ||
                      (f.SenderId == friendId && f.ReceiverId == userId)) &&
-                    (f.Status == FriendshipStatus.Accepted && f.Status == FriendshipStatus.Blocked) 
+                    (f.Status == FriendshipStatus.Accepted || f.Status == FriendshipStatus.Blocked) 
                     && !f.IsDeleted);
 
             if (friendship == null)
@@ -287,19 +287,6 @@ namespace AIEvent.Application.Services.Implements
             if (!Guid.TryParse(id, out var friendId))
                 return ErrorResponse.FailureResult("Invalid Guid format.", ErrorCodes.InvalidInput);
 
-            // Kiểm tra quan hệ bạn bè
-            var isFriend = await _unitOfWork.FriendshipRepository
-                .Query()
-                .AsNoTracking()
-                .AnyAsync(f =>
-                    f.Status == FriendshipStatus.Accepted &&
-                    ((f.SenderId == userId && f.ReceiverId == friendId) ||
-                     (f.SenderId == friendId && f.ReceiverId == userId)));
-
-            if (!isFriend)
-                return ErrorResponse.FailureResult("Friendship not found", ErrorCodes.NotFound);
-
-            // Lấy thông tin bạn bè
             var friend = await _unitOfWork.UserRepository
                 .Query()
                 .AsNoTracking()
@@ -308,10 +295,8 @@ namespace AIEvent.Application.Services.Implements
             if (friend == null)
                 return ErrorResponse.FailureResult("Friend not found", ErrorCodes.NotFound);
 
-            // Map sang response
             var response = _mapper.Map<FriendProfileResponse>(friend);
 
-            // Lấy danh sách sự kiện chung (chỉ select thô)
             var eventData = await _unitOfWork.EventRepository
                 .Query()
                 .AsNoTracking()
@@ -327,7 +312,6 @@ namespace AIEvent.Application.Services.Implements
                 })
                 .ToListAsync();
 
-            // Sau khi truy vấn, xử lý parse JSON ở bộ nhớ
             response.ListCommonEvent = eventData.Select(e => new CommonEvent
             {
                 EventName = e.Title,
