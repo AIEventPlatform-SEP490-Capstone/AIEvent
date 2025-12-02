@@ -57,9 +57,14 @@ fetcher.interceptors.response.use(
     }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
-      // Không refresh token cho login request hoặc refresh token request
+      // Không refresh token cho các auth endpoints không cần authentication
+      // (login, register, verify-otp, forgot-password, reset-password, refresh-token)
       if (
         originalRequest.url?.includes("/auth/login") ||
+        originalRequest.url?.includes("/auth/register") ||
+        originalRequest.url?.includes("/auth/verify-otp") ||
+        originalRequest.url?.includes("/auth/forgot-password") ||
+        originalRequest.url?.includes("/auth/reset-password") ||
         originalRequest.url?.includes("/auth/refresh-token")
       ) {
         return Promise.reject(error);

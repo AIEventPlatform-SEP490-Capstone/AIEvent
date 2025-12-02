@@ -252,7 +252,7 @@ export default function BecomeOrganizerPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label>Người liên hệ *</Label>
+                  <Label>Tên người liên hệ *</Label>
                   <Input
                     name="ContactName"
                     value={form.ContactName}
@@ -402,7 +402,7 @@ export default function BecomeOrganizerPage() {
               <div className="grid grid-cols-2 gap-6">
                 {/* Logo công ty */}
                 <div>
-                  <Label>Logo công ty</Label>
+                  <Label>Logo công ty *</Label>
                   <div className="mt-2 flex flex-col gap-2">
                     <Input
                       type="file"
@@ -429,7 +429,7 @@ export default function BecomeOrganizerPage() {
 
                 {/* Giấy phép kinh doanh */}
                 <div>
-                  <Label>Giấy phép kinh doanh</Label>
+                  <Label>Giấy phép kinh doanh *</Label>
                   <div className="mt-2 flex flex-col gap-2">
                     <Input
                       type="file"
@@ -458,7 +458,7 @@ export default function BecomeOrganizerPage() {
 
                 {/* CMND/CCCD mặt trước */}
                 <div>
-                  <Label>CMND/CCCD (mặt trước)</Label>
+                  <Label>CMND/CCCD (mặt trước) *</Label>
                   <div className="mt-2 flex flex-col gap-2">
                     <Input
                       type="file"
@@ -487,7 +487,7 @@ export default function BecomeOrganizerPage() {
 
                 {/* CMND/CCCD mặt sau */}
                 <div>
-                  <Label>CMND/CCCD (mặt sau)</Label>
+                  <Label>CMND/CCCD (mặt sau) *</Label>
                   <div className="mt-2 flex flex-col gap-2">
                     <Input
                       type="file"

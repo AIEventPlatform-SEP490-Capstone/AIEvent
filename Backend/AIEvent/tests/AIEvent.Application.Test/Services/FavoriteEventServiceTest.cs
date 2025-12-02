@@ -54,8 +54,7 @@ namespace AIEvent.Application.Test.Services
                 Description = "Test Description",
                 StartTime = DateTime.UtcNow.AddDays(1),
                 EndTime = DateTime.UtcNow.AddDays(1).AddHours(2),
-                TotalTickets = 100,
-                TicketPricingType = TicketPricingType.Free,
+                TotalTickets = 100, 
                 Status = EventStatus.Approved,
                 EventCategoryId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
             };

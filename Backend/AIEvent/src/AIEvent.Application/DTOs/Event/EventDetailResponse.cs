@@ -1,4 +1,4 @@
-﻿using AIEvent.Application.DTOs.EventField;
+using AIEvent.Application.DTOs.EventField;
 using AIEvent.Application.DTOs.Organizer;
 using AIEvent.Application.DTOs.Tag;
 using AIEvent.Application.DTOs.Ticket;
@@ -18,7 +18,6 @@ namespace AIEvent.Application.DTOs.Event
         public int TotalTickets { get; set; }
         public int SoldQuantity { get; set; } = 0;
         public int RemainingTickets { get; set; }
-        public TicketPricingType TicketPricingType { get; set; }
         public List<string>? ImgListEvent { get; set; }
         public List<string>? ImgListEvidences { get; set; }
         public EventStatus Status { get; set; }

@@ -92,17 +92,9 @@ const ManagerProfile = () => {
     lastLogin: "Chưa có"
   };
 
-  // Mock stats - có thể tích hợp API riêng sau
-  const managerStats = {
-    totalOperations: 856,
-    eventsReviewed: 142,
-    categoriesManaged: 28,
-  };
-
   const tabs = [
     { id: 'personal', label: 'Thông tin cá nhân' },
     { id: 'security', label: 'Bảo mật' },
-    { id: 'activity', label: 'Hoạt động' }
   ];
 
   const handleEdit = () => {
@@ -407,57 +399,7 @@ const ManagerProfile = () => {
                   </div>
                 )}
               </CardContent>
-            </Card>
-
-            {/* Manager Statistics - Moved below Personal Information */}
-            <Card className="shadow-xl border-0 overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50/50 border-b">
-                <div>
-                  <CardTitle className="text-2xl font-bold text-gray-900">Thống kê Manager</CardTitle>
-                  <CardDescription className="text-base mt-1">Thống kê hoạt động của bạn</CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-8">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Activity className="h-5 w-5 text-muted-foreground mr-3" />
-                      <span className="text-sm">Tổng thao tác</span>
-                    </div>
-                    <span className="font-semibold">{managerStats.totalOperations.toLocaleString()}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Calendar className="h-5 w-5 text-muted-foreground mr-3" />
-                      <span className="text-sm">Sự kiện đã xem xét</span>
-                    </div>
-                    <span className="font-semibold">{managerStats.eventsReviewed}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Users className="h-5 w-5 text-muted-foreground mr-3" />
-                      <span className="text-sm">Danh mục đã quản lý</span>
-                    </div>
-                    <span className="font-semibold">{managerStats.categoriesManaged}</span>
-                  </div>
-
-                  <div className="border-t border-gray-200 pt-4 mt-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Tham gia từ:</span>
-                        <span className="text-sm font-medium">{managerData.joinDate}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Đăng nhập cuối:</span>
-                        <span className="text-sm font-medium">{managerData.lastLogin}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            </Card>          
           </div>
         )}
 
@@ -496,55 +438,6 @@ const ManagerProfile = () => {
             </CardContent>
           </Card>
         )}
-
-        {activeTab === 'activity' && (
-          <Card className="shadow-xl border-0">
-            <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50/50 border-b">
-              <CardTitle className="text-2xl font-bold text-gray-900">Hoạt động</CardTitle>
-              <CardDescription className="text-base mt-1">Lịch sử hoạt động gần đây của bạn</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-8">
-              <div className="space-y-4">
-                <div className="relative flex items-start space-x-4 p-5 bg-gradient-to-r from-blue-50/50 to-transparent rounded-xl border-l-4 border-blue-500 hover:shadow-lg transition-all duration-300">
-                  <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                    <Activity className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 mb-1">Đăng nhập thành công</p>
-                    <p className="text-sm text-gray-600 mb-2">Hệ thống đã xác thực thành công đăng nhập của bạn</p>
-                    <p className="text-xs text-gray-500">14:30:00 15/3/2024</p>
-                  </div>
-                  <Badge className="bg-green-100 text-green-800 border-0">Thành công</Badge>
-                </div>
-                
-                <div className="relative flex items-start space-x-4 p-5 bg-gradient-to-r from-green-50/50 to-transparent rounded-xl border-l-4 border-green-500 hover:shadow-lg transition-all duration-300">
-                  <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                    <Calendar className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 mb-1">Xem xét sự kiện "Tech Conference 2024"</p>
-                    <p className="text-sm text-gray-600 mb-2">Bạn đã xem xét và quản lý sự kiện thành công</p>
-                    <p className="text-xs text-gray-500">10:15:00 15/3/2024</p>
-                  </div>
-                  <Badge className="bg-blue-100 text-blue-800 border-0">Đã xem xét</Badge>
-                </div>
-                
-                <div className="relative flex items-start space-x-4 p-5 bg-gradient-to-r from-purple-50/50 to-transparent rounded-xl border-l-4 border-purple-500 hover:shadow-lg transition-all duration-300">
-                  <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                    <Users className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 mb-1">Quản lý danh mục sự kiện</p>
-                    <p className="text-sm text-gray-600 mb-2">Bạn đã cập nhật và quản lý danh mục sự kiện mới</p>
-                    <p className="text-xs text-gray-500">09:45:00 15/3/2024</p>
-                  </div>
-                  <Badge className="bg-purple-100 text-purple-800 border-0">Hoàn thành</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
       </div>
 
       {/* Change Password Modal */}
