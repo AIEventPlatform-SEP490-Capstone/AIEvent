@@ -73,6 +73,10 @@ const ManagerEventsPage = () => {
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [reportDialogEvent, setReportDialogEvent] = useState(null);
 
+  // Add loading states for approval/rejection actions
+  const [approvingEventId, setApprovingEventId] = useState(null);
+  const [rejectingEventId, setRejectingEventId] = useState(null);
+
   // New state for storing all events for statistics
   const [allEventsForStats, setAllEventsForStats] = useState([]);
   const [loadingStats, setLoadingStats] = useState(true);
@@ -292,7 +296,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
         toast.dismiss(loadingToast);
 
         if (response !== null) {
-          toast.success('✅ Xóa sự kiện thành công!', {
+          toast.success('Xóa sự kiện thành công!', {
             duration: 3000,
           });
 
@@ -331,7 +335,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
         toast.dismiss(loadingToast);
 
         if (response !== null) {
-          toast.success('✅ Xóa sự kiện thành công!', {
+          toast.success('Xóa sự kiện thành công!', {
             duration: 3000,
           });
 
@@ -359,6 +363,10 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
 
   // Handle event approval
   const handleApproveEvent = async (eventId) => {
+    // Prevent multiple clicks
+    if (approvingEventId) return;
+    
+    setApprovingEventId(eventId);
     try {
       const response = await confirmEventAPI(eventId, {
         status: EventStatus.Approved
@@ -371,16 +379,22 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
     } catch (error) {
       console.error('Error approving event:', error);
       toast.error('Có lỗi xảy ra khi phê duyệt sự kiện');
+    } finally {
+      setApprovingEventId(null);
     }
   };
 
   // Handle event rejection
   const handleRejectEvent = async (eventId, reason) => {
+    // Prevent multiple clicks
+    if (rejectingEventId) return;
+    
     if (!reason.trim()) {
       toast.error('Vui lòng nhập lý do từ chối');
       return;
     }
-
+    
+    setRejectingEventId(eventId);
     try {
       const response = await confirmEventAPI(eventId, {
         status: EventStatus.Rejected,
@@ -394,6 +408,8 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
     } catch (error) {
       console.error('Error rejecting event:', error);
       toast.error('Có lỗi xảy ra khi từ chối sự kiện');
+    } finally {
+      setRejectingEventId(null);
     }
   };
 
@@ -1171,9 +1187,19 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                                 size="sm"
                                 onClick={() => handleApproveEvent(event.eventId)}
                                 className="bg-green-600 hover:bg-green-700"
+                                disabled={approvingEventId === event.eventId}
                               >
-                                <CheckCircle className="w-4 h-4 mr-2" />
-                                Duyệt
+                                {approvingEventId === event.eventId ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Đang duyệt...
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                    Duyệt
+                                  </>
+                                )}
                               </Button>
                               <Dialog>
                                 <DialogTrigger asChild>
@@ -1181,9 +1207,19 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                                     variant="outline"
                                     size="sm"
                                     className="bg-red-600 hover:bg-red-700 text-white border-red-600"
+                                    disabled={rejectingEventId === event.eventId}
                                   >
-                                    <XCircle className="w-4 h-4 mr-2" />
-                                    Từ chối
+                                    {rejectingEventId === event.eventId ? (
+                                      <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Đang từ chối...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <XCircle className="w-4 h-4 mr-2" />
+                                        Từ chối
+                                      </>
+                                    )}
                                   </Button>
                                 </DialogTrigger>
                                 <DialogContent>
@@ -1213,9 +1249,16 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                                         variant="destructive"
                                         className="flex-1"
                                         onClick={() => handleRejectEvent(event.eventId, rejectionReason)}
-                                        disabled={!rejectionReason.trim()}
+                                        disabled={!rejectionReason.trim() || rejectingEventId === event.eventId}
                                       >
-                                        Xác nhận từ chối
+                                        {rejectingEventId === event.eventId ? (
+                                          <>
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            Đang từ chối...
+                                          </>
+                                        ) : (
+                                          "Xác nhận từ chối"
+                                        )}
                                       </Button>
                                     </div>
                                   </div>

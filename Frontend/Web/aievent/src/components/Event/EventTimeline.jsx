@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
 import DateTimePicker from '../../components/ui/date-time-picker';
+import datetimeValidation from '../../utils/datetimeValidation';
 
 // Icons giữ nguyên...
 const TicketIcon = () => (
@@ -75,6 +76,14 @@ export function EventTimeline({
       onValidationChange(index, error);
     }
   };
+
+  // Field names for error messages
+  const fieldNames = [
+    "Thời gian mở bán vé",
+    "Thời gian đóng bán vé", 
+    "Thời gian bắt đầu sự kiện",
+    "Thời gian kết thúc sự kiện"
+  ];
 
   return (
     <div className="bg-white rounded-2xl p-8 border border-border/50 shadow-sm hover:border-blue-300 hover:shadow-md transition-all duration-300">
@@ -163,6 +172,7 @@ export function EventTimeline({
                             max={maxTime}
                             error={dateTimeErrors[index]}
                             onErrorChange={(error) => handleDateTimeErrorChange(index, error)}
+                            fieldName={fieldNames[index]}
                           />
                         </PopoverContent>
                         <PopoverTrigger asChild>
@@ -252,6 +262,7 @@ export function EventTimeline({
                         max={maxTime}
                         error={dateTimeErrors[index]}
                         onErrorChange={(error) => handleDateTimeErrorChange(index, error)}
+                        fieldName={fieldNames[index]}
                       />
                     </PopoverContent>
                     <PopoverTrigger asChild>

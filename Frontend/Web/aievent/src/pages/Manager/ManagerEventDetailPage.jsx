@@ -35,7 +35,8 @@ import {
   ChevronRight,
   Copy,
   Flag,
-  Target
+  Target,
+  Loader2
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
@@ -75,6 +76,10 @@ const ManagerEventDetailPage = () => {
 
   // Add state for image carousel
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  // Add loading states for approval/rejection actions
+  const [isApproving, setIsApproving] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
   
   // Add state for ticket sale countdown
   const [timeRemaining, setTimeRemaining] = useState(null);
@@ -243,7 +248,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
         toast.dismiss(loadingToast);
         
         if (response !== null) {
-          toast.success('✅ Xóa sự kiện thành công!', {
+          toast.success('Xóa sự kiện thành công!', {
             duration: 3000,
           });
           navigate(PATH.MANAGER_EVENTS || '/manager/events');
@@ -283,7 +288,7 @@ Nhấn OK để xác nhận xóa.`;
         toast.dismiss(loadingToast);
         
         if (response !== null) {
-          toast.success('✅ Xóa sự kiện thành công!', {
+          toast.success('Xóa sự kiện thành công!', {
             duration: 3000,
           });
           navigate(PATH.MANAGER_EVENTS || '/manager/events');
@@ -346,6 +351,10 @@ Nhấn OK để xác nhận xóa.`;
   };
 
   const handleApproveEvent = async () => {
+    // Prevent multiple clicks
+    if (isApproving) return;
+    
+    setIsApproving(true);
     try {
       const response = await confirmEventAPI(eventId, {
         status: EventStatus.Approved
@@ -358,15 +367,21 @@ Nhấn OK để xác nhận xóa.`;
     } catch (error) {
       console.error('Error approving event:', error);
       toast.error('Có lỗi xảy ra khi phê duyệt sự kiện');
+    } finally {
+      setIsApproving(false);
     }
   };
 
   const handleRejectEvent = async (reason) => {
+    // Prevent multiple clicks
+    if (isRejecting) return;
+    
     if (!reason || !reason.trim()) {
       toast.error('Vui lòng nhập lý do từ chối');
       return;
     }
     
+    setIsRejecting(true);
     try {
       const response = await confirmEventAPI(eventId, {
         status: EventStatus.Rejected,
@@ -381,6 +396,8 @@ Nhấn OK để xác nhận xóa.`;
     } catch (error) {
       console.error('Error rejecting event:', error);
       toast.error('Có lỗi xảy ra khi từ chối sự kiện');
+    } finally {
+      setIsRejecting(false);
     }
   };
 
@@ -681,20 +698,36 @@ Nhấn OK để xác nhận xóa.`;
             {event && event.status === EventStatus.PendingApproval && (
               <SidebarCard title="Phê duyệt sự kiện" icon={<Shield className="w-5 h-5 text-amber-600" />} gradient>
                 <div className="space-y-3">
-                  <ActionButton
-                    icon={CheckCircle}
-                    label="Phê duyệt sự kiện"
-                    onClick={handleApproveEvent}
-                    variant="primary"
-                  />
+                  <div className="relative">
+                    <ActionButton
+                      icon={CheckCircle}
+                      label={isApproving ? "Đang phê duyệt..." : "Phê duyệt sự kiện"}
+                      onClick={handleApproveEvent}
+                      variant="primary"
+                      disabled={isApproving}
+                    />
+                    {isApproving && (
+                      <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center rounded-lg">
+                        <Loader2 className="w-6 h-6 text-white animate-spin" />
+                      </div>
+                    )}
+                  </div>
                   
                   <Dialog>
                     <DialogTrigger asChild>
-                      <ActionButton
-                        icon={X}
-                        label="Từ chối sự kiện"
-                        variant="danger"
-                      />
+                      <div className="relative">
+                        <ActionButton
+                          icon={X}
+                          label={isRejecting ? "Đang từ chối..." : "Từ chối sự kiện"}
+                          variant="danger"
+                          disabled={isRejecting}
+                        />
+                        {isRejecting && (
+                          <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center rounded-lg">
+                            <Loader2 className="w-6 h-6 text-white animate-spin" />
+                          </div>
+                        )}
+                      </div>
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
@@ -723,9 +756,16 @@ Nhấn OK để xác nhận xóa.`;
                             variant="destructive"
                             className="flex-1"
                             onClick={() => handleRejectEvent(rejectionReason)}
-                            disabled={!rejectionReason.trim()}
+                            disabled={!rejectionReason.trim() || isRejecting}
                           >
-                            Xác nhận từ chối
+                            {isRejecting ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Đang từ chối...
+                              </>
+                            ) : (
+                              "Xác nhận từ chối"
+                            )}
                           </Button>
                         </div>
                       </div>

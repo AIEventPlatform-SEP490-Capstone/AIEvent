@@ -6,7 +6,7 @@ import { Input } from "../../../components/ui/input";
 import { Button } from "../../../components/ui/button";
 import AIEventLogo from "../../../assets/AIEventLogo.png";
 import LoginPanelBackground from "../../../assets/loginpanel.jpg";
-import { login } from "../../../store/slices/authSlice";
+import { login, logout } from "../../../store/slices/authSlice";
 import GoogleSignInButton from "../../../components/Auth/GoogleSignInButton";
 import {
   validationMessages,
@@ -41,6 +41,9 @@ const LoginPage = () => {
   // Effect to handle redirection when user is authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
+      if (user.role && user.role.toLowerCase() === 'staff') {
+        return;
+      }
       // Redirect về home, RoleBasedRedirect sẽ xử lý redirect theo role
       navigate(PATH.HOME, { replace: true });
     }
@@ -92,6 +95,13 @@ const LoginPage = () => {
         login({ ...formData, rememberMe })
       ).unwrap();
       if (result) {
+        // Check if the user has a staff role
+        if (result.user.role && result.user.role.toLowerCase() === 'staff') {
+          showError('Người dùng không có quyền truy cập');
+          dispatch(logout());
+          return;
+        }
+
         showSuccess(
           authMessages.loginSuccess(
             result.user.unique_name || result.user.email || "Bạn"

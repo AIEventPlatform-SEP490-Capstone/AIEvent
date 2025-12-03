@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Input } from './input';
 import { Card, CardContent } from './card';
+import datetimeValidation from '../../utils/datetimeValidation';
 
 const DateTimePicker = ({ 
   value, 
@@ -12,6 +13,7 @@ const DateTimePicker = ({
   label, 
   error, 
   onErrorChange,
+  fieldName = 'Thời gian',
   ...props 
 }) => {
   const [date, setDate] = useState('');
@@ -67,30 +69,21 @@ const DateTimePicker = ({
       parseInt(minutes)
     );
     
-    // Kiểm tra min date
-    if (min && selected < minDate) {
+    // Kiểm tra min date constraint
+    const minError = datetimeValidation.getDateMinError(selected.toISOString(), minDate, fieldName);
+    if (minError) {
       if (onErrorChange) {
-        // Kiểm tra xem có phải là kiểm tra thời gian hiện tại không
-        const timeDiff = Math.abs(minDate - now);
-        // Nếu minDate là thời gian hiện tại (sai khác không đáng kể)
-        if (timeDiff < 1000) { // Trong vòng 1 giây
-          onErrorChange('Thời gian phải sau thời điểm hiện tại');
-        } else {
-          // Nếu là kiểm tra với các thời gian khác (ví dụ: phải sau thời gian mở bán vé)
-          // Trích xuất thông tin từ minDate để tạo thông báo phù hợp
-          const minDateObj = new Date(min);
-          onErrorChange(`Thời gian phải sau ${minDateObj.toLocaleString('vi-VN')}`);
-        }
+        onErrorChange(minError);
       }
       return;
     }
     
-    // Kiểm tra max date nếu có
+    // Kiểm tra max date constraint nếu có
     if (max) {
-      const maxDate = new Date(max);
-      if (selected > maxDate) {
+      const maxError = datetimeValidation.getDateMaxError(selected.toISOString(), max, fieldName);
+      if (maxError) {
         if (onErrorChange) {
-          onErrorChange('Thời gian phải trước ' + maxDate.toLocaleString('vi-VN'));
+          onErrorChange(maxError);
         }
         return;
       }

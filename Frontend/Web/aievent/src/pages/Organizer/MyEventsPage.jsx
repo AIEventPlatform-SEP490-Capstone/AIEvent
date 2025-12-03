@@ -250,7 +250,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
         toast.dismiss(loadingToast);
         
         if (response !== null) {
-          toast.success('✅ Xóa sự kiện thành công!', {
+          toast.success('Xóa sự kiện thành công!', {
             duration: 3000,
           });
           
@@ -289,7 +289,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
         toast.dismiss(loadingToast);
         
         if (response !== null) {
-          toast.success('✅ Xóa sự kiện thành công!', {
+          toast.success('Xóa sự kiện thành công!', {
             duration: 3000,
           });
           
@@ -947,7 +947,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                             >
                               {event.title}
                             </h3>
-                            {eventStatus && (
+                            {eventStatus && activeTab !== 'draft' && (
                               <Badge
                                 className={`${statusConfig.badge} border-0 whitespace-nowrap flex-shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-all group-hover:shadow-lg group-hover:${statusConfig.glow}`}
                               >

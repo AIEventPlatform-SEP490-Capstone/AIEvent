@@ -97,7 +97,7 @@ const editEventSchema = z.object({
   saleEndTime: z.string().min(1, 'Thời gian kết thúc bán vé là bắt buộc'),
   ticketTypes: z.array(z.object({
     ticketName: z.string().min(1, 'Tên vé là bắt buộc'),
-    ticketPrice: z.number().min(0, 'Giá vé không được âm'),
+    ticketPrice: z.number().min(10000, 'Giá vé phải lớn hơn 10.000 VND'),
     ticketQuantity: z.number().min(1, 'Số lượng vé phải lớn hơn 0'),
     ticketDescription: z.string().optional(),
     // ruleRefundRequestId: z.string().min(1, 'Quy tắc hoàn tiền là bắt buộc'),
@@ -136,9 +136,9 @@ const editEventSchema = z.object({
   message: 'Thời gian bán vé phải kết thúc trước thời gian bắt đầu sự kiện và thời gian bắt đầu bán vé phải trước thời gian kết thúc bán vé',
   path: ['saleEndTime'],
 }).refine((data) => {
-  return data.ticketTypes.some(ticket => ticket.ticketPrice > 0);
+  return data.ticketTypes.some(ticket => ticket.ticketPrice > 10000);
 }, {
-  message: 'Phải có ít nhất một loại vé có giá > 0',
+  message: 'Phải có ít nhất một loại vé có giá > 10.000 VND',
   path: ['ticketTypes'],
 });
 
@@ -191,7 +191,7 @@ const EditEventPage = () => {
   const [editingTicketIndex, setEditingTicketIndex] = useState(null);
   const [ticketForm, setTicketForm] = useState({
     ticketName: '',
-    ticketPrice: 0,
+    ticketPrice: 10000,
     ticketQuantity: 1,
     ticketDescription: ''
   });
@@ -236,7 +236,7 @@ const EditEventPage = () => {
       ticketTypes: [
         {
           ticketName: 'Vé thường',
-          ticketPrice: 1,
+          ticketPrice: 10000,
           ticketQuantity: 1,
           ticketDescription: '',
           // ruleRefundRequestId: '',
@@ -331,8 +331,8 @@ const EditEventPage = () => {
   // Add ticket type
   const addTicketType = () => {
     append({
-      ticketName: '',
-      ticketPrice: 1,
+      ticketName: 'Vé thường',
+      ticketPrice: 10000,
       ticketQuantity: 1,
       ticketDescription: '',
       // ruleRefundRequestId: selectedRules.length > 0 ? selectedRules[0].ruleRefundId : '',
@@ -358,7 +358,7 @@ const EditEventPage = () => {
     setEditingTicketIndex(index);
     setTicketForm({
       ticketName: ticket.ticketName || '',
-      ticketPrice: ticket.ticketPrice || 0,
+      ticketPrice: ticket.ticketPrice || 10000,
       ticketQuantity: ticket.ticketQuantity || 1,
       ticketDescription: ticket.ticketDescription || ''
     });
@@ -369,7 +369,8 @@ const EditEventPage = () => {
     if (editingTicketIndex !== null) {
       // Update the ticket in the form
       setValue(`ticketTypes.${editingTicketIndex}.ticketName`, ticketForm.ticketName);
-      setValue(`ticketTypes.${editingTicketIndex}.ticketPrice`, parseFloat(ticketForm.ticketPrice) || 0);
+      const ticketPrice = parseFloat(ticketForm.ticketPrice);
+      setValue(`ticketTypes.${editingTicketIndex}.ticketPrice`, isNaN(ticketPrice) ? 10000 : ticketPrice);
       setValue(`ticketTypes.${editingTicketIndex}.ticketQuantity`, parseInt(ticketForm.ticketQuantity) || 1);
       setValue(`ticketTypes.${editingTicketIndex}.ticketDescription`, ticketForm.ticketDescription);
       
@@ -377,7 +378,7 @@ const EditEventPage = () => {
       setEditingTicketIndex(null);
       setTicketForm({
         ticketName: '',
-        ticketPrice: 0,
+        ticketPrice: 10000,
         ticketQuantity: 1,
         ticketDescription: ''
       });
@@ -389,7 +390,7 @@ const EditEventPage = () => {
     setEditingTicketIndex(null);
     setTicketForm({
       ticketName: '',
-      ticketPrice: 0,
+      ticketPrice: 10000,
       ticketQuantity: 1,
       ticketDescription: ''
     });
@@ -419,7 +420,10 @@ const EditEventPage = () => {
     const ticketTypes = formData.ticketTypes.map(ticket => {
       return {
         ...ticket,
-        ticketPrice: parseFloat(ticket.ticketPrice) || 0,
+        ticketPrice: (() => {
+          const price = parseFloat(ticket.ticketPrice);
+          return isNaN(price) ? 10000 : price;
+        })(),
         ticketQuantity: parseInt(ticket.ticketQuantity) || 0,
         soldQuantity: 0, // Default for preview
         remainingQuantity: parseInt(ticket.ticketQuantity) || 0,
@@ -493,6 +497,50 @@ const EditEventPage = () => {
       // Validate all fields at once and show inline errors
       const hasErrors = validateAllFields();
       
+      // Additional validation for datetime fields to ensure they're still valid
+      const currentValidationTime = new Date();
+      const validationSaleStartTime = new Date(data.saleStartTime);
+      const validationSaleEndTime = new Date(data.saleEndTime);
+      const validationEventStartTime = new Date(data.startTime);
+      const validationEventEndTime = new Date(data.endTime);
+      
+      // Check if any datetime has become invalid since form was filled
+      if (validationSaleStartTime <= currentValidationTime) {
+        setDateErrors(prev => ({
+          ...prev,
+          saleStartTime: 'Thời gian bắt đầu bán vé phải sau thời điểm hiện tại'
+        }));
+        toast.error('Thời gian bắt đầu bán vé phải sau thời điểm hiện tại');
+        return;
+      }
+      
+      if (validationSaleEndTime <= currentValidationTime) {
+        setDateErrors(prev => ({
+          ...prev,
+          saleEndTime: 'Thời gian kết thúc bán vé phải sau thời điểm hiện tại'
+        }));
+        toast.error('Thời gian kết thúc bán vé phải sau thời điểm hiện tại');
+        return;
+      }
+      
+      if (validationEventStartTime <= currentValidationTime) {
+        setDateErrors(prev => ({
+          ...prev,
+          startTime: 'Thời gian bắt đầu sự kiện phải sau thời điểm hiện tại'
+        }));
+        toast.error('Thời gian bắt đầu sự kiện phải sau thời điểm hiện tại');
+        return;
+      }
+      
+      if (validationEventEndTime <= currentValidationTime) {
+        setDateErrors(prev => ({
+          ...prev,
+          endTime: 'Thời gian kết thúc sự kiện phải sau thời điểm hiện tại'
+        }));
+        toast.error('Thời gian kết thúc sự kiện phải sau thời điểm hiện tại');
+        return;
+      }
+      
       if (hasErrors) {
         const errorMessage = publishStatus !== null ? 
           (publishStatus ? 'Vui lòng kiểm tra lại thông tin sự kiện trước khi xuất bản' : 'Vui lòng kiểm tra lại thông tin sự kiện trước khi lưu nháp') : 
@@ -527,22 +575,9 @@ const EditEventPage = () => {
       // Calculate total tickets from ticketTypes array
       const totalTickets = data.ticketTypes.reduce((sum, ticket) => sum + parseInt(ticket.ticketQuantity), 0);
       
-      // Function to convert datetime-local string (local time) to UTC ISO string
-      const convertToUTCISOString = (dateString) => {
-        if (!dateString) return '';
-        
-        // Parse the datetime string manually to avoid timezone issues
-        const [datePart, timePart] = dateString.split('T');
-        const [year, month, day] = datePart.split('-').map(Number);
-        const [hours, minutes] = timePart.split(':').map(Number);
-        
-        // Create a UTC date using the parsed components
-        // Since the user entered local time (UTC+7), we need to subtract 7 hours to get UTC
-        // ĐÚNG: KHÔNG TRỪ 7 TIẾNG
-        const utcDate = new Date(Date.UTC(year, month - 1, day, hours, minutes)); 
-        
-        // Return proper UTC ISO string
-        return utcDate.toISOString();
+      const convertToUTCISOString = (localDateTimeString) => {
+        const date = new Date(localDateTimeString);
+        return date.toISOString();
       };
       
       // Calculate added and removed tag IDs for update
@@ -582,7 +617,10 @@ const EditEventPage = () => {
             id: eventData.ticketDetails[index].ticketDetailId 
           }),
           ticketName: ticket.ticketName,
-          ticketPrice: parseFloat(ticket.ticketPrice),
+          ticketPrice: (() => {
+            const price = parseFloat(ticket.ticketPrice);
+            return isNaN(price) ? 10000 : price;
+          })(),
           ticketQuantity: parseInt(ticket.ticketQuantity),
           ticketDescription: ticket.ticketDescription || '',
           // ruleRefundRequestId: ticket.ruleRefundRequestId,
@@ -664,6 +702,8 @@ const EditEventPage = () => {
     const hasEvidenceImageErrors = selectedEvidenceImages.length === 0 && evidenceImagePreview.length === 0 && existingEvidenceImages.length === 0;
     const hasTimelineErrors = Object.values(dateErrors).some(error => error !== '');
     const hasTicketNameErrors = hasEmptyTicketNames;
+    
+    // Force re-render of timeline errors by updating state
     
     return hasTagErrors || hasImageErrors || hasEvidenceImageErrors || hasTimelineErrors || hasTicketNameErrors;
   };
@@ -813,7 +853,7 @@ const EditEventPage = () => {
           ticketTypes: event.ticketDetails && event.ticketDetails.length > 0 
             ? event.ticketDetails.map(ticket => ({
                 ticketName: ticket.ticketName || '',
-                ticketPrice: ticket.ticketPrice || 0,
+                ticketPrice: ticket.ticketPrice || 10000,
                 ticketQuantity: ticket.ticketQuantity || 1,
                 ticketDescription: ticket.ticketDescription || '',
                 // ruleRefundRequestId: ticket.ruleRefundRequestId || '',
@@ -821,7 +861,7 @@ const EditEventPage = () => {
             : [
                 {
                   ticketName: 'Vé thường',
-                  ticketPrice: 0,
+                  ticketPrice: 10000,
                   ticketQuantity: event.totalTickets || 1,
                   ticketDescription: '',
                   // ruleRefundRequestId: '',
@@ -1038,7 +1078,7 @@ const EditEventPage = () => {
 
                       // Nếu tất cả vé giá = 0 → Miễn phí
                       if (paidPrices.length === 0) {
-                        return "Miễn phí";
+                        return "Chưa có thông tin giá vé";
                       }
 
                       // Ngược lại → Có phí + hiển thị khoảng giá
@@ -1314,6 +1354,18 @@ const EditEventPage = () => {
                     Thời gian của sự kiện cần nhập đầy đủ
                   </p>
                 )}
+                {/* Display individual field errors */}
+                {Object.entries(dateErrors).map(([field, error]) => {
+                  if (error) {
+                    return (
+                      <p key={field} className="text-red-500 text-xs flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {error}
+                      </p>
+                    );
+                  }
+                  return null;
+                })}
               </div>
             )}
             
@@ -1401,7 +1453,7 @@ const EditEventPage = () => {
                                 name="ticketPrice"
                                 value={ticketForm.ticketPrice}
                                 onChange={handleTicketFormChange}
-                                min="0"
+                                min="10000"
                               />
                             </div>
                             <div className="md:col-span-2">
@@ -1423,6 +1475,27 @@ const EditEventPage = () => {
                               Lưu
                             </Button>
                           </div>
+                          {/* Display ticket validation errors */}
+                          {hasValidated && errors.ticketTypes && errors.ticketTypes[index] && (
+                            <>
+                              {errors.ticketTypes[index].ticketPrice && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-2 mt-2">
+                                  <p className="text-red-700 text-xs flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                    {errors.ticketTypes[index].ticketPrice.message}
+                                  </p>
+                                </div>
+                              )}
+                              {errors.ticketTypes[index].ticketQuantity && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-2 mt-2">
+                                  <p className="text-red-700 text-xs flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                    {errors.ticketTypes[index].ticketQuantity.message}
+                                  </p>
+                                </div>
+                              )}
+                            </>
+                          )}
                         </div>
                       ) : (
                         /* Ticket Display */
@@ -1473,6 +1546,15 @@ const EditEventPage = () => {
                 <p className="text-red-700 text-sm flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
                   {ticketNameError}
+                </p>
+              </div>
+            )}
+            {/* Display ticket types validation error */}
+            {hasValidated && errors.ticketTypes && errors.ticketTypes.message && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-2">
+                <p className="text-red-700 text-sm flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  {errors.ticketTypes.message}
                 </p>
               </div>
             )}

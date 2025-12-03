@@ -160,20 +160,18 @@ const EventDetailGuestPage = ({ previewData }) => {
 
   // Load AI recommended friends
   const loadAiRecommendedFriends = async () => {
-    if (!showAiRecommendations) {
-      setIsLoadingAiFriends(true);
-      try {
-        const res = await eventAPI.getAIRecommendedFriendsByEvent(id, 1, 10);
-        setAiRecommendedFriends(Array.isArray(res) ? res : res.items || []);
-      } catch (err) {
-        console.error("Error loading AI recommended friends:", err);
-        toast.error("Không thể tải danh sách bạn bè được đề xuất");
-        setAiRecommendedFriends([]);
-      } finally {
-        setIsLoadingAiFriends(false);
-      }
+    setIsLoadingAiFriends(true);
+    try {
+      const res = await eventAPI.getAIRecommendedFriendsByEvent(id, 1, 10);
+      setAiRecommendedFriends(Array.isArray(res) ? res : res.items || []);
+    } catch (err) {
+      console.error("Error loading AI recommended friends:", err);
+      toast.error("Không thể tải danh sách bạn bè được đề xuất");
+      setAiRecommendedFriends([]);
+    } finally {
+      setIsLoadingAiFriends(false);
+      setShowAiRecommendations(!showAiRecommendations);
     }
-    setShowAiRecommendations(!showAiRecommendations);
   };
   // Add friend function
   const handleAddFriend = async (userId) => {
@@ -551,10 +549,6 @@ const EventDetailGuestPage = ({ previewData }) => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             
             <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
-              {/* Display price badge first */}
-              <Badge className="bg-primary text-primary-foreground border-0 shadow-lg px-3 py-1.5 font-semibold">
-                {formatPrice(event)}
-              </Badge>
               {/* Display category badge */}
               <Badge className="bg-white/95 text-gray-900 border-0 shadow-lg px-3 py-1.5 font-semibold">
                 <Tag className="w-3 h-3 mr-1" />
@@ -861,10 +855,20 @@ const EventDetailGuestPage = ({ previewData }) => {
                 <Button 
                   variant="outline" 
                   onClick={loadAiRecommendedFriends}
-                  className="w-full border border-blue-300 hover:bg-blue-50 flex items-center justify-center"
+                  disabled={isLoadingAiFriends}
+                  className="w-full border border-blue-300 hover:bg-blue-50 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Sparkles className="w-4 h-4 mr-2 text-blue-500" />
-                  {showAiRecommendations ? "Ẩn đề xuất bạn bè" : "Xem đề xuất bạn bè thông minh"}
+                  {isLoadingAiFriends ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Đang tải...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2 text-blue-500" />
+                      {showAiRecommendations ? "Ẩn đề xuất bạn bè" : "Xem đề xuất bạn bè thông minh"}
+                    </>
+                  )}
                 </Button>
 
                 {showAiRecommendations && (
@@ -875,9 +879,10 @@ const EventDetailGuestPage = ({ previewData }) => {
                     </h3>
 
                     {isLoadingAiFriends ? (
-                      <div className="flex justify-center items-center py-8 text-gray-500">
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Đang tải danh sách bạn bè được đề xuất...
+                      <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                        <Loader2 className="w-6 h-6 mr-2 animate-spin" />
+                        <p className="mt-2">Đang tải danh sách bạn bè được đề xuất...</p>
+                        <p className="text-sm mt-1">Hệ thống AI đang phân tích và tìm kiếm bạn bè phù hợp</p>
                       </div>
                     ) : aiRecommendedFriends.length === 0 ? (
                       <div className="text-center py-6">
@@ -908,12 +913,23 @@ const EventDetailGuestPage = ({ previewData }) => {
                                 {friend.friendName || friend.name || "Người dùng"}
                               </p>
 
-                              <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                              {friend.reason && (
+                                <div className="mt-1 bg-blue-50 rounded-md p-2 border border-blue-100">
+                                  <p className="text-xs text-blue-700 flex items-start gap-1">
+                                    <Target className="w-3 h-3 mt-0.5 flex-shrink-0 text-blue-500" />
+                                    <span>
+                                      <span className="font-medium">Lý do đề xuất:</span> {friend.reason}
+                                    </span>
+                                  </p>
+                                </div>
+                              )}
+
+                              <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
                                 <MapPin className="w-3 h-3 text-gray-400" />
                                 {friend.district || "Chưa cập nhật khu vực"}
                               </p>
 
-                              <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                              <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
                                 <Activity className="w-3 h-3 text-gray-400" />
                                 {friend.eventNumber > 0
                                   ? `${friend.eventNumber} sự kiện đã tham gia` 
@@ -1274,101 +1290,6 @@ const EventDetailGuestPage = ({ previewData }) => {
               className="mt-1"
             />
           </div>
-
-          {/* AI Recommended Friends Section */}
-          <div className="mt-4">
-            <Button 
-              variant="outline" 
-              onClick={loadAiRecommendedFriends}
-              className="w-full border border-blue-300 hover:bg-blue-50 flex items-center justify-center"
-            >
-              <Sparkles className="w-4 h-4 mr-2 text-blue-500" />
-              {showAiRecommendations ? "Ẩn đề xuất bạn bè" : "Xem đề xuất bạn bè thông minh"}
-            </Button>
-
-            {showAiRecommendations && (
-              <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="text-base font-bold text-gray-900 mb-3 flex items-center">
-                  <Sparkles className="w-4 h-4 mr-2 text-blue-600" />
-                  Bạn bè được đề xuất bởi AI
-                </h3>
-
-                {isLoadingAiFriends ? (
-                  <div className="flex justify-center items-center py-8 text-gray-500">
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Đang tải danh sách bạn bè được đề xuất...
-                  </div>
-                ) : aiRecommendedFriends.length === 0 ? (
-                  <div className="text-center py-6">
-                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                      <User className="w-6 h-6 text-gray-400" />
-                    </div>
-                    <p className="text-gray-500 text-sm">
-                      Không tìm thấy bạn bè được đề xuất.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1">
-                    {aiRecommendedFriends.map((friend) => (
-                      <div
-                        key={friend.id}
-                        className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg bg-white"
-                      >
-                        <div className="relative flex-shrink-0">
-                          <img
-                            src={friend.image || userAvt || "/default-avatar.png"}
-                            alt={friend.friendName || friend.name}
-                            className="w-14 h-14 rounded-lg object-cover border border-gray-200"
-                          />
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold truncate text-gray-900">
-                            {friend.friendName || friend.name || "Người dùng"}
-                          </p>
-
-                          <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-gray-400" />
-                            {friend.district || "Chưa cập nhật khu vực"}
-                          </p>
-
-                          <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
-                            <Activity className="w-3 h-3 text-gray-400" />
-                            {friend.eventNumber > 0
-                              ? `${friend.eventNumber} sự kiện đã tham gia`
-                              : "Chưa tham gia sự kiện nào"}
-                          </div>
-
-                          <div className="mt-2">
-                            {!friend.friendRequestSent ? (
-                              <Button
-                                size="sm"
-                                onClick={() => handleAddFriend(friend.id)}
-                                className="h-7 text-xs bg-blue-600 hover:bg-blue-700"
-                              >
-                                <UserPlus className="w-3 h-3 mr-1" />
-                                Kết bạn
-                              </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                disabled
-                                className="h-7 text-xs bg-gray-300 cursor-not-allowed"
-                              >
-                                <CheckCircle className="w-3 h-3 mr-1" />
-                                Đã gửi
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
           <DialogFooter className="mt-4">
             <Button
               variant="outline"
