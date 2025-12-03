@@ -85,6 +85,7 @@ const styles = StyleSheet.create({
     elevation: 6,
 
   },
+  
 
   // Modern Profile Header with Gradient
 

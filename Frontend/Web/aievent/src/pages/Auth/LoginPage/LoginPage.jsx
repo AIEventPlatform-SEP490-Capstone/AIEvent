@@ -191,7 +191,8 @@ const LoginPage = () => {
                 Chào mừng đến với AIEvent
               </h1>
               <p className="text-base xl:text-lg text-blue-100 leading-relaxed">
-                Nền tảng quản lý sự kiện thông minh với công nghệ AI tiên tiến
+                Nền tảng tìm kiếm và quản lý sự kiện thông minh
+    
               </p>
             </div>
 
@@ -214,10 +215,10 @@ const LoginPage = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold mb-1">
-                    Tự động hóa thông minh
+                    Gợi ý sự kiện thông minh
                   </h3>
                   <p className="text-blue-100">
-                    Tối ưu hóa quy trình tổ chức sự kiện với AI
+                    Tìm kiếm sự kiện phù hợp với sở thích của bạn
                   </p>
                 </div>
               </div>
@@ -240,10 +241,10 @@ const LoginPage = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold mb-1">
-                    Quản lý linh hoạt
+                    Quản lý sự kiện toàn diện
                   </h3>
                   <p className="text-blue-100">
-                    Theo dõi và điều phối mọi khía cạnh sự kiện
+                    Tổ chức và theo dõi sự kiện dễ dàng 
                   </p>
                 </div>
               </div>
@@ -269,7 +270,7 @@ const LoginPage = () => {
                     Phân tích chi tiết
                   </h3>
                   <p className="text-blue-100">
-                    Báo cáo và thống kê thời gian thực
+                    Báo cáo và thống kê hiệu quả sự kiện
                   </p>
                 </div>
               </div>

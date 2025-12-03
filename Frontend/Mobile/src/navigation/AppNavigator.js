@@ -1,10 +1,9 @@
+// AppNavigator.js
 import React, { useEffect, useRef } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { checkAuth } from '../redux/actions/Action';
-import HomeScreen from '../screens/homeScreen';
-import EventDetailScreen from '../screens/eventDetailScreen';
-import TabNavigator from './TabNavigator';
+import MainStackNavigator from './MainStackNavigator';  
 import AuthNavigator from './AuthNavigator';
 import ScreenNames from '../constants/ScreenNames';
 import { LoadingScreen } from '../components/common';
@@ -17,7 +16,6 @@ const AppNavigator = () => {
   const hasCheckedAuth = useRef(false);
 
   useEffect(() => {
-    // Only check auth status once on component mount
     if (!hasCheckedAuth.current) {
       hasCheckedAuth.current = true;
       dispatch(checkAuth());
@@ -29,20 +27,18 @@ const AppNavigator = () => {
   }
 
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       {isLoggedIn ? (
-        <Stack.Screen 
-          name={ScreenNames.TAB_NAVIGATOR} 
-          component={TabNavigator} 
+        <Stack.Screen
+          name="MainApp"
+          component={MainStackNavigator}
+          options={{ unmountOnBlur: true }}
         />
       ) : (
-        <Stack.Screen 
-          name={ScreenNames.AUTH_NAVIGATOR} 
-          component={AuthNavigator} 
+        <Stack.Screen
+          name={ScreenNames.AUTH_NAVIGATOR}
+          component={AuthNavigator}
+          options={{ unmountOnBlur: true }}
         />
       )}
     </Stack.Navigator>

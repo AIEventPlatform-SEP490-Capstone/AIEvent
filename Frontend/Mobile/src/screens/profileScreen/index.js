@@ -24,11 +24,13 @@ import Strings from '../../constants/Strings';
 import { UserService, walletAPI } from '../../api/services';
 import { logoutUser } from '../../redux/actions/Action';
 import ScreenNames from '../../constants/ScreenNames';
-import { 
-  PredefinedSkills, 
-  PredefinedLanguages, 
-  PredefinedInterests, 
-  PredefinedEventTypes, 
+import { useSelector } from 'react-redux';
+import { isStaffUser } from '../../utils/jwtUtils';
+import {
+  PredefinedSkills,
+  PredefinedLanguages,
+  PredefinedInterests,
+  PredefinedEventTypes,
   PredefinedCities,
   ParticipationFrequencyDisplay,
   BudgetOptionDisplay,
@@ -40,6 +42,8 @@ import {
 
 const ProfileScreen = ({ navigation }) => {
   const dispatch = useDispatch();
+  const { accessToken, isLoggedIn } = useSelector(state => state.auth);
+  const isStaff = accessToken ? isStaffUser(accessToken) : false;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,14 +52,34 @@ const ProfileScreen = ({ navigation }) => {
   const [error, setError] = useState(null);
   const hasFetchedProfile = useRef(false);
 
-  const menuItems = [
-    { id: 'tickets', label: 'Vé của tôi', icon: '🎫', screen: ScreenNames.TICKETS_SCREEN },
-    { id: 'wallet', label: 'Ví điện tử', icon: '💳', screen: ScreenNames.WALLET_SCREEN },
-    { id: 'payment', label: 'Thông tin tài khoản', icon: '🏦', screen: ScreenNames.PAYMENT_INFORMATION_SCREEN },
-    { id: 'likes', label: 'Yêu thích', icon: '❤️', screen: ScreenNames.LIKES_SCREEN },
-    { id: 'friends', label: 'Bạn bè', icon: '👥', screen: ScreenNames.FRIENDS_SCREEN },
-    { id: 'settings', label: 'Cài đặt', icon: '⚙️', screen: ScreenNames.SETTINGS_SCREEN }
-  ];
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setIsLoading(false);
+      return;
+    }
+
+    if (!hasFetchedProfile.current) {
+      hasFetchedProfile.current = true;
+      fetchUserProfile();
+    }
+  }, [isLoggedIn]);
+
+  const menuItems = isStaff
+    ? [
+      {
+        id: 'settings',
+        label: 'Cài đặt',
+        icon: '⚙️',
+        screen: ScreenNames.SETTINGS_SCREEN
+      }]
+    : [
+      { id: 'tickets', label: 'Vé của tôi', icon: '🎫', screen: ScreenNames.TICKETS_SCREEN },
+      { id: 'wallet', label: 'Ví điện tử', icon: '💳', screen: ScreenNames.WALLET_SCREEN },
+      { id: 'payment', label: 'Thông tin tài khoản', icon: '🏦', screen: ScreenNames.PAYMENT_INFORMATION_SCREEN },
+      { id: 'likes', label: 'Yêu thích', icon: '❤️', screen: ScreenNames.LIKES_SCREEN },
+      { id: 'friends', label: 'Bạn bè', icon: '👥', screen: ScreenNames.FRIENDS_SCREEN },
+      { id: 'settings', label: 'Cài đặt', icon: '⚙️', screen: ScreenNames.SETTINGS_SCREEN }
+    ];
 
   useEffect(() => {
     if (!hasFetchedProfile.current) {
@@ -65,6 +89,11 @@ const ProfileScreen = ({ navigation }) => {
   }, []);
 
   const fetchUserProfile = async () => {
+    if (!accessToken || !isLoggedIn) {
+      setIsLoading(false);
+      return;
+    }
+  
     try {
       setIsLoading(true);
       setError(null);
@@ -74,15 +103,14 @@ const ProfileScreen = ({ navigation }) => {
       if (result.success) {
         setProfile(result.data);
       } else {
-        // Check if it's an authentication error
-        if (result.message && result.message.includes('not authenticated')) {
-          setError('Vui lòng đăng nhập lại để xem thông tin cá nhân');
+        if (result.message?.includes('authenticated') || result.message?.includes('token')) {       
+          setError('Phiên đăng nhập hết hạn');
         } else {
-          setError(result.message || 'Failed to fetch profile');
+          setError(result.message || 'Không thể tải thông tin');
         }
       }
     } catch (err) {
-      setError('An error occurred while fetching profile');
+      setError('Lỗi kết nối');
     } finally {
       setIsLoading(false);
     }
@@ -177,13 +205,13 @@ const ProfileScreen = ({ navigation }) => {
         style={styles.profileHeaderContent}
       >
         <View style={styles.avatarSection}>
-        <View style={styles.avatarContainer}>
+          <View style={styles.avatarContainer}>
             {profileData.avatarImgUrl && profileData.avatarImgUrl.trim() !== '' ? (
-              <Image 
-                source={{ 
+              <Image
+                source={{
                   uri: profileData.avatarImgUrl,
                   cache: 'force-cache' // Cache the image for better performance
-                }} 
+                }}
                 style={styles.avatar}
                 onError={(error) => {
                   // Handle avatar load error silently
@@ -205,7 +233,7 @@ const ProfileScreen = ({ navigation }) => {
             </CustomText>
           </TouchableOpacity>
         </View>
-        
+
         <View style={styles.profileInfo}>
           <CustomText variant="h2" color="white" style={styles.userName}>
             {profileData.name}
@@ -218,11 +246,11 @@ const ProfileScreen = ({ navigation }) => {
           </CustomText>
           <CustomText variant="body" color="white" style={styles.userLocation}>
             📍 {profileData.address}
-        </CustomText>
+          </CustomText>
           <CustomText variant="body" color="white" style={styles.userBio}>
             {profileData.bio}
-        </CustomText>
-      </View>
+          </CustomText>
+        </View>
 
         {/* Skills Section */}
         <View style={styles.skillsSection}>
@@ -284,16 +312,29 @@ const ProfileScreen = ({ navigation }) => {
       {menuItems.map((item) => (
         <TouchableOpacity
           key={item.id}
-          style={styles.menuItem}
-          onPress={() => handleMenuItemPress(item)}
-          activeOpacity={0.7}
+          style={[
+            styles.menuItem,
+            isStaff && styles.menuItemStaff 
+          ]}
+          onPress={() => {
+            if (item.onPress) {
+              item.onPress();
+            } else if (item.screen) {
+              navigation.navigate(item.screen);
+            }
+          }}
+          activeOpacity={0.8}
         >
           <View style={styles.menuIconContainer}>
-            <CustomText variant="h2" color="primary" style={styles.menuIcon}>
+            <CustomText variant="h1" color="primary" style={styles.menuIcon}>
               {item.icon}
             </CustomText>
           </View>
-          <CustomText variant="caption" color="primary" style={styles.menuLabel}>
+          <CustomText 
+            variant="caption" 
+            color="primary" 
+            style={[styles.menuLabel, isStaff && { fontWeight: '600', fontSize: 16 }]}
+          >
             {item.label}
           </CustomText>
         </TouchableOpacity>
@@ -328,8 +369,8 @@ const ProfileScreen = ({ navigation }) => {
           </CustomText>
         </TouchableOpacity>
         {error.includes('đăng nhập') && (
-          <TouchableOpacity 
-            style={[styles.retryButton, { backgroundColor: Colors.secondary, marginTop: 8 }]} 
+          <TouchableOpacity
+            style={[styles.retryButton, { backgroundColor: Colors.secondary, marginTop: 8 }]}
             onPress={() => {
               // Navigate to login screen
               // TODO: Add navigation logic here
@@ -346,7 +387,7 @@ const ProfileScreen = ({ navigation }) => {
 
   return (
     <GradientBackground style={styles.container}>
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         refreshControl={
           <RefreshControl
@@ -486,10 +527,10 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
     try {
       // Request permission first
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
+
       if (permissionResult.granted === false) {
         Alert.alert(
-          'Permission Required', 
+          'Permission Required',
           'Permission to access camera roll is required!',
           [
             {
@@ -544,7 +585,7 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
   const pickImage = async () => {
     try {
       console.log('Starting image picker with working approach...');
-      
+
       // Use the same approach that worked for testImagePicker
       const result = await ImagePicker.launchImageLibraryAsync({
         allowsEditing: true,
@@ -557,7 +598,7 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
         console.log('Selected asset:', asset);
-        
+
         setFormData(prev => ({
           ...prev,
           avatarImage: {
@@ -574,7 +615,7 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
     } catch (error) {
       console.error('Pick image error:', error);
       Alert.alert(
-        'Image Picker Error', 
+        'Image Picker Error',
         'Failed to open image picker. Using default avatar instead.',
         [
           {
@@ -648,8 +689,8 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
               <View style={styles.avatarEditContainer}>
                 <View style={styles.avatarEditPreview}>
                   {formData.avatarImgUrl ? (
-                    <Image 
-                      source={{ uri: formData.avatarImgUrl }} 
+                    <Image
+                      source={{ uri: formData.avatarImgUrl }}
                       style={styles.avatarEditImage}
                       onError={() => {
                         console.log('Edit avatar image failed to load');
@@ -663,8 +704,8 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
                     </View>
                   )}
                 </View>
-                <TouchableOpacity 
-                  style={styles.avatarEditButton} 
+                <TouchableOpacity
+                  style={styles.avatarEditButton}
                   onPress={handleAvatarChange}
                 >
                   <CustomText variant="caption" color="white">
@@ -775,50 +816,50 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
                 placeholder="Ví dụ: Công nghệ thông tin, Marketing, Tài chính..."
               />
             </View>
-             <View style={styles.formGroup}>
-               <CustomText variant="body" color="primary" style={styles.label}>
-                 Kinh nghiệm làm việc
-               </CustomText>
-               <TouchableOpacity 
-                 style={styles.pickerContainer}
-                 onPress={() => setShowExperienceDropdown(!showExperienceDropdown)}
-               >
-                 <CustomText variant="body" color="primary">
-                   {ExperienceDisplay[formData.experience] || formData.experience}
-                 </CustomText>
-                 <CustomText variant="body" color="secondary">▼</CustomText>
-               </TouchableOpacity>
-               {showExperienceDropdown && (
-                 <View style={styles.dropdown}>
-                   <ScrollView showsVerticalScrollIndicator={false}>
-                     {Object.entries(ExperienceDisplay).map(([key, value], index) => {
-                       const isLastItem = index === Object.entries(ExperienceDisplay).length - 1;
-                       return (
-                         <TouchableOpacity
-                           key={key}
-                           style={[
-                             isLastItem ? styles.dropdownItem : styles.dropdownItemWithBorder,
-                             formData.experience === key && styles.selectedDropdownItem
-                           ]}
-                           onPress={() => {
-                             handleInputChange('experience', key);
-                             setShowExperienceDropdown(false);
-                           }}
-                           activeOpacity={0.7}
-                         >
-                           <CustomText 
-                             variant="body" 
-                             color={formData.experience === key ? "white" : "primary"}
-                           >
-                             {value}
-                           </CustomText>
-                         </TouchableOpacity>
-                       );
-                     })}
-                   </ScrollView>
-                 </View>
-               )}
-             </View>
+            <View style={styles.formGroup}>
+              <CustomText variant="body" color="primary" style={styles.label}>
+                Kinh nghiệm làm việc
+              </CustomText>
+              <TouchableOpacity
+                style={styles.pickerContainer}
+                onPress={() => setShowExperienceDropdown(!showExperienceDropdown)}
+              >
+                <CustomText variant="body" color="primary">
+                  {ExperienceDisplay[formData.experience] || formData.experience}
+                </CustomText>
+                <CustomText variant="body" color="secondary">▼</CustomText>
+              </TouchableOpacity>
+              {showExperienceDropdown && (
+                <View style={styles.dropdown}>
+                  <ScrollView showsVerticalScrollIndicator={false}>
+                    {Object.entries(ExperienceDisplay).map(([key, value], index) => {
+                      const isLastItem = index === Object.entries(ExperienceDisplay).length - 1;
+                      return (
+                        <TouchableOpacity
+                          key={key}
+                          style={[
+                            isLastItem ? styles.dropdownItem : styles.dropdownItemWithBorder,
+                            formData.experience === key && styles.selectedDropdownItem
+                          ]}
+                          onPress={() => {
+                            handleInputChange('experience', key);
+                            setShowExperienceDropdown(false);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <CustomText
+                            variant="body"
+                            color={formData.experience === key ? "white" : "primary"}
+                          >
+                            {value}
+                          </CustomText>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
             <View style={styles.formGroup}>
               <CustomText variant="body" color="primary" style={styles.label}>
                 Mục tiêu nghề nghiệp
@@ -902,27 +943,27 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
               <CustomText variant="body" color="primary" style={styles.label}>
                 Kỹ năng chuyên môn
               </CustomText>
-               <View style={styles.editSkillsContainer}>
-                 {formData.skills && formData.skills.length > 0 ? (
-                   formData.skills.map((skill, index) => (
-                     <View key={index} style={styles.editSkillTag}>
-                       <CustomText variant="caption" color="white">
-                         {skill}
-                       </CustomText>
-                       <TouchableOpacity
-                         style={styles.editRemoveButton}
-                         onPress={() => removeArrayItem('skills', index)}
-                       >
-                         <CustomText variant="caption" color="white">×</CustomText>
-                       </TouchableOpacity>
-                     </View>
-                   ))
-                 ) : (
-                   <CustomText variant="caption" color="secondary" style={{ fontStyle: 'italic' }}>
-                     Chưa có kỹ năng nào
-                   </CustomText>
-                 )}
-               </View>
+              <View style={styles.editSkillsContainer}>
+                {formData.skills && formData.skills.length > 0 ? (
+                  formData.skills.map((skill, index) => (
+                    <View key={index} style={styles.editSkillTag}>
+                      <CustomText variant="caption" color="white">
+                        {skill}
+                      </CustomText>
+                      <TouchableOpacity
+                        style={styles.editRemoveButton}
+                        onPress={() => removeArrayItem('skills', index)}
+                      >
+                        <CustomText variant="caption" color="white">×</CustomText>
+                      </TouchableOpacity>
+                    </View>
+                  ))
+                ) : (
+                  <CustomText variant="caption" color="secondary" style={{ fontStyle: 'italic' }}>
+                    Chưa có kỹ năng nào
+                  </CustomText>
+                )}
+              </View>
               <View style={styles.addSkillContainer}>
                 <TextInput
                   style={styles.addSkillInput}
@@ -931,7 +972,7 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
                   onChangeText={setNewSkill}
                   onSubmitEditing={() => addArrayItem('skills', newSkill, setNewSkill)}
                 />
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.addButton}
                   onPress={() => addArrayItem('skills', newSkill, setNewSkill)}
                 >
@@ -945,27 +986,27 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
               <CustomText variant="body" color="primary" style={styles.label}>
                 Ngôn ngữ
               </CustomText>
-               <View style={styles.editSkillsContainer}>
-                 {formData.languages && formData.languages.length > 0 ? (
-                   formData.languages.map((language, index) => (
-                     <View key={index} style={styles.editSkillTag}>
-                       <CustomText variant="caption" color="white">
-                         {language}
-                       </CustomText>
-                       <TouchableOpacity
-                         style={styles.editRemoveButton}
-                         onPress={() => removeArrayItem('languages', index)}
-                       >
-                         <CustomText variant="caption" color="white">×</CustomText>
-                       </TouchableOpacity>
-                     </View>
-                   ))
-                 ) : (
-                   <CustomText variant="caption" color="secondary" style={{ fontStyle: 'italic' }}>
-                     Chưa có ngôn ngữ nào
-                   </CustomText>
-                 )}
-               </View>
+              <View style={styles.editSkillsContainer}>
+                {formData.languages && formData.languages.length > 0 ? (
+                  formData.languages.map((language, index) => (
+                    <View key={index} style={styles.editSkillTag}>
+                      <CustomText variant="caption" color="white">
+                        {language}
+                      </CustomText>
+                      <TouchableOpacity
+                        style={styles.editRemoveButton}
+                        onPress={() => removeArrayItem('languages', index)}
+                      >
+                        <CustomText variant="caption" color="white">×</CustomText>
+                      </TouchableOpacity>
+                    </View>
+                  ))
+                ) : (
+                  <CustomText variant="caption" color="secondary" style={{ fontStyle: 'italic' }}>
+                    Chưa có ngôn ngữ nào
+                  </CustomText>
+                )}
+              </View>
               <View style={styles.addSkillContainer}>
                 <TextInput
                   style={styles.addSkillInput}
@@ -974,7 +1015,7 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
                   onChangeText={setNewLanguage}
                   onSubmitEditing={() => addArrayItem('languages', newLanguage, setNewLanguage)}
                 />
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.addButton}
                   onPress={() => addArrayItem('languages', newLanguage, setNewLanguage)}
                 >
@@ -988,27 +1029,27 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
               <CustomText variant="body" color="primary" style={styles.label}>
                 Sở thích cá nhân
               </CustomText>
-               <View style={styles.editSkillsContainer}>
-                 {formData.interests && formData.interests.length > 0 ? (
-                   formData.interests.map((interest, index) => (
-                     <View key={index} style={styles.editSkillTag}>
-                       <CustomText variant="caption" color="white">
-                         {interest}
-                       </CustomText>
-                       <TouchableOpacity
-                         style={styles.editRemoveButton}
-                         onPress={() => removeArrayItem('interests', index)}
-                       >
-                         <CustomText variant="caption" color="white">×</CustomText>
-                       </TouchableOpacity>
-                     </View>
-                   ))
-                 ) : (
-                   <CustomText variant="caption" color="secondary" style={{ fontStyle: 'italic' }}>
-                     Chưa có sở thích nào
-                   </CustomText>
-                 )}
-               </View>
+              <View style={styles.editSkillsContainer}>
+                {formData.interests && formData.interests.length > 0 ? (
+                  formData.interests.map((interest, index) => (
+                    <View key={index} style={styles.editSkillTag}>
+                      <CustomText variant="caption" color="white">
+                        {interest}
+                      </CustomText>
+                      <TouchableOpacity
+                        style={styles.editRemoveButton}
+                        onPress={() => removeArrayItem('interests', index)}
+                      >
+                        <CustomText variant="caption" color="white">×</CustomText>
+                      </TouchableOpacity>
+                    </View>
+                  ))
+                ) : (
+                  <CustomText variant="caption" color="secondary" style={{ fontStyle: 'italic' }}>
+                    Chưa có sở thích nào
+                  </CustomText>
+                )}
+              </View>
               <View style={styles.addSkillContainer}>
                 <TextInput
                   style={styles.addSkillInput}
@@ -1017,7 +1058,7 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
                   onChangeText={setNewInterest}
                   onSubmitEditing={() => addArrayItem('interests', newInterest, setNewInterest)}
                 />
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.addButton}
                   onPress={() => addArrayItem('interests', newInterest, setNewInterest)}
                 >
@@ -1030,55 +1071,55 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
       case 'preferences':
         return (
           <View style={styles.editSection}>
-             <View style={styles.formGroup}>
-               <CustomText variant="body" color="primary" style={styles.label}>
-                 Tần suất tham gia sự kiện
-               </CustomText>
-               <TouchableOpacity 
-                 style={styles.pickerContainer}
-                 onPress={() => setShowParticipationDropdown(!showParticipationDropdown)}
-               >
-                 <CustomText variant="body" color="primary">
-                   {ParticipationFrequencyDisplay[formData.participationFrequency] || formData.participationFrequency}
-                 </CustomText>
-                 <CustomText variant="body" color="secondary">▼</CustomText>
-               </TouchableOpacity>
-               {showParticipationDropdown && (
-                 <View style={styles.dropdown}>
-                   <ScrollView showsVerticalScrollIndicator={false}>
-                     {Object.entries(ParticipationFrequencyDisplay).map(([key, value], index) => {
-                       const isLastItem = index === Object.entries(ParticipationFrequencyDisplay).length - 1;
-                       return (
-                         <TouchableOpacity
-                           key={key}
-                           style={[
-                             isLastItem ? styles.dropdownItem : styles.dropdownItemWithBorder,
-                             formData.participationFrequency === key && styles.selectedDropdownItem
-                           ]}
-                           onPress={() => {
-                             handleInputChange('participationFrequency', key);
-                             setShowParticipationDropdown(false);
-                           }}
-                           activeOpacity={0.7}
-                         >
-                           <CustomText 
-                             variant="body" 
-                             color={formData.participationFrequency === key ? "white" : "primary"}
-                           >
-                             {value}
-                           </CustomText>
-                         </TouchableOpacity>
-                       );
-                     })}
-                   </ScrollView>
-                 </View>
-               )}
-             </View>
+            <View style={styles.formGroup}>
+              <CustomText variant="body" color="primary" style={styles.label}>
+                Tần suất tham gia sự kiện
+              </CustomText>
+              <TouchableOpacity
+                style={styles.pickerContainer}
+                onPress={() => setShowParticipationDropdown(!showParticipationDropdown)}
+              >
+                <CustomText variant="body" color="primary">
+                  {ParticipationFrequencyDisplay[formData.participationFrequency] || formData.participationFrequency}
+                </CustomText>
+                <CustomText variant="body" color="secondary">▼</CustomText>
+              </TouchableOpacity>
+              {showParticipationDropdown && (
+                <View style={styles.dropdown}>
+                  <ScrollView showsVerticalScrollIndicator={false}>
+                    {Object.entries(ParticipationFrequencyDisplay).map(([key, value], index) => {
+                      const isLastItem = index === Object.entries(ParticipationFrequencyDisplay).length - 1;
+                      return (
+                        <TouchableOpacity
+                          key={key}
+                          style={[
+                            isLastItem ? styles.dropdownItem : styles.dropdownItemWithBorder,
+                            formData.participationFrequency === key && styles.selectedDropdownItem
+                          ]}
+                          onPress={() => {
+                            handleInputChange('participationFrequency', key);
+                            setShowParticipationDropdown(false);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <CustomText
+                            variant="body"
+                            color={formData.participationFrequency === key ? "white" : "primary"}
+                          >
+                            {value}
+                          </CustomText>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
             <View style={styles.formGroup}>
               <CustomText variant="body" color="primary" style={styles.label}>
                 Ngân sách cho sự kiện
               </CustomText>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.pickerContainer}
                 onPress={() => setShowBudgetDropdown(!showBudgetDropdown)}
               >
@@ -1087,36 +1128,36 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
                 </CustomText>
                 <CustomText variant="body" color="secondary">▼</CustomText>
               </TouchableOpacity>
-               {showBudgetDropdown && (
-                 <View style={styles.dropdown}>
-                   <ScrollView showsVerticalScrollIndicator={false}>
-                     {Object.entries(BudgetOptionDisplay).map(([key, value], index) => {
-                       const isLastItem = index === Object.entries(BudgetOptionDisplay).length - 1;
-                       return (
-                         <TouchableOpacity
-                           key={key}
-                           style={[
-                             isLastItem ? styles.dropdownItem : styles.dropdownItemWithBorder,
-                             formData.budgetOption === key && styles.selectedDropdownItem
-                           ]}
-                           onPress={() => {
-                             handleInputChange('budgetOption', key);
-                             setShowBudgetDropdown(false);
-                           }}
-                           activeOpacity={0.7}
-                         >
-                           <CustomText 
-                             variant="body" 
-                             color={formData.budgetOption === key ? "white" : "primary"}
-                           >
-                             {value}
-                           </CustomText>
-                         </TouchableOpacity>
-                       );
-                     })}
-                   </ScrollView>
-                 </View>
-               )}
+              {showBudgetDropdown && (
+                <View style={styles.dropdown}>
+                  <ScrollView showsVerticalScrollIndicator={false}>
+                    {Object.entries(BudgetOptionDisplay).map(([key, value], index) => {
+                      const isLastItem = index === Object.entries(BudgetOptionDisplay).length - 1;
+                      return (
+                        <TouchableOpacity
+                          key={key}
+                          style={[
+                            isLastItem ? styles.dropdownItem : styles.dropdownItemWithBorder,
+                            formData.budgetOption === key && styles.selectedDropdownItem
+                          ]}
+                          onPress={() => {
+                            handleInputChange('budgetOption', key);
+                            setShowBudgetDropdown(false);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <CustomText
+                            variant="body"
+                            color={formData.budgetOption === key ? "white" : "primary"}
+                          >
+                            {value}
+                          </CustomText>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              )}
             </View>
 
             {/* Interested Cities */}
@@ -1124,27 +1165,27 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
               <CustomText variant="body" color="primary" style={styles.label}>
                 Thành phố quan tâm
               </CustomText>
-               <View style={styles.editSkillsContainer}>
-                 {formData.cities && formData.cities.length > 0 ? (
-                   formData.cities.map((city, index) => (
-                     <View key={index} style={styles.editSkillTag}>
-                       <CustomText variant="caption" color="white">
-                         {city}
-                       </CustomText>
-                       <TouchableOpacity
-                         style={styles.editRemoveButton}
-                         onPress={() => removeArrayItem('cities', index)}
-                       >
-                         <CustomText variant="caption" color="white">×</CustomText>
-                       </TouchableOpacity>
-                     </View>
-                   ))
-                 ) : (
-                   <CustomText variant="caption" color="secondary" style={{ fontStyle: 'italic' }}>
-                     Chưa có thành phố nào
-                   </CustomText>
-                 )}
-               </View>
+              <View style={styles.editSkillsContainer}>
+                {formData.cities && formData.cities.length > 0 ? (
+                  formData.cities.map((city, index) => (
+                    <View key={index} style={styles.editSkillTag}>
+                      <CustomText variant="caption" color="white">
+                        {city}
+                      </CustomText>
+                      <TouchableOpacity
+                        style={styles.editRemoveButton}
+                        onPress={() => removeArrayItem('cities', index)}
+                      >
+                        <CustomText variant="caption" color="white">×</CustomText>
+                      </TouchableOpacity>
+                    </View>
+                  ))
+                ) : (
+                  <CustomText variant="caption" color="secondary" style={{ fontStyle: 'italic' }}>
+                    Chưa có thành phố nào
+                  </CustomText>
+                )}
+              </View>
               <View style={styles.addSkillContainer}>
                 <TextInput
                   style={styles.addSkillInput}
@@ -1153,7 +1194,7 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
                   onChangeText={setNewCity}
                   onSubmitEditing={() => addArrayItem('cities', newCity, setNewCity)}
                 />
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.addButton}
                   onPress={() => addArrayItem('cities', newCity, setNewCity)}
                 >
@@ -1167,27 +1208,27 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
               <CustomText variant="body" color="primary" style={styles.label}>
                 Loại sự kiện yêu thích
               </CustomText>
-               <View style={styles.editSkillsContainer}>
-                 {formData.eventTypes && formData.eventTypes.length > 0 ? (
-                   formData.eventTypes.map((eventType, index) => (
-                     <View key={index} style={styles.editSkillTag}>
-                       <CustomText variant="caption" color="white">
-                         {eventType}
-                       </CustomText>
-                       <TouchableOpacity
-                         style={styles.editRemoveButton}
-                         onPress={() => removeArrayItem('eventTypes', index)}
-                       >
-                         <CustomText variant="caption" color="white">×</CustomText>
-                       </TouchableOpacity>
-                     </View>
-                   ))
-                 ) : (
-                   <CustomText variant="caption" color="secondary" style={{ fontStyle: 'italic' }}>
-                     Chưa có loại sự kiện nào
-                   </CustomText>
-                 )}
-               </View>
+              <View style={styles.editSkillsContainer}>
+                {formData.eventTypes && formData.eventTypes.length > 0 ? (
+                  formData.eventTypes.map((eventType, index) => (
+                    <View key={index} style={styles.editSkillTag}>
+                      <CustomText variant="caption" color="white">
+                        {eventType}
+                      </CustomText>
+                      <TouchableOpacity
+                        style={styles.editRemoveButton}
+                        onPress={() => removeArrayItem('eventTypes', index)}
+                      >
+                        <CustomText variant="caption" color="white">×</CustomText>
+                      </TouchableOpacity>
+                    </View>
+                  ))
+                ) : (
+                  <CustomText variant="caption" color="secondary" style={{ fontStyle: 'italic' }}>
+                    Chưa có loại sự kiện nào
+                  </CustomText>
+                )}
+              </View>
               <View style={styles.addSkillContainer}>
                 <TextInput
                   style={styles.addSkillInput}
@@ -1196,7 +1237,7 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
                   onChangeText={setNewEventType}
                   onSubmitEditing={() => addArrayItem('eventTypes', newEventType, setNewEventType)}
                 />
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.addButton}
                   onPress={() => addArrayItem('eventTypes', newEventType, setNewEventType)}
                 >
@@ -1211,70 +1252,70 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
     }
   };
 
-   const closeAllDropdowns = () => {
-     setShowParticipationDropdown(false);
-     setShowBudgetDropdown(false);
-     setShowExperienceDropdown(false);
-   };
+  const closeAllDropdowns = () => {
+    setShowParticipationDropdown(false);
+    setShowBudgetDropdown(false);
+    setShowExperienceDropdown(false);
+  };
 
-   return (
-     <TouchableOpacity 
-       style={styles.modalContainer} 
-       activeOpacity={1}
-       onPress={closeAllDropdowns}
-     >
-       <View style={styles.modalHeader}>
-         <TouchableOpacity onPress={onClose}>
-           <CustomText variant="h3" color="primary">✕</CustomText>
-         </TouchableOpacity>
-         <CustomText variant="h3" color="primary">
-           Chỉnh sửa hồ sơ
-         </CustomText>
-         <View style={{ width: 24 }} />
-       </View>
+  return (
+    <TouchableOpacity
+      style={styles.modalContainer}
+      activeOpacity={1}
+      onPress={closeAllDropdowns}
+    >
+      <View style={styles.modalHeader}>
+        <TouchableOpacity onPress={onClose}>
+          <CustomText variant="h3" color="primary">✕</CustomText>
+        </TouchableOpacity>
+        <CustomText variant="h3" color="primary">
+          Chỉnh sửa hồ sơ
+        </CustomText>
+        <View style={{ width: 24 }} />
+      </View>
 
-       <TouchableOpacity 
-         style={styles.modalContent} 
-         activeOpacity={1}
-         onPress={(e) => e.stopPropagation()}
-       >
-         <View style={styles.sidebar}>
-           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-             <View style={{ flexDirection: 'row' }}>
-               {sections.map((section) => (
-                 <TouchableOpacity
-                   key={section.id}
-                   style={[
-                     styles.sidebarItem,
-                     activeSection === section.id && styles.activeSidebarItem
-                   ]}
-                   onPress={() => setActiveSection(section.id)}
-                 >
-                   <CustomText variant="caption" color={activeSection === section.id ? "white" : "primary"}>
-                     {section.icon} {section.label}
-                   </CustomText>
-                 </TouchableOpacity>
-               ))}
-             </View>
-           </ScrollView>
-         </View>
+      <TouchableOpacity
+        style={styles.modalContent}
+        activeOpacity={1}
+        onPress={(e) => e.stopPropagation()}
+      >
+        <View style={styles.sidebar}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={{ flexDirection: 'row' }}>
+              {sections.map((section) => (
+                <TouchableOpacity
+                  key={section.id}
+                  style={[
+                    styles.sidebarItem,
+                    activeSection === section.id && styles.activeSidebarItem
+                  ]}
+                  onPress={() => setActiveSection(section.id)}
+                >
+                  <CustomText variant="caption" color={activeSection === section.id ? "white" : "primary"}>
+                    {section.icon} {section.label}
+                  </CustomText>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </View>
 
-         <ScrollView style={styles.contentArea} showsVerticalScrollIndicator={false}>
-           <View style={styles.contentHeader}>
-             <CustomText variant="h3" color="primary">
-               {sections.find(s => s.id === activeSection)?.label}
-             </CustomText>
-             <CustomText variant="caption" color="secondary">
-               {activeSection === 'basic' && 'Cập nhật thông tin cá nhân cơ bản'}
-               {activeSection === 'professional' && 'Thông tin về nghề nghiệp và kinh nghiệm'}
-               {activeSection === 'social' && 'Liên kết với các mạng xã hội'}
-               {activeSection === 'skills' && 'Kỹ năng, ngôn ngữ và sở thích'}
-               {activeSection === 'preferences' && 'Tùy chọn sự kiện và ngân sách'}
-             </CustomText>
-           </View>
-           {renderSectionContent()}
-         </ScrollView>
-       </TouchableOpacity>
+        <ScrollView style={styles.contentArea} showsVerticalScrollIndicator={false}>
+          <View style={styles.contentHeader}>
+            <CustomText variant="h3" color="primary">
+              {sections.find(s => s.id === activeSection)?.label}
+            </CustomText>
+            <CustomText variant="caption" color="secondary">
+              {activeSection === 'basic' && 'Cập nhật thông tin cá nhân cơ bản'}
+              {activeSection === 'professional' && 'Thông tin về nghề nghiệp và kinh nghiệm'}
+              {activeSection === 'social' && 'Liên kết với các mạng xã hội'}
+              {activeSection === 'skills' && 'Kỹ năng, ngôn ngữ và sở thích'}
+              {activeSection === 'preferences' && 'Tùy chọn sự kiện và ngân sách'}
+            </CustomText>
+          </View>
+          {renderSectionContent()}
+        </ScrollView>
+      </TouchableOpacity>
 
       <View style={styles.modalFooter}>
         <CustomText variant="caption" color="secondary" style={{ textAlign: 'center', marginBottom: 6, fontSize: 12 }}>
@@ -1284,8 +1325,8 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
           <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
             <CustomText variant="body" color="primary">Hủy</CustomText>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.saveButton, isUpdating && styles.saveButtonDisabled]} 
+          <TouchableOpacity
+            style={[styles.saveButton, isUpdating && styles.saveButtonDisabled]}
             onPress={handleSave}
             disabled={isUpdating}
           >
