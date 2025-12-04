@@ -366,7 +366,7 @@ namespace AIEvent.API.Controllers
 
         [HttpGet("radius")]
         [Authorize(Roles = "User")]
-        public async Task<ActionResult<SuccessResponse<BasePaginated<EventsLocationResponse>>>> GetListEventForStaff(
+        public async Task<ActionResult<SuccessResponse<BasePaginated<EventsLocationResponse>>>> GetListEventByRadius(
                                                                                                           [FromQuery] string? categoryId,
                                                                                                           [FromQuery] int? radius,
                                                                                                           [FromQuery] double latitude,

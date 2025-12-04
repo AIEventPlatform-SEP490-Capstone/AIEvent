@@ -297,6 +297,21 @@ namespace AIEvent.Application.Services.Implements
 
             var response = _mapper.Map<FriendProfileResponse>(friend);
 
+            var friendShip = await _unitOfWork.FriendshipRepository
+                .Query()
+                .AsNoTracking()
+                .Select(f => new {f.SenderId, f.ReceiverId, f.Status, f.IsDeleted})
+                .FirstOrDefaultAsync(f => (f.SenderId == friendId || f.ReceiverId == friendId) && !f.IsDeleted);
+
+            if (friendShip == null)
+            {
+                response.FriendshipStatus = null;
+            }
+            else
+            {
+                response.FriendshipStatus = friendShip.Status;
+            }
+
             var eventData = await _unitOfWork.EventRepository
                 .Query()
                 .AsNoTracking()
@@ -401,5 +416,56 @@ namespace AIEvent.Application.Services.Implements
             return Result.Success();
         }
 
+        public async Task<Result<List<FriendLocationResponse>>> GetFriendLocationAsync(Guid userId, int radius, double latitude, double longitude)
+        {
+            try
+            {
+                var friends = await _unitOfWork.FriendshipRepository.Query(false)
+                    .Where(f => (f.SenderId == userId || f.ReceiverId == userId) && !f.IsDeleted && f.Status == FriendshipStatus.Accepted)        
+                    .Select(f => f.SenderId == userId ? f.Receiver : f.Sender)
+                    .Where(u => u.IsTurnOnLocation == true)
+                    .Select(u => new FriendLocationResponse                       
+                    {
+                        FriendId = u.Id,
+                        FriendName = u.FullName!,
+                        Email = u.Email!,
+                        ImageUrl = u.AvatarImgUrl,
+                        Latitude = u.Latitude,
+                        Longitude = u.Longitude
+                    })
+                    .ToListAsync();
+
+                double ToRad(double angle) => angle * Math.PI / 180.0;
+
+                double latRad = ToRad(latitude);
+                double lonRad = ToRad(longitude);
+                const double R = 6371;
+                
+                var result = friends
+                    .Select(f =>
+                    {
+                        double dLat = ToRad(f.Latitude - latitude);
+                        double dLon = ToRad(f.Longitude - longitude);
+
+                        double a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                                   Math.Cos(latRad) * Math.Cos(ToRad(f.Latitude)) *
+                                   Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+
+                        double distance = 2 * R * Math.Asin(Math.Sqrt(a));
+                        return new { Friend = f, Distance = distance };
+                    })
+                    .Where(x => x.Distance <= radius
+                                && x.Friend.Latitude != 0
+                                && x.Friend.Longitude != 0)
+                    .Select(x => x.Friend)
+                    .ToList();
+
+                return Result<List<FriendLocationResponse>>.Success(result);
+            }
+            catch (Exception ex)
+            {
+                return ErrorResponse.FailureResult($"Error : {ex.Message}", ErrorCodes.InternalServerError);
+            }
+        }
     }
 }

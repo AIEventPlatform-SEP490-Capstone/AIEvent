@@ -179,5 +179,24 @@ namespace AIEvent.API.Controllers
                 SuccessCodes.Success,
                 "UnBlock Friend successfully"));
         }
+
+        [HttpGet("location")]
+        [Authorize(Roles = "User")]
+        public async Task<ActionResult<SuccessResponse<List<FriendLocationResponse>>>> GetFriendLocation([FromQuery] int radius, 
+                                                                                                         [FromQuery] double latitude, 
+                                                                                                         [FromQuery] double longitude)
+        {
+            var userId = User.GetRequiredUserId();
+            var result = await _friendService.GetFriendLocationAsync(userId, radius, latitude, longitude);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<List<FriendLocationResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Friends retrieved successfully"));
+        }
     }
 }
