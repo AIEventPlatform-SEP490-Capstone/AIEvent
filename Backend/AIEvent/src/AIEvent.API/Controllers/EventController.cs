@@ -388,10 +388,10 @@ namespace AIEvent.API.Controllers
                 "Event retrieved successfully"));
         }
 
-		[HttpGet("{id}/by-organizer")]
+		[HttpGet("by-organizer")]
 		[AllowAnonymous]
 		public async Task<ActionResult<SuccessResponse<BasePaginated<EventsResponse>>>> GetEventByOrganizer([FromQuery] Guid organizerId,
-																										[FromQuery] string search,
+																										[FromQuery] string? search,
 																										[FromQuery] int pageNumber = 1,
 																										[FromQuery] int pageSize = 5)
 		{

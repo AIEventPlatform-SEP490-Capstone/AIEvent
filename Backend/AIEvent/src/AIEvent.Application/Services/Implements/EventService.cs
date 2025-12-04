@@ -1,4 +1,4 @@
-﻿using AIEvent.Application.Constants;
+using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Event;
 using AIEvent.Application.DTOs.Notification; 
@@ -1281,7 +1281,7 @@ namespace AIEvent.Application.Services.Implements
 
 		public async Task<Result<BasePaginated<EventsResponse>>> GetEventByOrganizerAsync(Guid? userId,
 																		Guid? organizerId,
-																		string search,
+																		string? search,
 																		int pageNumber = 1,
 																		int pageSize = 5)
 		{

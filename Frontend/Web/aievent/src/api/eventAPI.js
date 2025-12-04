@@ -563,6 +563,29 @@ export const eventAPI = {
     
     return data;
   },
+
+  // Get events by organizer
+  getEventsByOrganizer: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+
+    if (params.organizerId) queryParams.append('organizerId', params.organizerId);
+    if (params.search) queryParams.append('search', params.search);
+    if (params.pageNumber) queryParams.append('pageNumber', params.pageNumber);
+    if (params.pageSize) queryParams.append('pageSize', params.pageSize);
+
+    const response = await fetcher.get(`/event/by-organizer?${queryParams.toString()}`);
+    let data = response.data?.data || response.data;
+
+    if (data) {
+      if (data.items) {
+        data.items = processEventsArrayForDisplay(data.items);
+      } else if (Array.isArray(data)) {
+        data = processEventsArrayForDisplay(data);
+      }
+    }
+
+    return data;
+  },
   
 };
 
