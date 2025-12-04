@@ -69,8 +69,7 @@ import { uploadImagesToCloudinary } from '../../utils/cloudinary';
 import { convertUTC7ToUTC, convertUTCToUTC7 } from '../../utils/dateUtils';
 // Import geocoding utility
 import { geocodeAddress } from '../../utils/geocoding';
-
-// Import predefined cities
+import { stripHtml } from '../../utils/stripHtml';// Import predefined cities
 import { PredefinedCities } from '../../constants/userConstants';
 
 // Import the EventDetailGuestPage component for preview
@@ -84,8 +83,10 @@ import { useSidebar } from '../../components/ui/sidebar'; // Add this import
 const editEventSchema = z.object({
   title: z.string().min(1, 'Tiêu đề sự kiện là bắt buộc').max(200, 'Tiêu đề không được vượt quá 200 ký tự'),
   description: z.string().min(1, 'Mô tả sự kiện là bắt buộc').max(1000, 'Mô tả không được vượt quá 1000 ký tự'),
-  detailedDescription: z.string().min(1, 'Mô tả chi tiết sự kiện là bắt buộc'),
-  startTime: z.string().min(1, 'Thời gian bắt đầu là bắt buộc'),
+  detailedDescription: z.string().min(1, 'Mô tả chi tiết sự kiện là bắt buộc').refine(
+    (val) => stripHtml(val).length <= 1500, 
+    'Mô tả chi tiết không được vượt quá 1500 ký tự'
+  ),  startTime: z.string().min(1, 'Thời gian bắt đầu là bắt buộc'),
   endTime: z.string().min(1, 'Thời gian kết thúc là bắt buộc'),
   locationName: z.string().min(1, 'Địa điểm là bắt buộc'),
   address: z.string().min(1, 'Địa chỉ chi tiết là bắt buộc'),
