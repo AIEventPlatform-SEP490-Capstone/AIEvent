@@ -875,14 +875,22 @@ const EditEventPage = () => {
 
         // Load existing images
         if (event.imgListEvent && event.imgListEvent.length > 0) {
-          setExistingImages(event.imgListEvent);
-          setImagePreview(event.imgListEvent);
+          // Filter out any null or undefined values
+          const validImages = event.imgListEvent.filter(img => img !== null && img !== undefined && img !== '' && !img.includes('System.Collections.Generic.List'));
+          setExistingImages(validImages);
+          setImagePreview(validImages);
         }
 
         // Load existing evidence images
         if (event.imgListEvidences && event.imgListEvidences.length > 0) {
-          setExistingEvidenceImages(event.imgListEvidences);
-          setEvidenceImagePreview(event.imgListEvidences);
+          // Filter out any null or undefined values and invalid strings
+          const validEvidenceImages = event.imgListEvidences.filter(img => 
+            img !== null && img !== undefined && img !== '' && 
+            typeof img === 'string' && img.trim() !== '' && 
+            !img.includes('System.Collections.Generic.List')
+          );
+          setExistingEvidenceImages(validEvidenceImages);
+          setEvidenceImagePreview(validEvidenceImages);
         }
 
         // Load existing tags if any
@@ -1782,40 +1790,51 @@ const EditEventPage = () => {
 
                     {(existingEvidenceImages.length > 0 || evidenceImagePreview.length > 0) && (
                       <div className="grid grid-cols-3 gap-2">
-                        {/* Existing evidence images */}
-                        {existingEvidenceImages.map((img, index) => (
-                          <div key={`existing-${index}`} className="relative group rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
-                            <img
-                              src={img}
-                              alt={`Existing Evidence ${index + 1}`}
-                              className="w-full h-20 object-cover"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => removeExistingEvidenceImage(index)}
-                              className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
-                            >
-                              <X className="w-4 h-4 text-white" />
-                            </button>
-                          </div>
-                        ))}
-                        {/* New evidence image previews */}
-                        {evidenceImagePreview.map((img, index) => (
-                          <div key={`new-${index}`} className="relative group rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
-                            <img
-                              src={img}
-                              alt={`Evidence Preview ${index + 1}`}
-                              className="w-full h-20 object-cover"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => removeNewEvidenceImage(index)}
-                              className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
-                            >
-                              <X className="w-4 h-4 text-white" />
-                            </button>
-                          </div>
-                        ))}
+                        {/* Display existing evidence images without duplication */}
+                        {existingEvidenceImages
+                          .filter(img => img !== null && img !== undefined && img !== '' && 
+                            typeof img === 'string' && img.trim() !== '' && 
+                            !img.includes('System.Collections.Generic.List'))
+                          .map((img, index) => (
+                            <div key={`existing-${index}`} className="relative group rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+                              <img
+                                src={img}
+                                alt={`Evidence ${index + 1}`}
+                                className="w-full h-20 object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeExistingEvidenceImage(index)}
+                                className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                              >
+                                <X className="w-4 h-4 text-white" />
+                              </button>
+                            </div>
+                          ))
+                        }
+                        {/* Display new evidence image previews that are not already in existing images */}
+                        {evidenceImagePreview
+                          .filter(img => img !== null && img !== undefined && img !== '' && 
+                            typeof img === 'string' && img.trim() !== '' && 
+                            !img.includes('System.Collections.Generic.List') &&
+                            !existingEvidenceImages.includes(img))
+                          .map((img, index) => (
+                            <div key={`new-${index}`} className="relative group rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+                              <img
+                                src={img}
+                                alt={`Evidence Preview ${index + 1}`}
+                                className="w-full h-20 object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeNewEvidenceImage(index)}
+                                className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                              >
+                                <X className="w-4 h-4 text-white" />
+                              </button>
+                            </div>
+                          ))
+                        }
                       </div>
                     )}
                   </div>
