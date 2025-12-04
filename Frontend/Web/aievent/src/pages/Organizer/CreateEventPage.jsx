@@ -488,22 +488,26 @@ const CreateEventPage = () => {
   useEffect(() => {
     validateDates();
   }, [watch('startTime'), watch('endTime'), watch('saleStartTime'), watch('saleEndTime')]);
-  // Handle image upload
+  // Handle image upload - append new images to existing ones
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
-    if (files.length > 5) {
-      toast.error('Chỉ được tải lên tối đa 5 hình ảnh');
+    const totalImages = selectedImages.length + imagePreview.length;
+    
+    if (totalImages + files.length > 5) {
+      toast.error(`Chỉ được tải lên tối đa 5 hình ảnh. Bạn có thể thêm ${5 - totalImages} ảnh nữa.`);
       return;
     }
-    setSelectedImages(files);
+    
+    // Append new files to existing ones
+    setSelectedImages(prev => [...prev, ...files]);
     const previews = files.map(file => URL.createObjectURL(file));
-    setImagePreview(previews);
+    setImagePreview(prev => [...prev, ...previews]);
+    
     // Clear image error when images are selected
     if (files.length > 0) {
       setImageError('');
     }
-  };
-  // Handle evidence image upload
+  };  // Handle evidence image upload
   const handleEvidenceImageChange = (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 5) {
@@ -1472,7 +1476,43 @@ const CreateEventPage = () => {
                 </div>
               )}
           </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Image Thumbnails Row */}
+          {imagePreview.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-6">
+              {imagePreview.map((img, index) => (
+                <div key={index} className="relative group">
+                  <img
+                    src={img}
+                    alt={`Preview ${index + 1}`}
+                    className="w-20 h-20 object-cover rounded-lg border-2 border-gray-200 cursor-pointer hover:border-blue-500"
+                    onClick={() => setCurrentImageIndex(index)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+              
+              {/* Add More Images Button */}
+              {imagePreview.length < 5 && (
+                <label className="flex items-center justify-center w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500">
+                  <Plus className="w-6 h-6 text-gray-400" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
+          )}        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content - Event Detail Preview */}
           <div className="lg:col-span-2 space-y-8">
             <div className="space-y-3">
