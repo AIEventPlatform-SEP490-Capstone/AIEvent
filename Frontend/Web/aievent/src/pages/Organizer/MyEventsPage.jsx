@@ -598,12 +598,15 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                 <div className="absolute inset-0 p-8 flex flex-col justify-between">
                   {/* Status badge top-right */}
                   <div className="flex justify-end">
-                    {heroEvent.status && (
-                      <Badge className="bg-emerald-500/90 dark:bg-emerald-600/90 text-white backdrop-blur-sm border-emerald-400/50 rounded-full px-4 py-1.5 text-xs font-semibold shadow-lg shadow-emerald-500/30">
-                        <CheckCircle className="w-3 h-3 mr-1.5" />
-                        {EventStatusDisplay[heroEvent.status] || heroEvent.status}
-                      </Badge>
-                    )}
+                    {heroEvent.status && (() => {
+                      const statusConfig = getStatusConfig(heroEvent.status);
+                      return (
+                        <Badge className={`${statusConfig.badge} backdrop-blur-sm border-0 rounded-full px-4 py-1.5 text-xs font-semibold shadow-lg ${statusConfig.glow}`}>
+                          {statusConfig.icon && <statusConfig.icon className="w-3 h-3 mr-1.5" />}
+                          {EventStatusDisplay[heroEvent.status] || heroEvent.status}
+                        </Badge>
+                      );
+                    })()}
                   </div>
 
                   {/* Title and details */}
