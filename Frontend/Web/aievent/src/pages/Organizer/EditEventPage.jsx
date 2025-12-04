@@ -155,8 +155,6 @@ const EditEventPage = () => {
   const [selectedEvidenceImages, setSelectedEvidenceImageUrls] = useState([]);
   const [imagePreview, setImagePreview] = useState([]);
   const [evidenceImagePreview, setEvidenceImagePreview] = useState([]);
-  const [existingImages, setExistingImages] = useState([]);
-  const [existingEvidenceImages, setExistingEvidenceImages] = useState([]);
   const [removedImages, setRemovedImages] = useState([]);
   const [removedEvidenceImages, setRemovedEvidenceImages] = useState([]);
   const [removedTickets, setRemovedTickets] = useState([]);
@@ -271,62 +269,87 @@ const EditEventPage = () => {
     validateDates();
   }, [watch('startTime'), watch('endTime'), watch('saleStartTime'), watch('saleEndTime')]);
 
-  // Handle image upload
+  // Handle image upload - append new images to existing ones (similar to CreateEventPage)
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
-    if (files.length + existingImages.length > 5) {
-      toast.error('Chỉ được tải lên tối đa 5 hình ảnh');
+    const totalImages = selectedImages.length + imagePreview.length;
+    
+    if (totalImages + files.length > 5) {
+      toast.error(`Chỉ được tải lên tối đa 5 hình ảnh. Bạn có thể thêm ${5 - totalImages} ảnh nữa.`);
       return;
     }
-
+    
+    // Append new files to existing ones
     setSelectedImages(prev => [...prev, ...files]);
     const previews = files.map(file => URL.createObjectURL(file));
     setImagePreview(prev => [...prev, ...previews]);
+    
+    // Clear image error when images are selected
+    if (files.length > 0) {
+      setImageError('');
+    }
   };
 
-  // Handle evidence image upload
+  // Handle evidence image upload (similar to CreateEventPage)
   const handleEvidenceImageChange = (e) => {
     const files = Array.from(e.target.files);
-    if (files.length + existingEvidenceImages.length > 5) {
+    if (files.length > 5) {
       toast.error('Chỉ được tải lên tối đa 5 hình ảnh bằng chứng');
       return;
     }
-
-    setSelectedEvidenceImageUrls(prev => [...prev, ...files]);
+    setSelectedEvidenceImageUrls(files);
     const previews = files.map(file => URL.createObjectURL(file));
     setEvidenceImagePreview(prev => [...prev, ...previews]);
+    // Clear evidence image error when images are selected
+    if (files.length > 0) {
+      setEvidenceImageError('');
+    }
   };
 
-  // Remove existing image
-  const removeExistingImage = (index) => {
-    const imageUrl = existingImages[index];
-    setRemovedImages(prev => [...prev, imageUrl]);
-    setExistingImages(prev => prev.filter((_, i) => i !== index));
-  };
-
-  // Remove new image
-  const removeNewImage = (index) => {
+  // Remove image (similar to CreateEventPage)
+  const removeImage = (index) => {
+    // If this is an existing image (from existingImages), add it to removedImages
+    if (index < imagePreview.length) {
+      const imageUrl = imagePreview[index];
+      // Check if this image URL exists in the existing images (not a newly uploaded one)
+      if (eventData && eventData.imgListEvent && eventData.imgListEvent.includes(imageUrl)) {
+        setRemovedImages(prev => [...prev, imageUrl]);
+      }
+    }
+    
     const newImages = selectedImages.filter((_, i) => i !== index);
     const newPreviews = imagePreview.filter((_, i) => i !== index);
     
     setSelectedImages(newImages);
     setImagePreview(newPreviews);
+    
+    // Set error if no images left
+    if (newImages.length === 0 && newPreviews.length === 0) {
+      setImageError('Vui lòng tải lên ít nhất một hình ảnh sự kiện');
+    }
   };
 
-  // Remove existing evidence image
-  const removeExistingEvidenceImage = (index) => {
-    const imageUrl = existingEvidenceImages[index];
-    setRemovedEvidenceImages(prev => [...prev, imageUrl]);
-    setExistingEvidenceImages(prev => prev.filter((_, i) => i !== index));
-  };
-
-  // Remove new evidence image
-  const removeNewEvidenceImage = (index) => {
+  // Remove evidence image (similar to CreateEventPage)
+  const removeEvidenceImage = (index) => {
+    // If this is an existing evidence image (from existingEvidenceImages), add it to removedEvidenceImages
+    if (index < evidenceImagePreview.length) {
+      const imageUrl = evidenceImagePreview[index];
+      // Check if this image URL exists in the existing evidence images (not a newly uploaded one)
+      if (eventData && eventData.imgListEvidences && eventData.imgListEvidences.includes(imageUrl)) {
+        setRemovedEvidenceImages(prev => [...prev, imageUrl]);
+      }
+    }
+    
     const newImages = selectedEvidenceImages.filter((_, i) => i !== index);
     const newPreviews = evidenceImagePreview.filter((_, i) => i !== index);
     
     setSelectedEvidenceImageUrls(newImages);
     setEvidenceImagePreview(newPreviews);
+    
+    // Set error if no evidence images left
+    if (newImages.length === 0 && newPreviews.length === 0) {
+      setEvidenceImageError('Vui lòng tải lên ít nhất một hình ảnh bằng chứng');
+    }
   };
 
   // Add ticket type
@@ -435,7 +458,7 @@ const EditEventPage = () => {
     const totalTickets = ticketTypes.reduce((sum, ticket) => sum + (parseInt(ticket.ticketQuantity) || 0), 0);
     
     // Format image previews
-    const imgListEvent = [...existingImages, ...imagePreview];
+    const imgListEvent = imagePreview.length > 0 ? imagePreview : [];
     
     // Create preview event data
     const previewData = {
@@ -565,12 +588,20 @@ const EditEventPage = () => {
       // Upload images
       let imageUrls = [];
       if (selectedImages.length > 0) {
+        // Upload new images
         imageUrls = await uploadImagesToCloudinary(selectedImages);
+      } else {
+        // If no new images selected, send existing images that are not marked for removal
+        imageUrls = imagePreview.filter(img => !removedImages.includes(img));
       }
       
       let evidenceImageUrls = [];
       if (selectedEvidenceImages.length > 0) {
+        // Upload new evidence images
         evidenceImageUrls = await uploadImagesToCloudinary(selectedEvidenceImages);
+      } else {
+        // If no new evidence images selected, send existing evidence images that are not marked for removal
+        evidenceImageUrls = evidenceImagePreview.filter(img => !removedEvidenceImages.includes(img));
       }
       
       // Calculate total tickets from ticketTypes array
@@ -602,10 +633,10 @@ const EditEventPage = () => {
         longitude: geocodeResult.longitude,
         totalTickets: totalTickets,
         publish: publishStatus !== null ? publishStatus : (data.publish || false),
-        // Send existing images that are not removed + new images
-        images: [...existingImages.filter(img => !removedImages.includes(img)), ...imageUrls],
-        // Send existing evidence images that are not removed + new evidence images
-        evidenceImages: [...existingEvidenceImages.filter(img => !removedEvidenceImages.includes(img)), ...evidenceImageUrls],
+        // Send Cloudinary URLs instead of File objects
+        images: imageUrls,
+        // Send Cloudinary URLs instead of File objects
+        evidenceImages: evidenceImageUrls,
         removeImageUrls: removedImages,
         removeEvidenceImageUrls: removedEvidenceImages,
         eventCategoryId: data.eventCategoryId,
@@ -674,14 +705,14 @@ const EditEventPage = () => {
     }
     
     // Validate event images
-    if (selectedImages.length === 0 && imagePreview.length === 0 && existingImages.length === 0) {
+    if (selectedImages.length === 0 && imagePreview.length === 0) {
       setImageError('Vui lòng tải lên ít nhất một hình ảnh sự kiện');
     } else {
       setImageError('');
     }
     
     // Validate evidence images
-    if (selectedEvidenceImages.length === 0 && evidenceImagePreview.length === 0 && existingEvidenceImages.length === 0) {
+    if (selectedEvidenceImages.length === 0 && evidenceImagePreview.length === 0) {
       setEvidenceImageError('Vui lòng tải lên ít nhất một hình ảnh bằng chứng');
     } else {
       setEvidenceImageError('');
@@ -699,8 +730,8 @@ const EditEventPage = () => {
     
     // Return true if there are validation errors
     const hasTagErrors = !reduxSelectedTags || reduxSelectedTags.length === 0;
-    const hasImageErrors = selectedImages.length === 0 && imagePreview.length === 0 && existingImages.length === 0;
-    const hasEvidenceImageErrors = selectedEvidenceImages.length === 0 && evidenceImagePreview.length === 0 && existingEvidenceImages.length === 0;
+    const hasImageErrors = selectedImages.length === 0 && imagePreview.length === 0;
+    const hasEvidenceImageErrors = selectedEvidenceImages.length === 0 && evidenceImagePreview.length === 0;
     const hasTimelineErrors = Object.values(dateErrors).some(error => error !== '');
     const hasTicketNameErrors = hasEmptyTicketNames;
     
@@ -814,7 +845,7 @@ const EditEventPage = () => {
       case 2:
         return watch('startTime') && watch('endTime') && watch('district') && watch('locationName') && watch('address');
       case 3:
-        return (existingImages.length + imagePreview.length) > 0 && (existingEvidenceImages.length + evidenceImagePreview.length) > 0;
+        return (imagePreview.length > 0) && (evidenceImagePreview.length > 0);
       case 4:
         const ticketTypes = watch('ticketTypes');
         return ticketTypes && ticketTypes.length > 0 && ticketTypes.some(t => t.ticketName && t.ticketQuantity > 0);
@@ -877,7 +908,6 @@ const EditEventPage = () => {
         if (event.imgListEvent && event.imgListEvent.length > 0) {
           // Filter out any null or undefined values
           const validImages = event.imgListEvent.filter(img => img !== null && img !== undefined && img !== '' && !img.includes('System.Collections.Generic.List'));
-          setExistingImages(validImages);
           setImagePreview(validImages);
         }
 
@@ -889,7 +919,6 @@ const EditEventPage = () => {
             typeof img === 'string' && img.trim() !== '' && 
             !img.includes('System.Collections.Generic.List')
           );
-          setExistingEvidenceImages(validEvidenceImages);
           setEvidenceImagePreview(validEvidenceImages);
         }
 
@@ -1004,6 +1033,27 @@ const EditEventPage = () => {
   useEffect(() => {
     setCurrentImageIndex(0);
   }, [imagePreview?.length]);
+
+  // Clear tag error when tags are selected
+  useEffect(() => {
+    if (reduxSelectedTags && reduxSelectedTags.length > 0) {
+      setTagError('');
+    }
+  }, [reduxSelectedTags]);
+
+  // Clear image errors when images are selected
+  useEffect(() => {
+    if (selectedImages.length > 0 || imagePreview.length > 0) {
+      setImageError('');
+    }
+  }, [selectedImages, imagePreview]);
+
+  // Clear evidence image errors when evidence images are selected
+  useEffect(() => {
+    if (selectedEvidenceImages.length > 0 || evidenceImagePreview.length > 0) {
+      setEvidenceImageError('');
+    }
+  }, [selectedEvidenceImages, evidenceImagePreview]);
 
   if (isLoading) {
     return (
@@ -1204,6 +1254,43 @@ const EditEventPage = () => {
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               {imageError}
             </p>
+          </div>
+        )}
+        
+        {/* Image Thumbnails Row */}
+        {imagePreview.length > 0 && (
+          <div className="flex flex-wrap gap-2 my-6">
+            {imagePreview.map((img, index) => (
+              <div key={index} className="relative group">
+                <img
+                  src={img}
+                  alt={`Preview ${index + 1}`}
+                  className="w-20 h-20 object-cover rounded-lg border-2 border-gray-200 cursor-pointer hover:border-blue-500"
+                  onClick={() => setCurrentImageIndex(index)}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(index)}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+            
+            {/* Add More Images Button */}
+            {imagePreview.length < 5 && (
+              <label className="flex items-center justify-center w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500">
+                <Plus className="w-6 h-6 text-gray-400" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+              </label>
+            )}
           </div>
         )}
         
@@ -1772,79 +1859,48 @@ const EditEventPage = () => {
                           type="file"
                           multiple
                           accept="image/*"
-                          onChange={(e) => {
-                            const files = Array.from(e.target.files);
-                            if (files.length + existingEvidenceImages.length > 5) {
-                              toast.error('Chỉ được tải lên tối đa 5 hình ảnh bằng chứng');
-                              return;
-                            }
-                            setSelectedEvidenceImageUrls(prev => [...prev, ...files]);
-                            const previews = files.map(file => URL.createObjectURL(file));
-                            setEvidenceImagePreview(prev => [...prev, ...previews]);
-                          }}
+                          onChange={handleEvidenceImageChange}
                           className="hidden"
                           id="evidence-image-input"
                         />
                       </label>
                     </div>
 
-                    {(existingEvidenceImages.length > 0 || evidenceImagePreview.length > 0) && (
+                    {evidenceImagePreview.length > 0 && (
                       <div className="grid grid-cols-3 gap-2">
-                        {/* Display existing evidence images without duplication */}
-                        {existingEvidenceImages
-                          .filter(img => img !== null && img !== undefined && img !== '' && 
-                            typeof img === 'string' && img.trim() !== '' && 
-                            !img.includes('System.Collections.Generic.List'))
-                          .map((img, index) => (
-                            <div key={`existing-${index}`} className="relative group rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
-                              <img
-                                src={img}
-                                alt={`Evidence ${index + 1}`}
-                                className="w-full h-20 object-cover"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => removeExistingEvidenceImage(index)}
-                                className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
-                              >
-                                <X className="w-4 h-4 text-white" />
-                              </button>
-                            </div>
-                          ))
-                        }
-                        {/* Display new evidence image previews that are not already in existing images */}
-                        {evidenceImagePreview
-                          .filter(img => img !== null && img !== undefined && img !== '' && 
-                            typeof img === 'string' && img.trim() !== '' && 
-                            !img.includes('System.Collections.Generic.List') &&
-                            !existingEvidenceImages.includes(img))
-                          .map((img, index) => (
-                            <div key={`new-${index}`} className="relative group rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
-                              <img
-                                src={img}
-                                alt={`Evidence Preview ${index + 1}`}
-                                className="w-full h-20 object-cover"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => removeNewEvidenceImage(index)}
-                                className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
-                              >
-                                <X className="w-4 h-4 text-white" />
-                              </button>
-                            </div>
-                          ))
-                        }
+                        {evidenceImagePreview.filter(img => img !== null && img !== undefined && img !== '').map((img, index) => (
+                          <div key={index} className="relative group rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
+                            <img
+                              src={img}
+                              alt={`Evidence Preview ${index + 1}`}
+                              className="w-full h-20 object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeEvidenceImage(index)}
+                              className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                            >
+                              <X className="w-4 h-4 text-white" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     )}
+                    {/* Display error for evidence images if needed */}
+                    {hasValidated && errors.evidenceImages && (
+                      <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {errors.evidenceImages.message}
+                      </p>
+                    )}
+                    {/* Display custom evidence image error if needed */}
+                    {hasValidated && evidenceImageError && (
+                      <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {evidenceImageError}
+                      </p>
+                    )}
                   </div>
-                  {/* Display evidence image validation error */}
-                  {hasValidated && evidenceImageError && (
-                    <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" />
-                      {evidenceImageError}
-                    </p>
-                  )}
 
                   <div className="h-px bg-gradient-to-r from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-900"></div>
 
