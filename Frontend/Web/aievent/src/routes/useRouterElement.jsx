@@ -215,7 +215,6 @@ export default function useRouterElement() {
         },
         { path: "events", element: <div>Organizer Events Page</div> },
         { path: "my-events", element: <MyEventsPage /> },
-        // { path: "end-event-requests", element: <OrganizerEndEventRequestsPage /> }, // Đã tích hợp vào EventDetailPage
         { path: "event/:eventId", element: <EventDetailPage /> },
         { path: "event/:eventId/edit", element: <EditEventPage /> },
         {
