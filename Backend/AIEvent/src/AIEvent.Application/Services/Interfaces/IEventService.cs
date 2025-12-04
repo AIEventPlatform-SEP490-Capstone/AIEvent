@@ -26,5 +26,7 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result<BasePaginated<ListEventResponse>>> GetAllEventForStaff(Guid staffId, string? title, string? eventCategoryId,int pageNumber, int pageSize);
         Task<Result<BasePaginated<EventsLocationResponse>>> GetAllEventByRadius(Guid userId, int? radius, string? eventCategoryId,
                                                                                 double latitude, double longitude, int pageNumber, int pageSize);
-    }
+
+		Task<Result<BasePaginated<EventsResponse>>> GetEventByOrganizerAsync(Guid? userId, Guid? organizerId, string? search, int pageNumber = 1, int pageSize = 5);
+	}
 }

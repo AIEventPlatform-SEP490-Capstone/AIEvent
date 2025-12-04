@@ -1279,5 +1279,63 @@ namespace AIEvent.Application.Services.Implements
             return new BasePaginated<EventsLocationResponse>(result, totalCount, pageNumber, pageSize);
         }
 
-    }
+		public async Task<Result<BasePaginated<EventsResponse>>> GetEventByOrganizerAsync(Guid? userId,
+																		Guid? organizerId,
+																		string search,
+																		int pageNumber = 1,
+																		int pageSize = 5)
+		{
+			IQueryable<Event> events = _unitOfWork.EventRepository
+												.Query()
+												.AsNoTracking()
+												.Where(e => !e.DeletedAt.HasValue
+													&& e.Status == EventStatus.Approved
+													&& e.Publish == true);
+
+			if (!string.IsNullOrEmpty(search))
+				events = events
+								.Where(e => e.Title.ToLower().Contains(search.ToLower()));
+
+			int totalCount = await events.CountAsync();
+
+			var result = await events
+				.OrderByDescending(e => e.CreatedAt)
+				.Skip((pageNumber - 1) * pageSize)
+				.Take(pageSize)
+				.Select(e => new EventsResponse
+				{
+					EventId = e.Id,
+					EventCategoryName = e.EventCategory.CategoryName,
+					Title = e.Title,
+					StartTime = e.StartTime,
+					EndTime = e.EndTime,
+					Description = e.Description,
+					TotalTickets = e.TotalTickets,
+					SoldQuantity = e.SoldQuantity,
+					LocationName = e.LocationName,
+					Publish = e.Publish,
+					AverageRating = e.AverageRating,
+					TotalRatings = e.TotalRatings,
+					Status = e.Status,
+					Tags = e.EventTags.Select(t => new TagResponse
+					{
+						TagId = t.TagId.ToString(),
+						TagName = t.Tag.NameTag
+					}).ToList(),
+					TicketPrice = e.TicketTypes != null
+						? e.TicketTypes.Min(t => t.TicketPrice)
+						: 0,
+					IsFavorite = userId.HasValue && userId != Guid.Empty && e.FavoriteEvents.Any(fe => fe.UserId == userId),
+					FavoriteCount = e.FavoriteEvents.Count(),
+					SaleStartTime = e.SaleStartTime,
+					SaleEndTime = e.SaleEndTime,
+					ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
+						? new List<string>()
+						: e.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).ToList()
+				})
+				.ToListAsync();
+
+			return new BasePaginated<EventsResponse>(result, totalCount, pageNumber, pageSize);
+		}
+	}
 }
