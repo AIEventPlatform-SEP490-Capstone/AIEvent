@@ -31,6 +31,7 @@ import ProfileNavigation from '../../components/Profile/ProfileNavigation';
 import FriendsTab from '../../components/Profile/FriendsTab';
 import SettingsTab from '../../components/Profile/SettingsTab';
 import PaymentInfoTab from '../../components/Profile/PaymentInfoTab';
+import FavoriteEventsSection from '../../components/Profile/FavoriteEventsSection';
 import { useUserProfile } from '../../hooks/userProfile';
 import {
   ParticipationFrequency,
@@ -248,19 +249,7 @@ const UserProfilePage = () => {
         <div className="mt-4 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-visible">
           <div className="px-6 py-6 pb-8">
             {activeTab === 'likes' && (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold text-gray-900">Sự kiện yêu thích</h2>
-                  <Button 
-                    onClick={() => navigate('/favorites')}
-                    variant="outline"
-                    size="sm"
-                  >
-                    Xem tất cả
-                  </Button>
-                </div>
-                <p className="text-gray-600">Chưa có sự kiện yêu thích nào.</p>
-              </div>
+              <FavoriteEventsSection />
             )}
 
             {activeTab === 'friends' && (
