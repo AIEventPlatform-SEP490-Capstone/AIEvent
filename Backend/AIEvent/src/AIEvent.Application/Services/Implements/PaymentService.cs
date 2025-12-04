@@ -453,7 +453,7 @@ namespace AIEvent.Application.Services.Implements
                         }
                          
                         var platformFee = ev.TotalAmount * platformFeePercent + platformFixedFee;
-                        var payoutAmount = ev.TotalAmount - platformFee;
+                        var payoutAmount = (long)(ev.TotalAmount - platformFee);
 
                         if (payoutAmount < 0)
                         {
@@ -468,7 +468,7 @@ namespace AIEvent.Application.Services.Implements
                             {
                                 ReferenceId = referenceId,
                                 Amount = (long)payoutAmount,
-                                Description = $"Chuyển tiền doanh thu sự kiện '{ev.Title}' sau khi trừ {platformFee:N0} VND phí nền tảng AIEvent",
+                                Description = "Thanh toán sự kiện",
                                 ToBin = paymentInfor.BankBin,
                                 ToAccountNumber = paymentInfor.AccountNumber,
                                 Category = new List<string> { "Payout" }
