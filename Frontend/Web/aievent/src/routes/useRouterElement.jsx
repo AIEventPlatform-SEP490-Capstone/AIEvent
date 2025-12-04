@@ -29,6 +29,7 @@ import ApplicationStatusPage from "../pages/User/ApplicationStatusPage";
 import UserProfilePage from "../pages/User/UserProfilePage";
 import TagManagementPage from "../pages/Shared/TagManagementPage";
 import OrganizerProfilePage from "../pages/Organizer/OrganizerProfilePage";
+import OrganizerEventsPage from "../pages/Organizer/OrganizerEventsPage";
 import WalletDashboard from "../pages/Wallet/WalletDashboard";
 import BookingFlow from "../pages/User/BookingFlow";
 import MyTickets from "../pages/User/MyTickets";
@@ -128,6 +129,7 @@ export default function useRouterElement() {
           ),
         },
         { path: "event/:id", element: <EventDetailGuestPage /> },
+        { path: "organizer/:organizerId/events", element: <OrganizerEventsPage /> },
         {
           path: "booking/:id",
           element: (

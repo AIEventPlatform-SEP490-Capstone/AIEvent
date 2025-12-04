@@ -780,7 +780,21 @@ const EventDetailGuestPage = ({ previewData }) => {
 
             {/* Organizer */}
             {event.organizerEvent && (
-              <div className="bg-white rounded-xl p-8 border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all duration-300">
+              <div
+                onClick={() => {
+                  const orgId = event.organizerEvent.organizerId || event.organizerEvent.id || event.organizerId;
+                  if (orgId) navigate(`/organizer/${orgId}/events`);
+                }}
+                className="bg-white rounded-xl p-8 border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all duration-300 cursor-pointer"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    const orgId = event.organizerEvent.organizerId || event.organizerEvent.id || event.organizerId;
+                    if (orgId) navigate(`/organizer/${orgId}/events`);
+                  }
+                }}
+              >
                 <h2 className="text-xl font-bold text-foreground mb-6">Nhà tổ chức</h2>
                 <div className="flex items-start gap-4">
                   {event.organizerEvent.imgCompany ? (
@@ -797,6 +811,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                   <div>
                     <h3 className="font-semibold text-foreground text-lg">{event.organizerEvent.companyName || "Nhà tổ chức"}</h3>
                     <p className="text-muted-foreground mt-1">{event.organizerEvent.companyDescription || "Thông tin về nhà tổ chức chưa được cập nhật."}</p>
+                    <p className="text-xs text-primary mt-2 font-medium">Xem tất cả sự kiện của nhà tổ chức</p>
                   </div>
                 </div>
               </div>
