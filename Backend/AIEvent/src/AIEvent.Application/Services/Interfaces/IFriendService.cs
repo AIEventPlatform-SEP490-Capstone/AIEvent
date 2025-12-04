@@ -16,5 +16,6 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result<FriendProfileResponse>> GetFriendProfileAsync(Guid userId, string id);
         Task<Result> BlockFriendAsync(Guid userId, string id);
         Task<Result> UnBlockFriendAsync(Guid userId, string id);
+        Task<Result<List<FriendLocationResponse>>> GetFriendLocationAsync(Guid userId, int radius, double latitude, double longitude);
     }
 }

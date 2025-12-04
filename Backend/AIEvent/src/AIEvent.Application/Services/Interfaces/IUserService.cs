@@ -17,5 +17,6 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result<BasePaginated<AccountResponse>>> GetAllStaffAsync(int pageNumber, int pageSize, string? email, string? name, Guid userId);
         Task<Result> BanStaffAsync(Guid userId, string id);
         Task<Result> TurnOnOffLocationAsync(Guid userId, bool action);
+        //Task<Result> UpdateLocationAsync(Guid userId, double latitude, double longitude);
     }
 }

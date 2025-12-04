@@ -17,16 +17,14 @@ namespace AIEvent.Application.Services.Implements
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ITransactionHelper _transactionHelper;
-        private readonly IQrCodeService _qrCodeService;
         private readonly ITicketSignatureService _ticketSignatureService;
         private readonly IHangfireJobService _hangfireJobService;
 
-        public BookingService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper, IQrCodeService qrCodeService,
+        public BookingService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper,
             ITicketSignatureService ticketSignatureService,  IHangfireJobService hangfireJobService)
         {
             _unitOfWork = unitOfWork;
             _transactionHelper = transactionHelper;
-            _qrCodeService = qrCodeService;
             _ticketSignatureService = ticketSignatureService;
             _hangfireJobService = hangfireJobService;
         }
@@ -49,7 +47,7 @@ namespace AIEvent.Application.Services.Implements
             if (eventEntity == null)
                 return ErrorResponse.FailureResult("Event not found", ErrorCodes.NotFound);
 
-            if (eventEntity.OrganizerProfile?.UserId == null)
+            if (eventEntity.OrganizerProfile?.UserId == null || eventEntity.OrganizerProfile.IsDeleted)
                 return ErrorResponse.FailureResult("Organizer not found", ErrorCodes.NotFound);
 
             if (DateTime.UtcNow > eventEntity.SaleEndTime || DateTime.UtcNow < eventEntity.SaleStartTime)
