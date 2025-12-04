@@ -173,6 +173,12 @@ const EventDetailGuestPage = ({ previewData }) => {
       setShowAiRecommendations(!showAiRecommendations);
     }
   };
+  // Handle click on friend card - navigate to friend detail page
+  const handleFriendCardClick = (friendId) => {
+    // Navigate to friend detail page
+    navigate(`/friend/${friendId}`);
+  };
+
   // Add friend function
   const handleAddFriend = async (userId) => {
     try {
@@ -191,7 +197,6 @@ const EventDetailGuestPage = ({ previewData }) => {
       toast.error("Không thể gửi lời mời kết bạn");
     }
   };
-
   const { getFavoriteEvents, addFavoriteEvent, removeFavoriteEvent } =
     useFavoriteEvents();
 
@@ -913,9 +918,9 @@ const EventDetailGuestPage = ({ previewData }) => {
                         {aiRecommendedFriends.map((friend) => (
                           <div
                             key={friend.id}
-                            className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg bg-white"
-                          >
-                            <div className="relative flex-shrink-0">
+                            className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg bg-white cursor-pointer hover:bg-gray-50 transition-colors"
+                            onClick={() => handleFriendCardClick(friend.id)}
+                          >                            <div className="relative flex-shrink-0">
                               <img
                                 src={friend.image || userAvt || "/default-avatar.png"}
                                 alt={friend.friendName || friend.name}
@@ -951,7 +956,8 @@ const EventDetailGuestPage = ({ previewData }) => {
                                   : "Chưa tham gia sự kiện nào"}
                               </div>
 
-                              <div className="mt-2">
+                              {/* Stop propagation so clicking the button doesn't trigger card click */}
+                              <div className="mt-2" onClick={(e) => e.stopPropagation()}>
                                 {!friend.friendRequestSent ? (
                                   <Button
                                     size="sm"
@@ -971,8 +977,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                                     Đã gửi
                                   </Button>
                                 )}
-                              </div>
-                            </div>
+                              </div>                            </div>
                           </div>
                         ))}
                       </div>
