@@ -1,6 +1,7 @@
 ﻿using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Friend;
+using AIEvent.Application.DTOs.User;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
@@ -16,11 +17,13 @@ namespace AIEvent.Application.Services.Implements
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+        private readonly ICacheService _cacheService;
 
-        public FriendService(IUnitOfWork unitOfWork, IMapper mapper)
+        public FriendService(IUnitOfWork unitOfWork, IMapper mapper, ICacheService cacheService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _cacheService = cacheService;
         }
 
         public async Task<Result> AddFriendRequestAsync(Guid id, string userId)
@@ -420,31 +423,55 @@ namespace AIEvent.Application.Services.Implements
         {
             try
             {
-                var friends = await _unitOfWork.FriendshipRepository.Query(false)
-                    .Where(f => (f.SenderId == userId || f.ReceiverId == userId) && !f.IsDeleted && f.Status == FriendshipStatus.Accepted)        
+                var friendList = await _unitOfWork.FriendshipRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(f => (f.SenderId == userId || f.ReceiverId == userId)
+                                && !f.IsDeleted
+                                && f.Status == FriendshipStatus.Accepted)
                     .Select(f => f.SenderId == userId ? f.Receiver : f.Sender)
-                    .Where(u => u.IsTurnOnLocation == true)
-                    .Select(u => new FriendLocationResponse                       
+                    .Where(u => u.IsTurnOnLocation == true) 
+                    .Select(u => new
                     {
-                        FriendId = u.Id,
-                        FriendName = u.FullName!,
-                        Email = u.Email!,
-                        ImageUrl = u.AvatarImgUrl,
-                        Latitude = u.Latitude,
-                        Longitude = u.Longitude
+                        u.Id,
+                        u.FullName,
+                        u.Email,
+                        u.AvatarImgUrl
                     })
                     .ToListAsync();
 
-                double ToRad(double angle) => angle * Math.PI / 180.0;
+                if (!friendList.Any())
+                    return Result<List<FriendLocationResponse>>.Success(new List<FriendLocationResponse>());
+
+                var tasks = friendList.Select(async f =>
+                {
+                    var location = await _cacheService.GetAsync<UserLocationCache>($"user-location:{f.Id}");
+
+                    return location == null ? null : new FriendLocationResponse
+                    {
+                        FriendId = f.Id,
+                        FriendName = f.FullName!,
+                        Email = f.Email!,
+                        ImageUrl = f.AvatarImgUrl,
+                        Latitude = location.Latitude,
+                        Longitude = location.Longitude,
+                    };
+                });
+
+                var friendLocations = (await Task.WhenAll(tasks))
+                    .Where(x => x != null)
+                    .ToList()!;
+
+                const double R = 6371;
+                double ToRad(double x) => x * Math.PI / 180;
 
                 double latRad = ToRad(latitude);
                 double lonRad = ToRad(longitude);
-                const double R = 6371;
-                
-                var result = friends
+
+                var result = friendLocations
                     .Select(f =>
                     {
-                        double dLat = ToRad(f.Latitude - latitude);
+                        double dLat = ToRad(f!.Latitude - latitude);
                         double dLon = ToRad(f.Longitude - longitude);
 
                         double a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
@@ -454,9 +481,7 @@ namespace AIEvent.Application.Services.Implements
                         double distance = 2 * R * Math.Asin(Math.Sqrt(a));
                         return new { Friend = f, Distance = distance };
                     })
-                    .Where(x => x.Distance <= radius
-                                && x.Friend.Latitude != 0
-                                && x.Friend.Longitude != 0)
+                    .Where(x => x.Distance <= radius)
                     .Select(x => x.Friend)
                     .ToList();
 

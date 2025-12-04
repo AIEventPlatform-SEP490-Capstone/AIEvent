@@ -1,7 +1,8 @@
 ﻿using AIEvent.API.Extensions;
 using AIEvent.API.Middleware;
 using AIEvent.Application.Constants;
-using AIEvent.Application.DTOs.Common; 
+using AIEvent.Application.DTOs.Common;
+using AIEvent.Application.Helpers;
 using AIEvent.Infrastructure.Hubs;
 using Hangfire;
 using Hangfire.SqlServer;
@@ -134,6 +135,7 @@ namespace AIEvent.API
 
             app.MapControllers();
             app.MapHub<NotificationHub>("/hubs/notification");
+            app.MapHub<LocationHub>("/hubs/location");
             app.Run();
         }
     }
