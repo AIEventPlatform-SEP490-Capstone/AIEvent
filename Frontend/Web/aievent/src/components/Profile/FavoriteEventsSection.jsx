@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -39,12 +39,10 @@ const FavoriteEventsSection = () => {
   const safeFavoriteEvents = Array.isArray(favoriteEvents) ? favoriteEvents :
     (favoriteEvents && Array.isArray(favoriteEvents.items) ? favoriteEvents.items : []);
 
+  // Fetch categories once on component mount
   useEffect(() => {
-    // Only fetch favorite events if user is authenticated
-    if (isAuthenticated) {
-      getFavoriteEvents();
-    }
-  }, [isAuthenticated]);
+    refreshCategories();
+  }, []);
 
   // Fetch categories once on component mount
   useEffect(() => {
@@ -164,63 +162,61 @@ const FavoriteEventsSection = () => {
 
   const locationFilters = getLocationFilters();
 
-  // Filter events based on all filters
-  const filteredEvents = safeFavoriteEvents.filter(event => {
-    const matchesSearch = !searchQuery ||
-      event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchQuery.toLowerCase());
+  // Create filter object with useMemo to prevent unnecessary re-renders
+  const filters = useMemo(() => ({
+    searchQuery,
+    selectedCategory,
+    priceFilter,
+    locationFilter,
+    dateFilter
+  }), [searchQuery, selectedCategory, priceFilter, locationFilter, dateFilter]);
 
-    const matchesCategory = selectedCategory === "all" ||
-      event.eventCategoryName === selectedCategory;
-
-    // Price filter
-    let matchesPrice = true;
-    if (priceFilter !== "all") {
-      if (priceFilter === "free") {
-        matchesPrice = event.ticketType === 1 || event.ticketType === "free" || event.ticketPrice === 0;
-      } else if (priceFilter === "paid") {
-        matchesPrice = event.ticketType !== 1 && event.ticketType !== "free" && event.ticketPrice > 0;
+  // Fetch favorite events when filters change
+  useEffect(() => {
+    let isMounted = true;
+    
+    const fetchFavoriteEventsData = async () => {
+      try {
+        const params = {
+          pageNumber: 1,
+          pageSize: 50
+        };
+        
+        // Add search query if present
+        if (filters.searchQuery) {
+          params.search = filters.searchQuery;
+        }
+        
+        // Add category filter if not "all"
+        if (filters.selectedCategory !== "all") {
+          params.eventCategoryId = filters.selectedCategory;
+        }
+        
+        const response = await getFavoriteEvents(params);
+        
+        // Only update state if component is still mounted
+        if (isMounted) {
+          // Update the favorite events in Redux store
+        }
+      } catch (error) {
+        console.error("Error fetching favorite events:", error);
       }
-    }
+    };
+    
+    // Debounce the API call
+    const timeoutId = setTimeout(() => {
+      fetchFavoriteEventsData();
+    }, 300);
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
+  }, [filters]);
 
-    // Location filter
-    let matchesLocation = true;
-    if (locationFilter !== "all") {
-      matchesLocation = event.locationName === locationFilter || event.location === locationFilter || event.district === locationFilter;
-    }
-
-    // Date filter - simplified for client-side filtering
-    let matchesDate = true;
-    if (dateFilter !== "all") {
-      const eventDate = new Date(event.startTime || event.date);
-      const today = new Date();
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      switch (dateFilter) {
-        case "today":
-          matchesDate = eventDate.toDateString() === today.toDateString();
-          break;
-        case "tomorrow":
-          matchesDate = eventDate.toDateString() === tomorrow.toDateString();
-          break;
-        case "this_week":
-          const firstDayOfWeek = new Date(today);
-          firstDayOfWeek.setDate(today.getDate() - today.getDay());
-          const lastDayOfWeek = new Date(firstDayOfWeek);
-          lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6);
-          matchesDate = eventDate >= firstDayOfWeek && eventDate <= lastDayOfWeek;
-          break;
-        case "this_month":
-          matchesDate = eventDate.getMonth() === today.getMonth() && eventDate.getFullYear() === today.getFullYear();
-          break;
-        default:
-          matchesDate = true;
-      }
-    }
-
-    return matchesSearch && matchesCategory && matchesPrice && matchesLocation && matchesDate;
-  });
+  // For display purposes, we'll use the already filtered events from Redux
+  const filteredEvents = safeFavoriteEvents;
 
   // Show loading spinner while checking authentication
   if (!isAuthenticated) {
@@ -292,23 +288,6 @@ const FavoriteEventsSection = () => {
                     onClick={() => setSelectedCategory(category.id)}
                   >
                     {category.name}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Price Filter */}
-            <div className="space-y-2">
-              <span className="text-sm text-muted-foreground">Giá vé:</span>
-              <div className="flex gap-2">
-                {priceFilters.map((filter) => (
-                  <Button
-                    key={filter.value}
-                    variant={priceFilter === filter.value ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setPriceFilter(filter.value)}
-                  >
-                    {filter.label}
                   </Button>
                 ))}
               </div>
