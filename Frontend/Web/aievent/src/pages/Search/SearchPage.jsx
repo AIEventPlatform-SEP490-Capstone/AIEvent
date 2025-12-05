@@ -21,6 +21,7 @@ import { useEvents } from "../../hooks/useEvents";
 import { useCategories } from "../../hooks/useCategories";
 import { useFavoriteEvents } from "../../hooks/useFavoriteEvents";
 import { useSelector } from "react-redux";
+import { SaleStatusBadge } from "../../components/HomePage/SaleStatusBadge";
 
 export default function SearchPage() {
   const navigate = useNavigate();
@@ -495,13 +496,16 @@ export default function SearchPage() {
                 {/* Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0" />
                 
-                {/* Free Badge
-                {(event.ticketType === 1 || event.ticketPrice === 0) && (
-                  <Badge className="absolute top-4 left-4 bg-success text-success-foreground shadow-lg">
-                    <Sparkles className="w-3 h-3 mr-1" />
-                    Miễn phí
-                  </Badge>
-                )} */}
+                {/* Sale Status Badge - Top Left */}
+                {event.saleStartTime && event.saleEndTime && (
+                  <div className="absolute top-3 left-3">
+                    <SaleStatusBadge 
+                      saleStartTime={event.saleStartTime} 
+                      saleEndTime={event.saleEndTime}
+                      onImage={true}
+                    />
+                  </div>
+                )}
                 
                 {/* Category Badge at bottom */}
                 <Badge 

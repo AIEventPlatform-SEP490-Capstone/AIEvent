@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { useFavoriteEvents } from "../../hooks/useFavoriteEvents";
 import { useSelector } from "react-redux";
+import { SaleStatusBadge } from "./SaleStatusBadge";
 
 const categories = [
   { id: "all", name: "Tất cả", icon: Sparkles },
@@ -319,6 +320,17 @@ export function EventDiscovery({
                           </div>
                         )}
 
+                        {/* Sale Status Badge */}
+                        {event.saleStartTime && event.saleEndTime && (
+                          <div className="mb-4">
+                            <SaleStatusBadge 
+                              saleStartTime={event.saleStartTime} 
+                              saleEndTime={event.saleEndTime}
+                              onImage={false}
+                            />
+                          </div>
+                        )}
+
                         <div className="space-y-3">
                           <div className="flex items-center text-gray-600 text-sm">
                             <Calendar className="w-4 h-4 mr-2 text-blue-500" />
@@ -548,6 +560,18 @@ export function EventDiscovery({
                   
                   {/* Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0" />      
+                  
+                  {/* Sale Status Badge - Top Left */}
+                  {event.saleStartTime && event.saleEndTime && (
+                    <div className="absolute top-3 left-3">
+                      <SaleStatusBadge 
+                        saleStartTime={event.saleStartTime} 
+                        saleEndTime={event.saleEndTime}
+                        onImage={true}
+                      />
+                    </div>
+                  )}
+                  
                   {/* Category Badge at bottom */}
                   <Badge 
                     variant="secondary" 
