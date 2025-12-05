@@ -159,6 +159,21 @@ const CreateEventPage = () => {
   // Add state for ticket validation errors
   const [ticketErrors, setTicketErrors] = useState({});
   
+  // Add state for field validation errors
+  const [fieldErrors, setFieldErrors] = useState({
+    title: '',
+    description: '',
+    detailedDescription: '',
+    locationName: '',
+    address: '',
+    district: '',
+    eventCategoryId: '',
+    startTime: '',
+    endTime: '',
+    saleStartTime: '',
+    saleEndTime: ''
+  });
+  
   // Add state for editing modes
   const [editingField, setEditingField] = useState(null);
   const [tempValue, setTempValue] = useState('');
@@ -599,6 +614,102 @@ const CreateEventPage = () => {
     const ticketQuantity = parseInt(ticket.ticketQuantity);
     if (isNaN(ticketQuantity) || ticketQuantity < 20 || ticketQuantity > 100000) {
       errors.ticketQuantity = 'Số lượng vé phải từ 20 đến 100.000';
+    }
+    
+    return errors;
+  };
+
+  // Validate basic event information
+  const validateBasicInfo = (data) => {
+    const errors = {};
+    
+    if (!data.title || data.title.trim() === '') {
+      errors.title = 'Tiêu đề sự kiện là bắt buộc';
+    } else if (data.title.length > 200) {
+      errors.title = 'Tiêu đề không được vượt quá 200 ký tự';
+    }
+    
+    if (!data.description || data.description.trim() === '') {
+      errors.description = 'Mô tả sự kiện là bắt buộc';
+    } else if (data.description.length > 1000) {
+      errors.description = 'Mô tả không được vượt quá 1000 ký tự';
+    }
+    
+    if (!data.detailedDescription || data.detailedDescription.trim() === '') {
+      errors.detailedDescription = 'Mô tả chi tiết sự kiện là bắt buộc';
+    } else if (stripHtml(data.detailedDescription).length > 1500) {
+      errors.detailedDescription = 'Mô tả chi tiết không được vượt quá 1500 ký tự';
+    }
+    
+    if (!data.eventCategoryId || data.eventCategoryId.trim() === '') {
+      errors.eventCategoryId = 'Danh mục sự kiện là bắt buộc';
+    }
+    
+    return errors;
+  };
+
+  // Validate location information
+  const validateLocation = (data) => {
+    const errors = {};
+    
+    if (!data.locationName || data.locationName.trim() === '') {
+      errors.locationName = 'Địa điểm là bắt buộc';
+    }
+    
+    if (!data.address || data.address.trim() === '') {
+      errors.address = 'Địa chỉ chi tiết là bắt buộc';
+    }
+    
+    if (!data.district || data.district.trim() === '') {
+      errors.district = 'Quận/Huyện là bắt buộc';
+    }
+    
+    return errors;
+  };
+
+  // Validate datetime information
+  const validateDatetimes = (data) => {
+    const errors = {};
+    
+    if (!data.startTime || data.startTime.trim() === '') {
+      errors.startTime = 'Thời gian bắt đầu là bắt buộc';
+    }
+    
+    if (!data.endTime || data.endTime.trim() === '') {
+      errors.endTime = 'Thời gian kết thúc là bắt buộc';
+    }
+    
+    if (!data.saleStartTime || data.saleStartTime.trim() === '') {
+      errors.saleStartTime = 'Thời gian bắt đầu bán vé là bắt buộc';
+    }
+    
+    if (!data.saleEndTime || data.saleEndTime.trim() === '') {
+      errors.saleEndTime = 'Thời gian kết thúc bán vé là bắt buộc';
+    }
+    
+    // Check datetime relationships
+    if (data.startTime && data.endTime) {
+      const start = new Date(data.startTime);
+      const end = new Date(data.endTime);
+      if (start >= end) {
+        errors.endTime = 'Thời gian kết thúc phải sau thời gian bắt đầu';
+      }
+    }
+    
+    if (data.saleStartTime && data.saleEndTime) {
+      const saleStart = new Date(data.saleStartTime);
+      const saleEnd = new Date(data.saleEndTime);
+      if (saleStart >= saleEnd) {
+        errors.saleEndTime = 'Thời gian kết thúc bán vé phải sau thời gian bắt đầu';
+      }
+    }
+    
+    if (data.saleStartTime && data.startTime) {
+      const saleStart = new Date(data.saleStartTime);
+      const eventStart = new Date(data.startTime);
+      if (saleStart >= eventStart) {
+        errors.saleStartTime = 'Thời gian bắt đầu bán vé phải trước thời gian bắt đầu sự kiện';
+      }
     }
     
     return errors;
@@ -1217,6 +1328,58 @@ const CreateEventPage = () => {
   // Save edited field
   const saveEditing = () => {
     if (editingField) {
+      // Validate the field before saving
+      let error = '';
+      
+      if (editingField === 'title') {
+        if (!tempValue || tempValue.trim() === '') {
+          error = 'Tiêu đề sự kiện là bắt buộc';
+        } else if (tempValue.length > 200) {
+          error = 'Tiêu đề không được vượt quá 200 ký tự';
+        }
+      } else if (editingField === 'description') {
+        if (!tempValue || tempValue.trim() === '') {
+          error = 'Mô tả sự kiện là bắt buộc';
+        } else if (tempValue.length > 1000) {
+          error = 'Mô tả không được vượt quá 1000 ký tự';
+        }
+      } else if (editingField === 'detailedDescription') {
+        if (!tempValue || tempValue.trim() === '') {
+          error = 'Mô tả chi tiết sự kiện là bắt buộc';
+        } else if (stripHtml(tempValue).length > 1500) {
+          error = 'Mô tả chi tiết không được vượt quá 1500 ký tự';
+        }
+      } else if (editingField === 'locationName') {
+        if (!tempValue || tempValue.trim() === '') {
+          error = 'Địa điểm là bắt buộc';
+        }
+      } else if (editingField === 'address') {
+        if (!tempValue || tempValue.trim() === '') {
+          error = 'Địa chỉ chi tiết là bắt buộc';
+        }
+      } else if (editingField === 'district') {
+        if (!tempValue || tempValue.trim() === '') {
+          error = 'Quận/Huyện là bắt buộc';
+        }
+      } else if (editingField === 'linkRef') {
+        // linkRef is optional, no validation needed
+      }
+      
+      if (error) {
+        // Show error
+        setFieldErrors(prev => ({
+          ...prev,
+          [editingField]: error
+        }));
+        return;
+      }
+      
+      // Clear error and save
+      setFieldErrors(prev => ({
+        ...prev,
+        [editingField]: ''
+      }));
+      
       setValue(editingField, tempValue);
       setEditingField(null);
       setTempValue('');
@@ -1580,10 +1743,10 @@ const CreateEventPage = () => {
                   <Pencil className="w-4 h-4 inline-block ml-2 text-gray-400" />
                 </h1>
               )}
-              {hasValidated && errors.title && (
+              {(fieldErrors.title || (hasValidated && errors.title)) && (
                 <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" />
-                  {errors.title.message}
+                  {fieldErrors.title || errors.title?.message}
                 </p>
               )}
               
@@ -1607,10 +1770,10 @@ const CreateEventPage = () => {
                   <Pencil className="w-4 h-4 inline-block ml-2 text-gray-400" />
                 </p>
               )}
-              {hasValidated && errors.description && (
+              {(fieldErrors.description || (hasValidated && errors.description)) && (
                 <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" />
-                  {errors.description.message}
+                  {fieldErrors.description || errors.description?.message}
                 </p>
               )}
             </div>
@@ -2027,9 +2190,16 @@ const CreateEventPage = () => {
                       <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Quận/Huyện</Label>
                       <Select 
                         value={watch('district')} 
-                        onValueChange={(value) => setValue('district', value)}
+                        onValueChange={(value) => {
+                          setValue('district', value);
+                          // Clear error when user changes the value
+                          setFieldErrors(prev => ({
+                            ...prev,
+                            district: ''
+                          }));
+                        }}
                       >
-                        <SelectTrigger className="rounded-lg h-9 border-gray-200 dark:border-gray-800">
+                        <SelectTrigger className={`rounded-lg h-9 border-gray-200 dark:border-gray-800 ${fieldErrors.district ? 'border-red-500' : ''}`}>
                           <SelectValue placeholder="Chọn quận/huyện" />
                         </SelectTrigger>
                         <SelectContent>
@@ -2040,10 +2210,10 @@ const CreateEventPage = () => {
                           ))}
                         </SelectContent>
                       </Select>
-                      {errors.district && (
+                      {(fieldErrors.district || (errors.district && hasValidated)) && (
                         <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
                           <AlertCircle className="w-3 h-3" />
-                          {errors.district.message}
+                          {fieldErrors.district || errors.district?.message}
                         </p>
                       )}
                     </div>
@@ -2055,13 +2225,32 @@ const CreateEventPage = () => {
                       <Input
                         placeholder="Ví dụ: Trung tâm hội nghị thành phố"
                         value={watch('locationName') || ''}
-                        onChange={(e) => setValue('locationName', e.target.value)}
-                        className="rounded-lg h-9 border-gray-200 dark:border-gray-800 focus:border-blue-400"
+                        onChange={(e) => {
+                          setValue('locationName', e.target.value);
+                          // Clear error when user changes the value
+                          setFieldErrors(prev => ({
+                            ...prev,
+                            locationName: ''
+                          }));
+                        }}
+                        onBlur={() => {
+                          // Validate on blur
+                          const value = watch('locationName');
+                          let error = '';
+                          if (!value || value.trim() === '') {
+                            error = 'Địa điểm là bắt buộc';
+                          }
+                          setFieldErrors(prev => ({
+                            ...prev,
+                            locationName: error
+                          }));
+                        }}
+                        className={`rounded-lg h-9 border-gray-200 dark:border-gray-800 focus:border-blue-400 ${fieldErrors.locationName ? 'border-red-500' : ''}`}
                       />
-                      {errors.locationName && (
+                      {(fieldErrors.locationName || (errors.locationName && hasValidated)) && (
                         <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
                           <AlertCircle className="w-3 h-3" />
-                          {errors.locationName.message}
+                          {fieldErrors.locationName || errors.locationName?.message}
                         </p>
                       )}
                     </div>
@@ -2072,13 +2261,32 @@ const CreateEventPage = () => {
                         placeholder="Nhập địa chỉ đầy đủ"
                         rows={2}
                         value={watch('address') || ''}
-                        onChange={(e) => setValue('address', e.target.value)}
-                        className="rounded-lg border-gray-200 dark:border-gray-800 resize-none focus:border-blue-400 text-sm"
+                        onChange={(e) => {
+                          setValue('address', e.target.value);
+                          // Clear error when user changes the value
+                          setFieldErrors(prev => ({
+                            ...prev,
+                            address: ''
+                          }));
+                        }}
+                        onBlur={() => {
+                          // Validate on blur
+                          const value = watch('address');
+                          let error = '';
+                          if (!value || value.trim() === '') {
+                            error = 'Địa chỉ chi tiết là bắt buộc';
+                          }
+                          setFieldErrors(prev => ({
+                            ...prev,
+                            address: error
+                          }));
+                        }}
+                        className={`rounded-lg border-gray-200 dark:border-gray-800 resize-none focus:border-blue-400 text-sm ${fieldErrors.address ? 'border-red-500' : ''}`}
                       />
-                      {errors.address && (
+                      {(fieldErrors.address || (errors.address && hasValidated)) && (
                         <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
                           <AlertCircle className="w-3 h-3" />
-                          {errors.address.message}
+                          {fieldErrors.address || errors.address?.message}
                         </p>
                       )}
                     </div>
