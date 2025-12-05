@@ -36,6 +36,9 @@ const ScreenNames = {
   // Check In Confirmation Screen
   CHECK_IN_CONFIRMATION_SCREEN: 'CheckInConfirmationScreen',
   
+  // AI Chat Screen
+  AI_CHAT_SCREEN: 'AIChatScreen',
+  
   // Navigation
   TAB_NAVIGATOR: 'TabNavigator',
   AUTH_NAVIGATOR: 'AuthNavigator',

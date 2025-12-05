@@ -6,6 +6,7 @@ import WalletService from './WalletService';
 import BookingService from './BookingService';
 import FriendService from './FriendService';
 import RatingService from './RatingService';
+import AIChatService from './AIChatService';
 
 export const walletAPI = {
   getUserWallet: async () => {
@@ -53,6 +54,7 @@ export {
   BookingService,
   FriendService,
   RatingService,
+  AIChatService,
 };
 
 export default {
@@ -64,4 +66,5 @@ export default {
   BookingService,
   FriendService,
   RatingService,
+  AIChatService,
 };

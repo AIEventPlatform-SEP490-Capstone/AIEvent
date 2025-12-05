@@ -157,6 +157,15 @@ export const friendAPI = {
     const response = await fetcher.patch(`/friend/${friendId}/unblock`);
     return response.data;
   },
+
+  /**
+   * Lấy danh sách bạn bè và tọa độ của họ để hiển thị trên map
+   * @returns {Promise} Response từ API chứa danh sách bạn bè với latitude và longitude
+   */
+  getFriendsLocation: async () => {
+    const response = await fetcher.get("/friend/location");
+    return response.data?.data || response.data;
+  },
 };
 
 // Get AI recommended friends

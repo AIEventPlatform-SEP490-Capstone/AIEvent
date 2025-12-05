@@ -22,13 +22,18 @@ import {
   GripVertical,
   Maximize2,
   Minimize2,
-  Radius
+  Radius,
+  Share2,
+  User
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { eventAPI } from "../../api/eventAPI";
 import { eventCategoryAPI } from "../../api/eventCategoryAPI";
+import { friendAPI } from "../../api/friendAPI";
+import { userAPI } from "../../api/userAPI";
+import { useLocationSharing } from "../../hooks/useLocationSharing";
 import locationInfoIcon from "../../assets/location-info.png";
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -88,6 +93,7 @@ function NearbyEventsPage() {
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
   const userMarkerRef = useRef(null);
+  const friendMarkersRef = useRef([]);
 
   const [events, setEvents] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
@@ -109,6 +115,12 @@ function NearbyEventsPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const dragRef = useRef(null);
+  
+  // Friends location state
+  const [friends, setFriends] = useState([]);
+  const [loadingFriends, setLoadingFriends] = useState(false);
+  const [isLocationSharingEnabled, setIsLocationSharingEnabled] = useState(false);
+  const [togglingLocationSharing, setTogglingLocationSharing] = useState(false);
 
   // Calculate default position on mount (right side)
   useEffect(() => {
@@ -197,6 +209,101 @@ function NearbyEventsPage() {
     };
   }, []);
 
+  // Add friend markers to map
+  const addFriendMarkers = () => {
+    if (!mapInstanceRef.current || !mapReady) return;
+
+    // Clear existing friend markers
+    friendMarkersRef.current.forEach(marker => {
+      if (marker && mapInstanceRef.current) {
+        mapInstanceRef.current.removeLayer(marker);
+      }
+    });
+    friendMarkersRef.current = [];
+
+    // Add markers for each friend
+    friends.forEach((friend) => {
+      // Check if friend has valid coordinates
+      if (friend.latitude !== null && friend.latitude !== undefined &&
+        friend.longitude !== null && friend.longitude !== undefined &&
+        friend.latitude !== 0 && friend.longitude !== 0) {
+        
+        const friendIcon = L.divIcon({
+          className: 'friend-marker',
+          html: `<div style="
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 3px 10px rgba(139, 92, 246, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+          ">
+            ${friend.imageUrl ? `
+              <img src="${friend.imageUrl}" 
+                style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" 
+                alt="${friend.friendName || 'Friend'}"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+              />
+              <div style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border-radius: 50%; color: white; font-weight: bold; font-size: 10px;">
+                ${(friend.friendName || 'F').charAt(0).toUpperCase()}
+              </div>
+            ` : `
+              <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 10px;">
+                ${(friend.friendName || 'F').charAt(0).toUpperCase()}
+              </div>
+            `}
+          </div>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+        });
+
+        // Calculate distance if user location is available
+        let distanceText = '';
+        if (userLocation) {
+          const distance = calculateDistance(
+            userLocation.lat,
+            userLocation.lng,
+            friend.latitude,
+            friend.longitude
+          );
+          distanceText = `<p style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">
+            <strong style="color: #374151;">${createIconSVGString('Ruler', 14, '#6b7280')} Khoảng cách:</strong> <span style="color: #8b5cf6; font-weight: 600;">${distance.toFixed(1)} km</span>
+          </p>`;
+        }
+
+        const marker = L.marker([friend.latitude, friend.longitude], { icon: friendIcon })
+          .addTo(mapInstanceRef.current)
+          .bindPopup(`
+            <div style="min-width: 200px; padding: 4px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                ${friend.imageUrl ? `
+                  <img src="${friend.imageUrl}" 
+                    style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" 
+                    alt="${friend.friendName || 'Friend'}"
+                    onerror="this.style.display='none';"
+                  />
+                ` : `
+                  <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                    ${(friend.friendName || 'F').charAt(0).toUpperCase()}
+                  </div>
+                `}
+                <div>
+                  <h3 style="font-weight: 700; margin: 0; font-size: 14px; color: #1f2937;">${friend.friendName || 'Bạn bè'}</h3>
+                  ${friend.email ? `<p style="font-size: 11px; color: #6b7280; margin: 2px 0 0 0;">${friend.email}</p>` : ''}
+                </div>
+              </div>
+              ${distanceText}
+            </div>
+          `);
+        friendMarkersRef.current.push(marker);
+      }
+    });
+  };
+
   // Add event markers to map
   const addEventMarkers = () => {
     if (!mapInstanceRef.current || !mapReady) return;
@@ -266,9 +373,9 @@ function NearbyEventsPage() {
       }
     });
 
-    // Fit map to show all markers (include user location if available)
-    if (markersRef.current.length > 0) {
-      const group = new L.featureGroup(markersRef.current);
+    // Fit map to show all markers (include user location and friends if available)
+    if (markersRef.current.length > 0 || friendMarkersRef.current.length > 0) {
+      const group = new L.featureGroup([...markersRef.current, ...friendMarkersRef.current]);
       if (userMarkerRef.current) {
         group.addLayer(userMarkerRef.current);
       }
@@ -276,12 +383,13 @@ function NearbyEventsPage() {
     }
   };
 
-  // Update markers when events change
+  // Update markers when events or friends change
   useEffect(() => {
     if (mapReady) {
       addEventMarkers();
+      addFriendMarkers();
     }
-  }, [events, mapReady]);
+  }, [events, friends, mapReady]);
 
   // Fetch events from API
   const fetchNearbyEvents = useCallback(async () => {
@@ -366,6 +474,85 @@ function NearbyEventsPage() {
       fetchNearbyEvents();
     }
   }, [userLocation, radius, fetchNearbyEvents]);
+
+  // Fetch friends' locations
+  const fetchFriendsLocation = useCallback(async () => {
+    setLoadingFriends(true);
+    try {
+      const response = await friendAPI.getFriendsLocation();
+      const friendsList = Array.isArray(response) ? response : (response?.data || []);
+      setFriends(friendsList);
+    } catch (error) {
+      console.error('Error fetching friends location:', error);
+      // Không hiển thị lỗi nếu không có bạn bè chia sẻ vị trí
+    } finally {
+      setLoadingFriends(false);
+    }
+  }, []);
+
+  // Toggle location sharing
+  const handleToggleLocationSharing = async (enabled) => {
+    setTogglingLocationSharing(true);
+    try {
+      await userAPI.toggleLocationSharing(enabled);
+      setIsLocationSharingEnabled(enabled);
+      if (enabled) {
+        // Fetch friends when enabling location sharing
+        fetchFriendsLocation();
+      } else {
+        // Clear friends when disabling
+        setFriends([]);
+      }
+    } catch (error) {
+      console.error('Error toggling location sharing:', error);
+      setLocationError('Không thể thay đổi cài đặt chia sẻ vị trí');
+    } finally {
+      setTogglingLocationSharing(false);
+    }
+  };
+
+  // Handle location updates from SignalR
+  const handleLocationUpdate = useCallback((data) => {
+    // data có thể là location update của bạn bè
+    // Cập nhật vị trí của bạn bè trong danh sách
+    if (data && data.friendId) {
+      setFriends(prevFriends => {
+        const updatedFriends = [...prevFriends];
+        const friendIndex = updatedFriends.findIndex(f => f.friendId === data.friendId);
+        if (friendIndex >= 0) {
+          updatedFriends[friendIndex] = {
+            ...updatedFriends[friendIndex],
+            latitude: data.latitude,
+            longitude: data.longitude
+          };
+        }
+        return updatedFriends;
+      });
+    }
+  }, []);
+
+  // Setup SignalR for location sharing
+  const { updateLocation: updateLocationViaSignalR } = useLocationSharing(
+    handleLocationUpdate,
+    isLocationSharingEnabled && userLocation !== null
+  );
+
+  // Fetch friends location when location sharing is enabled
+  useEffect(() => {
+    if (isLocationSharingEnabled) {
+      fetchFriendsLocation();
+      // Refresh friends location periodically
+      const interval = setInterval(fetchFriendsLocation, 60000); // Every minute
+      return () => clearInterval(interval);
+    }
+  }, [isLocationSharingEnabled, fetchFriendsLocation]);
+
+  // Update location via SignalR when user location changes and sharing is enabled
+  useEffect(() => {
+    if (isLocationSharingEnabled && userLocation && updateLocationViaSignalR) {
+      updateLocationViaSignalR(userLocation.lat, userLocation.lng);
+    }
+  }, [userLocation, isLocationSharingEnabled, updateLocationViaSignalR]);
 
   // Add user location marker
   useEffect(() => {
@@ -526,8 +713,14 @@ function NearbyEventsPage() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        setUserLocation({ lat: latitude, lng: longitude });
+        const newLocation = { lat: latitude, lng: longitude };
+        setUserLocation(newLocation);
         setLoadingLocation(false);
+        
+        // Update location via SignalR if sharing is enabled
+        if (isLocationSharingEnabled && updateLocationViaSignalR) {
+          updateLocationViaSignalR(latitude, longitude);
+        }
       },
       (error) => {
         console.error('Geolocation error:', error);
@@ -822,6 +1015,43 @@ function NearbyEventsPage() {
                       </Button>
                     ))}
                   </div>
+                </div>
+                
+                {/* Location Sharing Toggle */}
+                <div className="pt-2 border-t border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Share2 className="w-4 h-4 text-gray-600" />
+                      <Label className="text-xs font-medium text-gray-700">
+                        Chia sẻ vị trí
+                      </Label>
+                    </div>
+                    <Button
+                      type="button"
+                      variant={isLocationSharingEnabled ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleToggleLocationSharing(!isLocationSharingEnabled)}
+                      disabled={togglingLocationSharing || !userLocation}
+                      className={`text-xs ${isLocationSharingEnabled
+                        ? "bg-purple-600 hover:bg-purple-700 text-white"
+                        : "bg-white hover:bg-gray-50"
+                        }`}
+                    >
+                      {togglingLocationSharing ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <>
+                          {isLocationSharingEnabled ? "Đang bật" : "Bật"}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  {isLocationSharingEnabled && friends.length > 0 && (
+                    <p className="text-xs text-purple-600 mt-1 flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      {friends.length} bạn bè đang chia sẻ vị trí
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
