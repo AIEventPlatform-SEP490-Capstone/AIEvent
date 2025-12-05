@@ -375,8 +375,20 @@ const CreateEventPage = () => {
     
     // Handle images - set image previews for cloning
     if (cloneData.imgListEvent && cloneData.imgListEvent.length > 0) {
+      // Filter out null, undefined, empty strings, and invalid URLs
+      const validImages = cloneData.imgListEvent.filter(img => 
+        img !== null && 
+        img !== undefined && 
+        img !== '' && 
+        typeof img === 'string' && 
+        img.trim() !== '' && 
+        !img.includes('System.Collections.Generic.List') &&
+        img.startsWith('http')
+      );
       // Set existing images as previews
-      setImagePreview([...cloneData.imgListEvent]);
+      if (validImages.length > 0) {
+        setImagePreview(validImages);
+      }
     }
     
     // Set selected category
@@ -441,16 +453,36 @@ const CreateEventPage = () => {
         
         // Load existing images
         if (event.imgListEvent && event.imgListEvent.length > 0) {
-          // Filter out any null or undefined values
-          const validImages = event.imgListEvent.filter(img => img !== null && img !== undefined && img !== '');
-          setImagePreview(validImages);
+          // Filter out null, undefined, empty strings, and invalid URLs
+          const validImages = event.imgListEvent.filter(img => 
+            img !== null && 
+            img !== undefined && 
+            img !== '' && 
+            typeof img === 'string' && 
+            img.trim() !== '' && 
+            !img.includes('System.Collections.Generic.List') &&
+            img.startsWith('http')
+          );
+          if (validImages.length > 0) {
+            setImagePreview(validImages);
+          }
         }
         
         // Load existing evidence images
         if (event.imgListEvidences && event.imgListEvidences.length > 0) {
-          // Filter out any null or undefined values
-          const validEvidenceImages = event.imgListEvidences.filter(img => img !== null && img !== undefined && img !== '');
-          setEvidenceImagePreview(validEvidenceImages);
+          // Filter out null, undefined, empty strings, and invalid URLs
+          const validEvidenceImages = event.imgListEvidences.filter(img => 
+            img !== null && 
+            img !== undefined && 
+            img !== '' && 
+            typeof img === 'string' && 
+            img.trim() !== '' && 
+            !img.includes('System.Collections.Generic.List') &&
+            img.startsWith('http')
+          );
+          if (validEvidenceImages.length > 0) {
+            setEvidenceImagePreview(validEvidenceImages);
+          }
         }
         
         // Load existing tags if any

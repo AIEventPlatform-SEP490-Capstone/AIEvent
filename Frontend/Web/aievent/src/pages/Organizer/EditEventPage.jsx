@@ -1062,20 +1062,36 @@ const EditEventPage = () => {
 
         // Load existing images
         if (event.imgListEvent && event.imgListEvent.length > 0) {
-          // Filter out any null or undefined values
-          const validImages = event.imgListEvent.filter(img => img !== null && img !== undefined && img !== '' && !img.includes('System.Collections.Generic.List'));
-          setImagePreview(validImages);
+          // Filter out null, undefined, empty strings, and invalid URLs
+          const validImages = event.imgListEvent.filter(img => 
+            img !== null && 
+            img !== undefined && 
+            img !== '' && 
+            typeof img === 'string' && 
+            img.trim() !== '' && 
+            !img.includes('System.Collections.Generic.List') &&
+            img.startsWith('http')
+          );
+          if (validImages.length > 0) {
+            setImagePreview(validImages);
+          }
         }
 
         // Load existing evidence images
         if (event.imgListEvidences && event.imgListEvidences.length > 0) {
-          // Filter out any null or undefined values and invalid strings
+          // Filter out null, undefined, empty strings, and invalid URLs
           const validEvidenceImages = event.imgListEvidences.filter(img => 
-            img !== null && img !== undefined && img !== '' && 
-            typeof img === 'string' && img.trim() !== '' && 
-            !img.includes('System.Collections.Generic.List')
+            img !== null && 
+            img !== undefined && 
+            img !== '' && 
+            typeof img === 'string' && 
+            img.trim() !== '' && 
+            !img.includes('System.Collections.Generic.List') &&
+            img.startsWith('http')
           );
-          setEvidenceImagePreview(validEvidenceImages);
+          if (validEvidenceImages.length > 0) {
+            setEvidenceImagePreview(validEvidenceImages);
+          }
         }
 
         // Load existing tags if any
