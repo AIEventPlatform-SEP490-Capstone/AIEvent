@@ -47,6 +47,7 @@ const Images = {
   facebook: require('../assets/images/Facebook.png'),
   twitter: require('../assets/images/Twitter.png'),
   linkedin: require('../assets/images/LinkedIn.png'),
+  aiChatGif: require('../assets/images/ai-chat-2.gif'),
 };
 
 export default Images;

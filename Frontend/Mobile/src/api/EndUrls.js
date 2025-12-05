@@ -74,6 +74,12 @@ const EndUrls = {
   // Ratings
   RATINGS_BY_EVENT: id => `${BASE_URL}/rating/${id}/event`,
   RATING: id => `${BASE_URL}/rating/${id}`,
+
+  // AI Chat
+  AI_CHAT: `${BASE_URL}/ai/chat`,
+  AI_CHAT_HISTORY: `${BASE_URL}/ai/chat/history`,
+  AI_CHAT_SESSIONS: `${BASE_URL}/ai/chat/sessions`,
+  AI_CHAT_SESSION_DELETE: sessionId => `${BASE_URL}/ai/chat/sessions/${sessionId}`,
 };
 
 export default EndUrls;

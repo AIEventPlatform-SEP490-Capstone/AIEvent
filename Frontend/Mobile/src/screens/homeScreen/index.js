@@ -29,6 +29,7 @@ import { selectEvents, selectEventsLoading, selectEventsError } from '../../redu
 import { selectCategories, selectCategoriesLoading } from '../../redux/slices/categoriesSlice';
 import { EventService } from '../../api/services';
 import { isStaffUser } from '../../utils/jwtUtils';
+import AIChatFloating from '../../components/presentation/AIChatFloating';
 
 const { width } = Dimensions.get('window');
 
@@ -571,6 +572,7 @@ const HomeScreen = () => {
           )}
         </View>
       </ScrollView>
+      <AIChatFloating />
     </View>
   );
 };

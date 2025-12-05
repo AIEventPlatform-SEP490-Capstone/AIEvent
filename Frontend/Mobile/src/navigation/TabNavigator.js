@@ -16,47 +16,98 @@ import BookingScreen from '../screens/bookingScreen';
 import ScreenNames from '../constants/ScreenNames';
 import Images from '../constants/Images';
 import Colors from '../constants/Colors';
+import BookingScreen from '../screens/bookingScreen';
+import AIChatScreen from '../screens/aiChatScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-// Stack chung cho Home (cả user và staff đều dùng)
-const HomeStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name={ScreenNames.HOME_SCREEN} component={HomeScreen} />
-    <Stack.Screen
-      name={ScreenNames.EVENT_DETAIL_SCREEN}
-      component={EventDetailScreen}
-      options={{
-        headerShown: true,
-        title: 'Chi tiết sự kiện',
-        headerStyle: { backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border },
-        headerTitleStyle: { color: Colors.textPrimary, fontSize: 18, fontWeight: '600' },
-      }}
-    />
-    <Stack.Screen name={ScreenNames.QR_SCANNER_SCREEN} component={QrScannerScreen} options={{ headerShown: false }} />
-    <Stack.Screen
-      name={ScreenNames.CHECK_IN_CONFIRMATION_SCREEN}
-      component={CheckInConfirmationScreen}
-      options={{
-        headerShown: true,
-        title: 'Xác nhận Check-in',
-        headerStyle: { backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border },
-        headerTitleStyle: { color: Colors.textPrimary, fontSize: 18, fontWeight: '600' },
-      }}
-    />
-    <Stack.Screen
-      name={ScreenNames.BOOKING_SCREEN}
-      component={BookingScreen}
-      options={{
-        headerShown: true,
-        title: 'Đặt vé',
-        headerStyle: { backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border },
-        headerTitleStyle: { color: Colors.textPrimary, fontSize: 18, fontWeight: '600' },
-      }}
-    />
-  </Stack.Navigator>
-);
+// Stack Navigator cho Home tab
+const HomeStack = () => {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}>
+      <Stack.Screen name={ScreenNames.HOME_SCREEN} component={HomeScreen} />
+      <Stack.Screen
+        name={ScreenNames.EVENT_DETAIL_SCREEN}
+        component={EventDetailScreen}
+        options={{
+          headerShown: true,
+          title: 'Chi tiết sự kiện',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
+        }}
+      />
+      <Stack.Screen 
+        name={ScreenNames.QR_SCANNER_SCREEN} 
+        component={QrScannerScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name={ScreenNames.CHECK_IN_CONFIRMATION_SCREEN}
+        component={CheckInConfirmationScreen}
+        options={{
+          headerShown: true,
+          title: 'Xác nhận Check-in',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
+        }}
+      />
+      <Stack.Screen
+        name={ScreenNames.BOOKING_SCREEN}
+        component={BookingScreen}
+        options={{
+          headerShown: true,
+          title: 'Đặt vé',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
+        }}
+      />
+      <Stack.Screen
+        name={ScreenNames.AI_CHAT_SCREEN}
+        component={AIChatScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+
+    </Stack.Navigator>
+  );
+};
 
 // Stack cho Profile (cả user và staff đều vào được Settings)
 const ProfileStack = () => (
