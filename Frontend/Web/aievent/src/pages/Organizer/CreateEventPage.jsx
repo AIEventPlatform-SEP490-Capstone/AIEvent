@@ -96,11 +96,10 @@ const createEventSchema = z.object({
   ticketTypes: z.array(z.object({
     ticketName: z.string().min(1, 'Tên vé là bắt buộc'),
     ticketPrice: z.number().min(10000, 'Giá vé phải lớn hơn 10.000 VND'),
-    ticketQuantity: z.number().min(1, 'Số lượng vé phải lớn hơn 0'),
+    ticketQuantity: z.number().min(20, 'Số lượng vé phải từ 20 đến 100.000').max(100000, 'Số lượng vé phải từ 20 đến 100.000'),
     ticketDescription: z.string().optional(),
     // ruleRefundRequestId: z.string().min(1, 'Quy tắc hoàn tiền là bắt buộc'),
-  })).min(1, 'Phải có ít nhất một loại vé')
-}).refine((data) => {
+  })).min(1, 'Phải có ít nhất một loại vé')}).refine((data) => {
   const saleStart = new Date(data.saleStartTime);
   const saleEnd = new Date(data.saleEndTime);
   const eventStart = new Date(data.startTime);
@@ -156,6 +155,9 @@ const CreateEventPage = () => {
   
   // Add state for ticket name validation errors
   const [ticketNameError, setTicketNameError] = useState('');
+  
+  // Add state for ticket validation errors
+  const [ticketErrors, setTicketErrors] = useState({});
   
   // Add state for editing modes
   const [editingField, setEditingField] = useState(null);
@@ -578,9 +580,52 @@ const CreateEventPage = () => {
     });
   };
   
+  // Validate ticket
+  const validateTicket = (ticket) => {
+    const errors = {};
+    
+    // Check ticket name
+    if (!ticket.ticketName || ticket.ticketName.trim() === '') {
+      errors.ticketName = 'Tên vé là bắt buộc';
+    }
+    
+    // Check ticket price
+    const ticketPrice = parseFloat(ticket.ticketPrice);
+    if (isNaN(ticketPrice) || ticketPrice < 10000) {
+      errors.ticketPrice = 'Giá vé phải lớn hơn 10.000 VND';
+    }
+    
+    // Check ticket quantity
+    const ticketQuantity = parseInt(ticket.ticketQuantity);
+    if (isNaN(ticketQuantity) || ticketQuantity < 20 || ticketQuantity > 100000) {
+      errors.ticketQuantity = 'Số lượng vé phải từ 20 đến 100.000';
+    }
+    
+    return errors;
+  };
+
   // Save edited ticket
   const saveEditingTicket = () => {
     if (editingTicketIndex !== null) {
+      // Validate the ticket
+      const errors = validateTicket(ticketForm);
+      
+      if (Object.keys(errors).length > 0) {
+        // Show errors
+        setTicketErrors(prev => ({
+          ...prev,
+          [editingTicketIndex]: errors
+        }));
+        return;
+      }
+      
+      // Clear errors if validation passes
+      setTicketErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[editingTicketIndex];
+        return newErrors;
+      });
+      
       // Update the ticket in the form
       setValue(`ticketTypes.${editingTicketIndex}.ticketName`, ticketForm.ticketName);
       const ticketPrice = parseFloat(ticketForm.ticketPrice);
@@ -1764,7 +1809,14 @@ const CreateEventPage = () => {
                                 value={ticketForm.ticketName}
                                 onChange={handleTicketFormChange}
                                 placeholder="Nhập tên vé"
+                                className={ticketErrors[editingTicketIndex]?.ticketName ? 'border-red-500' : ''}
                               />
+                              {ticketErrors[editingTicketIndex]?.ticketName && (
+                                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                  <AlertCircle className="w-3 h-3" />
+                                  {ticketErrors[editingTicketIndex].ticketName}
+                                </p>
+                              )}
                             </div>
                             <div>
                               <Label className="text-sm font-medium mb-1">Số lượng</Label>
@@ -1773,8 +1825,16 @@ const CreateEventPage = () => {
                                 name="ticketQuantity"
                                 value={ticketForm.ticketQuantity}
                                 onChange={handleTicketFormChange}
-                                min="1"
+                                min="20"
+                                max="100000"
+                                className={ticketErrors[editingTicketIndex]?.ticketQuantity ? 'border-red-500' : ''}
                               />
+                              {ticketErrors[editingTicketIndex]?.ticketQuantity && (
+                                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                  <AlertCircle className="w-3 h-3" />
+                                  {ticketErrors[editingTicketIndex].ticketQuantity}
+                                </p>
+                              )}
                             </div>
                             <div>
                               <Label className="text-sm font-medium mb-1">Giá vé (VND)</Label>
@@ -1784,7 +1844,14 @@ const CreateEventPage = () => {
                                 value={ticketForm.ticketPrice}
                                 onChange={handleTicketFormChange}
                                 min="10000"
+                                className={ticketErrors[editingTicketIndex]?.ticketPrice ? 'border-red-500' : ''}
                               />
+                              {ticketErrors[editingTicketIndex]?.ticketPrice && (
+                                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                  <AlertCircle className="w-3 h-3" />
+                                  {ticketErrors[editingTicketIndex].ticketPrice}
+                                </p>
+                              )}
                             </div>
                             <div className="md:col-span-2">
                               <Label className="text-sm font-medium mb-1">Mô tả</Label>
@@ -1805,27 +1872,6 @@ const CreateEventPage = () => {
                               Lưu
                             </Button>
                           </div>
-                          {/* Display ticket validation errors */}
-                          {hasValidated && errors.ticketTypes && errors.ticketTypes[index] && (
-                            <>
-                              {errors.ticketTypes[index].ticketPrice && (
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-2 mt-2">
-                                  <p className="text-red-700 text-xs flex items-center gap-1">
-                                    <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                                    {errors.ticketTypes[index].ticketPrice.message}
-                                  </p>
-                                </div>
-                              )}
-                              {errors.ticketTypes[index].ticketQuantity && (
-                                <div className="bg-red-50 border border-red-200 rounded-lg p-2 mt-2">
-                                  <p className="text-red-700 text-xs flex items-center gap-1">
-                                    <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                                    {errors.ticketTypes[index].ticketQuantity.message}
-                                  </p>
-                                </div>
-                              )}
-                            </>
-                          )}
                         </div>
                       ) : (
                         /* Ticket Display */
