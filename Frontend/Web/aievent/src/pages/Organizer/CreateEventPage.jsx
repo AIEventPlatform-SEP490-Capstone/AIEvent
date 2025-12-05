@@ -379,11 +379,6 @@ const CreateEventPage = () => {
       setImagePreview([...cloneData.imgListEvent]);
     }
     
-    if (cloneData.imgListEvidences && cloneData.imgListEvidences.length > 0) {
-      // Set existing evidence images as previews
-      setEvidenceImagePreview([...cloneData.imgListEvidences]);
-    }
-    
     // Set selected category
     if (cloneData.eventCategory) {
       setSelectedCategory(cloneData.eventCategory);
