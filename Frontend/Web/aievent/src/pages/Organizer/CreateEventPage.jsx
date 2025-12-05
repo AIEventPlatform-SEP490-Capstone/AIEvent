@@ -2149,26 +2149,33 @@ const CreateEventPage = () => {
               <Card className="border-0 rounded-t-none shadow-2xl">
                 <CardContent className="space-y-5 pt-6 pb-6">
                   {/* Category Selection */}
-                  <div className="space-y-3">
-                      <CategorySelector 
-                        selectedCategories={selectedCategory ? [selectedCategory] : []}
-                        onCategoriesChange={(categories) => {
-                          if (categories.length > 0) {
-                            const category = categories[0];
-                            setSelectedCategory(category);
-                            setValue('eventCategoryId', category.eventCategoryId);
-                          } else {
-                            setSelectedCategory(null);
-                            setValue('eventCategoryId', '');
-                          }
-                        }}
-                      />
-                      {errors.eventCategoryId && (
-                        <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3" />
-                          {errors.eventCategoryId.message}
+                  <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-6">
+                    <CategorySelector 
+                      selectedCategories={selectedCategory ? [selectedCategory] : []}
+                      onCategoriesChange={(categories) => {
+                        if (categories.length > 0) {
+                          const category = categories[0];
+                          setSelectedCategory(category);
+                          setValue('eventCategoryId', category.eventCategoryId);
+                          // Clear error when category is selected
+                          setFieldErrors(prev => ({
+                            ...prev,
+                            eventCategoryId: ''
+                          }));
+                        } else {
+                          setSelectedCategory(null);
+                          setValue('eventCategoryId', '');
+                        }
+                      }}
+                    />
+                    {(fieldErrors.eventCategoryId || (errors.eventCategoryId && hasValidated)) && (
+                      <div className="mt-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                        <p className="text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                          {fieldErrors.eventCategoryId || errors.eventCategoryId?.message}
                         </p>
-                      )}
+                      </div>
+                    )}
                   </div>
                   <div className="h-px bg-gradient-to-r from-gray-200 to-gray-100 dark:from-gray-800 dark:to-gray-900"></div>
 
