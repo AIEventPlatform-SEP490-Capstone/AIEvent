@@ -788,6 +788,11 @@ const EventDetailGuestPage = ({ previewData }) => {
               <div
                 onClick={() => {
                   const orgId = event.organizerEvent.organizerId || event.organizerEvent.id || event.organizerId;
+                  if (!isAuthenticated) {
+                    toast.error("Vui lòng đăng nhập để xem thông tin nhà tổ chức");
+                    navigate("/auth/login");
+                    return;
+                  }
                   if (orgId) navigate(`/organizer/${orgId}/events`);
                 }}
                 className="bg-white rounded-xl p-8 border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all duration-300 cursor-pointer"
