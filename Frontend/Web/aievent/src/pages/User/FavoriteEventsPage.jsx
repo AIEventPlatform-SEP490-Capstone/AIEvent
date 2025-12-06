@@ -22,6 +22,7 @@ import { Input } from "../../components/ui/input";
 import LoadingSpinner from "../../components/LoadingSpinner/LoadingSpinner";
 import { useSelector } from "react-redux";
 import { SaleStatusBadge } from "../../components/HomePage/SaleStatusBadge";
+import { EventCard } from "../../components/HomePage/EventCard";
 
 const FavoriteEventsPage = () => {
   const navigate = useNavigate();
@@ -375,122 +376,15 @@ const FavoriteEventsPage = () => {
       {filteredEvents.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredEvents.map((event) => (
-            <Card 
-              key={event.eventId} 
-              className="group overflow-hidden hover:shadow-xl transition-all duration-300 border-border/50 hover:border-primary/30 cursor-pointer"
-              onClick={() => handleViewDetail(event.eventId)}
-            >
-              {/* Image Container */}
-              <div className="aspect-[16/10] relative overflow-hidden bg-muted">
-                <img 
-                  src={event.image || (event.imgListEvent && event.imgListEvent[0]) || "/placeholder.svg"} 
-                  alt={event.title} 
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                />
-                
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0" />
-                
-                {/* Sale Status Badge - Top Left */}
-                {event.saleStartTime && event.saleEndTime && (
-                  <div className="absolute top-3 left-3">
-                    <SaleStatusBadge 
-                      saleStartTime={event.saleStartTime} 
-                      saleEndTime={event.saleEndTime}
-                      onImage={true}
-                    />
-                  </div>
-                )}
-                
-                {/* Category Badge at bottom */}
-                <Badge 
-                  variant="secondary" 
-                  className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm shadow-md"
-                >
-                  {event.eventCategoryName || "Khác"}
-                </Badge>
-                
-                {/* Remove Favorite Button */}
-                <Button 
-                  variant="secondary" 
-                  size="icon"
-                  className="absolute top-4 right-4 h-9 w-9 rounded-full shadow-lg backdrop-blur-sm bg-card/80 hover:bg-red-50 transition-all hover:scale-110"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemoveFavorite(event.eventId);
-                  }}
-                >
-                  <Heart className="w-4 h-4 fill-red-500 text-red-500" />
-                </Button>
-              </div>
-
-              <CardContent className="p-5">
-                <h3 className="font-bold text-lg mb-3 line-clamp-2 text-foreground group-hover:text-primary transition-colors">
-                  {event.title}
-                </h3>
-
-                <div className="space-y-2.5 text-sm text-muted-foreground mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 flex-1">
-                      <Calendar className="w-4 h-4 text-primary" />
-                      <span>{formatDate(event.startTime || event.date)}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="w-4 h-4 text-secondary" />
-                      <span>{formatTime(event.startTime || event.date)}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <MapPin className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-                    <span className="line-clamp-1 text-xs">
-                      {event.locationName || event.location}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-primary" />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium">
-                            {event.soldQuantity || 0}/{event.totalTickets || event.maxAttendees} người
-                          </span>
-                          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all"
-                              style={{ width: `${(event.totalTickets || event.maxAttendees) ? (event.soldQuantity || 0) / (event.totalTickets || event.maxAttendees) * 100 : 0}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <Heart className="w-4 h-4 mr-1 text-gray-500" />
-                      <span className="text-xs font-medium text-gray-600">
-                        {event.favoriteCount || 0}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-4 border-t border-border">
-                  <div className="text-xl font-bold text-primary">
-                    {formatPrice(event)}
-                  </div>
-                  <Button 
-                    size="sm"
-                    className="shadow-sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleViewDetail(event.eventId);
-                    }}
-                  >
-                    Xem chi tiết
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <div key={event.eventId} onClick={() => handleViewDetail(event.eventId)}>
+              <EventCard
+                event={event}
+                isLiked={true}
+                onLike={handleRemoveFavorite}
+                onViewDetail={handleViewDetail}
+                showReason={false}
+              />
+            </div>
           ))}
         </div>
       ) : (

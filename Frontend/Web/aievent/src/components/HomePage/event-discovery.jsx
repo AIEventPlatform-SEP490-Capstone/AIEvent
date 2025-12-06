@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { Badge } from "../ui/badge";
+import { EventCard } from "./EventCard";
 import {
   Calendar,
   MapPin,
@@ -220,32 +221,34 @@ export function EventDiscovery({
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* AI Recommended Events Section */}
       {showAIRecommendedSection && (
-        <div id="ai-recommended-events-section" className="mb-12">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="flex items-center gap-2 flex-1">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 via-sky-400 to-gray-300 flex items-center justify-center">
-                <Bot className="w-5 h-5 text-white" />
+        <div id="ai-recommended-events-section" className="mb-16">
+          <div className="flex items-center justify-between gap-6 mb-10">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 via-sky-400 to-indigo-500 flex items-center justify-center shadow-lg">
+                <Bot className="w-6 h-6 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-foreground">
-                Sự kiện AI gợi ý
-              </h2>
+              <div>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  Sự kiện được AI gợi ý
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">Được chọn riêng dành cho bạn</p>
+              </div>
             </div>
-            <div className="h-px bg-gradient-to-r from-blue-200 to-transparent flex-1"></div>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setIsAIEventsExpanded(!isAIEventsExpanded)}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+              className="flex items-center gap-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg px-4 py-2 transition-all"
             >
               {isAIEventsExpanded ? (
                 <>
                   <ChevronUp className="w-4 h-4" />
-                  <span className="text-sm">Ẩn</span>
+                  <span className="text-sm font-semibold">Ẩn</span>
                 </>
               ) : (
                 <>
                   <ChevronDown className="w-4 h-4" />
-                  <span className="text-sm">Hiện</span>
+                  <span className="text-sm font-semibold">Hiện</span>
                 </>
               )}
             </Button>
@@ -256,132 +259,15 @@ export function EventDiscovery({
               {recommendedEvents.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {recommendedEvents.map((event) => (
-                    <div 
+                    <EventCard
                       key={event.eventId || event.id}
-                      className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group"
-                    >
-                      <div className="relative">
-                        <img
-                          src={
-                            event.image || 
-                            (event.imgListEvent && event.imgListEvent[0]) || 
-                            "/placeholder.svg"
-                          }
-                          alt={event.title}
-                          className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                        <div className="absolute top-3 right-3 flex space-x-2">
-                          <button
-                            className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 hover:bg-white shadow-sm flex items-center justify-center transition-all"
-                            onClick={() => toggleLike(event.eventId || event.id)}
-                          >
-                            <Heart
-                              className={`w-4 h-4 ${
-                                likedEvents.has(event.eventId || event.id)
-                                  ? "fill-red-500 text-red-500"
-                                  : "text-gray-600"
-                              }`}
-                            />
-                          </button>
-                          <button
-                            className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 hover:bg-white shadow-sm flex items-center justify-center transition-all"
-                            onClick={() => handleViewDetail(event.eventId || event.id)}
-                          >
-                            <MessageCircle className="w-4 h-4 text-gray-600" />
-                          </button>
-                        </div>
-                        <div className="absolute bottom-3 left-3">
-                          <span className="bg-white/90 backdrop-blur-sm text-gray-900 font-bold px-3 py-1 rounded-full text-sm shadow-sm">
-                            {formatPrice(event)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="p-5">
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className="font-bold text-lg leading-tight text-gray-900 line-clamp-2">
-                            {event.title}
-                          </h3>
-                        </div>
-                        <p className="text-gray-600 text-sm leading-relaxed mb-4 line-clamp-2">
-                          {event.description}
-                        </p>
-                        
-                        {/* Display reason for AI recommended events */}
-                        {event.reason && (
-                          <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                            <div className="flex items-start gap-2">
-                              <Sparkles className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                              <div>
-                                <p className="text-xs font-semibold text-blue-700 mb-1">Lý do đề xuất:</p>
-                                <p className="text-xs text-blue-600 italic">"{event.reason}"</p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Sale Status Badge */}
-                        {event.saleStartTime && event.saleEndTime && (
-                          <div className="mb-4">
-                            <SaleStatusBadge 
-                              saleStartTime={event.saleStartTime} 
-                              saleEndTime={event.saleEndTime}
-                              onImage={false}
-                            />
-                          </div>
-                        )}
-
-                        <div className="space-y-3">
-                          <div className="flex items-center text-gray-600 text-sm">
-                            <Calendar className="w-4 h-4 mr-2 text-blue-500" />
-                            <span>
-                              {new Date(event.startTime || event.date).toLocaleDateString("vi-VN")} •{" "}
-                              {event.time || new Date(event.startTime).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center text-gray-600 text-sm">
-                            <MapPin className="w-4 h-4 mr-2 text-blue-500 flex-shrink-0" />
-                            <span className="truncate">
-                              {event.locationName || event.location}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                            <div className="flex items-center">
-                              <Users className="w-4 h-4 mr-1 text-gray-500" />
-                              <span className="text-sm text-gray-600">
-                                {event.soldQuantity || 0}/{event.totalTickets}
-                              </span>
-                            </div>
-                            <div className="flex items-center">
-                              <Heart className="w-4 h-4 mr-1 text-gray-500" />
-                              <span className="text-sm text-gray-600">
-                                {event.favoriteCount || event.likesCount || 0}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="flex space-x-2 pt-2">
-                            <Button
-                              className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm py-2"
-                              size="sm"
-                              onClick={() => handleRegister(event.eventId || event.id)}
-                            >
-                              Mua vé
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold text-sm py-2"
-                              onClick={() => handleViewDetail(event.eventId || event.id)}
-                            >
-                              Chi tiết
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                      event={event}
+                      isLiked={likedEvents.has(event.eventId || event.id)}
+                      onLike={toggleLike}
+                      onViewDetail={handleViewDetail}
+                      onRegister={handleRegister}
+                      showReason={true}
+                    />
                   ))}
                 </div>
               ) : (
@@ -398,42 +284,44 @@ export function EventDiscovery({
         </div>
       )}
 
-      {/* Featured Events Section - Simplified Carousel */}
+      {/* Featured Events Section */}
       {featuredEvents.length > 0 && selectedCategory === "all" && (
-        <div className="mb-12">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex items-center gap-2 flex-1">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-400 flex items-center justify-center">
-                <Star className="w-5 h-5 text-white" />
+        <div className="mb-16">
+          <div className="flex items-center justify-between gap-6 mb-10">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-400 flex items-center justify-center shadow-lg">
+                <Star className="w-6 h-6 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-foreground">
-                Sự kiện nổi bật
-              </h2>
+              <div>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                  Sự kiện nổi bật
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">Những sự kiện được chú ý nhất</p>
+              </div>
             </div>
-            <div className="h-px bg-gradient-to-r from-orange-200 to-transparent flex-1"></div>
             <div className="flex space-x-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={prevSlide}
-                className="w-8 h-8 p-0"
+                className="w-10 h-10 p-0 rounded-full hover:bg-orange-50 hover:border-orange-300 transition-all"
                 disabled={featuredEvents.length <= 3}
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-5 h-5" />
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={nextSlide}
-                className="w-8 h-8 p-0"
+                className="w-10 h-10 p-0 rounded-full hover:bg-orange-50 hover:border-orange-300 transition-all"
                 disabled={featuredEvents.length <= 3}
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-5 h-5" />
               </Button>
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-2xl">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-gray-50 to-gray-100 p-1">
             <div 
               className="flex transition-transform duration-500 ease-in-out"
               style={{ transform: `translateX(-${currentSlide * 33.333}%)` }}
@@ -441,10 +329,10 @@ export function EventDiscovery({
               {featuredEvents.map((event, index) => (
                 <div 
                   key={event.eventId || event.id}
-                  className="flex-shrink-0 w-1/3 px-2"
+                  className="flex-shrink-0 w-1/3 px-2 py-1"
                 >
                   <div 
-                    className="relative group cursor-pointer rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
+                    className="relative group cursor-pointer rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-400 h-72"
                     onClick={() => handleViewDetail(event.eventId || event.id)}
                   >
                     <img
@@ -454,37 +342,37 @@ export function EventDiscovery({
                         "/placeholder.svg"
                       }
                       alt={event.title}
-                      className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105"
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-120"
                     />
                     {/* Hover overlay with event info */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-                      <h3 className="text-white font-bold text-lg mb-1">{event.title}</h3>
-                      <div className="flex items-center text-white/90 text-sm mb-1">
-                        <Calendar className="w-4 h-4 mr-1" />
-                        <span>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400 flex flex-col justify-end p-5">
+                      <h3 className="text-white font-bold text-lg mb-2 line-clamp-2">{event.title}</h3>
+                      <div className="flex items-center text-white/95 text-sm mb-1.5">
+                        <Calendar className="w-4 h-4 mr-2" />
+                        <span className="font-medium">
                           {new Date(event.startTime || event.date).toLocaleDateString("vi-VN")}
                         </span>
                       </div>
-                      <div className="flex items-center text-white/90 text-sm">
-                        <MapPin className="w-4 h-4 mr-1" />
-                        <span className="truncate">
+                      <div className="flex items-center text-white/95 text-sm">
+                        <MapPin className="w-4 h-4 mr-2" />
+                        <span className="truncate font-medium">
                           {event.locationName || event.location}
                         </span>
                       </div>
                     </div>
                     
-                    {/* Like button */}
+                    {/* Like button - Enhanced */}
                     <button
-                      className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 hover:bg-white/30 shadow-sm flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                      className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/30 backdrop-blur-md border border-white/50 hover:bg-white/50 shadow-lg flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 hover:scale-110"
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleLike(event.eventId || event.id);
                       }}
                     >
                       <Heart
-                        className={`w-4 h-4 ${
+                        className={`w-5 h-5 transition-all ${
                           likedEvents.has(event.eventId || event.id)
-                            ? "fill-red-500 text-red-500"
+                            ? "fill-red-500 text-red-500 scale-125"
                             : "text-white"
                         }`}
                       />
@@ -497,38 +385,35 @@ export function EventDiscovery({
         </div>
       )}
 
-      <div id="recommended-events-section" className="mb-10">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 via-sky-400 to-gray-300 flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-white" />
-            </div>
-            <h2 className="text-2xl font-semibold text-foreground">
-              Tất cả sự kiện
+      <div id="recommended-events-section" className="mb-14">
+        <div className="flex items-center gap-4 mb-10">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 via-sky-400 to-cyan-400 flex items-center justify-center shadow-lg">
+            <Calendar className="w-6 h-6 text-white" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+              Khám phá sự kiện
             </h2>
-            <div className="h-px bg-gradient-to-r from-gray-200 to-transparent w-20"></div>
+            <p className="text-sm text-gray-600 mt-1">Tìm những sự kiện phù hợp với bạn</p>
           </div>
         </div>
 
-        {/* Category Filter Chips */}
-        <div className="flex space-x-3 overflow-x-auto pb-4 mb-8 scrollbar-hide">
+        {/* Category Filter Chips - Modern Style */}
+        <div className="flex space-x-2 overflow-x-auto pb-4 mb-10 scrollbar-hide">
           {categories.map((category) => {
             const Icon = category.icon;
+            const isSelected = selectedCategory === category.id;
             return (
               <Button
                 key={category.id}
-                variant={
-                  selectedCategory === category.id ? "default" : "outline"
-                }
-                size="lg"
                 onClick={() => handleCategoryChange(category.id)}
-                className={`whitespace-nowrap min-w-fit px-6 transition-all duration-300 flex-shrink-0 ${
-                  selectedCategory === category.id
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg hover:shadow-xl"
-                    : "border-border hover:bg-muted text-foreground hover:shadow-md"
+                className={`whitespace-nowrap min-w-fit px-5 py-2.5 rounded-full font-semibold transition-all duration-300 flex-shrink-0 flex items-center gap-2 ${
+                  isSelected
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-indigo-700"
+                    : "bg-white border-2 border-gray-200 text-gray-700 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50"
                 }`}
               >
-                <Icon className="w-5 h-5 mr-2" />
+                <Icon className="w-4 h-4" />
                 {category.name}
               </Button>
             );
@@ -541,148 +426,29 @@ export function EventDiscovery({
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {paginatedEvents.map((event) => (
-              <Card 
-                key={event.eventId || event.id} 
-                className="group overflow-hidden hover:shadow-xl transition-all duration-300 border-border/50 hover:border-primary/30 cursor-pointer"
-                onClick={() => handleViewDetail(event.eventId || event.id)}
-              >
-                {/* Image Container */}
-                <div className="aspect-[16/10] relative overflow-hidden bg-muted">
-                  <img 
-                    src={
-                      event.image || 
-                      (event.imgListEvent && event.imgListEvent[0]) || 
-                      "/placeholder.svg"
-                    } 
-                    alt={event.title} 
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                  />
-                  
-                  {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0" />      
-                  
-                  {/* Sale Status Badge - Top Left */}
-                  {event.saleStartTime && event.saleEndTime && (
-                    <div className="absolute top-3 left-3">
-                      <SaleStatusBadge 
-                        saleStartTime={event.saleStartTime} 
-                        saleEndTime={event.saleEndTime}
-                        onImage={true}
-                      />
-                    </div>
-                  )}
-                  
-                  {/* Category Badge at bottom */}
-                  <Badge 
-                    variant="secondary" 
-                    className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm shadow-md"
-                  >
-                    {event.category || event.eventCategoryName || "Event"}
-                  </Badge>
-                  
-                  {/* Like Button */}
-                  <Button 
-                    variant="secondary" 
-                    size="icon"
-                    className="absolute top-4 right-4 h-9 w-9 rounded-full shadow-lg backdrop-blur-sm bg-card/80 hover:bg-card transition-all hover:scale-110"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleLike(event.eventId || event.id);
-                    }}
-                  >
-                    <Heart 
-                      className={`w-4 h-4 transition-all ${
-                        likedEvents.has(event.eventId || event.id)
-                          ? "fill-red-500 text-red-500 scale-110"
-                          : "text-muted-foreground"
-                      }`} 
-                    />
-                  </Button>
-                </div>
-
-                <CardContent className="p-5">
-                  <h3 className="font-bold text-lg mb-3 line-clamp-2 text-foreground group-hover:text-primary transition-colors">
-                    {event.title}
-                  </h3>
-
-                  <div className="space-y-2.5 text-sm text-muted-foreground mb-4">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1.5 flex-1 text-gray-600 text-sm">
-                        <Calendar className="w-4 h-4 text-primary" />
-                        <span>{new Date(event.startTime || event.date).toLocaleDateString("vi-VN")}</span>
-                      </div>
-                      <div className="flex items-center text-gray-600 text-sm">
-                        <Clock className="w-4 h-4 mr-2 text-blue-500 flex-shrink-0"/>
-                        <span className="truncate">
-                          {event.time || new Date(event.startTime).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center text-gray-600 text-sm">
-                      <MapPin className="w-4 h-4 mr-2 text-blue-500 flex-shrink-0" />
-                      <span className="truncate">
-                        {event.locationName || event.location}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center text-gray-600 text-sm">
-                        <Users className="w-4 h-4 mr-2 text-blue-500 flex-shrink-0" />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate">
-                              {event.soldQuantity || 0}/{event.totalTickets} người
-                            </span>
-                            <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all"
-                                style={{ width: `${event.totalTickets ? (event.soldQuantity || 0) / event.totalTickets * 100 : 0}%` }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center">
-                        <Heart className="w-4 h-4 mr-1 text-gray-500" />
-                        <span className="text-xs font-medium text-gray-600">
-                          {event.favoriteCount || 0}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-border">
-                    <div className="text-xl font-bold text-primary">
-                      {formatPrice(event)}
-                    </div>
-                    <Button 
-                      size="sm"
-                      className="shadow-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleViewDetail(event.eventId || event.id);
-                      }}
-                    >
-                      Xem chi tiết
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <EventCard
+                key={event.eventId || event.id}
+                event={event}
+                isLiked={likedEvents.has(event.eventId || event.id)}
+                onLike={toggleLike}
+                onViewDetail={handleViewDetail}
+                onRegister={handleRegister}
+                showReason={false}
+              />
             ))}
           </div>
           
-          {/* Pagination */}
+          {/* Pagination - Modern Style */}
           {totalPages > 1 && (
-            <div className="flex justify-center items-center mt-12 space-x-2">
+            <div className="flex justify-center items-center mt-16 space-x-1">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => onPageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="px-4"
+                className="px-3 py-2 rounded-lg border-gray-300 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Trước
+                ← Trước
               </Button>
               
               {[...Array(totalPages)].map((_, index) => {
@@ -696,10 +462,13 @@ export function EventDiscovery({
                   return (
                     <Button
                       key={pageNumber}
-                      variant={currentPage === pageNumber ? "default" : "outline"}
                       size="sm"
                       onClick={() => onPageChange(pageNumber)}
-                      className={`px-4 ${currentPage === pageNumber ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white' : ''}`}
+                      className={`px-3.5 py-2 rounded-lg font-semibold transition-all ${
+                        currentPage === pageNumber
+                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
+                          : 'border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 hover:border-blue-300'
+                      }`}
                     >
                       {pageNumber}
                     </Button>
@@ -708,7 +477,7 @@ export function EventDiscovery({
                 
                 // Show ellipsis for skipped pages
                 if (pageNumber === currentPage - 2 || pageNumber === currentPage + 2) {
-                  return <span key={pageNumber} className="px-2 text-gray-400">...</span>;
+                  return <span key={pageNumber} className="px-2 text-gray-400 font-semibold">…</span>;
                 }
                 
                 return null;
@@ -719,20 +488,23 @@ export function EventDiscovery({
                 size="sm"
                 onClick={() => onPageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="px-4"
+                className="px-3 py-2 rounded-lg border-gray-300 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Sau
+                Sau →
               </Button>
             </div>
           )}
         </>
       ) : (
-        <div className="text-center py-12">
-          <div className="bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-            <Calendar className="w-8 h-8 text-gray-400" />
+        <div className="text-center py-16">
+          <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <Calendar className="w-10 h-10 text-gray-400" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Không tìm thấy sự kiện</h3>
-          <p className="text-gray-500">Hãy thử thay đổi bộ lọc</p>
+          <h3 className="text-lg font-bold text-gray-900 mb-2">Không tìm thấy sự kiện</h3>
+          <p className="text-gray-600 mb-6">Hãy thử thay đổi tiêu chí tìm kiếm hoặc bộ lọc của bạn</p>
+          <Button onClick={onRefresh} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold px-6">
+            ↺ Tải lại
+          </Button>
         </div>
       )}
     </div>
