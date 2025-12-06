@@ -5,9 +5,7 @@ using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
-using AIEvent.Infrastructure.Repositories.Implements;
 using AIEvent.Infrastructure.Repositories.Interfaces;
-using Microsoft.EntityFrameworkCore;
 using MockQueryable.Moq;
 using Moq;
 

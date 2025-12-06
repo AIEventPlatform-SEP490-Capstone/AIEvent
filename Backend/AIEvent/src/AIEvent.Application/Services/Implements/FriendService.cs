@@ -429,14 +429,17 @@ namespace AIEvent.Application.Services.Implements
                     .Where(f => (f.SenderId == userId || f.ReceiverId == userId)
                                 && !f.IsDeleted
                                 && f.Status == FriendshipStatus.Accepted)
-                    .Select(f => f.SenderId == userId ? f.Receiver : f.Sender)
-                    .Where(u => u.IsTurnOnLocation == true) 
-                    .Select(u => new
+                    .Select(f => new
                     {
-                        u.Id,
-                        u.FullName,
-                        u.Email,
-                        u.AvatarImgUrl
+                        Friend = f.SenderId == userId ? f.Receiver : f.Sender,
+                    })
+                    .Where(x => x.Friend.IsTurnOnLocation == true)
+                    .Select(x => new
+                    {
+                        x.Friend.Id,
+                        x.Friend.FullName,
+                        x.Friend.Email,
+                        x.Friend.AvatarImgUrl
                     })
                     .ToListAsync();
 
