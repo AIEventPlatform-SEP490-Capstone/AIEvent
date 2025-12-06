@@ -468,7 +468,7 @@ namespace AIEvent.Application.Services.Implements
                             {
                                 ReferenceId = referenceId,
                                 Amount = (long)payoutAmount,
-                                Description = "Thanh toán sự kiện",
+                                Description = "Thanh toán sự kiện"
                                 ToBin = paymentInfor.BankBin,
                                 ToAccountNumber = paymentInfor.AccountNumber,
                                 Category = new List<string> { "Payout" }

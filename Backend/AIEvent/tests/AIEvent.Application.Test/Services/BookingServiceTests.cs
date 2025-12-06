@@ -2118,7 +2118,6 @@ namespace AIEvent.Application.Test.Services
             Assert.Equal(ErrorCodes.InvalidInput, result.Error.StatusCode);
         }
 
-
         [Fact]
         public async Task UTCID20_CreateBookingAsync_ShouldSucceed_WhenAllValid()
         {
