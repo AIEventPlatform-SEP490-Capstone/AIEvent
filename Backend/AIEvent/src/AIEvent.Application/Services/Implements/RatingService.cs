@@ -30,7 +30,15 @@ namespace AIEvent.Application.Services.Implements
             var validationResult = ValidationHelper.ValidateModel(request);
             if (!validationResult.IsSuccess)
                 return validationResult;
+ 
+            var eventEntity = await _unitOfWork.EventRepository.GetByIdAsync(eventId, true);
+            if (eventEntity == null)
+                return ErrorResponse.FailureResult("Event not found", ErrorCodes.NotFound);
 
+            var now = DateTime.UtcNow;
+            if (eventEntity.CompletedAt == null && eventEntity.EndTime > now)
+                return ErrorResponse.FailureResult("You can only rate events that have been completed.", ErrorCodes.InvalidInput);
+ 
             var hasAttended = await _unitOfWork.BookingRepository
                                             .Query()
                                             .AnyAsync(b => b.UserId == userId 
