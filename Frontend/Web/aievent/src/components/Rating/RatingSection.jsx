@@ -6,6 +6,9 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -24,8 +27,6 @@ import {
 } from "../../components/ui/dialog";
 
 import { Button } from "../../components/ui/button";
-import { Card, CardHeader, CardContent } from "../../components/ui/card";
-import { Separator } from "../../components/ui/separator";
 import { useRatings } from "../../hooks/useRatings";
 import { useSelector } from "react-redux";
 import { toast } from "react-hot-toast";
@@ -47,7 +48,8 @@ const RatingSection = ({ eventId }) => {
   const [comment, setComment] = useState("");
   const [editingRatingId, setEditingRatingId] = useState(null);
   const [userExistingRating, setUserExistingRating] = useState(null);
-  const [hasPurchasedTicket, setHasPurchasedTicket] = useState(true); // mặc định true để test
+  const [hasPurchasedTicket, setHasPurchasedTicket] = useState(null); // null = đang kiểm tra, true/false = đã kiểm tra xong
+  const [isCheckingTicket, setIsCheckingTicket] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
@@ -59,8 +61,10 @@ const RatingSection = ({ eventId }) => {
   //  Kiểm tra user có mua vé event này chưa
   useEffect(() => {
     const checkUserHasTicket = async () => {
+      setIsCheckingTicket(true);
       if (!isAuthenticated || !eventId) {
         setHasPurchasedTicket(false);
+        setIsCheckingTicket(false);
         return;
       }
       try {
@@ -71,6 +75,8 @@ const RatingSection = ({ eventId }) => {
       } catch (err) {
         console.error("Error checking ticket:", err);
         setHasPurchasedTicket(false);
+      } finally {
+        setIsCheckingTicket(false);
       }
     };
     checkUserHasTicket();
@@ -79,6 +85,7 @@ const RatingSection = ({ eventId }) => {
   //  Load danh sách đánh giá
   useEffect(() => {
     if (eventId) refreshRatings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
 
   //  Tìm comment của user hiện tại
@@ -156,7 +163,7 @@ const RatingSection = ({ eventId }) => {
       setUserExistingRating(null);
       setEditingRatingId(null);
       refreshRatings();
-    } catch (error) {
+    } catch {
       toast.error("Không thể xóa đánh giá. Vui lòng thử lại.");
     } finally {
       setIsDeleting(false);
@@ -173,148 +180,200 @@ const RatingSection = ({ eventId }) => {
       : 0;
 
   return (
-    <Card className="mt-8">
-      <CardHeader>
-        <h3 className="text-xl font-semibold flex items-center gap-2">
+    <div className="mt-12 bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-8">
+        <div className="p-2 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl">
           <MessageCircle className="w-5 h-5 text-primary" />
+        </div>
+        <h3 className="text-2xl font-semibold text-gray-900">
           Đánh giá & Nhận xét
         </h3>
-      </CardHeader>
+      </div>
 
-      <CardContent>
-        {/* Tổng quan */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="text-5xl font-bold text-primary">{averageRating}</div>
-          <div className="flex flex-col">
-            <div className="flex items-center">
-              {[...Array(5)].map((_, i) => (
-                <Star
-                  key={i}
-                  className={`w-5 h-5 ${
-                    i < Math.round(averageRating)
-                      ? "fill-yellow-400 text-yellow-400"
-                      : "text-gray-300"
-                  }`}
-                />
-              ))}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {ratings.length} lượt đánh giá
-            </p>
+      {/* Tổng quan Rating */}
+      <div className="flex items-center gap-8 mb-10 pb-8 border-b border-gray-100">
+        <div className="flex flex-col items-center justify-center min-w-[120px]">
+          <div className="text-6xl font-bold bg-gradient-to-br from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            {averageRating}
+          </div>
+          <div className="flex items-center gap-1">
+            {[...Array(5)].map((_, i) => (
+              <Star
+                key={i}
+                className={`w-5 h-5 transition-all ${
+                  i < Math.round(averageRating)
+                    ? "fill-amber-400 text-amber-400 scale-110"
+                    : "text-gray-200"
+                }`}
+              />
+            ))}
           </div>
         </div>
+        <div className="flex-1">
+          <p className="text-gray-600 text-sm mb-1">
+            Dựa trên <span className="font-semibold text-gray-900">{ratings.length}</span> đánh giá
+          </p>
+          <div className="flex items-center gap-2 mt-2">
+            <div className="h-1.5 bg-gray-100 rounded-full flex-1 overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all duration-500"
+                style={{ width: `${(averageRating / 5) * 100}%` }}
+              />
+            </div>
+            <span className="text-xs text-gray-500 font-medium">
+              {averageRating}/5
+            </span>
+          </div>
+        </div>
+      </div>
 
-        <Separator className="mb-6" />
-
-        {/* Form đánh giá */}
-        {isAuthenticated ? (
-          hasPurchasedTicket ? (
-            <div className="mb-6 space-y-3">
-              {userExistingRating && !editingRatingId ? (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800 text-sm flex items-center justify-between">
-                  <span>Bạn đã tham gia và đánh giá sự kiện này.</span>
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="text-blue-600"
-                    onClick={() => handleEdit(userExistingRating)}
-                  >
-                    Cập nhật
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-2">
-                    {[1, 2, 3, 4, 5].map((score) => (
-                      <Star
-                        key={score}
-                        onClick={() => setRatingScore(score)}
-                        className={`cursor-pointer w-7 h-7 transition ${
-                          score <= ratingScore
-                            ? "fill-yellow-400 text-yellow-400"
-                            : "text-gray-300 hover:text-yellow-400"
-                        }`}
-                      />
-                    ))}
+      {/* Form đánh giá */}
+      {isAuthenticated ? (
+        isCheckingTicket ? (
+          // Đang kiểm tra - không hiển thị gì hoặc hiển thị loading nhẹ
+          <div className="mb-10"></div>
+        ) : hasPurchasedTicket ? (
+          <div className="mb-10">
+            {userExistingRating && !editingRatingId ? (
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100 rounded-xl p-5 flex items-center justify-between shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white rounded-lg shadow-sm">
+                    <Sparkles className="w-4 h-4 text-blue-600" />
                   </div>
+                  <span className="text-gray-700 font-medium">
+                    Bạn đã đánh giá sự kiện này
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                  onClick={() => handleEdit(userExistingRating)}
+                >
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Cập nhật
+                </Button>
+              </div>
+            ) : (
+              <div className="bg-gray-50 rounded-xl p-6 space-y-5 border border-gray-100">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-3 block">
+                    Đánh giá của bạn
+                  </label>
+                  <div className="flex items-center gap-3">
+                    {[1, 2, 3, 4, 5].map((score) => (
+                      <button
+                        key={score}
+                        type="button"
+                        onClick={() => setRatingScore(score)}
+                        className="group"
+                      >
+                        <Star
+                          className={`w-8 h-8 transition-all duration-200 ${
+                            score <= ratingScore
+                              ? "fill-amber-400 text-amber-400 scale-110 drop-shadow-sm"
+                              : "text-gray-300 group-hover:text-amber-300 group-hover:scale-105"
+                          }`}
+                        />
+                      </button>
+                    ))}
+                    {ratingScore > 0 && (
+                      <span className="ml-2 text-sm font-medium text-gray-600">
+                        {ratingScore} sao
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div>
                   <textarea
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    placeholder="Chia sẻ cảm nhận của bạn về sự kiện..."
-                    className="w-full border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    rows="3"
+                    placeholder="Chia sẻ cảm nhận của bạn về sự kiện này..."
+                    className="w-full bg-white border border-gray-200 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
+                    rows="4"
                   />
-                  <div className="flex gap-2">
-                    <Button onClick={handleSubmit} disabled={isSubmitting}>
-                      {isSubmitting
-                        ? editingRatingId
-                          ? "Đang cập nhật..."
-                          : "Đang gửi..."
-                        : editingRatingId
-                        ? "Cập nhật"
-                        : "Gửi đánh giá"}
-                    </Button>
+                </div>
+                <div className="flex gap-3">
+                  <Button 
+                    onClick={handleSubmit} 
+                    disabled={isSubmitting}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all"
+                  >
+                    {isSubmitting
+                      ? editingRatingId
+                        ? "Đang cập nhật..."
+                        : "Đang gửi..."
+                      : editingRatingId
+                      ? "Cập nhật đánh giá"
+                      : "Gửi đánh giá"}
+                  </Button>
 
-                    {editingRatingId && (
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setEditingRatingId(null);
-                          setRatingScore(0);
-                          setComment("");
-                        }}
-                      >
-                        Hủy
-                      </Button>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          ) : (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800 text-center">
-              <p>
-                Hãy <span className="font-semibold">tham gia sự kiện</span> để
-                có thể đánh giá và chia sẻ cảm nhận của bạn!
-              </p>
-            </div>
-          )
+                  {editingRatingId && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setEditingRatingId(null);
+                        setRatingScore(0);
+                        setComment("");
+                      }}
+                      className="border-gray-200 hover:bg-gray-50"
+                    >
+                      Hủy
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         ) : (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800 text-center">
-            <p>
-              Hãy <span className="font-semibold">tham gia sự kiện</span> để có
-              thể đánh giá và chia sẻ cảm nhận của bạn!
+          <div className="mb-10 bg-amber-50 border border-amber-100 rounded-xl p-5 text-center shadow-sm">
+            <p className="text-amber-800 text-sm">
+              Hãy <span className="font-semibold">tham gia sự kiện</span> để có thể đánh giá và chia sẻ cảm nhận của bạn!
             </p>
           </div>
-        )}
+        )
+      ) : (
+        <div className="mb-10 bg-amber-50 border border-amber-100 rounded-xl p-5 text-center shadow-sm">
+          <p className="text-amber-800 text-sm">
+            Hãy <span className="font-semibold">đăng nhập và tham gia sự kiện</span> để có thể đánh giá và chia sẻ cảm nhận của bạn!
+          </p>
+        </div>
+      )}
 
-        {/* Danh sách đánh giá */}
-        <div className="space-y-4">
-          {/*  Sắp xếp & Phân trang */}
-          {(() => {
-            const sortedRatings = [...ratings].sort(
-              (a, b) => new Date(b.createAt) - new Date(a.createAt)
-            );
-            const totalPages = Math.ceil(sortedRatings.length / pageSize);
-            const startIndex = (currentPage - 1) * pageSize;
-            const paginatedRatings = sortedRatings.slice(
-              startIndex,
-              startIndex + pageSize
-            );
+      {/* Danh sách đánh giá */}
+      <div>
+        {(() => {
+          const sortedRatings = [...ratings].sort(
+            (a, b) => new Date(b.createAt) - new Date(a.createAt)
+          );
+          const totalPages = Math.ceil(sortedRatings.length / pageSize);
+          const startIndex = (currentPage - 1) * pageSize;
+          const paginatedRatings = sortedRatings.slice(
+            startIndex,
+            startIndex + pageSize
+          );
 
-            return (
-              <>
-                {loading ? (
-                  <p className="text-sm text-muted-foreground">
-                    Đang tải đánh giá...
-                  </p>
-                ) : ratings.length === 0 ? (
-                  <div className="bg-gray-50 border rounded-lg p-6 text-center text-gray-500">
-                    <User className="mx-auto mb-2 w-6 h-6 text-gray-400" />
-                    <p>Chưa có đánh giá nào cho sự kiện này.</p>
+          return (
+            <>
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="flex items-center gap-3 text-gray-400">
+                    <div className="w-5 h-5 border-2 border-gray-300 border-t-primary rounded-full animate-spin" />
+                    <p className="text-sm">Đang tải đánh giá...</p>
                   </div>
-                ) : (
-                  paginatedRatings.map((rating) => {
+                </div>
+              ) : ratings.length === 0 ? (
+                <div className="bg-gray-50 rounded-xl p-12 text-center border border-gray-100">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <User className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 font-medium">Chưa có đánh giá nào</p>
+                  <p className="text-gray-400 text-sm mt-1">Hãy là người đầu tiên đánh giá sự kiện này!</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {paginatedRatings.map((rating) => {
                     const isCurrentUser =
                       isAuthenticated &&
                       (rating.userId === user?.userId ||
@@ -325,47 +384,59 @@ const RatingSection = ({ eventId }) => {
                     return (
                       <div
                         key={rating.ratingId}
-                        className="border rounded-lg p-3 hover:bg-muted/40 transition"
+                        className="bg-white border border-gray-100 rounded-xl p-5 hover:shadow-md transition-all duration-200 group"
                       >
-                        <div className="flex items-start justify-between mb-1">
-                          <div>
-                            <p className="font-semibold text-sm">
-                              {rating.userName}
-                            </p>
-                            <div className="flex items-center">
-                              {[...Array(5)].map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className={`w-4 h-4 ${
-                                    i < rating.ratingScore
-                                      ? "fill-yellow-400 text-yellow-400"
-                                      : "text-gray-300"
-                                  }`}
-                                />
-                              ))}
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-semibold text-primary">
+                                  {rating.userName?.[0]?.toUpperCase() || "U"}
+                                </span>
+                              </div>
+                              <div>
+                                <p className="font-semibold text-gray-900 text-sm">
+                                  {rating.userName}
+                                </p>
+                                <div className="flex items-center gap-1 mt-0.5">
+                                  {[...Array(5)].map((_, i) => (
+                                    <Star
+                                      key={i}
+                                      className={`w-4 h-4 transition-all ${
+                                        i < rating.ratingScore
+                                          ? "fill-amber-400 text-amber-400"
+                                          : "text-gray-200"
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
                             </div>
                           </div>
 
                           {isCurrentUser && (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="w-4 h-4 text-gray-500" />
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <MoreHorizontal className="w-4 h-4 text-gray-400" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
+                              <DropdownMenuContent align="end" className="bg-white border border-gray-100 shadow-lg">
                                 <DropdownMenuItem
                                   onClick={() => handleEdit(rating)}
+                                  className="cursor-pointer"
                                 >
-                                  <Pencil className="w-4 h-4 mr-2" /> Sửa đánh
-                                  giá
+                                  <Pencil className="w-4 h-4 mr-2" /> Sửa đánh giá
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => handleDelete(rating)}
-                                  className="text-red-600 focus:text-red-600"
+                                  className="text-red-600 focus:text-red-600 cursor-pointer"
                                 >
-                                  <Trash2 className="w-4 h-4 mr-2" /> Xóa đánh
-                                  giá
+                                  <Trash2 className="w-4 h-4 mr-2" /> Xóa đánh giá
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -373,75 +444,113 @@ const RatingSection = ({ eventId }) => {
                         </div>
 
                         {rating.comment && (
-                          <p className="text-sm text-gray-600">
+                          <p className="text-gray-700 text-sm leading-relaxed mb-3 pl-[52px]">
                             {rating.comment}
                           </p>
                         )}
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(rating.createAt).toLocaleString("vi-VN")}
+                        <p className="text-xs text-gray-400 pl-[52px]">
+                          {new Date(rating.createAt).toLocaleString("vi-VN", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </p>
                       </div>
                     );
-                  })
-                )}
+                  })}
+                </div>
+              )}
 
-                {/*  Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex justify-center items-center gap-3 mt-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage((p) => p - 1)}
-                    >
-                      Trước
-                    </Button>
-                    <span className="text-sm text-muted-foreground">
-                      Trang {currentPage}/{totalPages}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage((p) => p + 1)}
-                    >
-                      Sau
-                    </Button>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 mt-8 pt-6 border-t border-gray-100">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => p - 1)}
+                    className="border-gray-200 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-1" />
+                    Trước
+                  </Button>
+                  <div className="flex items-center gap-1 mx-4">
+                    {[...Array(totalPages)].map((_, i) => {
+                      const page = i + 1;
+                      if (
+                        page === 1 ||
+                        page === totalPages ||
+                        (page >= currentPage - 1 && page <= currentPage + 1)
+                      ) {
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${
+                              currentPage === page
+                                ? "bg-primary text-white shadow-sm"
+                                : "text-gray-600 hover:bg-gray-100"
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      } else if (
+                        page === currentPage - 2 ||
+                        page === currentPage + 2
+                      ) {
+                        return <span key={page} className="text-gray-400">...</span>;
+                      }
+                      return null;
+                    })}
                   </div>
-                )}
-              </>
-            );
-          })()}
-        </div>
-        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Xác nhận xóa đánh giá</DialogTitle>
-              <DialogDescription>
-                Hành động này sẽ xóa vĩnh viễn đánh giá của bạn. Bạn có chắc
-                chắn muốn tiếp tục không?
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsDeleteDialogOpen(false)}
-                disabled={isDeleting}
-              >
-                Hủy
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={confirmDelete}
-                disabled={isDeleting}
-              >
-                {isDeleting ? "Đang xóa..." : "Xác nhận xóa"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => p + 1)}
+                    className="border-gray-200 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Sau
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </div>
+              )}
+            </>
+          );
+        })()}
+      </div>
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-gray-900">Xác nhận xóa đánh giá</DialogTitle>
+            <DialogDescription className="text-gray-600">
+              Hành động này sẽ xóa vĩnh viễn đánh giá của bạn. Bạn có chắc chắn muốn tiếp tục không?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex justify-end gap-3 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isDeleting}
+              className="border-gray-200 hover:bg-gray-50"
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? "Đang xóa..." : "Xác nhận xóa"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 

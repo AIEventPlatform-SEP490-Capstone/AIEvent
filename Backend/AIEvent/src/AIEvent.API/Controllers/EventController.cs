@@ -394,7 +394,7 @@ namespace AIEvent.API.Controllers
 
         [HttpGet("radius")]
         [Authorize(Roles = "User")]
-        public async Task<ActionResult<SuccessResponse<BasePaginated<EventsLocationResponse>>>> GetListEventForStaff(
+        public async Task<ActionResult<SuccessResponse<BasePaginated<EventsLocationResponse>>>> GetListEventByRadius(
                                                                                                           [FromQuery] string? categoryId,
                                                                                                           [FromQuery] int? radius,
                                                                                                           [FromQuery] double latitude,
@@ -415,5 +415,31 @@ namespace AIEvent.API.Controllers
                 SuccessCodes.Success,
                 "Event retrieved successfully"));
         }
-    }
+
+		[HttpGet("by-organizer")]
+		[AllowAnonymous]
+		public async Task<ActionResult<SuccessResponse<BasePaginated<EventsResponse>>>> GetEventByOrganizer([FromQuery] Guid organizerId,
+																										[FromQuery] string? search,
+																										[FromQuery] int pageNumber = 1,
+																										[FromQuery] int pageSize = 5)
+		{
+			Guid? userId = null;
+			if (User.Identity?.IsAuthenticated == true)
+			{
+				userId = User.GetRequiredUserId();
+			}
+
+			var result = await _eventService.GetEventByOrganizerAsync(userId, organizerId, search, pageNumber, pageSize);
+
+			if (!result.IsSuccess)
+			{
+				return BadRequest(result.Error!);
+			}
+
+			return Ok(SuccessResponse<BasePaginated<EventsResponse>>.SuccessResult(
+				result.Value!,
+				SuccessCodes.Success,
+				"Event related retrieved successfully"));
+		}
+	}
 }

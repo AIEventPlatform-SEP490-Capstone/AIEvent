@@ -26,6 +26,7 @@ const ScreenNames = {
   LIKES_SCREEN: 'LikesScreen',
   FRIENDS_SCREEN: 'FriendsScreen',
   FRIEND_DETAIL_SCREEN: 'FriendDetailScreen',
+  INVITATIONS_SCREEN: 'InvitationsScreen',
   
   // Timeline Screen
   TIMELINE_SCREEN: 'TimelineScreen',
@@ -35,6 +36,9 @@ const ScreenNames = {
   
   // Check In Confirmation Screen
   CHECK_IN_CONFIRMATION_SCREEN: 'CheckInConfirmationScreen',
+  
+  // AI Chat Screen
+  AI_CHAT_SCREEN: 'AIChatScreen',
   
   // Navigation
   TAB_NAVIGATOR: 'TabNavigator',

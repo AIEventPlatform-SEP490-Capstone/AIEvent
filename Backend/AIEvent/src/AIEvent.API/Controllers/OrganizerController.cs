@@ -39,7 +39,7 @@ namespace AIEvent.API.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "Admin, Organizer, Manager")]
+        [Authorize(Roles = "Admin, Organizer, Manager, User")]
         public async Task<ActionResult<SuccessResponse<OrganizerDetailResponse>>> GetOrganizerById(Guid id)
         {
             var result = await _organizerService.GetOrganizerByIdAsync(id);

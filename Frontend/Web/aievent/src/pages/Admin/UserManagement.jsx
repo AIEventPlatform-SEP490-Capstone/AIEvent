@@ -407,27 +407,27 @@ const UserManagement = () => {
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle>Create New Manager Account</DialogTitle>
+                <DialogTitle>Tạo tài khoản Manager</DialogTitle>
                 <DialogDescription>
-                  Enter the details for the new manager account.
+                  Nhập thông tin cho tài khoản Manager mới.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <label htmlFor="fullName" className="text-right text-sm font-medium">
-                    Full Name *
+                    Tên đầy đủ *
                   </label>
                   <Input
                     id="fullName"
                     value={newManagerData.fullName}
                     onChange={(e) => handleCreateManagerChange('fullName', e.target.value)}
                     className="col-span-3"
-                    placeholder="Enter full name"
+                    placeholder="Nhập tên đầy đủ"
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <label htmlFor="email" className="text-right text-sm font-medium">
-                    Email *
+                    Email*
                   </label>
                   <Input
                     id="email"
@@ -435,12 +435,12 @@ const UserManagement = () => {
                     value={newManagerData.email}
                     onChange={(e) => handleCreateManagerChange('email', e.target.value)}
                     className="col-span-3"
-                    placeholder="Enter email"
+                    placeholder="Nhập email"
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <label htmlFor="password" className="text-right text-sm font-medium">
-                    Password *
+                    Mật khẩu *
                   </label>
                   <Input
                     id="password"
@@ -448,36 +448,36 @@ const UserManagement = () => {
                     value={newManagerData.password}
                     onChange={(e) => handleCreateManagerChange('password', e.target.value)}
                     className="col-span-3"
-                    placeholder="Enter password"
+                    placeholder="Nhập mật khẩu"
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <label htmlFor="phoneNumber" className="text-right text-sm font-medium">
-                    Phone *
+                    Số điện thoại *
                   </label>
                   <Input
                     id="phoneNumber"
                     value={newManagerData.phoneNumber}
                     onChange={(e) => handleCreateManagerChange('phoneNumber', e.target.value)}
                     className="col-span-3"
-                    placeholder="Enter phone number"
+                    placeholder="Nhập số điện thoại"
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <label htmlFor="address" className="text-right text-sm font-medium">
-                    Address
+                    Địa chỉ
                   </label>
                   <Input
                     id="address"
                     value={newManagerData.address}
                     onChange={(e) => handleCreateManagerChange('address', e.target.value)}
                     className="col-span-3"
-                    placeholder="Enter address"
+                    placeholder="Nhập địa chỉ"
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <label htmlFor="image" className="text-right text-sm font-medium">
-                    Avatar
+                    Ảnh đại diện
                   </label>
                   <Input
                     id="image"

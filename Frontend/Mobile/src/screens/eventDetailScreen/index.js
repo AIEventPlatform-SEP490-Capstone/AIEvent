@@ -9,9 +9,13 @@ import {
   Linking,
   Modal,
   StyleSheet,
+  Dimensions,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
+import RenderHtml from 'react-native-render-html';
 import styles from './styles.js';
 import CustomText from '../../components/common/customTextRN';
 import CustomButton from '../../components/common/customButtonRN';
@@ -26,12 +30,15 @@ import {
   selectEventsError,
 } from '../../redux/slices/eventsSlice';
 import EventService from '../../api/services/EventService';
+import FriendService from '../../api/services/FriendService';
 import RatingSectionMobile from '../../components/presentation/RatingSectionMobile';
 import AuthService from '../../api/services/AuthService';
 import {isStaffUser} from '../../utils/jwtUtils';
 // import Clipboard from '@react-native-clipboard/clipboard';
 import * as Clipboard from 'expo-clipboard';
 import Toast from 'react-native-toast-message';
+
+const {width} = Dimensions.get('window');
 
 const EventDetailScreen = () => {
   const navigation = useNavigation();
@@ -57,6 +64,12 @@ const EventDetailScreen = () => {
   const [event, setEvent] = useState(null);
   const [isStaff, setIsStaff] = useState(false);
   const [shareModalVisible, setShareModalVisible] = useState(false);
+  const [inviteModalVisible, setInviteModalVisible] = useState(false);
+  const [friends, setFriends] = useState([]);
+  const [selectedFriends, setSelectedFriends] = useState([]);
+  const [inviteMessage, setInviteMessage] = useState('Tham gia cùng tôi nhé!');
+  const [loadingFriends, setLoadingFriends] = useState(false);
+  const [sendingInvites, setSendingInvites] = useState(false);
 
   const shareUrl = `https://yourapp.com/event/${eventId}`;
   
@@ -150,6 +163,134 @@ const EventDetailScreen = () => {
       });
     });
   }, [shareUrl]);
+
+  // Load friends when invite modal opens
+  const loadFriends = useCallback(async () => {
+    try {
+      setLoadingFriends(true);
+      console.log('Loading friends...');
+      // Get friends with Accepted status only
+      const response = await FriendService.getFriends({ 
+        pageNumber: 1, 
+        pageSize: 100,
+        status: 'Accepted' 
+      });
+      
+      console.log('Friends response:', response);
+      
+      if (response.success && response.data) {
+        // Handle different response structures
+        let friendsList = [];
+        
+        // Check if data is an array directly
+        if (Array.isArray(response.data)) {
+          friendsList = response.data;
+        } 
+        // Check if data has items/Items property
+        else if (response.data.items) {
+          friendsList = response.data.items;
+        } 
+        else if (response.data.Items) {
+          friendsList = response.data.Items;
+        }
+        // Check if data.data exists (nested structure)
+        else if (response.data.data) {
+          if (Array.isArray(response.data.data)) {
+            friendsList = response.data.data;
+          } else if (response.data.data.items) {
+            friendsList = response.data.data.items;
+          } else if (response.data.data.Items) {
+            friendsList = response.data.data.Items;
+          }
+        }
+        
+        console.log('Friends list:', friendsList);
+        setFriends(friendsList);
+        
+        if (friendsList.length === 0) {
+          Toast.show({
+            type: 'info',
+            text1: 'Bạn chưa có bạn bè nào',
+          });
+        }
+      } else {
+        console.error('Failed to load friends:', response);
+        Toast.show({
+          type: 'error',
+          text1: response.message || 'Không thể tải danh sách bạn bè',
+        });
+      }
+    } catch (error) {
+      console.error('Error loading friends:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Lỗi khi tải danh sách bạn bè: ' + (error.message || 'Unknown error'),
+      });
+    } finally {
+      setLoadingFriends(false);
+    }
+  }, []);
+
+  // Handle opening invite modal
+  const handleOpenInviteModal = useCallback(() => {
+    setSelectedFriends([]);
+    setInviteMessage('Tham gia cùng tôi nhé!');
+    setInviteModalVisible(true);
+    loadFriends();
+  }, [loadFriends]);
+
+  // Toggle friend selection
+  const toggleFriendSelection = useCallback((friendId) => {
+    setSelectedFriends(prev => {
+      if (prev.includes(friendId)) {
+        return prev.filter(id => id !== friendId);
+      } else {
+        return [...prev, friendId];
+      }
+    });
+  }, []);
+
+  // Send invitations
+  const handleSendInvitations = useCallback(async () => {
+    if (selectedFriends.length === 0) {
+      Toast.show({
+        type: 'error',
+        text1: 'Vui lòng chọn ít nhất một bạn bè',
+      });
+      return;
+    }
+
+    try {
+      setSendingInvites(true);
+      const response = await EventService.inviteFriends(
+        eventId,
+        selectedFriends,
+        inviteMessage
+      );
+
+      if (response.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Đã gửi lời mời thành công!',
+        });
+        setInviteModalVisible(false);
+        setSelectedFriends([]);
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: response.message || 'Không thể gửi lời mời',
+        });
+      }
+    } catch (error) {
+      console.error('Error sending invitations:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Lỗi khi gửi lời mời',
+      });
+    } finally {
+      setSendingInvites(false);
+    }
+  }, [eventId, selectedFriends, inviteMessage]);
 
   useEffect(() => {
     // Only load event detail if we have a valid eventId
@@ -278,7 +419,7 @@ const EventDetailScreen = () => {
       if (!tags || !Array.isArray(tags)) return [];
       return tags.map(tag => {
         if (typeof tag === 'object') {
-          return tag.tagName || tag.name || tag.tagId || 'Tag';
+          return tag.tagName || tag.TagName || tag.tagId || tag.TagId || 'Tag';
         }
         return tag;
       });
@@ -286,6 +427,7 @@ const EventDetailScreen = () => {
 
     return {
       id: eventId,
+      eventId: eventId,
       title: eventData.title || eventData.Title || 'Chưa có tiêu đề',
       description:
         eventData.description || eventData.Description || 'Chưa có mô tả',
@@ -313,9 +455,10 @@ const EventDetailScreen = () => {
       location:
         eventData.locationName || eventData.LocationName || 'Chưa xác định',
       address: eventData.address || eventData.Address || '',
-      rating: eventData.averageRating || 4.5, // Use actual rating if available, otherwise mock
+      rating: eventData.averageRating !== undefined ? eventData.averageRating : 4.5,
       attendees: eventData.soldQuantity || eventData.SoldQuantity || 0,
       totalTickets: eventData.totalTickets || eventData.TotalTickets || 0,
+      remainingTickets: eventData.remainingTickets || 0,
       // Fix the price calculation logic
       price: calculateDisplayPrice(eventData),
       image:
@@ -323,20 +466,15 @@ const EventDetailScreen = () => {
           ? {uri: eventData.imgListEvent[0]}
           : 'card1', // Use actual image if available
       category:
-        eventData.eventCategoryName ||
-        eventData.EventCategoryName ||
-        (eventData.eventCategory
-          ? eventData.eventCategory.eventCategoryName
-          : '') ||
-        'Chưa phân loại',
+        eventData.eventCategory ?
+          (eventData.eventCategory.eventCategoryName || eventData.eventCategory.EventCategoryName) :
+          (eventData.eventCategoryName || eventData.EventCategoryName || 'Chưa phân loại'),
       organizer: eventData.organizerEvent
-        ? eventData.organizerEvent.companyName ||
-          eventData.organizerEvent.CompanyName ||
-          'Nhà tổ chức'
+        ? (eventData.organizerEvent.companyName || eventData.organizerEvent.CompanyName || 'Nhà tổ chức')
         : 'Chưa xác định',
       isFavorite: eventData.isFavorite || false,
       tags: transformTags(
-        eventData.tags || eventData.Tags || eventData.eventTags || [],
+        eventData.eventTags || eventData.EventTags || eventData.tags || [],
       ),
       ticketDetails: eventData.ticketDetails || eventData.TicketDetails || [],
     };
@@ -347,35 +485,21 @@ const EventDetailScreen = () => {
     // If we have ticket details, calculate from them
     if (eventData.ticketDetails && eventData.ticketDetails.length > 0) {
       const prices = eventData.ticketDetails.map(
-        ticket => ticket.ticketPrice || 0,
+        ticket => ticket.ticketPrice !== undefined ? ticket.ticketPrice : 0,
       );
       const minPrice = Math.min(...prices);
       const maxPrice = Math.max(...prices);
 
       if (minPrice === 0 && maxPrice === 0) {
-        return 'Miễn phí';
+        return '0đ';
       } else if (minPrice === maxPrice) {
         return `${minPrice.toLocaleString('vi-VN')}đ`;
       } else {
         return `${minPrice.toLocaleString('vi-VN')}đ - ${maxPrice.toLocaleString('vi-VN')}đ`;
       }
     }
-
-    // Fallback to direct ticketPrice property
-    if (eventData.ticketPrice !== undefined && eventData.ticketPrice > 0) {
-      return `${eventData.ticketPrice.toLocaleString('vi-VN')}đ`;
-    }
-
-    // Check ticketPricingType
-    if (
-      eventData.ticketPricingType === 'Free' ||
-      eventData.ticketPricingType === 'free'
-    ) {
-      return 'Miễn phí';
-    }
-
     // Default to Miễn phí if no price information
-    return 'Miễn phí';
+    return '0đ';
   };
 
   const handleJoinEvent = () => {
@@ -484,7 +608,7 @@ const EventDetailScreen = () => {
   }
 
   // Calculate available tickets
-  const totalAvailableTickets = event.totalTickets - (event.attendees || 0);
+  const totalAvailableTickets = event.remainingTickets || event.totalTickets - (event.attendees || 0);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -978,8 +1102,8 @@ const EventDetailScreen = () => {
                       variant="body"
                       color="primary"
                       style={styles.ticketPrice}>
-                      {ticket.ticketPrice === 0
-                        ? 'Miễn phí'
+                      {ticket.ticketPrice === 0 || ticket.ticketPrice === undefined
+                        ? '0đ'
                         : `${ticket.ticketPrice.toLocaleString('vi-VN')}đ`}
                     </CustomText>
                   </View>
@@ -994,18 +1118,29 @@ const EventDetailScreen = () => {
           <CustomText variant="h3" color="primary" style={styles.sectionTitle}>
             {Strings.EVENT_DESCRIPTION}
           </CustomText>
-          <CustomText
-            variant="body"
-            color="secondary"
-            style={{
-              fontSize: Fonts.md,
-              lineHeight: 24,
-              fontFamily: Fonts.regular,
-            }}>
-            {event.description ||
-              event.detailedDescription ||
-              'Chưa có mô tả cho sự kiện này.'}
-          </CustomText>
+          {event.detailedDescription ? (
+            <RenderHtml
+              contentWidth={width}
+              source={{html: event.detailedDescription}}
+              baseStyle={{
+                fontSize: Fonts.md,
+                lineHeight: 24,
+                fontFamily: Fonts.regular,
+                color: Colors.textSecondary,
+              }}
+            />
+          ) : (
+            <CustomText
+              variant="body"
+              color="secondary"
+              style={{
+                fontSize: Fonts.md,
+                lineHeight: 24,
+                fontFamily: Fonts.regular,
+              }}>
+              {event.description || 'Chưa có mô tả cho sự kiện này.'}
+            </CustomText>
+          )}
         </View>
 
         {/* Related Events Section */}
@@ -1101,6 +1236,13 @@ const EventDetailScreen = () => {
 
             <View style={styles.secondaryActions}>
               <CustomButton
+                title="Mời bạn bè"
+                onPress={handleOpenInviteModal}
+                variant="outline"
+                style={styles.actionButton}
+              />
+
+              <CustomButton
                 title={Strings.SHARE_EVENT}
                 onPress={() => setShareModalVisible(true)}
                 variant="outline"
@@ -1156,6 +1298,143 @@ const EventDetailScreen = () => {
           </View>
         </View>
       )}
+
+      {/* Invite Friends Modal */}
+      <Modal
+        visible={inviteModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setInviteModalVisible(false)}>
+        <View style={styles.inviteModalOverlay}>
+          <TouchableOpacity
+            style={styles.inviteModalBackdrop}
+            activeOpacity={1}
+            onPress={() => setInviteModalVisible(false)}
+          />
+          <View style={styles.inviteModalContent}>
+            <View style={styles.inviteModalHeader}>
+              <CustomText variant="h3" style={styles.inviteModalTitle}>
+                Mời bạn bè
+              </CustomText>
+              <TouchableOpacity
+                onPress={() => setInviteModalVisible(false)}
+                style={styles.inviteModalCloseButton}>
+                <Image source={Images.close} style={styles.inviteModalCloseIcon} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.inviteModalBody} showsVerticalScrollIndicator={false}>
+              {/* Message Input */}
+              <View style={styles.inviteMessageContainer}>
+                <CustomText variant="body" color="primary" style={styles.inviteMessageLabel}>
+                  Tin nhắn mời (tùy chọn)
+                </CustomText>
+                <TextInput
+                  style={styles.inviteMessageInput}
+                  placeholder="Nhập tin nhắn mời..."
+                  placeholderTextColor={Colors.textLight}
+                  value={inviteMessage}
+                  onChangeText={setInviteMessage}
+                  multiline
+                  maxLength={200}
+                />
+              </View>
+
+              {/* Friends List */}
+              <View style={styles.friendsListContainer}>
+                <CustomText variant="body" color="primary" style={styles.friendsListTitle}>
+                  Chọn bạn bè ({selectedFriends.length} đã chọn)
+                </CustomText>
+                {loadingFriends ? (
+                  <View style={styles.loadingFriendsContainer}>
+                    <ActivityIndicator size="large" color={Colors.primary} />
+                    <CustomText variant="body" color="secondary" style={{ marginTop: 12 }}>
+                      Đang tải danh sách bạn bè...
+                    </CustomText>
+                  </View>
+                ) : friends.length === 0 ? (
+                  <View style={styles.emptyFriendsContainer}>
+                    <CustomText variant="body" color="secondary" align="center">
+                      Bạn chưa có bạn bè nào
+                    </CustomText>
+                  </View>
+                ) : (
+                  friends.map((friend) => {
+                    const isSelected = selectedFriends.includes(friend.id);
+                    return (
+                      <TouchableOpacity
+                        key={friend.id}
+                        style={[
+                          styles.friendItem,
+                          isSelected && styles.friendItemSelected,
+                        ]}
+                        onPress={() => toggleFriendSelection(friend.id)}
+                        activeOpacity={0.7}>
+                        <View style={styles.friendItemContent}>
+                          <View style={styles.friendAvatar}>
+                            {friend.image ? (
+                              <Image
+                                source={{ uri: friend.image }}
+                                style={styles.friendAvatarImage}
+                              />
+                            ) : (
+                              <CustomText
+                                variant="h4"
+                                color="white"
+                                style={styles.friendAvatarText}>
+                                {friend.friendName?.[0]?.toUpperCase() || 'U'}
+                              </CustomText>
+                            )}
+                          </View>
+                          <View style={styles.friendInfo}>
+                            <CustomText
+                              variant="body"
+                              color="primary"
+                              style={styles.friendName}>
+                              {friend.friendName || 'Người dùng'}
+                            </CustomText>
+                            {friend.district && (
+                              <CustomText
+                                variant="caption"
+                                color="secondary"
+                                style={styles.friendDistrict}>
+                                {friend.district}
+                              </CustomText>
+                            )}
+                          </View>
+                        </View>
+                        {isSelected && (
+                          <View style={styles.friendCheckmark}>
+                            <CustomText variant="h4" color="white">
+                              ✓
+                            </CustomText>
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })
+                )}
+              </View>
+            </ScrollView>
+
+            {/* Modal Footer */}
+            <View style={styles.inviteModalFooter}>
+              <CustomButton
+                title="Hủy"
+                onPress={() => setInviteModalVisible(false)}
+                variant="outline"
+                style={[styles.inviteModalButton, styles.inviteModalCancelButton]}
+              />
+              <CustomButton
+                title={sendingInvites ? 'Đang gửi...' : 'Gửi lời mời'}
+                onPress={handleSendInvitations}
+                disabled={sendingInvites || selectedFriends.length === 0}
+                style={[styles.inviteModalButton, styles.inviteModalSendButton]}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };

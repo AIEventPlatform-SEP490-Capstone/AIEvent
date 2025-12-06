@@ -7,6 +7,7 @@ import {
   fetchRelatedEvents,
   fetchDraftEvents,
   fetchEventsByStatus,
+  fetchEventsByOrganizer,
   createEvent,
   updateEvent,
   deleteEvent,
@@ -98,6 +99,17 @@ export const useEvents = () => {
     }
   };
 
+  // Get events by organizer (public)
+  const getEventsByOrganizer = async (params = {}) => {
+    try {
+      const response = await dispatch(fetchEventsByOrganizer(params)).unwrap();
+      return response;
+    } catch (err) {
+      toast.error("Không thể tải danh sách sự kiện của nhà tổ chức");
+      return null;
+    }
+  };
+
   const createEventAPI = async (eventData) => {
     try {
       const response = await dispatch(createEvent(eventData)).unwrap();
@@ -143,7 +155,6 @@ export const useEvents = () => {
       const response = await dispatch(
         deleteEvent({ eventId, reasonCancel })
       ).unwrap();
-      toast.success("Xóa sự kiện thành công!");
       return response;
     } catch (err) {
       console.error("Delete event error:", err);
@@ -175,7 +186,6 @@ export const useEvents = () => {
       const response = await dispatch(
         confirmEvent({ eventId, confirmData })
       ).unwrap();
-      toast.success("Xác nhận sự kiện thành công!");
       return response;
     } catch (err) {
       toast.error("Không thể xác nhận sự kiện");
@@ -264,6 +274,7 @@ export const useEvents = () => {
     getRelatedEvents,
     getDraftEvents,
     getEventsByStatus,
+    getEventsByOrganizer,
     createEvent: createEventAPI,
     updateEvent: updateEventAPI,
     deleteEvent: deleteEventAPI,

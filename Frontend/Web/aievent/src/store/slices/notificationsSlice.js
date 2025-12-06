@@ -230,7 +230,7 @@ const notificationsSlice = createSlice({
           notification.ReadAt = readAt;
         });
         state.unreadCount = 0;
-        showSuccess("All notifications marked as read");
+        // showSuccess("All notifications marked as read");
       })
       .addCase(markAllAsRead.rejected, (_, action) => {
         showError(action.payload);

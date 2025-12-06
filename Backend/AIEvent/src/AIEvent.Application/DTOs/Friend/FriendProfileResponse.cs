@@ -1,4 +1,6 @@
-﻿namespace AIEvent.Application.DTOs.Friend
+﻿using AIEvent.Domain.Enums;
+
+namespace AIEvent.Application.DTOs.Friend
 {
     public class FriendProfileResponse
     {
@@ -21,5 +23,6 @@
         public string? FacebookUrl { get; set; }
         public DateTimeOffset? JoinTime { get; set; }
         public List<CommonEvent>? ListCommonEvent {  get; set; }
+        public FriendshipStatus? FriendshipStatus { get; set;}
     }
 }

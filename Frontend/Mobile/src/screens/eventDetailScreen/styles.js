@@ -505,6 +505,171 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 12,
   },
+
+  // Invite Friends Modal Styles
+  inviteModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  inviteModalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  inviteModalContent: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '90%',
+    paddingBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: -4},
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 16,
+  },
+  inviteModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  inviteModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    fontFamily: Fonts.bold,
+    color: Colors.textPrimary,
+  },
+  inviteModalCloseButton: {
+    padding: 4,
+  },
+  inviteModalCloseIcon: {
+    width: 24,
+    height: 24,
+    tintColor: Colors.secondary,
+  },
+  inviteModalBody: {
+    maxHeight: height * 0.6,
+    padding: 20,
+  },
+  inviteMessageContainer: {
+    marginBottom: 24,
+  },
+  inviteMessageLabel: {
+    fontSize: Fonts.md,
+    fontWeight: '600',
+    marginBottom: 8,
+    fontFamily: Fonts.semiBold,
+  },
+  inviteMessageInput: {
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    borderRadius: 12,
+    padding: 12,
+    fontSize: Fonts.md,
+    fontFamily: Fonts.regular,
+    color: Colors.textPrimary,
+    minHeight: 80,
+    textAlignVertical: 'top',
+    backgroundColor: Colors.background,
+  },
+  friendsListContainer: {
+    marginBottom: 20,
+  },
+  friendsListTitle: {
+    fontSize: Fonts.md,
+    fontWeight: '600',
+    marginBottom: 16,
+    fontFamily: Fonts.semiBold,
+  },
+  loadingFriendsContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyFriendsContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  friendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    marginBottom: 12,
+    borderRadius: 12,
+    backgroundColor: Colors.background,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  friendItemSelected: {
+    backgroundColor: '#E3F2FD',
+    borderColor: Colors.primary,
+  },
+  friendItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  friendAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  friendAvatarImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+  friendAvatarText: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  friendInfo: {
+    flex: 1,
+  },
+  friendName: {
+    fontSize: Fonts.md,
+    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
+    marginBottom: 4,
+  },
+  friendDistrict: {
+    fontSize: Fonts.sm,
+  },
+  friendCheckmark: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  inviteModalFooter: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.borderLight,
+    gap: 12,
+  },
+  inviteModalButton: {
+    flex: 1,
+  },
+  inviteModalCancelButton: {
+    marginRight: 0,
+  },
+  inviteModalSendButton: {
+    marginLeft: 0,
+  },
 });
 
 export default styles;

@@ -6,9 +6,11 @@ using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
+using AIEvent.Infrastructure.Hubs;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using MimeKit;
 using System.Text;
@@ -23,6 +25,7 @@ namespace AIEvent.Application.Services.Implements
         private readonly IHasherHelper _hasherHelper;
         private readonly IEmailService _emailService;
         private readonly IHangfireJobService _hangfireJobService;
+        private readonly ICacheService _cacheService;
 
         public UserService(
             IUnitOfWork unitOfWork,
@@ -30,7 +33,8 @@ namespace AIEvent.Application.Services.Implements
             ICloudinaryService loudinaryService,
             IHasherHelper hasherHelper,
             IEmailService emailService,
-            IHangfireJobService hangfireJobService)
+            IHangfireJobService hangfireJobService,
+            ICacheService cacheService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
@@ -38,6 +42,7 @@ namespace AIEvent.Application.Services.Implements
             _hasherHelper = hasherHelper;
             _emailService = emailService;
             _hangfireJobService = hangfireJobService;
+            _cacheService = cacheService;
         }
 
         public async Task<Result<UserDetailResponse>> GetUserByIdAsync(Guid userId)
@@ -98,10 +103,18 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result<BasePaginated<UserResponse>>> GetAllUsersAsync(int pageNumber, int pageSize, string? email, string? name, string? role)
         {
+            var roleAdmin = await _unitOfWork.RoleRepository
+                .Query()
+                .AsNoTracking()
+                .Select(r => new { r.Id, r.Name, r.IsDeleted })
+                .FirstOrDefaultAsync(r => r.Name == "Admin" && !r.IsDeleted);
+            if (roleAdmin == null)
+                return ErrorResponse.FailureResult("Role Admin not found", ErrorCodes.NotFound);
+
             IQueryable<User> userQuery = _unitOfWork.UserRepository
                 .Query()
                 .AsNoTracking()
-                .Where(u => u.IsActive && !u.IsDeleted)
+                .Where(u => u.IsActive && !u.IsDeleted && u.Id != roleAdmin.Id)
                 .OrderByDescending(s => s.CreatedAt);
 
             if (!string.IsNullOrEmpty(email))
@@ -485,6 +498,11 @@ namespace AIEvent.Application.Services.Implements
 
                 await _unitOfWork.UserRepository.UpdateAsync(user);
                 await _unitOfWork.SaveChangesAsync();
+
+                if (!action)
+                {
+                    await _cacheService.RemoveAsync($"user-location:{userId}");
+                }
 
                 return Result.Success();
             }

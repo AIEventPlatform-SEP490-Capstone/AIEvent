@@ -330,16 +330,6 @@ const SystemSettings = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2 bg-gray-100 p-1">
-          <TabsTrigger value="system" className="data-[state=active]:bg-white">
-            <Settings className="h-4 w-4 mr-2" />
-            Cấu hình hệ thống
-          </TabsTrigger>
-          <TabsTrigger value="website" className="data-[state=active]:bg-white">
-            <Globe className="h-4 w-4 mr-2" />
-            Cấu hình trang web
-          </TabsTrigger>
-        </TabsList>
 
         {/* Website Configuration Tab */}
         <TabsContent value="website" className="mt-6">

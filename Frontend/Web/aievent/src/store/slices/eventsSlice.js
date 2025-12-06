@@ -40,6 +40,18 @@ export const fetchRelatedEvents = createAsyncThunk(
   }
 );
 
+export const fetchEventsByOrganizer = createAsyncThunk(
+  'events/fetchEventsByOrganizer',
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      const response = await eventAPI.getEventsByOrganizer(params);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || 'Failed to fetch events by organizer');
+    }
+  }
+);
+
 export const createEvent = createAsyncThunk(
   'events/createEvent',
   async (eventData, { rejectWithValue }) => {
@@ -309,6 +321,20 @@ const eventsSlice = createSlice({
         state.totalCount = action.payload?.totalItems || action.payload?.totalCount || 0;
       })
       .addCase(fetchEventsByStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Fetch events by organizer
+      .addCase(fetchEventsByOrganizer.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchEventsByOrganizer.fulfilled, (state, action) => {
+        state.loading = false;
+        state.events = action.payload?.items || action.payload || [];
+        state.totalCount = action.payload?.totalItems || action.payload?.totalCount || 0;
+      })
+      .addCase(fetchEventsByOrganizer.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

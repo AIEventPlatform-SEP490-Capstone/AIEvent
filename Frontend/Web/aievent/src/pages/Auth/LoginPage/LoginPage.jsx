@@ -6,7 +6,7 @@ import { Input } from "../../../components/ui/input";
 import { Button } from "../../../components/ui/button";
 import AIEventLogo from "../../../assets/AIEventLogo.png";
 import LoginPanelBackground from "../../../assets/loginpanel.jpg";
-import { login } from "../../../store/slices/authSlice";
+import { login, logout } from "../../../store/slices/authSlice";
 import GoogleSignInButton from "../../../components/Auth/GoogleSignInButton";
 import {
   validationMessages,
@@ -41,6 +41,9 @@ const LoginPage = () => {
   // Effect to handle redirection when user is authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
+      if (user.role && user.role.toLowerCase() === 'staff') {
+        return;
+      }
       // Redirect về home, RoleBasedRedirect sẽ xử lý redirect theo role
       navigate(PATH.HOME, { replace: true });
     }
@@ -92,6 +95,13 @@ const LoginPage = () => {
         login({ ...formData, rememberMe })
       ).unwrap();
       if (result) {
+        // Check if the user has a staff role
+        if (result.user.role && result.user.role.toLowerCase() === 'staff') {
+          showError('Người dùng không có quyền truy cập');
+          dispatch(logout());
+          return;
+        }
+
         showSuccess(
           authMessages.loginSuccess(
             result.user.unique_name || result.user.email || "Bạn"
@@ -181,7 +191,8 @@ const LoginPage = () => {
                 Chào mừng đến với AIEvent
               </h1>
               <p className="text-base xl:text-lg text-blue-100 leading-relaxed">
-                Nền tảng quản lý sự kiện thông minh với công nghệ AI tiên tiến
+                Nền tảng tìm kiếm và quản lý sự kiện thông minh
+    
               </p>
             </div>
 
@@ -204,10 +215,10 @@ const LoginPage = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold mb-1">
-                    Tự động hóa thông minh
+                    Gợi ý sự kiện thông minh
                   </h3>
                   <p className="text-blue-100">
-                    Tối ưu hóa quy trình tổ chức sự kiện với AI
+                    Tìm kiếm sự kiện phù hợp với sở thích của bạn
                   </p>
                 </div>
               </div>
@@ -230,10 +241,10 @@ const LoginPage = () => {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold mb-1">
-                    Quản lý linh hoạt
+                    Quản lý sự kiện toàn diện
                   </h3>
                   <p className="text-blue-100">
-                    Theo dõi và điều phối mọi khía cạnh sự kiện
+                    Tổ chức và theo dõi sự kiện dễ dàng 
                   </p>
                 </div>
               </div>
@@ -259,7 +270,7 @@ const LoginPage = () => {
                     Phân tích chi tiết
                   </h3>
                   <p className="text-blue-100">
-                    Báo cáo và thống kê thời gian thực
+                    Báo cáo và thống kê hiệu quả sự kiện
                   </p>
                 </div>
               </div>

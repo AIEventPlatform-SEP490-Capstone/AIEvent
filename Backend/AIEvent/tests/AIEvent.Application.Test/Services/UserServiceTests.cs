@@ -24,6 +24,7 @@ namespace AIEvent.Application.Test.Services
         private readonly Mock<IEmailService> _mockEmailService;
         private readonly Mock<IHasherHelper> _mockHasherHelperService;
         private readonly Mock<IHangfireJobService> _mockHangfireJobService;
+        private readonly Mock<ICacheService> _mockCacheService;
         private readonly IUserService _userService;
 
         public UserServiceTests()
@@ -34,11 +35,12 @@ namespace AIEvent.Application.Test.Services
             _mockEmailService = new Mock<IEmailService>();
             _mockHasherHelperService = new Mock<IHasherHelper>();
             _mockHangfireJobService = new Mock<IHangfireJobService>();
+            _mockCacheService = new Mock<ICacheService>();
             var config = new MapperConfiguration(cfg => cfg.AddProfile<UserProfile>());
             _mockMapper.Setup(m => m.ConfigurationProvider).Returns(config);
             _mockMapper.Setup(m => m.ConfigurationProvider).Returns(config);
-            _userService = new UserService(_mockUnitOfWork.Object, _mockMapper.Object, _mockCloudinaryService.Object, 
-                _mockHasherHelperService.Object, _mockEmailService.Object, _mockHangfireJobService.Object);
+            _userService = new UserService(_mockUnitOfWork.Object, _mockMapper.Object, _mockCloudinaryService.Object,
+                _mockHasherHelperService.Object, _mockEmailService.Object, _mockHangfireJobService.Object, _mockCacheService.Object);         
         }
 
         #region GetUserByIdAsync Tests

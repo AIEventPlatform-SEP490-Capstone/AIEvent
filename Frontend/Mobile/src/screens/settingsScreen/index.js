@@ -13,6 +13,7 @@ import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
 import ScreenNames from '../../constants/ScreenNames';
 import { logoutUser } from '../../redux/actions/Action';
+import { CommonActions } from '@react-navigation/native';
 
 const SettingsScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -25,12 +26,9 @@ const SettingsScreen = ({ navigation }) => {
     
     Alert.alert(
       'Đăng xuất',
-      'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?',
+      'Bạn có chắc chắn muốn đăng xuất?',
       [
-        {
-          text: 'Hủy',
-          style: 'cancel',
-        },
+        { text: 'Hủy', style: 'cancel' },
         {
           text: 'Đăng xuất',
           style: 'destructive',
@@ -38,6 +36,14 @@ const SettingsScreen = ({ navigation }) => {
             try {
               setIsLoggingOut(true);
               await dispatch(logoutUser());
+  
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: ScreenNames.AUTH_NAVIGATOR }], 
+                })
+              );
+  
             } catch (error) {
               Alert.alert('Lỗi', 'Có lỗi xảy ra khi đăng xuất');
             } finally {
@@ -45,9 +51,10 @@ const SettingsScreen = ({ navigation }) => {
             }
           },
         },
-      ]
+      ],
+      { cancelable: true }
     );
-  }, [dispatch, isLoggingOut]);
+  }, [dispatch, isLoggingOut, navigation]);
 
   return (
     <View style={styles.container}>
@@ -69,57 +76,6 @@ const SettingsScreen = ({ navigation }) => {
             Quản lý tài khoản và cài đặt ứng dụng
           </CustomText>
         </LinearGradient>
-
-        {/* Account Settings Section */}
-        <View style={styles.settingsSection}>
-          <CustomText variant="h4" color="primary" style={styles.sectionTitle}>
-            Tài khoản
-          </CustomText>
-          
-          {/* Notifications Setting */}
-          <TouchableOpacity style={styles.settingCard} activeOpacity={0.7}>
-            <View style={styles.settingLeft}>
-              <CustomText variant="h3" style={styles.settingIcon}>
-                🔔
-              </CustomText>
-              <View style={styles.settingContent}>
-                <CustomText variant="body" color="primary" style={styles.settingTitle}>
-                  Thông báo
-                </CustomText>
-                <CustomText variant="caption" color="secondary" style={styles.settingDescription}>
-                  Nhận thông báo về sự kiện mới và cập nhật
-                </CustomText>
-              </View>
-            </View>
-            <View style={styles.settingRight}>
-              <View style={styles.toggleSwitch}>
-                <View style={styles.toggleThumb} />
-              </View>
-            </View>
-          </TouchableOpacity>
-
-          {/* Privacy Setting */}
-          <TouchableOpacity style={styles.settingCard} activeOpacity={0.7}>
-            <View style={styles.settingLeft}>
-              <CustomText variant="h3" style={styles.settingIcon}>
-                🔒
-              </CustomText>
-              <View style={styles.settingContent}>
-                <CustomText variant="body" color="primary" style={styles.settingTitle}>
-                  Quyền riêng tư
-                </CustomText>
-                <CustomText variant="caption" color="secondary" style={styles.settingDescription}>
-                  Hiển thị hồ sơ công khai cho người khác
-                </CustomText>
-              </View>
-            </View>
-            <View style={styles.settingRight}>
-              <View style={[styles.toggleSwitch, styles.toggleSwitchActive]}>
-                <View style={[styles.toggleThumb, styles.toggleThumbActive]} />
-              </View>
-            </View>
-          </TouchableOpacity>
-        </View>
 
         {/* Security Section */}
         <View style={styles.settingsSection}>
@@ -150,28 +106,6 @@ const SettingsScreen = ({ navigation }) => {
               <CustomText variant="body" color="secondary" style={styles.chevron}>
                 ›
               </CustomText>
-            </View>
-          </TouchableOpacity>
-
-          {/* Two-Factor Authentication */}
-          <TouchableOpacity style={styles.settingCard} activeOpacity={0.7}>
-            <View style={styles.settingLeft}>
-              <CustomText variant="h3" style={styles.settingIcon}>
-                🔐
-              </CustomText>
-              <View style={styles.settingContent}>
-                <CustomText variant="body" color="primary" style={styles.settingTitle}>
-                  Xác thực 2 bước
-                </CustomText>
-                <CustomText variant="caption" color="secondary" style={styles.settingDescription}>
-                  Bảo mật tài khoản với mã xác thực
-                </CustomText>
-              </View>
-            </View>
-            <View style={styles.settingRight}>
-              <View style={[styles.toggleSwitch, styles.toggleSwitchActive]}>
-                <View style={[styles.toggleThumb, styles.toggleThumbActive]} />
-              </View>
             </View>
           </TouchableOpacity>
 

@@ -250,7 +250,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
         toast.dismiss(loadingToast);
         
         if (response !== null) {
-          toast.success('✅ Xóa sự kiện thành công!', {
+          toast.success('Xóa sự kiện thành công!', {
             duration: 3000,
           });
           
@@ -289,7 +289,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
         toast.dismiss(loadingToast);
         
         if (response !== null) {
-          toast.success('✅ Xóa sự kiện thành công!', {
+          toast.success('Xóa sự kiện thành công!', {
             duration: 3000,
           });
           
@@ -344,22 +344,6 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
     return `${amount.toLocaleString('vi-VN')}đ`;
   }
 };
-
-  const getTicketTypeLabel = (ticketType) => {
-    // Handle both string enum names and number values
-    if (ticketType === 1 || ticketType === "Free" || ticketType === "free" || ticketType === "Miễn phí") return 'Miễn phí';
-    if (ticketType === 2 || ticketType === "Paid" || ticketType === "paid" || ticketType === "Có phí") return 'Có phí';
-    
-    // Additional check for string values (case insensitive)
-    if (typeof ticketType === 'string') {
-      const lowerTicketType = ticketType.toLowerCase();
-      if (lowerTicketType === 'free') return 'Miễn phí';
-      if (lowerTicketType === 'paid') return 'Có phí';
-    }
-    
-    // Default fallback
-    return 'Không xác định';
-  };
 
   const getTabDisplayName = (tab) => {
     switch (tab) {
@@ -614,12 +598,15 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                 <div className="absolute inset-0 p-8 flex flex-col justify-between">
                   {/* Status badge top-right */}
                   <div className="flex justify-end">
-                    {heroEvent.status && (
-                      <Badge className="bg-emerald-500/90 dark:bg-emerald-600/90 text-white backdrop-blur-sm border-emerald-400/50 rounded-full px-4 py-1.5 text-xs font-semibold shadow-lg shadow-emerald-500/30">
-                        <CheckCircle className="w-3 h-3 mr-1.5" />
-                        {EventStatusDisplay[heroEvent.status] || heroEvent.status}
-                      </Badge>
-                    )}
+                    {heroEvent.status && (() => {
+                      const statusConfig = getStatusConfig(heroEvent.status);
+                      return (
+                        <Badge className={`${statusConfig.badge} backdrop-blur-sm border-0 rounded-full px-4 py-1.5 text-xs font-semibold shadow-lg ${statusConfig.glow}`}>
+                          {statusConfig.icon && <statusConfig.icon className="w-3 h-3 mr-1.5" />}
+                          {EventStatusDisplay[heroEvent.status] || heroEvent.status}
+                        </Badge>
+                      );
+                    })()}
                   </div>
 
                   {/* Title and details */}
@@ -963,7 +950,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                             >
                               {event.title}
                             </h3>
-                            {eventStatus && (
+                            {eventStatus && activeTab !== 'draft' && (
                               <Badge
                                 className={`${statusConfig.badge} border-0 whitespace-nowrap flex-shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-all group-hover:shadow-lg group-hover:${statusConfig.glow}`}
                               >
@@ -1004,9 +991,6 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                               {event.eventCategoryName}
                             </Badge>
                           )}
-                          <Badge variant="outline" className="text-xs bg-white/50 dark:bg-white/10 border-white/20">
-                            {getTicketTypeLabel(event.ticketPricingType || event.ticketType)}
-                          </Badge>
                         </div>
 
                         {/* Metrics grid */}

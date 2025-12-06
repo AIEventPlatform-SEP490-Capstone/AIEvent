@@ -89,7 +89,6 @@ class EventService {
         eventCategoryId = '',
         pageNumber = 1,
         pageSize = 10,
-        ticketType = null,
         district = '',
         timeLine = null
       } = params;
@@ -100,7 +99,6 @@ class EventService {
       if (eventCategoryId) queryParams.append('eventCategoryId', eventCategoryId);
       if (pageNumber) queryParams.append('pageNumber', pageNumber);
       if (pageSize) queryParams.append('pageSize', pageSize);
-      if (ticketType !== null) queryParams.append('ticketType', ticketType);
       if (district) queryParams.append('district', district);
       if (timeLine !== null) queryParams.append('timeLine', timeLine);
 
@@ -401,12 +399,12 @@ class EventService {
   /**
    * Confirm invitation (Accept/Reject/Pending)
    * @param {string} invitationId - The ID of the invitation
-   * @param {string} status - Status: "Pending", "Accepted", or "Rejected"
+   * @param {string} status - Status: "Approved" or "Rejected"
    */
   static async confirmInvitation(invitationId, status) {
     try {
       // Validate status
-      const validStatuses = ['Pending', 'Accepted', 'Rejected'];
+      const validStatuses = ['Approved', 'Rejected'];
       if (!validStatuses.includes(status)) {
         return {
           success: false,
@@ -444,10 +442,20 @@ class EventService {
   /**
    * Get invitations status
    * Returns a list of invitations with pagination
+   * @param {Object} params - Query parameters
+   * @param {string} params.status - Filter by status: "Pending", "Accepted", or "Rejected" (optional)
    */
-  static async getInvitationsStatus() {
+  static async getInvitationsStatus(params = {}) {
     try {
-      const response = await BaseApiService.get(EndUrls.GET_INVITATIONS_STATUS);
+      const { status } = params;
+      let url = EndUrls.GET_INVITATIONS_STATUS;
+      
+      // Add status query parameter if provided
+      if (status) {
+        url += `?status=${encodeURIComponent(status)}`;
+      }
+      
+      const response = await BaseApiService.get(url);
       
       // Extract data from the response
       let data = response;

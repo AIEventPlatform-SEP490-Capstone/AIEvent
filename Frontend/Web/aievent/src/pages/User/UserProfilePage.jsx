@@ -14,7 +14,9 @@ import {
   Github,
   Twitter,
   Instagram,
-  Facebook
+  Book,
+  Facebook,
+  Heart
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
@@ -29,6 +31,7 @@ import ProfileNavigation from '../../components/Profile/ProfileNavigation';
 import FriendsTab from '../../components/Profile/FriendsTab';
 import SettingsTab from '../../components/Profile/SettingsTab';
 import PaymentInfoTab from '../../components/Profile/PaymentInfoTab';
+import FavoriteEventsSection from '../../components/Profile/FavoriteEventsSection';
 import { useUserProfile } from '../../hooks/userProfile';
 import {
   ParticipationFrequency,
@@ -246,19 +249,7 @@ const UserProfilePage = () => {
         <div className="mt-4 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-visible">
           <div className="px-6 py-6 pb-8">
             {activeTab === 'likes' && (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold text-gray-900">Sự kiện yêu thích</h2>
-                  <Button 
-                    onClick={() => navigate('/favorites')}
-                    variant="outline"
-                    size="sm"
-                  >
-                    Xem tất cả
-                  </Button>
-                </div>
-                <p className="text-gray-600">Chưa có sự kiện yêu thích nào.</p>
-              </div>
+              <FavoriteEventsSection />
             )}
 
             {activeTab === 'friends' && (
@@ -896,7 +887,7 @@ const SkillsSection = ({ formData, onChange }) => {
       {/* Languages */}
       <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center">
-          <Sparkles className="w-5 h-5 mr-2 text-orange-600" />
+          <Book className="w-5 h-5 mr-2 text-orange-600" />
           Ngôn ngữ
         </h3>
 
@@ -931,8 +922,10 @@ const SkillsSection = ({ formData, onChange }) => {
 
       {/* Event Interests */}
       <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-6">
-        <h3 className="text-lg font-semibold mb-4">Sở thích sự kiện</h3>
-        <h4 className="text-md font-medium mb-3 text-gray-700">Sở thích chung</h4>
+        <h3 className="text-lg font-semibold mb-4 flex items-center">
+          <Heart className="w-5 h-5 mr-2 text-blue-600" />
+          Sở thích chung
+        </h3>
 
         <div className="flex flex-wrap gap-3 mb-4">
           {(formData.interests || []).map((interest, index) => (

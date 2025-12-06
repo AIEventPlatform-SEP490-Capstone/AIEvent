@@ -286,7 +286,7 @@ const BookingScreen = () => {
                     </Text>
                     <Text style={styles.ticketPrice}>
                       {ticket.ticketPrice === 0
-                        ? 'Miễn phí'
+                        ? '0đ'
                         : `${ticket.ticketPrice.toLocaleString('vi-VN')}đ`}
                     </Text>
                     <Text style={styles.ticketRemaining}>

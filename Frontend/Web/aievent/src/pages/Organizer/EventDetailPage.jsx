@@ -200,9 +200,6 @@ const EventDetailPage = () => {
 
   // Format ticket price for individual tickets
   const formatTicketPrice = (ticket) => {
-    if (ticket.ticketPrice === 0) {
-      return 'Miễn phí';
-    }
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND'
@@ -243,7 +240,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
         toast.dismiss(loadingToast);
         
         if (response !== null) {
-          toast.success('✅ Xóa sự kiện thành công!', {
+          toast.success('Xóa sự kiện thành công!', {
             duration: 3000,
           });
           navigate(PATH.ORGANIZER_EVENTS || '/events');
@@ -283,7 +280,7 @@ Nhấn OK để xác nhận xóa.`;
         toast.dismiss(loadingToast);
         
         if (response !== null) {
-          toast.success('✅ Xóa sự kiện thành công!', {
+          toast.success('Xóa sự kiện thành công!', {
             duration: 3000,
           });
           navigate(PATH.ORGANIZER_EVENTS || '/events');
@@ -419,27 +416,6 @@ Nhấn OK để xác nhận xóa.`;
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             
             <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
-              {/* Display price badge first */}
-              <Badge className="bg-primary text-primary-foreground border-0 shadow-lg px-3 py-1.5 font-semibold">
-                {event.minTicketPrice !== undefined && event.maxTicketPrice !== undefined
-                  ? event.minTicketPrice === 0 && event.maxTicketPrice === 0
-                    ? "Miễn phí"
-                    : event.minTicketPrice === event.maxTicketPrice
-                    ? new Intl.NumberFormat("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      }).format(event.minTicketPrice)
-                    : `${new Intl.NumberFormat("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      }).format(event.minTicketPrice)} - ${new Intl.NumberFormat("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      }).format(event.maxTicketPrice)}`
-                  : event.ticketType === 1 || event.ticketType === "free"
-                  ? "Miễn phí"
-                  : "Có phí"}
-              </Badge>
               {/* Display category badge */}
               <Badge className="bg-white/95 text-gray-900 border-0 shadow-lg px-3 py-1.5 font-semibold">
                 <Tag className="w-3 h-3 mr-1" />
@@ -602,7 +578,7 @@ Nhấn OK để xác nhận xóa.`;
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-primary">
-                            {ticket.ticketPrice === 0 ? "Miễn phí" : formatTicketPrice(ticket)}
+                            {ticket.ticketPrice === 0 ? "" : formatTicketPrice(ticket)}
                           </p>
                         </div>
                       </div>
@@ -629,26 +605,6 @@ Nhấn OK để xác nhận xóa.`;
                   Thông tin chi tiết về sự kiện chưa được cập nhật.
                 </p>
               )}
-              
-              <div className="space-y-4">
-                <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-primary" />
-                  Bạn sẽ nhận được:
-                </h3>
-                <ul className="space-y-2">
-                  {[
-                    "Kiến thức và trải nghiệm quý báu",
-                    "Cơ hội kết nối với những người cùng chí hướng",
-                    "Tài liệu sự kiện (nếu có)",
-                    "Networking và chia sẻ kinh nghiệm",
-                  ].map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-3 text-muted-foreground">
-                      <CheckCircle className="w-4 h-4 text-primary flex-shrink-0 mt-1" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
             </div>
 
             {/* Organizer */}
@@ -873,65 +829,7 @@ Nhấn OK để xác nhận xóa.`;
                   </div>
                 </SidebarCard>
               )}
-
-            {/* Organizer - Enhanced */}
-            {event.organizerEvent && (
-              <SidebarCard title="Nhà tổ chức" icon={<User className="w-4 h-4" />}>
-                <div className="space-y-4">
-                  {/* Organizer Header */}
-                  <div className="flex items-start gap-3">
-                    {event.organizerEvent.imgCompany ? (
-                      <div className="relative">
-                        <img 
-                          src={event.organizerEvent.imgCompany} 
-                          alt={event.organizerEvent.companyName || "Organizer"} 
-                          className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border-2 border-white shadow-md ring-2 ring-primary/10"
-                        />
-                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-gradient-to-br from-green-400 to-green-500 rounded-full border-2 border-white shadow-sm" />
-                      </div>
-                    ) : (
-                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md flex-shrink-0">
-                        <User className="h-7 w-7 text-white" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-foreground text-sm mb-1 truncate">
-                        {event.organizerEvent.companyName || "Nhà tổ chức"}
-                      </h3>
-                      <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
-                        {event.organizerEvent.companyDescription || "Tổ chức sự kiện chuyên nghiệp"}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Trust Indicators */}
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
-                    <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-lg">
-                      <div className="text-lg font-bold text-blue-600">
-                        {event.organizerEvent.totalEvents || "15+"}
-                      </div>
-                      <div className="text-xs font-medium text-blue-700 mt-0.5">Sự kiện</div>
-                    </div>
-                    <div className="text-center p-3 bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-lg">
-                      <div className="text-lg font-bold text-purple-600">
-                        {event.organizerEvent.rating || "4.8"}
-                        <span className="text-sm">★</span>
-                      </div>
-                      <div className="text-xs font-medium text-purple-700 mt-0.5">Đánh giá</div>
-                    </div>
-                  </div>
-
-                  {/* Contact Button */}
-                  <Button 
-                    variant="outline"
-                    className="w-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 font-semibold rounded-xl py-5 transition-all group"
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
-                    Liên hệ nhà tổ chức
-                  </Button>
-                </div>
-              </SidebarCard>
-            )}
+            
           </div>
         </div>
       </div>

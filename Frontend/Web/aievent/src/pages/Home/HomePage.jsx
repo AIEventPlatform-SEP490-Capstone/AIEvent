@@ -155,7 +155,7 @@ const HomePage = () => {
         />
       </div>
       <Footer />
-      <ModernAIChat />
+      {isAuthenticated && <ModernAIChat />}
     </div>
   );
 };

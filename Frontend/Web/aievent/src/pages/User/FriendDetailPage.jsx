@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Calendar, ArrowLeft, MapPin, UserMinus, Briefcase, Target, Globe, Linkedin, Github, Twitter, Instagram, Facebook, Sparkles, Mail, UserCircle, Clock, MoreHorizontal, Ban } from 'lucide-react';
+import { Calendar, ArrowLeft, MapPin, UserMinus, Briefcase, Target, Globe, Linkedin, Github, Twitter, Instagram, Facebook, Sparkles, Mail, UserCircle, Clock, MoreHorizontal, Ban, UserPlus } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import ProfileHeader from '../../components/Profile/ProfileHeader';
@@ -19,10 +19,12 @@ import {
 } from '../../components/ui/alert-dialog';
 import { showSuccess, showError } from '../../lib/toastUtils';
 import { PATH } from '../../routes/path';
+import { useSelector } from 'react-redux';
 
 const FriendDetailPage = () => {
   const { friendId } = useParams();
   const navigate = useNavigate();
+  const { user: currentUser } = useSelector((state) => state.auth);
   const [friendProfile, setFriendProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -33,6 +35,7 @@ const FriendDetailPage = () => {
   const [isBlocking, setIsBlocking] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const [isAddingFriend, setIsAddingFriend] = useState(false);
 
   useEffect(() => {
     const fetchFriendProfile = async () => {
@@ -47,8 +50,15 @@ const FriendDetailPage = () => {
 
       try {
         const response = await friendAPI.getFriendProfile(friendId);
+        // Response structure: { statusCode, data: { fullName, FriendshipStatus, ... }, message }
+        console.log('Full API Response:', response);
         if (response && response.statusCode === 'AIE20000' && response.data) {
-          setFriendProfile(response.data);
+          const profileData = response.data;
+          // Log để debug
+          console.log('Friend profile data:', profileData);
+          console.log('FriendshipStatus value:', profileData.FriendshipStatus);
+          console.log('All keys in profileData:', Object.keys(profileData));
+          setFriendProfile(profileData);
         } else {
           throw new Error(response?.message || 'Failed to fetch friend profile');
         }
@@ -182,10 +192,81 @@ const FriendDetailPage = () => {
     return guidRegex.test(guid);
   };
 
-  // Handle unfriend
-  const handleUnfriend = () => {
-    setMenuOpen(false);
-    setUnfriendDialogOpen(true);
+  // Get friendship status - trạng thái quan hệ
+  // Note: Backend trả về FriendshipStatus (hoặc friendshipStatus do camelCase naming policy)
+  const friendshipStatus = friendProfile?.FriendshipStatus || friendProfile?.friendshipStatus;
+
+  // Helper: Get button label and state
+  const getFriendshipButtonState = () => {
+    // Kiểm tra các trường hợp có thể xảy ra
+    if (!friendshipStatus || friendshipStatus === null || friendshipStatus === undefined) {
+      return { type: 'add', label: 'Kết bạn' };
+    }
+
+    // Normalize case - backend có thể trả về "Pending", "pending", hoặc số 0, 1, 2...
+    const status = String(friendshipStatus).toLowerCase();
+
+    switch (status) {
+      case 'pending':
+      case '0': // Pending = 0 in enum
+        return { type: 'pending', label: 'Đã gửi lời mời' };
+      case 'accepted':
+      case '1': // Accepted = 1 in enum
+        return { type: 'accepted', label: 'Là bạn' };
+      case 'blocked':
+      case '3': // Blocked = 3 in enum
+        return { type: 'blocked', label: 'Đã chặn' };
+      case 'rejected':
+      case '2': // Rejected = 2 in enum
+        return { type: 'rejected', label: 'Từ chối' };
+      case 'canceled':
+      case '4': // Canceled = 4 in enum
+        return { type: 'add', label: 'Kết bạn' };
+      default:
+        console.warn('Unknown friendship status:', friendshipStatus);
+        return { type: 'add', label: 'Kết bạn' };
+    }
+  };
+
+  const friendshipState = getFriendshipButtonState();
+
+  // Handle add friend
+  const handleAddFriend = async () => {
+    if (!friendId) {
+      showError('Không tìm thấy ID của bạn bè. Vui lòng thử lại.');
+      return;
+    }
+
+    if (!isValidGuid(friendId)) {
+      showError('ID bạn bè không hợp lệ. Vui lòng làm mới trang và thử lại.');
+      return;
+    }
+
+    setIsAddingFriend(true);
+    try {
+      const response = await friendAPI.addFriend(friendId);
+      const statusCode = response?.statusCode;
+      const isSuccess = statusCode === "AIE20000" || statusCode === "AIE20001" || statusCode === "AIE20100" || statusCode === "200" || statusCode === 200;
+
+      if (isSuccess) {
+        showSuccess('Đã gửi lời mời kết bạn');
+        // Reload friend profile để cập nhật status
+        const profileResponse = await friendAPI.getFriendProfile(friendId);
+        if (profileResponse && profileResponse.statusCode === 'AIE20000' && profileResponse.data) {
+          console.log('Profile updated after add friend:', profileResponse.data.FriendshipStatus);
+          setFriendProfile(profileResponse.data);
+        }
+      } else {
+        const errorMessage = response?.message || 'Không thể gửi lời mời kết bạn. Vui lòng thử lại.';
+        showError(errorMessage);
+      }
+    } catch (error) {
+      console.error('Error adding friend:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Đã xảy ra lỗi khi gửi lời mời kết bạn.';
+      showError(errorMessage);
+    } finally {
+      setIsAddingFriend(false);
+    }
   };
 
   // Handle block
@@ -372,44 +453,71 @@ const FriendDetailPage = () => {
             onEditProfile={null} // No edit button for friend profile
           />
           {/* Menu Button */}
-          <div className="absolute top-6 right-6 z-20" ref={menuRef}>
-            <div className="relative">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMenuOpen(!menuOpen);
-                }}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-md border border-gray-300 hover:bg-gray-50 transition-all duration-300 shadow-lg hover:shadow-xl"
-                aria-label="Menu"
+          <div className="absolute top-6 right-6 z-20 flex items-center gap-3" ref={menuRef}>
+            {/* Action Buttons - Các nút hành động */}
+            {friendshipState.type === 'add' && (
+              <Button
+                onClick={handleAddFriend}
+                disabled={isAddingFriend}
+                className="bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
               >
-                <MoreHorizontal className="w-5 h-5 text-gray-700" />
-              </button>
+                <UserPlus className="w-4 h-4 mr-2" />
+                {isAddingFriend ? 'Đang gửi...' : 'Kết bạn'}
+              </Button>
+            )}
 
-              {menuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50 py-1">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleBlock();
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors text-orange-600"
-                  >
-                    <Ban className="w-4 h-4" />
-                    <span>Chặn</span>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleUnfriend();
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors text-red-600"
-                  >
-                    <UserMinus className="w-4 h-4" />
-                    <span>Hủy kết bạn</span>
-                  </button>
-                </div>
-              )}
-            </div>
+            {friendshipState.type === 'pending' && (
+              <span className="px-3 py-2 bg-yellow-50 border border-yellow-200 text-yellow-700 rounded-lg text-sm font-medium">
+                Lời mời đã gửi
+              </span>
+            )}
+
+            {friendshipState.type === 'accepted' && (
+              <div className="relative">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMenuOpen(!menuOpen);
+                  }}
+                  className="p-2 rounded-full bg-white/90 backdrop-blur-md border border-gray-300 hover:bg-gray-50 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  aria-label="Menu"
+                >
+                  <MoreHorizontal className="w-5 h-5 text-gray-700" />
+                </button>
+
+                {menuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50 py-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleBlock();
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors text-orange-600"
+                    >
+                      <Ban className="w-4 h-4" />
+                      <span>Chặn</span>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleUnfriend();
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors text-red-600"
+                    >
+                      <UserMinus className="w-4 h-4" />
+                      <span>Hủy kết bạn</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {friendshipState.type === 'blocked' && (
+              <span className="px-3 py-2 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm font-medium flex items-center gap-2">
+                <Ban className="w-4 h-4" />
+                Đã chặn
+              </span>
+            )}
           </div>
         </div>
       </div>

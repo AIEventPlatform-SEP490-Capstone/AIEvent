@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
@@ -14,13 +14,17 @@ import {
   X,
   Sparkles,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { useFavoriteEvents } from "../../hooks/useFavoriteEvents";
 import { useCategories } from "../../hooks/useCategories"; // Add this import
 import { Input } from "../../components/ui/input";
 import LoadingSpinner from "../../components/LoadingSpinner/LoadingSpinner";
 import { useSelector } from "react-redux";
+import { SaleStatusBadge } from "../../components/HomePage/SaleStatusBadge";
+import { EventCard } from "../../components/HomePage/EventCard";
 
 const FavoriteEventsPage = () => {
   const navigate = useNavigate();
@@ -34,17 +38,18 @@ const FavoriteEventsPage = () => {
   const [dateFilter, setDateFilter] = useState("all");
   const [showAllLocations, setShowAllLocations] = useState(false);
   const [showFilters, setShowFilters] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const pageSize = 12;
 
   // Ensure favoriteEvents is always an array
   const safeFavoriteEvents = Array.isArray(favoriteEvents) ? favoriteEvents : 
                           (favoriteEvents && Array.isArray(favoriteEvents.items) ? favoriteEvents.items : []);
 
+  // Fetch categories once on component mount
   useEffect(() => {
-    // Only fetch favorite events if user is authenticated
-    if (isAuthenticated) {
-      getFavoriteEvents();
-    }
-  }, [isAuthenticated]);
+    refreshCategories();
+  }, []);
 
   // Fetch categories once on component mount
   useEffect(() => {
@@ -79,11 +84,10 @@ const FavoriteEventsPage = () => {
   };
 
   const formatPrice = (event) => {
-    const ticketType = event.ticketType;
     const price = event.ticketPrice || 0;
     
-    if (ticketType === 1 || ticketType === "free" || price === 0) {
-      return "Miễn phí";
+    if (price === 0) {
+      return "0đ";
     }
     
     return new Intl.NumberFormat("vi-VN", {
@@ -172,63 +176,35 @@ const FavoriteEventsPage = () => {
   
   const locationFilters = getLocationFilters();
 
-  // Filter events based on all filters
-  const filteredEvents = safeFavoriteEvents.filter(event => {
-    const matchesSearch = !searchQuery || 
-      event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCategory = selectedCategory === "all" || 
-      event.eventCategoryName === selectedCategory;
-    
-    // Price filter
-    let matchesPrice = true;
-    if (priceFilter !== "all") {
-      if (priceFilter === "free") {
-        matchesPrice = event.ticketType === 1 || event.ticketType === "free" || event.ticketPrice === 0;
-      } else if (priceFilter === "paid") {
-        matchesPrice = event.ticketType !== 1 && event.ticketType !== "free" && event.ticketPrice > 0;
-      }
-    }
-    
-    // Location filter
-    let matchesLocation = true;
-    if (locationFilter !== "all") {
-      matchesLocation = event.locationName === locationFilter || event.location === locationFilter || event.district === locationFilter;
-    }
-    
-    // Date filter - simplified for client-side filtering
-    let matchesDate = true;
-    if (dateFilter !== "all") {
-      const eventDate = new Date(event.startTime || event.date);
-      const today = new Date();
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      
-      switch (dateFilter) {
-        case "today":
-          matchesDate = eventDate.toDateString() === today.toDateString();
-          break;
-        case "tomorrow":
-          matchesDate = eventDate.toDateString() === tomorrow.toDateString();
-          break;
-        case "this_week":
-          const firstDayOfWeek = new Date(today);
-          firstDayOfWeek.setDate(today.getDate() - today.getDay());
-          const lastDayOfWeek = new Date(firstDayOfWeek);
-          lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6);
-          matchesDate = eventDate >= firstDayOfWeek && eventDate <= lastDayOfWeek;
-          break;
-        case "this_month":
-          matchesDate = eventDate.getMonth() === today.getMonth() && eventDate.getFullYear() === today.getFullYear();
-          break;
-        default:
-          matchesDate = true;
-      }
-    }
-    
-    return matchesSearch && matchesCategory && matchesPrice && matchesLocation && matchesDate;
-  });
+  // Create filter object with useMemo to prevent unnecessary re-renders
+  const filters = useMemo(() => ({
+    searchQuery,
+    selectedCategory,
+    priceFilter,
+    locationFilter,
+    dateFilter
+  }), [searchQuery, selectedCategory, priceFilter, locationFilter, dateFilter]);
+
+  // Calculate pagination for favorite events
+  const totalResults = safeFavoriteEvents.length;
+  const totalPageCount = Math.ceil(totalResults / pageSize);
+  
+  useEffect(() => {
+    setTotalPages(Math.max(1, totalPageCount));
+    // Reset to page 1 when filters change
+    setCurrentPage(1);
+  }, [filters, safeFavoriteEvents.length]);
+
+  // Get paginated events for current page
+  const paginatedFavoriteEvents = safeFavoriteEvents.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Show loading spinner while checking authentication
   if (!isAuthenticated) {
@@ -311,24 +287,7 @@ const FavoriteEventsPage = () => {
                 ))}
               </div>
             </div>
-
-            {/* Price Filter */}
-            <div className="space-y-2">
-              <span className="text-sm text-muted-foreground">Giá vé:</span>
-              <div className="flex gap-2">
-                {priceFilters.map((filter) => (
-                  <Button
-                    key={filter.value}
-                    variant={priceFilter === filter.value ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setPriceFilter(filter.value)}
-                  >
-                    {filter.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
+        
             {/* Location Filter */}
             <div className="space-y-2">
               <span className="text-sm text-muted-foreground">Địa điểm:</span>
@@ -385,146 +344,108 @@ const FavoriteEventsPage = () => {
       </div>
 
       {/* Results Info */}
-      <div className="mb-6">
-        <p className="text-muted-foreground">
-          {filteredEvents.length} sự kiện yêu thích
-          {searchQuery && ` cho "${searchQuery}"`}
-        </p>
-      </div>
+      {safeFavoriteEvents.length > 0 && (
+        <div className="mb-6 text-sm text-gray-600">
+          Tìm thấy <span className="font-bold text-gray-900">{totalResults}</span> sự kiện yêu thích
+          {totalPages > 1 && <span className="ml-2">• Trang {currentPage}/{totalPages}</span>}
+        </div>
+      )}
 
       {/* Events Grid */}
-      {filteredEvents.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEvents.map((event) => (
-            <Card 
-              key={event.eventId} 
-              className="group overflow-hidden hover:shadow-xl transition-all duration-300 border-border/50 hover:border-primary/30 cursor-pointer"
-              onClick={() => handleViewDetail(event.eventId)}
-            >
-              {/* Image Container */}
-              <div className="aspect-[16/10] relative overflow-hidden bg-muted">
-                <img 
-                  src={event.image || (event.imgListEvent && event.imgListEvent[0]) || "/placeholder.svg"} 
-                  alt={event.title} 
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+      {paginatedFavoriteEvents.length > 0 ? (
+        <div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {paginatedFavoriteEvents.map((event) => (
+              <div key={event.eventId} onClick={() => handleViewDetail(event.eventId)}>
+                <EventCard
+                  event={event}
+                  isLiked={true}
+                  onLike={handleRemoveFavorite}
+                  onViewDetail={handleViewDetail}
+                  showReason={false}
                 />
-                
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0" />
-                
-                {/* Free Badge */}
-                {/* {(event.ticketType === 1 || event.ticketPrice === 0) && (
-                  <Badge className="absolute top-4 left-4 bg-success text-success-foreground shadow-lg">
-                    <Sparkles className="w-3 h-3 mr-1" />
-                    Miễn phí
-                  </Badge>
-                )} */}
-                
-                {/* Category Badge at bottom */}
-                <Badge 
-                  variant="secondary" 
-                  className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm shadow-md"
-                >
-                  {event.eventCategoryName || "Khác"}
-                </Badge>
-                
-                {/* Remove Favorite Button */}
-                <Button 
-                  variant="secondary" 
-                  size="icon"
-                  className="absolute top-4 right-4 h-9 w-9 rounded-full shadow-lg backdrop-blur-sm bg-card/80 hover:bg-red-50 transition-all hover:scale-110"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemoveFavorite(event.eventId);
-                  }}
-                >
-                  <Heart className="w-4 h-4 fill-red-500 text-red-500" />
-                </Button>
+              </div>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-1 mt-8 mb-4">
+              {/* Previous Button */}
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5 text-gray-600" />
+              </button>
+
+              {/* Page Numbers */}
+              <div className="flex gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                  const isCurrentPage = pageNum === currentPage;
+                  const isNearCurrent = Math.abs(pageNum - currentPage) <= 1;
+                  const isFirst = pageNum === 1;
+                  const isLast = pageNum === totalPages;
+
+                  if (!isCurrentPage && !isNearCurrent && !isFirst && !isLast) {
+                    return null;
+                  }
+
+                  if (
+                    !isCurrentPage &&
+                    !isNearCurrent &&
+                    !isFirst &&
+                    !isLast &&
+                    pageNum === (isNearCurrent ? currentPage + 2 : 2)
+                  ) {
+                    return (
+                      <span key={`ellipsis-${pageNum}`} className="px-2 text-gray-400">
+                        ...
+                      </span>
+                    );
+                  }
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={
+                        isCurrentPage
+                          ? "px-3 py-2 rounded bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium transition-all"
+                          : "px-3 py-2 rounded hover:bg-gray-100 text-gray-700 transition-colors"
+                      }
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
               </div>
 
-              <CardContent className="p-5">
-                <h3 className="font-bold text-lg mb-3 line-clamp-2 text-foreground group-hover:text-primary transition-colors">
-                  {event.title}
-                </h3>
-
-                <div className="space-y-2.5 text-sm text-muted-foreground mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 flex-1">
-                      <Calendar className="w-4 h-4 text-primary" />
-                      <span>{formatDate(event.startTime || event.date)}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="w-4 h-4 text-secondary" />
-                      <span>{formatTime(event.startTime || event.date)}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <MapPin className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-                    <span className="line-clamp-1 text-xs">
-                      {event.locationName || event.location}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-primary" />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium">
-                            {event.soldQuantity || 0}/{event.totalTickets || event.maxAttendees} người
-                          </span>
-                          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all"
-                              style={{ width: `${(event.totalTickets || event.maxAttendees) ? (event.soldQuantity || 0) / (event.totalTickets || event.maxAttendees) * 100 : 0}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <Heart className="w-4 h-4 mr-1 text-gray-500" />
-                      <span className="text-xs font-medium text-gray-600">
-                        {event.favoriteCount || 0}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-4 border-t border-border">
-                  <div className="text-xl font-bold text-primary">
-                    {formatPrice(event)}
-                  </div>
-                  <Button 
-                    size="sm"
-                    className="shadow-sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleViewDetail(event.eventId);
-                    }}
-                  >
-                    Xem chi tiết
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+              {/* Next Button */}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors"
+              >
+                <ChevronRight className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+          )}
         </div>
       ) : (
-        <div className="text-center py-12">
-          <Heart className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-xl font-semibold mb-2">Chưa có sự kiện yêu thích</h3>
-          <p className="text-muted-foreground mb-6">
-            {searchQuery || selectedCategory !== "all" || priceFilter !== "all" || locationFilter !== "all" || dateFilter !== "all"
-              ? "Không tìm thấy sự kiện yêu thích phù hợp với tiêu chí tìm kiếm" 
-              : "Hãy khám phá các sự kiện và lưu vào danh sách yêu thích"}
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="w-16 h-16 mb-4 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
+            <Heart className="w-8 h-8 text-blue-600" />
+          </div>
+          <p className="text-gray-600 text-center">
+            {searchQuery || selectedCategory !== "all" 
+              ? "Không tìm thấy sự kiện nào trong danh sách yêu thích của bạn." 
+              : "Bạn chưa thêm sự kiện nào vào danh sách yêu thích."}
           </p>
-          {!searchQuery && selectedCategory === "all" && priceFilter === "all" && locationFilter === "all" && dateFilter === "all" && (
-            <Button onClick={() => navigate("/search")}>
-              Khám phá sự kiện
-            </Button>
-          )}
+          <p className="text-sm text-gray-500 mt-2">
+            Khám phá các sự kiện và thêm chúng vào danh sách yêu thích của bạn
+          </p>
         </div>
       )}
     </div>

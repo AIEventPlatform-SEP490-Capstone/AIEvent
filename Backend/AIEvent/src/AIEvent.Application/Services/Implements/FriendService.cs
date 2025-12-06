@@ -1,6 +1,7 @@
 ﻿using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Friend;
+using AIEvent.Application.DTOs.User;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
@@ -16,11 +17,13 @@ namespace AIEvent.Application.Services.Implements
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+        private readonly ICacheService _cacheService;
 
-        public FriendService(IUnitOfWork unitOfWork, IMapper mapper)
+        public FriendService(IUnitOfWork unitOfWork, IMapper mapper, ICacheService cacheService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _cacheService = cacheService;
         }
 
         public async Task<Result> AddFriendRequestAsync(Guid id, string userId)
@@ -268,7 +271,7 @@ namespace AIEvent.Application.Services.Implements
                 .FirstOrDefaultAsync(f =>
                     ((f.SenderId == userId && f.ReceiverId == friendId) ||
                      (f.SenderId == friendId && f.ReceiverId == userId)) &&
-                    (f.Status == FriendshipStatus.Accepted && f.Status == FriendshipStatus.Blocked) 
+                    (f.Status == FriendshipStatus.Accepted || f.Status == FriendshipStatus.Blocked) 
                     && !f.IsDeleted);
 
             if (friendship == null)
@@ -287,19 +290,6 @@ namespace AIEvent.Application.Services.Implements
             if (!Guid.TryParse(id, out var friendId))
                 return ErrorResponse.FailureResult("Invalid Guid format.", ErrorCodes.InvalidInput);
 
-            // Kiểm tra quan hệ bạn bè
-            var isFriend = await _unitOfWork.FriendshipRepository
-                .Query()
-                .AsNoTracking()
-                .AnyAsync(f =>
-                    f.Status == FriendshipStatus.Accepted &&
-                    ((f.SenderId == userId && f.ReceiverId == friendId) ||
-                     (f.SenderId == friendId && f.ReceiverId == userId)));
-
-            if (!isFriend)
-                return ErrorResponse.FailureResult("Friendship not found", ErrorCodes.NotFound);
-
-            // Lấy thông tin bạn bè
             var friend = await _unitOfWork.UserRepository
                 .Query()
                 .AsNoTracking()
@@ -308,10 +298,23 @@ namespace AIEvent.Application.Services.Implements
             if (friend == null)
                 return ErrorResponse.FailureResult("Friend not found", ErrorCodes.NotFound);
 
-            // Map sang response
             var response = _mapper.Map<FriendProfileResponse>(friend);
 
-            // Lấy danh sách sự kiện chung (chỉ select thô)
+            var friendShip = await _unitOfWork.FriendshipRepository
+                .Query()
+                .AsNoTracking()
+                .Select(f => new {f.SenderId, f.ReceiverId, f.Status, f.IsDeleted})
+                .FirstOrDefaultAsync(f => (f.SenderId == friendId || f.ReceiverId == friendId) && !f.IsDeleted);
+
+            if (friendShip == null)
+            {
+                response.FriendshipStatus = null;
+            }
+            else
+            {
+                response.FriendshipStatus = friendShip.Status;
+            }
+
             var eventData = await _unitOfWork.EventRepository
                 .Query()
                 .AsNoTracking()
@@ -327,7 +330,6 @@ namespace AIEvent.Application.Services.Implements
                 })
                 .ToListAsync();
 
-            // Sau khi truy vấn, xử lý parse JSON ở bộ nhớ
             response.ListCommonEvent = eventData.Select(e => new CommonEvent
             {
                 EventName = e.Title,
@@ -417,5 +419,80 @@ namespace AIEvent.Application.Services.Implements
             return Result.Success();
         }
 
+        public async Task<Result<List<FriendLocationResponse>>> GetFriendLocationAsync(Guid userId, int radius, double latitude, double longitude)
+        {
+            try
+            {
+                var friendList = await _unitOfWork.FriendshipRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(f => f.Status == FriendshipStatus.Accepted && !f.IsDeleted &&
+                        (
+                            (f.SenderId == userId && f.Receiver.IsTurnOnLocation == true) ||
+                            (f.ReceiverId == userId && f.Sender.IsTurnOnLocation == true)
+                        )
+                    )
+                    .Select(f => f.SenderId == userId ? f.Receiver : f.Sender)
+                    .Select(u => new
+                    {
+                        u.Id,
+                        u.FullName,
+                        u.Email,
+                        u.AvatarImgUrl
+                    })
+                    .ToListAsync();
+
+                if (!friendList.Any())
+                    return Result<List<FriendLocationResponse>>.Success(new List<FriendLocationResponse>());
+
+                var tasks = friendList.Select(async f =>
+                {
+                    var location = await _cacheService.GetAsync<UserLocationCache>($"user-location:{f.Id}");
+
+                    return location == null ? null : new FriendLocationResponse
+                    {
+                        FriendId = f.Id,
+                        FriendName = f.FullName!,
+                        Email = f.Email!,
+                        ImageUrl = f.AvatarImgUrl,
+                        Latitude = location.Latitude,
+                        Longitude = location.Longitude,
+                    };
+                });
+
+                var friendLocations = (await Task.WhenAll(tasks))
+                    .Where(x => x != null)
+                    .ToList()!;
+
+                const double R = 6371;
+                double ToRad(double x) => x * Math.PI / 180;
+
+                double latRad = ToRad(latitude);
+                double lonRad = ToRad(longitude);
+
+                var result = friendLocations
+                    .Select(f =>
+                    {
+                        double dLat = ToRad(f!.Latitude - latitude);
+                        double dLon = ToRad(f.Longitude - longitude);
+
+                        double a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                                   Math.Cos(latRad) * Math.Cos(ToRad(f.Latitude)) *
+                                   Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+
+                        double distance = 2 * R * Math.Asin(Math.Sqrt(a));
+                        return new { Friend = f, Distance = distance };
+                    })
+                    .Where(x => x.Distance <= radius)
+                    .Select(x => x.Friend)
+                    .ToList();
+
+                return Result<List<FriendLocationResponse>>.Success(result);
+            }
+            catch (Exception ex)
+            {
+                return ErrorResponse.FailureResult($"Error : {ex.Message}", ErrorCodes.InternalServerError);
+            }
+        }
     }
 }

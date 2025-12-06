@@ -117,7 +117,6 @@ const AdminProfile = () => {
   const tabs = [
     { id: 'personal', label: 'Thông tin cá nhân' },
     { id: 'security', label: 'Bảo mật' },
-    { id: 'activity', label: 'Hoạt động' }
   ];
 
   const handleEdit = () => {
@@ -491,15 +490,6 @@ const AdminProfile = () => {
                 </Card>
               </div>
             </CardContent>
-          </Card>
-        )}
-
-        {activeTab === 'activity' && (
-          <Card className="shadow-xl border-0">
-            <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50/50 border-b">
-              <CardTitle className="text-2xl font-bold text-gray-900">Hoạt động</CardTitle>
-              <CardDescription className="text-base mt-1">Lịch sử hoạt động gần đây của bạn</CardDescription>
-            </CardHeader>
           </Card>
         )}
 
