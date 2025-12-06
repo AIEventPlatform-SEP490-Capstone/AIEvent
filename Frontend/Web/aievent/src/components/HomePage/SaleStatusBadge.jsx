@@ -1,59 +1,28 @@
 import React, { useState, useEffect } from "react";
-import { Clock } from "lucide-react";
 
-const glowKeyframes = `
-  @keyframes glow-pulse {
-    0%, 100% {
-      box-shadow: 0 0 15px 2px rgba(255, 107, 107, 0.4), 0 10px 25px -5px rgba(255, 107, 107, 0.4);
-    }
-    50% {
-      box-shadow: 0 0 25px 4px rgba(255, 107, 107, 0.6), 0 10px 35px -5px rgba(255, 107, 107, 0.5);
-    }
+// Add pulse animation styles
+const pulseStyles = `
+  @keyframes pulse-badge {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
   }
   
-  @keyframes glow-pulse-amber {
-    0%, 100% {
-      box-shadow: 0 0 15px 2px rgba(251, 146, 60, 0.4), 0 10px 25px -5px rgba(251, 146, 60, 0.4);
-    }
-    50% {
-      box-shadow: 0 0 25px 4px rgba(251, 146, 60, 0.6), 0 10px 35px -5px rgba(251, 146, 60, 0.5);
-    }
-  }
-  
-  @keyframes glow-pulse-emerald {
-    0%, 100% {
-      box-shadow: 0 0 15px 2px rgba(52, 211, 153, 0.4), 0 10px 25px -5px rgba(52, 211, 153, 0.4);
-    }
-    50% {
-      box-shadow: 0 0 25px 4px rgba(52, 211, 153, 0.6), 0 10px 35px -5px rgba(52, 211, 153, 0.5);
-    }
-  }
-
-  .glow-red {
-    animation: glow-pulse 2s ease-in-out infinite;
-  }
-
-  .glow-amber {
-    animation: glow-pulse-amber 2s ease-in-out infinite;
-  }
-
-  .glow-emerald {
-    animation: glow-pulse-emerald 2s ease-in-out infinite;
+  .badge-pulse-urgent {
+    animation: pulse-badge 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 `;
 
-// Inject styles
 if (typeof window !== "undefined") {
   const style = document.createElement("style");
-  style.textContent = glowKeyframes;
+  style.textContent = pulseStyles;
   document.head.appendChild(style);
 }
 
 export function SaleStatusBadge({ saleStartTime, saleEndTime, onImage = false }) {
   const [timeStatus, setTimeStatus] = useState({
     status: "upcoming", // upcoming, ongoing, ended
-    countdownText: "",
-    phaseLabel: "",
+    label: "",
+    description: "",
   });
 
   useEffect(() => {
@@ -62,101 +31,100 @@ export function SaleStatusBadge({ saleStartTime, saleEndTime, onImage = false })
       const startTime = new Date(saleStartTime);
       const endTime = new Date(saleEndTime);
 
-      // Nếu hết thời gian bán vé
+      // Sale ended
       if (now > endTime) {
         setTimeStatus({
           status: "ended",
-          countdownText: "Đã hết hạn",
-          phaseLabel: "Kết thúc bán",
+          label: "Hết hạn",
+          description: "Kết thúc bán",
         });
         return;
       }
 
-      // Nếu chưa tới thời gian bán vé
+      // Upcoming sale
       if (now < startTime) {
         const diff = startTime - now;
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
         const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
         const minutes = Math.floor((diff / 1000 / 60) % 60);
-        const seconds = Math.floor((diff / 1000) % 60);
 
-        let countdownText = "";
+        let timeText = "";
         if (days > 0) {
-          countdownText = `${days}d ${hours}h`;
+          timeText = `${days}d`;
         } else if (hours > 0) {
-          countdownText = `${hours}h ${minutes}m`;
+          timeText = `${hours}h`;
         } else {
-          countdownText = `${minutes}m ${seconds}s`;
+          timeText = `${minutes}m`;
         }
 
         setTimeStatus({
           status: "upcoming",
-          countdownText,
-          phaseLabel: "Sắp bán",
+          label: "Sắp bán",
+          description: timeText,
         });
         return;
       }
 
-      // Đang trong thời gian bán vé
+      // Sale ongoing
       const diff = endTime - now;
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
       const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
       const minutes = Math.floor((diff / 1000 / 60) % 60);
-      const seconds = Math.floor((diff / 1000) % 60);
 
-      let countdownText = "";
-      if (days > 0) {
-        countdownText = `${days}d ${hours}h`;
-      } else if (hours > 0) {
-        countdownText = `${hours}h ${minutes}m`;
-      } else {
-        countdownText = `${minutes}m ${seconds}s`;
+      // Determine urgency level
+      const totalMinutesLeft = Math.floor(diff / (1000 * 60));
+      let label = "Đang bán";
+      
+      if (totalMinutesLeft <= 30) {
+        label = "Kết thúc sớm";
+      } else if (totalMinutesLeft <= 120) {
+        label = "Nhanh lên";
       }
 
       setTimeStatus({
         status: "ongoing",
-        countdownText,
-        phaseLabel: "Đang bán",
+        label: label,
+        description: totalMinutesLeft <= 120 ? `${hours}h ${minutes}m` : "",
       });
     };
 
     updateStatus();
-    const interval = setInterval(updateStatus, 1000);
+    const interval = setInterval(updateStatus, 60000); // Update every minute
 
     return () => clearInterval(interval);
   }, [saleStartTime, saleEndTime]);
 
-  const getGlowClass = () => {
-    if (!onImage) return ""; // Không có glow cho badge ở dưới ảnh
-    
-    if (timeStatus.status === "ended") {
-      return "glow-red";
-    }
-    if (timeStatus.status === "upcoming") {
-      return "glow-amber";
-    }
-    return "glow-emerald";
-  };
-
   const getStatusStyle = () => {
     if (onImage) {
-      // Style cho badge trên ảnh - màu sáng, hiện đại với gradient, blur và glow
-      if (timeStatus.status === "ended") {
-        return "bg-gradient-to-r from-red-500 to-pink-500 backdrop-blur-lg border border-red-300/60 shadow-2xl shadow-red-500/40 blur-0";
+      // On-image badge - solid colors for good contrast
+      switch (timeStatus.status) {
+        case "ended":
+          return "bg-red-600 border-0";
+        case "upcoming":
+          return "bg-slate-600 border-0";
+        default:
+          // Ongoing sales with different urgency levels
+          if (timeStatus.label === "Kết thúc sớm") {
+            return "bg-red-500 border-0 badge-pulse-urgent";
+          } else if (timeStatus.label === "Nhanh lên") {
+            return "bg-amber-500 border-0";
+          }
+          return "bg-emerald-500 border-0";
       }
-      if (timeStatus.status === "upcoming") {
-        return "bg-gradient-to-r from-amber-400 to-orange-500 backdrop-blur-lg border border-amber-300/60 shadow-2xl shadow-amber-500/40 blur-0";
-      }
-      return "bg-gradient-to-r from-emerald-400 to-teal-500 backdrop-blur-lg border border-emerald-300/60 shadow-2xl shadow-emerald-500/40 blur-0";
     } else {
-      // Style cho badge ở dưới ảnh - nền nhạt, hiện đại
-      if (timeStatus.status === "ended") {
-        return "bg-red-50 border border-red-200/60 shadow-md shadow-red-100/50";
+      // Below-image badge - light backgrounds with borders
+      switch (timeStatus.status) {
+        case "ended":
+          return "bg-red-50 border border-red-300";
+        case "upcoming":
+          return "bg-slate-100 border border-slate-300";
+        default:
+          if (timeStatus.label === "Kết thúc sớm") {
+            return "bg-red-50 border border-red-300 badge-pulse-urgent";
+          } else if (timeStatus.label === "Nhanh lên") {
+            return "bg-amber-50 border border-amber-300";
+          }
+          return "bg-emerald-50 border border-emerald-300";
       }
-      if (timeStatus.status === "upcoming") {
-        return "bg-amber-50 border border-amber-200/60 shadow-md shadow-amber-100/50";
-      }
-      return "bg-emerald-50 border border-emerald-200/60 shadow-md shadow-emerald-100/50";
     }
   };
 
@@ -164,57 +132,32 @@ export function SaleStatusBadge({ saleStartTime, saleEndTime, onImage = false })
     if (onImage) {
       return "text-white";
     } else {
-      if (timeStatus.status === "ended") {
-        return "text-red-700";
+      switch (timeStatus.status) {
+        case "ended":
+          return "text-red-700";
+        case "upcoming":
+          return "text-slate-700";
+        default:
+          if (timeStatus.label === "Kết thúc sớm") {
+            return "text-red-700";
+          } else if (timeStatus.label === "Nhanh lên") {
+            return "text-amber-700";
+          }
+          return "text-emerald-700";
       }
-      if (timeStatus.status === "upcoming") {
-        return "text-amber-700";
-      }
-      return "text-emerald-700";
     }
   };
-
-  const getIconStyle = () => {
-    if (onImage) {
-      return "text-white";
-    } else {
-      if (timeStatus.status === "ended") {
-        return "text-red-500";
-      }
-      if (timeStatus.status === "upcoming") {
-        return "text-amber-600";
-      }
-      return "text-emerald-600";
-    }
-  };
-
-  if (timeStatus.status === "ended") {
-    return (
-      <div className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 ${getStatusStyle()} ${getGlowClass()}`}>
-        <Clock className={`w-3.5 h-3.5 flex-shrink-0 ${getIconStyle()}`} />
-        <div className="flex flex-col">
-          <span className={`text-xs font-bold ${getTextStyle()}`}>
-            {timeStatus.phaseLabel}
-          </span>
-          <span className={`text-xs font-semibold leading-none ${getTextStyle()}`}>
-            {timeStatus.countdownText}
-          </span>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 ${getStatusStyle()} ${getGlowClass()}`}>
-      <Clock className={`w-3.5 h-3.5 flex-shrink-0 ${getIconStyle()}`} />
-      <div className="flex flex-col">
-        <span className={`text-xs font-bold ${getTextStyle()}`}>
-          {timeStatus.phaseLabel}
-        </span>
-        <span className={`text-xs font-semibold leading-none ${getTextStyle()}`}>
-          {timeStatus.countdownText}
-        </span>
-      </div>
+    <div className={`inline-block rounded-md px-2.5 py-1 text-xs font-medium transition-all ${getStatusStyle()} ${getTextStyle()}`}>
+      {timeStatus.description ? (
+        <div className="flex items-center gap-1.5">
+          <span className="font-bold">{timeStatus.label}</span>
+          <span className="opacity-85">{timeStatus.description}</span>
+        </div>
+      ) : (
+        <span className="font-bold">{timeStatus.label}</span>
+      )}
     </div>
   );
 }

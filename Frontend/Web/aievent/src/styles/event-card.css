@@ -1,0 +1,163 @@
+/* Event Card Modern Animations */
+
+/* Smooth scale animation for card hover */
+.event-card {
+  @apply transition-all duration-500 ease-in-out;
+}
+
+/* Enhanced scrollbar styling */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Category filter chip animations */
+.category-chip {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+.category-chip:hover {
+  @apply transform -translate-y-0.5;
+}
+
+.category-chip.active {
+  @apply animate-pulse;
+  animation-duration: 2s;
+}
+
+/* Carousel container smooth transitions */
+.carousel-container {
+  @apply transition-transform duration-500 ease-in-out;
+}
+
+/* Pagination button hover effects */
+.pagination-btn {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  @apply transform -translate-y-0.5 shadow-lg;
+}
+
+/* Price badge pulse effect */
+.price-badge {
+  @apply relative inline-block;
+}
+
+/* Like button animation */
+.like-button {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+.like-button.liked {
+  @apply animate-bounce;
+  animation-duration: 0.6s;
+}
+
+/* Featured event card overlay animation */
+.featured-card-overlay {
+  @apply transition-opacity duration-400 ease-in-out;
+}
+
+/* Gradient text animation */
+.gradient-text {
+  background-size: 200% auto;
+  animation: gradient 3s linear infinite;
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* Skeleton loader animation */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton {
+  animation: shimmer 2s infinite;
+  background: linear-gradient(
+    to right,
+    #f0f0f0 8%,
+    #f8f8f8 18%,
+    #f0f0f0 33%
+  );
+  background-size: 800px 104px;
+}
+
+/* Badge entrance animation */
+.badge-entrance {
+  @apply animate-fadeInScale;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Card stagger animation */
+.card-stagger {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Hover scale effect for cards */
+.card-hover-scale:hover {
+  @apply transform scale-105;
+}
+
+/* Icon rotation on hover */
+.icon-rotate:hover {
+  @apply animate-spin;
+}
+
+/* Smooth shadow transitions */
+.shadow-transition {
+  @apply transition-shadow duration-300;
+}
+
+/* Button pulse effect */
+.button-pulse:hover {
+  @apply animate-pulse;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .event-card {
+    @apply rounded-lg;
+  }
+
+  .category-chip {
+    @apply px-4 py-2 text-sm;
+  }
+}
