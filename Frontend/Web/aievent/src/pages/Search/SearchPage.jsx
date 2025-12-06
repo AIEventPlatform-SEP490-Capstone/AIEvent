@@ -180,7 +180,7 @@ export default function SearchPage() {
       isMounted = false;
       clearTimeout(timeoutId);
     };
-  }, [filters, currentPage, pageSize];
+  }, [filters, currentPage, pageSize]);
 
   const handleViewDetail = (eventId) => {
     navigate(`/event/${eventId}`);
