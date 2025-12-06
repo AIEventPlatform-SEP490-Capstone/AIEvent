@@ -270,6 +270,8 @@ export const eventAPI = {
     
     if (params.search) queryParams.append('search', params.search);
     if (params.status !== undefined && params.status !== null) queryParams.append('status', params.status);
+    if (params.startDate) queryParams.append('startDate', params.startDate);
+    if (params.endDate) queryParams.append('endDate', params.endDate);
     if (params.pageNumber) queryParams.append('pageNumber', params.pageNumber);
     if (params.pageSize) queryParams.append('pageSize', params.pageSize);
 
