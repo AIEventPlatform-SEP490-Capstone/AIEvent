@@ -869,9 +869,9 @@ const EventDetailGuestPage = ({ previewData }) => {
               </div>
             </SidebarCard>
 
-            {/* AI Friend Recommendations */}
-            <SidebarCard title="Bạn bè thông minh" icon={<Sparkles className="w-4 h-4" />}>
-              <div className="space-y-3">
+            {/* AI Friend Recommendations - Only show when user is authenticated */}
+            {isAuthenticated && (
+              <SidebarCard title="Bạn bè thông minh" icon={<Sparkles className="w-4 h-4" />}>              <div className="space-y-3">
                 <Button 
                   variant="outline" 
                   onClick={loadAiRecommendedFriends}
@@ -986,6 +986,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                 )}
               </div>
             </SidebarCard>
+            )}
 
             {/* Location Card - Enhanced */}
             {(!event.isOnlineEvent || event.isOnlineEvent === false) &&
