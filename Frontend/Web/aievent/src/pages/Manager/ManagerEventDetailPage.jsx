@@ -845,24 +845,7 @@ Nhấn OK để xác nhận xóa.`;
                   </p>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="space-y-2 pt-2">
-                  <Button 
-                    variant="outline"
-                    className="w-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 font-semibold rounded-xl py-5 transition-all group"
-                  >
-                    <Users className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
-                    <span className="truncate">Xem danh sách tham gia</span>
-                  </Button>
-
-                  <Button 
-                    variant="outline"
-                    className="w-full border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 font-semibold rounded-xl py-5 transition-all group"
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
-                    <span className="truncate">Gửi thông báo</span>
-                  </Button>
-                </div>
+                
               </div>
             </SidebarCard>
 
