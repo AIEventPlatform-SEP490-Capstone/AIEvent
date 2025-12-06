@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createStackNavigator } from '@react-navigation/stack';
-import { Image, View } from 'react-native';
-import { useSelector } from 'react-redux';
-import { isStaffUser } from '../utils/jwtUtils';
+import React, {useEffect, useMemo, useRef} from 'react';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {createStackNavigator} from '@react-navigation/stack';
+import {Image, View} from 'react-native';
+import {useSelector} from 'react-redux';
+import {isStaffUser} from '../utils/jwtUtils';
 
 import HomeScreen from '../screens/homeScreen';
 import EventDetailScreen from '../screens/eventDetailScreen';
@@ -16,7 +16,6 @@ import BookingScreen from '../screens/bookingScreen';
 import ScreenNames from '../constants/ScreenNames';
 import Images from '../constants/Images';
 import Colors from '../constants/Colors';
-import BookingScreen from '../screens/bookingScreen';
 import AIChatScreen from '../screens/aiChatScreen';
 
 const Tab = createBottomTabNavigator();
@@ -50,8 +49,8 @@ const HomeStack = () => {
           },
         }}
       />
-      <Stack.Screen 
-        name={ScreenNames.QR_SCANNER_SCREEN} 
+      <Stack.Screen
+        name={ScreenNames.QR_SCANNER_SCREEN}
         component={QrScannerScreen}
         options={{
           headerShown: false,
@@ -104,35 +103,57 @@ const HomeStack = () => {
           headerShown: false,
         }}
       />
-
     </Stack.Navigator>
   );
 };
 
 // Stack cho Profile (cả user và staff đều vào được Settings)
 const ProfileStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
+  <Stack.Navigator screenOptions={{headerShown: false}}>
     <Stack.Screen name="ProfileMain" component={ProfileScreen} />
-    <Stack.Screen name={ScreenNames.SETTINGS_SCREEN} component={SettingsScreen} />
+    <Stack.Screen
+      name={ScreenNames.SETTINGS_SCREEN}
+      component={SettingsScreen}
+    />
     <Stack.Screen
       name={ScreenNames.EVENT_DETAIL_SCREEN}
       component={EventDetailScreen}
       options={{
         headerShown: true,
         title: 'Chi tiết sự kiện',
-        headerStyle: { backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border },
-        headerTitleStyle: { color: Colors.textPrimary, fontSize: 18, fontWeight: '600' },
+        headerStyle: {
+          backgroundColor: Colors.white,
+          borderBottomWidth: 1,
+          borderBottomColor: Colors.border,
+        },
+        headerTitleStyle: {
+          color: Colors.textPrimary,
+          fontSize: 18,
+          fontWeight: '600',
+        },
       }}
     />
-    <Stack.Screen name={ScreenNames.QR_SCANNER_SCREEN} component={QrScannerScreen} options={{ headerShown: false }} />
+    <Stack.Screen
+      name={ScreenNames.QR_SCANNER_SCREEN}
+      component={QrScannerScreen}
+      options={{headerShown: false}}
+    />
     <Stack.Screen
       name={ScreenNames.CHECK_IN_CONFIRMATION_SCREEN}
       component={CheckInConfirmationScreen}
       options={{
         headerShown: true,
         title: 'Xác nhận Check-in',
-        headerStyle: { backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border },
-        headerTitleStyle: { color: Colors.textPrimary, fontSize: 18, fontWeight: '600' },
+        headerStyle: {
+          backgroundColor: Colors.white,
+          borderBottomWidth: 1,
+          borderBottomColor: Colors.border,
+        },
+        headerTitleStyle: {
+          color: Colors.textPrimary,
+          fontSize: 18,
+          fontWeight: '600',
+        },
       }}
     />
   </Stack.Navigator>
@@ -143,27 +164,50 @@ const getTimelineStack = () => {
   try {
     const TimelineScreen = require('../screens/timelineScreen').default;
     return () => (
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name={ScreenNames.TIMELINE_SCREEN} component={TimelineScreen} />
+      <Stack.Navigator screenOptions={{headerShown: false}}>
+        <Stack.Screen
+          name={ScreenNames.TIMELINE_SCREEN}
+          component={TimelineScreen}
+        />
         <Stack.Screen
           name={ScreenNames.EVENT_DETAIL_SCREEN}
           component={EventDetailScreen}
           options={{
             headerShown: true,
             title: 'Chi tiết sự kiện',
-            headerStyle: { backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border },
-            headerTitleStyle: { color: Colors.textPrimary, fontSize: 18, fontWeight: '600' },
+            headerStyle: {
+              backgroundColor: Colors.white,
+              borderBottomWidth: 1,
+              borderBottomColor: Colors.border,
+            },
+            headerTitleStyle: {
+              color: Colors.textPrimary,
+              fontSize: 18,
+              fontWeight: '600',
+            },
           }}
         />
-        <Stack.Screen name={ScreenNames.QR_SCANNER_SCREEN} component={QrScannerScreen} options={{ headerShown: false }} />
+        <Stack.Screen
+          name={ScreenNames.QR_SCANNER_SCREEN}
+          component={QrScannerScreen}
+          options={{headerShown: false}}
+        />
         <Stack.Screen
           name={ScreenNames.CHECK_IN_CONFIRMATION_SCREEN}
           component={CheckInConfirmationScreen}
           options={{
             headerShown: true,
             title: 'Xác nhận Check-in',
-            headerStyle: { backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border },
-            headerTitleStyle: { color: Colors.textPrimary, fontSize: 18, fontWeight: '600' },
+            headerStyle: {
+              backgroundColor: Colors.white,
+              borderBottomWidth: 1,
+              borderBottomColor: Colors.border,
+            },
+            headerTitleStyle: {
+              color: Colors.textPrimary,
+              fontSize: 18,
+              fontWeight: '600',
+            },
           }}
         />
       </Stack.Navigator>
@@ -177,7 +221,7 @@ const getTicketsStack = () => {
   try {
     const TicketsScreen = require('../screens/ticketsScreen').default;
     return () => (
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator screenOptions={{headerShown: false}}>
         <Stack.Screen name="TicketsMain" component={TicketsScreen} />
         <Stack.Screen
           name={ScreenNames.EVENT_DETAIL_SCREEN}
@@ -185,19 +229,39 @@ const getTicketsStack = () => {
           options={{
             headerShown: true,
             title: 'Chi tiết sự kiện',
-            headerStyle: { backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border },
-            headerTitleStyle: { color: Colors.textPrimary, fontSize: 18, fontWeight: '600' },
+            headerStyle: {
+              backgroundColor: Colors.white,
+              borderBottomWidth: 1,
+              borderBottomColor: Colors.border,
+            },
+            headerTitleStyle: {
+              color: Colors.textPrimary,
+              fontSize: 18,
+              fontWeight: '600',
+            },
           }}
         />
-        <Stack.Screen name={ScreenNames.QR_SCANNER_SCREEN} component={QrScannerScreen} options={{ headerShown: false }} />
+        <Stack.Screen
+          name={ScreenNames.QR_SCANNER_SCREEN}
+          component={QrScannerScreen}
+          options={{headerShown: false}}
+        />
         <Stack.Screen
           name={ScreenNames.CHECK_IN_CONFIRMATION_SCREEN}
           component={CheckInConfirmationScreen}
           options={{
             headerShown: true,
             title: 'Xác nhận Check-in',
-            headerStyle: { backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border },
-            headerTitleStyle: { color: Colors.textPrimary, fontSize: 18, fontWeight: '600' },
+            headerStyle: {
+              backgroundColor: Colors.white,
+              borderBottomWidth: 1,
+              borderBottomColor: Colors.border,
+            },
+            headerTitleStyle: {
+              color: Colors.textPrimary,
+              fontSize: 18,
+              fontWeight: '600',
+            },
           }}
         />
       </Stack.Navigator>
@@ -209,29 +273,53 @@ const getTicketsStack = () => {
 
 const getFavoriteEventsStack = () => {
   try {
-    const FavoriteEventsScreen = require('../screens/favoriteEventsScreen').default;
+    const FavoriteEventsScreen =
+      require('../screens/favoriteEventsScreen').default;
     return () => (
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="FavoriteEventsMain" component={FavoriteEventsScreen} />
+      <Stack.Navigator screenOptions={{headerShown: false}}>
+        <Stack.Screen
+          name="FavoriteEventsMain"
+          component={FavoriteEventsScreen}
+        />
         <Stack.Screen
           name={ScreenNames.EVENT_DETAIL_SCREEN}
           component={EventDetailScreen}
           options={{
             headerShown: true,
             title: 'Chi tiết sự kiện',
-            headerStyle: { backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border },
-            headerTitleStyle: { color: Colors.textPrimary, fontSize: 18, fontWeight: '600' },
+            headerStyle: {
+              backgroundColor: Colors.white,
+              borderBottomWidth: 1,
+              borderBottomColor: Colors.border,
+            },
+            headerTitleStyle: {
+              color: Colors.textPrimary,
+              fontSize: 18,
+              fontWeight: '600',
+            },
           }}
         />
-        <Stack.Screen name={ScreenNames.QR_SCANNER_SCREEN} component={QrScannerScreen} options={{ headerShown: false }} />
+        <Stack.Screen
+          name={ScreenNames.QR_SCANNER_SCREEN}
+          component={QrScannerScreen}
+          options={{headerShown: false}}
+        />
         <Stack.Screen
           name={ScreenNames.CHECK_IN_CONFIRMATION_SCREEN}
           component={CheckInConfirmationScreen}
           options={{
             headerShown: true,
             title: 'Xác nhận Check-in',
-            headerStyle: { backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border },
-            headerTitleStyle: { color: Colors.textPrimary, fontSize: 18, fontWeight: '600' },
+            headerStyle: {
+              backgroundColor: Colors.white,
+              borderBottomWidth: 1,
+              borderBottomColor: Colors.border,
+            },
+            headerTitleStyle: {
+              color: Colors.textPrimary,
+              fontSize: 18,
+              fontWeight: '600',
+            },
           }}
         />
       </Stack.Navigator>
@@ -242,7 +330,7 @@ const getFavoriteEventsStack = () => {
 };
 
 const TabNavigator = () => {
-  const { accessToken, isLoggedIn } = useSelector(state => state.auth);
+  const {accessToken, isLoggedIn} = useSelector(state => state.auth);
   const isStaff = accessToken ? isStaffUser(accessToken) : false;
   const prevIsLoggedInRef = useRef(isLoggedIn);
 
@@ -260,13 +348,13 @@ const TabNavigator = () => {
         {
           name: 'HomeTab',
           component: HomeStack,
-          options: { title: 'Danh sách sự kiện' },
+          options: {title: 'Danh sách sự kiện'},
           icon: Images.home,
         },
         {
           name: 'Profile',
           component: ProfileStack,
-          options: { title: 'Hồ sơ' },
+          options: {title: 'Hồ sơ'},
           icon: Images.profile,
         },
       ];
@@ -274,19 +362,44 @@ const TabNavigator = () => {
 
     // Người dùng thường - giữ nguyên 5 tab
     return [
-      { name: 'HomeTab', component: HomeStack, options: { title: 'Trang chủ' }, icon: Images.home },
-      { name: 'Timeline', component: getTimelineStack(), options: { title: 'Timeline' }, icon: Images.calendar },
-      { name: 'MyEvents', component: getTicketsStack(), options: { title: 'Vé của tôi' }, icon: Images.ticket },
-      { name: 'FavoriteEvents', component: getFavoriteEventsStack(), options: { title: 'Yêu thích' }, icon: Images.heart },
-      { name: 'Profile', component: ProfileStack, options: { title: 'Hồ sơ' }, icon: Images.profile },
+      {
+        name: 'HomeTab',
+        component: HomeStack,
+        options: {title: 'Trang chủ'},
+        icon: Images.home,
+      },
+      {
+        name: 'Timeline',
+        component: getTimelineStack(),
+        options: {title: 'Timeline'},
+        icon: Images.calendar,
+      },
+      {
+        name: 'MyEvents',
+        component: getTicketsStack(),
+        options: {title: 'Vé của tôi'},
+        icon: Images.ticket,
+      },
+      {
+        name: 'FavoriteEvents',
+        component: getFavoriteEventsStack(),
+        options: {title: 'Yêu thích'},
+        icon: Images.heart,
+      },
+      {
+        name: 'Profile',
+        component: ProfileStack,
+        options: {title: 'Hồ sơ'},
+        icon: Images.profile,
+      },
     ];
   }, [isStaff]);
 
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
+      screenOptions={({route}) => ({
         headerShown: false,
-        tabBarIcon: ({ focused, color, size }) => {
+        tabBarIcon: ({focused, color, size}) => {
           const tab = tabScreens.find(t => t.name === route.name);
           const iconSource = tab?.icon;
 
@@ -295,7 +408,7 @@ const TabNavigator = () => {
           return (
             <Image
               source={iconSource}
-              style={{ width: size, height: size, tintColor: color }}
+              style={{width: size, height: size, tintColor: color}}
             />
           );
         },
@@ -312,8 +425,7 @@ const TabNavigator = () => {
         tabBarLabelStyle: {
           fontSize: 12,
         },
-      })}
-    >
+      })}>
       {tabScreens.map((tab, index) => (
         <Tab.Screen
           key={`${tab.name}-${index}`}
