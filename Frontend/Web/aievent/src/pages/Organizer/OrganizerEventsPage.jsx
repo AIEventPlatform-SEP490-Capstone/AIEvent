@@ -16,26 +16,36 @@ import {
   Filter,
   ChevronUp,
   ChevronDown,
-  Sparkles
+  Sparkles,
+  User
 } from 'lucide-react';
 import { useEvents } from '../../hooks/useEvents';
 import { useFavoriteEvents } from '../../hooks/useFavoriteEvents';
+import { useOrganizers } from '../../hooks/useOrganizers';
 
 export default function OrganizerEventsPage() {
   const { organizerId } = useParams();
   const navigate = useNavigate();
   const { getEventsByOrganizer, loading: eventsLoading } = useEvents();
   const { getFavoriteEvents, addFavoriteEvent, removeFavoriteEvent } = useFavoriteEvents();
+  const { getOrganizerById } = useOrganizers();
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('date'); // date, price
   const [showFilters, setShowFilters] = useState(true);
   const [favoriteEvents, setFavoriteEvents] = useState(new Set());
+  const [organizer, setOrganizer] = useState(null);
+  const [organizerLoading, setOrganizerLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
+        // Load organizer info
+        const orgData = await getOrganizerById(organizerId);
+        setOrganizer(orgData);
+
+        // Load events
         const res = await getEventsByOrganizer({ organizerId, pageNumber: 1, pageSize: 50 });
         let eventData = [];
         if (res && res.data && res.data.items) eventData = res.data.items;
@@ -53,6 +63,8 @@ export default function OrganizerEventsPage() {
         console.error('Error loading organizer events', err);
         setEvents([]);
         setFilteredEvents([]);
+      } finally {
+        setOrganizerLoading(false);
       }
     };
     load();
@@ -169,6 +181,48 @@ export default function OrganizerEventsPage() {
             <p className="text-muted-foreground mt-1">Khám phá tất cả các sự kiện được tổ chức bởi nhà tổ chức này</p>
           </div>
         </div>
+
+        {/* Organizer Info Card */}
+        {organizerLoading && (
+          <div className="mb-8 flex justify-center py-8">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        )}
+
+        {!organizerLoading && organizer && (
+          <Card className="mb-8 bg-white border border-gray-100 hover:shadow-md transition-all duration-300">
+            <CardContent className="p-8">
+              <h2 className="text-xl font-bold text-foreground mb-6">Nhà tổ chức</h2>
+              <div className="flex items-start gap-4">
+                {organizer.imgCompany ? (
+                  <img
+                    src={organizer.imgCompany}
+                    alt={organizer.companyName || "Organizer"}
+                    className="w-20 h-20 rounded-lg object-cover border border-gray-200"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                    <User className="h-10 w-10 text-blue-600" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <h3 className="font-semibold text-foreground text-lg">{organizer.companyName || "Nhà tổ chức"}</h3>
+                  <p className="text-muted-foreground mt-2 line-clamp-3">{organizer.companyDescription || "Thông tin về nhà tổ chức chưa được cập nhật."}</p>
+                  {organizer.email && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      <span className="font-medium">Email:</span> {organizer.email}
+                    </p>
+                  )}
+                  {organizer.phone && (
+                    <p className="text-sm text-muted-foreground">
+                      <span className="font-medium">Điện thoại:</span> {organizer.phone}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Search and Filter Controls */}
         <div className="mb-6">
