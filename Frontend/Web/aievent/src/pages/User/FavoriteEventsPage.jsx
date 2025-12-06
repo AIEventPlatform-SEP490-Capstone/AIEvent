@@ -14,7 +14,9 @@ import {
   X,
   Sparkles,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { useFavoriteEvents } from "../../hooks/useFavoriteEvents";
 import { useCategories } from "../../hooks/useCategories"; // Add this import
@@ -36,6 +38,9 @@ const FavoriteEventsPage = () => {
   const [dateFilter, setDateFilter] = useState("all");
   const [showAllLocations, setShowAllLocations] = useState(false);
   const [showFilters, setShowFilters] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const pageSize = 12;
 
   // Ensure favoriteEvents is always an array
   const safeFavoriteEvents = Array.isArray(favoriteEvents) ? favoriteEvents : 
@@ -180,52 +185,26 @@ const FavoriteEventsPage = () => {
     dateFilter
   }), [searchQuery, selectedCategory, priceFilter, locationFilter, dateFilter]);
 
-  // Fetch favorite events when filters change
+  // Calculate pagination for favorite events
+  const totalResults = safeFavoriteEvents.length;
+  const totalPageCount = Math.ceil(totalResults / pageSize);
+  
   useEffect(() => {
-    let isMounted = true;
-    
-    const fetchFavoriteEventsData = async () => {
-      try {
-        const params = {
-          pageNumber: 1,
-          pageSize: 50
-        };
-        
-        // Add search query if present
-        if (filters.searchQuery) {
-          params.search = filters.searchQuery;
-        }
-        
-        // Add category filter if not "all"
-        if (filters.selectedCategory !== "all") {
-          params.eventCategoryId = filters.selectedCategory;
-        }
-        
-        const response = await getFavoriteEvents(params);
-        
-        // Only update state if component is still mounted
-        if (isMounted) {
-          // Update the favorite events in Redux store
-        }
-      } catch (error) {
-        console.error("Error fetching favorite events:", error);
-      }
-    };
-    
-    // Debounce the API call
-    const timeoutId = setTimeout(() => {
-      fetchFavoriteEventsData();
-    }, 300);
-    
-    // Cleanup function
-    return () => {
-      isMounted = false;
-      clearTimeout(timeoutId);
-    };
-  }, [filters]);
+    setTotalPages(Math.max(1, totalPageCount));
+    // Reset to page 1 when filters change
+    setCurrentPage(1);
+  }, [filters, safeFavoriteEvents.length]);
 
-  // For display purposes, we'll use the already filtered events from Redux
-  const filteredEvents = safeFavoriteEvents;
+  // Get paginated events for current page
+  const paginatedFavoriteEvents = safeFavoriteEvents.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Show loading spinner while checking authentication
   if (!isAuthenticated) {
@@ -365,42 +344,108 @@ const FavoriteEventsPage = () => {
       </div>
 
       {/* Results Info */}
-      <div className="mb-6">
-        <p className="text-muted-foreground">
-          {filteredEvents.length} sự kiện yêu thích
-          {searchQuery && ` cho "${searchQuery}"`}
-        </p>
-      </div>
+      {safeFavoriteEvents.length > 0 && (
+        <div className="mb-6 text-sm text-gray-600">
+          Tìm thấy <span className="font-bold text-gray-900">{totalResults}</span> sự kiện yêu thích
+          {totalPages > 1 && <span className="ml-2">• Trang {currentPage}/{totalPages}</span>}
+        </div>
+      )}
 
       {/* Events Grid */}
-      {filteredEvents.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEvents.map((event) => (
-            <div key={event.eventId} onClick={() => handleViewDetail(event.eventId)}>
-              <EventCard
-                event={event}
-                isLiked={true}
-                onLike={handleRemoveFavorite}
-                onViewDetail={handleViewDetail}
-                showReason={false}
-              />
+      {paginatedFavoriteEvents.length > 0 ? (
+        <div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {paginatedFavoriteEvents.map((event) => (
+              <div key={event.eventId} onClick={() => handleViewDetail(event.eventId)}>
+                <EventCard
+                  event={event}
+                  isLiked={true}
+                  onLike={handleRemoveFavorite}
+                  onViewDetail={handleViewDetail}
+                  showReason={false}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-1 mt-8 mb-4">
+              {/* Previous Button */}
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5 text-gray-600" />
+              </button>
+
+              {/* Page Numbers */}
+              <div className="flex gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                  const isCurrentPage = pageNum === currentPage;
+                  const isNearCurrent = Math.abs(pageNum - currentPage) <= 1;
+                  const isFirst = pageNum === 1;
+                  const isLast = pageNum === totalPages;
+
+                  if (!isCurrentPage && !isNearCurrent && !isFirst && !isLast) {
+                    return null;
+                  }
+
+                  if (
+                    !isCurrentPage &&
+                    !isNearCurrent &&
+                    !isFirst &&
+                    !isLast &&
+                    pageNum === (isNearCurrent ? currentPage + 2 : 2)
+                  ) {
+                    return (
+                      <span key={`ellipsis-${pageNum}`} className="px-2 text-gray-400">
+                        ...
+                      </span>
+                    );
+                  }
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={
+                        isCurrentPage
+                          ? "px-3 py-2 rounded bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium transition-all"
+                          : "px-3 py-2 rounded hover:bg-gray-100 text-gray-700 transition-colors"
+                      }
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Next Button */}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors"
+              >
+                <ChevronRight className="w-5 h-5 text-gray-600" />
+              </button>
             </div>
-          ))}
+          )}
         </div>
       ) : (
-        <div className="text-center py-12">
-          <Heart className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-xl font-semibold mb-2">Chưa có sự kiện yêu thích</h3>
-          <p className="text-muted-foreground mb-6">
-            {searchQuery || selectedCategory !== "all" || priceFilter !== "all" || locationFilter !== "all" || dateFilter !== "all"
-              ? "Không tìm thấy sự kiện yêu thích phù hợp với tiêu chí tìm kiếm" 
-              : "Hãy khám phá các sự kiện và lưu vào danh sách yêu thích"}
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="w-16 h-16 mb-4 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
+            <Heart className="w-8 h-8 text-blue-600" />
+          </div>
+          <p className="text-gray-600 text-center">
+            {searchQuery || selectedCategory !== "all" 
+              ? "Không tìm thấy sự kiện nào trong danh sách yêu thích của bạn." 
+              : "Bạn chưa thêm sự kiện nào vào danh sách yêu thích."}
           </p>
-          {!searchQuery && selectedCategory === "all" && priceFilter === "all" && locationFilter === "all" && dateFilter === "all" && (
-            <Button onClick={() => navigate("/search")}>
-              Khám phá sự kiện
-            </Button>
-          )}
+          <p className="text-sm text-gray-500 mt-2">
+            Khám phá các sự kiện và thêm chúng vào danh sách yêu thích của bạn
+          </p>
         </div>
       )}
     </div>

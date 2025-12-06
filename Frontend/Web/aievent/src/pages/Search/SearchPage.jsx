@@ -15,7 +15,9 @@ import {
   Loader2,
   Sparkles,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { useEvents } from "../../hooks/useEvents";
 import { useCategories } from "../../hooks/useCategories";
@@ -40,6 +42,10 @@ export default function SearchPage() {
   const [showFilters, setShowFilters] = useState(true);
   const [events, setEvents] = useState([]);
   const [favoriteEvents, setFavoriteEvents] = useState(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const pageSize = 12;
 
   // Fetch favorite events only when user is authenticated
   useEffect(() => {
@@ -82,15 +88,15 @@ export default function SearchPage() {
     dateFilter
   }), [searchQuery, selectedCategory, priceFilter, locationFilter, dateFilter]);
 
-  // Fetch events when filters change
+  // Fetch events when filters change or page changes
   useEffect(() => {
     let isMounted = true;
     
     const fetchEventsData = async () => {
       try {
         const params = {
-          pageNumber: 1,
-          pageSize: 50
+          pageNumber: currentPage,
+          pageSize: pageSize
         };
         
         // Add search query if present
@@ -129,19 +135,32 @@ export default function SearchPage() {
         
         // Handle different response structures
         let eventData = [];
+        let total = 0;
+        let pages = 1;
+        
         if (response && response.data && response.data.items) {
           eventData = response.data.items;
+          total = response.data.totalRecords || response.data.items.length;
+          pages = Math.ceil(total / pageSize);
         } else if (response && response.items) {
           eventData = response.items;
+          total = response.totalRecords || response.items.length;
+          pages = Math.ceil(total / pageSize);
         } else if (response && Array.isArray(response)) {
           eventData = response;
+          total = response.length;
+          pages = Math.ceil(total / pageSize);
         } else if (response && response.data && Array.isArray(response.data)) {
           eventData = response.data;
+          total = eventData.length;
+          pages = Math.ceil(total / pageSize);
         }
         
         // Only update state if component is still mounted
         if (isMounted) {
           setEvents(eventData);
+          setTotalResults(total);
+          setTotalPages(Math.max(1, pages));
         }
       } catch (error) {
         console.error("Error fetching events:", error);
@@ -161,7 +180,7 @@ export default function SearchPage() {
       isMounted = false;
       clearTimeout(timeoutId);
     };
-  }, [filters]);
+  }, [filters, currentPage, pageSize];
 
   const handleViewDetail = (eventId) => {
     navigate(`/event/${eventId}`);
@@ -334,6 +353,11 @@ export default function SearchPage() {
     return "Khác";
   };
 
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Search Header */}
@@ -459,13 +483,13 @@ export default function SearchPage() {
         </div>
       </div>
 
-      {/* Results */}
-      <div className="mb-4">
-        <p className="text-muted-foreground">
+      {/* Results Info */}
+      <div className="mb-6">
+        <p className="text-muted-foreground font-medium">
           {(eventsLoading || categoriesLoading) ? (
             "Đang tải sự kiện..."
           ) : (
-            <>Tìm thấy {events.length} sự kiện{searchQuery && ` cho "${searchQuery}"`}</>
+            <>Tìm thấy <span className="text-blue-600 font-bold">{totalResults}</span> sự kiện{searchQuery && ` cho "${searchQuery}"`}{totalPages > 1 && ` • Trang ${currentPage}/${totalPages}`}</>
           )}
         </p>
       </div>
@@ -493,9 +517,70 @@ export default function SearchPage() {
         </div>
       )}
 
+      {/* Pagination */}
+      {!(eventsLoading || categoriesLoading) && totalPages > 1 && (
+        <div className="flex justify-center items-center mt-12 mb-8 space-x-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-3 py-2 rounded-lg border-gray-300 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            Trước
+          </Button>
+          
+          {[...Array(totalPages)].map((_, index) => {
+            const pageNumber = index + 1;
+            if (
+              pageNumber === 1 ||
+              pageNumber === totalPages ||
+              (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+            ) {
+              return (
+                <Button
+                  key={pageNumber}
+                  size="sm"
+                  onClick={() => handlePageChange(pageNumber)}
+                  className={`px-3.5 py-2 rounded-lg font-semibold transition-all ${
+                    currentPage === pageNumber
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
+                      : 'border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 hover:border-blue-300'
+                  }`}
+                >
+                  {pageNumber}
+                </Button>
+              );
+            }
+            
+            if (pageNumber === currentPage - 2 || pageNumber === currentPage + 2) {
+              return <span key={pageNumber} className="px-2 text-gray-400 font-semibold">…</span>;
+            }
+            
+            return null;
+          })}
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="px-3 py-2 rounded-lg border-gray-300 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Sau
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
+        </div>
+      )}
+
       {!(eventsLoading || categoriesLoading) && events.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground text-lg">Không tìm thấy sự kiện nào phù hợp với tiêu chí tìm kiếm</p>
+        <div className="text-center py-16">
+          <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <Search className="w-10 h-10 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-900 mb-2">Không tìm thấy sự kiện</h3>
+          <p className="text-gray-600">Hãy thử thay đổi tiêu chí tìm kiếm hoặc bộ lọc của bạn</p>
         </div>
       )}
     </div>
