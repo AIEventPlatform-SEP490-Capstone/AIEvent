@@ -90,32 +90,6 @@ namespace AIEvent.API.Controllers
                 "Event related retrieved successfully"));
         }
 
-        [HttpGet("{id}/by-organizer")]
-        [AllowAnonymous]
-        public async Task<ActionResult<SuccessResponse<BasePaginated<EventsResponse>>>> GetEventByOrganizer([FromQuery] Guid organizerId,
-                                                                                                               [FromQuery] string? search, 
-                                                                                                               [FromQuery] int pageNumber = 1,
-                                                                                                               [FromQuery] int pageSize = 5)
-        {
-            Guid? userId = null;
-            if (User.Identity?.IsAuthenticated == true)
-            {
-                userId = User.GetRequiredUserId();
-            }
-
-            var result = await _eventService.GetEventByOrganizerAsync(userId, organizerId, search, pageNumber, pageSize);
-
-            if (!result.IsSuccess)
-            {
-                return BadRequest(result.Error!);
-            }
-
-            return Ok(SuccessResponse<BasePaginated<EventsResponse>>.SuccessResult(
-                result.Value!,
-                SuccessCodes.Success,
-                "Event related retrieved successfully"));
-        }
-
         [HttpPatch("{id}")]
         [Authorize(Roles = "Organizer, Manager")]
         public async Task<ActionResult<SuccessResponse<object>>> UpdateEvent(Guid id, [FromBody] UpdateEventRequest request)
