@@ -78,6 +78,8 @@ import EventDetailGuestPage from '../Event/EventDetailGuestPage';
 // Import EventTimeline component
 import { EventTimeline } from '../../components/Event/EventTimeline';
 import { useSidebar } from '../../components/ui/sidebar'; // Add this import
+// Import number formatting utility
+import { formatNumberWithSeparator, removeNumberFormatting } from '../../utils/numberFormat';
 
 // Validation schema (updated to match CreateEventPage)
 const editEventSchema = z.object({
@@ -138,7 +140,7 @@ const editEventSchema = z.object({
 }).refine((data) => {
   return data.ticketTypes.some(ticket => ticket.ticketPrice > 10000);
 }, {
-  message: 'Phải có ít nhất một loại vé có giá > 10.000 VND',
+  message: 'Phải có ít nhất một loại vé có giá > 10.000 VND và số lượng > 20',
   path: ['ticketTypes'],
 });
 
@@ -399,8 +401,8 @@ const EditEventPage = () => {
     setEditingTicketIndex(index);
     setTicketForm({
       ticketName: ticket.ticketName || '',
-      ticketPrice: ticket.ticketPrice || 10000,
-      ticketQuantity: ticket.ticketQuantity || 1,
+      ticketPrice: formatNumberWithSeparator(ticket.ticketPrice || 10000),
+      ticketQuantity: formatNumberWithSeparator(ticket.ticketQuantity || 1),
       ticketDescription: ticket.ticketDescription || ''
     });
   };
@@ -528,8 +530,19 @@ const EditEventPage = () => {
   // Save edited ticket
   const saveEditingTicket = () => {
     if (editingTicketIndex !== null) {
+      // Clean the formatted values before validation
+      const cleanPrice = parseFloat(removeNumberFormatting(ticketForm.ticketPrice)) || 10000;
+      const cleanQuantity = parseInt(removeNumberFormatting(ticketForm.ticketQuantity)) || 1;
+      
+      // Create a clean version for validation
+      const cleanTicketForm = {
+        ...ticketForm,
+        ticketPrice: cleanPrice,
+        ticketQuantity: cleanQuantity
+      };
+      
       // Validate the ticket
-      const errors = validateTicket(ticketForm);
+      const errors = validateTicket(cleanTicketForm);
       
       if (Object.keys(errors).length > 0) {
         // Show errors
@@ -547,11 +560,10 @@ const EditEventPage = () => {
         return newErrors;
       });
       
-      // Update the ticket in the form
+      // Update the ticket in the form with clean values
       setValue(`ticketTypes.${editingTicketIndex}.ticketName`, ticketForm.ticketName);
-      const ticketPrice = parseFloat(ticketForm.ticketPrice);
-      setValue(`ticketTypes.${editingTicketIndex}.ticketPrice`, isNaN(ticketPrice) ? 10000 : ticketPrice);
-      setValue(`ticketTypes.${editingTicketIndex}.ticketQuantity`, parseInt(ticketForm.ticketQuantity) || 1);
+      setValue(`ticketTypes.${editingTicketIndex}.ticketPrice`, cleanPrice);
+      setValue(`ticketTypes.${editingTicketIndex}.ticketQuantity`, cleanQuantity);
       setValue(`ticketTypes.${editingTicketIndex}.ticketDescription`, ticketForm.ticketDescription);
       
       // Reset editing state
@@ -579,10 +591,20 @@ const EditEventPage = () => {
   // Handle ticket form change
   const handleTicketFormChange = (e) => {
     const { name, value } = e.target;
-    setTicketForm(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Format price and quantity with thousand separators
+    if (name === 'ticketPrice' || name === 'ticketQuantity') {
+      const numValue = removeNumberFormatting(value);
+      setTicketForm(prev => ({
+        ...prev,
+        [name]: numValue ? formatNumberWithSeparator(numValue) : ''
+      }));
+    } else {
+      setTicketForm(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   // Generate preview data from form values
@@ -1766,12 +1788,11 @@ const EditEventPage = () => {
                             <div>
                               <Label className="text-sm font-medium mb-1">Số lượng</Label>
                               <Input
-                                type="number"
+                                type="text"
                                 name="ticketQuantity"
                                 value={ticketForm.ticketQuantity}
                                 onChange={handleTicketFormChange}
-                                min="20"
-                                max="100000"
+                                placeholder="20 - 100.000"
                                 className={ticketErrors[editingTicketIndex]?.ticketQuantity ? 'border-red-500' : ''}
                               />
                               {ticketErrors[editingTicketIndex]?.ticketQuantity && (
@@ -1784,11 +1805,11 @@ const EditEventPage = () => {
                             <div>
                               <Label className="text-sm font-medium mb-1">Giá vé (VND)</Label>
                               <Input
-                                type="number"
+                                type="text"
                                 name="ticketPrice"
                                 value={ticketForm.ticketPrice}
                                 onChange={handleTicketFormChange}
-                                min="10000"
+                                placeholder="10.000 trở lên"
                                 className={ticketErrors[editingTicketIndex]?.ticketPrice ? 'border-red-500' : ''}
                               />
                               {ticketErrors[editingTicketIndex]?.ticketPrice && (
