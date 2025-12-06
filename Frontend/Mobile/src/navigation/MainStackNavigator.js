@@ -8,6 +8,7 @@ import TicketsScreen from '../screens/ticketsScreen';
 import LikesScreen from '../screens/likesScreen';
 import FriendsScreen from '../screens/friendsScreen';
 import FriendDetailScreen from '../screens/friendDetailScreen';
+import InvitationsScreen from '../screens/invitationsScreen';
 import ChangePasswordScreen from '../screens/changePasswordScreen';
 
 import ScreenNames from '../constants/ScreenNames';
@@ -27,6 +28,7 @@ const MainStackNavigator = () => {
       <Stack.Screen name={ScreenNames.LIKES_SCREEN} component={LikesScreen} />
       <Stack.Screen name={ScreenNames.FRIENDS_SCREEN} component={FriendsScreen} />
       <Stack.Screen name={ScreenNames.FRIEND_DETAIL_SCREEN} component={FriendDetailScreen} />
+      <Stack.Screen name={ScreenNames.INVITATIONS_SCREEN} component={InvitationsScreen} />
       <Stack.Screen name={ScreenNames.CHANGE_PASSWORD_SCREEN} component={ChangePasswordScreen} />
 
       {/* Nếu còn màn hình nào khác thì thêm vào đây luôn */}
