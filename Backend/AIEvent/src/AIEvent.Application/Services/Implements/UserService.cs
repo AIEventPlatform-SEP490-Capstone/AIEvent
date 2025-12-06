@@ -114,7 +114,7 @@ namespace AIEvent.Application.Services.Implements
             IQueryable<User> userQuery = _unitOfWork.UserRepository
                 .Query()
                 .AsNoTracking()
-                .Where(u => u.IsActive && !u.IsDeleted && u.Id != roleAdmin.Id)
+                .Where(u => u.IsActive && !u.IsDeleted && u.RoleId != roleAdmin.Id)
                 .OrderByDescending(s => s.CreatedAt);
 
             if (!string.IsNullOrEmpty(email))
