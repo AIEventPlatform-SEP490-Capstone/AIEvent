@@ -78,6 +78,7 @@ const ProfileScreen = ({ navigation }) => {
       { id: 'payment', label: 'Thông tin tài khoản', icon: '🏦', screen: ScreenNames.PAYMENT_INFORMATION_SCREEN },
       { id: 'likes', label: 'Yêu thích', icon: '❤️', screen: ScreenNames.LIKES_SCREEN },
       { id: 'friends', label: 'Bạn bè', icon: '👥', screen: ScreenNames.FRIENDS_SCREEN },
+      { id: 'invitations', label: 'Lời mời', icon: '📨', screen: ScreenNames.INVITATIONS_SCREEN },
       { id: 'settings', label: 'Cài đặt', icon: '⚙️', screen: ScreenNames.SETTINGS_SCREEN }
     ];
 
