@@ -426,20 +426,19 @@ namespace AIEvent.Application.Services.Implements
                 var friendList = await _unitOfWork.FriendshipRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(f => (f.SenderId == userId || f.ReceiverId == userId)
-                                && !f.IsDeleted
-                                && f.Status == FriendshipStatus.Accepted)
-                    .Select(f => new
+                    .Where(f => f.Status == FriendshipStatus.Accepted && !f.IsDeleted &&
+                        (
+                            (f.SenderId == userId && f.Receiver.IsTurnOnLocation == true) ||
+                            (f.ReceiverId == userId && f.Sender.IsTurnOnLocation == true)
+                        )
+                    )
+                    .Select(f => f.SenderId == userId ? f.Receiver : f.Sender)
+                    .Select(u => new
                     {
-                        Friend = f.SenderId == userId ? f.Receiver : f.Sender,
-                    })
-                    .Where(x => x.Friend.IsTurnOnLocation == true)
-                    .Select(x => new
-                    {
-                        x.Friend.Id,
-                        x.Friend.FullName,
-                        x.Friend.Email,
-                        x.Friend.AvatarImgUrl
+                        u.Id,
+                        u.FullName,
+                        u.Email,
+                        u.AvatarImgUrl
                     })
                     .ToListAsync();
 
