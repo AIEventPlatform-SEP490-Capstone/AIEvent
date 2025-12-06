@@ -129,7 +129,11 @@ export default function useRouterElement() {
           ),
         },
         { path: "event/:id", element: <EventDetailGuestPage /> },
-        { path: "organizer/:organizerId/events", element: <OrganizerEventsPage /> },
+        { path: "organizer/:organizerId/events", 
+          element: 
+            <ProtectedRoute>
+              <OrganizerEventsPage />
+            </ProtectedRoute> },
         {
           path: "booking/:id",
           element: (
