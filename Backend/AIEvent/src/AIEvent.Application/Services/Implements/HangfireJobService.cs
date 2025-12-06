@@ -554,17 +554,21 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task EmbedNewEventAsync(Guid eventId)
         {
+            var now = DateTime.UtcNow;
             var eventEntity = await _unitOfWork.EventRepository
                 .Query()
                 .AsNoTracking()
                 .Include(e => e.EventCategory)
                 .Include(e => e.EventTags)
                 .Include(e => e.TicketTypes)
-                .FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted && e.Status == EventStatus.Approved);
+                .FirstOrDefaultAsync(e => e.Id == eventId 
+                    && !e.IsDeleted 
+                    && e.Status == EventStatus.Approved
+                    && e.StartTime > now);
 
             if (eventEntity == null)
             {
-                _logger.LogWarning("EventEmbeddingJob: Event {EventId} not found.", eventId);
+                _logger.LogWarning("EventEmbeddingJob: Event {EventId} not found or not in the future.", eventId);
                 return;
             }
 
@@ -581,6 +585,8 @@ namespace AIEvent.Application.Services.Implements
                 Quận/Huyện: {eventEntity.District ?? "Không rõ"}
                 Thời gian bắt đầu: {eventEntity.StartTime:dd/MM/yyyy HH:mm}
                 Thời gian kết thúc: {eventEntity.EndTime:dd/MM/yyyy HH:mm}
+                Thời gian bắt đầu bán vé: {(eventEntity.SaleStartTime.HasValue ? eventEntity.SaleStartTime.Value.ToString("dd/MM/yyyy HH:mm") : "Không có")}
+                Thời gian kết thúc bán vé: {(eventEntity.SaleEndTime.HasValue ? eventEntity.SaleEndTime.Value.ToString("dd/MM/yyyy HH:mm") : "Không có")}
                 Các loại vé:
                 {(ticketInfos.Count > 0 ? string.Join("\n", ticketInfos) : "Không có vé")}
             ";
@@ -605,6 +611,8 @@ namespace AIEvent.Application.Services.Implements
                         ["Address"] = eventEntity.Address ?? "",
                         ["StartTime"] = eventEntity.StartTime,
                         ["EndTime"] = eventEntity.EndTime,
+                        ["SaleStartTime"] = eventEntity.SaleStartTime ?? (object)"",
+                        ["SaleEndTime"] = eventEntity.SaleEndTime ?? (object)"",
                         ["Tickets"] = string.Join(", ", ticketInfos)
                     }
                 };

@@ -24,6 +24,7 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task EmbedAllEventsAsync()
         {
+            var now = DateTime.UtcNow;
             var events = await _unitOfWork.EventRepository
                 .Query()
                 .Include(e => e.EventCategory)
@@ -32,7 +33,8 @@ namespace AIEvent.Application.Services.Implements
                 .Include(e => e.TicketTypes)
                 .Where(e => e.Publish == true 
                     && e.Status == EventStatus.Approved 
-                    && !e.IsDeleted)
+                    && !e.IsDeleted
+                    && e.StartTime > now)
                 .ToListAsync();
 
             if (events.Count == 0)
@@ -60,6 +62,8 @@ namespace AIEvent.Application.Services.Implements
                     Quận/Huyện: {e.District ?? "Không rõ"}
                     Thời gian bắt đầu: {e.StartTime:dd/MM/yyyy HH:mm}
                     Thời gian kết thúc: {e.EndTime:dd/MM/yyyy HH:mm}
+                    Thời gian bắt đầu bán vé: {(e.SaleStartTime.HasValue ? e.SaleStartTime.Value.ToString("dd/MM/yyyy HH:mm") : "Không có")}
+                    Thời gian kết thúc bán vé: {(e.SaleEndTime.HasValue ? e.SaleEndTime.Value.ToString("dd/MM/yyyy HH:mm") : "Không có")}
                     Các loại vé:
                     {(ticketInfos.Count > 0 ? string.Join("\n", ticketInfos) : "Không có vé")}
                     ";
@@ -85,6 +89,8 @@ namespace AIEvent.Application.Services.Implements
                             ["Address"] = e.Address ?? "",
                             ["StartTime"] = e.StartTime,
                             ["EndTime"] = e.EndTime,
+                            ["SaleStartTime"] = e.SaleStartTime ?? (object)"",
+                            ["SaleEndTime"] = e.SaleEndTime ?? (object)"",
                             ["Tickets"] = string.Join(", ", ticketInfos)
                         }
                     });

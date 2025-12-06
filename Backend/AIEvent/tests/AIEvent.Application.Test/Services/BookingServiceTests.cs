@@ -1540,6 +1540,104 @@ namespace AIEvent.Application.Test.Services
         }
         #endregion
 
+
+        [Fact]
+        public async Task UTCID15_CreateBookingAsync_ShouldReturnError_WhenTicketQuantityIsZero()
+        {
+            // Arrange
+            var userId = UserId;
+            var organizerId = OrgId;
+            var eventId = EventId;
+            var ticketTypeId = TicketTypeId;
+
+            var user = new User
+            {
+                Id = userId,
+                FullName = "Test User",
+                Email = "user@test.com",
+                IsDeleted = false,
+                IsActive = true
+            };
+
+            var organizerProfile = new OrganizerProfile
+            {
+                Id = organizerId,
+                UserId = userId,
+                Address = "ABC",
+                ContactEmail = "org@test.com",
+                ContactName = "Org",
+                ContactPhone = "123456789",
+                EventExperienceLevel = 0,
+                EventFrequency = 0,
+                EventSize = 0,
+                OrganizationType = 0,
+                OrganizerType = 0
+            };
+
+            var eventEntity = new Event
+            {
+                Id = eventId,
+                Description = "Test",
+                Title = "AIEvent 2025",
+                StartTime = DateTime.UtcNow.AddDays(1),
+                EndTime = DateTime.UtcNow.AddDays(2),
+                SaleStartTime = DateTime.UtcNow.AddDays(-1),
+                SaleEndTime = DateTime.UtcNow.AddDays(1),
+                Publish = true,
+                Status = EventStatus.Approved,
+                RemainingTickets = 100,
+                SoldQuantity = 0,
+                OrganizerProfile = organizerProfile
+            };
+
+            var ticketType = new TicketType
+            {
+                Id = ticketTypeId,
+                TicketName = "VIP",
+                TicketPrice = 100,
+                RemainingQuantity = 100,
+                SoldQuantity = 0,
+                TicketQuantity = 100
+            };
+
+            var request = new CreateBookingRequest
+            {
+                EventId = eventId,
+                TicketTypeRequests = new List<BookingTicketRequest>
+                {
+                    new BookingTicketRequest
+                    {
+                        TicketTypeId = ticketTypeId,
+                        Quantity = 0
+                    }
+                }
+            };
+
+
+            // ===== Mock Repositories =====
+            _unitOfWorkMock.Setup(u => u.UserRepository.Query(false))
+                .Returns(new List<User> { user }.AsQueryable().BuildMockDbSet().Object);
+
+            _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
+                .Returns(new List<Event> { eventEntity }.AsQueryable().BuildMockDbSet().Object);
+
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+                .Returns(new List<TicketType> { ticketType }.AsQueryable().BuildMockDbSet().Object);
+
+            _transactionHelperMock.Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(func => func());
+
+            // Act
+            var result = await _bookingService.CreateBookingAsync(userId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess, "Booking should fail when ticket quantity is zero.");
+            Assert.Equal("Quantity must be greater than 0", result.Error!.Message);
+            Assert.Equal(ErrorCodes.InvalidInput, result.Error.StatusCode);
+
+            _unitOfWorkMock.Verify(u => u.BookingRepository.AddAsync(It.IsAny<Booking>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.SaveChangesAsync(), Times.Never);
+        }
         //#region CheckInTicketAsync
         //[Theory]
         //[InlineData(null)]

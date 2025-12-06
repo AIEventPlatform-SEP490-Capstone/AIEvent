@@ -14,7 +14,7 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result> UpdateEventAsync(Guid organizerId, Guid eventId, UpdateEventRequest request);
         Task<Result<BasePaginated<EventsRelatedResponse>>> GetRelatedEventAsync(Guid eventId, int pageNumber = 1, int pageSize = 5);
         Task<Result<BasePaginated<EventsResponse>>> GetEventAsync(Guid? userId, string? search, string? eventCategoryId, List<EventTagRequest> tags, string? district, TimeLine? timeLine, int pageNumber = 1, int pageSize = 5);
-        Task<Result<BasePaginated<EventsRawResponse>>> GetAllEventStatusAsync(Guid? organizerId, string? search, EventStatus? status = null, int pageNumber = 1, int pageSize = 10);
+        Task<Result<BasePaginated<EventsRawResponse>>> GetAllEventStatusAsync(Guid? organizerId, string? search, EventStatus? status = null, DateTime? startDate = null, DateTime? endDate = null, int pageNumber = 1, int pageSize = 10);
         Task<Result> ConfirmEventAsync(Guid userId, Guid eventId, ConfirmEventRequest request);
         Task<Result<BasePaginated<EventsRawResponse>>> GetAllEventDraftAsync(Guid organizerId, int pageNumber = 1, int pageSize = 10);
         Task CompleteExpiredEventsAsync();
@@ -26,5 +26,6 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result<BasePaginated<ListEventResponse>>> GetAllEventForStaff(Guid staffId, string? title, string? eventCategoryId,int pageNumber, int pageSize);
         Task<Result<BasePaginated<EventsLocationResponse>>> GetAllEventByRadius(Guid userId, int? radius, string? eventCategoryId,
                                                                                 double latitude, double longitude, int pageNumber, int pageSize);
+        Task<Result<BasePaginated<EventsResponse>>> GetEventByOrganizerAsync(Guid? userId, Guid? organizerId, string? search, int pageNumber = 1, int pageSize = 5);
     }
 }
