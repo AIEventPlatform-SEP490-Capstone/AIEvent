@@ -245,6 +245,9 @@ export const eventAPI = {
     
     if (params.pageNumber) queryParams.append('pageNumber', params.pageNumber);
     if (params.pageSize) queryParams.append('pageSize', params.pageSize);
+    if (params.search) queryParams.append('search', params.search);
+    if (params.startDate) queryParams.append('startDate', params.startDate);
+    if (params.endDate) queryParams.append('endDate', params.endDate);
 
     const response = await fetcher.get(`/event/draft?${queryParams.toString()}`);
     // Return the actual data from the paginated response

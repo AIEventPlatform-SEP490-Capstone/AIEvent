@@ -18,7 +18,8 @@ import {
   Plus,
   CheckCircle,
   XCircle,
-  Copy
+  Copy,
+  X
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
@@ -53,6 +54,9 @@ const MyEventsPage = () => {
   const [showCompletionDropdown, setShowCompletionDropdown] = useState(false);
   const [initiationDropdownLabel, setInitiationDropdownLabel] = useState('Khởi tạo sự kiện');
   const [completionDropdownLabel, setCompletionDropdownLabel] = useState('Kết thúc sự kiện');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [dateError, setDateError] = useState('');
   const initiationDropdownRef = useRef(null);
   const completionDropdownRef = useRef(null);
   const pageSize = 5;
@@ -140,7 +144,7 @@ const MyEventsPage = () => {
   useEffect(() => {
     setCurrentPage(1);
     loadEvents(1);
-  }, [activeTab, searchTerm, filterStatus, sortBy]);
+  }, [activeTab, searchTerm, filterStatus, sortBy, startDate, endDate]);
 
   // Debounced search effect
   useEffect(() => {
@@ -165,6 +169,8 @@ const MyEventsPage = () => {
           pageNumber: page,
           pageSize: pageSize,
           search: searchTerm || '',
+          startDate: startDate ? new Date(startDate).toISOString() : '',
+          endDate: endDate ? new Date(endDate).toISOString() : '',
         });
       } else {
         // Load events by status for other tabs
@@ -174,6 +180,8 @@ const MyEventsPage = () => {
           status: statusParam,
           pageNumber: page,
           pageSize: pageSize,
+          startDate: startDate ? new Date(startDate).toISOString() : '',
+          endDate: endDate ? new Date(endDate).toISOString() : '',
         });
       }
       
@@ -428,6 +436,43 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
     setSearchTerm('');
     setFilterStatus('all');
     setSortBy('newest');
+    setStartDate('');
+    setEndDate('');
+    setDateError('');
+  };
+
+  // Handle start date change with validation
+  const handleStartDateChange = (value) => {
+    setDateError(''); // Clear error when user starts changing
+    setStartDate(value);
+    
+    // Validate if both dates are set
+    if (value && endDate) {
+      const start = new Date(value);
+      const end = new Date(endDate);
+      
+      if (start > end) {
+        setDateError('Ngày bắt đầu không thể sau ngày kết thúc');
+        return;
+      }
+    }
+  };
+
+  // Handle end date change with validation
+  const handleEndDateChange = (value) => {
+    setDateError(''); // Clear error when user starts changing
+    setEndDate(value);
+    
+    // Validate if both dates are set
+    if (startDate && value) {
+      const start = new Date(startDate);
+      const end = new Date(value);
+      
+      if (start > end) {
+        setDateError('Ngày kết thúc không thể trước ngày bắt đầu');
+        return;
+      }
+    }
   };
 
   const stats = getEventStats();
@@ -664,9 +709,9 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
 
           {/* Filters Section */}
           <div className="mb-8 backdrop-blur-sm bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-2xl p-6 shadow-lg">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
               {/* Search */}
-              <div className="relative md:col-span-2">
+              <div className="relative md:col-span-3">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                 <Input
                   placeholder="Tìm kiếm sự kiện..."
@@ -676,24 +721,51 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                 />
               </div>
 
-              {/* Status Filter */}
-              <Select value={filterStatus} onValueChange={handleStatusFilter}>
-                <SelectTrigger className="rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
-                  <SelectValue placeholder="Trạng thái" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                  <SelectItem value="upcoming">Sắp diễn ra</SelectItem>
-                  <SelectItem value="ongoing">Đang diễn ra</SelectItem>
-                  <SelectItem value="completed">Đã hoàn thành</SelectItem>
-                  <SelectItem value={EventStatus.PendingApproval}>Chờ phê duyệt</SelectItem>
-                  <SelectItem value={EventStatus.Approved}>Đã phê duyệt</SelectItem>
-                  <SelectItem value={EventStatus.Rejected}>Bị từ chối</SelectItem>
-                  <SelectItem value={EventStatus.Cancelled}>Đã hủy</SelectItem>
-                  <SelectItem value={EventStatus.WaitingForPayout}>Chờ thanh toán</SelectItem>
-                  <SelectItem value={EventStatus.PaidOut}>Đã thanh toán</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Start Date */}
+              <div className="relative">
+                <Input
+                  type="date"
+                  placeholder="Từ ngày"
+                  className={`py-2.5 rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${dateError ? 'border-red-500 focus:border-red-500' : ''}`}
+                  value={startDate}
+                  onChange={(e) => handleStartDateChange(e.target.value)}
+                  max={endDate || undefined}
+                />
+                {startDate && (
+                  <button
+                    onClick={() => {
+                      setStartDate('');
+                      setDateError('');
+                    }}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* End Date */}
+              <div className="relative">
+                <Input
+                  type="date"
+                  placeholder="Đến ngày"
+                  className={`py-2.5 rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${dateError ? 'border-red-500 focus:border-red-500' : ''}`}
+                  value={endDate}
+                  onChange={(e) => handleEndDateChange(e.target.value)}
+                  min={startDate || undefined}
+                />
+                {endDate && (
+                  <button
+                    onClick={() => {
+                      setEndDate('');
+                      setDateError('');
+                    }}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
 
               {/* Sort */}
               <Select value={sortBy} onValueChange={handleSortChange}>
@@ -708,6 +780,13 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                 </SelectContent>
               </Select>
             </div>
+            {/* Error message */}
+            {dateError && (
+              <div className="mt-4 flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
+                <AlertTriangle className="w-4 h-4" />
+                <span>{dateError}</span>
+              </div>
+            )}
           </div>
 
           {/* Tabs Section */}
