@@ -238,12 +238,7 @@ export function EventCard({
               >
                 {isSoldOut
                   ? "Đã hết vé"
-                  : isMostlyBooked
-                  ? `⚠️ Còn ${event.totalTickets - (event.soldQuantity || 0)} vé`
-                  : `${100 - Math.round(ticketPercentage)}% còn lại`}
-              </span>
-              <span className="text-xs text-gray-500">
-                {Math.round(ticketPercentage)}% đã bán
+                  : isMostlyBooked}
               </span>
             </div>
           </div>

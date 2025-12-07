@@ -646,21 +646,11 @@ const UserManagement = () => {
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
                       <h3 className="font-semibold text-gray-900">{user.fullName}</h3>
-                      {getRoleBadge(user.roles)}
-                      {getStatusBadge('active')}
                     </div>
                     <div className="flex items-center space-x-4 text-sm text-gray-800 mt-1">
                       <span className="flex items-center">
                         <Mail className="w-4 h-4 mr-1" />
                         {user.email}
-                      </span>
-                      <span className="flex items-center">
-                        <MapPin className="w-4 h-4 mr-1" />
-                        {user.city || user.address || 'N/A'}
-                      </span>
-                      <span className="flex items-center">
-                        <Calendar className="w-4 h-4 mr-1" />
-                        Tham gia: N/A
                       </span>
                     </div>
                   </div>
@@ -695,9 +685,6 @@ const UserManagement = () => {
                       Mở khóa
                     </Button>
                   )}
-                  <Button variant="outline" size="sm">
-                    <MoreHorizontal className="w-4 h-4" />
-                  </Button>
                 </div>
               </div>
             ))}
