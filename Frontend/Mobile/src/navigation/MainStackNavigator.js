@@ -12,6 +12,7 @@ import InvitationsScreen from '../screens/invitationsScreen';
 import ChangePasswordScreen from '../screens/changePasswordScreen';
 
 import ScreenNames from '../constants/ScreenNames';
+import Colors from '../constants/Colors';
 
 const Stack = createStackNavigator();
 

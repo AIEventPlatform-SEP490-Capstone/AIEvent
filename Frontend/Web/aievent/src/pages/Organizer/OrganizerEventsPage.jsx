@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Badge } from '../../components/ui/badge';
 import { 
   Loader2, 
   Calendar, 
@@ -16,7 +15,6 @@ import {
   Filter,
   ChevronUp,
   ChevronDown,
-  Sparkles,
   User,
   Mail,
   Phone,
@@ -26,6 +24,7 @@ import {
 import { useEvents } from '../../hooks/useEvents';
 import { useFavoriteEvents } from '../../hooks/useFavoriteEvents';
 import { useOrganizers } from '../../hooks/useOrganizers';
+import { EventCard } from '../../components/HomePage/EventCard';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -138,38 +137,6 @@ export default function OrganizerEventsPage() {
       
       console.error("Error toggling favorite:", err);
     }
-  };
-
-  const formatPrice = (event) => {
-    // Updated to use ticketPrice field from the API response
-    const price = event.ticketPrice !== undefined ? event.ticketPrice : null;
-    
-    if (price === null) {
-      return 'Liên hệ';
-    } else if (price === 0) {
-      return 'Miễn phí';
-    } else {
-      return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
-    }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN');
-  };
-
-  const formatTime = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const getCategoryName = (event) => {
-    if (event.eventCategoryName) {
-      return event.eventCategoryName;
-    }
-    return "Khác";
   };
 
   // Pagination calculations
@@ -348,109 +315,13 @@ export default function OrganizerEventsPage() {
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
                   {paginatedEvents.map((event) => (
-                    <Card 
-                      key={event.eventId || event.id} 
-                      className="group overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-200 bg-white cursor-pointer"
-                      onClick={() => handleViewDetail(event.eventId || event.id)}
-                    >
-                      {/* Image Container */}
-                      <div className="aspect-video relative overflow-hidden bg-gradient-to-br from-gray-200 to-gray-300">
-                        <img 
-                          src={event.image || (event.imgListEvent && event.imgListEvent[0]) || "/placeholder.svg"} 
-                          alt={event.title} 
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                        />
-                        
-                        {/* Gradient Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0" />
-
-                        {/* Category Badge */}
-                        <Badge 
-                          variant="secondary" 
-                          className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm shadow-md"
-                        >
-                          {getCategoryName(event)}
-                        </Badge>
-                        
-                        {/* Like Button */}
-                        <Button 
-                          variant="ghost"
-                          size="icon"
-                          className="absolute top-3 right-3 h-10 w-10 rounded-full shadow-lg backdrop-blur-sm bg-white/20 hover:bg-white/30 transition-all"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleLike(event.eventId || event.id);
-                          }}
-                        >
-                          <Heart 
-                            className={`w-5 h-5 transition-all ${
-                              favoriteEvents.has(event.eventId || event.id)
-                                ? "fill-red-500 text-red-500 scale-110"
-                                : "text-white"
-                            }`} 
-                          />
-                        </Button>
-                      </div>
-
-                      <CardContent className="p-4">
-                        <h3 className="font-bold text-base mb-3 line-clamp-2 text-gray-900 group-hover:text-blue-600 transition-colors">
-                          {event.title}
-                        </h3>
-
-                        <div className="space-y-2 text-sm text-gray-600 mb-3">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                            <span>{formatDate(event.startTime)}</span>
-                            <Clock className="w-4 h-4 text-blue-600 flex-shrink-0 ml-2" />
-                            <span>{formatTime(event.startTime)}</span>
-                          </div>
-
-                          <div className="flex items-start gap-2">
-                            <MapPin className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-                            <span className="line-clamp-1 text-xs">
-                              {event.locationName || event.location || event.address}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-3 pt-2 border-t border-gray-200">
-                            <div className="flex-1 flex items-center gap-2">
-                              <Users className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                              <span className="text-xs font-medium">
-                                {event.soldQuantity || 0}/{event.totalTickets}
-                              </span>
-                              <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                                <div 
-                                  className="h-full bg-gradient-to-r from-blue-600 to-purple-600 rounded-full"
-                                  style={{ width: `${event.totalTickets ? (event.soldQuantity || 0) / event.totalTickets * 100 : 0}%` }}
-                                />
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Heart className="w-4 h-4 text-gray-400" />
-                              <span className="text-xs font-medium text-gray-500">
-                                {event.favoriteCount || 0}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-                          <div className="text-lg font-bold text-blue-600">
-                            {formatPrice(event)}
-                          </div>
-                          <Button 
-                            size="sm"
-                            className="bg-blue-600 hover:bg-blue-700"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleViewDetail(event.eventId || event.id);
-                            }}
-                          >
-                            Xem chi tiết
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <EventCard
+                      key={event.eventId || event.id}
+                      event={event}
+                      onLike={toggleLike}
+                      onViewDetail={handleViewDetail}
+                      isLiked={favoriteEvents.has(event.eventId || event.id)}
+                    />
                   ))}
                 </div>
 

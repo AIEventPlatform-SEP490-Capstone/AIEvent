@@ -81,7 +81,7 @@ export default function useRouterElement() {
         {
           path: "wallet",
           element: (
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["User"]}>
               <WalletDashboard />
             </ProtectedRoute>
           ),
