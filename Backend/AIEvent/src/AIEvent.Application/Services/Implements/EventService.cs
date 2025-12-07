@@ -1300,7 +1300,10 @@ namespace AIEvent.Application.Services.Implements
 													&& e.Status != EventStatus.Rejected
 													&& e.Status != EventStatus.Cancelled
 													&& e.Status != EventStatus.PendingApproval
+
 													&& e.Publish == true);
+			if (organizerId.HasValue && organizerId != Guid.Empty)
+				events = events.Where(e => e.OrganizerProfileId == organizerId);
 
 			if (!string.IsNullOrEmpty(search))
 				events = events
