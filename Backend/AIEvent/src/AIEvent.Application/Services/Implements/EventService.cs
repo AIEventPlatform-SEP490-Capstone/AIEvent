@@ -121,8 +121,10 @@ namespace AIEvent.Application.Services.Implements
                                                 .AsNoTracking()
                                                 .Where(e => e.EndTime.AddDays(7) > DateTime.UtcNow 
                                                     && !e.DeletedAt.HasValue 
-                                                    && e.Status == EventStatus.Approved 
-                                                    && e.Publish == true);
+													&& e.Status != EventStatus.Rejected
+													&& e.Status != EventStatus.Cancelled
+													&& e.Status != EventStatus.PendingApproval
+													&& e.Publish == true);
 
             if (!string.IsNullOrEmpty(search))
                 events = events
@@ -1295,8 +1297,13 @@ namespace AIEvent.Application.Services.Implements
 												.Query()
 												.AsNoTracking()
 												.Where(e => !e.DeletedAt.HasValue
-													&& e.Status == EventStatus.Approved
+													&& e.Status != EventStatus.Rejected
+													&& e.Status != EventStatus.Cancelled
+													&& e.Status != EventStatus.PendingApproval
+
 													&& e.Publish == true);
+			if (organizerId.HasValue && organizerId != Guid.Empty)
+				events = events.Where(e => e.OrganizerProfileId == organizerId);
 
 			if (!string.IsNullOrEmpty(search))
 				events = events

@@ -31,6 +31,9 @@ const ScreenNames = {
   // Timeline Screen
   TIMELINE_SCREEN: 'TimelineScreen',
   
+  // Notifications Screen
+  NOTIFICATIONS_SCREEN: 'NotificationsScreen',
+  
   // QR Scanner Screen
   QR_SCANNER_SCREEN: 'QrScannerScreen',
   
