@@ -143,6 +143,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     lineHeight: 18,
   },
+  htmlMessageContainer: {
+    marginBottom: 8,
+    maxHeight: 100,
+    overflow: 'hidden',
+  },
   notificationMeta: {
     fontSize: 12,
     fontFamily: Fonts.regular,
