@@ -30,6 +30,7 @@ namespace AIEvent.Domain.Entities
         public Guid? RequireApprovalBy { get; set; }
         public string? ReasonReject { get; set; }
         public string? ReasonCancel { get; set; } 
+        public bool IsFlagWarning { get; set; } = false;
         public string? LinkRef { get; set; }
         public string? District { get; set; }
         public string? ImgListEvidences { get; set; }
@@ -49,7 +50,8 @@ namespace AIEvent.Domain.Entities
         public virtual RevenueReport? RevenueReport { get; set; }
         public virtual ICollection<Rating> Ratings { get; set; } = new List<Rating>();
         public double? AverageRating { get; set; } = 0;
-        public int TotalRatings { get; set; } = 0;
+        public int TotalRatings { get; set; } = 0; 
+        public int PayoutAttemptCount { get; set; } = 0;
         public ICollection<EventInvitation> Invitations { get; set; } = new List<EventInvitation>();
         public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
         public virtual ICollection<EventReport> EventReports { get; set; } = new List<EventReport>();

@@ -121,5 +121,24 @@ namespace AIEvent.API.Controllers
                 SuccessCodes.Success,
                 "Update OrganizerProfile successfully"));
         }
+
+        [HttpGet("flags")]
+        [Authorize(Roles = "Admin, Manager, Organizer")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<OrganizerWithFlagsResponse>>>> GetOrganizersWithFlags([FromQuery] Guid? organizerId = null,
+                                                                                                                            [FromQuery] int? minFlags = null,
+                                                                                                                            [FromQuery] int pageNumber = 1,
+                                                                                                                            [FromQuery] int pageSize = 10)
+        {
+            var result = await _organizerService.GetOrganizersWithFlagsAsync(organizerId, minFlags, pageNumber, pageSize);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<OrganizerWithFlagsResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Organizers with flags retrieved successfully"));
+        }
     }
 }

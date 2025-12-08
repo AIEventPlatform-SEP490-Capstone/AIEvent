@@ -7,6 +7,7 @@
         Rejected,
         Cancelled, 
         WaitingForPayout,
+        ErrorPayment,
         PaidOut,
     }
 }

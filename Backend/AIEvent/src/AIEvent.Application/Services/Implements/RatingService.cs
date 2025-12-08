@@ -36,7 +36,7 @@ namespace AIEvent.Application.Services.Implements
                 return ErrorResponse.FailureResult("Event not found", ErrorCodes.NotFound);
 
             var now = DateTime.UtcNow;
-            if (eventEntity.CompletedAt == null && eventEntity.EndTime > now)
+            if (eventEntity.CompletedAt == null || eventEntity.EndTime > now)
                 return ErrorResponse.FailureResult("You can only rate events that have been completed.", ErrorCodes.InvalidInput);
  
             var hasAttended = await _unitOfWork.BookingRepository

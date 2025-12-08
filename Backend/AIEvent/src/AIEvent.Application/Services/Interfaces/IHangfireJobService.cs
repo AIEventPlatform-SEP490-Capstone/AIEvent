@@ -1,4 +1,5 @@
 using AIEvent.Application.DTOs.Booking; 
+using AIEvent.Application.DTOs.Event;
 using AIEvent.Application.DTOs.InviteFriend; 
 
 namespace AIEvent.Application.Services.Interfaces
@@ -11,5 +12,6 @@ namespace AIEvent.Application.Services.Interfaces
         Task EnqueueConfirmEmail(ConfirmInvitationEmail request);
         Task EnqueueUserEmbeddingJobAsync(Guid userId);
         Task EnqueueEmbedNewEventJobAsync(Guid eventId);
+        Task EnqueueCancelEventNotificationJobAsync(CancelEventNotificationRequest request);
     }
 }
