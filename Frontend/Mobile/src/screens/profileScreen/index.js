@@ -76,7 +76,6 @@ const ProfileScreen = ({ navigation }) => {
       { id: 'tickets', label: 'Vé của tôi', icon: '🎫', screen: ScreenNames.TICKETS_SCREEN },
       { id: 'wallet', label: 'Ví điện tử', icon: '💳', screen: ScreenNames.WALLET_SCREEN },
       { id: 'payment', label: 'Thông tin tài khoản', icon: '🏦', screen: ScreenNames.PAYMENT_INFORMATION_SCREEN },
-      { id: 'likes', label: 'Yêu thích', icon: '❤️', screen: ScreenNames.LIKES_SCREEN },
       { id: 'friends', label: 'Bạn bè', icon: '👥', screen: ScreenNames.FRIENDS_SCREEN },
       { id: 'invitations', label: 'Lời mời', icon: '📨', screen: ScreenNames.INVITATIONS_SCREEN },
       { id: 'settings', label: 'Cài đặt', icon: '⚙️', screen: ScreenNames.SETTINGS_SCREEN }
@@ -1205,47 +1204,7 @@ const EditProfileModal = ({ profileData, originalProfile, isUpdating, onClose, o
             </View>
 
             {/* Favorite Event Types */}
-            <View style={styles.formGroup}>
-              <CustomText variant="body" color="primary" style={styles.label}>
-                Loại sự kiện yêu thích
-              </CustomText>
-              <View style={styles.editSkillsContainer}>
-                {formData.eventTypes && formData.eventTypes.length > 0 ? (
-                  formData.eventTypes.map((eventType, index) => (
-                    <View key={index} style={styles.editSkillTag}>
-                      <CustomText variant="caption" color="white">
-                        {eventType}
-                      </CustomText>
-                      <TouchableOpacity
-                        style={styles.editRemoveButton}
-                        onPress={() => removeArrayItem('eventTypes', index)}
-                      >
-                        <CustomText variant="caption" color="white">×</CustomText>
-                      </TouchableOpacity>
-                    </View>
-                  ))
-                ) : (
-                  <CustomText variant="caption" color="secondary" style={{ fontStyle: 'italic' }}>
-                    Chưa có loại sự kiện nào
-                  </CustomText>
-                )}
-              </View>
-              <View style={styles.addSkillContainer}>
-                <TextInput
-                  style={styles.addSkillInput}
-                  placeholder="Thêm loại sự kiện yêu thích..."
-                  value={newEventType}
-                  onChangeText={setNewEventType}
-                  onSubmitEditing={() => addArrayItem('eventTypes', newEventType, setNewEventType)}
-                />
-                <TouchableOpacity
-                  style={styles.addButton}
-                  onPress={() => addArrayItem('eventTypes', newEventType, setNewEventType)}
-                >
-                  <CustomText variant="caption" color="white">+ Thêm</CustomText>
-                </TouchableOpacity>
-              </View>
-            </View>
+            
           </View>
         );
       default:
