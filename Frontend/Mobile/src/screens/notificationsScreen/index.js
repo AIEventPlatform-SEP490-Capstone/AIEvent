@@ -8,8 +8,10 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
+  useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import RenderHTML from 'react-native-render-html';
 import { useNotifications } from '../../hooks/useNotifications';
 import CustomText from '../../components/common/customTextRN';
 import Images from '../../constants/Images';
@@ -71,6 +73,7 @@ const NotificationsScreen = ({ navigation }) => {
     deleteReadNotifications,
   } = useNotifications();
 
+  const { width } = useWindowDimensions();
   const [filterType, setFilterType] = useState('all'); // all, unread, read
   const [refreshing, setRefreshing] = useState(false);
   const [isMarking, setIsMarking] = useState(false);
@@ -176,16 +179,76 @@ const NotificationsScreen = ({ navigation }) => {
     return date.toLocaleDateString('vi-VN');
   };
 
+  // Check if message contains HTML tags
+  const isHTMLContent = (text) => {
+    if (!text) return false;
+    return /<[a-z][\s\S]*>/i.test(text);
+  };
+
+  // HTML rendering configuration
+  const htmlRenderConfig = {
+    baseStyle: {
+      fontSize: 14,
+      color: Colors.textSecondary || '#666',
+      lineHeight: 20,
+    },
+    tagsStyles: {
+      p: { marginTop: 0, marginBottom: 4 },
+      strong: { fontWeight: 'bold', color: Colors.text || '#000' },
+      b: { fontWeight: 'bold', color: Colors.text || '#000' },
+      em: { fontStyle: 'italic' },
+      i: { fontStyle: 'italic' },
+      u: { textDecorationLine: 'underline' },
+      a: { color: Colors.primary || '#007AFF', textDecorationLine: 'underline' },
+      ul: { marginTop: 4, marginBottom: 4 },
+      ol: { marginTop: 4, marginBottom: 4 },
+      li: { marginBottom: 2 },
+    },
+  };
+
+  const handleNotificationPress = (item) => {
+    const isRead = item.isRead || item.IsRead;
+    const notificationId = item.notificationId || item.NotificationId;
+    const eventInvitationId = item.eventInvitationId || item.EventInvitationId;
+    const eventId = item.eventId || item.EventId;
+
+    // Mark as read if unread
+    if (!isRead) {
+      handleMarkAsRead(notificationId);
+    }
+
+    // Navigate based on notification data
+    try {
+      if (eventInvitationId) {
+        // Navigate to Invitations screen (need to go up to MainStack)
+        navigation.getParent()?.navigate('InvitationsScreen', { 
+          invitationId: eventInvitationId 
+        });
+      } else if (eventId) {
+        // Navigate to Event Detail screen (same HomeStack)
+        navigation.navigate('EventDetailScreen', { 
+          eventId: eventId 
+        });
+      }
+    } catch (error) {
+      console.error('Navigation error:', error);
+    }
+    // If neither exists, just mark as read (no navigation)
+  };
+
   const renderNotificationItem = ({ item }) => {
     const isRead = item.isRead || item.IsRead;
     const notificationType = item.type || item.Type || 'System';
     const title = item.title || item.Title || 'Thông báo';
     const message = item.message || item.Message || '';
-    const createdAt = item.createdDate || item.CreatedDate;
+    const createdAt = item.createdDate || item.CreatedDate || item.createdTime || item.CreatedTime;
     const notificationId = item.notificationId || item.NotificationId;
+    const eventInvitationId = item.eventInvitationId || item.EventInvitationId;
+    const eventId = item.eventId || item.EventId;
 
     const iconSource = notificationTypeIcons[notificationType] || Images.bell;
     const typeLabel = notificationTypeLabels[notificationType] || 'Thông báo';
+    const hasNavigation = eventInvitationId || eventId;
 
     return (
       <TouchableOpacity
@@ -194,11 +257,7 @@ const NotificationsScreen = ({ navigation }) => {
           !isRead && styles.notificationItemUnread,
           isRead && styles.notificationItemRead,
         ]}
-        onPress={() => {
-          if (!isRead) {
-            handleMarkAsRead(notificationId);
-          }
-        }}
+        onPress={() => handleNotificationPress(item)}
         activeOpacity={0.6}
       >
         <View style={[styles.notificationIcon, isRead && styles.notificationIconRead]}>
@@ -210,20 +269,36 @@ const NotificationsScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.notificationContent}>
-          <View style={styles.typeBadge}>
-            <CustomText style={styles.typeBadgeText}>{typeLabel}</CustomText>
+          <View style={styles.notificationHeader}>
+            <View style={styles.typeBadge}>
+              <CustomText style={styles.typeBadgeText}>{typeLabel}</CustomText>
+            </View>
+            {hasNavigation && (
+              <CustomText style={styles.arrowText}>›</CustomText>
+            )}
           </View>
           <CustomText style={styles.notificationTitle} numberOfLines={2}>
             {title}
           </CustomText>
           {message ? (
-            <CustomText
-              style={styles.notificationMessage}
-              numberOfLines={2}
-              color="textSecondary"
-            >
-              {message}
-            </CustomText>
+            isHTMLContent(message) ? (
+              <View style={styles.htmlMessageContainer}>
+                <RenderHTML
+                  contentWidth={width - 120}
+                  source={{ html: message }}
+                  baseStyle={htmlRenderConfig.baseStyle}
+                  tagsStyles={htmlRenderConfig.tagsStyles}
+                />
+              </View>
+            ) : (
+              <CustomText
+                style={styles.notificationMessage}
+                numberOfLines={2}
+                color="textSecondary"
+              >
+                {message}
+              </CustomText>
+            )
           ) : null}
           <CustomText style={styles.notificationMeta}>
             {formatTimeAgo(createdAt)}

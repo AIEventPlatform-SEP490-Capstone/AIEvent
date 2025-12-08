@@ -417,22 +417,48 @@ const RatingSectionMobile = ({eventId}) => {
                 }}
                 multiline
               />
-              <View style={{flexDirection: 'row', marginTop: 8}}>
-                <CustomButton
-                  title={editingRatingId ? 'Cập nhật' : 'Gửi đánh giá'}
+              <View style={{flexDirection: 'row', marginTop: 12, gap: 10}}>
+                <TouchableOpacity
+                  style={[
+                    styles.submitButton,
+                    (isSubmitting || ratingScore === 0) && styles.submitButtonDisabled
+                  ]}
                   onPress={handleSubmit}
-                  disabled={isSubmitting}
-                />
+                  disabled={isSubmitting || ratingScore === 0}
+                  activeOpacity={0.8}>
+                  <LinearGradient
+                    colors={
+                      isSubmitting || ratingScore === 0
+                        ? ['#D1D5DB', '#9CA3AF']
+                        : editingRatingId
+                        ? ['#667EEA', '#764BA2']
+                        : ['#4CAF50', '#45A049']
+                    }
+                    start={{x: 0, y: 0}}
+                    end={{x: 1, y: 1}}
+                    style={styles.submitGradient}>
+                    <CustomText style={styles.submitButtonText}>
+                      {isSubmitting
+                        ? 'Đang gửi...'
+                        : editingRatingId
+                        ? '✓ Cập nhật'
+                        : '✓ Gửi đánh giá'}
+                    </CustomText>
+                  </LinearGradient>
+                </TouchableOpacity>
                 {editingRatingId ? (
-                  <CustomButton
-                    title="Hủy"
-                    variant="outline"
+                  <TouchableOpacity
+                    style={styles.cancelButton}
                     onPress={() => {
                       setEditingRatingId(null);
                       setRatingScore(0);
                       setComment('');
                     }}
-                  />
+                    activeOpacity={0.7}>
+                    <CustomText style={styles.cancelButtonText}>
+                      Hủy
+                    </CustomText>
+                  </TouchableOpacity>
                 ) : null}
               </View>
             </View>
@@ -622,12 +648,54 @@ const styles = StyleSheet.create({
   deleteButton: {
     // Gradient already applied via LinearGradient component
   },
-  cancelButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    backgroundColor: '#F3F4F6',
+  // Submit button styles
+  submitButton: {
+    flex: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#4CAF50',
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  submitButtonDisabled: {
+    shadowOpacity: 0.1,
+    elevation: 1,
+  },
+  submitGradient: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  submitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    backgroundColor: '#FFF5F5',
+    borderWidth: 1.5,
+    borderColor: '#FF6B6B',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#FF6B6B',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cancelButtonText: {
+    color: '#E53E3E',
+    fontSize: 15,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });

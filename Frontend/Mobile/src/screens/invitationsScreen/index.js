@@ -377,17 +377,22 @@ const InvitationsScreen = () => {
                   {/* Action Buttons for Received Pending Invitations */}
                   {isReceived && isPending && (
                     <View style={styles.actionButtons}>
-                      <CustomButton
-                        title="Từ chối"
+                      <TouchableOpacity
+                        style={styles.rejectButton}
                         onPress={() => handleConfirmAction(invitation, 'reject')}
-                        variant="outline"
-                        style={[styles.actionButton, styles.rejectButton]}
-                      />
-                      <CustomButton
-                        title="Chấp nhận"
+                        activeOpacity={0.7}>
+                        <CustomText variant="body" style={styles.rejectButtonText}>
+                          Từ chối
+                        </CustomText>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.approveButton}
                         onPress={() => handleConfirmAction(invitation, 'approve')}
-                        style={[styles.actionButton, styles.approveButton]}
-                      />
+                        activeOpacity={0.7}>
+                        <CustomText variant="body" style={styles.approveButtonText}>
+                          Chấp nhận
+                        </CustomText>
+                      </TouchableOpacity>
                     </View>
                   )}
                 </View>

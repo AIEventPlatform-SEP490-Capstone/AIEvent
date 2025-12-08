@@ -116,13 +116,25 @@ const styles = StyleSheet.create({
   notificationContent: {
     flex: 1,
   },
+  notificationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   typeBadge: {
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
     backgroundColor: Colors.primary,
-    marginBottom: 8,
     alignSelf: 'flex-start',
+  },
+  arrowText: {
+    fontSize: 24,
+    fontFamily: Fonts.bold,
+    color: Colors.textSecondary,
+    opacity: 0.4,
+    marginLeft: 8,
   },
   typeBadgeText: {
     fontSize: 11,
@@ -142,6 +154,11 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginBottom: 8,
     lineHeight: 18,
+  },
+  htmlMessageContainer: {
+    marginBottom: 8,
+    maxHeight: 100,
+    overflow: 'hidden',
   },
   notificationMeta: {
     fontSize: 12,
