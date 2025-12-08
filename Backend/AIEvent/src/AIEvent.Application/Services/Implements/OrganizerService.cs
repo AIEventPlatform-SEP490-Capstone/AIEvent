@@ -386,5 +386,60 @@ namespace AIEvent.Application.Services.Implements
             return Result<object>.Success(response);
         }
 
+        public async Task<Result<BasePaginated<OrganizerWithFlagsResponse>>> GetOrganizersWithFlagsAsync(Guid? organizerId = null, int? minFlags = null, int pageNumber = 1, int pageSize = 10)
+        {
+            IQueryable<OrganizerProfile> query = _unitOfWork.OrganizerProfileRepository
+                .Query()
+                .AsNoTracking()
+                .Where(p => !p.DeletedAt.HasValue && p.Status == OrganizerProfileStatus.Approved);
+
+            if (organizerId.HasValue)
+                query = query.Where(o => o.Id == organizerId.Value);
+
+            if (minFlags.HasValue)
+                query = query.Where(o => o.TotalEventFlags >= minFlags.Value);
+
+            var totalCount = await query.CountAsync();
+
+            var result = await query
+                .OrderByDescending(o => o.TotalEventFlags)
+                .ThenByDescending(o => o.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(o => new OrganizerWithFlagsResponse
+                {
+                    Id = o.Id.ToString(),
+                    OrganizationType = o.OrganizationType,
+                    CompanyName = o.CompanyName,
+                    ContactName = o.ContactName,
+                    ContactEmail = o.ContactEmail,
+                    ContactPhone = o.ContactPhone,
+                    Address = o.Address,
+                    ImgCompany = o.ImgCompany,
+                    CreatedAt = o.CreatedAt,
+                    Status = o.Status,
+                    TotalEventFlags = o.TotalEventFlags,
+                    IsBanned = o.IsBanned,
+                    FlaggedEvents = o.Events!
+                        .Where(e => e.IsFlagWarning == true && !e.IsDeleted)
+                        .OrderByDescending(e => e.CreatedAt)
+                        .Select(e => new EventFlagResponse
+                        {
+                            EventId = e.Id,
+                            Title = e.Title,
+                            StartTime = e.StartTime,
+                            EndTime = e.EndTime,
+                            LocationName = e.LocationName,
+                            Status = e.Status,
+                            ReasonCancel = e.ReasonCancel,
+                            CreatedAt = e.CreatedAt
+                        })
+                        .ToList()
+                })
+                .ToListAsync();
+
+            return new BasePaginated<OrganizerWithFlagsResponse>(result, totalCount, pageNumber, pageSize);
+        }
+
     }
 }

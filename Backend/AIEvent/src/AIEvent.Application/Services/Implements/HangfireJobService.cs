@@ -1,5 +1,6 @@
 ﻿using AIEvent.Application.DTOs.Booking;
 using AIEvent.Application.DTOs.Common;
+using AIEvent.Application.DTOs.Event;
 using AIEvent.Application.DTOs.InviteFriend;
 using AIEvent.Application.DTOs.Notification;
 using AIEvent.Application.DTOs.PineconeVector;
@@ -348,25 +349,63 @@ namespace AIEvent.Application.Services.Implements
                 if (bookingsForNotification.Any())
                 {
                     var notificationTasks = new List<Task>();
-                    foreach (var bookingInfo in bookingsForNotification)
+                    var emailTasks = new List<Task>();
+                    
+                    foreach (var booking in hasBookings)
                     {
-                        if (bookingInfo.UserId != Guid.Empty)
+                        if (booking.UserId != Guid.Empty)
                         {
                             var notificationRequest = new CreateNotificationRequest
                             {
-                                UserId = bookingInfo.UserId,
+                                UserId = booking.UserId,
                                 Title = "Sự kiện đã bị hủy - Hoàn tiền",
-                                Message = $"Sự kiện <strong>{eventTitle}</strong> đã bị hủy.{(string.IsNullOrEmpty(reasonCancel) ? "" : $" Lý do: {reasonCancel}")} Số tiền <strong>{bookingInfo.TotalAmount:N0} VNĐ</strong> đã được hoàn vào ví của bạn.",
+                                Message = $"Sự kiện <strong>{eventTitle}</strong> đã bị hủy.{(string.IsNullOrEmpty(reasonCancel) ? "" : $" Lý do: {reasonCancel}")} Số tiền <strong>{booking.TotalAmount:N0} VNĐ</strong> đã được hoàn vào ví của bạn.",
                                 Type = NotificationType.Refund, 
                                 EventId = eventId
                             };
 
                             notificationTasks.Add(_notificationService.CreateNotificationAsync(notificationRequest));
+                             
+                            if (booking.User != null && 
+                                booking.User.IsEmailNotificationEnabled == true && 
+                                !string.IsNullOrEmpty(booking.User.Email))
+                            {
+                                var firstImage = !string.IsNullOrEmpty(existingEvent.ImgListEvent)
+                                    ? existingEvent.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()
+                                    : null;
+
+                                var sb = new StringBuilder();
+                                if (!string.IsNullOrEmpty(firstImage))
+                                    sb.AppendLine($"<img src='{firstImage}' alt='Event' style='width:100%;max-width:600px;border-radius:8px;margin-bottom:20px;'/>");
+
+                                sb.AppendLine($"<p>Xin chào {booking.User.FullName ?? booking.User.Email},</p>")
+                                  .AppendLine($"<p>Chúng tôi rất tiếc phải thông báo rằng sự kiện <strong>{eventTitle}</strong> đã bị hủy.")
+                                  .AppendLine(string.IsNullOrEmpty(reasonCancel) 
+                                      ? "" 
+                                      : $"<p><strong>Lý do:</strong> {reasonCancel}</p>")
+                                  .AppendLine($"<p>Số tiền <strong>{booking.TotalAmount:N0} VNĐ</strong> đã được hoàn vào ví của bạn.</p>")
+                                  .AppendLine("<p>Chúng tôi xin lỗi vì sự bất tiện này.</p>")
+                                  .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
+
+                                var message = new MimeMessage
+                                {
+                                    Subject = $"Thông báo hủy sự kiện: {eventTitle}",
+                                    Body = new TextPart("html") { Text = sb.ToString() }
+                                };
+
+                                emailTasks.Add(_emailService.SendEmailAsync(booking.User.Email, message));
+                            }
                         }
                     }
 
                     await Task.WhenAll(notificationTasks);
                     _logger.LogInformation("Sent refund notifications to {UserCount} users for cancelled event {EventId}", bookingsForNotification.Count, eventId);
+
+                    if (emailTasks.Any())
+                    {
+                        await Task.WhenAll(emailTasks);
+                        _logger.LogInformation("Sent cancellation emails to {EmailCount} users for cancelled event {EventId}", emailTasks.Count, eventId);
+                    }
                 }
 
                 await _pineconeVectorService.DeleteVectorAsync(eventId.ToString(), isUser: false);
@@ -624,6 +663,100 @@ namespace AIEvent.Application.Services.Implements
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error generating embedding for event {EventId}", eventEntity.Id);
+            }
+        }
+
+        public async Task EnqueueCancelEventNotificationJobAsync(CancelEventNotificationRequest request)
+        {
+            BackgroundJob.Enqueue(() => ProcessCancelEventNotificationJobAsync(request));
+            await Task.CompletedTask;
+        }
+
+        [AutomaticRetry(Attempts = 3)]
+        public async Task ProcessCancelEventNotificationJobAsync(CancelEventNotificationRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("Starting cancellation notification job for event {EventId} to organizer {OrganizerUserId}", 
+                    request.EventId, request.OrganizerUserId);
+
+                // Send notification to organizer
+                var notificationRequest = new CreateNotificationRequest
+                {
+                    UserId = request.OrganizerUserId,
+                    Title = "Sự kiện đã bị hủy bởi quản lý",
+                    Message = $"Sự kiện <strong>{request.EventTitle}</strong> của bạn đã bị hủy bởi quản lý và đã được đánh dấu cảnh báo (cờ cảnh báo).{(string.IsNullOrEmpty(request.ReasonCancel) ? "" : $" Lý do: {request.ReasonCancel}")}",
+                    Type = NotificationType.EventCancelled,
+                    EventId = request.EventId,
+                    ImageUrl = request.FirstImage
+                };
+
+                await _notificationService.CreateNotificationAsync(notificationRequest);
+                _logger.LogInformation("Sent cancellation notification to organizer {OrganizerUserId} for event {EventId}", 
+                    request.OrganizerUserId, request.EventId);
+
+                // Send email if organizer has email notification enabled
+                if (request.IsEmailNotificationEnabled && !string.IsNullOrEmpty(request.OrganizerEmail))
+                {
+                    var sb = new StringBuilder();
+                    if (!string.IsNullOrEmpty(request.FirstImage))
+                        sb.AppendLine($"<img src='{request.FirstImage}' alt='Event' style='width:100%;max-width:600px;border-radius:8px;margin-bottom:20px;'/>");
+
+                    sb.AppendLine($"<p>Xin chào {request.OrganizerFullName ?? request.OrganizerEmail},</p>")
+                      .AppendLine($"<p>Chúng tôi thông báo rằng sự kiện <strong>{request.EventTitle}</strong> của bạn đã bị hủy bởi quản lý và đã được đánh dấu cảnh báo (cờ cảnh báo).")
+                      .AppendLine(string.IsNullOrEmpty(request.ReasonCancel) 
+                          ? "" 
+                          : $"<p><strong>Lý do:</strong> {request.ReasonCancel}</p>")
+                      .AppendLine("<p>Vui lòng kiểm tra và liên hệ với chúng tôi nếu bạn có thắc mắc.</p>")
+                      .AppendLine($"<p><a href=\"https://ai-event-alpha.vercel.app/event/{request.EventId}\">Xem chi tiết sự kiện</a></p>")
+                      .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
+
+                    var message = new MimeMessage
+                    {
+                        Subject = $"Thông báo: Sự kiện {request.EventTitle} đã bị hủy",
+                        Body = new TextPart("html") { Text = sb.ToString() }
+                    };
+
+                    await _emailService.SendEmailAsync(request.OrganizerEmail, message);
+                    _logger.LogInformation("Sent cancellation email to organizer {OrganizerEmail} for event {EventId}", 
+                        request.OrganizerEmail, request.EventId);
+                }
+ 
+                var organizerProfile = await _unitOfWork.OrganizerProfileRepository
+                    .Query()
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(o => o.Id == request.OrganizerProfileId && !o.IsDeleted);
+
+                if (organizerProfile != null && 
+                    organizerProfile.TotalEventFlags >= 3 && 
+                    organizerProfile.Status == OrganizerProfileStatus.Approved &&
+                    !organizerProfile.IsBanned)
+                {
+                    var adminRole = await _unitOfWork.RoleRepository
+                        .Query()
+                        .FirstOrDefaultAsync(r => r.Name == "Admin" && !r.IsDeleted);
+
+                    if (adminRole != null)
+                    {
+                        var adminNotificationRequest = new CreateNotificationToAllRequest
+                        {
+                            Title = $"Cảnh báo: Organizer đạt {organizerProfile.TotalEventFlags} cờ cảnh báo",
+                            Message = $"Organizer <strong>{organizerProfile.CompanyName ?? organizerProfile.ContactName}</strong> (Email: {organizerProfile.ContactEmail}) đã đạt 3 cờ cảnh báo. Vui lòng xem xét ban tài khoản này.",
+                            Type = NotificationType.System,
+                            TargetRoles = new List<Guid> { adminRole.Id },
+                            OrganizerProfileId = organizerProfile.Id
+                        };
+
+                        await _notificationService.CreateNotificationToAllAsync(adminNotificationRequest);
+                        _logger.LogInformation("Sent admin notification for organizer {OrganizerProfileId} with 3 flags", 
+                            request.OrganizerProfileId);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing cancel event notification for event {EventId}", request.EventId);
+                throw;
             }
         }
     }

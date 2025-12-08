@@ -13,10 +13,12 @@ namespace AIEvent.Application.DTOs.Event
         public string? LocationName { get; set; }
         public decimal? Price { get; set; }
         public int? TotalPerson { get; set; }
+        public bool IsFlagWarning { get; set; }
         public int? TotalPersonJoin { get; set; }
         public List<string>? ImgListEvent { get; set; }
         public EventStatus? Status { get; set; }
         public string? OrganizedBy { get; set; }
+        public string? ReasonCancel { get; set; }
         public decimal? TotalAmount { get; set; } = 0;
         public decimal? PayoutAmount { get; set; } = 0;
         public decimal? PlatformFee { get; set; } = 0;
