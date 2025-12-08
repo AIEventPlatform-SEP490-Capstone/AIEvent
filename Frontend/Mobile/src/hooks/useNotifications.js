@@ -18,7 +18,7 @@ import {
   selectTotalItems,
 } from '../redux/slices/notificationsSlice';
 import NotificationService from '../api/services/NotificationService';
-import { NETWORK_CONFIG } from '../config/NetworkConfig';
+import { NETWORK_CONFIG, getSignalRBaseUrl } from '../config/NetworkConfig';
 
 export const useNotifications = () => {
   const dispatch = useDispatch();
@@ -125,13 +125,14 @@ export const useNotifications = () => {
         }
 
         // Get base URL safely
-        const baseUrl = NETWORK_CONFIG?.BASE_URL || '';
+        const baseUrl = getSignalRBaseUrl();
         if (!baseUrl) {
           console.log('SignalR: No base URL configured');
           return;
         }
 
         const cleanUrl = baseUrl.replace(/\/$/, '');
+        console.log('SignalR: Connecting to', `${cleanUrl}/hubs/notification`);
         const connection = new signalR.HubConnectionBuilder()
           .withUrl(`${cleanUrl}/hubs/notification`, {
             accessTokenFactory: () => accessToken,
