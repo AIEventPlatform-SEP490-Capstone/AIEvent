@@ -206,16 +206,49 @@ const NotificationsScreen = ({ navigation }) => {
     },
   };
 
+  const handleNotificationPress = (item) => {
+    const isRead = item.isRead || item.IsRead;
+    const notificationId = item.notificationId || item.NotificationId;
+    const eventInvitationId = item.eventInvitationId || item.EventInvitationId;
+    const eventId = item.eventId || item.EventId;
+
+    // Mark as read if unread
+    if (!isRead) {
+      handleMarkAsRead(notificationId);
+    }
+
+    // Navigate based on notification data
+    try {
+      if (eventInvitationId) {
+        // Navigate to Invitations screen (need to go up to MainStack)
+        navigation.getParent()?.navigate('InvitationsScreen', { 
+          invitationId: eventInvitationId 
+        });
+      } else if (eventId) {
+        // Navigate to Event Detail screen (same HomeStack)
+        navigation.navigate('EventDetailScreen', { 
+          eventId: eventId 
+        });
+      }
+    } catch (error) {
+      console.error('Navigation error:', error);
+    }
+    // If neither exists, just mark as read (no navigation)
+  };
+
   const renderNotificationItem = ({ item }) => {
     const isRead = item.isRead || item.IsRead;
     const notificationType = item.type || item.Type || 'System';
     const title = item.title || item.Title || 'Thông báo';
     const message = item.message || item.Message || '';
-    const createdAt = item.createdDate || item.CreatedDate;
+    const createdAt = item.createdDate || item.CreatedDate || item.createdTime || item.CreatedTime;
     const notificationId = item.notificationId || item.NotificationId;
+    const eventInvitationId = item.eventInvitationId || item.EventInvitationId;
+    const eventId = item.eventId || item.EventId;
 
     const iconSource = notificationTypeIcons[notificationType] || Images.bell;
     const typeLabel = notificationTypeLabels[notificationType] || 'Thông báo';
+    const hasNavigation = eventInvitationId || eventId;
 
     return (
       <TouchableOpacity
@@ -224,11 +257,7 @@ const NotificationsScreen = ({ navigation }) => {
           !isRead && styles.notificationItemUnread,
           isRead && styles.notificationItemRead,
         ]}
-        onPress={() => {
-          if (!isRead) {
-            handleMarkAsRead(notificationId);
-          }
-        }}
+        onPress={() => handleNotificationPress(item)}
         activeOpacity={0.6}
       >
         <View style={[styles.notificationIcon, isRead && styles.notificationIconRead]}>
@@ -240,8 +269,13 @@ const NotificationsScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.notificationContent}>
-          <View style={styles.typeBadge}>
-            <CustomText style={styles.typeBadgeText}>{typeLabel}</CustomText>
+          <View style={styles.notificationHeader}>
+            <View style={styles.typeBadge}>
+              <CustomText style={styles.typeBadgeText}>{typeLabel}</CustomText>
+            </View>
+            {hasNavigation && (
+              <CustomText style={styles.arrowText}>›</CustomText>
+            )}
           </View>
           <CustomText style={styles.notificationTitle} numberOfLines={2}>
             {title}
