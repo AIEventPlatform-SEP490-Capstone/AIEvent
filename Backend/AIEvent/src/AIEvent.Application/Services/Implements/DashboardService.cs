@@ -401,7 +401,7 @@ namespace AIEvent.Application.Services.Implements
                 if (existedSetting != null)
                 {
                     return ErrorResponse.FailureResult(
-                        "System setting can only be update once per month", 
+                        "System setting can only be update once per month",
                         ErrorCodes.InvalidInput);
                 }
 
@@ -454,32 +454,48 @@ namespace AIEvent.Application.Services.Implements
                 FlatformFee = systemSetting.FlatformFee,
                 EventReminderHours = systemSetting.EventReminderHours,
                 DateApply = systemSetting.UpdatedAt,
+                CreateTime = systemSetting.CreatedAt,
             };
 
             return Result<SystemSettingResponse>.Success(request);
         }
 
-        public async Task<Result<List<SystemSettingResponse>>> GetSystemSettingListAsync(string adminId)
+        public async Task<Result<BasePaginated<SystemSettingResponse>>> GetSystemSettingListAsync(string adminId, int pageNumber = 1, int pageSize = 10)
         {
-            var systemSettings = await _unitOfWork.SystemSettingRepository
-                .Query()
-                .AsNoTracking()
-                .Where(s => !s.IsDeleted && s.CreatedBy == adminId)
-                .OrderByDescending(s => s.CreatedAt)
-                .Select(s => new SystemSettingResponse   
-                {
-                    DatePayout = s.DatePayout,
-                    FixFee = s.FixFee,
-                    FlatformFee = s.FlatformFee,
-                    EventReminderHours = s.EventReminderHours,
-                    DateApply = s.UpdatedAt ?? s.CreatedAt
-                })
-                .ToListAsync();
+            try
+            {
+                var query = _unitOfWork.SystemSettingRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(s => !s.IsDeleted && s.CreatedBy == adminId);
 
-            if (!systemSettings.Any())
-                return ErrorResponse.FailureResult("No Permission or No System Settings Found", ErrorCodes.PermissionDenied);
+                var totalCount = await query.CountAsync();
 
-            return Result<List<SystemSettingResponse>>.Success(systemSettings);
+                var systemSettings = await query
+                    .OrderByDescending(s => s.CreatedAt)
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(s => new SystemSettingResponse   
+                    {
+                        DatePayout = s.DatePayout,
+                        FixFee = s.FixFee,
+                        FlatformFee = s.FlatformFee,
+                        EventReminderHours = s.EventReminderHours,
+                        DateApply = s.UpdatedAt ?? s.CreatedAt,
+                        CreateTime = s.CreatedAt
+                    })
+                    .ToListAsync();
+
+                if (!systemSettings.Any() && totalCount == 0)
+                    return ErrorResponse.FailureResult("No Permission or No System Settings Found", ErrorCodes.PermissionDenied);
+
+                return Result<BasePaginated<SystemSettingResponse>>.Success(
+                    new BasePaginated<SystemSettingResponse>(systemSettings, totalCount, pageNumber, pageSize));
+            }
+            catch (Exception ex)
+            {
+                return ErrorResponse.FailureResult($"Error getting system settings: {ex.Message}", ErrorCodes.InternalServerError);
+            }
         }
 
         public async Task<Result<AdminDashboardResponse>> GetAdminDashboardAsync(int? year = null, int? month = null)

@@ -23,7 +23,6 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result<List<EventStatisticByMonthResponse>>> GetStatisticsEventsByMonthAsync(int year, EventStatus status);
         Task<Result<List<OrganizerStatisticResponse>>> GetTotalOrganizersCreatedEventsByMonthAsync(int year);
         Task<Result<ApprovedSummaryResponse>> GetOrganizerAndEventApprovedSummaryAsync();
-        Task<Result<List<SystemSettingResponse>>> GetSystemSettingListAsync(string adminId);
-    }
+        Task<Result<BasePaginated<SystemSettingResponse>>> GetSystemSettingListAsync(string adminId, int pageNumber = 1, int pageSize = 10);    }
 }
 

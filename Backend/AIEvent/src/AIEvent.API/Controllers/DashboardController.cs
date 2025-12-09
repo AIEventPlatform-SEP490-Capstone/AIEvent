@@ -167,22 +167,23 @@ namespace AIEvent.API.Controllers
 
         [HttpGet("history-system-setting")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<SuccessResponse<List<SystemSettingResponse>>>> GetListSystemSetting()
+        public async Task<ActionResult<SuccessResponse<BasePaginated<SystemSettingResponse>>>> GetListSystemSetting(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
         {
             string userId = User.GetRequiredUserId().ToString();
-            var result = await _dashboardService.GetSystemSettingListAsync(userId);
+            var result = await _dashboardService.GetSystemSettingListAsync(userId, pageNumber, pageSize);
 
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
 
-            return Ok(SuccessResponse<List<SystemSettingResponse>>.SuccessResult(
+            return Ok(SuccessResponse<BasePaginated<SystemSettingResponse>>.SuccessResult(
                 result.Value!,
                 SuccessCodes.Success,
                 "SystemSetting retrieved successfully"));
         }
-
         [HttpGet("admin-overview")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<SuccessResponse<AdminDashboardResponse>>> GetAdminDashboard(
