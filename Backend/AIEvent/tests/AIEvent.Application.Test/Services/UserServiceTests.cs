@@ -170,7 +170,7 @@ namespace AIEvent.Application.Test.Services
                 Id = userId,
                 Email = "test@example.com",
                 FullName = "Test User",
-                IsActive = true,
+                IsActive = false,
                 DeletedAt = DateTime.UtcNow
             };
             _mockUnitOfWork.Setup(x => x.BookingRepository.Query(false))

@@ -12,6 +12,7 @@ using AIEvent.Infrastructure.Repositories.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions; 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using PayOS.Models.V1.Payouts;
 
 namespace AIEvent.Application.Services.Implements
@@ -24,8 +25,10 @@ namespace AIEvent.Application.Services.Implements
         private readonly IHangfireJobService _hangfireJobService;
         private readonly INotificationService _notificationService;
         private readonly IPayOSService _payOSService;
+        private readonly ILogger<EventService> _logger;
         public EventService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper, IMapper mapper, 
-            IHangfireJobService hangfireJobService, INotificationService notificationService, IPayOSService payOSService)
+            IHangfireJobService hangfireJobService, INotificationService notificationService, IPayOSService payOSService,
+            ILogger<EventService> logger)
         {
             _unitOfWork = unitOfWork;
             _transactionHelper = transactionHelper;
@@ -33,6 +36,7 @@ namespace AIEvent.Application.Services.Implements
             _hangfireJobService = hangfireJobService;
             _notificationService = notificationService;
             _payOSService = payOSService;
+            _logger = logger;
         }
 
         public async Task<Result> CreateEventAsync(Guid organizerId, CreateEventRequest request)
@@ -862,79 +866,89 @@ namespace AIEvent.Application.Services.Implements
         public async Task CompleteExpiredEventsAsync()
         {
             var now = DateTime.UtcNow;
-            var endedEvents = await _unitOfWork.EventRepository
-                .Query()
-                .Where(e => e.Status == EventStatus.Approved
-                            && e.EndTime <= now
-                            && e.Publish == true
-                            && !e.IsDeleted)
-                .ToListAsync();
+                var endedEvents = await _unitOfWork.EventRepository
+                    .Query()
+                    .Where(e => e.Status == EventStatus.Approved
+                                && e.EndTime <= now
+                                && e.Publish == true
+                                && !e.IsDeleted)
+                    .ToListAsync();
 
-            if (!endedEvents.Any()) return;
-
-            var allSettings = await _unitOfWork.SystemSettingRepository
-                .Query()
-                .AsNoTracking()
-                .Where(s => !s.IsDeleted)
-                .OrderByDescending(s => s.UpdatedAt)                
-                .ToListAsync();
-
-            if (!allSettings.Any()) return;
-
-            var settingCache = new Dictionary<string, SystemSetting>();
-
-            foreach (var ev in endedEvents)
-            {
-                var saleStart = ev.SaleStartTime!.Value;
-
-                var key = $"{saleStart:yyyy-MM}";
-
-                if (!settingCache.TryGetValue(key, out var setting))
+                if (!endedEvents.Any())
                 {
-                    setting = allSettings
-                        .FirstOrDefault(s => s.UpdatedAt <= saleStart)
-                        ?? allSettings.Last();
+                    _logger.LogInformation("No expired events found to process");
+                    return;
+                }
+                var allSettings = await _unitOfWork.SystemSettingRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(s => !s.IsDeleted)
+                    .OrderByDescending(s => s.UpdatedAt)
+                    .ToListAsync();
 
-                    settingCache[key] = setting;
+                if (!allSettings.Any())
+                {
+                    _logger.LogWarning("No SystemSettings found. Cannot process expired events.");
+                    return;
                 }
 
-                var totalRevenue = ev.TotalAmount;
-                
-                if (totalRevenue >= setting.FlatformFee + 10000)
+                var settingCache = new Dictionary<string, SystemSetting>();
+
+                foreach (var ev in endedEvents)
                 {
+                    var saleStart = ev.SaleStartTime!.Value;
+
+                    var key = $"{saleStart:yyyy-MM}";
+
+                    if (!settingCache.TryGetValue(key, out var setting))
+                    {
+                        setting = allSettings
+                            .FirstOrDefault(s => s.UpdatedAt <= saleStart)
+                            ?? allSettings.Last();
+
+                        settingCache[key] = setting;
+                    }
+
+                    var totalRevenue = ev.TotalAmount;
                     decimal platformFee = totalRevenue * setting.FlatformFee + setting.FixFee;
                     decimal netRevenue = totalRevenue - platformFee;
-                    ev.PlatformFee = platformFee;
-                    ev.PayoutAmount = netRevenue;
-                    ev.Status = EventStatus.WaitingForPayout;
-                }
-                else
-                {
-                    var payoutDate = DateTime.UtcNow;
-                    ev.PlatformFee = 0;
-                    ev.PayoutAmount = 0;
-                    ev.Status = EventStatus.PaidOut;
-                    ev.PaidOutAt = payoutDate;
 
-                    var revenueReport = new RevenueReport
+                    if (netRevenue >= 0)
                     {
-                        OrganizerProfileId = ev.OrganizerProfileId,
-                        EventId = ev.Id,
-                        EventName = ev.Title,
-                        GrossRevenue = 0,
-                        PlatformFee = 0,
-                        NetRevenue = 0,
-                        ReportMonth = payoutDate.Month,
-                        ReportYear = payoutDate.Year,
-                        PayoutDate = null
-                    };
+                        ev.PlatformFee = platformFee;
+                        ev.PayoutAmount = netRevenue;
+                        ev.Status = EventStatus.WaitingForPayout;
+                        _logger.LogInformation("Event {EventId} ({Title}) set to WaitingForPayout. Revenue: {Revenue:N0}, PlatformFee: {PlatformFee:N0}, NetRevenue: {NetRevenue:N0}",
+                            ev.Id, ev.Title, totalRevenue, platformFee, netRevenue);
+                    }
+                    else
+                    {
+                        var payoutDate = DateTime.UtcNow;
+                        ev.PlatformFee = 0;
+                        ev.PayoutAmount = 0;
+                        ev.Status = EventStatus.PaidOut;
+                        ev.PaidOutAt = payoutDate;
 
-                    await _unitOfWork.RevenueReportRepository.AddAsync(revenueReport);
-                    await _unitOfWork.SaveChangesAsync();
+                        var revenueReport = new RevenueReport
+                        {
+                            OrganizerProfileId = ev.OrganizerProfileId,
+                            EventId = ev.Id,
+                            EventName = ev.Title,
+                            GrossRevenue = 0,
+                            PlatformFee = 0,
+                            NetRevenue = 0,
+                            ReportMonth = payoutDate.Month,
+                            ReportYear = payoutDate.Year,
+                            PayoutDate = null
+                        };
+
+                        await _unitOfWork.RevenueReportRepository.AddAsync(revenueReport);
+                        await _unitOfWork.SaveChangesAsync();
+                        _logger.LogInformation("Event {EventId} ({Title}) set to PaidOut with zero revenue. RevenueReport created.", ev.Id, ev.Title);
+                    }
+
+                    ev.CompletedAt = now;
                 }
-                
-                ev.CompletedAt = now;
-            }
 
             await _unitOfWork.EventRepository.UpdateRangeAsync(endedEvents);
             await _unitOfWork.SaveChangesAsync();
@@ -1473,7 +1487,7 @@ namespace AIEvent.Application.Services.Implements
 				.Query()
 				.Include(e => e.OrganizerProfile)
 				.FirstOrDefaultAsync(e => e.Id == eventId
-                 && e.Status != EventStatus.ErrorPayment
+                 && e.Status == EventStatus.ErrorPayment
                  && !e.IsDeleted);
 
 			if (ev == null)

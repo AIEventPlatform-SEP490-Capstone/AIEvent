@@ -1,6 +1,7 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Dashboard;
+using AIEvent.Application.DTOs.RevenueReport;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
@@ -1216,6 +1217,63 @@ namespace AIEvent.Application.Services.Implements
                     ErrorCodes.InternalServerError
                 );
             }
+        }
+
+
+
+        public async Task<Result<BasePaginated<PayoutHistoryResponse>>> GetPayoutHistoryAsync(Guid? organizerId = null, string? search = null, int? year = null, int? month = null, int pageNumber = 1, int pageSize = 10)
+        {
+            IQueryable<RevenueReport> query = _unitOfWork.RevenueReportRepository
+                .Query()
+                .AsNoTracking()
+                .Where(r => !r.IsDeleted && r.PayoutDate != null);
+
+            if (organizerId.HasValue)
+                query = query.Where(r => r.OrganizerProfileId == organizerId.Value);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchLower = search.ToLower().Trim();
+                query = query.Where(r =>
+                    r.OrganizerProfile.ContactName.ToLower().Contains(searchLower) ||
+                    r.OrganizerProfile.ContactEmail.ToLower().Contains(searchLower) ||
+                    (r.OrganizerProfile.CompanyName != null && r.OrganizerProfile.CompanyName.ToLower().Contains(searchLower)) ||
+                    r.EventName.ToLower().Contains(searchLower));
+            }
+
+            if (year.HasValue)
+                query = query.Where(r => r.ReportYear == year.Value);
+
+            if (month.HasValue)
+                query = query.Where(r => r.ReportMonth == month.Value);
+
+            var totalCount = await query.CountAsync();
+
+            var result = await query
+                .OrderByDescending(r => r.PayoutDate)
+                .ThenByDescending(r => r.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(r => new PayoutHistoryResponse
+                {
+                    RevenueReportId = r.Id,
+                    OrganizerProfileId = r.OrganizerProfileId,
+                    OrganizerName = r.OrganizerProfile.ContactName,
+                    OrganizerEmail = r.OrganizerProfile.ContactEmail,
+                    CompanyName = r.OrganizerProfile.CompanyName,
+                    EventId = r.EventId,
+                    EventName = r.EventName,
+                    GrossRevenue = r.GrossRevenue,
+                    PlatformFee = r.PlatformFee,
+                    NetRevenue = r.NetRevenue,
+                    ReportMonth = r.ReportMonth,
+                    ReportYear = r.ReportYear,
+                    PayoutDate = r.PayoutDate,
+                    CreatedAt = r.CreatedAt
+                })
+                .ToListAsync();
+
+            return new BasePaginated<PayoutHistoryResponse>(result, totalCount, pageNumber, pageSize);
         }
 
     }

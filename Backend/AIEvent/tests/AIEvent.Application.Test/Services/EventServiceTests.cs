@@ -14,6 +14,7 @@ using AIEvent.Infrastructure.Repositories.Interfaces;
 using AutoMapper;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using MockQueryable.Moq;
 using Moq;
 
@@ -31,6 +32,7 @@ namespace AIEvent.Application.Test.Services
        private readonly Mock<IMapper> _mockMapper;
        private readonly Mock<IHangfireJobService> _mockHangfireJobService;
        private readonly Mock<INotificationService> _mockNotificationService;
+       private readonly Mock<ILogger<EventService>> _mockLogger;
        private readonly IEventService _eventService;
 
        public EventServiceTests()
@@ -41,6 +43,7 @@ namespace AIEvent.Application.Test.Services
            _mockHangfireJobService = new Mock<IHangfireJobService>();
            _mockNotificationService = new Mock<INotificationService>();
            _mockpayOSService = new Mock<IPayOSService>();
+           _mockLogger = new Mock<ILogger<EventService>>();
 
             _eventService = new EventService(
                _mockUnitOfWork.Object,
@@ -48,7 +51,8 @@ namespace AIEvent.Application.Test.Services
                _mockMapper.Object,
                _mockHangfireJobService.Object,
                _mockNotificationService.Object,
-               _mockpayOSService.Object);
+               _mockpayOSService.Object,
+               _mockLogger.Object);
        }
 
 
@@ -1954,7 +1958,7 @@ namespace AIEvent.Application.Test.Services
            // Assert
            result.Should().NotBeNull();
            result.Value!.Items.Should().HaveCount(1);
-           result.Value.Items.First().Title.Should().Be("Event in HCM");
+           result.Value.Items.First().Title.Should().Be("Event in Hanoi");
        }
 
        [Fact]
@@ -2468,7 +2472,7 @@ namespace AIEvent.Application.Test.Services
            // Assert
            result.Should().NotBeNull();
            result.Value!.Items.Should().HaveCount(1);
-           result.Value.Items.First().Title.Should().Be("Rock Concert in HCM");
+           result.Value.Items.First().Title.Should().Be("Rock Concert in Hanoi");
        }
 
        [Fact]
@@ -7021,7 +7025,7 @@ namespace AIEvent.Application.Test.Services
                EndTime = futureDate.AddDays(1).AddHours(2),
                EventCategoryId = eventCategory.Id,
                EventCategory = eventCategory,
-               OrganizerProfileId = TestOrganizerId, // Different organizer
+               OrganizerProfileId = Guid.NewGuid(),
                Publish = true,
                IsDeleted = false,
                Status = EventStatus.Approved,
@@ -7443,6 +7447,189 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Never());
            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
        }
+       #endregion
+
+       #region CompleteExpiredEventsAsync Tests
+         
+       [Fact]
+       public async Task CompleteExpiredEventsAsync_WithNoEndedEvents_ShouldReturnWithoutError()
+       {
+           // Arrange
+           var events = new List<Event>().AsQueryable().BuildMockDbSet();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+
+           // Act
+           await _eventService.CompleteExpiredEventsAsync();
+
+           // Assert
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateRangeAsync(It.IsAny<List<Event>>()), Times.Never);
+           _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never);
+           _mockLogger.Verify(
+               x => x.Log(
+                   LogLevel.Information,
+                   It.IsAny<EventId>(),
+                   It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("No expired events found to process")),
+                   It.IsAny<Exception>(),
+                   It.Is<Func<It.IsAnyType, Exception?, string>>((v, t) => true)),
+               Times.Once);
+       }
+         
+       [Fact]
+       public async Task CompleteExpiredEventsAsync_WithNoSystemSettings_ShouldReturnWithoutError()
+       {
+           // Arrange
+           var now = DateTime.UtcNow;
+           var eventItem = new Event
+           {
+               Id = Guid.NewGuid(),
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = now.AddDays(-2),
+               EndTime = now.AddHours(-1), // Ended
+               SaleStartTime = now.AddDays(-3),
+               Status = EventStatus.Approved,
+               Publish = true,
+               IsDeleted = false,
+               TotalAmount = 100000,
+               OrganizerProfileId = TestOrganizerId
+           };
+
+           var events = new List<Event> { eventItem }.AsQueryable().BuildMockDbSet();
+           var systemSettings = new List<SystemSetting>().AsQueryable().BuildMockDbSet();
+
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings.Object);
+
+           // Act
+           await _eventService.CompleteExpiredEventsAsync();
+
+           // Assert
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateRangeAsync(It.IsAny<List<Event>>()), Times.Never);
+           _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never);
+       }
+         
+       [Fact]
+       public async Task CompleteExpiredEventsAsync_WithHighRevenue_ShouldSetWaitingForPayout()
+       {
+           // Arrange
+           var now = DateTime.UtcNow;
+           var eventItem = new Event
+           {
+               Id = Guid.NewGuid(),
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = now.AddDays(-2),
+               EndTime = now.AddHours(-1), // Ended
+               SaleStartTime = now.AddDays(-3),
+               Status = EventStatus.Approved,
+               Publish = true,
+               IsDeleted = false,
+               TotalAmount = 200000, // High revenue
+               OrganizerProfileId = TestOrganizerId
+           };
+
+           var systemSetting = new SystemSetting
+           {
+               Id = Guid.NewGuid(),
+               FlatformFee = 0.07m,
+               FixFee = 45000,
+               DatePayout = 7,
+               UpdatedAt = now.AddDays(-4),
+               IsDeleted = false
+           };
+
+           var events = new List<Event> { eventItem }.AsQueryable().BuildMockDbSet();
+           var systemSettings = new List<SystemSetting> { systemSetting }.AsQueryable().BuildMockDbSet();
+
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings.Object);
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateRangeAsync(It.IsAny<List<Event>>()))
+               .Returns(Task.CompletedTask);
+           _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+
+           // Act
+           await _eventService.CompleteExpiredEventsAsync();
+
+           // Assert
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateRangeAsync(It.Is<List<Event>>(e => 
+               e.First().Status == EventStatus.WaitingForPayout &&
+               e.First().CompletedAt.HasValue)), Times.Once);
+           _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once);
+           _mockLogger.Verify(
+               x => x.Log(
+                   LogLevel.Information,
+                   It.IsAny<EventId>(),
+                   It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("set to WaitingForPayout")),
+                   It.IsAny<Exception>(),
+                   It.Is<Func<It.IsAnyType, Exception?, string>>((v, t) => true)),
+               Times.Once);
+       }
+         
+       [Fact]
+       public async Task CompleteExpiredEventsAsync_WithLowRevenue_ShouldSetPaidOutAndCreateRevenueReport()
+       {
+           // Arrange
+           var now = DateTime.UtcNow;
+           var eventItem = new Event
+           {
+               Id = Guid.NewGuid(),
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = now.AddDays(-2),
+               EndTime = now.AddHours(-1), // Ended
+               SaleStartTime = now.AddDays(-3),
+               Status = EventStatus.Approved,
+               Publish = true,
+               IsDeleted = false,
+               TotalAmount = 5000, // Low revenue - với FlatformFee = 0.07 và FixFee = 45000, netRevenue sẽ < 0
+               OrganizerProfileId = TestOrganizerId
+           };
+
+           var systemSetting = new SystemSetting
+           {
+               Id = Guid.NewGuid(),
+               FlatformFee = 0.07m,
+               FixFee = 45000,
+               DatePayout = 7,
+               UpdatedAt = now.AddDays(-4),
+               IsDeleted = false
+           };
+
+           var events = new List<Event> { eventItem }.AsQueryable().BuildMockDbSet();
+           var systemSettings = new List<SystemSetting> { systemSetting }.AsQueryable().BuildMockDbSet();
+
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings.Object);
+           _mockUnitOfWork.Setup(x => x.RevenueReportRepository.AddAsync(It.IsAny<RevenueReport>()))
+               .ReturnsAsync((RevenueReport r) => r);
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateRangeAsync(It.IsAny<List<Event>>()))
+               .Returns(Task.CompletedTask);
+           _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+
+           // Act
+           await _eventService.CompleteExpiredEventsAsync();
+
+           // Assert
+           _mockUnitOfWork.Verify(x => x.RevenueReportRepository.AddAsync(It.Is<RevenueReport>(r => 
+               r.EventId == eventItem.Id &&
+               r.GrossRevenue == 0 &&
+               r.PlatformFee == 0 &&
+               r.NetRevenue == 0)), Times.Once);
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateRangeAsync(It.Is<List<Event>>(e => 
+               e.First().Status == EventStatus.PaidOut &&
+               e.First().PaidOutAt.HasValue &&
+               e.First().CompletedAt.HasValue)), Times.Once);
+           _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.AtLeast(2));
+           _mockLogger.Verify(
+               x => x.Log(
+                   LogLevel.Information,
+                   It.IsAny<EventId>(),
+                   It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("set to PaidOut with zero revenue")),
+                   It.IsAny<Exception>(),
+                   It.Is<Func<It.IsAnyType, Exception?, string>>((v, t) => true)),
+               Times.Once);
+       }
+
        #endregion
 
    }

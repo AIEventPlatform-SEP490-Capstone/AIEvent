@@ -1,5 +1,6 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Notification;
+using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
@@ -32,7 +33,7 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork = new Mock<IUnitOfWork>();
             _mockHubContext = new Mock<IHubContext<NotificationHub>>();
             _mockClientProxy = new Mock<IClientProxy>();
-            _mockEmailService = new Mock<IEmailService>(); 
+            _mockEmailService = new Mock<IEmailService>();
             // Setup SendCoreAsync for extension method SendAsync
             _mockClientProxy.Setup(x => x.SendCoreAsync(
                 It.IsAny<string>(),
@@ -951,6 +952,657 @@ namespace AIEvent.Application.Test.Services
             result.IsSuccess.Should().BeTrue();
             // Only non-deleted notifications should be deleted (filtered by !n.IsDeleted in query)
             _mockUnitOfWork.Verify(x => x.NotificationRepository.DeleteAsync(It.Is<Notification>(n => !n.IsDeleted)), Times.Once);
+        }
+
+        #endregion
+
+        #region SendEventBookingReminderAsync Tests
+
+        [Fact]
+        public async Task SendEventBookingReminderAsync_WithValidBookings_ShouldReturnSuccess()
+        {
+            // Arrange
+            var now = DateTime.UtcNow;
+            var eventId = Guid.NewGuid();
+            var bookingId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+
+            var systemSetting = new SystemSetting
+            {
+                Id = Guid.NewGuid(),
+                EventReminderHours = 3,
+                FlatformFee = 0.07m,
+                FixFee = 45000,
+                DatePayout = 7,
+                CreatedAt = now,
+                UpdatedAt = now,
+                IsDeleted = false
+            };
+
+            var user = new User
+            {
+                Id = userId,
+                Email = "test@example.com",
+                FullName = "Test User",
+                IsDeleted = false,
+                IsEmailNotificationEnabled = true
+            };
+
+            var eventItem = new Event
+            {
+                Id = eventId,
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = now.AddHours(2),
+                EndTime = now.AddHours(4),
+                SaleStartTime = now.AddDays(-1),
+                Status = EventStatus.Approved,
+                IsDeleted = false,
+                ImgListEvent = "image1.jpg, image2.jpg"
+            };
+
+            var booking = new Booking
+            {
+                Id = bookingId,
+                UserId = userId,
+                EventId = eventId,
+                Status = BookingStatus.Completed,
+                IsNotification = false,
+                IsDeleted = false,
+                Event = eventItem,
+                User = user
+            };
+
+            var systemSettings = new List<SystemSetting> { systemSetting }.AsQueryable().BuildMockDbSet();
+            var bookings = new List<Booking> { booking }.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings.Object);
+            _mockUnitOfWork.Setup(x => x.BookingRepository.Query(It.IsAny<bool>())).Returns(bookings.Object);
+            _mockUnitOfWork.Setup(x => x.BookingRepository.UpdateRangeAsync(It.IsAny<List<Booking>>()))
+                .Returns(Task.CompletedTask);
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+            _mockUnitOfWork.Setup(x => x.NotificationRepository.AddAsync(It.IsAny<Notification>()))
+                .ReturnsAsync((Notification n) => n);
+            _mockEmailService.Setup(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<MimeKit.MimeMessage>()))
+                .ReturnsAsync(Result.Success());
+
+            // Act
+            var result = await _notificationService.SendEventBookingReminderAsync();
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.NotificationRepository.AddAsync(It.IsAny<Notification>()), Times.Once);
+            _mockUnitOfWork.Verify(x => x.BookingRepository.UpdateRangeAsync(It.IsAny<List<Booking>>()), Times.Once);
+            _mockEmailService.Verify(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<MimeKit.MimeMessage>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task SendEventBookingReminderAsync_WithNoSystemSettings_ShouldReturnFailure()
+        {
+            // Arrange
+            var systemSettings = new List<SystemSetting>().AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings.Object);
+
+            // Act
+            var result = await _notificationService.SendEventBookingReminderAsync();
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("SystemSetting not found");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        [Fact]
+        public async Task SendEventBookingReminderAsync_WithNoBookings_ShouldReturnFailure()
+        {
+            // Arrange
+            var now = DateTime.UtcNow;
+            var systemSetting = new SystemSetting
+            {
+                Id = Guid.NewGuid(),
+                EventReminderHours = 3,
+                CreatedAt = now,
+                UpdatedAt = now,
+                IsDeleted = false
+            };
+
+            var systemSettings = new List<SystemSetting> { systemSetting }.AsQueryable().BuildMockDbSet();
+            var bookings = new List<Booking>().AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings.Object);
+            _mockUnitOfWork.Setup(x => x.BookingRepository.Query(It.IsAny<bool>())).Returns(bookings.Object);
+
+            // Act
+            var result = await _notificationService.SendEventBookingReminderAsync();
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Upcoming events not found");
+            result.Error!.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+        [Fact]
+        public async Task SendEventBookingReminderAsync_WithEventOutsideReminderWindow_ShouldNotSendNotification()
+        {
+            // Arrange
+            var now = DateTime.UtcNow;
+            var eventId = Guid.NewGuid();
+            var bookingId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+
+            var systemSetting = new SystemSetting
+            {
+                Id = Guid.NewGuid(),
+                EventReminderHours = 3,
+                CreatedAt = now,
+                UpdatedAt = now,
+                IsDeleted = false
+            };
+
+            var user = new User
+            {
+                Id = userId,
+                Email = "test@example.com",
+                IsDeleted = false
+            };
+
+            var eventItem = new Event
+            {
+                Id = eventId,
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = now.AddHours(5), // Outside reminder window (3 hours)
+                EndTime = now.AddHours(7),
+                SaleStartTime = now.AddDays(-1),
+                Status = EventStatus.Approved,
+                IsDeleted = false
+            };
+
+            var booking = new Booking
+            {
+                Id = bookingId,
+                UserId = userId,
+                EventId = eventId,
+                Status = BookingStatus.Completed,
+                IsNotification = false,
+                IsDeleted = false,
+                Event = eventItem,
+                User = user
+            };
+
+            var systemSettings = new List<SystemSetting> { systemSetting }.AsQueryable().BuildMockDbSet();
+            var bookings = new List<Booking> { booking }.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings.Object);
+            _mockUnitOfWork.Setup(x => x.BookingRepository.Query(It.IsAny<bool>())).Returns(bookings.Object);
+
+            // Act
+            var result = await _notificationService.SendEventBookingReminderAsync();
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.NotificationRepository.AddAsync(It.IsAny<Notification>()), Times.Never);
+        }
+
+        #endregion
+
+        #region SendFavoriteEventTicketSaleNotificationAsync Tests
+
+        [Fact]
+        public async Task SendFavoriteEventTicketSaleNotificationAsync_WithValidEvents_ShouldReturnSuccess()
+        {
+            // Arrange
+            var now = DateTime.UtcNow;
+            var eventId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+
+            var user = new User
+            {
+                Id = userId,
+                Email = "test@example.com",
+                FullName = "Test User",
+                IsDeleted = false,
+                IsActive = true,
+                IsEmailNotificationEnabled = true
+            };
+
+            var favoriteEvent = new FavoriteEvent
+            {
+                UserId = userId,
+                EventId = eventId,
+                User = user
+            };
+
+            var eventItem = new Event
+            {
+                Id = eventId,
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = now.AddDays(1),
+                EndTime = now.AddDays(1).AddHours(2),
+                SaleStartTime = now.AddMinutes(30), // Within 1 hour
+                Status = EventStatus.Approved,
+                IsDeleted = false,
+                ImgListEvent = "image1.jpg, image2.jpg",
+                FavoriteEvents = new List<FavoriteEvent> { favoriteEvent }
+            };
+
+            var events = new List<Event> { eventItem }.AsQueryable().BuildMockDbSet();
+            var notifications = new List<Notification>().AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.NotificationRepository.Query(It.IsAny<bool>())).Returns(notifications.Object);
+            _mockUnitOfWork.Setup(x => x.NotificationRepository.AddAsync(It.IsAny<Notification>()))
+                .ReturnsAsync((Notification n) => n);
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+            _mockEmailService.Setup(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<MimeKit.MimeMessage>()))
+                .ReturnsAsync(Result.Success());
+
+            // Act
+            var result = await _notificationService.SendFavoriteEventTicketSaleNotificationAsync();
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.NotificationRepository.AddAsync(It.IsAny<Notification>()), Times.Once);
+            _mockEmailService.Verify(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<MimeKit.MimeMessage>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task SendFavoriteEventTicketSaleNotificationAsync_WithNoEvents_ShouldReturnFailure()
+        {
+            // Arrange
+            var events = new List<Event>().AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+
+            // Act
+            var result = await _notificationService.SendFavoriteEventTicketSaleNotificationAsync();
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Favorite Event not found");
+            _mockUnitOfWork.Verify(x => x.NotificationRepository.AddAsync(It.IsAny<Notification>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task SendFavoriteEventTicketSaleNotificationAsync_WithInactiveUser_ShouldNotSendNotification()
+        {
+            // Arrange
+            var now = DateTime.UtcNow;
+            var eventId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+
+            var user = new User
+            {
+                Id = userId,
+                Email = "test@example.com",
+                IsDeleted = false,
+                IsActive = false // Inactive user
+            };
+
+            var favoriteEvent = new FavoriteEvent
+            {
+                UserId = userId,
+                EventId = eventId,
+                User = user
+            };
+
+            var eventItem = new Event
+            {
+                Id = eventId,
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = now.AddDays(1),
+                EndTime = now.AddDays(1).AddHours(2),
+                SaleStartTime = now.AddMinutes(30),
+                Status = EventStatus.Approved,
+                IsDeleted = false,
+                FavoriteEvents = new List<FavoriteEvent> { favoriteEvent }
+            };
+
+            var events = new List<Event> { eventItem }.AsQueryable().BuildMockDbSet();
+            var notifications = new List<Notification>().AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.NotificationRepository.Query(It.IsAny<bool>())).Returns(notifications.Object);
+
+            // Act
+            var result = await _notificationService.SendFavoriteEventTicketSaleNotificationAsync();
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.NotificationRepository.AddAsync(It.IsAny<Notification>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task SendFavoriteEventTicketSaleNotificationAsync_WithEventOutsideTimeWindow_ShouldNotSendNotification()
+        {
+            // Arrange
+            var now = DateTime.UtcNow;
+            var eventId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+
+            var user = new User
+            {
+                Id = userId,
+                Email = "test@example.com",
+                IsDeleted = false,
+                IsActive = true
+            };
+
+            var favoriteEvent = new FavoriteEvent
+            {
+                UserId = userId,
+                EventId = eventId,
+                User = user
+            };
+
+            var eventItem = new Event
+            {
+                Id = eventId,
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = now.AddDays(1),
+                EndTime = now.AddDays(1).AddHours(2),
+                SaleStartTime = now.AddHours(2), // Outside 1 hour window
+                Status = EventStatus.Approved,
+                IsDeleted = false,
+                FavoriteEvents = new List<FavoriteEvent> { favoriteEvent }
+            };
+
+            var events = new List<Event> { eventItem }.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+
+            // Act
+            var result = await _notificationService.SendFavoriteEventTicketSaleNotificationAsync();
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Favorite Event not found");
+            _mockUnitOfWork.Verify(x => x.NotificationRepository.AddAsync(It.IsAny<Notification>()), Times.Never);
+        }
+
+        /// <summary>
+        /// Precondition: Booking có IsNotification = true (đã được gửi thông báo trước đó)
+        /// Return: Method hoàn thành mà không gửi notification lại, không cập nhật booking
+        /// </summary>
+        [Fact]
+        public async Task SendEventBookingReminderAsync_WithAlreadyNotifiedBooking_ShouldNotSendNotification()
+        {
+            // Arrange
+            var now = DateTime.UtcNow;
+            var eventId = Guid.NewGuid();
+            var bookingId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+
+            var systemSetting = new SystemSetting
+            {
+                Id = Guid.NewGuid(),
+                EventReminderHours = 3,
+                CreatedAt = now,
+                UpdatedAt = now,
+                IsDeleted = false
+            };
+
+            var user = new User
+            {
+                Id = userId,
+                Email = "test@example.com",
+                FullName = "Test User",
+                IsDeleted = false,
+                IsEmailNotificationEnabled = true
+            };
+
+            var eventItem = new Event
+            {
+                Id = eventId,
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = now.AddHours(2),
+                EndTime = now.AddHours(4),
+                SaleStartTime = now.AddDays(-1),
+                Status = EventStatus.Approved,
+                IsDeleted = false,
+                ImgListEvent = "image1.jpg, image2.jpg"
+            };
+
+            var booking = new Booking
+            {
+                Id = bookingId,
+                UserId = userId,
+                EventId = eventId,
+                Status = BookingStatus.Completed,
+                IsNotification = true, // Already notified
+                IsDeleted = false,
+                Event = eventItem,
+                User = user
+            };
+
+            var systemSettings = new List<SystemSetting> { systemSetting }.AsQueryable().BuildMockDbSet();
+            var bookings = new List<Booking> { booking }.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings.Object);
+            _mockUnitOfWork.Setup(x => x.BookingRepository.Query(It.IsAny<bool>())).Returns(bookings.Object);
+
+            // Act
+            var result = await _notificationService.SendEventBookingReminderAsync();
+
+            // Assert
+            // When all bookings are already notified (IsNotification = true), no bookings match the query
+            // Service returns Failure with "Upcoming events not found"
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Contain("Upcoming events not found");
+            _mockUnitOfWork.Verify(x => x.NotificationRepository.AddAsync(It.IsAny<Notification>()), Times.Never);
+        }
+
+        /// <summary>
+        /// Precondition: Booking hợp lệ nhưng User liên kết có IsDeleted = true
+        /// Return: Method hoàn thành mà không gửi notification cho user đã bị xóa
+        /// </summary>
+        [Fact]
+        public async Task SendEventBookingReminderAsync_WithDeletedUser_ShouldNotSendNotification()
+        {
+            // Arrange
+            var now = DateTime.UtcNow;
+            var eventId = Guid.NewGuid();
+            var bookingId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+
+            var systemSetting = new SystemSetting
+            {
+                Id = Guid.NewGuid(),
+                EventReminderHours = 3,
+                CreatedAt = now,
+                UpdatedAt = now,
+                IsDeleted = false
+            };
+
+            var user = new User
+            {
+                Id = userId,
+                Email = "test@example.com",
+                IsDeleted = true // Deleted user
+            };
+
+            var eventItem = new Event
+            {
+                Id = eventId,
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = now.AddHours(2),
+                EndTime = now.AddHours(4),
+                SaleStartTime = now.AddDays(-1),
+                Status = EventStatus.Approved,
+                IsDeleted = false
+            };
+
+            var booking = new Booking
+            {
+                Id = bookingId,
+                UserId = userId,
+                EventId = eventId,
+                Status = BookingStatus.Completed,
+                IsNotification = false,
+                IsDeleted = false,
+                Event = eventItem,
+                User = user
+            };
+
+            var systemSettings = new List<SystemSetting> { systemSetting }.AsQueryable().BuildMockDbSet();
+            var bookings = new List<Booking> { booking }.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings.Object);
+            _mockUnitOfWork.Setup(x => x.BookingRepository.Query(It.IsAny<bool>())).Returns(bookings.Object);
+
+            // Act
+            var result = await _notificationService.SendEventBookingReminderAsync();
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.NotificationRepository.AddAsync(It.IsAny<Notification>()), Times.Never);
+        }
+
+        /// <summary>
+        /// Precondition: Event có nhiều users đã favorite, tất cả đều active và hợp lệ
+        /// Return: Gửi notification cho tất cả users, gửi email cho users có IsEmailNotificationEnabled = true
+        /// </summary>
+        [Fact]
+        public async Task SendFavoriteEventTicketSaleNotificationAsync_WithMultipleUsers_ShouldSendToAllUsers()
+        {
+            // Arrange
+            var now = DateTime.UtcNow;
+            var eventId = Guid.NewGuid();
+            var userId1 = Guid.NewGuid();
+            var userId2 = Guid.NewGuid();
+
+            var user1 = new User
+            {
+                Id = userId1,
+                Email = "user1@example.com",
+                FullName = "User 1",
+                IsDeleted = false,
+                IsActive = true,
+                IsEmailNotificationEnabled = true
+            };
+
+            var user2 = new User
+            {
+                Id = userId2,
+                Email = "user2@example.com",
+                FullName = "User 2",
+                IsDeleted = false,
+                IsActive = true,
+                IsEmailNotificationEnabled = false
+            };
+
+            var favoriteEvent1 = new FavoriteEvent
+            {
+                UserId = userId1,
+                EventId = eventId,
+                User = user1
+            };
+
+            var favoriteEvent2 = new FavoriteEvent
+            {
+                UserId = userId2,
+                EventId = eventId,
+                User = user2
+            };
+
+            var eventItem = new Event
+            {
+                Id = eventId,
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = now.AddDays(1),
+                EndTime = now.AddDays(1).AddHours(2),
+                SaleStartTime = now.AddMinutes(30),
+                Status = EventStatus.Approved,
+                IsDeleted = false,
+                ImgListEvent = "image1.jpg, image2.jpg",
+                FavoriteEvents = new List<FavoriteEvent> { favoriteEvent1, favoriteEvent2 }
+            };
+
+            var events = new List<Event> { eventItem }.AsQueryable().BuildMockDbSet();
+            var notifications = new List<Notification>().AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.NotificationRepository.Query(It.IsAny<bool>())).Returns(notifications.Object);
+            _mockUnitOfWork.Setup(x => x.NotificationRepository.AddAsync(It.IsAny<Notification>()))
+                .ReturnsAsync((Notification n) => n);
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+            _mockEmailService.Setup(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<MimeKit.MimeMessage>()))
+                .ReturnsAsync(Result.Success());
+
+            // Act
+            var result = await _notificationService.SendFavoriteEventTicketSaleNotificationAsync();
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.NotificationRepository.AddAsync(It.IsAny<Notification>()), Times.Exactly(2));
+            _mockEmailService.Verify(x => x.SendEmailAsync(It.Is<string>(e => e == user1.Email), It.IsAny<MimeKit.MimeMessage>()), Times.Once);
+            _mockEmailService.Verify(x => x.SendEmailAsync(It.Is<string>(e => e == user2.Email), It.IsAny<MimeKit.MimeMessage>()), Times.Never);
+        }
+
+        /// <summary>
+        /// Precondition: User có IsEmailNotificationEnabled = false
+        /// Return: Gửi in-app notification nhưng không gửi email notification
+        /// </summary>
+        [Fact]
+        public async Task SendFavoriteEventTicketSaleNotificationAsync_WithNoEmailNotificationEnabled_ShouldNotSendEmail()
+        {
+            // Arrange
+            var now = DateTime.UtcNow;
+            var eventId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+
+            var user = new User
+            {
+                Id = userId,
+                Email = "test@example.com",
+                FullName = "Test User",
+                IsDeleted = false,
+                IsActive = true,
+                IsEmailNotificationEnabled = false // Email notification disabled
+            };
+
+            var favoriteEvent = new FavoriteEvent
+            {
+                UserId = userId,
+                EventId = eventId,
+                User = user
+            };
+
+            var eventItem = new Event
+            {
+                Id = eventId,
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = now.AddDays(1),
+                EndTime = now.AddDays(1).AddHours(2),
+                SaleStartTime = now.AddMinutes(30),
+                Status = EventStatus.Approved,
+                IsDeleted = false,
+                ImgListEvent = "image1.jpg, image2.jpg",
+                FavoriteEvents = new List<FavoriteEvent> { favoriteEvent }
+            };
+
+            var events = new List<Event> { eventItem }.AsQueryable().BuildMockDbSet();
+            var notifications = new List<Notification>().AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.NotificationRepository.Query(It.IsAny<bool>())).Returns(notifications.Object);
+            _mockUnitOfWork.Setup(x => x.NotificationRepository.AddAsync(It.IsAny<Notification>()))
+                .ReturnsAsync((Notification n) => n);
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+
+            // Act
+            var result = await _notificationService.SendFavoriteEventTicketSaleNotificationAsync();
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockUnitOfWork.Verify(x => x.NotificationRepository.AddAsync(It.IsAny<Notification>()), Times.Once);
+            _mockEmailService.Verify(x => x.SendEmailAsync(It.IsAny<string>(), It.IsAny<MimeKit.MimeMessage>()), Times.Never);
         }
 
         #endregion
