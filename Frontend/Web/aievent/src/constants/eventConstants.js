@@ -6,7 +6,8 @@ export const EventStatus = {
   Rejected: 'Rejected',
   Cancelled: 'Cancelled',
   WaitingForPayout: 'WaitingForPayout',
-  PaidOut: 'PaidOut'
+  PaidOut: 'PaidOut',
+  ErrorPayment: 'ErrorPayment'
 };
 
 export const EventStatusDisplay = {
@@ -15,7 +16,8 @@ export const EventStatusDisplay = {
   [EventStatus.Rejected]: 'Bị từ chối',
   [EventStatus.Cancelled]: 'Đã hủy',
   [EventStatus.WaitingForPayout]: 'Chờ thanh toán',
-  [EventStatus.PaidOut]: 'Đã thanh toán'
+  [EventStatus.PaidOut]: 'Đã thanh toán',
+  [EventStatus.ErrorPayment]: 'Lỗi thanh toán'
 };
 
 export const TicketType = {

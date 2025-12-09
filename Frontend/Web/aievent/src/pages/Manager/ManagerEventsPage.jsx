@@ -35,7 +35,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger
+  DialogTrigger,
 } from '../../components/ui/dialog';
 import { useEvents } from '../../hooks/useEvents';
 import { PATH } from '../../routes/path';
@@ -84,10 +84,20 @@ const ManagerEventsPage = () => {
   // Add loading states for approval/rejection actions
   const [approvingEventId, setApprovingEventId] = useState(null);
   const [rejectingEventId, setRejectingEventId] = useState(null);
+  const [resolvingPaymentEventId, setResolvingPaymentEventId] = useState(null);
+  
+  // State for resolve payment confirmation dialog
+  const [isResolvePaymentDialogOpen, setIsResolvePaymentDialogOpen] = useState(false);
+  const [selectedEventForPayment, setSelectedEventForPayment] = useState(null);
 
   // New state for storing all events for statistics
   const [allEventsForStats, setAllEventsForStats] = useState([]);
   const [loadingStats, setLoadingStats] = useState(true);
+
+  // State for organizer filter
+  const [organizers, setOrganizers] = useState([]);
+  const [selectedOrganizerId, setSelectedOrganizerId] = useState('');
+  const [loadingOrganizers, setLoadingOrganizers] = useState(false);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -104,6 +114,36 @@ const ManagerEventsPage = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
+  }, []);
+
+  // Load organizers when component mounts
+  useEffect(() => {
+    const loadOrganizers = async () => {
+      setLoadingOrganizers(true);
+      try {
+        const response = await organizerAPI.getOrganizers({
+          pageNumber: 1,
+          pageSize: 1000, // Get all organizers
+        });
+        
+        if (response) {
+          const organizersData = response.items || response || [];
+          console.log('Organizers data:', organizersData);
+          console.log('First organizer:', organizersData[0]);
+          setOrganizers(organizersData);
+        } else {
+          setOrganizers([]);
+        }
+      } catch (error) {
+        console.error('Error loading organizers:', error);
+        toast.error('Không thể tải danh sách nhà tổ chức');
+        setOrganizers([]);
+      } finally {
+        setLoadingOrganizers(false);
+      }
+    };
+
+    loadOrganizers();
   }, []);
 
   // Load all events for statistics when component mounts
@@ -171,7 +211,7 @@ const ManagerEventsPage = () => {
       setInitiationDropdownLabel('Bị từ chối');
     }
     // Reset initiation dropdown to default when selecting completion statuses or other main tabs
-    else if ([EventStatus.WaitingForPayout, EventStatus.PaidOut, 
+    else if ([EventStatus.WaitingForPayout, EventStatus.PaidOut, EventStatus.ErrorPayment,
               'all', EventStatus.Cancelled].includes(activeTab)) {
       setInitiationDropdownLabel('Khởi tạo sự kiện');
     }
@@ -181,6 +221,8 @@ const ManagerEventsPage = () => {
       setCompletionDropdownLabel('Chờ thanh toán');
     } else if (activeTab === EventStatus.PaidOut) {
       setCompletionDropdownLabel('Đã thanh toán');
+    } else if (activeTab === EventStatus.ErrorPayment) {
+      setCompletionDropdownLabel('Lỗi thanh toán');
     }
     // Reset completion dropdown to default when selecting initiation statuses or other main tabs
     else if ([EventStatus.PendingApproval, EventStatus.Approved,
@@ -241,6 +283,7 @@ const ManagerEventsPage = () => {
           pageSize: pageSize,
           startDate: startDate ? new Date(startDate).toISOString() : '',
           endDate: endDate ? new Date(endDate).toISOString() : '',
+          organizerId: selectedOrganizerId || undefined,
         });
       } else {
         // Load events by specific status
@@ -251,6 +294,7 @@ const ManagerEventsPage = () => {
           pageSize: pageSize,
           startDate: startDate ? new Date(startDate).toISOString() : '',
           endDate: endDate ? new Date(endDate).toISOString() : '',
+          organizerId: selectedOrganizerId || undefined,
         });
       }
 
@@ -311,101 +355,57 @@ const ManagerEventsPage = () => {
     navigate(`/manager/event/${eventId}/edit`);
   };
 
-  const handleDeleteEvent = async (eventId) => {
+  const handleCancelEvent = async (eventId) => {
     // Find event name for better confirmation
     const event = allEvents.find(e => e.eventId === eventId);
     const eventName = event?.title || 'sự kiện này';
 
-    // Check if event has bookings that require a reason
-    const hasBookings = event?.totalPersonJoin > 0;
+    // Always require a reason for canceling events
+    const reason = prompt(`Bạn có chắc chắn muốn hủy "${eventName}"?
 
-    if (hasBookings) {
-      // For events with bookings, show prompt for reason
-      const reason = prompt(`Bạn có chắc chắn muốn xóa "${eventName}"?
-
-⚠️ Sự kiện này đã có ${event.totalPersonJoin} người đăng ký.
+⚠️ Hành động này sẽ hủy bỏ sự kiện và thông báo cho người tham gia.
 
 Vui lòng nhập lý do hủy bỏ sự kiện:`);
 
-      if (reason === null) {
-        // User cancelled
-        return;
+    if (reason === null) {
+      // User cancelled
+      return;
+    }
+
+    if (!reason.trim()) {
+      toast.error('Vui lòng nhập lý do hủy bỏ sự kiện');
+      return;
+    }
+
+    try {
+      const loadingToast = toast.loading('Đang hủy sự kiện...');
+
+      const response = await eventAPI.cancelEvent(eventId, reason.trim());
+
+      toast.dismiss(loadingToast);
+
+      if (response !== null) {
+        toast.success('Hủy sự kiện thành công!', {
+          duration: 3000,
+        });
+
+        // Update local state immediately for better UX
+        setAllEvents(prev => prev.filter(event => event.eventId !== eventId));
+        setEvents(prev => prev.filter(event => event.eventId !== eventId));
+
+        // Reload to sync with server
+        loadEvents();
       }
-
-      if (!reason.trim()) {
-        toast.error('Vui lòng nhập lý do hủy bỏ sự kiện');
-        return;
-      }
-
-      try {
-        const loadingToast = toast.loading('Đang xóa sự kiện...');
-
-        const response = await deleteEventAPI(eventId, reason.trim());
-
-        toast.dismiss(loadingToast);
-
-        if (response !== null) {
-          toast.success('Xóa sự kiện thành công!', {
-            duration: 3000,
-          });
-
-          // Update local state immediately for better UX
-          setAllEvents(prev => prev.filter(event => event.eventId !== eventId));
-          setEvents(prev => prev.filter(event => event.eventId !== eventId));
-
-          // Reload to sync with server
-          loadEvents();
-        }
-      } catch (error) {
-        console.error('Error deleting event:', error);
-        if (error.response?.status === 403) {
-          toast.error('❌ Bạn không có quyền xóa sự kiện này');
-        } else if (error.response?.status === 404) {
-          toast.error('❌ Sự kiện không tồn tại');
-        } else if (error.response?.status === 400) {
-          toast.error('❌ Không thể xóa sự kiện đã có người đăng ký');
-        } else {
-          toast.error('❌ Có lỗi xảy ra khi xóa sự kiện');
-        }
-      }
-    } else {
-      // For events without bookings, use simple confirmation
-      const confirmMessage = `Bạn có chắc chắn muốn xóa "${eventName}"?\n\n⚠️ Hành động này không thể hoàn tác!`;
-
-      if (!window.confirm(confirmMessage)) {
-        return;
-      }
-
-      try {
-        const loadingToast = toast.loading('Đang xóa sự kiện...');
-
-        const response = await deleteEventAPI(eventId);
-
-        toast.dismiss(loadingToast);
-
-        if (response !== null) {
-          toast.success('Xóa sự kiện thành công!', {
-            duration: 3000,
-          });
-
-          // Update local state immediately for better UX
-          setAllEvents(prev => prev.filter(event => event.eventId !== eventId));
-          setEvents(prev => prev.filter(event => event.eventId !== eventId));
-
-          // Reload to sync with server
-          loadEvents();
-        }
-      } catch (error) {
-        console.error('Error deleting event:', error);
-        if (error.response?.status === 403) {
-          toast.error('❌ Bạn không có quyền xóa sự kiện này');
-        } else if (error.response?.status === 404) {
-          toast.error('❌ Sự kiện không tồn tại');
-        } else if (error.response?.status === 400) {
-          toast.error('❌ Không thể xóa sự kiện đã có người đăng ký');
-        } else {
-          toast.error('❌ Có lỗi xảy ra khi xóa sự kiện');
-        }
+    } catch (error) {
+      console.error('Error canceling event:', error);
+      if (error.response?.status === 403) {
+        toast.error(' Bạn không có quyền hủy sự kiện này');
+      } else if (error.response?.status === 404) {
+        toast.error(' Sự kiện không tồn tại');
+      } else if (error.response?.status === 400) {
+        toast.error(' Không thể hủy sự kiện này');
+      } else {
+        toast.error(' Có lỗi xảy ra khi hủy sự kiện');
       }
     }
   };
@@ -462,6 +462,57 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
     }
   };
 
+  // Handle resolve error payment
+  const handleResolveErrorPayment = async (eventId) => {
+    // Prevent multiple clicks
+    if (resolvingPaymentEventId) return;
+
+    setResolvingPaymentEventId(eventId);
+    try {
+      const response = await eventAPI.resolveErrorPayment(eventId);
+
+      if (response) {
+        toast.success('✅ Thanh toán lại thành công! Trạng thái sự kiện đã được cập nhật sang "Đã thanh toán".', {
+          duration: 4000,
+        });
+        setIsResolvePaymentDialogOpen(false);
+        setSelectedEventForPayment(null);
+        loadEvents();
+      }
+    } catch (error) {
+      console.error('Error resolving payment:', error);
+      
+      // Get error message from response
+      const errorMessage = error.response?.data?.message || error.message;
+      const statusCode = error.response?.data?.statusCode;
+      
+      // Handle specific error cases
+      if (errorMessage?.includes('Event not found')) {
+        toast.error(' Không tìm thấy sự kiện hoặc sự kiện không ở trạng thái lỗi thanh toán');
+      } else if (errorMessage?.includes('Payment information not found')) {
+        toast.error(' Nhà tổ chức chưa thêm thông tin thanh toán. Vui lòng yêu cầu nhà tổ chức cập nhật thông tin ngân hàng.');
+      } else if (errorMessage?.includes('Organizer profile not found')) {
+        toast.error(' Không tìm thấy thông tin nhà tổ chức');
+      } else if (errorMessage?.includes('System setting not found')) {
+        toast.error(' Lỗi cấu hình hệ thống. Vui lòng liên hệ quản trị viên.');
+      } else if (errorMessage?.includes('Payout amount is negative')) {
+        toast.error(' Số tiền thanh toán không hợp lệ (âm). Vui lòng kiểm tra lại doanh thu sự kiện.');
+      } else if (errorMessage?.includes('Payout transaction failed')) {
+        toast.error(' Giao dịch thanh toán thất bại. Vui lòng thử lại sau hoặc kiểm tra thông tin ngân hàng.');
+      } else if (errorMessage?.includes('Failed to process payout')) {
+        toast.error(' Lỗi xử lý thanh toán: ' + errorMessage);
+      } else if (error.response?.status === 403) {
+        toast.error(' Bạn không có quyền thực hiện thao tác này');
+      } else if (error.response?.status === 400) {
+        toast.error(' ' + (errorMessage || 'Không thể thanh toán lại cho sự kiện này'));
+      } else {
+        toast.error(' Có lỗi xảy ra khi thanh toán lại: ' + (errorMessage || 'Vui lòng thử lại sau'));
+      }
+    } finally {
+      setResolvingPaymentEventId(null);
+    }
+  };
+
   const handleOpenReports = (event) => {
     setReportDialogEvent(event);
     setIsReportDialogOpen(true);
@@ -498,6 +549,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       case EventStatus.Cancelled: return 'Đã hủy';
       case EventStatus.WaitingForPayout: return 'Chờ thanh toán';
       case EventStatus.PaidOut: return 'Đã thanh toán';
+      case EventStatus.ErrorPayment: return 'Lỗi thanh toán';
       default: return tab;
     }
   };
@@ -736,6 +788,11 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
         icon: CheckCircle,
         glow: "shadow-lg shadow-blue-500/20"
       },
+      [EventStatus.ErrorPayment]: {
+        badge: "bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-300",
+        icon: AlertTriangle,
+        glow: "shadow-lg shadow-orange-500/20"
+      },
       [EventStatus.PendingApproval]: {
         badge: "bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300",
         icon: Clock,
@@ -920,7 +977,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
           <div className="mb-8 backdrop-blur-sm bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-2xl p-6 shadow-lg">
             <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
               {/* Search */}
-              <div className="relative md:col-span-3">
+              <div className="relative md:col-span-2">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                 <Input
                   placeholder="Tìm kiếm sự kiện..."
@@ -929,6 +986,43 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                   onChange={handleSearchChange}
                 />
               </div>
+
+              {/* Organizer Filter */}
+              <Select value={selectedOrganizerId || "all"} onValueChange={(value) => setSelectedOrganizerId(value === "all" ? "" : value)}>
+                <SelectTrigger className="rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                  <SelectValue placeholder="Nhà tổ chức" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả nhà tổ chức</SelectItem>
+                  {organizers.map((organizer, index) => {
+                    // Try different possible field names from backend - prioritize companyName
+                    const displayName = organizer.companyName || 
+                                       organizer.CompanyName || 
+                                       organizer.organizerName || 
+                                       organizer.OrganizerName || 
+                                       organizer.name || 
+                                       organizer.Name ||
+                                       organizer.fullName ||
+                                       organizer.FullName ||
+                                       organizer.contactEmail || 
+                                       organizer.email || 
+                                       organizer.Email ||
+                                       `Organizer ${index + 1}`;
+                    
+                    // Use 'id' field as the value since that's what the backend returns
+                    const organizerId = organizer.id || organizer.organizerProfileId || organizer.OrganizerProfileId || `organizer-${index}`;
+                    
+                    return (
+                      <SelectItem 
+                        key={organizerId} 
+                        value={organizerId}
+                      >
+                        {displayName}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
 
               {/* Start Date */}
               <div className="relative">
@@ -1092,7 +1186,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                     setShowInitiationDropdown(false);
                   }}
                   className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${
-                    [EventStatus.WaitingForPayout, EventStatus.PaidOut].includes(activeTab)
+                    [EventStatus.WaitingForPayout, EventStatus.PaidOut, EventStatus.ErrorPayment].includes(activeTab)
                       ? 'bg-white text-blue-600 shadow-sm'
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
@@ -1131,6 +1225,20 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                       }`}
                     >
                       Đã thanh toán
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveTab(EventStatus.ErrorPayment);
+                        setShowCompletionDropdown(false);
+                        navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.ErrorPayment}`);
+                      }}
+                      className={`block w-full text-left px-4 py-2 text-sm ${
+                        activeTab === EventStatus.ErrorPayment
+                          ? 'bg-blue-50 text-blue-600'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      Lỗi thanh toán
                     </button>
                   </div>
                 )}
@@ -1310,7 +1418,11 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                 return (
                   <div
                     key={event.eventId}
-                    className="group backdrop-blur-sm bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-2xl overflow-hidden hover:border-indigo-300 dark:hover:border-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300 shadow-lg"
+                    className={`group backdrop-blur-sm ${
+                      event.isFlagWarning 
+                        ? 'bg-amber-50/80 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700' 
+                        : 'bg-white/60 dark:bg-white/5 border-white/60 dark:border-white/10'
+                    } border rounded-2xl overflow-hidden hover:border-indigo-300 dark:hover:border-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300 shadow-lg`}
                   >
                     <div className="flex flex-col lg:flex-row gap-0">
                       {/* Event thumbnail */}
@@ -1384,6 +1496,23 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                           </div>
                         )}
 
+                        {eventStatus === EventStatus.Cancelled && event.reasonCancel && (
+                          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+                            <p className="text-gray-800 text-sm">
+                              <strong>Lý do hủy:</strong> {event.reasonCancel}
+                            </p>
+                          </div>
+                        )}
+
+                        {event.isFlagWarning && (
+                          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4 flex items-start gap-2">
+                            <AlertTriangle className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                            <p className="text-orange-800 text-sm">
+                              <strong>Cảnh báo:</strong> Sự kiện này có báo cáo vi phạm
+                            </p>
+                          </div>
+                        )}
+
                         {/* Event category badges */}
                         <div className="flex items-center gap-2 mb-4">
                           {event.eventCategoryName && (
@@ -1447,6 +1576,43 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                               {displayReportCount}
                             </span>
                           </Button>
+
+                          {(eventStatus === EventStatus.Approved || 
+                            eventStatus === EventStatus.WaitingForPayout) && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-red-600 dark:text-red-400 hover:bg-red-100/50 dark:hover:bg-red-900/50 hover:text-red-700 dark:hover:text-red-300 rounded-lg transition-colors h-9"
+                              onClick={() => handleCancelEvent(event.eventId)}
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              Hủy sự kiện
+                            </Button>
+                          )}
+
+                          {eventStatus === EventStatus.ErrorPayment && (
+                            <Button
+                              size="sm"
+                              className="bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors h-9 shadow-md"
+                              onClick={() => {
+                                setSelectedEventForPayment(event);
+                                setIsResolvePaymentDialogOpen(true);
+                              }}
+                              disabled={resolvingPaymentEventId === event.eventId}
+                            >
+                              {resolvingPaymentEventId === event.eventId ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Đang xử lý...
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="w-4 h-4 mr-2" />
+                                  Thanh toán lại
+                                </>
+                              )}
+                            </Button>
+                          )}
 
                           {eventStatus === EventStatus.PendingApproval && (
                             <>
@@ -1608,6 +1774,70 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
             onClose={handleCloseReports}
             onReportCountChange={handleReportCountChange}
           />
+
+          {/* Resolve Payment Confirmation Dialog */}
+          <Dialog open={isResolvePaymentDialogOpen} onOpenChange={setIsResolvePaymentDialogOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-orange-600">
+                  <AlertTriangle className="w-5 h-5" />
+                  Xác nhận thanh toán lại
+                </DialogTitle>
+                <DialogDescription>
+                  Bạn có chắc chắn muốn thử thanh toán lại cho sự kiện này?
+                </DialogDescription>
+              </DialogHeader>
+              
+              {selectedEventForPayment && (
+                <div className="space-y-4">
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-900 mb-2">{selectedEventForPayment.title}</h4>
+                    <div className="space-y-1 text-sm text-gray-600">
+                      <p><strong>Trạng thái:</strong> Lỗi thanh toán</p>
+                      <p><strong>Số tiền thanh toán:</strong> {formatCurrency(selectedEventForPayment.payoutAmount)}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-sm text-blue-800">
+                      ℹ️ Hệ thống sẽ thử xử lý lại giao dịch thanh toán cho nhà tổ chức.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        setIsResolvePaymentDialogOpen(false);
+                        setSelectedEventForPayment(null);
+                      }}
+                      disabled={resolvingPaymentEventId === selectedEventForPayment.eventId}
+                    >
+                      Hủy
+                    </Button>
+                    <Button
+                      className="flex-1 bg-orange-600 hover:bg-orange-700"
+                      onClick={() => handleResolveErrorPayment(selectedEventForPayment.eventId)}
+                      disabled={resolvingPaymentEventId === selectedEventForPayment.eventId}
+                    >
+                      {resolvingPaymentEventId === selectedEventForPayment.eventId ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Đang xử lý...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Xác nhận
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
 
         </div>
       </div>

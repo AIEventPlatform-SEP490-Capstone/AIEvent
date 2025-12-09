@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-hot-toast";
+import eventAPI from "../api/eventAPI";
 import {
   fetchEvents,
   fetchEventById,
@@ -29,8 +30,6 @@ import {
   clearEvents,
   clearRelatedEvents,
 } from "../store/slices/eventsSlice";
-import eventAPI from "../api/eventAPI";
-
 export const useEvents = () => {
   const dispatch = useDispatch();
 
@@ -190,6 +189,32 @@ export const useEvents = () => {
       return response;
     } catch (err) {
       toast.error("Không thể xác nhận sự kiện");
+      return null;
+    }
+  };
+
+  // Cancel event (requires Manager role)
+  const cancelEventAPI = async (eventId, reasonCancel) => {
+    try {
+      const response = await eventAPI.cancelEvent(eventId, reasonCancel);
+      if (response) {
+        toast.success("Hủy sự kiện thành công!");
+      }
+      return response;
+    } catch (err) {
+      console.error("Cancel event error:", err);
+      let errorMessage = "Không thể hủy sự kiện";
+      if (err && typeof err === "object") {
+        if (err.message) errorMessage = err.message;
+        else if (err.error) errorMessage = err.error;
+        else if (Object.keys(err).length > 0) {
+          const firstKey = Object.keys(err)[0];
+          if (typeof err[firstKey] === "string") {
+            errorMessage = err[firstKey];
+          }
+        }
+      }
+      toast.error(errorMessage);
       return null;
     }
   };
