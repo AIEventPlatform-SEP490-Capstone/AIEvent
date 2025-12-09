@@ -9,6 +9,7 @@ using AIEvent.Domain.Entities;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using AIEvent.Domain.Enums;
 using MimeKit;
 using System.Text; 
@@ -19,12 +20,12 @@ namespace AIEvent.Application.Services.Implements
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IHubContext<NotificationHub> _hubContext; 
-        private readonly IEmailService _emailService;
+        private readonly IEmailService _emailService; 
 
         public NotificationService(IUnitOfWork unitOfWork, IHubContext<NotificationHub> hubContext, IEmailService emailService)
         {
             _unitOfWork = unitOfWork;
-            _hubContext = hubContext; 
+            _hubContext = hubContext;
             _emailService = emailService;
         }
 
@@ -224,185 +225,184 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task<Result> SendEventBookingReminderAsync()
         {
-            var allSettings = await _unitOfWork.SystemSettingRepository
-                .Query()
-                .AsNoTracking()
-                .Where(s => !s.IsDeleted)
-                .OrderByDescending(s => s.CreatedAt)
-                .ToListAsync();
-
-            if (!allSettings.Any())
-                return ErrorResponse.FailureResult("SystemSetting not found", ErrorCodes.NotFound);
-
-            var bookingsToNotify = await _unitOfWork.BookingRepository
+             var allSettings = await _unitOfWork.SystemSettingRepository
                     .Query()
-                    .Where(b => !b.IsDeleted
-                                && b.IsNotification == false
-                                && b.Status == BookingStatus.Completed
-                                && b.Event.Status == EventStatus.Approved
-                                && !b.Event.IsDeleted
-                                && b.Event.StartTime > DateTime.UtcNow)
-                    .Include(b => b.Event)
-                    .Include(b => b.User)
+                    .AsNoTracking()
+                    .Where(s => !s.IsDeleted)
+                    .OrderByDescending(s => s.CreatedAt)
                     .ToListAsync();
 
-            if (!bookingsToNotify.Any())
-                return ErrorResponse.FailureResult("Upcoming events not found", ErrorCodes.NotFound);
+                if (!allSettings.Any())
+                    return ErrorResponse.FailureResult("SystemSetting not found", ErrorCodes.NotFound);
+
+            var bookingsToNotify = await _unitOfWork.BookingRepository
+                        .Query()
+                        .Where(b => !b.IsDeleted
+                                    && b.IsNotification == false
+                                    && b.Status == BookingStatus.Completed
+                                    && b.Event.Status == EventStatus.Approved
+                                    && !b.Event.IsDeleted
+                                    && b.Event.StartTime > DateTime.UtcNow)
+                        .Include(b => b.Event)
+                        .Include(b => b.User)
+                        .ToListAsync();
+
+                if (!bookingsToNotify.Any())
+                    return ErrorResponse.FailureResult("Upcoming events not found", ErrorCodes.NotFound);
 
             var settingCache = new Dictionary<string, SystemSetting>();
-            var bookingsToUpdate = new List<Booking>();
+                var bookingsToUpdate = new List<Booking>(); 
 
-            foreach (var booking in bookingsToNotify)
-            {
-                var eventItem = booking.Event;
-                var user = booking.User;
-                if (user == null || user.IsDeleted) continue;
+                foreach (var booking in bookingsToNotify)
+                {
+                    var eventItem = booking.Event;
+                    var user = booking.User;
+                    if (user == null || user.IsDeleted)
+                        continue;
 
                 var key = $"{eventItem.SaleStartTime:yyyy-MM}";
-                if (!settingCache.TryGetValue(key, out var setting))
-                {
-                    setting = allSettings
-                        .FirstOrDefault(s => s.UpdatedAt!.Value.Year == eventItem.SaleStartTime!.Value.Year &&
-                                             s.UpdatedAt!.Value.Month == eventItem.SaleStartTime!.Value.Month)
-                        ?? allSettings.First();
+                    if (!settingCache.TryGetValue(key, out var setting))
+                    {
+                        setting = allSettings
+                            .FirstOrDefault(s => s.UpdatedAt!.Value.Year == eventItem.SaleStartTime!.Value.Year &&
+                                                 s.UpdatedAt!.Value.Month == eventItem.SaleStartTime!.Value.Month)
+                            ?? allSettings.First();
 
-                    settingCache[key] = setting;
+                        settingCache[key] = setting;
+                    }
+
+                    var reminderHours = setting.EventReminderHours > 0 ? setting.EventReminderHours : 3;
+
+                    if (eventItem.StartTime <= DateTime.UtcNow.AddHours(reminderHours))
+                    {
+                        var firstImage = !string.IsNullOrEmpty(eventItem.ImgListEvent)
+                            ? eventItem.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()
+                            : string.Empty;
+                     
+                        await CreateNotificationAsync(new CreateNotificationRequest
+                        {
+                            UserId = booking.UserId,
+                            Title = $"Sắp diễn ra: {eventItem.Title}",
+                            Message = $"Sự kiện {eventItem.Title} sẽ diễn ra vào {eventItem.StartTime.AddHours(7):HH:mm dd/MM/yyyy}",
+                            Type = NotificationType.EventReminder,
+                            EventId = eventItem.Id,
+                            ImageUrl = firstImage
+                        }); 
+ 
+                        if (user.IsEmailNotificationEnabled == true && !string.IsNullOrEmpty(user.Email))
+                        {
+                            var sb = new StringBuilder();
+
+                            if (!string.IsNullOrEmpty(firstImage))
+                                sb.AppendLine($"<img src='{firstImage}' style='width:100%;max-width:600px;border-radius:8px;margin-bottom:20px;'/>");
+
+                            sb.AppendLine($"<p>Xin chào {user.FullName ?? user.Email},</p>")
+                              .AppendLine($"<p>Sự kiện <strong>{eventItem.Title}</strong> sẽ diễn ra vào <strong>{eventItem.StartTime.AddHours(7):HH:mm dd/MM/yyyy}</strong>.</p>")
+                              .AppendLine("<p>Đừng quên tham gia sự kiện nhé!</p>")
+                              .AppendLine($"<p><a href=\"https://ai-event-alpha.vercel.app/event/{eventItem.Id}\">Xem chi tiết sự kiện</a></p>")
+                              .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
+
+                            await _emailService.SendEmailAsync(user.Email, new MimeMessage
+                            {
+                                Subject = $"Nhắc nhở: {eventItem.Title} sắp diễn ra",
+                                Body = new TextPart("html") { Text = sb.ToString() }
+                            });
+                         }
+
+                        booking.IsNotification = true;
+                        bookingsToUpdate.Add(booking);
+                    }
                 }
 
-                var reminderHours = setting.EventReminderHours > 0 ? setting.EventReminderHours : 3;
+                if (bookingsToUpdate.Any())
+                {
+                    await _unitOfWork.BookingRepository.UpdateRangeAsync(bookingsToUpdate);
+                    await _unitOfWork.SaveChangesAsync();
+                }
 
-                if (eventItem.StartTime <= DateTime.UtcNow.AddHours(reminderHours))
+                return Result.Success(); 
+        }
+
+    public async Task<Result> SendFavoriteEventTicketSaleNotificationAsync()
+        { 
+            var now = DateTime.UtcNow;
+                var oneHourFromNow = now.AddHours(1);
+
+                var eventsToNotify = await _unitOfWork.EventRepository
+                    .Query()
+                    .Where(e => !e.IsDeleted
+                                && e.Status == EventStatus.Approved
+                                && e.SaleStartTime.HasValue
+                                && e.SaleStartTime.Value > now
+                                && e.SaleStartTime.Value <= oneHourFromNow
+                                && e.FavoriteEvents.Any())
+                    .Include(e => e.FavoriteEvents)
+                        .ThenInclude(fe => fe.User)
+                    .ToListAsync();
+
+                if (!eventsToNotify.Any())
+                    return ErrorResponse.FailureResult("Favorite Event not found", ErrorCodes.NotFound);
+
+            foreach (var eventItem in eventsToNotify)
                 {
                     var firstImage = !string.IsNullOrEmpty(eventItem.ImgListEvent)
                         ? eventItem.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()
                         : string.Empty;
 
-                    // Gửi Notification
-                    await CreateNotificationAsync(new CreateNotificationRequest
-                    {
-                        UserId = booking.UserId,
-                        Title = $"Sắp diễn ra: {eventItem.Title}",
-                        Message = $"Sự kiện {eventItem.Title} sẽ diễn ra vào {eventItem.StartTime.AddHours(7):HH:mm dd/MM/yyyy}",
-                        Type = NotificationType.EventReminder,
-                        EventId = eventItem.Id,
-                        ImageUrl = firstImage
-                    });
+                    var favoriteUsers = eventItem.FavoriteEvents
+                        .Where(fe => fe.User != null && !fe.User.IsDeleted && fe.User.IsActive)
+                        .GroupBy(fe => fe.UserId)
+                        .Select(g => g.First().User)
+                        .ToList();
+ 
+                    foreach (var user in favoriteUsers)
+                    { 
+                        var existingNotification = await _unitOfWork.NotificationRepository
+                            .Query()
+                            .AnyAsync(n => n.UserId == user.Id
+                                        && n.EventId == eventItem.Id
+                                        && n.Type == NotificationType.TicketSaleReminder
+                                        && !n.IsDeleted);
 
-                    // Gửi Email nếu bật
-                    if (user.IsEmailNotificationEnabled == true && !string.IsNullOrEmpty(user.Email))
-                    {
-                        var sb = new StringBuilder();
-
-                        if (!string.IsNullOrEmpty(firstImage))
-                            sb.AppendLine($"<img src='{firstImage}' style='width:100%;max-width:600px;border-radius:8px;margin-bottom:20px;'/>");
-
-                        sb.AppendLine($"<p>Xin chào {user.FullName ?? user.Email},</p>")
-                          .AppendLine($"<p>Sự kiện <strong>{eventItem.Title}</strong> sẽ diễn ra vào <strong>{eventItem.StartTime.AddHours(7):HH:mm dd/MM/yyyy}</strong>.</p>")
-                          .AppendLine("<p>Đừng quên tham gia sự kiện nhé!</p>")
-                          .AppendLine($"<p><a href=\"https://ai-event-alpha.vercel.app/event/{eventItem.Id}\">Xem chi tiết sự kiện</a></p>")
-                          .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
-
-                        await _emailService.SendEmailAsync(user.Email, new MimeMessage
-                        {
-                            Subject = $"Nhắc nhở: {eventItem.Title} sắp diễn ra",
-                            Body = new TextPart("html") { Text = sb.ToString() }
-                        });
-                    }
-
-                    booking.IsNotification = true;
-                    bookingsToUpdate.Add(booking);
-                }
-            }
-
-            if (bookingsToUpdate.Any())
-            {
-                await _unitOfWork.BookingRepository.UpdateRangeAsync(bookingsToUpdate);
-                await _unitOfWork.SaveChangesAsync();
-            }
-
-            return Result.Success();
-        }
-
-    public async Task<Result> SendFavoriteEventTicketSaleNotificationAsync()
-        {
-            var now = DateTime.UtcNow;
-            var oneHourFromNow = now.AddHours(1);
-
-            var eventsToNotify = await _unitOfWork.EventRepository
-                .Query()
-                .Where(e => !e.IsDeleted
-                            && e.Status == EventStatus.Approved
-                            && e.SaleStartTime.HasValue
-                            && e.SaleStartTime.Value > now
-                            && e.SaleStartTime.Value <= oneHourFromNow
-                            && e.FavoriteEvents.Any())
-                .Include(e => e.FavoriteEvents)
-                    .ThenInclude(fe => fe.User)
-                .ToListAsync();
-
-            if (!eventsToNotify.Any())
-                return Result.Success();
-
-            foreach (var eventItem in eventsToNotify)
-            {
-                var firstImage = !string.IsNullOrEmpty(eventItem.ImgListEvent)
-                    ? eventItem.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()
-                    : string.Empty;
-
-                var favoriteUsers = eventItem.FavoriteEvents
-                    .Where(fe => fe.User != null && !fe.User.IsDeleted && fe.User.IsActive)
-                    .GroupBy(fe => fe.UserId)
-                    .Select(g => g.First().User)
-                    .ToList();
-
-                foreach (var user in favoriteUsers)
-                { 
-                    var existingNotification = await _unitOfWork.NotificationRepository
-                        .Query()
-                        .AnyAsync(n => n.UserId == user.Id
-                                    && n.EventId == eventItem.Id
-                                    && n.Type == NotificationType.TicketSaleReminder
-                                    && !n.IsDeleted);
-
-                    if (existingNotification)
-                        continue;
+                        if (existingNotification)
+                            continue;
 
                     var notificationRequest = new CreateNotificationRequest
-                    {
-                        UserId = user.Id,
-                        Title = $"Sắp mở bán vé: {eventItem.Title}",
-                        Message = $"Sự kiện {eventItem.Title} sẽ mở bán vé vào {eventItem.SaleStartTime!.Value.AddHours(7):HH:mm dd/MM/yyyy}. Đừng bỏ lỡ cơ hội!",
-                        Type = NotificationType.TicketSaleReminder,
-                        EventId = eventItem.Id,
-                        ImageUrl = firstImage
-                    };
-
-                    await CreateNotificationAsync(notificationRequest);
-
-                    if (user.IsEmailNotificationEnabled == true && !string.IsNullOrEmpty(user.Email))
-                    {
-                        var sb = new StringBuilder();
-                        if (!string.IsNullOrEmpty(firstImage))
-                            sb.AppendLine($"<img src='{firstImage}' alt='Event' style='width:100%;max-width:600px;border-radius:8px;margin-bottom:20px;'/>");
-
-                        sb.AppendLine($"<p>Xin chào {user.FullName ?? user.Email},</p>")
-                          .AppendLine($"<p>Sự kiện <strong>{eventItem.Title}</strong> sẽ mở bán vé vào <strong>{eventItem.SaleStartTime.Value.AddHours(7):HH:mm dd/MM/yyyy}</strong>.</p>")
-                          .AppendLine("<p>Đừng bỏ lỡ cơ hội sở hữu vé cho sự kiện yêu thích của bạn!</p>")
-                          .AppendLine($"<p><a href=\"https://ai-event-alpha.vercel.app/event/{eventItem.Id}\">Xem chi tiết và đặt vé ngay</a></p>")
-                          .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
-
-                        var message = new MimeMessage
                         {
-                            Subject = $"Thông báo: {eventItem.Title} sắp mở bán vé",
-                            Body = new TextPart("html") { Text = sb.ToString() }
+                            UserId = user.Id,
+                            Title = $"Sắp mở bán vé: {eventItem.Title}",
+                            Message = $"Sự kiện {eventItem.Title} sẽ mở bán vé vào {eventItem.SaleStartTime!.Value.AddHours(7):HH:mm dd/MM/yyyy}. Đừng bỏ lỡ cơ hội!",
+                            Type = NotificationType.TicketSaleReminder,
+                            EventId = eventItem.Id,
+                            ImageUrl = firstImage
                         };
 
-                        await _emailService.SendEmailAsync(user.Email, message);
+                        await CreateNotificationAsync(notificationRequest); 
+
+                        if (user.IsEmailNotificationEnabled == true && !string.IsNullOrEmpty(user.Email))
+                        {
+                            var sb = new StringBuilder();
+                            if (!string.IsNullOrEmpty(firstImage))
+                                sb.AppendLine($"<img src='{firstImage}' alt='Event' style='width:100%;max-width:600px;border-radius:8px;margin-bottom:20px;'/>");
+
+                            sb.AppendLine($"<p>Xin chào {user.FullName ?? user.Email},</p>")
+                              .AppendLine($"<p>Sự kiện <strong>{eventItem.Title}</strong> sẽ mở bán vé vào <strong>{eventItem.SaleStartTime.Value.AddHours(7):HH:mm dd/MM/yyyy}</strong>.</p>")
+                              .AppendLine("<p>Đừng bỏ lỡ cơ hội sở hữu vé cho sự kiện yêu thích của bạn!</p>")
+                              .AppendLine($"<p><a href=\"https://ai-event-alpha.vercel.app/event/{eventItem.Id}\">Xem chi tiết và đặt vé ngay</a></p>")
+                              .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
+
+                            var message = new MimeMessage
+                            {
+                                Subject = $"Thông báo: {eventItem.Title} sắp mở bán vé",
+                                Body = new TextPart("html") { Text = sb.ToString() }
+                            };
+
+                            await _emailService.SendEmailAsync(user.Email, message);
+                        }
                     }
                 }
-            }
 
-            return Result.Success();
+                return Result.Success();
         }
     }
 }

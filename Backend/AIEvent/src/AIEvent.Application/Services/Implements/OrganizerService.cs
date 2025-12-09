@@ -2,6 +2,7 @@
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Notification;
 using AIEvent.Application.DTOs.Organizer;
+using AIEvent.Application.DTOs.RevenueReport;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
@@ -391,10 +392,12 @@ namespace AIEvent.Application.Services.Implements
             IQueryable<OrganizerProfile> query = _unitOfWork.OrganizerProfileRepository
                 .Query()
                 .AsNoTracking()
-                .Where(p => !p.DeletedAt.HasValue && p.Status == OrganizerProfileStatus.Approved);
+                .Where(p => !p.DeletedAt.HasValue 
+                        && p.Status == OrganizerProfileStatus.Approved
+                        && p.TotalEventFlags > 0);
 
             if (organizerId.HasValue)
-                query = query.Where(o => o.Id == organizerId.Value);
+                query = query.Where(o => o.Id == organizerId.Value );
 
             if (minFlags.HasValue)
                 query = query.Where(o => o.TotalEventFlags >= minFlags.Value);
@@ -440,6 +443,5 @@ namespace AIEvent.Application.Services.Implements
 
             return new BasePaginated<OrganizerWithFlagsResponse>(result, totalCount, pageNumber, pageSize);
         }
-
     }
 }
