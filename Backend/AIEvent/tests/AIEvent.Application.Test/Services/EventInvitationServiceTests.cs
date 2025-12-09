@@ -17,6 +17,16 @@ namespace AIEvent.Application.Test.Services
 {
     public class EventInvitationServiceTests
     {
+        // Fixed Test IDs
+        private static readonly Guid TestUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        private static readonly Guid TestEventId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        private static readonly Guid TestFriendId1 = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        private static readonly Guid TestFriendId2 = Guid.Parse("44444444-4444-4444-4444-444444444444");
+        private static readonly Guid TestInvitationId = Guid.Parse("55555555-5555-5555-5555-555555555555");
+        private static readonly Guid TestInviterId = Guid.Parse("66666666-6666-6666-6666-666666666666");
+        private static readonly Guid TestFriendshipId1 = Guid.Parse("77777777-7777-7777-7777-777777777777");
+        private static readonly Guid TestFriendshipId2 = Guid.Parse("88888888-8888-8888-8888-888888888888");
+
         private readonly Mock<IUnitOfWork> _mockUnitOfWork;
         private readonly Mock<IHangfireJobService> _mockHangfireJobService;
         private readonly Mock<INotificationService> _mockNotificationService;
@@ -68,6 +78,7 @@ namespace AIEvent.Application.Test.Services
         #region InviteFriendsAsync Tests
 
         // UTCID01: Valid request with all required fields - Success
+        // EP: Valid input (non-empty InvitedUserIds, valid user, valid event), BV: Multiple friends
         [Fact]
         public async Task UTCID01_InviteFriendsAsync_WithValidRequest_ShouldReturnSuccess()
         {
@@ -96,7 +107,7 @@ namespace AIEvent.Application.Test.Services
 
             var friendship1 = new Friendship
             {
-                Id = Guid.NewGuid(),
+                Id = TestFriendshipId1,
                 SenderId = userId,
                 ReceiverId = friendId1,
                 Status = FriendshipStatus.Accepted,
@@ -105,7 +116,7 @@ namespace AIEvent.Application.Test.Services
 
             var friendship2 = new Friendship
             {
-                Id = Guid.NewGuid(),
+                Id = TestFriendshipId2,
                 SenderId = friendId2,
                 ReceiverId = userId,
                 Status = FriendshipStatus.Accepted,
@@ -174,12 +185,13 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID02: Null InvitedUserIds - Should return failure
+        // EP: Invalid input (null InvitedUserIds), BV: null value
         [Fact]
         public async Task UTCID02_InviteFriendsAsync_WithNullInvitedUserIds_ShouldReturnFailure()
         {
             // Arrange
-            var eventId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
+            var eventId = TestEventId;
+            var userId = TestUserId;
             var request = new InviteFriendRequest
             {
                 InvitedUserIds = null,
@@ -195,17 +207,18 @@ namespace AIEvent.Application.Test.Services
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
             _mockUnitOfWork.Verify(x => x.UserRepository.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Never());
         }
-
+ 
         // UTCID03: User not found - Should return failure
+        // EP: Invalid input (non-existent user), BV: null user
         [Fact]
         public async Task UTCID03_InviteFriendsAsync_WithNonExistentUser_ShouldReturnFailure()
         {
             // Arrange
-            var eventId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
+            var eventId = TestEventId;
+            var userId = TestUserId;
             var request = new InviteFriendRequest
             {
-                InvitedUserIds = new List<Guid> { Guid.NewGuid() },
+                InvitedUserIds = new List<Guid> { TestFriendId1 },
                 Message = "Join us!"
             };
 
@@ -223,15 +236,16 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID04: User is deleted - Should return failure
+        // EP: Invalid input (deleted user), BV: IsDeleted = true
         [Fact]
         public async Task UTCID04_InviteFriendsAsync_WithDeletedUser_ShouldReturnFailure()
         {
             // Arrange
-            var eventId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
+            var eventId = TestEventId;
+            var userId = TestUserId;
             var request = new InviteFriendRequest
             {
-                InvitedUserIds = new List<Guid> { Guid.NewGuid() },
+                InvitedUserIds = new List<Guid> { TestFriendId1 },
                 Message = "Join us!"
             };
 
@@ -257,15 +271,16 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID05: Event not found - Should return failure
+        // EP: Invalid input (non-existent event), BV: null event
         [Fact]
         public async Task UTCID05_InviteFriendsAsync_WithNonExistentEvent_ShouldReturnFailure()
         {
             // Arrange
-            var eventId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
+            var eventId = TestEventId;
+            var userId = TestUserId;
             var request = new InviteFriendRequest
             {
-                InvitedUserIds = new List<Guid> { Guid.NewGuid() },
+                InvitedUserIds = new List<Guid> { TestFriendId1 },
                 Message = "Join us!"
             };
 
@@ -294,15 +309,16 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID06: Event not approved - Should return failure
+        // EP: Invalid input (event status != Approved), BV: Status = PendingApproval
         [Fact]
         public async Task UTCID06_InviteFriendsAsync_WithEventNotApproved_ShouldReturnFailure()
         {
             // Arrange
-            var eventId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
+            var eventId = TestEventId;
+            var userId = TestUserId;
             var request = new InviteFriendRequest
             {
-                InvitedUserIds = new List<Guid> { Guid.NewGuid() },
+                InvitedUserIds = new List<Guid> { TestFriendId1 },
                 Message = "Join us!"
             };
 
@@ -333,15 +349,16 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID07: Past event - Should return failure
+        // EP: Invalid input (StartTime < UtcNow), BV: StartTime = UtcNow - 1 second
         [Fact]
         public async Task UTCID07_InviteFriendsAsync_WithPastEvent_ShouldReturnFailure()
         {
             // Arrange
-            var eventId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
+            var eventId = TestEventId;
+            var userId = TestUserId;
             var request = new InviteFriendRequest
             {
-                InvitedUserIds = new List<Guid> { Guid.NewGuid() },
+                InvitedUserIds = new List<Guid> { TestFriendId1 },
                 Message = "Join us!"
             };
 
@@ -372,13 +389,14 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID08: Event start time in future (boundary) - Should proceed
+        // BV: StartTime = UtcNow + 1 second (boundary value)
         [Fact]
         public async Task UTCID08_InviteFriendsAsync_WithEventStartTimeInFuture_Boundary_ShouldReturnSuccess()
         {
             // Arrange
-            var eventId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
-            var friendId = Guid.NewGuid();
+            var eventId = TestEventId;
+            var userId = TestUserId;
+            var friendId = TestFriendId1;
             var request = new InviteFriendRequest
             {
                 InvitedUserIds = new List<Guid> { friendId },
@@ -399,7 +417,7 @@ namespace AIEvent.Application.Test.Services
 
             var friendship = new Friendship
             {
-                Id = Guid.NewGuid(),
+                Id = TestFriendshipId1,
                 SenderId = userId,
                 ReceiverId = friendId,
                 Status = FriendshipStatus.Accepted,
@@ -427,6 +445,9 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.EventInvitationRepository.Query(It.IsAny<bool>())).Returns(existingInvitations.Object);
             _mockUnitOfWork.Setup(x => x.EventInvitationRepository.AddRangeAsync(It.IsAny<IEnumerable<EventInvitation>>()));
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+            SetupHangfireMockForInviteEmail();
+            _mockNotificationService.Setup(x => x.CreateNotificationAsync(It.IsAny<CreateNotificationRequest>()))
+                .ReturnsAsync(Result.Success());
 
             // Act
             var result = await _eventInvitationService.InviteFriendsAsync(eventId, userId, request);
@@ -436,13 +457,14 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID09: No valid users to invite (not friends) - Should return failure
+        // EP: Invalid input (users not in friend list), BV: empty friend list
         [Fact]
         public async Task UTCID09_InviteFriendsAsync_WithUsersNotFriends_ShouldReturnFailure()
         {
             // Arrange
-            var eventId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
-            var nonFriendId = Guid.NewGuid();
+            var eventId = TestEventId;
+            var userId = TestUserId;
+            var nonFriendId = TestFriendId1;
             var request = new InviteFriendRequest
             {
                 InvitedUserIds = new List<Guid> { nonFriendId },
@@ -480,14 +502,15 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID10: User already invited - Should skip existing invitations
+        // EP: Valid input (some users already invited), BV: partial existing invitations
         [Fact]
         public async Task UTCID10_InviteFriendsAsync_WithAlreadyInvitedUser_ShouldSkipAndReturnSuccess()
         {
             // Arrange
-            var eventId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
-            var friendId1 = Guid.NewGuid();
-            var friendId2 = Guid.NewGuid();
+            var eventId = TestEventId;
+            var userId = TestUserId;
+            var friendId1 = TestFriendId1;
+            var friendId2 = TestFriendId2;
             var request = new InviteFriendRequest
             {
                 InvitedUserIds = new List<Guid> { friendId1, friendId2 },
@@ -508,7 +531,7 @@ namespace AIEvent.Application.Test.Services
 
             var friendship1 = new Friendship
             {
-                Id = Guid.NewGuid(),
+                Id = TestFriendshipId1,
                 SenderId = userId,
                 ReceiverId = friendId1,
                 Status = FriendshipStatus.Accepted,
@@ -517,7 +540,7 @@ namespace AIEvent.Application.Test.Services
 
             var friendship2 = new Friendship
             {
-                Id = Guid.NewGuid(),
+                Id = TestFriendshipId2,
                 SenderId = userId,
                 ReceiverId = friendId2,
                 Status = FriendshipStatus.Accepted,
@@ -544,7 +567,7 @@ namespace AIEvent.Application.Test.Services
 
             var existingInvitation = new EventInvitation
             {
-                Id = Guid.NewGuid(),
+                Id = TestInvitationId,
                 EventId = eventId,
                 InviterId = userId,
                 InvitedUserId = friendId1,
@@ -577,13 +600,14 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID11: User with email notification disabled - Should not send email
+        // EP: Valid input (email notification disabled), BV: IsEmailNotificationEnabled = false
         [Fact]
         public async Task UTCID11_InviteFriendsAsync_WithEmailNotificationDisabled_ShouldNotSendEmail()
         {
             // Arrange
-            var eventId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
-            var friendId = Guid.NewGuid();
+            var eventId = TestEventId;
+            var userId = TestUserId;
+            var friendId = TestFriendId1;
             var request = new InviteFriendRequest
             {
                 InvitedUserIds = new List<Guid> { friendId },
@@ -604,7 +628,7 @@ namespace AIEvent.Application.Test.Services
 
             var friendship = new Friendship
             {
-                Id = Guid.NewGuid(),
+                Id = TestFriendshipId1,
                 SenderId = userId,
                 ReceiverId = friendId,
                 Status = FriendshipStatus.Accepted,
@@ -632,6 +656,8 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Setup(x => x.EventInvitationRepository.Query(It.IsAny<bool>())).Returns(existingInvitations.Object);
             _mockUnitOfWork.Setup(x => x.EventInvitationRepository.AddRangeAsync(It.IsAny<IEnumerable<EventInvitation>>()));
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+            _mockNotificationService.Setup(x => x.CreateNotificationAsync(It.IsAny<CreateNotificationRequest>()))
+                .ReturnsAsync(Result.Success());
 
             // Act
             var result = await _eventInvitationService.InviteFriendsAsync(eventId, userId, request);
@@ -640,20 +666,22 @@ namespace AIEvent.Application.Test.Services
             result.IsSuccess.Should().BeTrue();
             _mockUnitOfWork.Verify(x => x.EventInvitationRepository.AddRangeAsync(It.IsAny<IEnumerable<EventInvitation>>()), Times.Once());
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
+            _mockHangfireJobService.Verify(x => x.EnqueueInviteEmail(It.IsAny<InviteFriendEmail>()), Times.Never());
         }
         #endregion
 
         #region ConfirmInvitationAsync Tests
 
         // UTCID01: Valid request with Approved status - Success
+        // EP: Valid input (Approved status), BV: Status = Approved
         [Fact]
         public async Task UTCID01_ConfirmInvitationAsync_WithApprovedStatus_ShouldReturnSuccess()
         {
             // Arrange
-            var invitationId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
-            var inviterId = Guid.NewGuid();
-            var eventId = Guid.NewGuid();
+            var invitationId = TestInvitationId;
+            var userId = TestUserId;
+            var inviterId = TestInviterId;
+            var eventId = TestEventId;
             var request = new ConfirmInvitationRequest
             {
                 Status = ConfirmStatus.Approved
@@ -721,14 +749,15 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID02: Valid request with Rejected status - Success
+        // EP: Valid input (Rejected status), BV: Status = Rejected
         [Fact]
         public async Task UTCID02_ConfirmInvitationAsync_WithRejectedStatus_ShouldReturnSuccess()
         {
             // Arrange
-            var invitationId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
-            var inviterId = Guid.NewGuid();
-            var eventId = Guid.NewGuid();
+            var invitationId = TestInvitationId;
+            var userId = TestUserId;
+            var inviterId = TestInviterId;
+            var eventId = TestEventId;
             var request = new ConfirmInvitationRequest
             {
                 Status = ConfirmStatus.Rejected
@@ -794,12 +823,13 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID03: User not found - Should return failure
+        // EP: Invalid input (non-existent user), BV: null user
         [Fact]
         public async Task UTCID03_ConfirmInvitationAsync_WithNonExistentUser_ShouldReturnFailure()
         {
             // Arrange
-            var invitationId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
+            var invitationId = TestInvitationId;
+            var userId = TestUserId;
             var request = new ConfirmInvitationRequest
             {
                 Status = ConfirmStatus.Approved
@@ -819,12 +849,13 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID04: User is deleted - Should return failure
+        // EP: Invalid input (deleted user), BV: IsDeleted = true
         [Fact]
         public async Task UTCID04_ConfirmInvitationAsync_WithDeletedUser_ShouldReturnFailure()
         {
             // Arrange
-            var invitationId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
+            var invitationId = TestInvitationId;
+            var userId = TestUserId;
             var request = new ConfirmInvitationRequest
             {
                 Status = ConfirmStatus.Approved
@@ -852,12 +883,13 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID05: Invitation not found - Should return failure
+        // EP: Invalid input (non-existent invitation), BV: null invitation
         [Fact]
         public async Task UTCID05_ConfirmInvitationAsync_WithNonExistentInvitation_ShouldReturnFailure()
         {
             // Arrange
-            var invitationId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
+            var invitationId = TestInvitationId;
+            var userId = TestUserId;
             var request = new ConfirmInvitationRequest
             {
                 Status = ConfirmStatus.Approved
@@ -889,13 +921,14 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID06: Invitation with different userId - Should return failure
+        // EP: Invalid input (different userId), BV: InvitedUserId != userId
         [Fact]
         public async Task UTCID06_ConfirmInvitationAsync_WithDifferentUserId_ShouldReturnFailure()
         {
             // Arrange
-            var invitationId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
-            var otherUserId = Guid.NewGuid();
+            var invitationId = TestInvitationId;
+            var userId = TestUserId;
+            var otherUserId = TestFriendId1;
             var request = new ConfirmInvitationRequest
             {
                 Status = ConfirmStatus.Approved
@@ -932,12 +965,13 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID07: Invitation is deleted - Should return failure
+        // EP: Invalid input (deleted invitation), BV: IsDeleted = true
         [Fact]
         public async Task UTCID07_ConfirmInvitationAsync_WithDeletedInvitation_ShouldReturnFailure()
         {
             // Arrange
-            var invitationId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
+            var invitationId = TestInvitationId;
+            var userId = TestUserId;
             var request = new ConfirmInvitationRequest
             {
                 Status = ConfirmStatus.Approved
@@ -974,14 +1008,15 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID08: Inviter is null - Should return failure
+        // EP: Invalid input (null inviter), BV: Inviter = null
         [Fact]
         public async Task UTCID08_ConfirmInvitationAsync_WithNullInviter_ShouldReturnFailure()
         {
             // Arrange
-            var invitationId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
-            var inviterId = Guid.NewGuid();
-            var eventId = Guid.NewGuid();
+            var invitationId = TestInvitationId;
+            var userId = TestUserId;
+            var inviterId = TestInviterId;
+            var eventId = TestEventId;
             var request = new ConfirmInvitationRequest
             {
                 Status = ConfirmStatus.Approved
@@ -1026,14 +1061,15 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID09: Inviter is deleted - Should return failure
+        // EP: Invalid input (deleted inviter), BV: IsDeleted = true
         [Fact]
         public async Task UTCID09_ConfirmInvitationAsync_WithDeletedInviter_ShouldReturnFailure()
         {
             // Arrange
-            var invitationId = Guid.NewGuid();
-            var userId = Guid.NewGuid();
-            var inviterId = Guid.NewGuid();
-            var eventId = Guid.NewGuid();
+            var invitationId = TestInvitationId;
+            var userId = TestUserId;
+            var inviterId = TestInviterId;
+            var eventId = TestEventId;
             var request = new ConfirmInvitationRequest
             {
                 Status = ConfirmStatus.Approved
@@ -1085,18 +1121,81 @@ namespace AIEvent.Application.Test.Services
             _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Never());
         }
 
+        // UTCID10: InviterId is Guid.Empty - Should not send notification
+        // EP: Valid input (InviterId = Guid.Empty), BV: InviterId = Guid.Empty
+        [Fact]
+        public async Task UTCID10_ConfirmInvitationAsync_WithEmptyInviterId_ShouldNotSendNotification()
+        {
+            // Arrange
+            var invitationId = TestInvitationId;
+            var userId = TestUserId;
+            var inviterId = Guid.Empty; // Empty Guid
+            var eventId = TestEventId;
+            var request = new ConfirmInvitationRequest
+            {
+                Status = ConfirmStatus.Approved
+            };
+
+            var invitedUser = new User
+            {
+                Id = userId,
+                Email = "invited@example.com",
+                FullName = "Invited User",
+                IsDeleted = false
+            };
+
+            var inviter = new User
+            {
+                Id = inviterId,
+                Email = "inviter@example.com",
+                FullName = "Inviter User",
+                IsEmailNotificationEnabled = true,
+                IsDeleted = false
+            };
+
+            var eventEntity = CreateEvent(eventId, "Test Event", "image1.jpg");
+
+            var invitation = new EventInvitation
+            {
+                Id = invitationId,
+                EventId = eventId,
+                InviterId = inviterId, // Empty Guid
+                InvitedUserId = userId,
+                Status = null,
+                Message = "Join us!",
+                Event = eventEntity,
+                Inviter = inviter,
+                IsDeleted = false
+            };
+
+            var invitations = new List<EventInvitation> { invitation }.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(invitedUser);
+            _mockUnitOfWork.Setup(x => x.EventInvitationRepository.Query(It.IsAny<bool>())).Returns(invitations.Object);
+            _mockUnitOfWork.Setup(x => x.EventInvitationRepository.UpdateAsync(It.IsAny<EventInvitation>()));
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+
+            // Act
+            var result = await _eventInvitationService.ConfirmInvitationAsync(invitationId, userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            _mockNotificationService.Verify(x => x.CreateNotificationAsync(It.IsAny<CreateNotificationRequest>()), Times.Never());
+        }
+
         #endregion
 
         #region GetInviteFriendsByStatus Tests
 
         // UTCID01: Valid request with status null - should return all invitations
+        // EP: Valid input (status = null), BV: null status
         [Fact]
         public async Task UTCID01_GetInviteFriendsByStatus_WithStatusNull_ShouldReturnAllInvitations()
         {
             // Arrange
-            var userId = Guid.NewGuid();
-            var eventId = Guid.NewGuid();
-            var invitedUserId = Guid.NewGuid();
+            var userId = TestUserId;
+            var eventId = TestEventId;
+            var invitedUserId = TestFriendId1;
             var now = DateTimeOffset.UtcNow;
 
             var inviter = new User
@@ -1120,7 +1219,7 @@ namespace AIEvent.Application.Test.Services
 
             var invitation1 = new EventInvitation
             {
-                Id = Guid.NewGuid(),
+                Id = TestInvitationId,
                 EventId = eventId,
                 InviterId = userId,
                 InvitedUserId = invitedUserId,
@@ -1136,7 +1235,7 @@ namespace AIEvent.Application.Test.Services
 
             var invitation2 = new EventInvitation
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.Parse("99999999-9999-9999-9999-999999999999"),
                 EventId = eventId,
                 InviterId = userId,
                 InvitedUserId = invitedUserId,
@@ -1170,13 +1269,14 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID02: Valid request with status Pending - should return only pending invitations
+        // EP: Valid input (status = Pending), BV: Status = Pending
         [Fact]
         public async Task UTCID02_GetInviteFriendsByStatus_WithStatusPending_ShouldReturnOnlyPendingInvitations()
         {
             // Arrange
-            var userId = Guid.NewGuid();
-            var eventId = Guid.NewGuid();
-            var invitedUserId = Guid.NewGuid();
+            var userId = TestUserId;
+            var eventId = TestEventId;
+            var invitedUserId = TestFriendId1;
             var now = DateTimeOffset.UtcNow;
 
             var inviter = new User
@@ -1248,13 +1348,14 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID03: Valid request with status Accepted - should return only accepted invitations
+        // EP: Valid input (status = Accepted), BV: Status = Accepted
         [Fact]
         public async Task UTCID03_GetInviteFriendsByStatus_WithStatusAccepted_ShouldReturnOnlyAcceptedInvitations()
         {
             // Arrange
-            var userId = Guid.NewGuid();
-            var eventId = Guid.NewGuid();
-            var invitedUserId = Guid.NewGuid();
+            var userId = TestUserId;
+            var eventId = TestEventId;
+            var invitedUserId = TestFriendId1;
             var now = DateTimeOffset.UtcNow;
 
             var inviter = new User
@@ -1326,13 +1427,14 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID04: Valid request with status Rejected - should return only rejected invitations
+        // EP: Valid input (status = Rejected), BV: Status = Rejected
         [Fact]
         public async Task UTCID04_GetInviteFriendsByStatus_WithStatusRejected_ShouldReturnOnlyRejectedInvitations()
         {
             // Arrange
-            var userId = Guid.NewGuid();
-            var eventId = Guid.NewGuid();
-            var invitedUserId = Guid.NewGuid();
+            var userId = TestUserId;
+            var eventId = TestEventId;
+            var invitedUserId = TestFriendId1;
             var now = DateTimeOffset.UtcNow;
 
             var inviter = new User
@@ -1404,11 +1506,12 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID05: Empty result set - should return empty paginated result
+        // EP: Valid input (no invitations), BV: empty collection
         [Fact]
         public async Task UTCID05_GetInviteFriendsByStatus_WithEmptyResultSet_ShouldReturnEmptyPaginated()
         {
             // Arrange
-            var userId = Guid.NewGuid();
+            var userId = TestUserId;
             var invitations = new List<EventInvitation>().AsQueryable().BuildMockDbSet();
 
             _mockUnitOfWork.Setup(x => x.EventInvitationRepository.Query(It.IsAny<bool>()))
@@ -1427,13 +1530,14 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID06: Pagination - page 1 with page size 1 - should return first item
+        // EP: Valid input (page 1, size 1), BV: page = 1, size = 1
         [Fact]
         public async Task UTCID06_GetInviteFriendsByStatus_WithPage1Size1_ShouldReturnFirstItem()
         {
             // Arrange
-            var userId = Guid.NewGuid();
-            var eventId = Guid.NewGuid();
-            var invitedUserId = Guid.NewGuid();
+            var userId = TestUserId;
+            var eventId = TestEventId;
+            var invitedUserId = TestFriendId1;
             var now = DateTimeOffset.UtcNow;
 
             var inviter = new User
@@ -1508,13 +1612,14 @@ namespace AIEvent.Application.Test.Services
         }
 
         // UTCID07: Pagination - page 2 with page size 1 - should return second item
+        // EP: Valid input (page 2, size 1), BV: page = 2, size = 1
         [Fact]
         public async Task UTCID07_GetInviteFriendsByStatus_WithPage2Size1_ShouldReturnSecondItem()
         {
             // Arrange
-            var userId = Guid.NewGuid();
-            var eventId = Guid.NewGuid();
-            var invitedUserId = Guid.NewGuid();
+            var userId = TestUserId;
+            var eventId = TestEventId;
+            var invitedUserId = TestFriendId1;
             var now = DateTimeOffset.UtcNow;
 
             var inviter = new User
@@ -1586,7 +1691,6 @@ namespace AIEvent.Application.Test.Services
             result.Value!.PageSize.Should().Be(1);
             result.Value!.Items.First().CreatedAt.Should().Be(invitation1.CreatedAt);
         }
-
         #endregion
     }
 }

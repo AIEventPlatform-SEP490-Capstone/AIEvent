@@ -1029,12 +1029,28 @@ namespace AIEvent.Application.Services.Implements
                     })
                     .ToListAsync();
 
+                var systemSettingChanges = await _unitOfWork.SystemSettingRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(s => !s.IsDeleted && s.CreatedAt >= thirtyDaysAgo)
+                    .OrderByDescending(s => s.CreatedAt)
+                    .Take(3)
+                    .Select(s => new RecentActivityResponse
+                    {
+                        Id = s.Id,
+                        Title = "Thay đổi cài đặt hệ thống",
+                        Description = $"Phí nền tảng: {s.FlatformFee:P2}, Phí cố định: {s.FixFee:N0} VNĐ, Ngày thanh toán: {s.DatePayout} ngày, Nhắc nhở sự kiện: {s.EventReminderHours} giờ",
+                        CreatedAt = s.CreatedAt
+                    })
+                    .ToListAsync();
+
                 activities.AddRange(recentUsers);
                 activities.AddRange(recentEvents);
                 activities.AddRange(recentOrganizerRequests);
                 activities.AddRange(approvedEvents);
                 activities.AddRange(rejectedEvents);
                 activities.AddRange(cancelEvents);
+                activities.AddRange(systemSettingChanges);
 
                 var sortedActivities = activities
                     .OrderByDescending(a => a.CreatedAt)

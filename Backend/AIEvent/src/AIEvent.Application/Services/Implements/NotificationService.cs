@@ -323,6 +323,87 @@ namespace AIEvent.Application.Services.Implements
             return Result.Success();
         }
 
+    public async Task<Result> SendFavoriteEventTicketSaleNotificationAsync()
+        {
+            var now = DateTime.UtcNow;
+            var oneHourFromNow = now.AddHours(1);
 
+            var eventsToNotify = await _unitOfWork.EventRepository
+                .Query()
+                .Where(e => !e.IsDeleted
+                            && e.Status == EventStatus.Approved
+                            && e.SaleStartTime.HasValue
+                            && e.SaleStartTime.Value > now
+                            && e.SaleStartTime.Value <= oneHourFromNow
+                            && e.FavoriteEvents.Any())
+                .Include(e => e.FavoriteEvents)
+                    .ThenInclude(fe => fe.User)
+                .ToListAsync();
+
+            if (!eventsToNotify.Any())
+                return Result.Success();
+
+            foreach (var eventItem in eventsToNotify)
+            {
+                var firstImage = !string.IsNullOrEmpty(eventItem.ImgListEvent)
+                    ? eventItem.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()
+                    : string.Empty;
+
+                var favoriteUsers = eventItem.FavoriteEvents
+                    .Where(fe => fe.User != null && !fe.User.IsDeleted && fe.User.IsActive)
+                    .GroupBy(fe => fe.UserId)
+                    .Select(g => g.First().User)
+                    .ToList();
+
+                foreach (var user in favoriteUsers)
+                { 
+                    var existingNotification = await _unitOfWork.NotificationRepository
+                        .Query()
+                        .AnyAsync(n => n.UserId == user.Id
+                                    && n.EventId == eventItem.Id
+                                    && n.Type == NotificationType.TicketSaleReminder
+                                    && !n.IsDeleted);
+
+                    if (existingNotification)
+                        continue;
+
+                    var notificationRequest = new CreateNotificationRequest
+                    {
+                        UserId = user.Id,
+                        Title = $"Sắp mở bán vé: {eventItem.Title}",
+                        Message = $"Sự kiện {eventItem.Title} sẽ mở bán vé vào {eventItem.SaleStartTime!.Value.AddHours(7):HH:mm dd/MM/yyyy}. Đừng bỏ lỡ cơ hội!",
+                        Type = NotificationType.TicketSaleReminder,
+                        EventId = eventItem.Id,
+                        ImageUrl = firstImage
+                    };
+
+                    await CreateNotificationAsync(notificationRequest);
+
+                    if (user.IsEmailNotificationEnabled == true && !string.IsNullOrEmpty(user.Email))
+                    {
+                        var sb = new StringBuilder();
+                        if (!string.IsNullOrEmpty(firstImage))
+                            sb.AppendLine($"<img src='{firstImage}' alt='Event' style='width:100%;max-width:600px;border-radius:8px;margin-bottom:20px;'/>");
+
+                        sb.AppendLine($"<p>Xin chào {user.FullName ?? user.Email},</p>")
+                          .AppendLine($"<p>Sự kiện <strong>{eventItem.Title}</strong> sẽ mở bán vé vào <strong>{eventItem.SaleStartTime.Value.AddHours(7):HH:mm dd/MM/yyyy}</strong>.</p>")
+                          .AppendLine("<p>Đừng bỏ lỡ cơ hội sở hữu vé cho sự kiện yêu thích của bạn!</p>")
+                          .AppendLine($"<p><a href=\"https://ai-event-alpha.vercel.app/event/{eventItem.Id}\">Xem chi tiết và đặt vé ngay</a></p>")
+                          .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
+
+                        var message = new MimeMessage
+                        {
+                            Subject = $"Thông báo: {eventItem.Title} sắp mở bán vé",
+                            Body = new TextPart("html") { Text = sb.ToString() }
+                        };
+
+                        await _emailService.SendEmailAsync(user.Email, message);
+                    }
+                }
+            }
+
+            return Result.Success();
+        }
     }
 }
+
