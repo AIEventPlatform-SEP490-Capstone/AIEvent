@@ -1221,20 +1221,18 @@ namespace AIEvent.Application.Services.Implements
 
 
 
-        public async Task<Result<BasePaginated<PayoutHistoryResponse>>> GetPayoutHistoryAsync(Guid? organizerId = null, string? search = null, int? year = null, int? month = null, int pageNumber = 1, int pageSize = 10)
+        public async Task<Result<BasePaginated<PayoutHistoryResponse>>> GetPayoutHistoryAsync(string? search = null, int? year = null, int? month = null, int pageNumber = 1, int pageSize = 10)
         {
-            IQueryable<RevenueReport> query = _unitOfWork.RevenueReportRepository
+            IQueryable<RevenueReport> revenueQuery = _unitOfWork.RevenueReportRepository
                 .Query()
                 .AsNoTracking()
-                .Where(r => !r.IsDeleted && r.PayoutDate != null);
-
-            if (organizerId.HasValue)
-                query = query.Where(r => r.OrganizerProfileId == organizerId.Value);
+                .Include(r => r.OrganizerProfile)
+                .Where(r => !r.IsDeleted);
 
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var searchLower = search.ToLower().Trim();
-                query = query.Where(r =>
+                revenueQuery = revenueQuery.Where(r =>
                     r.OrganizerProfile.ContactName.ToLower().Contains(searchLower) ||
                     r.OrganizerProfile.ContactEmail.ToLower().Contains(searchLower) ||
                     (r.OrganizerProfile.CompanyName != null && r.OrganizerProfile.CompanyName.ToLower().Contains(searchLower)) ||
@@ -1242,38 +1240,106 @@ namespace AIEvent.Application.Services.Implements
             }
 
             if (year.HasValue)
-                query = query.Where(r => r.ReportYear == year.Value);
+                revenueQuery = revenueQuery.Where(r => r.ReportYear == year.Value);
 
             if (month.HasValue)
-                query = query.Where(r => r.ReportMonth == month.Value);
+                revenueQuery = revenueQuery.Where(r => r.ReportMonth == month.Value);
 
-            var totalCount = await query.CountAsync();
+            IQueryable<WalletTransaction> walletTransactionQuery = _unitOfWork.WalletTransactionRepository
+                .Query()
+                .AsNoTracking()
+                .Include(wt => wt.Wallet)
+                    .ThenInclude(w => w.User)
+                .Where(wt => wt.Status == TransactionStatus.Success
+                    && (wt.Type == TransactionType.Topup || wt.Type == TransactionType.Withdraw)
+                    && !wt.IsDeleted);
 
-            var result = await query
+            if (year.HasValue)
+                walletTransactionQuery = walletTransactionQuery.Where(wt => wt.CreatedAt.Year == year.Value);
+
+            if (month.HasValue)
+                walletTransactionQuery = walletTransactionQuery.Where(wt => wt.CreatedAt.Month == month.Value);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchLower = search.ToLower().Trim();
+                walletTransactionQuery = walletTransactionQuery.Where(wt =>
+                    (wt.Wallet.User.FullName != null && wt.Wallet.User.FullName.ToLower().Contains(searchLower)) ||
+                    (wt.Wallet.User.Email != null && wt.Wallet.User.Email.ToLower().Contains(searchLower)));
+            }
+
+            var revenueCount = await revenueQuery.CountAsync();
+            var walletTransactionCount = await walletTransactionQuery.CountAsync();
+            var totalCount = revenueCount + walletTransactionCount;
+
+            var revenueReportsTask = revenueQuery
                 .OrderByDescending(r => r.PayoutDate)
                 .ThenByDescending(r => r.CreatedAt)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .Select(r => new PayoutHistoryResponse
+                .ToListAsync();
+
+            var walletTransactionsTask = walletTransactionQuery
+                .OrderByDescending(wt => wt.CreatedAt)
+                .ToListAsync();
+
+            await Task.WhenAll(revenueReportsTask, walletTransactionsTask);
+
+            var revenueReports = await revenueReportsTask;
+            var walletTransactions = await walletTransactionsTask;
+
+            var result = new List<PayoutHistoryResponse>(totalCount);
+
+            foreach (var r in revenueReports)
+            {
+                result.Add(new PayoutHistoryResponse
                 {
+                    HistoryType = "Payout",
                     RevenueReportId = r.Id,
                     OrganizerProfileId = r.OrganizerProfileId,
-                    OrganizerName = r.OrganizerProfile.ContactName,
-                    OrganizerEmail = r.OrganizerProfile.ContactEmail,
-                    CompanyName = r.OrganizerProfile.CompanyName,
+                    OrganizerName = r.OrganizerProfile?.ContactName ?? string.Empty,
+                    OrganizerEmail = r.OrganizerProfile?.ContactEmail ?? string.Empty,
+                    CompanyName = r.OrganizerProfile?.CompanyName,
                     EventId = r.EventId,
                     EventName = r.EventName,
                     GrossRevenue = r.GrossRevenue,
                     PlatformFee = r.PlatformFee,
                     NetRevenue = r.NetRevenue,
+                    Amount = r.NetRevenue,
                     ReportMonth = r.ReportMonth,
                     ReportYear = r.ReportYear,
-                    PayoutDate = r.PayoutDate,
-                    CreatedAt = r.CreatedAt
-                })
-                .ToListAsync();
+                    TransactionDate = r.PayoutDate,
+                    CreatedAt = r.CreatedAt,
+                    Description = $"Payout cho sự kiện: {r.EventName}"
+                });
+            }
+ 
+            foreach (var wt in walletTransactions)
+            {
+                var user = wt.Wallet?.User;
+                if (user == null) continue;
 
-            return new BasePaginated<PayoutHistoryResponse>(result, totalCount, pageNumber, pageSize);
+                result.Add(new PayoutHistoryResponse
+                {
+                    HistoryType = wt.Type == TransactionType.Topup ? "Topup" : "Withdraw",
+                    WalletTransactionId = wt.Id,
+                    OrganizerName = user.FullName ?? string.Empty,
+                    OrganizerEmail = user.Email ?? string.Empty,
+                    Amount = wt.Amount,
+                    ReportMonth = wt.CreatedAt.Month,
+                    ReportYear = wt.CreatedAt.Year,
+                    TransactionDate = wt.CreatedAt.DateTime,
+                    CreatedAt = wt.CreatedAt,
+                    Description = wt.Description,
+                    TransactionType = wt.Type
+                });
+            }
+             
+            var paginatedResult = result
+                .OrderByDescending(x => x.TransactionDate ?? x.CreatedAt.DateTime)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return new BasePaginated<PayoutHistoryResponse>(paginatedResult, totalCount, pageNumber, pageSize);
         }
 
     }
