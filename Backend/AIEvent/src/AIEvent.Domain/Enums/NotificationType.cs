@@ -15,6 +15,7 @@
         PayoutCompleted,
         PayoutFailed,
         EventReminder,
+        TicketSaleReminder,
         ReportEvent,
         EventCancelled,
         System = 99
