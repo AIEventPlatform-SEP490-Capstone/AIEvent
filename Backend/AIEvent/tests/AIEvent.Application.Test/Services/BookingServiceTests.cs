@@ -2701,7 +2701,7 @@ namespace AIEvent.Application.Test.Services
 
 
         [Fact]
-        public async Task UTCID011_CheckInfor_Success_ShouldReturnCheckInforResponse()
+        public async Task UTCID11_CheckInfor_Success_ShouldReturnCheckInforResponse()
         {
             // Arrange
             string qrContent = "code.signature";
@@ -2842,5 +2842,426 @@ namespace AIEvent.Application.Test.Services
 
         #endregion
 
+        #region CheckInTicketAsync Tests
+        [Fact]
+        public async Task UTCID01_CheckInTicket_QrNull_ShouldReturnErrorEmptyQr()
+        {
+            // Arrange
+            string? qrContent = null;
+            var userId = Guid.NewGuid();
+
+            // Act
+            var result = await _bookingService.CheckInTicketAsync(userId, qrContent);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal("QR content is empty", result.Error!.Message);
+            Assert.Equal(ErrorCodes.InvalidInput, result.Error.StatusCode);
+
+            // Verify 
+            _ticketSignatureServiceMock.Verify(x => x.ValidateSignature(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.TicketRepository.Query(false), Times.Never);
+            _unitOfWorkMock.Verify(u => u.StaffProfileRepository.Query(false), Times.Never);
+        }
+
+
+        [Fact]
+        public async Task UTCID02_CheckInTicket_EmptyString_ShouldReturnErrorEmptyQr()
+        {
+            // Arrange
+            string qrContent = ""; 
+            var userId = Guid.NewGuid();
+
+            // Act
+            var result = await _bookingService.CheckInTicketAsync(userId, qrContent);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal("QR content is empty", result.Error!.Message);
+            Assert.Equal(ErrorCodes.InvalidInput, result.Error.StatusCode);
+
+            // Verify
+            _ticketSignatureServiceMock.Verify(x => x.ValidateSignature(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.TicketRepository.Query(false), Times.Never);
+            _unitOfWorkMock.Verify(u => u.StaffProfileRepository.Query(false), Times.Never);
+        }
+
+
+        [Fact]
+        public async Task UTCID03_CheckInTicket_WhiteSpace_ShouldReturnErrorEmptyQr()
+        {
+            // Arrange
+            string qrContent = " "; 
+            var userId = Guid.NewGuid();
+
+            // Act
+            var result = await _bookingService.CheckInTicketAsync(userId, qrContent);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal("QR content is empty", result.Error!.Message);
+            Assert.Equal(ErrorCodes.InvalidInput, result.Error.StatusCode);
+
+            // Verify
+            _ticketSignatureServiceMock.Verify(x => x.ValidateSignature(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.TicketRepository.Query(false), Times.Never);
+            _unitOfWorkMock.Verify(u => u.StaffProfileRepository.Query(false), Times.Never);
+        }
+
+
+        [Fact]
+        public async Task UTCID04_CheckInTicket_NoDot_ShouldReturnInvalidFormat()
+        {
+            // Arrange
+            string qrContent = "ABC"; 
+            var userId = Guid.NewGuid();
+
+            // Act
+            var result = await _bookingService.CheckInTicketAsync(userId, qrContent);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal("Invalid QR format", result.Error!.Message);
+            Assert.Equal(ErrorCodes.InvalidInput, result.Error.StatusCode);
+
+            // Verify
+            _ticketSignatureServiceMock.Verify(x => x.ValidateSignature(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.TicketRepository.Query(false), Times.Never);
+            _unitOfWorkMock.Verify(u => u.StaffProfileRepository.Query(false), Times.Never);
+        }
+
+
+        [Fact]
+        public async Task UTCID05_CheckInTicket_MoreThanTwoSegments_ShouldReturnInvalidFormat()
+        {
+            // Arrange
+            string qrContent = "A.B.C"; 
+            var userId = Guid.NewGuid();
+
+            // Act
+            var result = await _bookingService.CheckInTicketAsync(userId, qrContent);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal("Invalid QR format", result.Error!.Message);
+            Assert.Equal(ErrorCodes.InvalidInput, result.Error.StatusCode);
+
+            // Verify
+            _ticketSignatureServiceMock.Verify(x => x.ValidateSignature(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.TicketRepository.Query(false), Times.Never);
+            _unitOfWorkMock.Verify(u => u.StaffProfileRepository.Query(false), Times.Never);
+        }
+
+
+        [Fact]
+        public async Task UTCID06_CheckInTicket_SignatureEmpty_ShouldReturnInvalidSignature()
+        {
+            // Arrange
+            string qrContent = "code.";
+            var userId = Guid.NewGuid();
+
+            _ticketSignatureServiceMock
+                .Setup(x => x.ValidateSignature("code", ""))   
+                .Returns(false);
+
+            // Act
+            var result = await _bookingService.CheckInTicketAsync(userId, qrContent);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal("Invalid or tampered QR code", result.Error!.Message);
+            Assert.Equal(ErrorCodes.InvalidInput, result.Error.StatusCode);
+
+            _ticketSignatureServiceMock.Verify(x => x.ValidateSignature("code", ""), Times.Once);
+            _unitOfWorkMock.Verify(u => u.TicketRepository.Query(false), Times.Never);
+            _unitOfWorkMock.Verify(u => u.StaffProfileRepository.Query(false), Times.Never);
+        }
+
+
+        [Fact]
+        public async Task UTCID07_CheckInTicket_CodeEmpty_ShouldReturnInvalidSignature()
+        {
+            // Arrange
+            string qrContent = ".sign"; 
+            var userId = Guid.NewGuid();
+
+            _ticketSignatureServiceMock
+                .Setup(x => x.ValidateSignature("", "sign"))
+                .Returns(false);
+
+            // Act
+            var result = await _bookingService.CheckInTicketAsync(userId, qrContent);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal("Invalid or tampered QR code", result.Error!.Message);
+            Assert.Equal(ErrorCodes.InvalidInput, result.Error.StatusCode);
+
+            // Verify 
+            _ticketSignatureServiceMock.Verify(x => x.ValidateSignature("", "sign"), Times.Once);
+            _unitOfWorkMock.Verify(u => u.TicketRepository.Query(false), Times.Never);
+            _unitOfWorkMock.Verify(u => u.StaffProfileRepository.Query(false), Times.Never);
+        }
+
+
+        [Fact]
+        public async Task UTCID08_CheckInTicket_SignatureInvalid_ShouldReturnInvalidSignature()
+        {
+            // Arrange
+            string qrContent = "TKT123.ABC";
+            var userId = Guid.NewGuid();
+
+            _ticketSignatureServiceMock
+                .Setup(x => x.ValidateSignature("TKT123", "ABC"))
+                .Returns(false);
+
+            // Act
+            var result = await _bookingService.CheckInTicketAsync(userId, qrContent);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal("Invalid or tampered QR code", result.Error!.Message);
+            Assert.Equal(ErrorCodes.InvalidInput, result.Error.StatusCode);
+
+            // Verify
+            _ticketSignatureServiceMock.Verify(x => x.ValidateSignature("TKT123", "ABC"), Times.Once);
+            _unitOfWorkMock.Verify(u => u.TicketRepository.Query(false), Times.Never);
+            _unitOfWorkMock.Verify(u => u.StaffProfileRepository.Query(false), Times.Never);
+        }
+
+
+        [Fact]
+        public async Task UTCID09_CheckInTicket_TicketNotFound_ShouldReturnNotFound()
+        {
+            // Arrange
+            string qrContent = "TKT123.ABC";
+            var userId = Guid.NewGuid();
+
+            _ticketSignatureServiceMock
+                .Setup(x => x.ValidateSignature("TKT123", "ABC"))
+                .Returns(true);
+
+            var mockTicketQuery = new List<Ticket>().AsQueryable().BuildMock();
+            _unitOfWorkMock.Setup(u => u.TicketRepository.Query(false))
+                           .Returns(mockTicketQuery);
+
+            // Act
+            var result = await _bookingService.CheckInTicketAsync(userId, qrContent);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal("Ticket not found", result.Error!.Message);
+            Assert.Equal(ErrorCodes.NotFound, result.Error.StatusCode);
+
+            // Verify
+            _ticketSignatureServiceMock.Verify(x => x.ValidateSignature("TKT123", "ABC"), Times.Once);
+            _unitOfWorkMock.Verify(u => u.TicketRepository.Query(false), Times.Once);
+            _unitOfWorkMock.Verify(u => u.StaffProfileRepository.Query(false), Times.Never);
+        }
+
+
+        [Fact]
+        public async Task UTCID10_CheckInTicket_StaffNotBelongToOrganizer_ShouldReturnNoPermission()
+        {
+            // Arrange
+            string qrContent = "TKT001.SIGN";
+            var userId = Guid.NewGuid();
+            var organizerId = Guid.NewGuid();
+
+            var ticket = new Ticket
+            {
+                TicketCode = "TKT001",
+                EventName = "Sample Event",
+                User = new User { FullName = "Test User" },
+                Status = TicketStatus.Valid,
+                EndTime = DateTime.UtcNow.AddHours(1),
+                QrCodeUrl = "test",
+                TicketType = new TicketType
+                {
+                    TicketName = "VIP",
+                    CreatedBy = organizerId.ToString(),
+                    TicketQuantity = 100,
+                }
+            };
+
+            _ticketSignatureServiceMock
+                .Setup(x => x.ValidateSignature("TKT001", "SIGN"))
+                .Returns(true);
+
+            var ticketQuery = new List<Ticket> { ticket }.AsQueryable().BuildMock();
+            _unitOfWorkMock.Setup(u => u.TicketRepository.Query(false))
+                           .Returns(ticketQuery);
+
+            var staffEmpty = new List<StaffProfile>().AsQueryable().BuildMock();
+            _unitOfWorkMock.Setup(u => u.StaffProfileRepository.Query(false))
+                           .Returns(staffEmpty);
+
+            // Act
+            var result = await _bookingService.CheckInTicketAsync(userId, qrContent);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal("No Permission", result.Error!.Message);
+            Assert.Equal(ErrorCodes.PermissionDenied, result.Error.StatusCode);
+
+            // Verify
+            _ticketSignatureServiceMock.Verify(x => x.ValidateSignature("TKT001", "SIGN"), Times.Once);
+            _unitOfWorkMock.Verify(u => u.TicketRepository.Query(false), Times.Once);
+            _unitOfWorkMock.Verify(u => u.StaffProfileRepository.Query(false), Times.Once);
+        }
+
+
+        [Fact]
+        public async Task UTCID11_CheckInTicket_StatusNotValid_ShouldReturnAlreadyCheckedIn()
+        {
+            // Arrange
+            string qrContent = "TKT001.SIGN";
+            var userId = UserId;
+            var organizerId = OrgId;
+
+            var ticket = new Ticket
+            {
+                TicketCode = "TKT001",
+                EventName = "Event Test",
+                Status = TicketStatus.Used, 
+                QrCodeUrl = "url",
+                EndTime = DateTime.UtcNow.AddHours(1),
+                User = new User { FullName = "User A" },
+                TicketType = new TicketType 
+                { 
+                    TicketName = "VIP", 
+                    CreatedBy = organizerId.ToString(),
+                    TicketQuantity = 100,
+                }
+            };
+
+            _ticketSignatureServiceMock
+                .Setup(x => x.ValidateSignature("TKT001", "SIGN"))
+                .Returns(true);
+
+            var ticketQuery = new List<Ticket> { ticket }.AsQueryable().BuildMock();
+            _unitOfWorkMock.Setup(u => u.TicketRepository.Query(false))
+                           .Returns(ticketQuery);
+
+            var staff = new List<StaffProfile>
+            {
+                new StaffProfile
+                {
+                    UserId = UserId,
+                    OrganizerProfile = new OrganizerProfile
+                    {
+                        Id = OrgId,
+                        UserId = Guid.NewGuid(),
+                        Address = "ABC",
+                        ContactEmail = "org@test.com",
+                        ContactName = "Org",
+                        ContactPhone = "123456789",
+                        EventExperienceLevel = 0,
+                        EventFrequency = 0,
+                        EventSize = 0,
+                        OrganizationType = 0,
+                        OrganizerType = 0
+                    },
+                    IsDeleted = false
+                }
+            }.AsQueryable().BuildMock();
+            _unitOfWorkMock.Setup(u => u.StaffProfileRepository
+                .Query(false))
+                .Returns(staff);
+
+            // Act
+            var result = await _bookingService.CheckInTicketAsync(userId, qrContent);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal("Ticket already checked in", result.Error!.Message);
+            Assert.Equal(ErrorCodes.InvalidInput, result.Error.StatusCode);
+
+            // Verify
+            _ticketSignatureServiceMock.Verify(x => x.ValidateSignature("TKT001", "SIGN"), Times.Once);
+            _unitOfWorkMock.Verify(u => u.TicketRepository.Query(false), Times.Once);
+            _unitOfWorkMock.Verify(u => u.StaffProfileRepository.Query(false), Times.Once);
+            _unitOfWorkMock.Verify(u => u.TicketRepository.UpdateAsync(It.IsAny<Ticket>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.SaveChangesAsync(), Times.Never);
+        }
+
+
+        [Fact]
+        public async Task UTCID13_CheckInTicket_Success_ShouldReturnSuccess()
+        {
+            // Arrange
+            string qrContent = "TKT001.SIGN";
+            var userId = UserId;
+            var organizerId = OrgId;
+
+            var ticket = new Ticket
+            {
+                TicketCode = "TKT001",
+                EventName = "Event Test",
+                Status = TicketStatus.Valid,
+                QrCodeUrl = "url",
+                EndTime = DateTime.UtcNow.AddHours(2), 
+                User = new User { FullName = "User A" },
+                TicketType = new TicketType
+                {
+                    TicketName = "VIP",
+                    CreatedBy = organizerId.ToString(),
+                    TicketQuantity = 100,
+                }
+            };
+
+            _ticketSignatureServiceMock
+                .Setup(x => x.ValidateSignature("TKT001", "SIGN"))
+                .Returns(true);
+
+            var ticketQuery = new List<Ticket> { ticket }.AsQueryable().BuildMock();
+            _unitOfWorkMock.Setup(u => u.TicketRepository.Query(false))
+                           .Returns(ticketQuery);
+
+            var staff = new List<StaffProfile>
+            {
+                new StaffProfile
+                {
+                    UserId = userId,
+                    OrganizerProfile = new OrganizerProfile
+                    {
+                        Id = organizerId,
+                        UserId = Guid.NewGuid(),
+                        Address = "ABC",
+                        ContactEmail = "org@test.com",
+                        ContactName = "Org",
+                        ContactPhone = "123456789",
+                        EventExperienceLevel = 0,
+                        EventFrequency = 0,
+                        EventSize = 0,
+                        OrganizationType = 0,
+                        OrganizerType = 0
+                    },
+                    IsDeleted = false
+                }
+            }.AsQueryable().BuildMock();
+
+            _unitOfWorkMock.Setup(u => u.StaffProfileRepository.Query(false))
+                           .Returns(staff);
+
+            // Act
+            var result = await _bookingService.CheckInTicketAsync(userId, qrContent);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Value);
+            Assert.Equal("TKT001", result.Value.TicketCode);
+            Assert.Equal("User A", result.Value.FullName);
+
+            // Verify đúng flow
+            _ticketSignatureServiceMock.Verify(x => x.ValidateSignature("TKT001", "SIGN"), Times.Once);
+            _unitOfWorkMock.Verify(u => u.TicketRepository.Query(false), Times.Once);
+            _unitOfWorkMock.Verify(u => u.StaffProfileRepository.Query(false), Times.Once);
+            _unitOfWorkMock.Verify(u => u.TicketRepository.UpdateAsync(It.IsAny<Ticket>()), Times.Once);
+            _unitOfWorkMock.Verify(u => u.SaveChangesAsync(), Times.Once);
+        }
+
+
+        #endregion
     }
 }
