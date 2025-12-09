@@ -12,6 +12,7 @@ using AIEvent.Infrastructure.Repositories.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions; 
 using Microsoft.EntityFrameworkCore;
+using PayOS.Models.V1.Payouts;
 
 namespace AIEvent.Application.Services.Implements
 {
@@ -22,14 +23,16 @@ namespace AIEvent.Application.Services.Implements
         private readonly IMapper _mapper;
         private readonly IHangfireJobService _hangfireJobService;
         private readonly INotificationService _notificationService;
+        private readonly IPayOSService _payOSService;
         public EventService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper, IMapper mapper, 
-            IHangfireJobService hangfireJobService, INotificationService notificationService)
+            IHangfireJobService hangfireJobService, INotificationService notificationService, IPayOSService payOSService)
         {
             _unitOfWork = unitOfWork;
             _transactionHelper = transactionHelper;
             _mapper = mapper;
             _hangfireJobService = hangfireJobService;
             _notificationService = notificationService;
+            _payOSService = payOSService;
         }
 
         public async Task<Result> CreateEventAsync(Guid organizerId, CreateEventRequest request)
@@ -773,7 +776,9 @@ namespace AIEvent.Application.Services.Implements
                     TotalPerson = e.TotalTickets,
                     TotalPersonJoin = e.SoldQuantity,
                     TotalAmount = e.TotalAmount,
+                    IsFlagWarning = e.IsFlagWarning,
                     FavoriteCount = e.FavoriteEvents.Count(),
+                    ReasonCancel = e.ReasonCancel,
                     SaleStartTime = e.SaleStartTime,
                     SaleEndTime = e.SaleEndTime,
                     ImgListEvent = string.IsNullOrEmpty(e.ImgListEvent)
@@ -1349,6 +1354,231 @@ namespace AIEvent.Application.Services.Implements
 				.ToListAsync();
 
 			return new BasePaginated<EventsResponse>(result, totalCount, pageNumber, pageSize);
+		}
+
+		public async Task<Result> CancelEventAsync(Guid eventId, CancelEventRequest request)
+		{
+			if (eventId == Guid.Empty)
+				return ErrorResponse.FailureResult("Invalid eventId", ErrorCodes.InvalidInput);
+
+			if (request == null)
+				return ErrorResponse.FailureResult("Request cannot be null", ErrorCodes.InvalidInput);
+
+			var existingEvent = await _unitOfWork.EventRepository
+				.Query()
+				.Include(e => e.OrganizerProfile!)
+					.ThenInclude(o => o.User)
+				.Include(e => e.Bookings)
+				.FirstOrDefaultAsync(e => e.Id == eventId && !e.IsDeleted);
+
+			if (existingEvent == null || existingEvent.DeletedAt.HasValue)
+				return ErrorResponse.FailureResult("Event not found or inactive", ErrorCodes.InvalidInput);
+
+			if (existingEvent.Status == EventStatus.Cancelled)
+				return ErrorResponse.FailureResult("Event cancelled cannot cancel", ErrorCodes.InvalidInput);
+
+			var hasBookings = existingEvent.Bookings
+				.Where(b => b.Status == BookingStatus.Completed)
+				.ToList();
+
+			if (existingEvent.Publish == true && hasBookings.Any())
+				if (string.IsNullOrEmpty(request.ReasonCancel))
+					return ErrorResponse.FailureResult("Cancellation of a published event with existing bookings must have a reason.", ErrorCodes.InvalidInput);
+
+			var eventTitle = existingEvent.Title;
+			var organizerUserId = existingEvent.OrganizerProfile?.UserId ?? Guid.Empty;
+			var organizerUser = existingEvent.OrganizerProfile?.User;
+			var firstImage = !string.IsNullOrEmpty(existingEvent.ImgListEvent)
+				? existingEvent.ImgListEvent.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()
+				: null;
+
+			if (existingEvent.OrganizerProfile == null)
+				return ErrorResponse.FailureResult("Organizer profile not found", ErrorCodes.NotFound);
+
+			return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+			{ 
+				var organizerProfile = existingEvent.OrganizerProfile;
+				if (organizerProfile != null)
+				{
+					organizerProfile.TotalEventFlags += 1;
+					await _unitOfWork.OrganizerProfileRepository.UpdateAsync(organizerProfile);
+				}
+
+				if (hasBookings.Any() && !string.IsNullOrEmpty(request.ReasonCancel))
+				{
+					existingEvent.IsFlagWarning = true;
+					existingEvent.Status = EventStatus.Cancelled;
+					existingEvent.ReasonCancel = request.ReasonCancel.Trim();
+					await _unitOfWork.EventRepository.UpdateAsync(existingEvent);
+					await _hangfireJobService.EnqueueCancelEventJobAsync(eventId, request.ReasonCancel);
+				}
+				else
+				{
+					existingEvent.IsFlagWarning = true;
+					existingEvent.Status = EventStatus.Cancelled;
+					if (!string.IsNullOrEmpty(request.ReasonCancel))
+					{
+						existingEvent.ReasonCancel = request.ReasonCancel.Trim();
+					}
+					await _unitOfWork.EventRepository.UpdateAsync(existingEvent);
+				}
+ 
+				if (organizerUserId != Guid.Empty)
+				{
+					var notificationJobRequest = new CancelEventNotificationRequest
+					{
+						EventId = eventId,
+						OrganizerUserId = organizerUserId,
+						OrganizerProfileId = existingEvent.OrganizerProfileId,
+						EventTitle = eventTitle,
+						ReasonCancel = request.ReasonCancel,
+						FirstImage = firstImage,
+						OrganizerEmail = organizerUser?.Email,
+						OrganizerFullName = organizerUser?.FullName,
+						IsEmailNotificationEnabled = organizerUser?.IsEmailNotificationEnabled == true
+					};
+
+					await _hangfireJobService.EnqueueCancelEventNotificationJobAsync(notificationJobRequest);
+				}
+
+				return Result.Success();
+			});
+		}
+
+		public async Task<Result> ResolveErrorPaymentAsync(Guid eventId)
+		{
+			if (eventId == Guid.Empty)
+				return ErrorResponse.FailureResult("Invalid eventId", ErrorCodes.InvalidInput);
+
+			var ev = await _unitOfWork.EventRepository
+				.Query()
+				.Include(e => e.OrganizerProfile)
+				.FirstOrDefaultAsync(e => e.Id == eventId
+                 && e.Status != EventStatus.ErrorPayment
+                 && !e.IsDeleted);
+
+			if (ev == null)
+				return ErrorResponse.FailureResult("Event not found", ErrorCodes.NotFound);
+
+			var systemSetting = await _unitOfWork.SystemSettingRepository
+				.Query()
+				.FirstOrDefaultAsync(s => !s.IsDeleted);
+
+			if (systemSetting == null)
+				return ErrorResponse.FailureResult("System setting not found", ErrorCodes.NotFound);
+
+			if (ev.OrganizerProfile == null)
+				return ErrorResponse.FailureResult("Organizer profile not found", ErrorCodes.NotFound);
+
+			var paymentInfor = await _unitOfWork.PaymentInformationRepository
+				.Query()
+				.AsNoTracking()
+				.FirstOrDefaultAsync(p => p.UserId == ev.OrganizerProfile.UserId && !p.IsDeleted);
+
+			if (paymentInfor == null)
+				return ErrorResponse.FailureResult("Payment information not found. Organizer needs to add payment information first.", ErrorCodes.NotFound);
+
+			var existingRevenueReport = await _unitOfWork.RevenueReportRepository
+				.Query()
+				.FirstOrDefaultAsync(r => r.EventId == eventId && !r.IsDeleted);
+
+			decimal platformFee = 0;
+			decimal netRevenue = 0;
+
+			if (ev.TotalAmount > 0)
+			{
+				platformFee = ev.TotalAmount * systemSetting.FlatformFee + systemSetting.FixFee;
+				netRevenue = ev.TotalAmount - platformFee;
+			}
+
+			if (netRevenue < 0)
+				return ErrorResponse.FailureResult("Payout amount is negative", ErrorCodes.InvalidInput);
+
+			try
+			{
+				var referenceId = GenerateOrderCode().ToString();
+				var payoutRequest = new PayoutRequest
+				{
+					ReferenceId = referenceId,
+					Amount = (long)netRevenue,
+					Description = "Thanh toán sự kiện - Xử lý lỗi thanh toán",
+					ToBin = paymentInfor.BankBin,
+					ToAccountNumber = paymentInfor.AccountNumber,
+					Category = new List<string> { "Payout" }
+				};
+
+				var payoutResponse = await _payOSService.CreatePayoutAsync(payoutRequest);
+
+				if (payoutResponse.ApprovalState != PayoutApprovalState.Completed)
+                    return ErrorResponse.FailureResult($"Payout transaction failed. ApprovalState: {payoutResponse.ApprovalState}", ErrorCodes.InternalServerError);
+
+                var payoutDate = DateTime.UtcNow;
+
+				return await _transactionHelper.ExecuteInTransactionAsync(async () =>
+				{
+					ev.PlatformFee = platformFee;
+					ev.PayoutAmount = netRevenue;
+					ev.Status = EventStatus.PaidOut;
+					ev.PaidOutAt = payoutDate;
+
+					if (existingRevenueReport == null)
+					{
+						var revenueReport = new RevenueReport
+						{
+							OrganizerProfileId = ev.OrganizerProfileId,
+							EventId = ev.Id,
+							EventName = ev.Title,
+							GrossRevenue = ev.TotalAmount,
+							PlatformFee = platformFee,
+							NetRevenue = netRevenue,
+							ReportMonth = payoutDate.Month,
+							ReportYear = payoutDate.Year,
+							PayoutDate = payoutDate
+						};
+
+						await _unitOfWork.RevenueReportRepository.AddAsync(revenueReport);
+					}
+					else
+					{
+						existingRevenueReport.GrossRevenue = ev.TotalAmount;
+						existingRevenueReport.PlatformFee = platformFee;
+						existingRevenueReport.NetRevenue = netRevenue;
+						existingRevenueReport.PayoutDate = payoutDate;
+						existingRevenueReport.ReportMonth = payoutDate.Month;
+						existingRevenueReport.ReportYear = payoutDate.Year;
+						await _unitOfWork.RevenueReportRepository.UpdateAsync(existingRevenueReport);
+					}
+
+					await _unitOfWork.EventRepository.UpdateAsync(ev);
+					await _unitOfWork.SaveChangesAsync();
+
+					if (ev.OrganizerProfile != null)
+					{
+						await _notificationService.CreateNotificationAsync(new CreateNotificationRequest
+						{
+							UserId = ev.OrganizerProfile.UserId,
+							Title = "Doanh thu đã được chuyển",
+							Message = $"Sự kiện <strong>{ev.Title}</strong> đã được chuyển <strong>{netRevenue:N0} VND</strong> vào tài khoản. Lỗi thanh toán đã được xử lý.",
+							Type = NotificationType.PayoutCompleted,
+							EventId = ev.Id
+						});
+					}
+
+					return Result.Success();
+				});
+			}
+			catch (Exception ex)
+			{
+				return ErrorResponse.FailureResult($"Failed to process payout: {ex.Message}", ErrorCodes.InternalServerError);
+			}
+		}
+
+		private static long GenerateOrderCode()
+		{
+			var random = new Random();
+			var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+			var randomPart = random.Next(100, 999);
+			return long.Parse($"{timestamp}{randomPart}");
 		}
 	}
 }

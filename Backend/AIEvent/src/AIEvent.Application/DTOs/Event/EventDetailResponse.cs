@@ -25,6 +25,8 @@ namespace AIEvent.Application.DTOs.Event
         public string? Address { get; set; }
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
+        public bool? IsFlagWarning { get; set; }
+        public string? ReasonCancel { get; set; }
         public DateTime? SaleStartTime { get; set; } 
         public DateTime? SaleEndTime { get; set; }
         public OrganizerEventResponse OrganizerEvent { get; set; } = default!;

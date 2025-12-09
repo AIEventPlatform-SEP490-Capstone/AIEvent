@@ -26,6 +26,7 @@ namespace AIEvent.Application.Test.Services
        private static readonly Guid TestEventCategoryId = new Guid("22222222-2222-2222-2222-222222222233");
 
        private readonly Mock<IUnitOfWork> _mockUnitOfWork;
+       private readonly Mock<IPayOSService> _mockpayOSService;
        private readonly Mock<ITransactionHelper> _mockTransactionHelper;
        private readonly Mock<IMapper> _mockMapper;
        private readonly Mock<IHangfireJobService> _mockHangfireJobService;
@@ -39,13 +40,15 @@ namespace AIEvent.Application.Test.Services
            _mockMapper = new Mock<IMapper>();
            _mockHangfireJobService = new Mock<IHangfireJobService>();
            _mockNotificationService = new Mock<INotificationService>();
+           _mockpayOSService = new Mock<IPayOSService>();
 
-           _eventService = new EventService(
+            _eventService = new EventService(
                _mockUnitOfWork.Object,
                _mockTransactionHelper.Object,
                _mockMapper.Object,
                _mockHangfireJobService.Object,
-               _mockNotificationService.Object);
+               _mockNotificationService.Object,
+               _mockpayOSService.Object);
        }
 
 
@@ -6276,7 +6279,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.PendingApproval, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.PendingApproval, null, null, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -6373,7 +6376,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.Approved, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.Approved, null, null, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -6470,7 +6473,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.Rejected, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.Rejected, null, null, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -6568,7 +6571,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(organizerId, null, EventStatus.Approved, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(organizerId, null, EventStatus.Approved, null, null, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -6626,7 +6629,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.Approved, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.Approved, null, null, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -6683,7 +6686,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "rock", EventStatus.Approved, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "rock", EventStatus.Approved, null, null, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -6743,7 +6746,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "minh", EventStatus.Approved, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "minh", EventStatus.Approved, null, null, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -6801,7 +6804,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "music", EventStatus.Approved, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "music", EventStatus.Approved, null, null, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -6859,7 +6862,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "", EventStatus.Approved, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "", EventStatus.Approved, null, null, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -6916,7 +6919,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.Approved, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.Approved, null, null, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -6974,7 +6977,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.Approved, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.Approved, null, null, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -7052,7 +7055,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(organizerId, "rock", EventStatus.Approved, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(organizerId, "rock", EventStatus.Approved, null, null, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -7129,7 +7132,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(null, null, null, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(null, null, null, null, null, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
@@ -7191,7 +7194,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetAllEventStatusAsync(null, null, EventStatus.Approved, 1, 10);
+           var result = await _eventService.GetAllEventStatusAsync(null, null, EventStatus.Approved, null, null, 1, 10);
 
            // Assert
            result.Should().NotBeNull();
