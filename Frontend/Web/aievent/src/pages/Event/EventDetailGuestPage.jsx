@@ -708,7 +708,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                 if (now < new Date(event.startTime)) return 1;
                 // Stage 3: Sự kiện kết thúc (Event end)
                 if (now < new Date(event.endTime)) return 2;
-                return 2; // Event has ended
+                return 3; // Event has ended - show final stage
               })()}
             />
 

@@ -18,9 +18,15 @@ if (typeof window !== "undefined") {
   document.head.appendChild(style);
 }
 
-export function SaleStatusBadge({ saleStartTime, saleEndTime, onImage = false }) {
+export function SaleStatusBadge({ 
+  saleStartTime, 
+  saleEndTime, 
+  startTime, 
+  endTime, 
+  onImage = false 
+}) {
   const [timeStatus, setTimeStatus] = useState({
-    status: "upcoming", // upcoming, ongoing, ended
+    status: "not-started", // not-started, on-sale, sale-closed, event-ongoing, event-ended
     label: "",
     description: "",
   });
@@ -28,22 +34,68 @@ export function SaleStatusBadge({ saleStartTime, saleEndTime, onImage = false })
   useEffect(() => {
     const updateStatus = () => {
       const now = new Date();
-      const startTime = new Date(saleStartTime);
-      const endTime = new Date(saleEndTime);
+      const saleStart = new Date(saleStartTime);
+      const saleEnd = new Date(saleEndTime);
+      const eventStart = new Date(startTime);
+      const eventEnd = new Date(endTime);
 
-      // Sale ended
-      if (now > endTime) {
+      // Event has ended
+      if (now > eventEnd) {
         setTimeStatus({
-          status: "ended",
-          label: "Hết hạn",
-          description: "Kết thúc bán",
+          status: "event-ended",
+          label: "Sự kiện đã kết thúc",
+          description: "",
         });
         return;
       }
 
-      // Upcoming sale
-      if (now < startTime) {
-        const diff = startTime - now;
+      // Event is ongoing
+      if (now >= eventStart && now <= eventEnd) {
+        setTimeStatus({
+          status: "event-ongoing",
+          label: "Sự kiện đang diễn ra",
+          description: "",
+        });
+        return;
+      }
+
+      // Sale has ended but event hasn't started yet
+      if (now > saleEnd && now < eventStart) {
+        setTimeStatus({
+          status: "sale-closed",
+          label: "Đóng bán vé",
+          description: "",
+        });
+        return;
+      }
+
+      // Sale is ongoing
+      if (now >= saleStart && now <= saleEnd) {
+        const diff = saleEnd - now;
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((diff / 1000 / 60) % 60);
+
+        // Determine urgency level
+        const totalMinutesLeft = Math.floor(diff / (1000 * 60));
+        let label = "Đang mở bán";
+        
+        // if (totalMinutesLeft <= 30) {
+        //   label = "Kết thúc sớm";
+        // } else if (totalMinutesLeft <= 120) {
+        //   label = "Nhanh lên";
+        // }
+
+        setTimeStatus({
+          status: "on-sale",
+          label: label,
+          description: totalMinutesLeft <= 120 ? `${hours}h ${minutes}m` : "",
+        });
+        return;
+      }
+
+      // Sale hasn't started yet
+      if (now < saleStart) {
+        const diff = saleStart - now;
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
         const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
         const minutes = Math.floor((diff / 1000 / 60) % 60);
@@ -58,72 +110,63 @@ export function SaleStatusBadge({ saleStartTime, saleEndTime, onImage = false })
         }
 
         setTimeStatus({
-          status: "upcoming",
-          label: "Sắp bán",
+          status: "not-started",
+          label: "Chưa bán vé",
           description: timeText,
         });
         return;
       }
-
-      // Sale ongoing
-      const diff = endTime - now;
-      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-      const minutes = Math.floor((diff / 1000 / 60) % 60);
-
-      // Determine urgency level
-      const totalMinutesLeft = Math.floor(diff / (1000 * 60));
-      let label = "Đang bán";
-      
-      if (totalMinutesLeft <= 30) {
-        label = "Kết thúc sớm";
-      } else if (totalMinutesLeft <= 120) {
-        label = "Nhanh lên";
-      }
-
-      setTimeStatus({
-        status: "ongoing",
-        label: label,
-        description: totalMinutesLeft <= 120 ? `${hours}h ${minutes}m` : "",
-      });
     };
 
     updateStatus();
     const interval = setInterval(updateStatus, 60000); // Update every minute
 
     return () => clearInterval(interval);
-  }, [saleStartTime, saleEndTime]);
+  }, [saleStartTime, saleEndTime, startTime, endTime]);
 
   const getStatusStyle = () => {
     if (onImage) {
       // On-image badge - solid colors for good contrast
       switch (timeStatus.status) {
-        case "ended":
-          return "bg-red-600 border-0";
-        case "upcoming":
-          return "bg-slate-600 border-0";
-        default:
-          // Ongoing sales with different urgency levels
+        case "not-started":
+          return "bg-slate-600 border-0"; // Chưa bán vé
+        case "on-sale":
+          // On-sale with different urgency levels
           if (timeStatus.label === "Kết thúc sớm") {
-            return "bg-red-500 border-0 badge-pulse-urgent";
+            return "bg-red-500 border-0 badge-pulse-urgent"; // Urgent
           } else if (timeStatus.label === "Nhanh lên") {
-            return "bg-amber-500 border-0";
+            return "bg-amber-500 border-0"; // Warning
           }
-          return "bg-emerald-500 border-0";
+          return "bg-emerald-500 border-0"; // Normal on-sale
+        case "sale-closed":
+          return "bg-orange-600 border-0"; // Sale closed but event not started
+        case "event-ongoing":
+          return "bg-blue-600 border-0"; // Event is happening
+        case "event-ended":
+          return "bg-red-600 border-0"; // Event finished
+        default:
+          return "bg-slate-600 border-0";
       }
     } else {
       // Below-image badge - light backgrounds with borders
       switch (timeStatus.status) {
-        case "ended":
-          return "bg-red-50 border border-red-300";
-        case "upcoming":
+        case "not-started":
           return "bg-slate-100 border border-slate-300";
-        default:
+        case "on-sale":
           if (timeStatus.label === "Kết thúc sớm") {
             return "bg-red-50 border border-red-300 badge-pulse-urgent";
           } else if (timeStatus.label === "Nhanh lên") {
             return "bg-amber-50 border border-amber-300";
           }
           return "bg-emerald-50 border border-emerald-300";
+        case "sale-closed":
+          return "bg-orange-50 border border-orange-300";
+        case "event-ongoing":
+          return "bg-blue-50 border border-blue-300";
+        case "event-ended":
+          return "bg-red-50 border border-red-300";
+        default:
+          return "bg-slate-100 border border-slate-300";
       }
     }
   };
@@ -133,17 +176,23 @@ export function SaleStatusBadge({ saleStartTime, saleEndTime, onImage = false })
       return "text-white";
     } else {
       switch (timeStatus.status) {
-        case "ended":
-          return "text-red-700";
-        case "upcoming":
+        case "not-started":
           return "text-slate-700";
-        default:
+        case "on-sale":
           if (timeStatus.label === "Kết thúc sớm") {
             return "text-red-700";
           } else if (timeStatus.label === "Nhanh lên") {
             return "text-amber-700";
           }
           return "text-emerald-700";
+        case "sale-closed":
+          return "text-orange-700";
+        case "event-ongoing":
+          return "text-blue-700";
+        case "event-ended":
+          return "text-red-700";
+        default:
+          return "text-slate-700";
       }
     }
   };

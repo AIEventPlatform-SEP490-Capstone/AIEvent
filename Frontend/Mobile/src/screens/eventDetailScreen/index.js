@@ -1119,16 +1119,100 @@ const EventDetailScreen = () => {
             {Strings.EVENT_DESCRIPTION}
           </CustomText>
           {event.detailedDescription ? (
-            <RenderHtml
-              contentWidth={width}
-              source={{html: event.detailedDescription}}
-              baseStyle={{
-                fontSize: Fonts.md,
-                lineHeight: 24,
-                fontFamily: Fonts.regular,
-                color: Colors.textSecondary,
-              }}
-            />
+            <View style={{overflow: 'hidden', width: '100%'}}>
+              <RenderHtml
+                contentWidth={width - 88}
+                source={{html: event.detailedDescription}}
+                baseStyle={{
+                  fontSize: Fonts.md,
+                  lineHeight: 26,
+                  color: Colors.textPrimary,
+                }}
+                tagsStyles={{
+                  body: {
+                    fontSize: Fonts.md,
+                    lineHeight: 26,
+                    margin: 0,
+                    padding: 0,
+                    color: Colors.textPrimary,
+                  },
+                  p: {
+                    marginBottom: 12,
+                    marginTop: 0,
+                    fontSize: Fonts.md,
+                    lineHeight: 26,
+                    color: Colors.textPrimary,
+                  },
+                  div: {
+                    marginBottom: 8,
+                  },
+                  img: {
+                    maxWidth: '100%',
+                    objectFit: 'contain',
+                  },
+                  span: {
+                    fontSize: Fonts.md,
+                    lineHeight: 26,
+                  },
+                  strong: {
+                    fontWeight: 'bold',
+                  },
+                  b: {
+                    fontWeight: 'bold',
+                  },
+                  em: {
+                    fontStyle: 'italic',
+                  },
+                  i: {
+                    fontStyle: 'italic',
+                  },
+                  h1: {
+                    fontSize: Fonts.xl,
+                    fontWeight: 'bold',
+                    marginBottom: 12,
+                    marginTop: 8,
+                    color: Colors.textPrimary,
+                  },
+                  h2: {
+                    fontSize: Fonts.lg,
+                    fontWeight: 'bold',
+                    marginBottom: 10,
+                    marginTop: 8,
+                    color: Colors.textPrimary,
+                  },
+                  h3: {
+                    fontSize: Fonts.md,
+                    fontWeight: 'bold',
+                    marginBottom: 8,
+                    marginTop: 6,
+                    color: Colors.textPrimary,
+                  },
+                  ul: {
+                    marginBottom: 12,
+                    paddingLeft: 20,
+                  },
+                  ol: {
+                    marginBottom: 12,
+                    paddingLeft: 20,
+                  },
+                  li: {
+                    marginBottom: 6,
+                    lineHeight: 26,
+                  },
+                }}
+                renderersProps={{
+                  img: {
+                    enableExperimentalPercentWidth: true,
+                  },
+                }}
+                enableExperimentalMarginCollapsing={true}
+                enableCSSInlineProcessing={true}
+                defaultTextProps={{
+                  selectable: true,
+                  allowFontScaling: true,
+                }}
+              />
+            </View>
           ) : (
             <CustomText
               variant="body"

@@ -80,6 +80,13 @@ const EndUrls = {
   AI_CHAT_HISTORY: `${BASE_URL}/ai/chat/history`,
   AI_CHAT_SESSIONS: `${BASE_URL}/ai/chat/sessions`,
   AI_CHAT_SESSION_DELETE: sessionId => `${BASE_URL}/ai/chat/sessions/${sessionId}`,
+
+  // Notifications
+  NOTIFICATIONS: `${BASE_URL}/notifications`,
+  NOTIFICATIONS_UNREAD_COUNT: `${BASE_URL}/notifications?isRead=false&pageNumber=1&pageSize=100`,
+  MARK_NOTIFICATION_READ: notificationId => `${BASE_URL}/notifications/${notificationId}/read`,
+  MARK_ALL_NOTIFICATIONS_READ: `${BASE_URL}/notifications/read-all`,
+  DELETE_READ_NOTIFICATIONS: `${BASE_URL}/notifications/read`,
 };
 
 export default EndUrls;

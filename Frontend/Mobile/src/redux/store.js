@@ -4,6 +4,7 @@ import eventsReducer from './slices/eventsSlice';
 import categoriesReducer from './slices/categoriesSlice';
 import favoriteEventsReducer from './slices/favoriteEventsSlice';
 import aiChatReducer from './slices/aiChatSlice';
+import notificationsReducer from './slices/notificationsSlice';
 
 const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ const store = configureStore({
     categories: categoriesReducer,
     favoriteEvents: favoriteEventsReducer,
     aiChat: aiChatReducer,
+    notifications: notificationsReducer,
   },
 });
 

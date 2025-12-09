@@ -1,0 +1,242 @@
+import { StyleSheet, Dimensions } from 'react-native';
+import Colors from '../../constants/Colors';
+import Fonts from '../../constants/Fonts';
+
+const { width, height } = Dimensions.get('window');
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 50,
+    paddingBottom: 24,
+    marginBottom: 16,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontFamily: Fonts.bold,
+    fontWeight: '800',
+    marginBottom: 8,
+    letterSpacing: 0.5,
+    color: Colors.white,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    fontFamily: Fonts.regular,
+    opacity: 0.9,
+    color: 'rgba(255, 255, 255, 0.85)',
+  },
+  contentContainer: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingTop: 0,
+  },
+  filterSection: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    marginHorizontal: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+  filterButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    backgroundColor: Colors.white,
+  },
+  filterButtonActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  filterButtonText: {
+    fontSize: 13,
+    fontFamily: Fonts.semibold,
+    color: Colors.textSecondary,
+  },
+  filterButtonTextActive: {
+    color: Colors.white,
+  },
+  notificationsList: {
+    flex: 1,
+  },
+  notificationItem: {
+    flexDirection: 'row',
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    marginHorizontal: 4,
+    borderLeftWidth: 5,
+    borderLeftColor: Colors.primary,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+    alignItems: 'flex-start',
+  },
+  notificationItemUnread: {
+    backgroundColor: 'rgba(33, 150, 243, 0.03)',
+    borderLeftColor: Colors.primary,
+  },
+  notificationItemRead: {
+    borderLeftColor: Colors.border,
+  },
+  notificationIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+    flexShrink: 0,
+  },
+  notificationIconRead: {
+    backgroundColor: '#E8ECF0',
+  },
+  iconImage: {
+    width: 26,
+    height: 26,
+  },
+  notificationContent: {
+    flex: 1,
+  },
+  notificationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  typeBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: Colors.primary,
+    alignSelf: 'flex-start',
+  },
+  arrowText: {
+    fontSize: 24,
+    fontFamily: Fonts.bold,
+    color: Colors.textSecondary,
+    opacity: 0.4,
+    marginLeft: 8,
+  },
+  typeBadgeText: {
+    fontSize: 11,
+    fontFamily: Fonts.semibold,
+    color: Colors.white,
+  },
+  notificationTitle: {
+    fontSize: 16,
+    fontFamily: Fonts.semibold,
+    color: Colors.textPrimary,
+    marginBottom: 6,
+    lineHeight: 22,
+  },
+  notificationMessage: {
+    fontSize: 13,
+    fontFamily: Fonts.regular,
+    color: Colors.textSecondary,
+    marginBottom: 8,
+    lineHeight: 18,
+  },
+  htmlMessageContainer: {
+    marginBottom: 8,
+    maxHeight: 100,
+    overflow: 'hidden',
+  },
+  notificationMeta: {
+    fontSize: 12,
+    fontFamily: Fonts.regular,
+    color: Colors.textLight,
+  },
+  unreadDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: Colors.primary,
+    marginLeft: 8,
+    marginTop: 2,
+    flexShrink: 0,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  emptyIcon: {
+    width: 100,
+    height: 100,
+    marginBottom: 20,
+    opacity: 0.2,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontFamily: Fonts.semibold,
+    color: Colors.textPrimary,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  emptyMessage: {
+    fontSize: 14,
+    fontFamily: Fonts.regular,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bottomActionBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    paddingBottom: 20,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    backgroundColor: Colors.white,
+    gap: 10,
+  },
+  bottomButton: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderRadius: 12,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bottomButtonText: {
+    fontSize: 12,
+    fontFamily: Fonts.semibold,
+    color: Colors.white,
+  },
+  bottomButtonSecondary: {
+    backgroundColor: '#F0F0F0',
+  },
+  bottomButtonTextSecondary: {
+    color: Colors.textPrimary,
+  },
+});
+
+export default styles;

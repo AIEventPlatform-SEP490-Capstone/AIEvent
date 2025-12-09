@@ -491,6 +491,7 @@ namespace AIEvent.Infrastructure.Data
                     EventReminderHours = 3,
                     CreatedBy = adminUserId.ToString(),
                     CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now,
                 }
             );
         }

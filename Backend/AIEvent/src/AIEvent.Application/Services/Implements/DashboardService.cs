@@ -14,10 +14,12 @@ namespace AIEvent.Application.Services.Implements
     public class DashboardService : IDashboardService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IHangfireJobService _hangfireJobService;
 
-        public DashboardService(IUnitOfWork unitOfWork)
+        public DashboardService(IUnitOfWork unitOfWork, IHangfireJobService hangfireJobService)
         {
             _unitOfWork = unitOfWork;
+            _hangfireJobService = hangfireJobService;
         }
 
         private IQueryable<Event> GetFilteredEvents(Guid organizerProfileId, DashboardFilterRequest? filter)
@@ -365,40 +367,80 @@ namespace AIEvent.Application.Services.Implements
             }
         }
 
-        public async Task<Result> UpdateSystemSetiing(string adminId, SystemSettingRequest request)
+        public async Task<Result> CreateSystemSetting(Guid id, SystemSettingRequest request)
         {
             try
             {
-                var systemSetting = await _unitOfWork.SystemSettingRepository
-                    .Query()
-                    .FirstOrDefaultAsync(s => s.CreatedBy == adminId && !s.IsDeleted);
-
-                if (systemSetting == null)
+                if (request.FlatformFee <= 0 || request.FixFee <= 0 || request.DatePayout <= 0 || request.EventReminderHours <= 0)
                 {
-                    return ErrorResponse.FailureResult("No Permission", ErrorCodes.PermissionDenied);
+                    return ErrorResponse.FailureResult(
+                        "All fields must be greater than 0",
+                        ErrorCodes.InvalidInput
+                    );
                 }
 
-                systemSetting.FlatformFee = request.FlatformFee;
-                systemSetting.FixFee = request.FixFee;
-                systemSetting.DatePayout = request.DatePayout;
-                systemSetting.EventReminderHours = request.EventReminderHours;
+                if (request.DateApply <= DateTime.UtcNow)
+                {
+                    return ErrorResponse.FailureResult(
+                        "DateApply must be greater than today",
+                        ErrorCodes.InvalidInput
+                    );
+                }
 
-                await _unitOfWork.SystemSettingRepository.UpdateAsync(systemSetting);
+                var adminId = id.ToString();
+
+                var now = DateTime.UtcNow;
+
+                var existedSetting = await _unitOfWork.SystemSettingRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(s => s.CreatedBy == adminId && !s.IsDeleted)
+                    .Where(s => s.CreatedAt.Month == now.Month && s.CreatedAt.Year == now.Year)
+                    .FirstOrDefaultAsync();
+
+                if (existedSetting != null)
+                {
+                    return ErrorResponse.FailureResult(
+                        "System setting can only be update once per month",
+                        ErrorCodes.InvalidInput);
+                }
+
+                var newSetting = new SystemSetting
+                {
+                    FlatformFee = request.FlatformFee,
+                    FixFee = request.FixFee,
+                    DatePayout = request.DatePayout,
+                    EventReminderHours = request.EventReminderHours,
+                    CreatedBy = adminId,
+                    CreatedAt = now,
+                    UpdatedAt = request.DateApply.UtcDateTime,
+                };
+
+                await _unitOfWork.SystemSettingRepository.AddAsync(newSetting);
                 await _unitOfWork.SaveChangesAsync();
+
+                await _hangfireJobService.EnqueueNotifyPlatformSettingChange(newSetting);
 
                 return Result.Success();
             }
             catch (Exception ex)
             {
-                return ErrorResponse.FailureResult($"Error getting revenue by category/tag: {ex.Message}", ErrorCodes.InternalServerError);
+                return ErrorResponse.FailureResult(
+                    $"Error creating system setting: {ex.Message}",
+                    ErrorCodes.InternalServerError
+                );
             }
         }
+
 
         public async Task<Result<SystemSettingResponse>> GetSystemSetting(string adminId)
         {
             var systemSetting = await _unitOfWork.SystemSettingRepository
-                    .Query()
-                    .FirstOrDefaultAsync(s => s.CreatedBy == adminId && !s.IsDeleted);
+                .Query()
+                .AsNoTracking()
+                .Where(s => !s.IsDeleted && s.CreatedBy == adminId)
+                .OrderByDescending(s => s.CreatedAt)
+                .FirstOrDefaultAsync();
 
             if (systemSetting == null)
             {
@@ -411,10 +453,49 @@ namespace AIEvent.Application.Services.Implements
                 FixFee = systemSetting.FixFee,
                 FlatformFee = systemSetting.FlatformFee,
                 EventReminderHours = systemSetting.EventReminderHours,
-                UpdateAt = systemSetting.UpdatedAt,
+                DateApply = systemSetting.UpdatedAt,
+                CreateTime = systemSetting.CreatedAt,
             };
 
             return Result<SystemSettingResponse>.Success(request);
+        }
+
+        public async Task<Result<BasePaginated<SystemSettingResponse>>> GetSystemSettingListAsync(string adminId, int pageNumber = 1, int pageSize = 10)
+        {
+            try
+            {
+                var query = _unitOfWork.SystemSettingRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(s => !s.IsDeleted && s.CreatedBy == adminId);
+
+                var totalCount = await query.CountAsync();
+
+                var systemSettings = await query
+                    .OrderByDescending(s => s.CreatedAt)
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(s => new SystemSettingResponse   
+                    {
+                        DatePayout = s.DatePayout,
+                        FixFee = s.FixFee,
+                        FlatformFee = s.FlatformFee,
+                        EventReminderHours = s.EventReminderHours,
+                        DateApply = s.UpdatedAt ?? s.CreatedAt,
+                        CreateTime = s.CreatedAt
+                    })
+                    .ToListAsync();
+
+                if (!systemSettings.Any() && totalCount == 0)
+                    return ErrorResponse.FailureResult("No Permission or No System Settings Found", ErrorCodes.PermissionDenied);
+
+                return Result<BasePaginated<SystemSettingResponse>>.Success(
+                    new BasePaginated<SystemSettingResponse>(systemSettings, totalCount, pageNumber, pageSize));
+            }
+            catch (Exception ex)
+            {
+                return ErrorResponse.FailureResult($"Error getting system settings: {ex.Message}", ErrorCodes.InternalServerError);
+            }
         }
 
         public async Task<Result<AdminDashboardResponse>> GetAdminDashboardAsync(int? year = null, int? month = null)

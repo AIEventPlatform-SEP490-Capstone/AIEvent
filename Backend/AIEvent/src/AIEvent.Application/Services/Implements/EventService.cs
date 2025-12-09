@@ -124,8 +124,10 @@ namespace AIEvent.Application.Services.Implements
                                                 .AsNoTracking()
                                                 .Where(e => e.EndTime.AddDays(7) > DateTime.UtcNow 
                                                     && !e.DeletedAt.HasValue 
-                                                    && e.Status == EventStatus.Approved 
-                                                    && e.Publish == true);
+													&& e.Status != EventStatus.Rejected
+													&& e.Status != EventStatus.Cancelled
+													&& e.Status != EventStatus.PendingApproval
+													&& e.Publish == true);
 
             if (!string.IsNullOrEmpty(search))
                 events = events
@@ -870,18 +872,37 @@ namespace AIEvent.Application.Services.Implements
 
             if (!endedEvents.Any()) return;
 
-            var systemSetting = await _unitOfWork.SystemSettingRepository
+            var allSettings = await _unitOfWork.SystemSettingRepository
                 .Query()
-                .FirstOrDefaultAsync(s => !s.IsDeleted);
-            if (systemSetting == null) return;
+                .AsNoTracking()
+                .Where(s => !s.IsDeleted)
+                .OrderByDescending(s => s.UpdatedAt)                
+                .ToListAsync();
+
+            if (!allSettings.Any()) return;
+
+            var settingCache = new Dictionary<string, SystemSetting>();
 
             foreach (var ev in endedEvents)
             {
+                var saleStart = ev.SaleStartTime!.Value;
+
+                var key = $"{saleStart:yyyy-MM}";
+
+                if (!settingCache.TryGetValue(key, out var setting))
+                {
+                    setting = allSettings
+                        .FirstOrDefault(s => s.UpdatedAt <= saleStart)
+                        ?? allSettings.Last();
+
+                    settingCache[key] = setting;
+                }
+
                 var totalRevenue = ev.TotalAmount;
                 
-                if (totalRevenue >= systemSetting.FlatformFee + 10000)
+                if (totalRevenue >= setting.FlatformFee + 10000)
                 {
-                    decimal platformFee = totalRevenue * systemSetting.FlatformFee + systemSetting.FixFee;
+                    decimal platformFee = totalRevenue * setting.FlatformFee + setting.FixFee;
                     decimal netRevenue = totalRevenue - platformFee;
                     ev.PlatformFee = platformFee;
                     ev.PayoutAmount = netRevenue;
@@ -1300,8 +1321,13 @@ namespace AIEvent.Application.Services.Implements
 												.Query()
 												.AsNoTracking()
 												.Where(e => !e.DeletedAt.HasValue
-													&& e.Status == EventStatus.Approved
+													&& e.Status != EventStatus.Rejected
+													&& e.Status != EventStatus.Cancelled
+													&& e.Status != EventStatus.PendingApproval
+
 													&& e.Publish == true);
+			if (organizerId.HasValue && organizerId != Guid.Empty)
+				events = events.Where(e => e.OrganizerProfileId == organizerId);
 
 			if (!string.IsNullOrEmpty(search))
 				events = events
@@ -1453,14 +1479,26 @@ namespace AIEvent.Application.Services.Implements
 			if (ev == null)
 				return ErrorResponse.FailureResult("Event not found", ErrorCodes.NotFound);
 
-			var systemSetting = await _unitOfWork.SystemSettingRepository
-				.Query()
-				.FirstOrDefaultAsync(s => !s.IsDeleted);
+            var systemSetting = await _unitOfWork.SystemSettingRepository
+                .Query()
+                .AsNoTracking()
+                .Where(s => !s.IsDeleted && s.UpdatedAt <= ev.SaleStartTime) 
+                .OrderByDescending(s => s.UpdatedAt)                     
+                .FirstOrDefaultAsync();
 
-			if (systemSetting == null)
-				return ErrorResponse.FailureResult("System setting not found", ErrorCodes.NotFound);
+            if (systemSetting == null)
+            {
+                systemSetting = await _unitOfWork.SystemSettingRepository
+                    .Query()
+                    .Where(s => !s.IsDeleted)
+                    .OrderByDescending(s => s.UpdatedAt)
+                    .FirstOrDefaultAsync();
+            }
 
-			if (ev.OrganizerProfile == null)
+            if (systemSetting == null)
+                return ErrorResponse.FailureResult("System setting not found", ErrorCodes.NotFound);
+
+            if (ev.OrganizerProfile == null)
 				return ErrorResponse.FailureResult("Organizer profile not found", ErrorCodes.NotFound);
 
 			var paymentInfor = await _unitOfWork.PaymentInformationRepository

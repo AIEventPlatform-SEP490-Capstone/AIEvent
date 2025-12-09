@@ -103,7 +103,7 @@ function NearbyEventsPage() {
   const [locationError, setLocationError] = useState(null);
   const [eventsError, setEventsError] = useState(null);
   const [mapReady, setMapReady] = useState(false);
-  const [radius, setRadius] = useState(20); // Default radius 20km
+  const [radius, setRadius] = useState(30); // Default radius 30km
   const [categoryId, setCategoryId] = useState("");
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
@@ -475,20 +475,32 @@ function NearbyEventsPage() {
     }
   }, [userLocation, radius, fetchNearbyEvents]);
 
-  // Fetch friends' locations
+  // Fetch friends' locations - luôn fetch khi có userLocation, không phụ thuộc vào location sharing
   const fetchFriendsLocation = useCallback(async () => {
+    // Chỉ fetch khi có userLocation
+    if (!userLocation) {
+      return;
+    }
+
     setLoadingFriends(true);
     try {
-      const response = await friendAPI.getFriendsLocation();
+      // Gọi API với radius (km), latitude, longitude - API sẽ tự chuyển sang mét
+      const response = await friendAPI.getFriendsLocation({
+        radius: radius, // km - API sẽ chuyển sang mét
+        latitude: userLocation.lat,
+        longitude: userLocation.lng
+      });
+      
       const friendsList = Array.isArray(response) ? response : (response?.data || []);
       setFriends(friendsList);
     } catch (error) {
       console.error('Error fetching friends location:', error);
       // Không hiển thị lỗi nếu không có bạn bè chia sẻ vị trí
+      setFriends([]);
     } finally {
       setLoadingFriends(false);
     }
-  }, []);
+  }, [userLocation, radius]);
 
   // Toggle location sharing
   const handleToggleLocationSharing = async (enabled) => {
@@ -496,13 +508,8 @@ function NearbyEventsPage() {
     try {
       await userAPI.toggleLocationSharing(enabled);
       setIsLocationSharingEnabled(enabled);
-      if (enabled) {
-        // Fetch friends when enabling location sharing
-        fetchFriendsLocation();
-      } else {
-        // Clear friends when disabling
-        setFriends([]);
-      }
+      // Không clear friends khi tắt location sharing - vẫn cho phép xem vị trí bạn bè
+      // Chỉ update location của mình qua SignalR khi bật
     } catch (error) {
       console.error('Error toggling location sharing:', error);
       setLocationError('Không thể thay đổi cài đặt chia sẻ vị trí');
@@ -537,15 +544,15 @@ function NearbyEventsPage() {
     isLocationSharingEnabled && userLocation !== null
   );
 
-  // Fetch friends location when location sharing is enabled
+  // Fetch friends location khi có userLocation - không phụ thuộc vào location sharing
   useEffect(() => {
-    if (isLocationSharingEnabled) {
+    if (userLocation) {
       fetchFriendsLocation();
       // Refresh friends location periodically
       const interval = setInterval(fetchFriendsLocation, 60000); // Every minute
       return () => clearInterval(interval);
     }
-  }, [isLocationSharingEnabled, fetchFriendsLocation]);
+  }, [userLocation, radius, fetchFriendsLocation]);
 
   // Update location via SignalR when user location changes and sharing is enabled
   useEffect(() => {
@@ -1046,11 +1053,17 @@ function NearbyEventsPage() {
                       )}
                     </Button>
                   </div>
-                  {isLocationSharingEnabled && friends.length > 0 && (
-                    <p className="text-xs text-purple-600 mt-1 flex items-center gap-1">
-                      <User className="w-3 h-3" />
-                      {friends.length} bạn bè đang chia sẻ vị trí
-                    </p>
+                  {friends.length > 0 && (
+                    <div className="mt-2">
+                      <div className="flex items-center gap-2 bg-purple-50 rounded-lg px-3 py-2 border border-purple-100">
+                        <div className="p-1.5 bg-purple-100 rounded-lg">
+                          <User className="w-3.5 h-3.5 text-purple-600" />
+                        </div>
+                        <div className="text-xs font-semibold text-gray-800">
+                          {friends.length} bạn bè trong bán kính {radius}km
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
