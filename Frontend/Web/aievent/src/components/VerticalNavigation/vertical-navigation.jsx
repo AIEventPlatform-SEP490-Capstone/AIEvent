@@ -249,7 +249,7 @@ export function VerticalNavigation() {
         isActive: pathname === "/timeline",
       },
       {
-        title: "Sự kiện gần bạn",
+        title: "Xung quanh bạn",
         url: "/nearby",
         icon: MapPin,
         isActive: pathname === "/nearby",

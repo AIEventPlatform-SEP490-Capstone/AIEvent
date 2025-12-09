@@ -129,12 +129,12 @@ namespace AIEvent.API.Controllers
                 "Revenue by category/tag retrieved successfully"));
         }
 
-        [HttpPatch("system-setting")]
+        [HttpPost("system-setting")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<SuccessResponse<object>>> UpdateSystemSetting(SystemSettingRequest request)
         {
-            string userId = User.GetRequiredUserId().ToString();
-            var result = await _dashboardService.UpdateSystemSetiing(userId, request);
+            var userId = User.GetRequiredUserId();
+            var result = await _dashboardService.CreateSystemSetting(userId, request);
 
             if (!result.IsSuccess)
             {
@@ -144,7 +144,7 @@ namespace AIEvent.API.Controllers
             return Ok(SuccessResponse<object>.SuccessResult(
                 new { },
                 SuccessCodes.Success,
-                "SystemSetting updated successfully"));
+                "SystemSetting created successfully"));
         }
 
         [HttpGet("system-setting")]
@@ -165,6 +165,25 @@ namespace AIEvent.API.Controllers
                 "SystemSetting retrieved successfully"));
         }
 
+        [HttpGet("history-system-setting")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<SystemSettingResponse>>>> GetListSystemSetting(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            string userId = User.GetRequiredUserId().ToString();
+            var result = await _dashboardService.GetSystemSettingListAsync(userId, pageNumber, pageSize);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<SystemSettingResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "SystemSetting retrieved successfully"));
+        }
         [HttpGet("admin-overview")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<SuccessResponse<AdminDashboardResponse>>> GetAdminDashboard(

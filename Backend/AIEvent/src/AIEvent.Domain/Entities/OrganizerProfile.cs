@@ -35,7 +35,9 @@ namespace AIEvent.Domain.Entities
         public OrganizerProfileStatus Status { get; set; } = OrganizerProfileStatus.Pending;
         public DateTime? ConfirmAt { get; set; }
         public string? ConfirmBy { get; set; }
-
+        public int TotalEventFlags { get; set; } = 0;
+        public bool IsBanned { get; set; } = false;
+        public DateTime? BannedAt { get; set; }
         public User User { get; set; } = default!;
         public ICollection<Event>? Events { get; set; } 
         public ICollection<RevenueReport>? RevenueReports { get; set; }
