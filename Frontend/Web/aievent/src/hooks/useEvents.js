@@ -29,6 +29,7 @@ import {
   clearEvents,
   clearRelatedEvents,
 } from "../store/slices/eventsSlice";
+import eventAPI from "../api/eventAPI";
 
 export const useEvents = () => {
   const dispatch = useDispatch();
@@ -254,6 +255,22 @@ export const useEvents = () => {
     }
   };
 
+  const cancelEventByManager = async (eventId, reasonCancel) => {
+    try {
+      const response = await eventAPI.cancelEventByManager(eventId, reasonCancel);
+      toast.success("Hủy sự kiện vi phạm thành công");
+      return response;
+    } catch (err) {
+      console.error("Cancel event by manager error:", err);
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Không thể hủy sự kiện vi phạm";
+      toast.error(message);
+      return null;
+    }
+  };
+
   const clearCurrent = () => dispatch(clearCurrentEvent());
   const clearAllEvents = () => dispatch(clearEvents());
   const clearRelated = () => dispatch(clearRelatedEvents());
@@ -279,6 +296,7 @@ export const useEvents = () => {
     updateEvent: updateEventAPI,
     deleteEvent: deleteEventAPI,
     confirmEvent: confirmEventAPI,
+    cancelEventByManager,
     clearCurrentEvent: clearCurrent,
     clearEvents: clearAllEvents,
     clearRelatedEvents: clearRelated,

@@ -29,6 +29,11 @@ namespace AIEvent.Application.Services.Implements
                 service => service.SendEventBookingReminderAsync(),
                 "*/5 * * * *");
 
+            _recurringJobManager.AddOrUpdate<INotificationService>(
+                "auto-send-favorite-event-ticket-sale-notification",
+                service => service.SendFavoriteEventTicketSaleNotificationAsync(),
+                "*/5 * * * *");
+
             _recurringJobManager.AddOrUpdate<IPaymentService>(
                 "auto-process-expired-pending-transactions",
                 service => service.ProcessExpiredPendingTransactionsAsync(),

@@ -313,6 +313,21 @@ export const eventAPI = {
     return response.data?.data || response.data;
   },
 
+  // Cancel event by manager for violations (requires Manager role)
+  cancelEventByManager: async (eventId, reasonCancel) => {
+    const payload = {
+      reasonCancel,
+    };
+
+    const response = await fetcher.patch(`/event/${eventId}/cancel`, payload, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    return response.data?.data || response.data;
+  },
+
   // Request to end event (requires Admin, Manager, Organizer roles)
   requestEndEvent: async (requestData) => {
     // Send JSON data with text/plain content type

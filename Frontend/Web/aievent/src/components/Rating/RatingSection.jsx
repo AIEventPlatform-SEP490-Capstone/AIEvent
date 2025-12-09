@@ -413,34 +413,6 @@ const RatingSection = ({ eventId }) => {
                               </div>
                             </div>
                           </div>
-
-                          {isCurrentUser && (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon"
-                                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                  <MoreHorizontal className="w-4 h-4 text-gray-400" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="bg-white border border-gray-100 shadow-lg">
-                                <DropdownMenuItem
-                                  onClick={() => handleEdit(rating)}
-                                  className="cursor-pointer"
-                                >
-                                  <Pencil className="w-4 h-4 mr-2" /> Sửa đánh giá
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => handleDelete(rating)}
-                                  className="text-red-600 focus:text-red-600 cursor-pointer"
-                                >
-                                  <Trash2 className="w-4 h-4 mr-2" /> Xóa đánh giá
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          )}
                         </div>
 
                         {rating.comment && (

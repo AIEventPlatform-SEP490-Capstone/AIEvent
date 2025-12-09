@@ -6,6 +6,7 @@
         public required decimal FixFee { get; set; }
         public required int DatePayout { get; set; }
         public required int EventReminderHours { get; set; }
-        public DateTimeOffset? UpdateAt { get; set; }
+        public DateTimeOffset? DateApply { get; set; }
+        public DateTimeOffset? CreateTime { get; set; }
     }
 }

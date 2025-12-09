@@ -7,11 +7,19 @@ export const dashboardAPI = {
     return response.data?.data || response.data;
   },
 
-  // PATCH: Cập nhật cài đặt hệ thống
+  // POST: Cập nhật cài đặt hệ thống
   updateSystemSettings: async (settingsData) => {
-    const response = await fetcher.patch("/dashboard/system-setting", settingsData);
+    const response = await fetcher.post("/dashboard/system-setting", settingsData);
     return response.data?.data || response.data;
   },
+
+  // GET: Lấy lịch sử cài đặt hệ thống
+  getHistorySystemSettings: async ({ pageNumber = 1, pageSize = 10 } = {}) => {
+  const response = await fetcher.get("/dashboard/history-system-setting", {
+    params: { pageNumber, pageSize }
+  });
+  return response.data?.data || response.data;
+},
 
   // GET: Báo cáo hệ thống cho Admin (thống kê tháng + hoạt động gần đây)
   getAdminSystemReport: async ({ pageNumber = 1, pageSize = 10 } = {}) => {

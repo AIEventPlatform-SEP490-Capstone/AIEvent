@@ -1,6 +1,7 @@
 using AIEvent.Application.DTOs.Booking; 
 using AIEvent.Application.DTOs.Event;
-using AIEvent.Application.DTOs.InviteFriend; 
+using AIEvent.Application.DTOs.InviteFriend;
+using AIEvent.Domain.Entities;
 
 namespace AIEvent.Application.Services.Interfaces
 {
@@ -13,5 +14,6 @@ namespace AIEvent.Application.Services.Interfaces
         Task EnqueueUserEmbeddingJobAsync(Guid userId);
         Task EnqueueEmbedNewEventJobAsync(Guid eventId);
         Task EnqueueCancelEventNotificationJobAsync(CancelEventNotificationRequest request);
+        Task EnqueueNotifyPlatformSettingChange(SystemSetting newSetting);
     }
 }

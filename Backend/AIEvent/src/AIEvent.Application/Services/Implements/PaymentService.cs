@@ -380,25 +380,31 @@ namespace AIEvent.Application.Services.Implements
         {
             try
             {
-                var systemSetting = await _unitOfWork.SystemSettingRepository
+                var allSettings = await _unitOfWork.SystemSettingRepository
                     .Query()
-                    .FirstOrDefaultAsync(s => !s.IsDeleted);
-                if (systemSetting == null)
+                    .AsNoTracking()
+                    .Where(s => !s.IsDeleted)
+                    .OrderByDescending(s => s.UpdatedAt)               
+                    .ToListAsync();
+
+                if (!allSettings.Any())
                 {
                     _logger.LogError("SystemSetting not found");
                     return;
                 }
 
-                var payoutDeadline = DateTime.UtcNow.AddMinutes(-systemSetting.DatePayout);
+                var settingCache = new Dictionary<string, SystemSetting>();
+
+                var defaultSetting = allSettings.First();
+
                 var pendingEvents = await _unitOfWork.EventRepository
                     .Query()
                     .Include(e => e.OrganizerProfile)
                     .Where(e => e.Status == EventStatus.WaitingForPayout
-                                && e.CompletedAt <= payoutDeadline 
                                 && e.PayoutAttemptCount < 20
                                 && !e.IsDeleted)
                     .OrderBy(e => e.CompletedAt)
-                    .Take(50)
+                    .Take(200)              
                     .ToListAsync();
 
                 if (!pendingEvents.Any())
@@ -406,12 +412,51 @@ namespace AIEvent.Application.Services.Implements
                     _logger.LogInformation("No events ready for payout.");
                     return;
                 }
-                 
-                decimal platformFeePercent = systemSetting.FlatformFee;
-                decimal platformFixedFee = systemSetting.FixFee;
+
+                pendingEvents = pendingEvents
+                    .Where(ev =>
+                    {
+                        var key = $"{ev.SaleStartTime!.Value:yyyy-MM}";
+
+                        if (!settingCache.TryGetValue(key, out var setting))
+                        {
+                            setting = allSettings.FirstOrDefault(s =>
+                                s.UpdatedAt!.Value.Year == ev.SaleStartTime.Value.Year &&
+                                s.UpdatedAt.Value.Month == ev.SaleStartTime.Value.Month)
+                                ?? defaultSetting;
+
+                            settingCache[key] = setting;
+                        }
+
+                        var deadline = DateTime.UtcNow.AddMinutes(-setting.DatePayout);
+                        return ev.CompletedAt <= deadline;
+                    })
+                    .Take(50)
+                    .ToList();
+
+                if (!pendingEvents.Any())
+                {
+                    _logger.LogInformation("No events meet payout deadline after applying month-based SystemSetting.");
+                    return;
+                }
 
                 foreach (var ev in pendingEvents)
                 {
+                    var key = $"{ev.SaleStartTime!.Value:yyyy-MM}";
+
+                    if (!settingCache.TryGetValue(key, out var setting))
+                    {
+                        setting = allSettings.FirstOrDefault(s =>
+                            s.UpdatedAt!.Value.Year == ev.SaleStartTime.Value.Year &&
+                            s.UpdatedAt.Value.Month == ev.SaleStartTime.Value.Month)
+                            ?? defaultSetting;
+
+                        settingCache[key] = setting;
+                    }
+
+                    decimal platformFeePercent = setting.FlatformFee;
+                    decimal platformFixedFee = setting.FixFee;
+
                     if (ev.Status != EventStatus.WaitingForPayout ||
                             ev.OrganizerProfile == null ||
                             ev.TotalAmount <= 0)

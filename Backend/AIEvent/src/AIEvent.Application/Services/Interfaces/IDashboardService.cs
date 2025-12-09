@@ -13,7 +13,7 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result<RevenueStatisticsResponse>> GetRevenueStatisticsAsync(Guid organizerProfileId, DashboardFilterRequest? filter = null);
         Task<Result<NetRevenueStatisticsResponse>> GetNetRevenueStatisticsAsync(Guid organizerProfileId, DashboardFilterRequest? filter = null);
         Task<Result<RevenueByCategoryTagResponse>> GetRevenueByCategoryTagAsync(Guid organizerProfileId, DashboardFilterRequest? filter = null);
-        Task<Result> UpdateSystemSetiing(string adminId, SystemSettingRequest request);
+        Task<Result> CreateSystemSetting(Guid id, SystemSettingRequest request);
         Task<Result<SystemSettingResponse>> GetSystemSetting(string adminId);
         Task<Result<AdminDashboardResponse>> GetAdminDashboardAsync(int? year = null, int? month = null);
         Task<Result<BasePaginated<EventManagementResponse>>> GetEventManagementAsync(string? search = null, int pageNumber = 1, int pageSize = 10);
@@ -23,6 +23,6 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result<List<EventStatisticByMonthResponse>>> GetStatisticsEventsByMonthAsync(int year, EventStatus status);
         Task<Result<List<OrganizerStatisticResponse>>> GetTotalOrganizersCreatedEventsByMonthAsync(int year);
         Task<Result<ApprovedSummaryResponse>> GetOrganizerAndEventApprovedSummaryAsync();
-    }
+        Task<Result<BasePaginated<SystemSettingResponse>>> GetSystemSettingListAsync(string adminId, int pageNumber = 1, int pageSize = 10);    }
 }
 
