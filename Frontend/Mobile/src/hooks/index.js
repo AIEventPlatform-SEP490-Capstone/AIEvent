@@ -4,4 +4,5 @@ export { useFavoriteEvents } from './useFavoriteEvents';
 export { useRatings } from './useRatings';
 export { useAIChat } from './useAIChat';
 export { useVoiceRecording } from './useVoiceRecording';
+export { useNotifications } from './useNotifications';
 

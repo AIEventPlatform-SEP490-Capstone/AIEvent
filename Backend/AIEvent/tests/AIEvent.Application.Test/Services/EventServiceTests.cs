@@ -26,6 +26,7 @@ namespace AIEvent.Application.Test.Services
        private static readonly Guid TestEventCategoryId = new Guid("22222222-2222-2222-2222-222222222233");
 
        private readonly Mock<IUnitOfWork> _mockUnitOfWork;
+       private readonly Mock<IPayOSService> _mockpayOSService;
        private readonly Mock<ITransactionHelper> _mockTransactionHelper;
        private readonly Mock<IMapper> _mockMapper;
        private readonly Mock<IHangfireJobService> _mockHangfireJobService;
@@ -39,13 +40,15 @@ namespace AIEvent.Application.Test.Services
            _mockMapper = new Mock<IMapper>();
            _mockHangfireJobService = new Mock<IHangfireJobService>();
            _mockNotificationService = new Mock<INotificationService>();
+           _mockpayOSService = new Mock<IPayOSService>();
 
-           _eventService = new EventService(
+            _eventService = new EventService(
                _mockUnitOfWork.Object,
                _mockTransactionHelper.Object,
                _mockMapper.Object,
                _mockHangfireJobService.Object,
-               _mockNotificationService.Object);
+               _mockNotificationService.Object,
+               _mockpayOSService.Object);
        }
 
 

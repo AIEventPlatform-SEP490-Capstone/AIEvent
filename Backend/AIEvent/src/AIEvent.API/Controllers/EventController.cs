@@ -165,19 +165,20 @@ namespace AIEvent.API.Controllers
 
         [HttpGet("status")]
         [Authorize(Roles = "Admin, Manager, Organizer")]
-        public async Task<ActionResult<SuccessResponse<BasePaginated<EventsRawResponse>>>> GetEventStatus([FromQuery] string? search,
+        public async Task<ActionResult<SuccessResponse<BasePaginated<EventsRawResponse>>>> GetEventStatus([FromQuery] Guid? organizerId = null,
+                                                                                                          [FromQuery] string? search = null,
                                                                                                           [FromQuery] EventStatus? status = null,
                                                                                                           [FromQuery] DateTime? startDate = null,
                                                                                                           [FromQuery] DateTime? endDate = null,
                                                                                                           [FromQuery] int pageNumber = 1,
                                                                                                           [FromQuery] int pageSize = 10)
         {
-            Guid organizerId = Guid.Empty;
-            if (User.IsInRole("Organizer"))
+            Guid? finalOrganizerId = organizerId;
+            if (!finalOrganizerId.HasValue && User.IsInRole("Organizer"))
             {
-                organizerId = User.GetRequiredOrganizerId();
+                finalOrganizerId = User.GetRequiredOrganizerId();
             }
-            var result = await _eventService.GetAllEventStatusAsync(organizerId, search, status, startDate, endDate, pageNumber, pageSize);
+            var result = await _eventService.GetAllEventStatusAsync(finalOrganizerId, search, status, startDate, endDate, pageNumber, pageSize);
 
             if (!result.IsSuccess)
             {
@@ -414,6 +415,40 @@ namespace AIEvent.API.Controllers
 				result.Value!,
 				SuccessCodes.Success,
 				"Event related retrieved successfully"));
+		}
+
+		[HttpPatch("{id}/resolve-error-payment")]
+		[Authorize(Roles = "Admin, Manager")]
+		public async Task<ActionResult<SuccessResponse<object>>> ResolveErrorPayment(Guid id)
+		{
+			var result = await _eventService.ResolveErrorPaymentAsync(id);
+
+			if (!result.IsSuccess)
+			{
+				return BadRequest(result.Error!);
+			}
+
+			return Ok(SuccessResponse<object>.SuccessResult(
+				new { },
+				SuccessCodes.Success,
+				"Error payment resolved successfully. Event status changed to PaidOut."));
+		}
+
+		[HttpPatch("{id}/cancel")]
+		[Authorize(Roles = "Manager")]
+		public async Task<ActionResult<SuccessResponse<object>>> CancelEvent(Guid id, [FromBody] CancelEventRequest request)
+		{
+			var result = await _eventService.CancelEventAsync(id, request);
+
+			if (!result.IsSuccess)
+			{
+				return BadRequest(result.Error!);
+			}
+
+			return Ok(SuccessResponse<object>.SuccessResult(
+				new { },
+				SuccessCodes.Success,
+				"Event cancelled successfully"));
 		}
 	}
 }

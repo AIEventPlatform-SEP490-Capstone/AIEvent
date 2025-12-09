@@ -13,6 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { styles } from './styles';
 import CustomText from '../../components/common/customTextRN';
+import NotificationBadge from '../../components/common/NotificationBadge';
 import { LinearGradient } from 'expo-linear-gradient';
 import EventCard from '../../components/presentation/EventCard';
 import EventCardWithFavorite from '../../components/presentation/EventCardWithFavorite';
@@ -401,9 +402,11 @@ const HomeScreen = () => {
           <CustomText variant="h2" color="white" style={styles.headerTitle}>
             Khám phá sự kiện
           </CustomText>
-          <TouchableOpacity style={styles.notificationButton} activeOpacity={0.7}>
-            <Image source={Images.bell} style={styles.notificationIcon} />
-          </TouchableOpacity>
+          <NotificationBadge 
+            onPress={() => {
+              navigation.navigate(ScreenNames.NOTIFICATIONS_SCREEN);
+            }}
+          />
         </View>
       </LinearGradient>
 

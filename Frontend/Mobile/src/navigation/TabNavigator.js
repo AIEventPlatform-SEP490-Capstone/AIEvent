@@ -12,6 +12,7 @@ import SettingsScreen from '../screens/settingsScreen';
 import QrScannerScreen from '../screens/qrScannerScreen';
 import CheckInConfirmationScreen from '../screens/qrScannerScreen/CheckInConfirmationScreen';
 import BookingScreen from '../screens/bookingScreen';
+import NotificationsScreen from '../screens/notificationsScreen';
 
 import ScreenNames from '../constants/ScreenNames';
 import Images from '../constants/Images';
@@ -99,6 +100,13 @@ const HomeStack = () => {
       <Stack.Screen
         name={ScreenNames.AI_CHAT_SCREEN}
         component={AIChatScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name={ScreenNames.NOTIFICATIONS_SCREEN}
+        component={NotificationsScreen}
         options={{
           headerShown: false,
         }}
@@ -360,7 +368,7 @@ const TabNavigator = () => {
       ];
     }
 
-    // Người dùng thường - giữ nguyên 5 tab
+    // Người dùng thường - 5 tab
     return [
       {
         name: 'HomeTab',

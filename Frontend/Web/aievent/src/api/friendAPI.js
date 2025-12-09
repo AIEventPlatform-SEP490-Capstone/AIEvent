@@ -160,10 +160,30 @@ export const friendAPI = {
 
   /**
    * Lấy danh sách bạn bè và tọa độ của họ để hiển thị trên map
+   * @param {Object} params - Tham số tìm kiếm
+   * @param {number} params.radius - Bán kính tìm kiếm (km) - sẽ chuyển sang mét khi gọi API
+   * @param {number} params.latitude - Vĩ độ của người dùng
+   * @param {number} params.longitude - Kinh độ của người dùng
    * @returns {Promise} Response từ API chứa danh sách bạn bè với latitude và longitude
    */
-  getFriendsLocation: async () => {
-    const response = await fetcher.get("/friend/location");
+  getFriendsLocation: async (params = {}) => {
+    const { radius, latitude, longitude } = params;
+    const queryParams = new URLSearchParams();
+    
+    // Backend nhận radius là mét, nhưng frontend dùng km
+    if (radius !== undefined && radius !== null) {
+      queryParams.append('radius', (radius * 1000).toString()); // Chuyển km sang mét
+    }
+    if (latitude !== undefined && latitude !== null) {
+      queryParams.append('latitude', latitude.toString());
+    }
+    if (longitude !== undefined && longitude !== null) {
+      queryParams.append('longitude', longitude.toString());
+    }
+    
+    const queryString = queryParams.toString();
+    const url = queryString ? `/friend/location?${queryString}` : '/friend/location';
+    const response = await fetcher.get(url);
     return response.data?.data || response.data;
   },
 };

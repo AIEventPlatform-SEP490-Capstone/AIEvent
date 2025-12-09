@@ -90,10 +90,12 @@ export function EventCard({
         <div className="absolute top-3 left-3 right-3 z-10 flex justify-between items-start">
           {/* Left: Sale Status Badge */}
           <div>
-            {event.saleStartTime && event.saleEndTime && (
+            {event.saleStartTime && event.saleEndTime && event.startTime && event.endTime && (
               <SaleStatusBadge
                 saleStartTime={event.saleStartTime}
                 saleEndTime={event.saleEndTime}
+                startTime={event.startTime}
+                endTime={event.endTime}
                 onImage={true}
               />
             )}
@@ -236,12 +238,7 @@ export function EventCard({
               >
                 {isSoldOut
                   ? "Đã hết vé"
-                  : isMostlyBooked
-                  ? `⚠️ Còn ${event.totalTickets - (event.soldQuantity || 0)} vé`
-                  : `${100 - Math.round(ticketPercentage)}% còn lại`}
-              </span>
-              <span className="text-xs text-gray-500">
-                {Math.round(ticketPercentage)}% đã bán
+                  : isMostlyBooked}
               </span>
             </div>
           </div>
