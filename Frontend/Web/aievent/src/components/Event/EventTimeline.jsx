@@ -41,6 +41,7 @@ export function EventTimeline({
   rawTimes = [], 
   onTimeChange, 
   minDateTime,
+  maxDateTime,
   // Thêm props để xử lý validation
   validationTimes = {},
   onValidationChange
@@ -114,15 +115,21 @@ export function EventTimeline({
 
               // Xác định min và max cho từng trường thời gian
               let minTime = minDateTime;
-              let maxTime = null;
+              let maxTime = maxDateTime || null;
               
               // Logic xác định min/max time dựa trên các trường thời gian khác
               if (index === 0) { // Mở bán vé
                 // Không có min cụ thể, chỉ cần sau thời điểm hiện tại
-                maxTime = validationTimes.startTime || null; // Trước thời gian bắt đầu sự kiện
+                const eventStartTime = validationTimes.startTime;
+                if (eventStartTime && (!maxTime || new Date(eventStartTime) < new Date(maxTime))) {
+                  maxTime = eventStartTime; // Trước thời gian bắt đầu sự kiện
+                }
               } else if (index === 1) { // Đóng bán vé
                 minTime = validationTimes.saleStartTime || minDateTime; // Sau thời gian mở bán vé
-                maxTime = validationTimes.startTime || null; // Trước thời gian bắt đầu sự kiện
+                const eventStartTime = validationTimes.startTime;
+                if (eventStartTime && (!maxTime || new Date(eventStartTime) < new Date(maxTime))) {
+                  maxTime = eventStartTime; // Trước thời gian bắt đầu sự kiện
+                }
               } else if (index === 2) { // Sự kiện bắt đầu
                 minTime = validationTimes.saleEndTime || minDateTime; // Sau thời gian đóng bán vé
               } else if (index === 3) { // Sự kiện kết thúc
@@ -217,13 +224,19 @@ export function EventTimeline({
 
           // Xác định min và max cho từng trường thời gian (mobile)
           let minTime = minDateTime;
-          let maxTime = null;
+          let maxTime = maxDateTime || null;
           
           if (index === 0) { // Mở bán vé
-            maxTime = validationTimes.startTime || null;
+            const eventStartTime = validationTimes.startTime;
+            if (eventStartTime && (!maxTime || new Date(eventStartTime) < new Date(maxTime))) {
+              maxTime = eventStartTime;
+            }
           } else if (index === 1) { // Đóng bán vé
             minTime = validationTimes.saleStartTime || minDateTime;
-            maxTime = validationTimes.startTime || null;
+            const eventStartTime = validationTimes.startTime;
+            if (eventStartTime && (!maxTime || new Date(eventStartTime) < new Date(maxTime))) {
+              maxTime = eventStartTime;
+            }
           } else if (index === 2) { // Sự kiện bắt đầu
             minTime = validationTimes.saleEndTime || minDateTime;
           } else if (index === 3) { // Sự kiện kết thúc
