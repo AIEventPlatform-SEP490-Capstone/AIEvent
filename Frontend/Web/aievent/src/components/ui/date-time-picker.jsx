@@ -102,9 +102,10 @@ const DateTimePicker = ({
     
     // Kiểm tra trước thời gian kết thúc nếu có
     if (max) {
-      if (selected > new Date(max)) {
+      const maxDate = new Date(max);
+      if (selected > maxDate) {
         if (onErrorChange) {
-          onErrorChange(`${fieldName} không được sau ${new Date(max).toLocaleString('vi-VN')}`);
+          onErrorChange(`${fieldName} không được sau ${maxDate.toLocaleString('vi-VN')}`);
         }
         return;
       }

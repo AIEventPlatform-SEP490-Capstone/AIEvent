@@ -1,10 +1,25 @@
 // DateTime validation utilities
 export const datetimeValidation = {
+  // Get max date (2 months from now)
+  getMaxDate: (now = new Date()) => {
+    const maxDate = new Date(now);
+    maxDate.setMonth(maxDate.getMonth() + 2);
+    return maxDate;
+  },
+
   // Validate that a date is in the future
   isFutureDate: (dateString, now = new Date()) => {
     if (!dateString) return false;
     const date = new Date(dateString);
     return date > now;
+  },
+
+  // Validate that a date is within 2 months from now
+  isWithinTwoMonths: (dateString, now = new Date()) => {
+    if (!dateString) return false;
+    const date = new Date(dateString);
+    const maxDate = datetimeValidation.getMaxDate(now);
+    return date <= maxDate;
   },
 
   // Validate date relationships

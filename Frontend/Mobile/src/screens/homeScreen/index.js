@@ -108,7 +108,6 @@ const HomeScreen = () => {
 
       // The data transformation is now handled in the Redux slice
       // We just need to check if the call was successful
-      // console.log('Events response:', response);
       if (response && response.success) {
         // The events are already transformed in the Redux store
         // The useEffect will handle updating filteredEvents
@@ -168,7 +167,12 @@ const HomeScreen = () => {
     return {
       ...eventData,
       price: calculateDisplayPrice(eventData),
-      tags: transformTags(eventData.tags || eventData.Tags || eventData.eventTags || [])
+      tags: transformTags(eventData.tags || eventData.Tags || eventData.eventTags || []),
+      // Include sale times for SaleStatusBadge and EventTimeline
+      saleStartTime: eventData.saleStartTime || eventData.SaleStartTime,
+      saleEndTime: eventData.saleEndTime || eventData.SaleEndTime,
+      startTime: eventData.startTime || eventData.StartTime,
+      endTime: eventData.endTime || eventData.EndTime,
     };
   };
 

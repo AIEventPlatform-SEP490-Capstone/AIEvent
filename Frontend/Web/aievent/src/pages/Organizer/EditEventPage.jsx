@@ -80,6 +80,8 @@ import { EventTimeline } from '../../components/Event/EventTimeline';
 import { useSidebar } from '../../components/ui/sidebar'; // Add this import
 // Import number formatting utility
 import { formatNumberWithSeparator, removeNumberFormatting } from '../../utils/numberFormat';
+// Import datetime validation utility
+import datetimeValidation from '../../utils/datetimeValidation';
 
 // Validation schema (updated to match CreateEventPage)
 const editEventSchema = z.object({
@@ -936,12 +938,15 @@ const EditEventPage = () => {
     // Create now date in the same timezone as the input dates (UTC+7)
     // Since datetime inputs are in local time (UTC+7), we need to compare with local time
     const now = new Date();
+    const maxDate = datetimeValidation.getMaxDate(now);
     
-    // Check if any datetime is in the past
+    // Check if any datetime is in the past or beyond 2 months
     if (startTime) {
       const start = new Date(startTime);
       if (start <= now) {
         newErrors.startTime = 'Thời gian bắt đầu phải sau thời điểm hiện tại';
+      } else if (start > maxDate) {
+        newErrors.startTime = 'Thời gian bắt đầu không được quá 2 tháng kể từ hiện tại';
       }
     }
     
@@ -949,6 +954,8 @@ const EditEventPage = () => {
       const end = new Date(endTime);
       if (end <= now) {
         newErrors.endTime = 'Thời gian kết thúc phải sau thời điểm hiện tại';
+      } else if (end > maxDate) {
+        newErrors.endTime = 'Thời gian kết thúc không được quá 2 tháng kể từ hiện tại';
       }
     }
     
@@ -956,6 +963,8 @@ const EditEventPage = () => {
       const saleStart = new Date(saleStartTime);
       if (saleStart <= now) {
         newErrors.saleStartTime = 'Thời gian bắt đầu bán vé phải sau thời điểm hiện tại';
+      } else if (saleStart > maxDate) {
+        newErrors.saleStartTime = 'Thời gian bắt đầu bán vé không được quá 2 tháng kể từ hiện tại';
       }
     }
     
@@ -963,6 +972,8 @@ const EditEventPage = () => {
       const saleEnd = new Date(saleEndTime);
       if (saleEnd <= now) {
         newErrors.saleEndTime = 'Thời gian kết thúc bán vé phải sau thời điểm hiện tại';
+      } else if (saleEnd > maxDate) {
+        newErrors.saleEndTime = 'Thời gian kết thúc bán vé không được quá 2 tháng kể từ hiện tại';
       }
     }
     
@@ -1013,7 +1024,19 @@ const EditEventPage = () => {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
   
+  // Get maximum datetime for input fields (2 months from now)
+  const getMaxDateTime = () => {
+    const maxDate = datetimeValidation.getMaxDate();
+    const year = maxDate.getFullYear();
+    const month = String(maxDate.getMonth() + 1).padStart(2, '0');
+    const day = String(maxDate.getDate()).padStart(2, '0');
+    const hours = String(maxDate.getHours()).padStart(2, '0');
+    const minutes = String(maxDate.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+  
   const minDateTime = getMinDateTime();
+  const maxDateTime = getMaxDateTime();
 
   // Check if a step is complete
   const isStepComplete = (step) => {
@@ -1686,6 +1709,7 @@ const EditEventPage = () => {
               })()}
               isEditable={true}
               minDateTime={minDateTime}
+              maxDateTime={maxDateTime}
             />
             {/* Display timeline validation errors */}
             {hasValidated && (

@@ -239,6 +239,19 @@ export const eventAPI = {
     }
   },
 
+  // Cancel event (requires Manager role)
+  cancelEvent: async (eventId, reasonCancel) => {
+    const response = await fetcher.patch(`/event/${eventId}/cancel`, {
+      reasonCancel: reasonCancel
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    // Return the actual response data
+    return response.data?.data || response.data;
+  },
+
   // Get draft events (requires Organizer role)
   getDraftEvents: async (params = {}) => {
     const queryParams = new URLSearchParams();
@@ -277,6 +290,7 @@ export const eventAPI = {
     if (params.endDate) queryParams.append('endDate', params.endDate);
     if (params.pageNumber) queryParams.append('pageNumber', params.pageNumber);
     if (params.pageSize) queryParams.append('pageSize', params.pageSize);
+    if (params.organizerId) queryParams.append('organizerId', params.organizerId);
 
     const response = await fetcher.get(`/event/status?${queryParams.toString()}`);
     // Return the actual data from the paginated response
@@ -310,6 +324,21 @@ export const eventAPI = {
       },
     });
     // Return the actual response data
+    return response.data?.data || response.data;
+  },
+
+  // Cancel event by manager for violations (requires Manager role)
+  cancelEventByManager: async (eventId, reasonCancel) => {
+    const payload = {
+      reasonCancel,
+    };
+
+    const response = await fetcher.patch(`/event/${eventId}/cancel`, payload, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
     return response.data?.data || response.data;
   },
 
@@ -590,6 +619,13 @@ export const eventAPI = {
     }
 
     return data;
+  },
+
+  // Resolve error payment (requires Admin, Manager roles)
+  resolveErrorPayment: async (eventId) => {
+    const response = await fetcher.patch(`/event/${eventId}/resolve-error-payment`);
+    // Return the actual response data
+    return response.data?.data || response.data;
   },
   
 };

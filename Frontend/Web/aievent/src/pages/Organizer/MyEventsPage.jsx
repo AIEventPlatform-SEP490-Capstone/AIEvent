@@ -122,7 +122,7 @@ const MyEventsPage = () => {
       setInitiationDropdownLabel('Bị từ chối');
     } 
     // Reset initiation dropdown to default when selecting completion statuses or other main tabs
-    else if ([EventStatus.WaitingForPayout, EventStatus.PaidOut, 
+    else if ([EventStatus.WaitingForPayout, EventStatus.PaidOut, EventStatus.ErrorPayment,
               'all', 'draft', EventStatus.Cancelled].includes(activeTab)) {
       setInitiationDropdownLabel('Khởi tạo sự kiện');
     }
@@ -132,6 +132,8 @@ const MyEventsPage = () => {
       setCompletionDropdownLabel('Chờ thanh toán');
     } else if (activeTab === EventStatus.PaidOut) {
       setCompletionDropdownLabel('Đã thanh toán');
+    } else if (activeTab === EventStatus.ErrorPayment) {
+      setCompletionDropdownLabel('Lỗi thanh toán');
     }
     // Reset completion dropdown to default when selecting initiation statuses or other main tabs
     else if ([EventStatus.PendingApproval, EventStatus.Approved, 
@@ -272,13 +274,13 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       } catch (error) {
         console.error('Error deleting event:', error);
         if (error.response?.status === 403) {
-          toast.error('❌ Bạn không có quyền xóa sự kiện này');
+          toast.error(' Bạn không có quyền xóa sự kiện này');
         } else if (error.response?.status === 404) {
-          toast.error('❌ Sự kiện không tồn tại');
+          toast.error(' Sự kiện không tồn tại');
         } else if (error.response?.status === 400) {
-          toast.error('❌ Không thể xóa sự kiện đã có người đăng ký');
+          toast.error(' Không thể xóa sự kiện đã có người đăng ký');
         } else {
-          toast.error('❌ Có lỗi xảy ra khi xóa sự kiện');
+          toast.error(' Có lỗi xảy ra khi xóa sự kiện');
         }
       }
     } else {
@@ -311,13 +313,13 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       } catch (error) {
         console.error('Error deleting event:', error);
         if (error.response?.status === 403) {
-          toast.error('❌ Bạn không có quyền xóa sự kiện này');
+          toast.error(' Bạn không có quyền xóa sự kiện này');
         } else if (error.response?.status === 404) {
-          toast.error('❌ Sự kiện không tồn tại');
+          toast.error(' Sự kiện không tồn tại');
         } else if (error.response?.status === 400) {
-          toast.error('❌ Không thể xóa sự kiện đã có người đăng ký');
+          toast.error(' Không thể xóa sự kiện đã có người đăng ký');
         } else {
-          toast.error('❌ Có lỗi xảy ra khi xóa sự kiện');
+          toast.error(' Có lỗi xảy ra khi xóa sự kiện');
         }
       }
     }
@@ -363,6 +365,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       case EventStatus.Cancelled: return 'Đã hủy';
       case EventStatus.WaitingForPayout: return 'Chờ thanh toán';
       case EventStatus.PaidOut: return 'Đã thanh toán';
+      case EventStatus.ErrorPayment: return 'Lỗi thanh toán';
       default: return tab;
     }
   };
@@ -523,6 +526,11 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
         badge: "bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300",
         icon: CheckCircle,
         glow: "shadow-lg shadow-blue-500/20"
+      },
+      [EventStatus.ErrorPayment]: {
+        badge: "bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-300",
+        icon: AlertTriangle,
+        glow: "shadow-lg shadow-orange-500/20"
       },
       [EventStatus.PendingApproval]: {
         badge: "bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300",
@@ -893,7 +901,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                     setShowInitiationDropdown(false);
                   }}
                   className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${
-                    [EventStatus.WaitingForPayout, EventStatus.PaidOut].includes(activeTab)
+                    [EventStatus.WaitingForPayout, EventStatus.PaidOut, EventStatus.ErrorPayment].includes(activeTab)
                       ? 'bg-white text-blue-600 shadow-sm'
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
@@ -931,6 +939,19 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                       }`}
                     >
                       Đã thanh toán
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveTab(EventStatus.ErrorPayment);
+                        setShowCompletionDropdown(false);
+                      }}
+                      className={`block w-full text-left px-4 py-2 text-sm ${
+                        activeTab === EventStatus.ErrorPayment
+                          ? 'bg-blue-50 text-blue-600'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      Lỗi thanh toán
                     </button>
                   </div>
                 )}
@@ -997,7 +1018,11 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                 return (
                   <div
                     key={event.eventId}
-                    className="group backdrop-blur-sm bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-2xl overflow-hidden hover:border-indigo-300 dark:hover:border-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300 shadow-lg"
+                    className={`group backdrop-blur-sm ${
+                      event.isFlagWarning 
+                        ? 'bg-amber-50/80 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700' 
+                        : 'bg-white/60 dark:bg-white/5 border-white/60 dark:border-white/10'
+                    } border rounded-2xl overflow-hidden hover:border-indigo-300 dark:hover:border-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300 shadow-lg`}
                   >
                     <div className="flex flex-col lg:flex-row gap-0">
                       {/* Event thumbnail */}
@@ -1062,6 +1087,32 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                             </div>
                           </div>
                         </div>
+
+                        {/* Status messages */}
+                        {eventStatus === EventStatus.Rejected && event.rejectReason && (
+                          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                            <p className="text-red-800 text-sm">
+                              <strong>Lý do từ chối:</strong> {event.rejectReason}
+                            </p>
+                          </div>
+                        )}
+
+                        {eventStatus === EventStatus.Cancelled && event.reasonCancel && (
+                          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+                            <p className="text-gray-800 text-sm">
+                              <strong>Lý do hủy:</strong> {event.reasonCancel}
+                            </p>
+                          </div>
+                        )}
+
+                        {event.isFlagWarning && (
+                          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4 flex items-start gap-2">
+                            <AlertTriangle className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                            <p className="text-orange-800 text-sm">
+                              <strong>Cảnh báo:</strong> Sự kiện này có báo cáo vi phạm
+                            </p>
+                          </div>
+                        )}
 
                         {/* Event category and ticket type badges */}
                         <div className="flex items-center gap-2 mb-4">

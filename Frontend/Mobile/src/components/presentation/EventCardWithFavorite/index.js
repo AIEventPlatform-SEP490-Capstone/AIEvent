@@ -4,6 +4,7 @@ import { useDispatch } from 'react-redux';
 import Toast from 'react-native-toast-message';
 import { styles } from '../EventCard/styles';
 import CustomText from '../../common/customTextRN';
+import SaleStatusBadge from '../SaleStatusBadge';
 import Images from '../../../constants/Images';
 import Colors from '../../../constants/Colors';
 import Fonts from '../../../constants/Fonts';
@@ -144,6 +145,19 @@ const EventCardWithFavorite = ({ event, onPress, isRecommended = false }) => {
       {/* Image Section with Overlay */}
       <View style={styles.imageContainer}>
         <Image source={getEventImage()} style={styles.eventImage} />
+        
+        {/* Sale Status Badge on Image */}
+        {event.saleStartTime && event.saleEndTime && event.startTime && event.endTime && (
+          <View style={styles.saleStatusBadgeContainer}>
+            <SaleStatusBadge
+              saleStartTime={event.saleStartTime}
+              saleEndTime={event.saleEndTime}
+              startTime={event.startTime}
+              endTime={event.endTime}
+              onImage={true}
+            />
+          </View>
+        )}
         
         {/* AI Recommendation Badge */}
         {isRecommended && (

@@ -1473,7 +1473,7 @@ namespace AIEvent.Application.Services.Implements
 				.Query()
 				.Include(e => e.OrganizerProfile)
 				.FirstOrDefaultAsync(e => e.Id == eventId
-                 && e.Status != EventStatus.ErrorPayment
+                 && e.Status == EventStatus.ErrorPayment
                  && !e.IsDeleted);
 
 			if (ev == null)

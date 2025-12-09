@@ -570,27 +570,59 @@ const CreateEventPage = () => {
   };
   // Remove image
   const removeImage = (index) => {
-    const newImages = selectedImages.filter((_, i) => i !== index);
-    const newPreviews = imagePreview.filter((_, i) => i !== index);
+    const removedPreview = imagePreview[index];
     
-    setSelectedImages(newImages);
+    // Remove from preview array
+    const newPreviews = imagePreview.filter((_, i) => i !== index);
     setImagePreview(newPreviews);
     
+    // Only remove from selectedImages if it's a blob URL (newly uploaded file)
+    if (removedPreview && removedPreview.startsWith('blob:')) {
+      // Find the corresponding file index in selectedImages
+      // Count how many blob URLs come before this index
+      const blobsBefore = imagePreview.slice(0, index).filter(url => 
+        typeof url === 'string' && url.startsWith('blob:')
+      ).length;
+      
+      // Remove the corresponding file
+      const newImages = selectedImages.filter((_, i) => i !== blobsBefore);
+      setSelectedImages(newImages);
+      
+      // Revoke the blob URL to free memory
+      URL.revokeObjectURL(removedPreview);
+    }
+    
     // Set error if no images left
-    if (newImages.length === 0 && newPreviews.length === 0) {
+    if (newPreviews.length === 0) {
       setImageError('Vui lòng tải lên ít nhất một hình ảnh sự kiện');
     }
   };
   // Remove evidence image
   const removeEvidenceImage = (index) => {
-    const newImages = selectedEvidenceImages.filter((_, i) => i !== index);
-    const newPreviews = evidenceImagePreview.filter((_, i) => i !== index);
+    const removedPreview = evidenceImagePreview[index];
     
-    setSelectedEvidenceImageUrls(newImages);
+    // Remove from preview array
+    const newPreviews = evidenceImagePreview.filter((_, i) => i !== index);
     setEvidenceImagePreview(newPreviews);
     
+    // Only remove from selectedEvidenceImages if it's a blob URL (newly uploaded file)
+    if (removedPreview && removedPreview.startsWith('blob:')) {
+      // Find the corresponding file index in selectedEvidenceImages
+      // Count how many blob URLs come before this index
+      const blobsBefore = evidenceImagePreview.slice(0, index).filter(url => 
+        typeof url === 'string' && url.startsWith('blob:')
+      ).length;
+      
+      // Remove the corresponding file
+      const newImages = selectedEvidenceImages.filter((_, i) => i !== blobsBefore);
+      setSelectedEvidenceImageUrls(newImages);
+      
+      // Revoke the blob URL to free memory
+      URL.revokeObjectURL(removedPreview);
+    }
+    
     // Set error if no evidence images left
-    if (newImages.length === 0 && newPreviews.length === 0) {
+    if (newPreviews.length === 0) {
       setEvidenceImageError('Vui lòng tải lên ít nhất một hình ảnh bằng chứng');
     }
   };
@@ -1089,16 +1121,39 @@ const CreateEventPage = () => {
       }
       
       let imageUrls = [];
-      if (imagePreview.length > 0 && selectedImages.length === 0) {
-        imageUrls = [...imagePreview];
-      } else if (selectedImages.length > 0) {
-        imageUrls = await uploadImagesToCloudinary(selectedImages);
+      // Separate existing URLs (from clone/edit) and new files to upload
+      const existingImageUrls = imagePreview.filter(url => 
+        typeof url === 'string' && 
+        (url.startsWith('http://') || url.startsWith('https://')) &&
+        !url.startsWith('blob:')
+      );
+      
+      if (selectedImages.length > 0) {
+        // Upload new images to Cloudinary
+        const newImageUrls = await uploadImagesToCloudinary(selectedImages);
+        // Combine existing URLs with newly uploaded URLs
+        imageUrls = [...existingImageUrls, ...newImageUrls];
+      } else if (existingImageUrls.length > 0) {
+        // Only use existing URLs if no new images to upload
+        imageUrls = [...existingImageUrls];
       }
+      
       let evidenceImageUrls = [];
-      if (evidenceImagePreview.length > 0 && selectedEvidenceImages.length === 0) {
-        evidenceImageUrls = [...evidenceImagePreview];
-      } else if (selectedEvidenceImages.length > 0) {
-        evidenceImageUrls = await uploadImagesToCloudinary(selectedEvidenceImages);
+      // Separate existing URLs (from clone/edit) and new files to upload
+      const existingEvidenceUrls = evidenceImagePreview.filter(url => 
+        typeof url === 'string' && 
+        (url.startsWith('http://') || url.startsWith('https://')) &&
+        !url.startsWith('blob:')
+      );
+      
+      if (selectedEvidenceImages.length > 0) {
+        // Upload new evidence images to Cloudinary
+        const newEvidenceUrls = await uploadImagesToCloudinary(selectedEvidenceImages);
+        // Combine existing URLs with newly uploaded URLs
+        evidenceImageUrls = [...existingEvidenceUrls, ...newEvidenceUrls];
+      } else if (existingEvidenceUrls.length > 0) {
+        // Only use existing URLs if no new images to upload
+        evidenceImageUrls = [...existingEvidenceUrls];
       }
       
       // Calculate total tickets from ticketTypes array
@@ -1210,12 +1265,15 @@ const CreateEventPage = () => {
     // Create now date in the same timezone as the input dates (UTC+7)
     // Since datetime inputs are in local time (UTC+7), we need to compare with local time
     const now = new Date();
+    const maxDate = datetimeValidation.getMaxDate(now);
     
     // Check if any datetime is in the past
     if (startTime) {
       const start = new Date(startTime);
       if (start <= now) {
         newErrors.startTime = 'Thời gian bắt đầu phải sau thời điểm hiện tại';
+      } else if (start > maxDate) {
+        newErrors.startTime = 'Thời gian bắt đầu không được quá 2 tháng kể từ hiện tại';
       }
     }
     
@@ -1223,6 +1281,8 @@ const CreateEventPage = () => {
       const end = new Date(endTime);
       if (end <= now) {
         newErrors.endTime = 'Thời gian kết thúc phải sau thời điểm hiện tại';
+      } else if (end > maxDate) {
+        newErrors.endTime = 'Thời gian kết thúc không được quá 2 tháng kể từ hiện tại';
       }
     }
     
@@ -1230,6 +1290,8 @@ const CreateEventPage = () => {
       const saleStart = new Date(saleStartTime);
       if (saleStart <= now) {
         newErrors.saleStartTime = 'Thời gian bắt đầu bán vé phải sau thời điểm hiện tại';
+      } else if (saleStart > maxDate) {
+        newErrors.saleStartTime = 'Thời gian bắt đầu bán vé không được quá 2 tháng kể từ hiện tại';
       }
     }
     
@@ -1237,6 +1299,8 @@ const CreateEventPage = () => {
       const saleEnd = new Date(saleEndTime);
       if (saleEnd <= now) {
         newErrors.saleEndTime = 'Thời gian kết thúc bán vé phải sau thời điểm hiện tại';
+      } else if (saleEnd > maxDate) {
+        newErrors.saleEndTime = 'Thời gian kết thúc bán vé không được quá 2 tháng kể từ hiện tại';
       }
     }
     
@@ -1349,7 +1413,19 @@ const CreateEventPage = () => {
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
   
+  // Get maximum datetime for input fields (2 months from now)
+  const getMaxDateTime = () => {
+    const maxDate = datetimeValidation.getMaxDate();
+    const year = maxDate.getFullYear();
+    const month = String(maxDate.getMonth() + 1).padStart(2, '0');
+    const day = String(maxDate.getDate()).padStart(2, '0');
+    const hours = String(maxDate.getHours()).padStart(2, '0');
+    const minutes = String(maxDate.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+  
   const minDateTime = getMinDateTime();
+  const maxDateTime = getMaxDateTime();
   // Check if a step is complete
   const isStepComplete = (step) => {
     switch (step) {
@@ -1914,6 +1990,7 @@ const CreateEventPage = () => {
               })()}
               isEditable={true}
               minDateTime={minDateTime}
+              maxDateTime={maxDateTime}
               // Thêm props để xử lý validation
               validationTimes={{
                 startTime: watch('startTime'),

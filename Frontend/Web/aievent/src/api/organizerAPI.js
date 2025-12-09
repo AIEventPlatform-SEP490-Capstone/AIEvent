@@ -86,6 +86,21 @@ export const organizerAPI = {
 
     return response.data?.data || response.data;
   },
+
+  // Lấy danh sách organizer và sự kiện bị gán cờ
+  getOrganizerFlags: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.organizerId) queryParams.append("organizerId", params.organizerId);
+    if (params.minFlags !== undefined && params.minFlags !== null) queryParams.append("minFlags", params.minFlags);
+    if (params.pageNumber) queryParams.append("pageNumber", params.pageNumber);
+    if (params.pageSize) queryParams.append("pageSize", params.pageSize);
+
+    const query = queryParams.toString();
+    const response = await fetcher.get(
+      query ? `/organizer/flags?${query}` : "/organizer/flags"
+    );
+    return response.data?.data || response.data;
+  },
 };
 
 export default organizerAPI;
