@@ -613,33 +613,16 @@ Nhấn OK để xác nhận xóa.`;
                     </div>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-bold text-amber-900 mb-2">⚠️ Cảnh báo vi phạm</h3>
+                    <h3 className="text-lg font-bold text-amber-900 mb-2">Cảnh báo vi phạm</h3>
                     <p className="text-amber-800 leading-relaxed">
-                      Sự kiện này đã nhận được báo cáo vi phạm từ người dùng.
+                      <strong>Lý do hủy sự kiện:</strong> {event.reasonCancel}
                     </p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Cancellation Reason Banner */}
-            {event.status === EventStatus.Cancelled && event.reasonCancel && (
-              <div className="bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-300 rounded-2xl p-6 shadow-lg">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 rounded-full bg-gray-500 flex items-center justify-center">
-                      <XCircle className="w-6 h-6 text-white" />
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">Sự kiện đã bị hủy</h3>
-                    <p className="text-gray-700 leading-relaxed">
-                      <strong>Lý do:</strong> {event.reasonCancel}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+           
 
             {/* Rejection Reason Banner */}
             {event.status === EventStatus.Rejected && event.rejectReason && (
@@ -962,74 +945,76 @@ Nhấn OK để xác nhận xóa.`;
                   variant="secondary"
                 />
                 
-                <div className="border-t border-gray-200 my-2"></div>
+                {(event.status === EventStatus.Approved || event.status === EventStatus.WaitingForPayout) && (
+                  <>
+                    <div className="border-t border-gray-200 my-2"></div>
 
-                {event.status !== EventStatus.Cancelled && (
-                  <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
-                    <DialogTrigger asChild>
-                      <div className="relative">
-                        <ActionButton
-                          icon={Flag}
-                          label="Hủy sự kiện vi phạm"
-                          variant="danger"
-                          onClick={() => setIsCancelDialogOpen(true)}
-                        />
-                        {isCancelling && (
-                          <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center rounded-lg">
-                            <Loader2 className="w-6 h-6 text-white animate-spin" />
-                          </div>
-                        )}
-                      </div>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Hủy sự kiện vi phạm</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <p className="text-sm text-gray-600">
-                          Gửi thông báo đến organizer và gán cờ cho sự kiện vi phạm. Vui lòng cung cấp lý do hủy.
-                        </p>
-                        <div>
-                          <Label htmlFor="cancel-reason">Lý do hủy</Label>
-                          <Textarea
-                            id="cancel-reason"
-                            placeholder="Nhập lý do hủy sự kiện..."
-                            value={cancelReason}
-                            onChange={(e) => setCancelReason(e.target.value)}
-                            rows={4}
+                    <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+                      <DialogTrigger asChild>
+                        <div className="relative">
+                          <ActionButton
+                            icon={Flag}
+                            label="Hủy sự kiện vi phạm"
+                            variant="danger"
+                            onClick={() => setIsCancelDialogOpen(true)}
                           />
+                          {isCancelling && (
+                            <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center rounded-lg">
+                              <Loader2 className="w-6 h-6 text-white animate-spin" />
+                            </div>
+                          )}
                         </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            className="flex-1"
-                            onClick={() => {
-                              setCancelReason('');
-                              setIsCancelDialogOpen(false);
-                            }}
-                            disabled={isCancelling}
-                          >
-                            Hủy
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            className="flex-1"
-                            onClick={handleCancelEventByManager}
-                            disabled={isCancelling || !cancelReason.trim()}
-                          >
-                            {isCancelling ? (
-                              <>
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                Đang hủy...
-                              </>
-                            ) : (
-                              'Xác nhận hủy'
-                            )}
-                          </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Hủy sự kiện vi phạm</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <p className="text-sm text-gray-600">
+                            Gửi thông báo đến organizer và gán cờ cho sự kiện vi phạm. Vui lòng cung cấp lý do hủy.
+                          </p>
+                          <div>
+                            <Label htmlFor="cancel-reason">Lý do hủy</Label>
+                            <Textarea
+                              id="cancel-reason"
+                              placeholder="Nhập lý do hủy sự kiện..."
+                              value={cancelReason}
+                              onChange={(e) => setCancelReason(e.target.value)}
+                              rows={4}
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              className="flex-1"
+                              onClick={() => {
+                                setCancelReason('');
+                                setIsCancelDialogOpen(false);
+                              }}
+                              disabled={isCancelling}
+                            >
+                              Hủy
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              className="flex-1"
+                              onClick={handleCancelEventByManager}
+                              disabled={isCancelling || !cancelReason.trim()}
+                            >
+                              {isCancelling ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Đang hủy...
+                                </>
+                              ) : (
+                                'Xác nhận hủy'
+                              )}
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                      </DialogContent>
+                    </Dialog>
+                  </>
                 )}
 
               </div>

@@ -89,6 +89,12 @@ const ManagerEventsPage = () => {
   // State for resolve payment confirmation dialog
   const [isResolvePaymentDialogOpen, setIsResolvePaymentDialogOpen] = useState(false);
   const [selectedEventForPayment, setSelectedEventForPayment] = useState(null);
+  
+  // State for cancel event dialog
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [selectedEventForCancel, setSelectedEventForCancel] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancellingEventId, setCancellingEventId] = useState(null);
 
   // New state for storing all events for statistics
   const [allEventsForStats, setAllEventsForStats] = useState([]);
@@ -355,43 +361,31 @@ const ManagerEventsPage = () => {
     navigate(`/manager/event/${eventId}/edit`);
   };
 
-  const handleCancelEvent = async (eventId) => {
-    // Find event name for better confirmation
-    const event = allEvents.find(e => e.eventId === eventId);
-    const eventName = event?.title || 'sự kiện này';
-
-    // Always require a reason for canceling events
-    const reason = prompt(`Bạn có chắc chắn muốn hủy "${eventName}"?
-
-⚠️ Hành động này sẽ hủy bỏ sự kiện và thông báo cho người tham gia.
-
-Vui lòng nhập lý do hủy bỏ sự kiện:`);
-
-    if (reason === null) {
-      // User cancelled
+  const handleCancelEvent = async () => {
+    if (!cancelReason.trim()) {
+      toast.error('Vui lòng nhập lý do hủy');
       return;
     }
 
-    if (!reason.trim()) {
-      toast.error('Vui lòng nhập lý do hủy bỏ sự kiện');
-      return;
-    }
+    if (!selectedEventForCancel) return;
 
+    setCancellingEventId(selectedEventForCancel.eventId);
     try {
-      const loadingToast = toast.loading('Đang hủy sự kiện...');
-
-      const response = await eventAPI.cancelEvent(eventId, reason.trim());
-
-      toast.dismiss(loadingToast);
+      const response = await eventAPI.cancelEvent(selectedEventForCancel.eventId, cancelReason.trim());
 
       if (response !== null) {
         toast.success('Hủy sự kiện thành công!', {
           duration: 3000,
         });
 
+        // Close dialog and reset state
+        setIsCancelDialogOpen(false);
+        setSelectedEventForCancel(null);
+        setCancelReason('');
+
         // Update local state immediately for better UX
-        setAllEvents(prev => prev.filter(event => event.eventId !== eventId));
-        setEvents(prev => prev.filter(event => event.eventId !== eventId));
+        setAllEvents(prev => prev.filter(event => event.eventId !== selectedEventForCancel.eventId));
+        setEvents(prev => prev.filter(event => event.eventId !== selectedEventForCancel.eventId));
 
         // Reload to sync with server
         loadEvents();
@@ -407,6 +401,8 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       } else {
         toast.error(' Có lỗi xảy ra khi hủy sự kiện');
       }
+    } finally {
+      setCancellingEventId(null);
     }
   };
 
@@ -1583,10 +1579,24 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                               size="sm"
                               variant="ghost"
                               className="text-red-600 dark:text-red-400 hover:bg-red-100/50 dark:hover:bg-red-900/50 hover:text-red-700 dark:hover:text-red-300 rounded-lg transition-colors h-9"
-                              onClick={() => handleCancelEvent(event.eventId)}
+                              onClick={() => {
+                                setSelectedEventForCancel(event);
+                                setCancelReason('');
+                                setIsCancelDialogOpen(true);
+                              }}
+                              disabled={cancellingEventId === event.eventId}
                             >
-                              <XCircle className="w-4 h-4 mr-1" />
-                              Hủy sự kiện
+                              {cancellingEventId === event.eventId ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                                  Đang hủy...
+                                </>
+                              ) : (
+                                <>
+                                  <Flag className="w-4 h-4 mr-1" />
+                                  Hủy sự kiện
+                                </>
+                              )}
                             </Button>
                           )}
 
@@ -1830,6 +1840,86 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
                         <>
                           <CheckCircle className="w-4 h-4 mr-2" />
                           Xác nhận
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Cancel Event Dialog */}
+          <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-red-600">
+                  <Flag className="w-5 h-5" />
+                  Hủy sự kiện vi phạm
+                </DialogTitle>
+                <DialogDescription>
+                  Gửi thông báo đến organizer và gán cờ cho sự kiện vi phạm. Vui lòng cung cấp lý do hủy.
+                </DialogDescription>
+              </DialogHeader>
+              
+              {selectedEventForCancel && (
+                <div className="space-y-4">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-900 mb-2">{selectedEventForCancel.title}</h4>
+                    <div className="space-y-1 text-sm text-gray-600">
+                      <p><strong>Trạng thái:</strong> {EventStatusDisplay[selectedEventForCancel.status] || selectedEventForCancel.status}</p>
+                      {selectedEventForCancel.totalPersonJoin > 0 && (
+                        <p><strong>Người tham gia:</strong> {selectedEventForCancel.totalPersonJoin} người</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    <p className="text-sm text-amber-800">
+                      ⚠️ Hành động này sẽ hủy bỏ sự kiện và thông báo cho người tham gia.
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="cancel-reason">Lý do hủy</Label>
+                    <Textarea
+                      id="cancel-reason"
+                      placeholder="Nhập lý do hủy sự kiện vi phạm..."
+                      value={cancelReason}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                      rows={4}
+                      className="mt-2"
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        setIsCancelDialogOpen(false);
+                        setSelectedEventForCancel(null);
+                        setCancelReason('');
+                      }}
+                      disabled={cancellingEventId === selectedEventForCancel.eventId}
+                    >
+                      Hủy
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={handleCancelEvent}
+                      disabled={cancellingEventId === selectedEventForCancel.eventId || !cancelReason.trim()}
+                    >
+                      {cancellingEventId === selectedEventForCancel.eventId ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Đang hủy...
+                        </>
+                      ) : (
+                        <>
+                          <Flag className="w-4 h-4 mr-2" />
+                          Xác nhận hủy
                         </>
                       )}
                     </Button>
