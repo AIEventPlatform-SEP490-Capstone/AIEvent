@@ -266,14 +266,13 @@ namespace AIEvent.API.Controllers
         [HttpGet("admin/payout-history")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<SuccessResponse<BasePaginated<PayoutHistoryResponse>>>> GetPayoutHistory(
-            [FromQuery] Guid? organizerId = null,
             [FromQuery] int? year = null,
             [FromQuery] int? month = null,
             [FromQuery] string? search = null,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
         {
-            var result = await _dashboardService.GetPayoutHistoryAsync(organizerId, search, year, month, pageNumber, pageSize);
+            var result = await _dashboardService.GetPayoutHistoryAsync(search, year, month, pageNumber, pageSize);
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
