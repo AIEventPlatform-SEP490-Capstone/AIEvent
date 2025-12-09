@@ -403,6 +403,10 @@ export const styles = StyleSheet.create({
     paddingVertical: 16,
     marginBottom: 24,
   },
+  shareButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+    opacity: 0.6,
+  },
   shareButtonText: {
     fontSize: Fonts.md,
     fontWeight: '600',

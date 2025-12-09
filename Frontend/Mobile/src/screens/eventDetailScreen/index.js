@@ -32,6 +32,7 @@ import {
 import EventService from '../../api/services/EventService';
 import FriendService from '../../api/services/FriendService';
 import RatingSectionMobile from '../../components/presentation/RatingSectionMobile';
+import EventTimeline from '../../components/presentation/EventTimeline';
 import AuthService from '../../api/services/AuthService';
 import {isStaffUser} from '../../utils/jwtUtils';
 // import Clipboard from '@react-native-clipboard/clipboard';
@@ -385,7 +386,6 @@ const EventDetailScreen = () => {
       }
 
       const response = await getEventById(eventId);
-      console.log('Event detail response:', response);
       if (response && response.success) {
         const transformedEvent = transformEventData(response.data);
         setEvent(transformedEvent);
@@ -409,6 +409,42 @@ const EventDetailScreen = () => {
     }
   };
 
+  // Format time manually for better compatibility
+  const formatTime = (dateString) => {
+    if (!dateString) return 'Chưa xác định';
+    
+    // Check if it's already formatted (HH:mm)
+    if (typeof dateString === 'string' && /^\d{2}:\d{2}$/.test(dateString)) {
+      return dateString;
+    }
+    
+    const date = new Date(dateString);
+    // Check if date is valid
+    if (isNaN(date.getTime())) return 'Chưa xác định';
+    
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Chưa xác định';
+    
+    // Check if it's already formatted (dd/mm/yyyy)
+    if (typeof dateString === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
+      return dateString;
+    }
+    
+    const date = new Date(dateString);
+    // Check if date is valid
+    if (isNaN(date.getTime())) return 'Chưa xác định';
+    
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   const transformEventData = eventData => {
     // Ensure we have a valid ID
     const eventId =
@@ -425,6 +461,12 @@ const EventDetailScreen = () => {
       });
     };
 
+    // Get raw date/time values
+    const rawStartTime = eventData.startTime || eventData.StartTime;
+    const rawEndTime = eventData.endTime || eventData.EndTime;
+    const rawSaleStartTime = eventData.saleStartTime || eventData.SaleStartTime;
+    const rawSaleEndTime = eventData.saleEndTime || eventData.SaleEndTime;
+
     return {
       id: eventId,
       eventId: eventId,
@@ -433,25 +475,7 @@ const EventDetailScreen = () => {
         eventData.description || eventData.Description || 'Chưa có mô tả',
       detailedDescription:
         eventData.detailedDescription || eventData.DetailedDescription || '',
-      date:
-        eventData.startTime || eventData.StartTime
-          ? new Date(
-              eventData.startTime || eventData.StartTime,
-            ).toLocaleDateString('vi-VN')
-          : 'Chưa xác định',
-      time:
-        eventData.startTime || eventData.StartTime
-          ? new Date(
-              eventData.startTime || eventData.StartTime,
-            ).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})
-          : 'Chưa xác định',
-      endTime:
-        eventData.endTime || eventData.EndTime
-          ? new Date(eventData.endTime || eventData.EndTime).toLocaleTimeString(
-              'vi-VN',
-              {hour: '2-digit', minute: '2-digit'},
-            )
-          : 'Chưa xác định',
+      date: formatDate(rawStartTime),
       location:
         eventData.locationName || eventData.LocationName || 'Chưa xác định',
       address: eventData.address || eventData.Address || '',
@@ -477,6 +501,11 @@ const EventDetailScreen = () => {
         eventData.eventTags || eventData.EventTags || eventData.tags || [],
       ),
       ticketDetails: eventData.ticketDetails || eventData.TicketDetails || [],
+      // Include sale times for EventTimeline component (keep as raw ISO strings for calculations)
+      saleStartTime: rawSaleStartTime,
+      saleEndTime: rawSaleEndTime,
+      startTime: rawStartTime,
+      endTime: rawEndTime,
     };
   };
 
@@ -502,10 +531,48 @@ const EventDetailScreen = () => {
     return '0đ';
   };
 
+  // Check if ticket sale is active
+  const getTicketSaleStatus = () => {
+    if (!event?.saleStartTime || !event?.saleEndTime) {
+      return { canBuy: true, message: 'Mua vé ngay' };
+    }
+
+    const now = new Date();
+    const saleStart = new Date(event.saleStartTime);
+    const saleEnd = new Date(event.saleEndTime);
+
+    if (now < saleStart) {
+      return { canBuy: false, message: 'Chưa mở bán' };
+    } else if (now > saleEnd) {
+      return { canBuy: false, message: 'Hết bán' };
+    } else {
+      return { canBuy: true, message: 'Mua vé ngay' };
+    }
+  };
+
   const handleJoinEvent = () => {
     // Check if we have a valid eventId
     if (!eventId || typeof eventId !== 'string' || eventId.trim() === '') {
       Alert.alert('Error', 'No valid event ID provided');
+      return;
+    }
+
+    // Check if ticket sale is active
+    const saleStatus = getTicketSaleStatus();
+    if (!saleStatus.canBuy) {
+      if (saleStatus.message === 'Chưa mở bán') {
+        Toast.show({
+          type: 'info',
+          text1: 'Vé chưa mở bán',
+          text2: 'Vui lòng quay lại sau thời gian mở bán vé',
+        });
+      } else {
+        Toast.show({
+          type: 'info',
+          text1: 'Đã hết bán',
+          text2: 'Thời gian bán vé đã kết thúc',
+        });
+      }
       return;
     }
 
@@ -945,7 +1012,7 @@ const EventDetailScreen = () => {
                   fontWeight: '600',
                   fontFamily: Fonts.semiBold,
                 }}>
-                {event.time} - {event.endTime}
+                {formatTime(event.startTime)} - {formatTime(event.endTime)}
               </CustomText>
             </View>
           </View>
@@ -1044,6 +1111,16 @@ const EventDetailScreen = () => {
             </View>
           )}
         </View>
+
+        {/* Event Timeline */}
+        {event.saleStartTime && event.saleEndTime && (
+          <EventTimeline
+            saleStartTime={event.saleStartTime}
+            saleEndTime={event.saleEndTime}
+            startTime={event.startTime}
+            endTime={event.endTime}
+          />
+        )}
 
         {/* Ticket Information Section */}
         {event.ticketDetails && event.ticketDetails.length > 0 && (
@@ -1307,14 +1384,18 @@ const EventDetailScreen = () => {
         {!isStaff && (
           <View style={styles.actionsSection}>
             <TouchableOpacity
-              style={styles.shareButton}
+              style={[
+                styles.shareButton,
+                !getTicketSaleStatus().canBuy && styles.shareButtonDisabled
+              ]}
               onPress={handleJoinEvent}
-              activeOpacity={0.8}>
+              activeOpacity={0.8}
+              disabled={!getTicketSaleStatus().canBuy}>
               <CustomText
                 variant="button"
                 color="white"
                 style={styles.shareButtonText}>
-                Đặt vé ngay
+                {getTicketSaleStatus().message}
               </CustomText>
             </TouchableOpacity>
 

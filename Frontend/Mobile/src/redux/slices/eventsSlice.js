@@ -131,7 +131,12 @@ const eventsSlice = createSlice({
             isFavorite: event.isFavorite || false,
             totalTickets: event.totalTickets || event.TotalTickets || 0,
             tags: event.tags || event.Tags || [],
-            ticketDetails: event.ticketDetails || event.TicketDetails || []
+            ticketDetails: event.ticketDetails || event.TicketDetails || [],
+            // Include sale times for SaleStatusBadge
+            saleStartTime: event.saleStartTime || event.SaleStartTime,
+            saleEndTime: event.saleEndTime || event.SaleEndTime,
+            startTime: event.startTime || event.StartTime,
+            endTime: event.endTime || event.EndTime,
           }));
           
           state.events = transformedEvents;
@@ -178,7 +183,12 @@ const eventsSlice = createSlice({
             isFavorite: event.isFavorite || false,
             totalTickets: event.totalTickets || event.TotalTickets || 0,
             tags: event.tags || event.Tags || [],
-            ticketDetails: event.ticketDetails || event.TicketDetails || []
+            ticketDetails: event.ticketDetails || event.TicketDetails || [],
+            // Include sale times for SaleStatusBadge
+            saleStartTime: event.saleStartTime || event.SaleStartTime,
+            saleEndTime: event.saleEndTime || event.SaleEndTime,
+            startTime: event.startTime || event.StartTime,
+            endTime: event.endTime || event.EndTime,
           }));
           
           state.events = transformedEvents;
