@@ -1,7 +1,8 @@
 ﻿using AIEvent.API.Extensions;
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
-using AIEvent.Application.DTOs.Dashboard; 
+using AIEvent.Application.DTOs.Dashboard;
+using AIEvent.Application.DTOs.RevenueReport;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Enums;
@@ -260,6 +261,27 @@ namespace AIEvent.API.Controllers
                 result.Value!,
                 SuccessCodes.Success,
                 "System report retrieved successfully"));
+        }
+
+        [HttpGet("admin/payout-history")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<PayoutHistoryResponse>>>> GetPayoutHistory(
+            [FromQuery] int? year = null,
+            [FromQuery] int? month = null,
+            [FromQuery] string? search = null,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            var result = await _dashboardService.GetPayoutHistoryAsync(search, year, month, pageNumber, pageSize);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<PayoutHistoryResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Payout history retrieved successfully"));
         }
 
         [HttpGet("organizer-approved-statistics")]

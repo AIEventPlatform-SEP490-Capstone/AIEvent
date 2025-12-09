@@ -1,6 +1,7 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Dashboard;
+using AIEvent.Application.DTOs.RevenueReport;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
@@ -1216,6 +1217,129 @@ namespace AIEvent.Application.Services.Implements
                     ErrorCodes.InternalServerError
                 );
             }
+        }
+
+
+
+        public async Task<Result<BasePaginated<PayoutHistoryResponse>>> GetPayoutHistoryAsync(string? search = null, int? year = null, int? month = null, int pageNumber = 1, int pageSize = 10)
+        {
+            IQueryable<RevenueReport> revenueQuery = _unitOfWork.RevenueReportRepository
+                .Query()
+                .AsNoTracking()
+                .Include(r => r.OrganizerProfile)
+                .Where(r => !r.IsDeleted);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchLower = search.ToLower().Trim();
+                revenueQuery = revenueQuery.Where(r =>
+                    r.OrganizerProfile.ContactName.ToLower().Contains(searchLower) ||
+                    r.OrganizerProfile.ContactEmail.ToLower().Contains(searchLower) ||
+                    (r.OrganizerProfile.CompanyName != null && r.OrganizerProfile.CompanyName.ToLower().Contains(searchLower)) ||
+                    r.EventName.ToLower().Contains(searchLower));
+            }
+
+            if (year.HasValue)
+                revenueQuery = revenueQuery.Where(r => r.ReportYear == year.Value);
+
+            if (month.HasValue)
+                revenueQuery = revenueQuery.Where(r => r.ReportMonth == month.Value);
+
+            IQueryable<WalletTransaction> walletTransactionQuery = _unitOfWork.WalletTransactionRepository
+                .Query()
+                .AsNoTracking()
+                .Include(wt => wt.Wallet)
+                    .ThenInclude(w => w.User)
+                .Where(wt => wt.Status == TransactionStatus.Success
+                    && (wt.Type == TransactionType.Topup || wt.Type == TransactionType.Withdraw)
+                    && !wt.IsDeleted);
+
+            if (year.HasValue)
+                walletTransactionQuery = walletTransactionQuery.Where(wt => wt.CreatedAt.Year == year.Value);
+
+            if (month.HasValue)
+                walletTransactionQuery = walletTransactionQuery.Where(wt => wt.CreatedAt.Month == month.Value);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchLower = search.ToLower().Trim();
+                walletTransactionQuery = walletTransactionQuery.Where(wt =>
+                    (wt.Wallet.User.FullName != null && wt.Wallet.User.FullName.ToLower().Contains(searchLower)) ||
+                    (wt.Wallet.User.Email != null && wt.Wallet.User.Email.ToLower().Contains(searchLower)));
+            }
+
+            var revenueCount = await revenueQuery.CountAsync();
+            var walletTransactionCount = await walletTransactionQuery.CountAsync();
+            var totalCount = revenueCount + walletTransactionCount;
+
+            var revenueReportsTask = revenueQuery
+                .OrderByDescending(r => r.PayoutDate)
+                .ThenByDescending(r => r.CreatedAt)
+                .ToListAsync();
+
+            var walletTransactionsTask = walletTransactionQuery
+                .OrderByDescending(wt => wt.CreatedAt)
+                .ToListAsync();
+
+            await Task.WhenAll(revenueReportsTask, walletTransactionsTask);
+
+            var revenueReports = await revenueReportsTask;
+            var walletTransactions = await walletTransactionsTask;
+
+            var result = new List<PayoutHistoryResponse>(totalCount);
+
+            foreach (var r in revenueReports)
+            {
+                result.Add(new PayoutHistoryResponse
+                {
+                    HistoryType = "Payout",
+                    RevenueReportId = r.Id,
+                    OrganizerProfileId = r.OrganizerProfileId,
+                    OrganizerName = r.OrganizerProfile?.ContactName ?? string.Empty,
+                    OrganizerEmail = r.OrganizerProfile?.ContactEmail ?? string.Empty,
+                    CompanyName = r.OrganizerProfile?.CompanyName,
+                    EventId = r.EventId,
+                    EventName = r.EventName,
+                    GrossRevenue = r.GrossRevenue,
+                    PlatformFee = r.PlatformFee,
+                    NetRevenue = r.NetRevenue,
+                    Amount = r.NetRevenue,
+                    ReportMonth = r.ReportMonth,
+                    ReportYear = r.ReportYear,
+                    TransactionDate = r.PayoutDate,
+                    CreatedAt = r.CreatedAt,
+                    Description = $"Payout cho sự kiện: {r.EventName}"
+                });
+            }
+ 
+            foreach (var wt in walletTransactions)
+            {
+                var user = wt.Wallet?.User;
+                if (user == null) continue;
+
+                result.Add(new PayoutHistoryResponse
+                {
+                    HistoryType = wt.Type == TransactionType.Topup ? "Topup" : "Withdraw",
+                    WalletTransactionId = wt.Id,
+                    OrganizerName = user.FullName ?? string.Empty,
+                    OrganizerEmail = user.Email ?? string.Empty,
+                    Amount = wt.Amount,
+                    ReportMonth = wt.CreatedAt.Month,
+                    ReportYear = wt.CreatedAt.Year,
+                    TransactionDate = wt.CreatedAt.DateTime,
+                    CreatedAt = wt.CreatedAt,
+                    Description = wt.Description,
+                    TransactionType = wt.Type
+                });
+            }
+             
+            var paginatedResult = result
+                .OrderByDescending(x => x.TransactionDate ?? x.CreatedAt.DateTime)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return new BasePaginated<PayoutHistoryResponse>(paginatedResult, totalCount, pageNumber, pageSize);
         }
 
     }
