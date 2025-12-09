@@ -13,5 +13,6 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result> MarkAllAsReadAsync(Guid userId);
         Task<Result> DeleteIsReadNotificationsAsync(Guid userId);
         Task<Result> SendEventBookingReminderAsync();
+        Task<Result> SendFavoriteEventTicketSaleNotificationAsync();
     }
 }
