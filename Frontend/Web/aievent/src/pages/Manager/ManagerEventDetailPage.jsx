@@ -965,24 +965,58 @@ Nhấn OK để xác nhận xóa.`;
                           )}
                         </div>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent className="max-w-md">
                         <DialogHeader>
-                          <DialogTitle>Hủy sự kiện vi phạm</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <p className="text-sm text-gray-600">
+                          <DialogTitle className="flex items-center gap-2 text-red-600">
+                            <Flag className="w-5 h-5" />
+                            Hủy sự kiện vi phạm
+                          </DialogTitle>
+                          <DialogDescription>
                             Gửi thông báo đến organizer và gán cờ cho sự kiện vi phạm. Vui lòng cung cấp lý do hủy.
-                          </p>
+                          </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="space-y-4">
+                          {/* Event Info Card */}
+                          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <h4 className="font-semibold text-gray-900 mb-2">{event.title}</h4>
+                            <div className="space-y-1 text-sm text-gray-600">
+                              <p><strong>Trạng thái:</strong> {EventStatusDisplay[event.status] || event.status}</p>
+                              {event.totalPersonJoin > 0 && (
+                                <p><strong>Người tham gia:</strong> {event.totalPersonJoin} người</p>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Warning Message */}
+                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                            <div className="flex items-start gap-2">
+                              <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                              <p className="text-sm text-amber-800">
+                                Hành động này sẽ hủy bỏ sự kiện và thông báo cho người tham gia. Organizer sẽ bị gán cờ vi phạm.
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Reason Input */}
                           <div>
-                            <Label htmlFor="cancel-reason">Lý do hủy</Label>
+                            <Label htmlFor="cancel-reason" className="text-sm font-semibold">
+                              Lý do hủy <span className="text-red-500">*</span>
+                            </Label>
                             <Textarea
                               id="cancel-reason"
-                              placeholder="Nhập lý do hủy sự kiện..."
+                              placeholder="Nhập lý do hủy sự kiện vi phạm..."
                               value={cancelReason}
                               onChange={(e) => setCancelReason(e.target.value)}
                               rows={4}
+                              className="mt-2"
                             />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Lý do này sẽ được gửi đến organizer và lưu vào hệ thống
+                            </p>
                           </div>
+
+                          {/* Action Buttons */}
                           <div className="flex gap-2">
                             <Button
                               variant="outline"
@@ -993,7 +1027,7 @@ Nhấn OK để xác nhận xóa.`;
                               }}
                               disabled={isCancelling}
                             >
-                              Hủy
+                              Hủy bỏ
                             </Button>
                             <Button
                               variant="destructive"
@@ -1007,7 +1041,10 @@ Nhấn OK để xác nhận xóa.`;
                                   Đang hủy...
                                 </>
                               ) : (
-                                'Xác nhận hủy'
+                                <>
+                                  <Flag className="w-4 h-4 mr-2" />
+                                  Xác nhận hủy
+                                </>
                               )}
                             </Button>
                           </div>
