@@ -40,6 +40,7 @@ import {
 import { useEvents } from '../../hooks/useEvents';
 import { PATH } from '../../routes/path';
 import eventAPI from '../../api/eventAPI';
+import organizerAPI from '../../api/organizerAPI';
 import EventReportManager from '../../components/Manager/EventReportManager';
 
 // Import EventStatus constants
@@ -76,6 +77,9 @@ const ManagerEventsPage = () => {
   const [reportCounts, setReportCounts] = useState({});
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [reportDialogEvent, setReportDialogEvent] = useState(null);
+  const [flaggedOrganizers, setFlaggedOrganizers] = useState([]);
+  const [flaggedLoading, setFlaggedLoading] = useState(false);
+  const [flaggedSearchTerm, setFlaggedSearchTerm] = useState('');
 
   // Add loading states for approval/rejection actions
   const [approvingEventId, setApprovingEventId] = useState(null);
@@ -131,6 +135,31 @@ const ManagerEventsPage = () => {
     loadAllEventsForStats();
   }, []);
 
+  const loadFlaggedOrganizers = async (organizerIdParam = '', minFlagsParam = '') => {
+    setFlaggedLoading(true);
+    try {
+      const response = await organizerAPI.getOrganizerFlags({
+        organizerId: organizerIdParam || undefined,
+        minFlags: minFlagsParam !== '' ? Number(minFlagsParam) : undefined,
+        pageNumber: 1,
+        pageSize: 50,
+      });
+      const items = response?.items || response || [];
+      setFlaggedOrganizers(items);
+    } catch (error) {
+      console.error('Error loading flagged organizers:', error);
+      toast.error('Không thể tải danh sách tổ chức/sự kiện bị gán cờ');
+      setFlaggedOrganizers([]);
+    } finally {
+      setFlaggedLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadFlaggedOrganizers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Update dropdown labels when activeTab changes
   useEffect(() => {
     // Update initiation dropdown label
@@ -168,10 +197,18 @@ const ManagerEventsPage = () => {
 
     if (tabParam && tabParam !== activeTab) {
       setActiveTab(tabParam);
-    } else {
-      setCurrentPage(1);
-      loadEvents(1);
+      return;
     }
+
+    if (activeTab === 'flagged') {
+      setIsLoading(false);
+      setEvents([]);
+      setAllEvents([]);
+      return;
+    }
+
+    setCurrentPage(1);
+    loadEvents(1);
   }, [location.search, activeTab, searchTerm, filterStatus, sortBy, startDate, endDate]);
 
   // Debounced search effect
@@ -184,6 +221,10 @@ const ManagerEventsPage = () => {
   }, [searchTerm, filterStatus, sortBy]);
 
   const loadEvents = async (page = 1) => {
+    if (activeTab === 'flagged') {
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
       // Clear existing events immediately when switching tabs
@@ -534,6 +575,20 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
     setDateError('');
   };
 
+  const handleSearchFlagged = () => {
+    const trimmed = flaggedSearchTerm.trim();
+    setFlaggedSearchTerm(trimmed);
+
+    const isNumeric = trimmed !== '' && !Number.isNaN(Number(trimmed));
+    const minFlags = isNumeric ? trimmed : '';
+    loadFlaggedOrganizers('', minFlags);
+  };
+
+  const handleClearFlagged = () => {
+    setFlaggedSearchTerm('');
+    loadFlaggedOrganizers('');
+  };
+
   // Handle start date change with validation
   const handleStartDateChange = (value) => {
     setDateError(''); // Clear error when user starts changing
@@ -572,6 +627,27 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
 
   // Use server-side pagination - events array already contains the correct page of events
   const paginatedEvents = events;
+
+  const filteredFlaggedOrganizers = useMemo(() => {
+    const term = flaggedSearchTerm.trim().toLowerCase();
+    if (!term) return flaggedOrganizers;
+
+    return flaggedOrganizers.filter((org) => {
+      const companyName = (org.companyName || org.contactName || '').toLowerCase();
+      const organizerId = (org.id || '').toLowerCase();
+      const totalFlags = String(org.totalEventFlags ?? '').toLowerCase();
+      const eventMatch = (org.flaggedEvents || []).some(
+        (fe) => (fe.title || '').toLowerCase().includes(term)
+      );
+
+      return (
+        companyName.includes(term) ||
+        organizerId.includes(term) ||
+        totalFlags.includes(term) ||
+        eventMatch
+      );
+    });
+  }, [flaggedSearchTerm, flaggedOrganizers]);
 
   useEffect(() => {
     const idsToFetch = paginatedEvents
@@ -924,7 +1000,7 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
 
           {/* Tabs Section */}
           <div className="mb-6">
-            <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
+            <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-lg w-fit">
               <button
                 onClick={() => {
                   setActiveTab('all');
@@ -1074,34 +1150,154 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
               >
                 Đã hủy
               </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab('flagged');
+                  setShowInitiationDropdown(false);
+                  setShowCompletionDropdown(false);
+                  navigate(`${PATH.MANAGER_EVENTS}?tab=flagged`);
+                }}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ${
+                  activeTab === 'flagged'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <Flag className="w-4 h-4 text-red-500" />
+                Bị gán cờ
+              </button>
             </div>
           </div>
 
-          {/* Events List */}
-          {isLoading ? (
-            <div className="flex flex-col justify-center items-center py-20">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-              <p className="text-gray-500">Đang tải sự kiện...</p>
-            </div>
-          ) : events.length === 0 ? (
-            <div className="backdrop-blur-sm bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-2xl p-12 text-center shadow-lg">
-              <div className="text-5xl mb-4">📭</div>
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                {allEvents.length === 0
-                  ? 'Chưa có sự kiện nào'
-                  : 'Không có sự kiện'
-                }
-              </h3>
-              <p className="text-slate-600 dark:text-slate-400 mb-6">
-                {allEvents.length === 0
-                  ? 'Bắt đầu quản lý sự kiện trong hệ thống!'
-                  : `Không có sự kiện nào trong danh mục "${getTabDisplayName(activeTab)}".`
-                }
-              </p>
+          {activeTab === 'flagged' ? (
+            <div className="mb-8 backdrop-blur-sm bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-2xl p-6 shadow-lg">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Flag className="w-4 h-4 text-red-500" />
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                      Organizer & sự kiện bị gán cờ
+                    </h3>
+                  </div>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                    Danh sách các organizer bị gán cờ vi phạm, kèm các sự kiện đã bị hủy.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 items-center">
+                  <Input
+                    placeholder="Tìm tên công ty, sự kiện hoặc số sự kiện bị gắn cờ"
+                    value={flaggedSearchTerm}
+                    onChange={(e) => setFlaggedSearchTerm(e.target.value)}
+                    className="w-72"
+                  />
+                  <Button onClick={handleSearchFlagged} className="whitespace-nowrap">
+                    Tìm
+                  </Button>
+                  <Button variant="outline" onClick={handleClearFlagged} className="whitespace-nowrap">
+                    Xóa lọc
+                  </Button>
+                </div>
+              </div>
+
+              {flaggedLoading ? (
+                <div className="flex items-center justify-center py-6 text-slate-500">
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Đang tải danh sách bị gán cờ...
+                </div>
+              ) : filteredFlaggedOrganizers.length === 0 ? (
+                <div className="mt-4 text-sm text-slate-600 dark:text-slate-400">
+                  Không có organizer/sự kiện nào bị gán cờ phù hợp bộ lọc.
+                </div>
+              ) : (
+                <div className="mt-4 space-y-4">
+                  {filteredFlaggedOrganizers.map((org) => (
+                    <Card key={org.id} className="border-slate-200/60 dark:border-slate-800/60">
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                          <div>
+                            <h4 className="text-base font-semibold text-slate-900 dark:text-white">
+                              {org.companyName || org.contactName || 'Organizer'}
+                            </h4>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">
+                              {org.contactEmail || 'Không có email'} • {org.contactPhone || 'Không có SĐT'}
+                            </p>
+                            <p className="text-sm text-slate-500">
+                              Tổng số sự kiện bị gán cờ: {org.totalEventFlags ?? 0}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {org.isBanned && (
+                              <Badge variant="destructive" className="px-3 py-1">
+                                Đã cấm
+                              </Badge>
+                            )}
+                            <Badge variant="outline" className="px-3 py-1">
+                              {org.organizationType || 'Organizer'}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-2">
+                          {org.flaggedEvents && org.flaggedEvents.length > 0 ? (
+                            org.flaggedEvents.map((fe) => (
+                              <div
+                                key={fe.eventId}
+                                className="rounded-lg border border-slate-100 dark:border-slate-800 p-3 bg-white/70 dark:bg-slate-900/40"
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="font-semibold text-slate-900 dark:text-white">{fe.title || 'Sự kiện'}</p>
+                                    <p className="text-xs text-slate-500">
+                                      {fe.startTime ? formatDate(fe.startTime) : 'Chưa có thời gian'}
+                                    </p>
+                                    {fe.reasonCancel && (
+                                      <p className="text-xs text-red-500 mt-1">Lý do hủy: {fe.reasonCancel}</p>
+                                    )}
+                                  </div>
+                                  <Badge variant="outline" className="whitespace-nowrap">
+                                    {EventStatusDisplay[fe.status] || fe.status || 'Đã hủy'}
+                                  </Badge>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-sm text-slate-500">Không có sự kiện bị gán cờ.</p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
-            <div className="space-y-4">
-              {paginatedEvents.map((event) => {
+            <>
+              {/* Events List */}
+              {isLoading ? (
+                <div className="flex flex-col justify-center items-center py-20">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                  <p className="text-gray-500">Đang tải sự kiện...</p>
+                </div>
+              ) : events.length === 0 ? (
+                <div className="backdrop-blur-sm bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-2xl p-12 text-center shadow-lg">
+                  <div className="text-5xl mb-4">📭</div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                    {allEvents.length === 0
+                      ? 'Chưa có sự kiện nào'
+                      : 'Không có sự kiện'
+                    }
+                  </h3>
+                  <p className="text-slate-600 dark:text-slate-400 mb-6">
+                    {allEvents.length === 0
+                      ? 'Bắt đầu quản lý sự kiện trong hệ thống!'
+                      : `Không có sự kiện nào trong danh mục "${getTabDisplayName(activeTab)}".`
+                    }
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {paginatedEvents.map((event) => {
                 const eventImage = getEventImage(event);
                 const eventStatus = 'status' in event ? event.status : null;
                 const statusConfig = eventStatus ? getStatusConfig(eventStatus) : getStatusConfig('default');
@@ -1354,53 +1550,55 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
             </div>
           )}
 
-          {/* Pagination */}
-          {!isLoading && totalPages > 1 && (
-            <div className="flex justify-center gap-2 mt-8">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  const newPage = Math.max(1, currentPage - 1);
-                  setCurrentPage(newPage);
-                  loadEvents(newPage);
-                }}
-                disabled={currentPage === 1}
-                className="rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50"
-              >
-                Trước
-              </Button>
-              <div className="flex items-center gap-2">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              {/* Pagination */}
+              {!isLoading && totalPages > 1 && (
+                <div className="flex justify-center gap-2 mt-8">
                   <Button
-                    key={page}
-                    variant={currentPage === page ? 'default' : 'outline'}
+                    variant="outline"
                     onClick={() => {
-                      setCurrentPage(page);
-                      loadEvents(page);
+                      const newPage = Math.max(1, currentPage - 1);
+                      setCurrentPage(newPage);
+                      loadEvents(newPage);
                     }}
-                    className={`rounded-xl ${
-                      currentPage === page 
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg' 
-                        : 'border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
-                    }`}
+                    disabled={currentPage === 1}
+                    className="rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50"
                   >
-                    {page}
+                    Trước
                   </Button>
-                ))}
-              </div>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  const newPage = Math.min(totalPages, currentPage + 1);
-                  setCurrentPage(newPage);
-                  loadEvents(newPage);
-                }}
-                disabled={currentPage === totalPages}
-                className="rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50"
-              >
-                Sau
-              </Button>
-            </div>
+                  <div className="flex items-center gap-2">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? 'default' : 'outline'}
+                        onClick={() => {
+                          setCurrentPage(page);
+                          loadEvents(page);
+                        }}
+                        className={`rounded-xl ${
+                          currentPage === page 
+                            ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg' 
+                            : 'border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
+                        }`}
+                      >
+                        {page}
+                      </Button>
+                    ))}
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const newPage = Math.min(totalPages, currentPage + 1);
+                      setCurrentPage(newPage);
+                      loadEvents(newPage);
+                    }}
+                    disabled={currentPage === totalPages}
+                    className="rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50"
+                  >
+                    Sau
+                  </Button>
+                </div>
+              )}
+            </>
           )}
 
           {/* Event Report Manager Component */}

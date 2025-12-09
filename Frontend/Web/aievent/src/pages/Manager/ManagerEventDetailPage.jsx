@@ -73,6 +73,9 @@ const ManagerEventDetailPage = () => {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
+  const [cancelReason, setCancelReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
 
   // Add state for image carousel
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -85,7 +88,7 @@ const ManagerEventDetailPage = () => {
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [saleStarted, setSaleStarted] = useState(false);
 
-  const { getEventById, deleteEvent: deleteEventAPI, confirmEvent: confirmEventAPI, loading: eventLoading } = useEvents();
+  const { getEventById, deleteEvent: deleteEventAPI, confirmEvent: confirmEventAPI, cancelEventByManager, loading: eventLoading } = useEvents();
   
   // Countdown timer effect for ticket sale
   useEffect(() => {
@@ -398,6 +401,27 @@ Nhấn OK để xác nhận xóa.`;
       toast.error('Có lỗi xảy ra khi từ chối sự kiện');
     } finally {
       setIsRejecting(false);
+    }
+  };
+
+  const handleCancelEventByManager = async () => {
+    if (!cancelReason.trim()) {
+      toast.error('Vui lòng nhập lý do hủy');
+      return;
+    }
+
+    setIsCancelling(true);
+    try {
+      const response = await cancelEventByManager(eventId, cancelReason.trim());
+      if (response !== null) {
+        setIsCancelDialogOpen(false);
+        setCancelReason('');
+        await loadEventDetail();
+      }
+    } catch (error) {
+      console.error('Error cancelling event by manager:', error);
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -793,7 +817,75 @@ Nhấn OK để xác nhận xóa.`;
                 />
                 
                 <div className="border-t border-gray-200 my-2"></div>
-                
+
+                {event.status !== EventStatus.Cancelled && (
+                  <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+                    <DialogTrigger asChild>
+                      <div className="relative">
+                        <ActionButton
+                          icon={Flag}
+                          label="Hủy sự kiện vi phạm"
+                          variant="danger"
+                          onClick={() => setIsCancelDialogOpen(true)}
+                        />
+                        {isCancelling && (
+                          <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center rounded-lg">
+                            <Loader2 className="w-6 h-6 text-white animate-spin" />
+                          </div>
+                        )}
+                      </div>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Hủy sự kiện vi phạm</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <p className="text-sm text-gray-600">
+                          Gửi thông báo đến organizer và gán cờ cho sự kiện vi phạm. Vui lòng cung cấp lý do hủy.
+                        </p>
+                        <div>
+                          <Label htmlFor="cancel-reason">Lý do hủy</Label>
+                          <Textarea
+                            id="cancel-reason"
+                            placeholder="Nhập lý do hủy sự kiện..."
+                            value={cancelReason}
+                            onChange={(e) => setCancelReason(e.target.value)}
+                            rows={4}
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => {
+                              setCancelReason('');
+                              setIsCancelDialogOpen(false);
+                            }}
+                            disabled={isCancelling}
+                          >
+                            Hủy
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            className="flex-1"
+                            onClick={handleCancelEventByManager}
+                            disabled={isCancelling || !cancelReason.trim()}
+                          >
+                            {isCancelling ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Đang hủy...
+                              </>
+                            ) : (
+                              'Xác nhận hủy'
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+
                 <ActionButton
                   icon={Trash2}
                   label="Xóa sự kiện"
