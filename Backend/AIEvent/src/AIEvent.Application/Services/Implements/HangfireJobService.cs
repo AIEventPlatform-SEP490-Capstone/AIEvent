@@ -759,5 +759,110 @@ namespace AIEvent.Application.Services.Implements
                 throw;
             }
         }
+
+
+        public async Task EnqueueNotifyPlatformSettingChange(SystemSetting newSetting)
+        {
+            BackgroundJob.Enqueue(() => ProcessNotifyPlatformSettingChange(newSetting));
+            await Task.CompletedTask;
+        }
+
+        [AutomaticRetry(Attempts = 3)]
+        public async Task ProcessNotifyPlatformSettingChange(SystemSetting newSetting)
+        {
+            var role = await _unitOfWork.RoleRepository
+                .Query()
+                .AsNoTracking()
+                .Select(r => new { r.Id, r.Name, r.IsDeleted })
+                .FirstOrDefaultAsync(r => r.Name == "Organizer" && !r.IsDeleted);
+
+            if (role == null)
+            {
+                _logger.LogError("Not found role Organizer");
+                return;
+            }
+
+            var organizers = await _unitOfWork.OrganizerProfileRepository
+                .Query()
+                .AsNoTracking()
+                .Include(u => u.User)
+                .Where(u => !u.IsDeleted && u.User.RoleId == role.Id && u.User.IsActive && !u.IsBanned)
+                .ToListAsync();
+
+            if (!organizers.Any())
+                return;
+
+            foreach (var organizer in organizers)
+            {
+                var applyDate = newSetting.UpdatedAt?.ToString("dd/MM/yyyy") ?? "Không xác định";
+
+                var html = $@"
+                <div style='font-family:Segoe UI, sans-serif;background:#ffffff;padding:25px;border-radius:10px;
+                            width:100%;max-width:650px;margin:auto;border:1px solid #e6e6e6;line-height:1.6'>
+
+                    <!-- Header -->
+                    <div style='text-align:center;margin-bottom:22px'>
+                        <img src='https://res.cloudinary.com/dklvpvp4v/image/upload/v1760719179/z7120917022972_68f328e208cc7b01cb1411a865d51bc3_onmsdm.jpg'
+                             alt='AIEvent Logo'
+                             style='width:160px;border-radius:8px;margin-bottom:14px;object-fit:cover'/>
+                        <hr style='width:70%;border-top:2px solid #0057ff;margin-top:0'>
+                    </div>
+
+                    <h2 style='text-align:center;color:#0057ff;margin-top:0;font-weight:700'>
+                        THÔNG BÁO CẬP NHẬT PHÍ NỀN TẢNG
+                    </h2>
+
+                    <p style='font-size:15px;color:#333;margin-bottom:10px'>
+                        Xin chào <b>{organizer.CompanyName}</b>,
+                    </p>
+
+                    <p style='font-size:14px;color:#444'>
+                        Hệ thống <b>AIEvent</b> xin thông báo rằng cấu hình phí nền tảng đã được cập nhật. 
+                        Chi tiết như sau:
+                    </p>
+
+                    <!-- Info Box -->
+                    <div style='background:#f5faff;border-left:6px solid #0057ff;padding:15px 20px;border-radius:6px;margin-top:15px'>
+                        <p style='margin:0;font-size:14px'><b>Phí Platform:</b> {newSetting.FlatformFee}%</p>
+                        <p style='margin:5px 0;font-size:14px'><b>Phí Cố Định:</b> {newSetting.FixFee:N0} VNĐ / mỗi vé</p>
+                        <p style='margin:5px 0;font-size:14px'><b>Ngày Payout hằng tháng:</b> Ngày {newSetting.DatePayout}</p>
+                        <p style='margin:5px 0;font-size:14px;color:#0057ff'><b>Ngày bắt đầu áp dụng:</b> {applyDate}</p>
+                    </div>
+
+                    <p style='margin-top:20px;font-size:14px;color:#444'>
+                        Các mức phí mới sẽ được áp dụng kể từ ngày trên cho những sự kiện phát sinh sau thời điểm này. 
+                        Vui lòng cân nhắc điều chỉnh giá vé hoặc kế hoạch tổ chức nếu cần thiết.
+                    </p>
+
+                    <!-- CTA -->
+                    <div style='text-align:center;margin-top:28px'>
+                        <a href='https://ai-event-alpha.vercel.app'
+                           style='display:inline-block;background:#0057ff;color:#ffffff;padding:12px 30px;
+                                  font-size:15px;border-radius:6px;text-decoration:none;font-weight:600;
+                                  box-shadow:0 4px 10px rgba(0,0,0,0.15)'>
+                            Đăng nhập hệ thống
+                        </a>
+                    </div>
+
+                    <hr style='margin:35px 0;border-top:1px solid #ddd'/>
+
+                    <p style='font-size:12px;color:#999;text-align:center'>
+                        Đây là email tự động từ hệ thống AIEvent. Vui lòng không trả lời email này.<br/>
+                        Nếu bạn cần hỗ trợ, vui lòng liên hệ đội ngũ AIEvent.
+                    </p>
+                </div>";
+
+
+                var message = new MimeMessage
+                {
+                    Subject = "Cập nhật mới về phí nền tảng AIEvent",
+                    Body = new TextPart("html") { Text = html }
+                };
+
+                await _emailService.SendEmailAsync(organizer.ContactEmail!, message);
+            }
+        }
+
+
     }
 } 
