@@ -84,7 +84,7 @@ export const generateEventImage = async (eventData) => {
       return {
         success: true,
         image: data.image, // base64 data URL
-        imagePrompt: data.imagePrompt // the prompt used to generate
+        imagePrompt: data.imagePrompt, // the prompt used to generate
       };
     } else {
       throw new Error(data.error || 'Failed to generate event image');
@@ -93,7 +93,48 @@ export const generateEventImage = async (eventData) => {
     console.error('Error generating event image:', error);
     return {
       success: false,
-      error: error.message || 'Failed to generate event image'
+      error: error.message || 'Failed to generate event image',
+    };
+  }
+};
+
+/**
+ * Generate multiple event banner images using AI based on event data
+ * @param {Object} eventData - The parsed event data (title, description, locationName, etc.)
+ * @param {number} count - Number of images to generate (1-5)
+ * @returns {Promise<Object>} - Generated images as base64 data URLs
+ */
+export const generateMultipleEventImages = async (eventData, count = 3) => {
+  try {
+    const response = await fetch(`${WORKER_URL}/generate-images`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ eventData, count: Math.min(Math.max(count, 1), 5) }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to generate images');
+    }
+
+    if (data.success) {
+      return {
+        success: true,
+        images: data.images, // Array of { index, image, imagePrompt }
+        totalGenerated: data.totalGenerated,
+        errors: data.errors,
+      };
+    } else {
+      throw new Error(data.error || 'Failed to generate event images');
+    }
+  } catch (error) {
+    console.error('Error generating event images:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to generate event images',
     };
   }
 };

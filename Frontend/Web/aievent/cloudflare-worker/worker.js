@@ -17,7 +17,7 @@ var corsHeaders = {
 
 var SYSTEM_PROMPT = 'You are an AI assistant that extracts event information from text and returns it as JSON. Extract ONLY the following fields if they are EXPLICITLY mentioned in the text: title (Event title/name), description (Short description max 200 chars), detailedDescription (Detailed description), locationName (Venue/location name), address (Street address), district (District/area in Vietnam context), startTime (Event start time ISO format YYYY-MM-DDTHH:mm), endTime (Event end time ISO format), saleStartTime (Ticket sale start time ISO format), saleEndTime (Ticket sale end time ISO format), ticketTypes (Array of ticket types with ticketName, ticketPrice as number, ticketQuantity as number, ticketDescription), linkRef (Reference link/URL if any). CRITICAL RULES: 1. Return ONLY valid JSON, no markdown or explanation. 2. MUST use null for ANY field NOT EXPLICITLY mentioned in the text - DO NOT invent or assume values. 3. For dates: ONLY extract if date/time is explicitly written in text. If no date/time mentioned, use null. If only date given without time, assume 00:00 for start and 23:59 for end. 4. For Vietnamese text, keep the original language. 5. ticketPrice should be a number (VND), ticketQuantity should be a number. 6. If year is not specified but date is given, use 2025. 7. NEVER create default dates like today date - only use null if not mentioned.';
 
-var IMAGE_PROMPT_SYSTEM = 'You are an expert at creating image generation prompts. Given event information, create a detailed, vivid prompt for generating an event banner/poster image. The prompt should be in English, descriptive, and suitable for Stable Diffusion. Focus on visual elements, atmosphere, colors, and style. Keep it under 200 words. Return ONLY the prompt text, no explanation.';
+var IMAGE_PROMPT_SYSTEM = 'You are an expert at creating image generation prompts for event banners. Given event information, create a detailed, vivid prompt for generating a wide banner image (16:9 aspect ratio). The prompt should be in English, descriptive, and suitable for Stable Diffusion. Focus on visual elements, atmosphere, colors, and style suitable for a professional event banner. Keep it under 150 words. Return ONLY the prompt text, no explanation.';
 
 addEventListener('fetch', function(event) {
   event.respondWith(handleRequest(event.request));
@@ -38,8 +38,9 @@ async function handleRequest(request) {
     });
   }
 
-  // Route to different handlers based on path
-  if (path === '/generate-image') {
+  if (path === '/generate-images') {
+    return handleGenerateMultipleImages(request);
+  } else if (path === '/generate-image') {
     return handleGenerateImage(request);
   } else {
     return handleParseEvent(request);
@@ -124,7 +125,7 @@ async function handleParseEvent(request) {
   }
 }
 
-// Generate event image
+// Generate single event image
 async function handleGenerateImage(request) {
   try {
     var body = await request.json();
@@ -137,81 +138,19 @@ async function handleGenerateImage(request) {
       });
     }
 
-    // Create event summary for prompt generation
-    var eventSummary = 'Event: ' + (eventData.title || 'Untitled Event');
-    if (eventData.description) eventSummary += '. Description: ' + eventData.description;
-    if (eventData.locationName) eventSummary += '. Location: ' + eventData.locationName;
-
-    // Step 1: Generate image prompt using LLM
-    var promptResponse = await fetch(
-      'https://api.cloudflare.com/client/v4/accounts/' + CLOUDFLARE_ACCOUNT_ID + '/ai/run/' + AI_MODEL,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + CLOUDFLARE_API_TOKEN,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          messages: [
-            { role: 'system', content: IMAGE_PROMPT_SYSTEM },
-            { role: 'user', content: 'Create an image generation prompt for this event:\n\n' + eventSummary }
-          ],
-          max_tokens: 300,
-          temperature: 0.7
-        })
-      }
-    );
-
-    var promptData = await promptResponse.json();
+    var result = await generateSingleImage(eventData, 0);
     
-    if (!promptData.success || !promptData.result || !promptData.result.response) {
-      return new Response(JSON.stringify({ error: 'Failed to generate image prompt' }), {
+    if (result.error) {
+      return new Response(JSON.stringify({ error: result.error }), {
         status: 500,
         headers: Object.assign({}, corsHeaders, { 'Content-Type': 'application/json' })
       });
     }
-
-    var imagePrompt = promptData.result.response.trim();
-    
-    // Add quality enhancers to prompt
-    imagePrompt = imagePrompt + ', high quality, professional event poster, vibrant colors, modern design, 4k, detailed';
-
-    // Step 2: Generate image using Stable Diffusion
-    var imageResponse = await fetch(
-      'https://api.cloudflare.com/client/v4/accounts/' + CLOUDFLARE_ACCOUNT_ID + '/ai/run/' + IMAGE_MODEL,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + CLOUDFLARE_API_TOKEN,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          prompt: imagePrompt,
-          num_steps: 20,
-          guidance: 7.5
-        })
-      }
-    );
-
-    // Check if image generation was successful
-    if (!imageResponse.ok) {
-      var errorData = await imageResponse.json();
-      return new Response(JSON.stringify({ 
-        error: 'Image generation failed: ' + (errorData.errors ? errorData.errors[0].message : 'Unknown error')
-      }), {
-        status: 500,
-        headers: Object.assign({}, corsHeaders, { 'Content-Type': 'application/json' })
-      });
-    }
-
-    // Get image as array buffer and convert to base64
-    var imageBuffer = await imageResponse.arrayBuffer();
-    var base64Image = arrayBufferToBase64(imageBuffer);
 
     return new Response(JSON.stringify({ 
       success: true, 
-      imagePrompt: imagePrompt,
-      image: 'data:image/png;base64,' + base64Image
+      imagePrompt: result.imagePrompt,
+      image: result.image
     }), {
       headers: Object.assign({}, corsHeaders, { 'Content-Type': 'application/json' })
     });
@@ -226,7 +165,140 @@ async function handleGenerateImage(request) {
   }
 }
 
-// Helper function to convert ArrayBuffer to Base64
+// Generate multiple event images (up to 5)
+async function handleGenerateMultipleImages(request) {
+  try {
+    var body = await request.json();
+    var eventData = body.eventData;
+    var count = Math.min(Math.max(body.count || 1, 1), 5); // 1-5 images
+
+    if (!eventData) {
+      return new Response(JSON.stringify({ error: 'Event data is required' }), {
+        status: 400,
+        headers: Object.assign({}, corsHeaders, { 'Content-Type': 'application/json' })
+      });
+    }
+
+    var images = [];
+    var errors = [];
+
+    // Generate images sequentially to avoid rate limits
+    for (var i = 0; i < count; i++) {
+      var result = await generateSingleImage(eventData, i);
+      if (result.error) {
+        errors.push({ index: i, error: result.error });
+      } else {
+        images.push({
+          index: i,
+          image: result.image,
+          imagePrompt: result.imagePrompt
+        });
+      }
+    }
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      images: images,
+      errors: errors.length > 0 ? errors : undefined,
+      totalRequested: count,
+      totalGenerated: images.length
+    }), {
+      headers: Object.assign({}, corsHeaders, { 'Content-Type': 'application/json' })
+    });
+
+  } catch (error) {
+    return new Response(JSON.stringify({ 
+      error: error.message || 'Internal server error' 
+    }), {
+      status: 500,
+      headers: Object.assign({}, corsHeaders, { 'Content-Type': 'application/json' })
+    });
+  }
+}
+
+// Helper function to generate a single image
+async function generateSingleImage(eventData, variationIndex) {
+  try {
+    var eventSummary = 'Event: ' + (eventData.title || 'Untitled Event');
+    if (eventData.description) eventSummary += '. Description: ' + eventData.description;
+    if (eventData.locationName) eventSummary += '. Location: ' + eventData.locationName;
+
+    // Add variation instruction for different images
+    var variationHints = [
+      'Create a vibrant, colorful banner with dynamic composition.',
+      'Create an elegant, sophisticated banner with subtle tones.',
+      'Create a modern, minimalist banner with bold typography space.',
+      'Create an energetic, exciting banner with dramatic lighting.',
+      'Create a warm, inviting banner with soft gradients.'
+    ];
+    var variationHint = variationHints[variationIndex % variationHints.length];
+
+    var promptResponse = await fetch(
+      'https://api.cloudflare.com/client/v4/accounts/' + CLOUDFLARE_ACCOUNT_ID + '/ai/run/' + AI_MODEL,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + CLOUDFLARE_API_TOKEN,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          messages: [
+            { role: 'system', content: IMAGE_PROMPT_SYSTEM },
+            { role: 'user', content: variationHint + ' Create an image generation prompt for this event:\n\n' + eventSummary }
+          ],
+          max_tokens: 300,
+          temperature: 0.8 // Higher temperature for more variation
+        })
+      }
+    );
+
+    var promptData = await promptResponse.json();
+    
+    if (!promptData.success || !promptData.result || !promptData.result.response) {
+      return { error: 'Failed to generate image prompt' };
+    }
+
+    var imagePrompt = promptData.result.response.trim();
+    
+    // Add quality enhancers and banner-specific instructions
+    imagePrompt = imagePrompt + ', wide banner format 16:9 aspect ratio, high quality, professional event banner, vibrant colors, modern design, 4k, detailed, no text, no watermark';
+
+    var imageResponse = await fetch(
+      'https://api.cloudflare.com/client/v4/accounts/' + CLOUDFLARE_ACCOUNT_ID + '/ai/run/' + IMAGE_MODEL,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + CLOUDFLARE_API_TOKEN,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prompt: imagePrompt,
+          num_steps: 20,
+          guidance: 7.5,
+          width: 1024,  // Wide banner format
+          height: 576   // 16:9 aspect ratio (1024/576 ≈ 16:9)
+        })
+      }
+    );
+
+    if (!imageResponse.ok) {
+      var errorData = await imageResponse.json();
+      return { error: 'Image generation failed: ' + (errorData.errors ? errorData.errors[0].message : 'Unknown error') };
+    }
+
+    var imageBuffer = await imageResponse.arrayBuffer();
+    var base64Image = arrayBufferToBase64(imageBuffer);
+
+    return {
+      image: 'data:image/png;base64,' + base64Image,
+      imagePrompt: imagePrompt
+    };
+
+  } catch (error) {
+    return { error: error.message || 'Failed to generate image' };
+  }
+}
+
 function arrayBufferToBase64(buffer) {
   var binary = '';
   var bytes = new Uint8Array(buffer);

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -25,10 +25,13 @@ import {
   Clock,
   AlertTriangle,
 } from 'lucide-react';
-import { parseEventFromText, generateEventImage } from '../../utils/cloudflareAI';
+import {
+  parseEventFromText,
+  generateMultipleEventImages,
+} from '../../utils/cloudflareAI';
 import { toast } from 'react-hot-toast';
 import { PredefinedCities } from '../../constants/userConstants';
-import { Image as ImageIcon } from 'lucide-react';
+import { Image as ImageIcon, Check, Plus, Minus } from 'lucide-react';
 
 const EXAMPLE_TEXT = `Sự kiện: Đêm nhạc Acoustic "Những Bản Tình Ca Bất Hủ"
 Mô tả: Đêm nhạc acoustic lãng mạn với những ca khúc tình yêu được yêu thích nhất
@@ -47,7 +50,9 @@ const ImportEventTextDialog = ({ open, onOpenChange, onImport }) => {
   const [parsedData, setParsedData] = useState(null);
   const [error, setError] = useState('');
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [generatedImage, setGeneratedImage] = useState(null);
+  const [generatedImages, setGeneratedImages] = useState([]); // Array of images
+  const [selectedImages, setSelectedImages] = useState([]); // Selected images to import
+  const [imageCount, setImageCount] = useState(3); // Number of images to generate
 
   // Validate parsed data and return warnings - only check fields that have data
   const validationWarnings = useMemo(() => {
@@ -232,10 +237,10 @@ const ImportEventTextDialog = ({ open, onOpenChange, onImport }) => {
 
   const handleImport = () => {
     if (parsedData) {
-      // Include generated image if available
+      // Include selected generated images
       const dataToImport = {
         ...parsedData,
-        generatedImage: generatedImage || null,
+        generatedImages: selectedImages.length > 0 ? selectedImages : null,
       };
       onImport(dataToImport);
       handleClose();
@@ -247,7 +252,8 @@ const ImportEventTextDialog = ({ open, onOpenChange, onImport }) => {
     setText('');
     setParsedData(null);
     setError('');
-    setGeneratedImage(null);
+    setGeneratedImages([]);
+    setSelectedImages([]);
     onOpenChange(false);
   };
 
@@ -255,21 +261,27 @@ const ImportEventTextDialog = ({ open, onOpenChange, onImport }) => {
     setText(EXAMPLE_TEXT);
     setParsedData(null);
     setError('');
-    setGeneratedImage(null);
+    setGeneratedImages([]);
+    setSelectedImages([]);
   };
 
-  const handleGenerateImage = async () => {
+  const handleGenerateImages = async () => {
     if (!parsedData) {
       toast.error('Vui lòng phân tích thông tin sự kiện trước');
       return;
     }
 
     setIsGeneratingImage(true);
+    setGeneratedImages([]);
+    setSelectedImages([]);
+
     try {
-      const result = await generateEventImage(parsedData);
-      if (result.success) {
-        setGeneratedImage(result.image);
-        toast.success('Đã tạo ảnh sự kiện thành công!');
+      const result = await generateMultipleEventImages(parsedData, imageCount);
+      if (result.success && result.images.length > 0) {
+        setGeneratedImages(result.images);
+        // Auto-select first image
+        setSelectedImages([result.images[0].image]);
+        toast.success(`Đã tạo ${result.totalGenerated} ảnh thành công!`);
       } else {
         toast.error(result.error || 'Không thể tạo ảnh');
       }
@@ -278,6 +290,19 @@ const ImportEventTextDialog = ({ open, onOpenChange, onImport }) => {
     } finally {
       setIsGeneratingImage(false);
     }
+  };
+
+  const toggleImageSelection = (image) => {
+    setSelectedImages((prev) => {
+      if (prev.includes(image)) {
+        return prev.filter((img) => img !== image);
+      } else if (prev.length < 5) {
+        return [...prev, image];
+      } else {
+        toast.error('Chỉ được chọn tối đa 5 ảnh');
+        return prev;
+      }
+    });
   };
 
   const formatDateTime = (dateStr) => {
@@ -297,7 +322,7 @@ const ImportEventTextDialog = ({ open, onOpenChange, onImport }) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
@@ -601,48 +626,89 @@ const ImportEventTextDialog = ({ open, onOpenChange, onImport }) => {
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                        Ảnh sự kiện (AI)
+                        Ảnh sự kiện (AI) {selectedImages.length > 0 && `- Đã chọn ${selectedImages.length}`}
                       </p>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={handleGenerateImage}
-                        disabled={isGeneratingImage || !parsedData}
-                        className="h-7 text-xs"
-                      >
-                        {isGeneratingImage ? (
-                          <>
-                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                            Đang tạo...
-                          </>
-                        ) : (
-                          <>
-                            <ImageIcon className="w-3 h-3 mr-1" />
-                            Tạo ảnh AI
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                    
-                    {generatedImage ? (
-                      <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                        <img
-                          src={generatedImage}
-                          alt="AI Generated Event Banner"
-                          className="w-full h-40 object-cover"
-                        />
-                        <div className="absolute bottom-2 right-2">
-                          <span className="bg-black/60 text-white text-xs px-2 py-1 rounded">
-                            AI Generated
-                          </span>
+                      <div className="flex items-center gap-2">
+                        {/* Image count selector */}
+                        <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-md px-2 py-1">
+                          <button
+                            type="button"
+                            onClick={() => setImageCount((c) => Math.max(1, c - 1))}
+                            className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                            disabled={imageCount <= 1}
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <span className="text-xs font-medium w-4 text-center">{imageCount}</span>
+                          <button
+                            type="button"
+                            onClick={() => setImageCount((c) => Math.min(5, c + 1))}
+                            className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                            disabled={imageCount >= 5}
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
                         </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={handleGenerateImages}
+                          disabled={isGeneratingImage || !parsedData}
+                          className="h-7 text-xs"
+                        >
+                          {isGeneratingImage ? (
+                            <>
+                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              Đang tạo...
+                            </>
+                          ) : (
+                            <>
+                              <ImageIcon className="w-3 h-3 mr-1" />
+                              Tạo {imageCount} ảnh
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {generatedImages.length > 0 ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        {generatedImages.map((imgData, idx) => (
+                          <div
+                            key={idx}
+                            className={`relative rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${
+                              selectedImages.includes(imgData.image)
+                                ? 'border-green-500 ring-2 ring-green-200'
+                                : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
+                            }`}
+                            onClick={() => toggleImageSelection(imgData.image)}
+                          >
+                            <img
+                              src={imgData.image}
+                              alt={`AI Generated ${idx + 1}`}
+                              className="w-full h-24 object-cover"
+                            />
+                            {/* Selection indicator */}
+                            {selectedImages.includes(imgData.image) && (
+                              <div className="absolute top-1 left-1 bg-green-500 text-white rounded-full p-0.5">
+                                <Check className="w-3 h-3" />
+                              </div>
+                            )}
+                            <div className="absolute bottom-1 right-1">
+                              <span className="bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">
+                                #{idx + 1}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     ) : (
                       <div className="h-32 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg flex items-center justify-center">
                         <div className="text-center text-muted-foreground">
                           <ImageIcon className="w-8 h-8 mx-auto mb-1 opacity-30" />
-                          <p className="text-xs">Nhấn "Tạo ảnh AI" để tạo banner</p>
+                          <p className="text-xs">Nhấn "Tạo ảnh" để tạo banner</p>
+                          <p className="text-[10px] mt-1">Click ảnh để chọn, tối đa 5 ảnh</p>
                         </div>
                       </div>
                     )}
@@ -673,10 +739,13 @@ const ImportEventTextDialog = ({ open, onOpenChange, onImport }) => {
               ? 'Có lỗi - Không thể import'
               : hasWarnings
                 ? 'Import (có cảnh báo)'
-                : 'Import vào form'}
+                : selectedImages.length > 0
+                  ? `Import (${selectedImages.length} ảnh)`
+                  : 'Import vào form'}
           </Button>
         </DialogFooter>
       </DialogContent>
+
     </Dialog>
   );
 };
