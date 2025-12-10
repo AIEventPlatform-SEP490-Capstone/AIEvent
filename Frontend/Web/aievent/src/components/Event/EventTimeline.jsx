@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
 import DateTimePicker from '../../components/ui/date-time-picker';
 import datetimeValidation from '../../utils/datetimeValidation';
@@ -51,11 +51,78 @@ export function EventTimeline({
     rawTime: rawTimes[index]
   }));
 
-  // FIX HOÀN CHỈNH – SIÊU ỔN ĐỊNH
-  const hasAnyTimeDefined = rawTimes.some(time => 
-    time && typeof time === 'string' && time.trim() !== ''
-  );
-  const effectiveCurrentStage = hasAnyTimeDefined ? propCurrentStage : -1;
+  // Check if any time is defined (support both string and Date)
+  const hasAnyTimeDefined = rawTimes.some(time => {
+    if (!time) return false;
+    if (typeof time === 'string') return time.trim() !== '';
+    if (time instanceof Date) return !isNaN(time.getTime());
+    return true; // Other truthy values
+  });
+
+  // State for auto-updating current stage and trigger re-render
+  const [currentStage, setCurrentStage] = useState(propCurrentStage);
+  const [, setTick] = useState(0); // Force re-render trigger
+
+  // Auto-update current stage based on time
+  useEffect(() => {
+    // Helper function to calculate current stage based on time
+    const calculateCurrentStage = () => {
+      if (!hasAnyTimeDefined || rawTimes.length < 4) return propCurrentStage;
+      
+      const now = new Date();
+      const [saleStartTime, saleEndTime, startTime, endTime] = rawTimes;
+      
+      // Parse times safely (handle both string and Date)
+      const parseTime = (time) => {
+        if (!time) return null;
+        if (time instanceof Date) return time;
+        return new Date(time);
+      };
+      
+      const saleStart = parseTime(saleStartTime);
+      const saleEnd = parseTime(saleEndTime);
+      const eventStart = parseTime(startTime);
+      const eventEnd = parseTime(endTime);
+      
+      // Stage -1: Before sale starts
+      if (saleStart && !isNaN(saleStart.getTime()) && now < saleStart) return -1;
+      // Stage 0: Sale is ongoing (after sale start, before sale end)
+      if (saleEnd && !isNaN(saleEnd.getTime()) && now < saleEnd) return 0;
+      // Stage 1: Sale ended, event not started yet
+      if (eventStart && !isNaN(eventStart.getTime()) && now < eventStart) return 1;
+      // Stage 2: Event is ongoing
+      if (eventEnd && !isNaN(eventEnd.getTime()) && now < eventEnd) return 2;
+      // Stage 3: Event has ended
+      return 3;
+    };
+
+    // Only auto-update if not in edit mode
+    if (isEditable) {
+      setCurrentStage(propCurrentStage);
+      return;
+    }
+
+    // If no times defined, use prop value
+    if (!hasAnyTimeDefined) {
+      setCurrentStage(propCurrentStage);
+      return;
+    }
+
+    // Calculate initial stage immediately
+    const initialStage = calculateCurrentStage();
+    setCurrentStage(initialStage);
+
+    // Set up interval to check every 10 seconds for more responsive updates
+    const interval = setInterval(() => {
+      const newStage = calculateCurrentStage();
+      setCurrentStage(newStage);
+      setTick(t => t + 1); // Force re-render
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [rawTimes, isEditable, hasAnyTimeDefined, propCurrentStage]);
+
+  const effectiveCurrentStage = hasAnyTimeDefined ? currentStage : -1;
 
   // Bảo vệ progress bar
   const progressWidth = effectiveCurrentStage < 0 || effectiveCurrentStage >= stages.length

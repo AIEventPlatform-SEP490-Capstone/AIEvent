@@ -954,13 +954,6 @@ const EventDetailGuestPage = ({ previewData }) => {
                                 {friend.district || "Chưa cập nhật khu vực"}
                               </p>
 
-                              <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                                <Activity className="w-3 h-3 text-gray-400" />
-                                {friend.eventNumber > 0
-                                  ? `${friend.eventNumber} sự kiện đã tham gia` 
-                                  : "Chưa tham gia sự kiện nào"}
-                              </div>
-
                               {/* Stop propagation so clicking the button doesn't trigger card click */}
                               <div className="mt-2" onClick={(e) => e.stopPropagation()}>
                                 {!friend.friendRequestSent ? (
