@@ -39,6 +39,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../components/ui/dialog";
+import { X as XIcon } from "lucide-react";
 
 const translations = {
   organizationType: {
@@ -415,19 +416,25 @@ export default function OrganizerApprovalDetailPage() {
         open={!!selectedImage}
         onOpenChange={() => setSelectedImage(null)}
       >
-        <DialogContent className="fixed inset-0 w-screen h-screen max-w-none p-6 bg-background overflow-y-auto flex flex-col items-center justify-center">
-          <DialogHeader className="w-full flex justify-between items-center mb-4">
-            <DialogTitle className="text-lg font-semibold">
-              {selectedImage?.label}
-            </DialogTitle>
-          </DialogHeader>
-          {selectedImage && (
-            <img
-              src={selectedImage.src}
-              alt={selectedImage.label}
-              className="max-h-[90vh] w-auto rounded-lg object-contain border shadow-lg"
-            />
-          )}
+        <DialogContent
+          overlayClassName="bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 w-screen h-screen max-w-none p-6 overflow-y-auto left-0 top-0 translate-x-0 translate-y-0 bg-transparent"
+        >
+          <div className="flex flex-col items-center justify-center min-h-full relative">
+            <DialogHeader className="w-full flex justify-between items-center mb-4">
+              <DialogTitle className="text-lg font-semibold text-white">
+                {selectedImage?.label}
+              </DialogTitle>
+            </DialogHeader>
+
+            {selectedImage && (
+              <img
+                src={selectedImage.src}
+                alt={selectedImage.label}
+                className="max-h-[90vh] max-w-[90vw] w-auto rounded-lg object-contain border shadow-lg"
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </main>

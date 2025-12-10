@@ -261,9 +261,16 @@ export default function ChatPage() {
         const response = await getChatHistory(sessionId, 1, 100);
         const historyItems = response?.data?.items || response?.items || [];
 
+        // Sort items by createdAt timestamp (oldest first) to ensure correct order
+        const sortedItems = [...historyItems].sort((a, b) => {
+          const timeA = new Date(a.createdAt || 0).getTime();
+          const timeB = new Date(b.createdAt || 0).getTime();
+          return timeA - timeB;
+        });
+
         // Add user prompts as messages
         const messagesWithPrompts = [];
-        historyItems.forEach((item, index) => {
+        sortedItems.forEach((item, index) => {
           // Add user message
           messagesWithPrompts.push({
             id: `user-${item.id || index}`,
@@ -341,11 +348,13 @@ export default function ChatPage() {
     setInputValue("");
 
     const wasNewSession = !selectedSessionId;
-    const nowIso = new Date().toISOString();
+    const previousSessionCount = sessions.length;
 
     try {
+      // API response structure: { statusCode, message, data: "response text" }
       const response = await sendMessage(userPrompt, selectedSessionId);
 
+      // Extract response text - data is a string, not an object
       const responseText = response?.data || response?.message || "";
       const eventInfo = parseEventFromResponse(responseText);
 
@@ -359,63 +368,35 @@ export default function ChatPage() {
 
       setMessages((prev) => [...prev, aiMessage]);
 
-      const sessionPayload =
-        response?.session ||
-        response?.data?.session ||
-        response?.data?.data?.session ||
-        response?.data?.sessionInfo ||
-        null;
-
-      const sessionIdFromResponse =
-        sessionPayload?.sessionId ||
-        sessionPayload?.id ||
-        response?.sessionId ||
-        response?.id ||
-        response?.data?.sessionId ||
-        response?.data?.data?.sessionId ||
-        response?.data?.id ||
-        null;
-
-      if (wasNewSession) {
-        if (sessionIdFromResponse) {
-          const sessionName =
-            sessionPayload?.sessionName ||
-            sessionPayload?.name ||
-            (userPrompt.length > 40
-              ? `${userPrompt.slice(0, 40)}...`
-              : userPrompt) ||
-            "Cuộc trò chuyện mới";
-          const optimisticSession = {
-            sessionId: sessionIdFromResponse,
-            sessionName,
-            lastMessageAt:
-              sessionPayload?.lastMessageAt ||
-              sessionPayload?.updatedAt ||
-              nowIso,
-            createdAt: sessionPayload?.createdAt || nowIso,
-          };
-          upsertSession(optimisticSession);
-          setSelectedSessionId(sessionIdFromResponse);
-          setAutoSelectEnabled(true);
-        }
-      } else if (sessionIdFromResponse || selectedSessionId) {
-        const updatedSession = {
-          sessionId: sessionIdFromResponse || selectedSessionId,
-          lastMessageAt:
-            sessionPayload?.lastMessageAt ||
-            sessionPayload?.updatedAt ||
-            nowIso,
-        };
-        upsertSession(updatedSession);
-      }
-
-      loadSessions({
-        disableAutoSelect: !!sessionIdFromResponse || !wasNewSession,
+      // Reload sessions to get the new sessionId (if new session was created)
+      // The API doesn't return sessionId in the POST response
+      const updatedSessions = await loadSessions({
+        disableAutoSelect: !wasNewSession,
         forceAutoSelect: wasNewSession,
         silent: true,
-      }).catch((refreshError) =>
-        console.error("Error refreshing sessions:", refreshError)
-      );
+      });
+
+      // If this was a new session, find the newest session and select it
+      if (wasNewSession && updatedSessions && updatedSessions.length > previousSessionCount) {
+        // Find the newest session (first in the list, as API returns newest first)
+        const newestSession = updatedSessions[0];
+        if (newestSession?.sessionId) {
+          setSelectedSessionId(newestSession.sessionId);
+          setAutoSelectEnabled(true);
+          setCurrentSessionId(newestSession.sessionId);
+        }
+      } else if (!wasNewSession && selectedSessionId) {
+        // Update existing session's lastMessageAt
+        const currentSession = updatedSessions?.find(
+          (s) => s.sessionId === selectedSessionId
+        );
+        if (currentSession) {
+          upsertSession({
+            sessionId: selectedSessionId,
+            lastMessageAt: currentSession.lastMessageAt,
+          });
+        }
+      }
     } catch (error) {
       console.error("Error sending message:", error);
       const errorMessage = {
@@ -430,6 +411,10 @@ export default function ChatPage() {
   };
 
   const handleNewChat = () => {
+    // Prevent creating new chat while a message is being sent
+    if (isLoading) {
+      return;
+    }
     newChatPendingRef.current = true;
     setAutoSelectEnabled(false);
     setSelectedSessionId(null);
@@ -509,8 +494,9 @@ export default function ChatPage() {
               </h2>
               <Button
                 onClick={handleNewChat}
+                disabled={isLoading}
                 size="sm"
-                className="h-8 px-3 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-base font-medium shadow-sm hover:shadow-md transition-all flex items-center gap-1.5"
+                className="h-8 px-3 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-base font-medium shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Plus className="h-3.5 w-3.5" />
                 Mới

@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  Clock,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -32,7 +33,7 @@ import { useSelector } from "react-redux";
 import { toast } from "react-hot-toast";
 import { bookingAPI } from "../../api/bookingAPI";
 
-const RatingSection = ({ eventId }) => {
+const RatingSection = ({ eventId, eventEndTime }) => {
   const {
     ratings,
     loading,
@@ -89,14 +90,14 @@ const RatingSection = ({ eventId }) => {
   }, [eventId]);
 
   //  Tìm comment của user hiện tại
+  // Vì API chỉ trả về userName trong rating, nên so sánh userName với user.unique_name hoặc user.name
   useEffect(() => {
-    if (isAuthenticated && ratings.length > 0) {
+    if (isAuthenticated && ratings.length > 0 && user) {
       const existing = ratings.find(
         (r) =>
-          r.userId === user?.userId ||
-          r.accountId === user?.accountId ||
-          r.userName === user?.userName ||
-          r.email === user?.email
+          r.userName === user?.unique_name ||
+          r.userName === user?.name ||
+          r.userName === user?.userName
       );
       setUserExistingRating(existing || null);
     } else {
@@ -179,6 +180,9 @@ const RatingSection = ({ eventId }) => {
         ).toFixed(1)
       : 0;
 
+  // Kiểm tra xem sự kiện đã kết thúc chưa
+  const isEventEnded = eventEndTime ? new Date() > new Date(eventEndTime) : false;
+
   return (
     <div className="mt-12 bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
       {/* Header */}
@@ -234,28 +238,53 @@ const RatingSection = ({ eventId }) => {
           // Đang kiểm tra - không hiển thị gì hoặc hiển thị loading nhẹ
           <div className="mb-10"></div>
         ) : hasPurchasedTicket ? (
-          <div className="mb-10">
-            {userExistingRating && !editingRatingId ? (
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100 rounded-xl p-5 flex items-center justify-between shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white rounded-lg shadow-sm">
-                    <Sparkles className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <span className="text-gray-700 font-medium">
-                    Bạn đã đánh giá sự kiện này
-                  </span>
+          !isEventEnded ? (
+            // Sự kiện chưa kết thúc - hiển thị thông báo
+            <div className="mb-10 bg-blue-50 border border-blue-100 rounded-xl p-5 text-center shadow-sm">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Clock className="w-5 h-5 text-blue-600" />
+                <div className="text-blue-800 text-sm font-medium">
+                  Bạn chỉ có thể bình luận sau khi sự kiện kết thúc
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-blue-200 text-blue-700 hover:bg-blue-50"
-                  onClick={() => handleEdit(userExistingRating)}
-                >
-                  <Pencil className="w-4 h-4 mr-2" />
-                  Cập nhật
-                </Button>
               </div>
-            ) : (
+              <p className="text-blue-600 text-xs mt-1">
+                Vui lòng quay lại sau khi sự kiện kết thúc để chia sẻ cảm nhận của bạn
+              </p>
+            </div>
+          ) : (
+            <div className="mb-10">
+              {userExistingRating && !editingRatingId ? (
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100 rounded-xl p-5 flex items-center justify-between shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white rounded-lg shadow-sm">
+                      <Sparkles className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <span className="text-gray-700 font-medium">
+                      Bạn đã đánh giá sự kiện này
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                      onClick={() => handleEdit(userExistingRating)}
+                    >
+                      <Pencil className="w-4 h-4 mr-2" />
+                      Cập nhật bình luận
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-red-200 text-red-700 hover:bg-red-50"
+                      onClick={() => handleDelete(userExistingRating)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Xóa bình luận
+                    </Button>
+                  </div>
+                </div>
+              ) : (
               <div className="bg-gray-50 rounded-xl p-6 space-y-5 border border-gray-100">
                 <div>
                   <label className="text-sm font-medium text-gray-700 mb-3 block">
@@ -324,8 +353,9 @@ const RatingSection = ({ eventId }) => {
                   )}
                 </div>
               </div>
-            )}
-          </div>
+              )}
+            </div>
+          )
         ) : (
           <div className="mb-10 bg-amber-50 border border-amber-100 rounded-xl p-5 text-center shadow-sm">
             <p className="text-amber-800 text-sm">
@@ -374,12 +404,14 @@ const RatingSection = ({ eventId }) => {
               ) : (
                 <div className="space-y-4">
                   {paginatedRatings.map((rating) => {
+                    // Xác định rating của user hiện tại
+                    // Ưu tiên so sánh ratingId với userExistingRating (chính xác 100%)
+                    // Nếu không có userExistingRating, so sánh userName (có thể không chính xác nếu trùng tên)
                     const isCurrentUser =
                       isAuthenticated &&
-                      (rating.userId === user?.userId ||
-                        rating.accountId === user?.accountId ||
-                        rating.userName === user?.userName ||
-                        rating.email === user?.email);
+                      user &&
+                      userExistingRating &&
+                      rating.ratingId === userExistingRating.ratingId;
 
                     return (
                       <div
@@ -413,6 +445,36 @@ const RatingSection = ({ eventId }) => {
                               </div>
                             </div>
                           </div>
+                          {/* Nút Xóa và Cập nhật - chỉ hiển thị cho bình luận của người dùng hiện tại */}
+                          {isCurrentUser && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <MoreHorizontal className="w-4 h-4 text-gray-500" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="bg-white">
+                                <DropdownMenuItem
+                                  onClick={() => handleEdit(rating)}
+                                  className="cursor-pointer"
+                                >
+                                  <Pencil className="w-4 h-4 mr-2" />
+                                  Cập nhật bình luận
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleDelete(rating)}
+                                  className="cursor-pointer text-red-600 focus:text-red-600"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Xóa bình luận
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
                         </div>
 
                         {rating.comment && (
