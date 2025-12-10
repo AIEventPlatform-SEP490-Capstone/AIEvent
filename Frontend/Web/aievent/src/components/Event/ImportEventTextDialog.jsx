@@ -323,7 +323,7 @@ const ImportEventTextDialog = ({ open, onOpenChange, onImport }) => {
                 }}
                 placeholder="Ví dụ: Sự kiện âm nhạc 'Đêm Nhạc Trịnh' tại Nhà hát Hòa Bình, Quận 10. Thời gian: 20:00 ngày 15/02/2025. Vé VIP 500.000đ (50 vé)..."
                 rows={12}
-                className="resize-none text-sm"
+                className="resize-y text-sm min-h-[200px] max-h-[500px]"
               />
               <p className="text-xs text-muted-foreground">{text.length} ký tự</p>
             </div>
