@@ -206,7 +206,7 @@ const SystemSettings = () => {
   const handleInputChange = (field, value) => {
     let val = value;
     if (field === 'flatformFee') val = Math.max(0, Math.min(1, parseFloat(value) || 0));
-    if (field === 'datePayout') val = Math.max(4, Math.min(14, parseInt(value) || 4));
+    if (field === 'datePayout') val = Math.max(5, Math.min(15, parseInt(value) || 5));
     if (field === 'eventReminderHours') val = Math.max(1, Math.min(4, parseInt(value) || 1));
     setEditForm(prev => ({ ...prev, [field]: val }));
   };
@@ -373,11 +373,11 @@ const SystemSettings = () => {
                         <div className="flex items-center gap-4">
                           <Clock className="h-5 w-5 text-gray-600" />
                           <div className="flex-1">
-                            <Label>Ngày thanh toán (4-14 ngày)</Label>
+                            <Label>Ngày thanh toán (5-15 ngày)</Label>
                             <Input
                               type="number"
-                              min="4"
-                              max="14"
+                              min="5"
+                              max="15"
                               value={editForm.datePayout}
                               onChange={(e) => handleInputChange('datePayout', e.target.value)}
                               className="mt-1 text-lg"
