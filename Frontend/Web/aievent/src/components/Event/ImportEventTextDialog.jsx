@@ -25,9 +25,10 @@ import {
   Clock,
   AlertTriangle,
 } from 'lucide-react';
-import { parseEventFromText } from '../../utils/cloudflareAI';
+import { parseEventFromText, generateEventImage } from '../../utils/cloudflareAI';
 import { toast } from 'react-hot-toast';
 import { PredefinedCities } from '../../constants/userConstants';
+import { Image as ImageIcon } from 'lucide-react';
 
 const EXAMPLE_TEXT = `Sự kiện: Đêm nhạc Acoustic "Những Bản Tình Ca Bất Hủ"
 Mô tả: Đêm nhạc acoustic lãng mạn với những ca khúc tình yêu được yêu thích nhất
@@ -45,6 +46,8 @@ const ImportEventTextDialog = ({ open, onOpenChange, onImport }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [parsedData, setParsedData] = useState(null);
   const [error, setError] = useState('');
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [generatedImage, setGeneratedImage] = useState(null);
 
   // Validate parsed data and return warnings - only check fields that have data
   const validationWarnings = useMemo(() => {
@@ -229,7 +232,12 @@ const ImportEventTextDialog = ({ open, onOpenChange, onImport }) => {
 
   const handleImport = () => {
     if (parsedData) {
-      onImport(parsedData);
+      // Include generated image if available
+      const dataToImport = {
+        ...parsedData,
+        generatedImage: generatedImage || null,
+      };
+      onImport(dataToImport);
       handleClose();
       toast.success('Đã import thông tin sự kiện');
     }
@@ -239,6 +247,7 @@ const ImportEventTextDialog = ({ open, onOpenChange, onImport }) => {
     setText('');
     setParsedData(null);
     setError('');
+    setGeneratedImage(null);
     onOpenChange(false);
   };
 
@@ -246,6 +255,29 @@ const ImportEventTextDialog = ({ open, onOpenChange, onImport }) => {
     setText(EXAMPLE_TEXT);
     setParsedData(null);
     setError('');
+    setGeneratedImage(null);
+  };
+
+  const handleGenerateImage = async () => {
+    if (!parsedData) {
+      toast.error('Vui lòng phân tích thông tin sự kiện trước');
+      return;
+    }
+
+    setIsGeneratingImage(true);
+    try {
+      const result = await generateEventImage(parsedData);
+      if (result.success) {
+        setGeneratedImage(result.image);
+        toast.success('Đã tạo ảnh sự kiện thành công!');
+      } else {
+        toast.error(result.error || 'Không thể tạo ảnh');
+      }
+    } catch (err) {
+      toast.error('Đã xảy ra lỗi khi tạo ảnh');
+    } finally {
+      setIsGeneratingImage(false);
+    }
   };
 
   const formatDateTime = (dateStr) => {
@@ -564,6 +596,57 @@ const ImportEventTextDialog = ({ open, onOpenChange, onImport }) => {
                       </div>
                     </div>
                   )}
+
+                  {/* AI Generated Image Section */}
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Ảnh sự kiện (AI)
+                      </p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={handleGenerateImage}
+                        disabled={isGeneratingImage || !parsedData}
+                        className="h-7 text-xs"
+                      >
+                        {isGeneratingImage ? (
+                          <>
+                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                            Đang tạo...
+                          </>
+                        ) : (
+                          <>
+                            <ImageIcon className="w-3 h-3 mr-1" />
+                            Tạo ảnh AI
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    
+                    {generatedImage ? (
+                      <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                        <img
+                          src={generatedImage}
+                          alt="AI Generated Event Banner"
+                          className="w-full h-40 object-cover"
+                        />
+                        <div className="absolute bottom-2 right-2">
+                          <span className="bg-black/60 text-white text-xs px-2 py-1 rounded">
+                            AI Generated
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-32 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg flex items-center justify-center">
+                        <div className="text-center text-muted-foreground">
+                          <ImageIcon className="w-8 h-8 mx-auto mb-1 opacity-30" />
+                          <p className="text-xs">Nhấn "Tạo ảnh AI" để tạo banner</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -579,14 +662,18 @@ const ImportEventTextDialog = ({ open, onOpenChange, onImport }) => {
             onClick={handleImport}
             disabled={!parsedData || hasErrors}
             className={`${
-              hasErrors 
+              hasErrors
                 ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
             }`}
             title={hasErrors ? 'Vui lòng sửa các lỗi trước khi import' : ''}
           >
             <FileText className="w-4 h-4 mr-2" />
-            {hasErrors ? 'Có lỗi - Không thể import' : hasWarnings ? 'Import (có cảnh báo)' : 'Import vào form'}
+            {hasErrors
+              ? 'Có lỗi - Không thể import'
+              : hasWarnings
+                ? 'Import (có cảnh báo)'
+                : 'Import vào form'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1682,6 +1682,15 @@ const CreateEventPage = () => {
       setValue('ticketTypes', newTickets);
     }
     
+    // Handle AI generated image
+    if (parsedData.generatedImage) {
+      // Add AI generated image to preview
+      setImagePreview(prev => [parsedData.generatedImage, ...prev]);
+      // Clear image error since we have an image now
+      setImageError('');
+      toast.success('Đã thêm ảnh AI vào sự kiện');
+    }
+    
     // Trigger validation after import
     validateDates();
   };
