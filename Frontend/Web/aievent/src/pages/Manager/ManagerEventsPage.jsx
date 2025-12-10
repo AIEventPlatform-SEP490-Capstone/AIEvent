@@ -257,7 +257,7 @@ const ManagerEventsPage = () => {
 
     setCurrentPage(1);
     loadEvents(1);
-  }, [location.search, activeTab, searchTerm, filterStatus, sortBy, startDate, endDate]);
+  }, [location.search, activeTab, searchTerm, filterStatus, sortBy, startDate, endDate, selectedOrganizerId]);
 
   // Debounced search effect
   useEffect(() => {
