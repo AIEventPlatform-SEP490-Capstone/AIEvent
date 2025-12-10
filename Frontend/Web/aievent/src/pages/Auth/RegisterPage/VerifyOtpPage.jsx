@@ -10,14 +10,17 @@ import { Button } from "../../../components/ui/button";
 import { showError, showSuccess } from "../../../lib/toastUtils";
 import { useAuth } from "../../../hooks/useAuth";
 import { PATH } from "../../../routes/path";
+import { useDispatch } from "react-redux";
+import { verifyOtp as verifyOtpAction } from "../../../store/slices/authSlice";
 
 export default function VerifyOtpPage() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [inputs, setInputs] = useState(["", "", "", "", "", ""]);
   const inputsRef = useRef([]);
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
-  const { verifyOtp, resendOtp } = useAuth();
+  const { resendOtp } = useAuth();
 
   const pendingEmail =
     typeof window !== "undefined" ? localStorage.getItem("pendingEmail") : null;
@@ -29,6 +32,7 @@ export default function VerifyOtpPage() {
       return;
     }
     inputsRef.current[0]?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleChange = (index, e) => {
@@ -73,16 +77,33 @@ export default function VerifyOtpPage() {
     }
     setLoading(true);
     try {
-      await verifyOtp({ email: pendingEmail, otpCode });
-      showSuccess("Xác thực thành công! Đang chuyển hướng...");
-      localStorage.removeItem("pendingEmail");
-      setTimeout(() => navigate(PATH.HOME || "/"), 1000);
+      // Sử dụng .unwrap() để đảm bảo throw error khi reject
+      const result = await dispatch(
+        verifyOtpAction({ email: pendingEmail, otpCode })
+      ).unwrap();
+      
+      // Chỉ chuyển trang khi verify thành công và có token
+      if (result?.tokens?.accessToken) {
+        showSuccess("Xác thực thành công! Đang chuyển hướng...");
+        localStorage.removeItem("pendingEmail");
+        setTimeout(() => navigate(PATH.HOME || "/"), 1000);
+      } else {
+        // Nếu không có token, coi như lỗi
+        throw new Error("Xác thực thất bại. Không nhận được token.");
+      }
     } catch (err) {
       const message =
         err?.message ||
         err?.data?.message ||
-        "Xác thực thất bại. Vui lòng thử lại.";
+        "Mã OTP không đúng. Vui lòng kiểm tra lại và thử lại.";
       showError(message);
+      // Clear input để người dùng có thể nhập lại
+      setInputs(["", "", "", "", "", ""]);
+      // Focus lại vào input đầu tiên
+      setTimeout(() => {
+        inputsRef.current[0]?.focus();
+      }, 100);
+      // Không chuyển trang khi có lỗi
     } finally {
       setLoading(false);
     }
