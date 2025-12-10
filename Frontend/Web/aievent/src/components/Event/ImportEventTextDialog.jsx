@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -23,9 +23,11 @@ import {
   MapPin,
   Ticket,
   Clock,
+  AlertTriangle,
 } from 'lucide-react';
 import { parseEventFromText } from '../../utils/cloudflareAI';
 import { toast } from 'react-hot-toast';
+import { PredefinedCities } from '../../constants/userConstants';
 
 const EXAMPLE_TEXT = `Sự kiện: Đêm nhạc Acoustic "Những Bản Tình Ca Bất Hủ"
 Mô tả: Đêm nhạc acoustic lãng mạn với những ca khúc tình yêu được yêu thích nhất
@@ -43,6 +45,159 @@ const ImportEventTextDialog = ({ open, onOpenChange, onImport }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [parsedData, setParsedData] = useState(null);
   const [error, setError] = useState('');
+
+  // Validate parsed data and return warnings - only check fields that have data
+  const validationWarnings = useMemo(() => {
+    if (!parsedData) return [];
+
+    const warnings = [];
+    const now = new Date();
+
+    // Title validation - only if has value
+    if (parsedData.title && parsedData.title.length > 200) {
+      warnings.push({
+        field: 'title',
+        message: `Tiêu đề vượt quá 200 ký tự (${parsedData.title.length}/200)`,
+        type: 'error',
+      });
+    }
+
+    // Description validation - only if has value
+    if (parsedData.description && parsedData.description.length > 1000) {
+      warnings.push({
+        field: 'description',
+        message: `Mô tả vượt quá 1000 ký tự (${parsedData.description.length}/1000)`,
+        type: 'error',
+      });
+    }
+
+    // District validation - only if has value, check if matches predefined list
+    if (parsedData.district) {
+      const districtInput = parsedData.district.toLowerCase().trim();
+      const matchedDistrict = PredefinedCities.find((city) => {
+        const cityLower = city.toLowerCase();
+        if (cityLower === districtInput) return true;
+        if (districtInput.includes(cityLower) || cityLower.includes(districtInput)) return true;
+        const numberMatch = districtInput.match(/\d+/);
+        if (numberMatch && cityLower.includes(numberMatch[0])) return true;
+        return false;
+      });
+      if (!matchedDistrict) {
+        warnings.push({
+          field: 'district',
+          message: `Quận "${parsedData.district}" không khớp với danh sách. Sẽ cần chọn lại thủ công.`,
+          type: 'warning',
+        });
+      }
+    }
+
+    // DateTime validations - only if has value
+    if (parsedData.startTime) {
+      const startTime = new Date(parsedData.startTime);
+      if (startTime <= now) {
+        warnings.push({
+          field: 'startTime',
+          message: 'Thời gian bắt đầu phải sau thời điểm hiện tại',
+          type: 'error',
+        });
+      }
+    }
+
+    if (parsedData.endTime && parsedData.startTime) {
+      const startTime = new Date(parsedData.startTime);
+      const endTime = new Date(parsedData.endTime);
+      if (endTime <= startTime) {
+        warnings.push({
+          field: 'endTime',
+          message: 'Thời gian kết thúc phải sau thời gian bắt đầu',
+          type: 'error',
+        });
+      }
+    }
+
+    if (parsedData.saleStartTime) {
+      const saleStartTime = new Date(parsedData.saleStartTime);
+      if (saleStartTime <= now) {
+        warnings.push({
+          field: 'saleStartTime',
+          message: 'Thời gian mở bán vé phải sau thời điểm hiện tại',
+          type: 'error',
+        });
+      }
+    }
+
+    if (parsedData.saleEndTime && parsedData.saleStartTime) {
+      const saleStartTime = new Date(parsedData.saleStartTime);
+      const saleEndTime = new Date(parsedData.saleEndTime);
+      if (saleEndTime <= saleStartTime) {
+        warnings.push({
+          field: 'saleEndTime',
+          message: 'Thời gian đóng bán vé phải sau thời gian mở bán',
+          type: 'error',
+        });
+      }
+    }
+
+    if (parsedData.saleStartTime && parsedData.startTime) {
+      const saleStartTime = new Date(parsedData.saleStartTime);
+      const eventStartTime = new Date(parsedData.startTime);
+      if (saleStartTime >= eventStartTime) {
+        warnings.push({
+          field: 'saleStartTime',
+          message: 'Thời gian mở bán vé phải trước thời gian bắt đầu sự kiện',
+          type: 'error',
+        });
+      }
+    }
+
+    if (parsedData.saleEndTime && parsedData.startTime) {
+      const saleEndTime = new Date(parsedData.saleEndTime);
+      const eventStartTime = new Date(parsedData.startTime);
+      if (saleEndTime >= eventStartTime) {
+        warnings.push({
+          field: 'saleEndTime',
+          message: 'Thời gian đóng bán vé phải trước thời gian bắt đầu sự kiện',
+          type: 'error',
+        });
+      }
+    }
+
+    // Ticket validations - only if has tickets
+    if (parsedData.ticketTypes && parsedData.ticketTypes.length > 0) {
+      parsedData.ticketTypes.forEach((ticket, idx) => {
+        // Only validate price if it exists
+        if (ticket.ticketPrice !== null && ticket.ticketPrice !== undefined && ticket.ticketPrice < 10000) {
+          warnings.push({
+            field: `ticket_${idx}`,
+            message: `Vé "${ticket.ticketName || idx + 1}": Giá vé phải >= 10.000 VND`,
+            type: 'error',
+          });
+        }
+        // Only validate quantity if it exists
+        if (ticket.ticketQuantity !== null && ticket.ticketQuantity !== undefined) {
+          if (ticket.ticketQuantity < 20) {
+            warnings.push({
+              field: `ticket_${idx}`,
+              message: `Vé "${ticket.ticketName || idx + 1}": Số lượng phải >= 20`,
+              type: 'error',
+            });
+          }
+          if (ticket.ticketQuantity > 100000) {
+            warnings.push({
+              field: `ticket_${idx}`,
+              message: `Vé "${ticket.ticketName || idx + 1}": Số lượng phải <= 100.000`,
+              type: 'error',
+            });
+          }
+        }
+      });
+    }
+
+    return warnings;
+  }, [parsedData]);
+
+  const hasErrors = validationWarnings.some(w => w.type === 'error');
+  const hasWarnings = validationWarnings.some(w => w.type === 'warning');
 
   const handleParse = async () => {
     if (!text.trim()) {
@@ -230,14 +385,64 @@ const ImportEventTextDialog = ({ open, onOpenChange, onImport }) => {
             )}
 
             {parsedData && (
-              <div className="border border-green-200 dark:border-green-800 rounded-lg bg-green-50/50 dark:bg-green-950/20 overflow-hidden">
-                {/* Success Header */}
-                <div className="bg-green-100 dark:bg-green-900/50 px-4 py-2 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-green-600" />
-                  <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                    Phân tích thành công
-                  </span>
+              <div className={`border rounded-lg overflow-hidden ${
+                hasErrors 
+                  ? 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20'
+                  : hasWarnings
+                    ? 'border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-950/20'
+                    : 'border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20'
+              }`}>
+                {/* Status Header */}
+                <div className={`px-4 py-2 flex items-center gap-2 ${
+                  hasErrors 
+                    ? 'bg-red-100 dark:bg-red-900/50'
+                    : hasWarnings
+                      ? 'bg-yellow-100 dark:bg-yellow-900/50'
+                      : 'bg-green-100 dark:bg-green-900/50'
+                }`}>
+                  {hasErrors ? (
+                    <>
+                      <AlertCircle className="w-4 h-4 text-red-600" />
+                      <span className="text-sm font-medium text-red-700 dark:text-red-300">
+                        Có {validationWarnings.filter(w => w.type === 'error').length} lỗi cần sửa
+                      </span>
+                    </>
+                  ) : hasWarnings ? (
+                    <>
+                      <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                      <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
+                        Có {validationWarnings.filter(w => w.type === 'warning').length} cảnh báo
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 text-green-600" />
+                      <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                        Phân tích thành công
+                      </span>
+                    </>
+                  )}
                 </div>
+
+                {/* Validation Warnings/Errors */}
+                {validationWarnings.length > 0 && (
+                  <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-900/50">
+                    <div className="space-y-1 max-h-24 overflow-y-auto">
+                      {validationWarnings.map((warning, idx) => (
+                        <div key={idx} className={`flex items-start gap-2 text-xs ${
+                          warning.type === 'error' ? 'text-red-600' : 'text-yellow-600'
+                        }`}>
+                          {warning.type === 'error' ? (
+                            <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                          ) : (
+                            <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                          )}
+                          <span>{warning.message}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Result Content */}
                 <div className="p-4 space-y-4 max-h-[350px] overflow-y-auto">
@@ -372,11 +577,16 @@ const ImportEventTextDialog = ({ open, onOpenChange, onImport }) => {
           <Button
             type="button"
             onClick={handleImport}
-            disabled={!parsedData}
-            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+            disabled={!parsedData || hasErrors}
+            className={`${
+              hasErrors 
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
+            }`}
+            title={hasErrors ? 'Vui lòng sửa các lỗi trước khi import' : ''}
           >
             <FileText className="w-4 h-4 mr-2" />
-            Import vào form
+            {hasErrors ? 'Có lỗi - Không thể import' : hasWarnings ? 'Import (có cảnh báo)' : 'Import vào form'}
           </Button>
         </DialogFooter>
       </DialogContent>
