@@ -1268,23 +1268,16 @@ namespace AIEvent.Application.Services.Implements
                     (wt.Wallet.User.Email != null && wt.Wallet.User.Email.ToLower().Contains(searchLower)));
             }
 
-            var revenueCount = await revenueQuery.CountAsync();
-            var walletTransactionCount = await walletTransactionQuery.CountAsync();
-            var totalCount = revenueCount + walletTransactionCount;
-
-            var revenueReportsTask = revenueQuery
+            var revenueReports = await revenueQuery
                 .OrderByDescending(r => r.PayoutDate)
                 .ThenByDescending(r => r.CreatedAt)
                 .ToListAsync();
 
-            var walletTransactionsTask = walletTransactionQuery
+            var walletTransactions = await walletTransactionQuery
                 .OrderByDescending(wt => wt.CreatedAt)
                 .ToListAsync();
 
-            await Task.WhenAll(revenueReportsTask, walletTransactionsTask);
-
-            var revenueReports = await revenueReportsTask;
-            var walletTransactions = await walletTransactionsTask;
+            int totalCount = revenueReports.Count + walletTransactions.Count;
 
             var result = new List<PayoutHistoryResponse>(totalCount);
 
