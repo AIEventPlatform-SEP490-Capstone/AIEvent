@@ -28,6 +28,8 @@ import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Label } from '../../components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../../components/ui/dialog';
+import { Textarea } from '../../components/ui/textarea';
 import { useEvents } from '../../hooks/useEvents';
 import { PATH } from '../../routes/path';
 
@@ -60,6 +62,12 @@ const MyEventsPage = () => {
   const initiationDropdownRef = useRef(null);
   const completionDropdownRef = useRef(null);
   const pageSize = 5;
+
+  // Delete confirmation dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState(null);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // New state for storing all events for statistics
   const [allEventsForStats, setAllEventsForStats] = useState([]);
@@ -226,102 +234,58 @@ const MyEventsPage = () => {
     navigate(`/organizer/event/${eventId}/edit`);
   };
 
-  const handleDeleteEvent = async (eventId) => {
-    // Find event name for better confirmation
+  const handleDeleteEvent = (eventId) => {
     const event = allEvents.find(e => e.eventId === eventId);
-    const eventName = event?.title || 'sự kiện này';
+    setEventToDelete(event);
+    setDeleteReason('');
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteEvent = async () => {
+    if (!eventToDelete) return;
+
+    const hasBookings = eventToDelete.totalPersonJoin > 0;
     
-    // Check if event has bookings that require a reason
-    const hasBookings = event?.totalPersonJoin > 0;
-    
-    if (hasBookings) {
-      // For events with bookings, show prompt for reason
-      const reason = prompt(`Bạn có chắc chắn muốn xóa "${eventName}"?
+    if (hasBookings && !deleteReason.trim()) {
+      toast.error('Vui lòng nhập lý do hủy bỏ sự kiện');
+      return;
+    }
 
-⚠️ Sự kiện này đã có ${event.totalPersonJoin} người đăng ký.
-
-Vui lòng nhập lý do hủy bỏ sự kiện:`);
+    try {
+      setIsDeleting(true);
       
-      if (reason === null) {
-        // User cancelled
-        return;
-      }
+      const response = hasBookings 
+        ? await deleteEventAPI(eventToDelete.eventId, deleteReason.trim())
+        : await deleteEventAPI(eventToDelete.eventId);
       
-      if (!reason.trim()) {
-        toast.error('Vui lòng nhập lý do hủy bỏ sự kiện');
-        return;
+      if (response !== null) {
+        toast.success('Xóa sự kiện thành công!', { duration: 3000 });
+        
+        // Update local state immediately for better UX
+        setAllEvents(prev => prev.filter(event => event.eventId !== eventToDelete.eventId));
+        setEvents(prev => prev.filter(event => event.eventId !== eventToDelete.eventId));
+        
+        // Close dialog and reset state
+        setDeleteDialogOpen(false);
+        setEventToDelete(null);
+        setDeleteReason('');
+        
+        // Reload to sync with server
+        loadEvents();
       }
-
-      try {
-        const loadingToast = toast.loading('Đang xóa sự kiện...');
-        
-        const response = await deleteEventAPI(eventId, reason.trim());
-        
-        toast.dismiss(loadingToast);
-        
-        if (response !== null) {
-          toast.success('Xóa sự kiện thành công!', {
-            duration: 3000,
-          });
-          
-          // Update local state immediately for better UX
-          setAllEvents(prev => prev.filter(event => event.eventId !== eventId));
-          setEvents(prev => prev.filter(event => event.eventId !== eventId));
-          
-          // Reload to sync with server
-          loadEvents();
-        }
-      } catch (error) {
-        console.error('Error deleting event:', error);
-        if (error.response?.status === 403) {
-          toast.error(' Bạn không có quyền xóa sự kiện này');
-        } else if (error.response?.status === 404) {
-          toast.error(' Sự kiện không tồn tại');
-        } else if (error.response?.status === 400) {
-          toast.error(' Không thể xóa sự kiện đã có người đăng ký');
-        } else {
-          toast.error(' Có lỗi xảy ra khi xóa sự kiện');
-        }
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      if (error.response?.status === 403) {
+        toast.error('Bạn không có quyền xóa sự kiện này');
+      } else if (error.response?.status === 404) {
+        toast.error('Sự kiện không tồn tại');
+      } else if (error.response?.status === 400) {
+        toast.error('Không thể xóa sự kiện đã có người đăng ký');
+      } else {
+        toast.error('Có lỗi xảy ra khi xóa sự kiện');
       }
-    } else {
-      // For events without bookings, use simple confirmation
-      const confirmMessage = `Bạn có chắc chắn muốn xóa "${eventName}"?\n\n⚠️ Hành động này không thể hoàn tác!`;
-      
-      if (!window.confirm(confirmMessage)) {
-        return;
-      }
-
-      try {
-        const loadingToast = toast.loading('Đang xóa sự kiện...');
-        
-        const response = await deleteEventAPI(eventId);
-        
-        toast.dismiss(loadingToast);
-        
-        if (response !== null) {
-          toast.success('Xóa sự kiện thành công!', {
-            duration: 3000,
-          });
-          
-          // Update local state immediately for better UX
-          setAllEvents(prev => prev.filter(event => event.eventId !== eventId));
-          setEvents(prev => prev.filter(event => event.eventId !== eventId));
-          
-          // Reload to sync with server
-          loadEvents();
-        }
-      } catch (error) {
-        console.error('Error deleting event:', error);
-        if (error.response?.status === 403) {
-          toast.error(' Bạn không có quyền xóa sự kiện này');
-        } else if (error.response?.status === 404) {
-          toast.error(' Sự kiện không tồn tại');
-        } else if (error.response?.status === 400) {
-          toast.error(' Không thể xóa sự kiện đã có người đăng ký');
-        } else {
-          toast.error(' Có lỗi xảy ra khi xóa sự kiện');
-        }
-      }
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -1259,6 +1223,76 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="w-5 h-5" />
+              Xác nhận hủy sự kiện
+            </DialogTitle>
+            <DialogDescription className="text-left">
+              Bạn có chắc chắn muốn hủy sự kiện <span className="font-semibold text-slate-900 dark:text-white">"{eventToDelete?.title}"</span>?
+              {eventToDelete?.totalPersonJoin > 0 && (
+                <span className="block mt-2 text-amber-600 dark:text-amber-400">
+                  ⚠️ Sự kiện này đã có {eventToDelete.totalPersonJoin} người đăng ký.
+                </span>
+              )}
+              <span className="block mt-2 text-red-500">
+                Hành động này không thể hoàn tác!
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          
+          {eventToDelete?.totalPersonJoin > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="deleteReason" className="text-sm font-medium">
+                Lý do hủy sự kiện <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                id="deleteReason"
+                placeholder="Nhập lý do hủy sự kiện..."
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                className="min-h-[80px] resize-none"
+              />
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setEventToDelete(null);
+                setDeleteReason('');
+              }}
+              disabled={isDeleting}
+            >
+              Hủy bỏ
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteEvent}
+              disabled={isDeleting || (eventToDelete?.totalPersonJoin > 0 && !deleteReason.trim())}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? (
+                <>
+                  <span className="animate-spin mr-2">⏳</span>
+                  Đang xử lý...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Xác nhận hủy
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
