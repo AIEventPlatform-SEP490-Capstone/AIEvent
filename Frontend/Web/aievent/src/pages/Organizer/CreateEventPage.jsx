@@ -1682,6 +1682,20 @@ const CreateEventPage = () => {
       setValue('ticketTypes', newTickets);
     }
     
+    // Handle AI generated images (multiple)
+    if (parsedData.generatedImages && parsedData.generatedImages.length > 0) {
+      // Add AI generated images to preview (limit to 5 total)
+      const currentCount = imagePreview.length;
+      const availableSlots = 5 - currentCount;
+      const imagesToAdd = parsedData.generatedImages.slice(0, availableSlots);
+      
+      if (imagesToAdd.length > 0) {
+        setImagePreview(prev => [...imagesToAdd, ...prev]);
+        setImageError('');
+        toast.success(`Đã thêm ${imagesToAdd.length} ảnh AI vào sự kiện`);
+      }
+    }
+    
     // Trigger validation after import
     validateDates();
   };

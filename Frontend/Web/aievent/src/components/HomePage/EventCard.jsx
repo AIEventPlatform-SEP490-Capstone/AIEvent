@@ -64,6 +64,11 @@ export function EventCard({
   
   const isSoldOut = ticketPercentage >= 100;
   const isMostlyBooked = ticketPercentage >= 80;
+  
+  // Check if sale has not started yet
+  const now = new Date();
+  const saleStartTime = event.saleStartTime ? new Date(event.saleStartTime) : null;
+  const isNotOnSale = saleStartTime && saleStartTime > now;
 
   return (
     <Card
@@ -248,11 +253,13 @@ export function EventCard({
         <div className="flex gap-2 pt-4 border-t border-gray-200">
           <Button
             onClick={handleRegisterClick}
-            disabled={isLoading || isSoldOut}
+            disabled={isLoading || isSoldOut || isNotOnSale}
             className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all duration-300 group/btn rounded-lg"
           >
             {isSoldOut ? (
               "Hết vé"
+            ) : isNotOnSale ? (
+              "Chưa mở bán"
             ) : (
               <>
                 <span>Mua vé</span>

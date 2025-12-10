@@ -871,12 +871,12 @@ const ManagerEventsPage = () => {
               <div className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="relative backdrop-blur-sm bg-white/40 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-2xl p-4 hover:scale-[1.03] transition-transform duration-300">
                 <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                  Tham gia
+                  Mua vé
                 </p>
                 <p className="text-2xl font-bold text-violet-600 dark:text-violet-400 mt-2">
                   {stats.totalRegistrations}
                 </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Tổng số đăng ký</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Tổng số người mua vé</p>
               </div>
             </div>
           </div>
