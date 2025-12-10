@@ -827,7 +827,7 @@ const EventDetailGuestPage = ({ previewData }) => {
               </div>
             )}
 
-            <RatingSection eventId={event.eventId || id} />
+            <RatingSection eventId={event.eventId || id} eventEndTime={event.endTime} />
           </div>
 
           {/* Sidebar - Enhanced */}
@@ -1350,12 +1350,6 @@ const EventDetailGuestPage = ({ previewData }) => {
                   Chọn nơi bạn muốn chia sẻ
                 </p>
               </div>
-              <button
-                onClick={() => setIsShareOpen(false)}
-                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center"
-              >
-                <X className="w-4 h-4 text-gray-500" />
-              </button>
             </div>
 
             {/* Social Options Grid */}

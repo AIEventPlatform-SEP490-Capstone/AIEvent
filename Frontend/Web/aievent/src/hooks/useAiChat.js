@@ -16,16 +16,15 @@ export const useAiChat = () => {
       const sessionToUse = sessionId !== null ? sessionId : currentSessionId;
 
       try {
+        // API response structure: { statusCode, message, data: "response text" }
+        // Note: sessionId is NOT returned in the POST response
+        // It needs to be retrieved from GET /api/ai/chat/sessions after sending
         const response = await aiChatAPI.sendMessage(userPrompt, sessionToUse);
 
-        // Extract sessionId from response if available (usually in response.data or response.data.data)
-        const newSessionId =
-          response?.data?.sessionId ||
-          response?.sessionId ||
-          sessionToUse ||
-          null;
-        if (newSessionId && newSessionId !== currentSessionId) {
-          setCurrentSessionId(newSessionId);
+        // Keep current sessionId if we had one, don't try to extract from response
+        // The sessionId will be retrieved from sessions list if needed
+        if (sessionToUse && sessionToUse !== currentSessionId) {
+          setCurrentSessionId(sessionToUse);
         }
 
         return response;

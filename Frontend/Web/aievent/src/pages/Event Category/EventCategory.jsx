@@ -175,6 +175,7 @@ const EventCategory = () => {
       clearCategoriesError();
     } finally {
       setIsSubmittingCreate(false);
+      setIsCreating(false);
     }
   };
 
