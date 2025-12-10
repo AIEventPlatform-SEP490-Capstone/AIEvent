@@ -24,8 +24,10 @@ namespace AIEvent.Application.Services.Implements
         private readonly IHangfireJobService _hangfireJobService;
         private readonly INotificationService _notificationService;
         private readonly IPayOSService _payOSService;
+        private readonly IPineconeVectorService _pineconeVectorService;
+
         public EventService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper, IMapper mapper, 
-            IHangfireJobService hangfireJobService, INotificationService notificationService, IPayOSService payOSService)
+            IHangfireJobService hangfireJobService, INotificationService notificationService, IPayOSService payOSService, IPineconeVectorService pineconeVectorService)
         {
             _unitOfWork = unitOfWork;
             _transactionHelper = transactionHelper;
@@ -33,6 +35,7 @@ namespace AIEvent.Application.Services.Implements
             _hangfireJobService = hangfireJobService;
             _notificationService = notificationService;
             _payOSService = payOSService;
+            _pineconeVectorService = pineconeVectorService;
         }
 
         public async Task<Result> CreateEventAsync(Guid organizerId, CreateEventRequest request)
@@ -597,6 +600,9 @@ namespace AIEvent.Application.Services.Implements
                     return Result.Success();
                 }
                 await _unitOfWork.EventRepository.DeleteAsync(existingEvent!);
+
+                await _pineconeVectorService.DeleteVectorAsync(eventId.ToString(), isUser: false);
+
                 return Result.Success();
             });
         }

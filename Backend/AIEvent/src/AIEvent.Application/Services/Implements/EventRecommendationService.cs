@@ -595,7 +595,7 @@ namespace AIEvent.Application.Services.Implements
                 return new BasePaginated<ListSearchFriend>(new List<ListSearchFriend>(), 0, pageNumber, pageSize);
 
             var pineconeResults = await _pineconeService.QuerySimilarFriendInEventAsync(
-                embedding, isUser: true, topK: 11,
+                embedding, isUser: true, topK: 6,
                 includeIds: candidateIds,   
                 excludeIds: friendIds       
             );
