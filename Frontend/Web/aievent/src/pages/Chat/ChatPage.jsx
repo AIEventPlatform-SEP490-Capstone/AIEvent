@@ -201,7 +201,11 @@ export default function ChatPage() {
 
   const loadSessions = useCallback(
     async (options = {}) => {
-      const { disableAutoSelect = false, silent = false } = options;
+      const {
+        disableAutoSelect = false,
+        silent = false,
+        forceAutoSelect = false,
+      } = options;
       try {
         if (!silent) {
           setLoadingSessions(true);
@@ -214,7 +218,7 @@ export default function ChatPage() {
         if (
           sessionsList.length > 0 &&
           !selectedSessionId &&
-          autoSelectEnabled &&
+          (autoSelectEnabled || forceAutoSelect) &&
           !disableAutoSelect
         ) {
           setSelectedSessionId(sessionsList[0].sessionId);
@@ -364,9 +368,12 @@ export default function ChatPage() {
 
       const sessionIdFromResponse =
         sessionPayload?.sessionId ||
+        sessionPayload?.id ||
         response?.sessionId ||
+        response?.id ||
         response?.data?.sessionId ||
         response?.data?.data?.sessionId ||
+        response?.data?.id ||
         null;
 
       if (wasNewSession) {
@@ -403,7 +410,8 @@ export default function ChatPage() {
       }
 
       loadSessions({
-        disableAutoSelect: true,
+        disableAutoSelect: !!sessionIdFromResponse || !wasNewSession,
+        forceAutoSelect: wasNewSession,
         silent: true,
       }).catch((refreshError) =>
         console.error("Error refreshing sessions:", refreshError)
@@ -527,26 +535,23 @@ export default function ChatPage() {
                   <div
                     key={session.sessionId}
                     onClick={() => handleSelectSession(session.sessionId)}
-                    className={`p-2.5 rounded-lg cursor-pointer transition-all ${
-                      selectedSessionId === session.sessionId
-                        ? "bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30 border border-blue-200/50 dark:border-blue-700/50 shadow-sm"
-                        : "hover:bg-slate-50 dark:hover:bg-slate-700/50 border border-transparent hover:border-slate-200/50 dark:hover:border-slate-600/50"
-                    }`}
+                    className={`p-2.5 rounded-lg cursor-pointer transition-all ${selectedSessionId === session.sessionId
+                      ? "bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30 border border-blue-200/50 dark:border-blue-700/50 shadow-sm"
+                      : "hover:bg-slate-50 dark:hover:bg-slate-700/50 border border-transparent hover:border-slate-200/50 dark:hover:border-slate-600/50"
+                      }`}
                   >
                     <div className="flex items-start justify-between gap-1.5">
                       <div className="flex-1 min-w-0">
-                        <p className={`font-medium text-sm truncate mb-0.5 ${
-                          selectedSessionId === session.sessionId
-                            ? "text-slate-800 dark:text-slate-100"
-                            : "text-slate-700 dark:text-slate-300"
-                        }`}>
+                        <p className={`font-medium text-sm truncate mb-0.5 ${selectedSessionId === session.sessionId
+                          ? "text-slate-800 dark:text-slate-100"
+                          : "text-slate-700 dark:text-slate-300"
+                          }`}>
                           {session.sessionName || "Cuộc trò chuyện mới"}
                         </p>
-                        <p className={`text-xs ${
-                          selectedSessionId === session.sessionId
-                            ? "text-slate-500 dark:text-slate-400"
-                            : "text-slate-400 dark:text-slate-500"
-                        }`}>
+                        <p className={`text-xs ${selectedSessionId === session.sessionId
+                          ? "text-slate-500 dark:text-slate-400"
+                          : "text-slate-400 dark:text-slate-500"
+                          }`}>
                           {formatDate(
                             session.lastMessageAt || session.createdAt
                           )}
@@ -585,25 +590,25 @@ export default function ChatPage() {
           <Card className="flex-1 flex flex-col m-3 rounded-xl shadow-xl border border-slate-200/60 dark:border-slate-700/60 overflow-hidden bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm p-0 relative">
             {/* Header */}
             <CardHeader className="px-4 py-3 !pb-3 border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-br from-blue-100 to-cyan-50 dark:from-gray-800/50 dark:to-gray-700/30">
-  <div className="flex h-12 items-center">
-    <div className="flex items-center gap-2.5">
-      <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl blur-md opacity-20" />
-        <div className="relative bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl p-2 shadow-sm">
-          <Bot className="h-5 w-5 text-white" />
-        </div>
-      </div>
-      <div className="flex flex-col justify-center">
-        <span className="text-base font-semibold text-slate-800 dark:text-slate-100 leading-tight">
-          AI Assistant
-        </span>
-        <span className="text-xs text-slate-500 dark:text-slate-400 leading-tight">
-          Luôn sẵn sàng hỗ trợ
-        </span>
-      </div>
-    </div>
-  </div>
-</CardHeader>
+              <div className="flex h-12 items-center">
+                <div className="flex items-center gap-2.5">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl blur-md opacity-20" />
+                    <div className="relative bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl p-2 shadow-sm">
+                      <Bot className="h-5 w-5 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex flex-col justify-center">
+                    <span className="text-base font-semibold text-slate-800 dark:text-slate-100 leading-tight">
+                      AI Assistant
+                    </span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 leading-tight">
+                      Luôn sẵn sàng hỗ trợ
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
 
             {/* Messages */}
             <CardContent className="flex-1 flex flex-col p-4 min-h-0 overflow-hidden">
@@ -629,14 +634,12 @@ export default function ChatPage() {
                           className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300"
                         >
                           <div
-                            className={`flex ${
-                              isUserMessage ? "justify-end" : "justify-start"
-                            }`}
+                            className={`flex ${isUserMessage ? "justify-end" : "justify-start"
+                              }`}
                           >
                             <div
-                              className={`flex items-start gap-2 ${
-                                isUserMessage ? "flex-row-reverse" : ""
-                              } max-w-[85%]`}
+                              className={`flex items-start gap-2 ${isUserMessage ? "flex-row-reverse" : ""
+                                } max-w-[85%]`}
                             >
                               {message.sender === "ai" && (
                                 <div className="relative flex-shrink-0">
@@ -668,115 +671,114 @@ export default function ChatPage() {
                                 </div>
                               )}
                               <div className="flex flex-col gap-1">
-                              <div className="flex items-start gap-2">
-                                <div
-                                  className={`rounded-xl break-words shadow-sm relative overflow-hidden ${
-                                    isUserMessage
+                                <div className="flex items-start gap-2">
+                                  <div
+                                    className={`rounded-xl break-words shadow-sm relative overflow-hidden ${isUserMessage
                                       ? "bg-gradient-to-br from-blue-600 to-cyan-600 text-white rounded-tr-md px-3 py-2.5"
                                       : "bg-gradient-to-br from-white to-blue-50/30 dark:from-gray-800 dark:to-blue-950/20 border border-blue-100/60 dark:border-blue-900/40 rounded-tl-md px-3.5 py-2.5 shadow-md backdrop-blur-sm"
-                                  }`}
-                                >
-                                  {/* Subtle gradient overlay for AI messages */}
-                                  {!isUserMessage && (
-                                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5 pointer-events-none" />
-                                  )}
-                                  <div className={`relative ${isUserMessage ? "text-white" : "text-slate-700 dark:text-slate-200"}`}>
-                                    <div className="text-sm leading-relaxed space-y-1.5">
-                                      {message.content
-                                        .split("\n")
-                                        .map((line, index) => {
-                                          if (
-                                            line.startsWith("**") &&
-                                            line.endsWith("**")
-                                          ) {
-                                            return (
-                                              <div
-                                                key={index}
-                                                className="font-bold text-base mb-1.5 flex items-center gap-2 text-blue-700 dark:text-blue-300"
-                                              >
-                                                <Sparkles className="h-3.5 w-3.5 text-yellow-500 dark:text-yellow-400 flex-shrink-0" />
-                                                <span>{line.slice(2, -2)}</span>
-                                              </div>
-                                            );
-                                          }
-                                          if (
-                                            line.startsWith("• ") ||
-                                            line.startsWith("- ")
-                                          ) {
-                                            return (
-                                              <div
-                                                key={index}
-                                                className="flex items-start gap-2 my-1.5 pl-1"
-                                              >
-                                                <div className="mt-1.5 flex-shrink-0">
-                                                  <div className="h-1.5 w-1.5 rounded-full bg-blue-500 dark:bg-blue-400" />
+                                      }`}
+                                  >
+                                    {/* Subtle gradient overlay for AI messages */}
+                                    {!isUserMessage && (
+                                      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5 pointer-events-none" />
+                                    )}
+                                    <div className={`relative ${isUserMessage ? "text-white" : "text-slate-700 dark:text-slate-200"}`}>
+                                      <div className="text-sm leading-relaxed space-y-1.5">
+                                        {message.content
+                                          .split("\n")
+                                          .map((line, index) => {
+                                            if (
+                                              line.startsWith("**") &&
+                                              line.endsWith("**")
+                                            ) {
+                                              return (
+                                                <div
+                                                  key={index}
+                                                  className="font-bold text-base mb-1.5 flex items-center gap-2 text-blue-700 dark:text-blue-300"
+                                                >
+                                                  <Sparkles className="h-3.5 w-3.5 text-yellow-500 dark:text-yellow-400 flex-shrink-0" />
+                                                  <span>{line.slice(2, -2)}</span>
                                                 </div>
-                                                <span className="flex-1">{line.slice(2)}</span>
+                                              );
+                                            }
+                                            if (
+                                              line.startsWith("• ") ||
+                                              line.startsWith("- ")
+                                            ) {
+                                              return (
+                                                <div
+                                                  key={index}
+                                                  className="flex items-start gap-2 my-1.5 pl-1"
+                                                >
+                                                  <div className="mt-1.5 flex-shrink-0">
+                                                    <div className="h-1.5 w-1.5 rounded-full bg-blue-500 dark:bg-blue-400" />
+                                                  </div>
+                                                  <span className="flex-1">{line.slice(2)}</span>
+                                                </div>
+                                              );
+                                            }
+                                            return line ? (
+                                              <div key={index} className="my-1.5 first:mt-0 last:mb-0">
+                                                {renderLineWithLink(line)}
                                               </div>
+                                            ) : (
+                                              <div key={index} className="h-2" />
                                             );
-                                          }
-                                          return line ? (
-                                            <div key={index} className="my-1.5 first:mt-0 last:mb-0">
-                                              {renderLineWithLink(line)}
-                                            </div>
-                                          ) : (
-                                            <div key={index} className="h-2" />
-                                          );
-                                        })}
+                                          })}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                                {message.sender === "ai" && (
-                                  <button className="h-6 w-6 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors flex items-center justify-center">
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <button className="h-6 w-6 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors flex items-center justify-center">
-                                          <MoreVertical className="h-3 w-3" />
-                                        </button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent
-                                        align="end"
-                                        className="w-44"
-                                      >
-                                        {isSpeechSynthesisSupported ? (
-                                          <DropdownMenuItem
-                                            className="gap-2 text-base"
-                                            onClick={() =>
-                                              isSpeakingThisMessage
-                                                ? handleStopSpeaking()
-                                                : handleSpeakMessage(
+                                  {message.sender === "ai" && (
+                                    <button className="h-6 w-6 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors flex items-center justify-center">
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <button className="h-6 w-6 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors flex items-center justify-center">
+                                            <MoreVertical className="h-3 w-3" />
+                                          </button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent
+                                          align="end"
+                                          className="w-44"
+                                        >
+                                          {isSpeechSynthesisSupported ? (
+                                            <DropdownMenuItem
+                                              className="gap-2 text-base"
+                                              onClick={() =>
+                                                isSpeakingThisMessage
+                                                  ? handleStopSpeaking()
+                                                  : handleSpeakMessage(
                                                     message.id,
                                                     message.content
                                                   )
-                                            }
-                                          >
-                                            {isSpeakingThisMessage ? (
-                                              <>
-                                                <VolumeX className="h-4 w-4 text-red-500" />
-                                                Dừng đọc
-                                              </>
-                                            ) : (
-                                              <>
-                                                <Volume2 className="h-4 w-4 text-blue-500" />
-                                                Đọc to
-                                              </>
-                                            )}
-                                          </DropdownMenuItem>
-                                        ) : (
-                                          <DropdownMenuItem
-                                            disabled
-                                            className="gap-2 opacity-70 text-base"
-                                          >
-                                            <VolumeX className="h-4 w-4" />
-                                            Không hỗ trợ đọc
-                                          </DropdownMenuItem>
-                                        )}
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
-                                  </button>
-                                )}
+                                              }
+                                            >
+                                              {isSpeakingThisMessage ? (
+                                                <>
+                                                  <VolumeX className="h-4 w-4 text-red-500" />
+                                                  Dừng đọc
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <Volume2 className="h-4 w-4 text-blue-500" />
+                                                  Đọc to
+                                                </>
+                                              )}
+                                            </DropdownMenuItem>
+                                          ) : (
+                                            <DropdownMenuItem
+                                              disabled
+                                              className="gap-2 opacity-70 text-base"
+                                            >
+                                              <VolumeX className="h-4 w-4" />
+                                              Không hỗ trợ đọc
+                                            </DropdownMenuItem>
+                                          )}
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </button>
+                                  )}
+                                </div>
                               </div>
-                            </div>
                             </div>
                           </div>
 
@@ -879,11 +881,10 @@ export default function ChatPage() {
                       size="icon"
                       onClick={isRecording ? stopRecording : startRecording}
                       disabled={isLoading}
-                      className={`h-9 w-9 rounded-lg border border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all flex-shrink-0 ${
-                        isRecording
-                          ? "border-red-400 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-600"
-                          : ""
-                      }`}
+                      className={`h-9 w-9 rounded-lg border border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all flex-shrink-0 ${isRecording
+                        ? "border-red-400 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-600"
+                        : ""
+                        }`}
                     >
                       {isRecording ? (
                         <Square className="h-3.5 w-3.5" />
@@ -911,8 +912,8 @@ export default function ChatPage() {
                     {isRecording && interimTranscript
                       ? `Đang nghe: "${interimTranscript}"`
                       : speechError
-                      ? `Không thể thu âm: ${speechError}`
-                      : "Nhấn mic để nói câu hỏi của bạn"}
+                        ? `Không thể thu âm: ${speechError}`
+                        : "Nhấn mic để nói câu hỏi của bạn"}
                   </p>
                 )}
                 {!isSpeechSupported && (
@@ -942,7 +943,7 @@ export default function ChatPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="rounded-lg border border-purple-200/50 dark:border-purple-900/40 p-4 bg-purple-50/40 dark:bg-purple-900/20 space-y-2">   
+          <div className="rounded-lg border border-purple-200/50 dark:border-purple-900/40 p-4 bg-purple-50/40 dark:bg-purple-900/20 space-y-2">
             <div className="text-base text-muted-foreground flex items-center justify-between">
               <span>Số tin nhắn</span>
               <span className="font-semibold text-foreground">
