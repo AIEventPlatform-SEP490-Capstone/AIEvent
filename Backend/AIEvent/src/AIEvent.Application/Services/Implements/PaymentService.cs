@@ -378,8 +378,6 @@ namespace AIEvent.Application.Services.Implements
 
         public async Task ProcessPendingPayoutsAsync()
         {
-            try
-            {
                 var allSettings = await _unitOfWork.SystemSettingRepository
                     .Query()
                     .AsNoTracking()
@@ -389,7 +387,7 @@ namespace AIEvent.Application.Services.Implements
 
                 if (!allSettings.Any())
                 {
-                    _logger.LogError("SystemSetting not found");
+                    _logger.LogError("SystemSetting not found for ProcessPendingPayoutsAsync");
                     return;
                 }
 
@@ -401,7 +399,7 @@ namespace AIEvent.Application.Services.Implements
                     .Query()
                     .Include(e => e.OrganizerProfile)
                     .Where(e => e.Status == EventStatus.WaitingForPayout
-                                && e.PayoutAttemptCount < 20
+                                && e.PayoutAttemptCount < 7
                                 && !e.IsDeleted)
                     .OrderBy(e => e.CompletedAt)
                     .Take(200)              
@@ -412,7 +410,7 @@ namespace AIEvent.Application.Services.Implements
                     _logger.LogInformation("No events ready for payout.");
                     return;
                 }
-
+ 
                 pendingEvents = pendingEvents
                     .Where(ev =>
                     {
@@ -439,7 +437,7 @@ namespace AIEvent.Application.Services.Implements
                     _logger.LogInformation("No events meet payout deadline after applying month-based SystemSetting.");
                     return;
                 }
-
+ 
                 foreach (var ev in pendingEvents)
                 {
                     var key = $"{ev.SaleStartTime!.Value:yyyy-MM}";
@@ -464,193 +462,176 @@ namespace AIEvent.Application.Services.Implements
                         _logger.LogWarning("Event {EventId} is Cancelled or ErrorPayment, skipping payout", ev.Id);
                         continue;
                     }
-                    
-                    try
-                    { 
-                        ev.PayoutAttemptCount++;
+                     
+                    ev.PayoutAttemptCount++;
                          
-                        if (ev.PayoutAttemptCount >= 20)
-                        { 
-                            if (ev.OrganizerProfile != null)
+                    if (ev.PayoutAttemptCount >= 7)
+                    { 
+                        if (ev.OrganizerProfile != null)
+                        {
+                            await _notificationService.CreateNotificationAsync(new CreateNotificationRequest
+                            {
+                                UserId = ev.OrganizerProfile.UserId,
+                                Title = "Cảnh báo: Dừng thực hiện payout",
+                                Message = $"Sự kiện <strong>{ev.Title}</strong> đã thực hiện payout đạt {ev.PayoutAttemptCount} lần. Hệ thống sẽ dừng thực hiện giao dịch payout cho sự kiện này. Sự kiện đã được chuyển sang trạng thái ErrorPayment. Vui lòng liên hệ hỗ trợ.",
+                                Type = NotificationType.System,
+                                EventId = ev.Id
+                            });
+                        }
+                         
+                        var managerRole = await _unitOfWork.RoleRepository
+                            .Query()
+                            .AsNoTracking()
+                            .Where(r => r.Name == "Manager" && !r.IsDeleted)
+                            .Select(r => r.Id)
+                            .FirstOrDefaultAsync();
+                        
+                        if (managerRole != Guid.Empty)
+                        {
+                            var managerUsers = await _unitOfWork.UserRepository
+                                .Query()
+                                .AsNoTracking()
+                                .Where(u => u.RoleId == managerRole && !u.IsDeleted && u.IsActive)
+                                .Select(u => u.Id)
+                                .ToListAsync();
+                            
+                            foreach (var managerId in managerUsers)
                             {
                                 await _notificationService.CreateNotificationAsync(new CreateNotificationRequest
                                 {
-                                    UserId = ev.OrganizerProfile.UserId,
+                                    UserId = managerId,
                                     Title = "Cảnh báo: Dừng thực hiện payout",
-                                    Message = $"Sự kiện <strong>{ev.Title}</strong> đã thực hiện payout đạt {ev.PayoutAttemptCount} lần. Hệ thống sẽ dừng thực hiện giao dịch payout cho sự kiện này. Sự kiện đã được chuyển sang trạng thái ErrorPayment. Vui lòng liên hệ hỗ trợ.",
+                                    Message = $"Sự kiện <strong>{ev.Title}</strong> (ID: {ev.Id}) đã thực hiện payout đạt {ev.PayoutAttemptCount} lần. Hệ thống đã dừng thực hiện giao dịch payout cho sự kiện này và chuyển sang trạng thái ErrorPayment. Vui lòng kiểm tra và xử lý.",
                                     Type = NotificationType.System,
                                     EventId = ev.Id
                                 });
                             }
-                             
-                            var managerRole = await _unitOfWork.RoleRepository
-                                .Query()
-                                .AsNoTracking()
-                                .Where(r => r.Name == "Manager" && !r.IsDeleted)
-                                .Select(r => r.Id)
-                                .FirstOrDefaultAsync();
-                            
-                            if (managerRole != Guid.Empty)
-                            {
-                                var managerUsers = await _unitOfWork.UserRepository
-                                    .Query()
-                                    .AsNoTracking()
-                                    .Where(u => u.RoleId == managerRole && !u.IsDeleted && u.IsActive)
-                                    .Select(u => u.Id)
-                                    .ToListAsync();
-                                
-                                foreach (var managerId in managerUsers)
-                                {
-                                    await _notificationService.CreateNotificationAsync(new CreateNotificationRequest
-                                    {
-                                        UserId = managerId,
-                                        Title = "Cảnh báo: Dừng thực hiện payout",
-                                        Message = $"Sự kiện <strong>{ev.Title}</strong> (ID: {ev.Id}) đã thực hiện payout đạt {ev.PayoutAttemptCount} lần. Hệ thống đã dừng thực hiện giao dịch payout cho sự kiện này và chuyển sang trạng thái ErrorPayment. Vui lòng kiểm tra và xử lý.",
-                                        Type = NotificationType.System,
-                                        EventId = ev.Id
-                                    });
-                                }
-                            }
-                             
-                            ev.Status = EventStatus.ErrorPayment;
-                            ev.ReasonCancel = $"Sự kiện bị hủy do đã thực hiện payout đạt {ev.PayoutAttemptCount} lần.";
-                            
-                            await _unitOfWork.EventRepository.UpdateAsync(ev);
-                            await _unitOfWork.SaveChangesAsync();
-                            
-                            _logger.LogWarning("Event {EventId} PayoutAttemptCount reached {Count}. Status changed to ErrorPayment. Payout stopped. Notification sent to organizer and managers.", 
-                                ev.Id, ev.PayoutAttemptCount);
-                            
-                            continue;
                         }
+                         
+                        ev.Status = EventStatus.ErrorPayment;
+                        ev.ReasonCancel = $"Sự kiện bị hủy do đã thực hiện payout đạt {ev.PayoutAttemptCount} lần.";
                         
-                        var paymentInfor = await _unitOfWork.PaymentInformationRepository
+                        await _unitOfWork.EventRepository.UpdateAsync(ev);
+                        await _unitOfWork.SaveChangesAsync(); 
+                        continue;
+                    }
+                    
+                    var paymentInfor = await _unitOfWork.PaymentInformationRepository
+                        .Query()
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(p => p.UserId == ev.OrganizerProfile!.UserId && !p.IsDeleted);
+
+                    var hasBeenPaid = await _unitOfWork.RevenueReportRepository
+                        .Query()
+                        .AnyAsync(r => r.EventId == ev.Id && r.PayoutDate != null && !r.IsDeleted);
+                     
+                    if (hasBeenPaid)
+                    {
+                        _logger.LogInformation("Event {EventId} already paid out.", ev.Id); 
+                        continue;
+                    }
+                     
+                    if (paymentInfor == null)
+                    { 
+                        var hasWarned = await _unitOfWork.NotificationRepository
                             .Query()
-                            .AsNoTracking()
-                            .FirstOrDefaultAsync(p => p.UserId == ev.OrganizerProfile!.UserId && !p.IsDeleted);
+                            .AnyAsync(n => n.EventId == ev.Id
+                                          && n.Type == NotificationType.PayoutFailed
+                                          && !n.IsDeleted);
 
-                        var hasBeenPaid = await _unitOfWork.RevenueReportRepository
-                            .Query()
-                            .AnyAsync(r => r.EventId == ev.Id && r.PayoutDate != null && !r.IsDeleted);
-                         
-                        if (hasBeenPaid)
+                        if (!hasWarned)
                         {
-                            _logger.LogInformation("Event {EventId} already paid out.", ev.Id); 
-                            continue;
-                        }
-                         
-                        if (paymentInfor == null)
-                        { 
-                            var hasWarned = await _unitOfWork.NotificationRepository
-                                .Query()
-                                .AnyAsync(n => n.EventId == ev.Id
-                                              && n.Type == NotificationType.PayoutFailed
-                                              && !n.IsDeleted);
-
-                            if (!hasWarned)
+                            await _notificationService.CreateNotificationAsync(new CreateNotificationRequest
                             {
-                                await _notificationService.CreateNotificationAsync(new CreateNotificationRequest
-                                {
-                                    UserId = ev.OrganizerProfile!.UserId,
-                                    Title = "Doanh thu chưa được chuyển",
-                                    Message = $"Sự kiện <strong>{ev.Title}</strong> chưa thể chuyển tiền do chưa có thông tin ngân hàng. Vui lòng cập nhật thông tin để nhận thanh toán.",
-                                    Type = NotificationType.PayoutFailed, 
-                                    EventId = ev.Id
-                                });
-                                _logger.LogInformation("Sent payout warning for Event {EventId} (no payment info)", ev.Id);
-                            } 
-                            continue;
-                        }
-                         
-                        var platformFee = ev.TotalAmount * platformFeePercent + platformFixedFee;
-                        var payoutAmount = (long)(ev.TotalAmount - platformFee);
+                                UserId = ev.OrganizerProfile!.UserId,
+                                Title = "Doanh thu chưa được chuyển",
+                                Message = $"Sự kiện <strong>{ev.Title}</strong> chưa thể chuyển tiền do chưa có thông tin ngân hàng. Vui lòng cập nhật thông tin để nhận thanh toán.",
+                                Type = NotificationType.PayoutFailed, 
+                                EventId = ev.Id
+                            });
+                            _logger.LogInformation("Sent payout warning for Event {EventId} (no payment info)", ev.Id);
+                        } 
+                        continue;
+                    }
+                     
+                    var platformFee = ev.TotalAmount * platformFeePercent + platformFixedFee;
+                    var payoutAmount = (long)(ev.TotalAmount - platformFee);
 
-                        if (payoutAmount < 0)
-                        {
-                            _logger.LogWarning("Payout amount negative for Event {EventId}: {Amount}", ev.Id, payoutAmount);
-                            continue;
-                        }
+                    if (payoutAmount <= 0)
+                    {
+                        _logger.LogWarning("Payout amount negative for Event {EventId}: {Amount}", ev.Id, payoutAmount);
+                        continue;
+                    }
 
-                        var referenceId = GenerateOrderCode().ToString();
-                        var payoutRequest = new PayoutRequest
-                        {
-                            ReferenceId = referenceId,
-                            Amount = (long)payoutAmount,
-                            Description = "Thanh toán sự kiện",
-                            ToBin = paymentInfor.BankBin,
-                            ToAccountNumber = paymentInfor.AccountNumber,
-                            Category = new List<string> { "Payout" }
-                        };
+                    var referenceId = GenerateOrderCode().ToString();
+                    var payoutRequest = new PayoutRequest
+                    {
+                        ReferenceId = referenceId,
+                        Amount = (long)payoutAmount,
+                        Description = "Thanh toán sự kiện",
+                        ToBin = paymentInfor.BankBin,
+                        ToAccountNumber = paymentInfor.AccountNumber,
+                        Category = new List<string> { "Payout" }
+                    };
 
-                        var payoutResponse = await _payOSService.CreatePayoutAsync(payoutRequest);
-                        var payoutDate = DateTime.UtcNow;
-                        if (payoutResponse.ApprovalState != PayoutApprovalState.Completed)
-                        {
-                            _logger.LogError("Payout transaction failed for Event {EventId}", ev.Id);
-                            await _unitOfWork.EventRepository.UpdateAsync(ev);
-                            await _unitOfWork.SaveChangesAsync();
-                            continue;
-                        }
-
-                        var result = await _transactionHelper.ExecuteInTransactionAsync(async () =>
-                        {
-                             
-                            var revenueReport = new RevenueReport
-                            {
-                                OrganizerProfileId = ev.OrganizerProfileId,
-                                EventId = ev.Id,
-                                EventName = ev.Title,
-                                GrossRevenue = ev.TotalAmount,
-                                PlatformFee = platformFee,
-                                NetRevenue = payoutAmount,
-                                ReportMonth = payoutDate.Month,
-                                ReportYear = payoutDate.Year,
-                                PayoutDate = payoutDate
-                            };
-
-                            await _unitOfWork.RevenueReportRepository.AddAsync(revenueReport);
-                            return Result.Success();
-                        });
-
-                        if (!result.IsSuccess)
-                        {
-                            _logger.LogError("Payout transaction failed for Event {EventId}", ev.Id); 
-                            continue;
-                        }
-                             
-                        ev.Status = EventStatus.PaidOut;
-                        ev.PaidOutAt = DateTime.UtcNow;
+                    var payoutResponse = await _payOSService.CreatePayoutAsync(payoutRequest);
+                    var payoutDate = DateTime.UtcNow;
+                    if (payoutResponse.ApprovalState != PayoutApprovalState.Completed)
+                    {
+                        _logger.LogError("Payout transaction failed for Event {EventId}", ev.Id);
                         await _unitOfWork.EventRepository.UpdateAsync(ev);
                         await _unitOfWork.SaveChangesAsync();
-                         
-                        await _notificationService.CreateNotificationAsync(new CreateNotificationRequest
-                        {
-                            UserId = ev.OrganizerProfile!.UserId,
-                            Title = "Doanh thu đã được chuyển",
-                            Message = $"Sự kiện <strong>{ev.Title}</strong> đã được chuyển <strong>{payoutAmount:N0} VND</strong> vào tài khoản.",
-                            Type = NotificationType.PayoutCompleted, 
-                            EventId = ev.Id
-                        });
+                        continue;
+                    }
 
-                        _logger.LogInformation("Payout success: Event {EventId} → {Amount:N0} VND", ev.Id, payoutAmount);
-                    }
-                    catch (Exception ex)
+                    var result = await _transactionHelper.ExecuteInTransactionAsync(async () =>
                     {
-                        _logger.LogError(ex, "Payout failed for Event {EventId}", ev.Id); 
+                         
+                        var revenueReport = new RevenueReport
+                        {
+                            OrganizerProfileId = ev.OrganizerProfileId,
+                            EventId = ev.Id,
+                            EventName = ev.Title,
+                            GrossRevenue = ev.TotalAmount,
+                            PlatformFee = platformFee,
+                            NetRevenue = payoutAmount,
+                            ReportMonth = payoutDate.Month,
+                            ReportYear = payoutDate.Year,
+                            PayoutDate = payoutDate
+                        };
+
+                        await _unitOfWork.RevenueReportRepository.AddAsync(revenueReport);
+                        return Result.Success();
+                    });
+
+                    if (!result.IsSuccess)
+                    {
+                        _logger.LogError("Payout transaction failed for Event {EventId}", ev.Id); 
+                        continue;
                     }
+                         
+                    ev.Status = EventStatus.PaidOut;
+                    ev.PaidOutAt = DateTime.UtcNow;
+                    await _unitOfWork.EventRepository.UpdateAsync(ev);
+                    await _unitOfWork.SaveChangesAsync();
+                     
+                    await _notificationService.CreateNotificationAsync(new CreateNotificationRequest
+                    {
+                        UserId = ev.OrganizerProfile!.UserId,
+                        Title = "Doanh thu đã được chuyển",
+                        Message = $"Sự kiện <strong>{ev.Title}</strong> đã được chuyển <strong>{payoutAmount:N0} VND</strong> vào tài khoản.",
+                        Type = NotificationType.PayoutCompleted, 
+                        EventId = ev.Id
+                    });
+
+                    _logger.LogInformation("Payout success: Event {EventId} ({Title}) → {Amount:N0} VND", ev.Id, ev.Title, payoutAmount);
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error in ProcessPendingPayoutsAsync job");
-                throw;
-            }
         }
 
         public async Task ProcessExpiredPendingTransactionsAsync()
         {
             try
-            {
+            { 
                 var expiredTime = DateTime.UtcNow.AddMinutes(-15);
                 var pendingTransactions = await _unitOfWork.WalletTransactionRepository
                     .Query()
@@ -664,7 +645,7 @@ namespace AIEvent.Application.Services.Implements
                     _logger.LogInformation("No expired pending transactions found.");
                     return;
                 }
-
+ 
                 var transactionUpdate = new List<WalletTransaction>();
                 foreach (var transaction in pendingTransactions)
                 {
@@ -687,9 +668,7 @@ namespace AIEvent.Application.Services.Implements
                 if(transactionUpdate.Any())
                     await _unitOfWork.WalletTransactionRepository.UpdateRangeAsync(transactionUpdate);
 
-                await _unitOfWork.SaveChangesAsync();
-
-                _logger.LogInformation("Processed {Count} expired pending transactions", pendingTransactions.Count);
+                await _unitOfWork.SaveChangesAsync(); 
             }
             catch (Exception ex)
             {

@@ -15,6 +15,7 @@ import {
   Tag,
   CheckCircle,
   AlertCircle,
+  AlertTriangle,
   UserPlus,
   Ticket,
   Globe,
@@ -30,6 +31,7 @@ import {
   Image as ImageIcon,
   Copy,
   X,
+  XCircle,
   Sparkles,
   ChevronLeft,
   ChevronRight,
@@ -248,13 +250,13 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       } catch (error) {
         console.error('Error deleting event:', error);
         if (error.response?.status === 403) {
-          toast.error('❌ Bạn không có quyền xóa sự kiện này');
+          toast.error(' Bạn không có quyền xóa sự kiện này');
         } else if (error.response?.status === 404) {
-          toast.error('❌ Sự kiện không tồn tại hoặc đã bị xóa');
+          toast.error(' Sự kiện không tồn tại hoặc đã bị xóa');
         } else if (error.response?.status === 400) {
-          toast.error('❌ Không thể xóa sự kiện đã có người đăng ký');
+          toast.error(' Không thể xóa sự kiện đã có người đăng ký');
         } else {
-          toast.error('❌ Có lỗi xảy ra khi xóa sự kiện');
+          toast.error(' Có lỗi xảy ra khi xóa sự kiện');
         }
       }
     } else {
@@ -288,13 +290,13 @@ Nhấn OK để xác nhận xóa.`;
       } catch (error) {
         console.error('Error deleting event:', error);
         if (error.response?.status === 403) {
-          toast.error('❌ Bạn không có quyền xóa sự kiện này');
+          toast.error(' Bạn không có quyền xóa sự kiện này');
         } else if (error.response?.status === 404) {
-          toast.error('❌ Sự kiện không tồn tại hoặc đã bị xóa');
+          toast.error(' Sự kiện không tồn tại hoặc đã bị xóa');
         } else if (error.response?.status === 400) {
-          toast.error('❌ Không thể xóa sự kiện đã có người đăng ký');
+          toast.error(' Không thể xóa sự kiện đã có người đăng ký');
         } else {
-          toast.error('❌ Có lỗi xảy ra khi xóa sự kiện');
+          toast.error(' Có lỗi xảy ra khi xóa sự kiện');
         }
       }
     }
@@ -458,6 +460,63 @@ Nhấn OK để xác nhận xóa.`;
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
+            {/* Warning Banner for IsFlagWarning */}
+            {event.isFlagWarning && (
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-2xl p-6 shadow-lg">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-amber-500 flex items-center justify-center">
+                      <AlertTriangle className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-amber-900 mb-2">⚠️ Cảnh báo vi phạm</h3>
+                    <p className="text-amber-800 leading-relaxed">
+                      Sự kiện này đã nhận được báo cáo vi phạm từ người dùng. Vui lòng kiểm tra và đảm bảo nội dung sự kiện tuân thủ các quy định của nền tảng.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Cancellation Reason Banner */}
+            {event.status === EventStatus.Cancelled && event.reasonCancel && (
+              <div className="bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-300 rounded-2xl p-6 shadow-lg">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-gray-500 flex items-center justify-center">
+                      <XCircle className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">Sự kiện đã bị hủy</h3>
+                    <p className="text-gray-700 leading-relaxed">
+                      <strong>Lý do:</strong> {event.reasonCancel}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Rejection Reason Banner */}
+            {event.status === EventStatus.Rejected && event.rejectReason && (
+              <div className="bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-300 rounded-2xl p-6 shadow-lg">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center">
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-red-900 mb-2">Sự kiện bị từ chối</h3>
+                    <p className="text-red-800 leading-relaxed">
+                      <strong>Lý do:</strong> {event.rejectReason}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}         <XCircle className="w-6 h-6 text-white" />
+          
+
             <div className="space-y-3">
               <h1 className="text-4xl font-bold text-foreground leading-tight">{event.title}</h1>
               <p className="text-lg text-muted-foreground leading-relaxed">{event.description}</p>

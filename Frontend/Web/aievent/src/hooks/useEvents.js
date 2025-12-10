@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-hot-toast";
+import eventAPI from "../api/eventAPI";
 import {
   fetchEvents,
   fetchEventById,
@@ -29,7 +30,6 @@ import {
   clearEvents,
   clearRelatedEvents,
 } from "../store/slices/eventsSlice";
-
 export const useEvents = () => {
   const dispatch = useDispatch();
 
@@ -193,6 +193,32 @@ export const useEvents = () => {
     }
   };
 
+  // Cancel event (requires Manager role)
+  const cancelEventAPI = async (eventId, reasonCancel) => {
+    try {
+      const response = await eventAPI.cancelEvent(eventId, reasonCancel);
+      if (response) {
+        toast.success("Hủy sự kiện thành công!");
+      }
+      return response;
+    } catch (err) {
+      console.error("Cancel event error:", err);
+      let errorMessage = "Không thể hủy sự kiện";
+      if (err && typeof err === "object") {
+        if (err.message) errorMessage = err.message;
+        else if (err.error) errorMessage = err.error;
+        else if (Object.keys(err).length > 0) {
+          const firstKey = Object.keys(err)[0];
+          if (typeof err[firstKey] === "string") {
+            errorMessage = err[firstKey];
+          }
+        }
+      }
+      toast.error(errorMessage);
+      return null;
+    }
+  };
+
   const inviteFriendsAPI = async (eventId, invitationData) => {
     try {
       const response = await dispatch(
@@ -254,6 +280,22 @@ export const useEvents = () => {
     }
   };
 
+  const cancelEventByManager = async (eventId, reasonCancel) => {
+    try {
+      const response = await eventAPI.cancelEventByManager(eventId, reasonCancel);
+      toast.success("Hủy sự kiện vi phạm thành công");
+      return response;
+    } catch (err) {
+      console.error("Cancel event by manager error:", err);
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Không thể hủy sự kiện vi phạm";
+      toast.error(message);
+      return null;
+    }
+  };
+
   const clearCurrent = () => dispatch(clearCurrentEvent());
   const clearAllEvents = () => dispatch(clearEvents());
   const clearRelated = () => dispatch(clearRelatedEvents());
@@ -279,6 +321,7 @@ export const useEvents = () => {
     updateEvent: updateEventAPI,
     deleteEvent: deleteEventAPI,
     confirmEvent: confirmEventAPI,
+    cancelEventByManager,
     clearCurrentEvent: clearCurrent,
     clearEvents: clearAllEvents,
     clearRelatedEvents: clearRelated,

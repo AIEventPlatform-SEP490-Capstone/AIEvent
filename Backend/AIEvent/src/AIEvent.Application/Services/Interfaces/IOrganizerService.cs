@@ -1,4 +1,4 @@
-﻿using AIEvent.Application.DTOs.Organizer;
+﻿using AIEvent.Application.DTOs.Organizer; 
 using AIEvent.Application.Helpers;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Enums;

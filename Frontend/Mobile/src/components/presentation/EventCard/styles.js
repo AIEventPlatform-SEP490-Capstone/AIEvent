@@ -225,6 +225,13 @@ const styles = StyleSheet.create({
     height: 14,
     tintColor: Colors.white,
   },
+  // Sale Status Badge on image
+  saleStatusBadgeContainer: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    zIndex: 3,
+  },
   // Category badge on image
   categoryBadgeOnImage: {
     position: 'absolute',

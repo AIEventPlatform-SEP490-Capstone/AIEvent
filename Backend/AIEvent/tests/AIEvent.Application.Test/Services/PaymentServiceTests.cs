@@ -1,4 +1,5 @@
 using AIEvent.Application.Constants;
+using AIEvent.Application.DTOs.Notification;
 using AIEvent.Application.DTOs.PaymentInformation;
 using AIEvent.Application.DTOs.Payment;
 using AIEvent.Application.Helpers;
@@ -2417,6 +2418,422 @@ namespace AIEvent.Application.Test.Services
             result.Value!.Items.ElementAt(1).AccountHolderName.Should().Be("User 2");
         }
 
+        #endregion
+
+        #region ProcessPendingPayoutsAsync Tests
+
+        [Fact]
+        public async Task ProcessPendingPayoutsAsync_WithNoSystemSettings_ShouldReturnWithoutError()
+        {
+            // Arrange
+            var systemSettings = new List<SystemSetting>().AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings.Object);
+
+            // Act
+            await _paymentService.ProcessPendingPayoutsAsync();
+
+            // Assert
+            _mockUnitOfWork.Verify(x => x.EventRepository.Query(It.IsAny<bool>()), Times.Never);
+            _mockLog.Verify(
+                x => x.Log(
+                    LogLevel.Error,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("SystemSetting not found for ProcessPendingPayoutsAsync")),
+                    It.IsAny<Exception>(),
+                    It.Is<Func<It.IsAnyType, Exception?, string>>((v, t) => true)),
+                Times.Once);
+        }
+         
+        [Fact]
+        public async Task ProcessPendingPayoutsAsync_WithNoPendingEvents_ShouldReturnWithoutError()
+        {
+            // Arrange
+            var now = DateTime.UtcNow;
+            var systemSetting = new SystemSetting
+            {
+                Id = Guid.NewGuid(),
+                FlatformFee = 0.07m,
+                FixFee = 45000,
+                DatePayout = 7,
+                UpdatedAt = now,
+                IsDeleted = false
+            };
+
+            var systemSettings = new List<SystemSetting> { systemSetting }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event>().AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+
+            // Act
+            await _paymentService.ProcessPendingPayoutsAsync();
+
+            // Assert
+            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Never);
+            _mockLog.Verify(
+                x => x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("No events ready for payout")),
+                    It.IsAny<Exception>(),
+                    It.Is<Func<It.IsAnyType, Exception?, string>>((v, t) => true)),
+                Times.Once);
+        }
+         
+        [Fact]
+        public async Task ProcessPendingPayoutsAsync_WithEventNotMeetingDeadline_ShouldNotProcess()
+        {
+            // Arrange
+            var now = DateTime.UtcNow;
+            var systemSetting = new SystemSetting
+            {
+                Id = Guid.NewGuid(),
+                FlatformFee = 0.07m,
+                FixFee = 45000,
+                DatePayout = 7, // 7 days (but calculated in minutes: 7 * 24 * 60 = 10080 minutes)
+                UpdatedAt = now.AddDays(-10), // Match event's SaleStartTime month
+                IsDeleted = false
+            };
+
+            var organizerUserId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = organizerUserId,
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                ContactName = "Test Contact",
+                ContactEmail = "test@example.com",
+                ContactPhone = "0123456789",
+                Address = "Test Address",
+                IsDeleted = false
+            };
+
+            var eventItem = new Event
+            {
+                Id = Guid.NewGuid(),
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = now.AddDays(1),
+                EndTime = now.AddDays(1).AddHours(2),
+                SaleStartTime = now.AddDays(-10),
+                Status = EventStatus.WaitingForPayout,
+                CompletedAt = now.AddMinutes(-5), // Not meeting deadline (needs to be <= now.AddMinutes(-7))
+                PayoutAttemptCount = 0,
+                IsDeleted = false,
+                TotalAmount = 200000,
+                OrganizerProfileId = organizerProfile.Id,
+                OrganizerProfile = organizerProfile
+            };
+
+            var systemSettings = new List<SystemSetting> { systemSetting }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event> { eventItem }.AsQueryable().BuildMockDbSet();
+            var revenueReports = new List<RevenueReport>().AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.RevenueReportRepository.Query(It.IsAny<bool>())).Returns(revenueReports.Object);
+
+            // Act
+            await _paymentService.ProcessPendingPayoutsAsync();
+
+            // Assert
+            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()), Times.Never);
+            _mockLog.Verify(
+                x => x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("No events meet payout deadline")),
+                    It.IsAny<Exception>(),
+                    It.Is<Func<It.IsAnyType, Exception?, string>>((v, t) => true)),
+                Times.Once);
+        }
+         
+        [Fact]
+        public async Task ProcessPendingPayoutsAsync_WithNoPaymentInformation_ShouldSendNotification()
+        {
+            // Arrange
+            var now = DateTime.UtcNow;
+            var systemSetting = new SystemSetting
+            {
+                Id = Guid.NewGuid(),
+                FlatformFee = 0.07m,
+                FixFee = 45000,
+                DatePayout = 7,
+                UpdatedAt = now,
+                IsDeleted = false
+            };
+
+            var organizerUserId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = organizerUserId,
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                ContactName = "Test Contact",
+                ContactEmail = "test@example.com",
+                ContactPhone = "0123456789",
+                Address = "Test Address",
+                IsDeleted = false
+            };
+
+            var eventItem = new Event
+            {
+                Id = Guid.NewGuid(),
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = now.AddDays(1),
+                EndTime = now.AddDays(1).AddHours(2),
+                SaleStartTime = now.AddDays(-10),
+                Status = EventStatus.WaitingForPayout,
+                CompletedAt = now.AddDays(-10), // Meets deadline
+                PayoutAttemptCount = 0,
+                IsDeleted = false,
+                TotalAmount = 200000,
+                OrganizerProfileId = organizerProfile.Id,
+                OrganizerProfile = organizerProfile
+            };
+
+            var systemSettings = new List<SystemSetting> { systemSetting }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event> { eventItem }.AsQueryable().BuildMockDbSet();
+            var paymentInfos = new List<PaymentInformation>().AsQueryable().BuildMockDbSet();
+            var notifications = new List<Notification>().AsQueryable().BuildMockDbSet();
+            var revenueReports = new List<RevenueReport>().AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>())).Returns(paymentInfos.Object);
+            _mockUnitOfWork.Setup(x => x.NotificationRepository.Query(It.IsAny<bool>())).Returns(notifications.Object);
+            _mockUnitOfWork.Setup(x => x.RevenueReportRepository.Query(It.IsAny<bool>())).Returns(revenueReports.Object);
+            _mockUnitOfWork.Setup(x => x.NotificationRepository.AddAsync(It.IsAny<Notification>()))
+                .ReturnsAsync((Notification n) => n);
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+
+            // Act
+            await _paymentService.ProcessPendingPayoutsAsync();
+
+            // Assert
+            _notificationService.Verify(x => x.CreateNotificationAsync(It.Is<CreateNotificationRequest>(req =>
+                req.UserId == organizerUserId &&
+                req.Type == NotificationType.PayoutFailed &&
+                req.EventId == eventItem.Id)), Times.Once);
+            _mockLog.Verify(
+                x => x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Sent payout warning for Event") && v.ToString()!.Contains("no payment info")),
+                    It.IsAny<Exception>(),
+                    It.Is<Func<It.IsAnyType, Exception?, string>>((v, t) => true)),
+                Times.Once);
+        }
+         
+        [Fact]
+        public async Task ProcessPendingPayoutsAsync_WithValidPayout_ShouldProcessSuccessfully()
+        {
+            // Arrange
+            var now = DateTime.UtcNow;
+            var systemSetting = new SystemSetting
+            {
+                Id = Guid.NewGuid(),
+                FlatformFee = 0.07m,
+                FixFee = 45000,
+                DatePayout = 7,
+                UpdatedAt = now,
+                IsDeleted = false
+            };
+
+            var organizerUserId = Guid.NewGuid();
+            var organizerProfile = new OrganizerProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = organizerUserId,
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                ContactName = "Test Contact",
+                ContactEmail = "test@example.com",
+                ContactPhone = "0123456789",
+                Address = "Test Address",
+                IsDeleted = false
+            };
+
+            var eventItem = new Event
+            {
+                Id = Guid.NewGuid(),
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = now.AddDays(1),
+                EndTime = now.AddDays(1).AddHours(2),
+                SaleStartTime = now.AddDays(-10),
+                Status = EventStatus.WaitingForPayout,
+                CompletedAt = now.AddDays(-10), // Meets deadline
+                PayoutAttemptCount = 0,
+                IsDeleted = false,
+                TotalAmount = 200000,
+                OrganizerProfileId = organizerProfile.Id,
+                OrganizerProfile = organizerProfile
+            };
+
+            var paymentInfo = new PaymentInformation
+            {
+                Id = Guid.NewGuid(),
+                UserId = organizerUserId,
+                AccountHolderName = "Test User",
+                AccountNumber = "1234567890",
+                BankName = "Test Bank",
+                BankBin = "123456",
+                IsDeleted = false
+            };
+
+            var payoutResponse = new PayOS.Models.V1.Payouts.Payout
+            {
+                ApprovalState = PayOS.Models.V1.Payouts.PayoutApprovalState.Completed
+            };
+
+            var systemSettings = new List<SystemSetting> { systemSetting }.AsQueryable().BuildMockDbSet();
+            var events = new List<Event> { eventItem }.AsQueryable().BuildMockDbSet();
+            var paymentInfos = new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMockDbSet();
+            var revenueReports = new List<RevenueReport>().AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings.Object);
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>())).Returns(paymentInfos.Object);
+            _mockUnitOfWork.Setup(x => x.RevenueReportRepository.Query(It.IsAny<bool>())).Returns(revenueReports.Object);
+            _mockUnitOfWork.Setup(x => x.RevenueReportRepository.AddAsync(It.IsAny<RevenueReport>()))
+                .ReturnsAsync((RevenueReport r) => r);
+            _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()))
+                .ReturnsAsync((Event e) => e);
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+            _mockpayOSService.Setup(x => x.CreatePayoutAsync(It.IsAny<PayOS.Models.V1.Payouts.PayoutRequest>()))
+                .ReturnsAsync(payoutResponse);
+            _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+                .Returns<Func<Task<Result>>>(async func => await func());
+            _notificationService.Setup(x => x.CreateNotificationAsync(It.IsAny<CreateNotificationRequest>()))
+                .ReturnsAsync(Result.Success());
+
+            // Act
+            await _paymentService.ProcessPendingPayoutsAsync();
+
+            // Assert
+            _mockpayOSService.Verify(x => x.CreatePayoutAsync(It.IsAny<PayOS.Models.V1.Payouts.PayoutRequest>()), Times.Once);
+            _mockUnitOfWork.Verify(x => x.RevenueReportRepository.AddAsync(It.IsAny<RevenueReport>()), Times.Once);
+            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.Is<Event>(e => 
+                e.Status == EventStatus.PaidOut && e.PaidOutAt.HasValue)), Times.Once);
+            _notificationService.Verify(x => x.CreateNotificationAsync(It.Is<CreateNotificationRequest>(req =>
+                req.UserId == organizerUserId &&
+                req.Type == NotificationType.PayoutCompleted &&
+                req.EventId == eventItem.Id)), Times.Once);
+            _mockLog.Verify(
+                x => x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Payout success")),
+                    It.IsAny<Exception>(),
+                    It.Is<Func<It.IsAnyType, Exception?, string>>((v, t) => true)),
+                Times.Once);
+        }
+  
+        #endregion
+
+        #region ProcessExpiredPendingTransactionsAsync Tests
+         
+        [Fact]
+        public async Task ProcessExpiredPendingTransactionsAsync_WithExpiredTransactions_ShouldMarkAsFailed()
+        {
+            // Arrange
+            var now = DateTime.UtcNow;
+            var expiredTime = now.AddMinutes(-20); // More than 15 minutes ago
+
+            var transaction1 = new WalletTransaction
+            {
+                Id = Guid.NewGuid(),
+                WalletId = Guid.NewGuid(),
+                Amount = 100000,
+                Status = TransactionStatus.Pending,
+                CreatedAt = expiredTime,
+                IsDeleted = false
+            };
+
+            var transaction2 = new WalletTransaction
+            {
+                Id = Guid.NewGuid(),
+                WalletId = Guid.NewGuid(),
+                Amount = 200000,
+                Status = TransactionStatus.Pending,
+                CreatedAt = expiredTime,
+                Description = "Existing description",
+                IsDeleted = false
+            };
+
+            var transactions = new List<WalletTransaction> { transaction1, transaction2 }.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.Query(It.IsAny<bool>())).Returns(transactions.Object);
+            _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.UpdateRangeAsync(It.IsAny<List<WalletTransaction>>()))
+                .Returns(Task.CompletedTask);
+            _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
+
+            // Act
+            await _paymentService.ProcessExpiredPendingTransactionsAsync();
+
+            // Assert
+            _mockUnitOfWork.Verify(x => x.WalletTransactionRepository.UpdateRangeAsync(It.Is<List<WalletTransaction>>(t => 
+                t.Count == 2 &&
+                t.All(tr => tr.Status == TransactionStatus.Failed))), Times.Once);
+            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once);
+            _mockLog.Verify(
+                x => x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Expired pending transaction") && v.ToString()!.Contains("marked as Failed")),
+                    It.IsAny<Exception>(),
+                    It.Is<Func<It.IsAnyType, Exception?, string>>((v, t) => true)),
+                Times.Exactly(2)); // One for each transaction 
+        }
+         
+        [Fact]
+        public async Task ProcessExpiredPendingTransactionsAsync_WithNonExpiredTransactions_ShouldNotProcess()
+        {
+            // Arrange
+            var now = DateTime.UtcNow;
+            var recentTime = now.AddMinutes(-10); // Less than 15 minutes ago
+
+            var transaction = new WalletTransaction
+            {
+                Id = Guid.NewGuid(),
+                WalletId = Guid.NewGuid(),
+                Amount = 100000,
+                Status = TransactionStatus.Pending,
+                CreatedAt = recentTime,
+                IsDeleted = false
+            };
+
+            var transactions = new List<WalletTransaction> { transaction }.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.Query(It.IsAny<bool>())).Returns(transactions.Object);
+
+            // Act
+            await _paymentService.ProcessExpiredPendingTransactionsAsync();
+
+            // Assert
+            _mockUnitOfWork.Verify(x => x.WalletTransactionRepository.UpdateRangeAsync(It.IsAny<List<WalletTransaction>>()), Times.Never);
+            _mockLog.Verify(
+                x => x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("No expired pending transactions found")),
+                    It.IsAny<Exception>(),
+                    It.Is<Func<It.IsAnyType, Exception?, string>>((v, t) => true)),
+                Times.Once);
+        }
         #endregion
     }
 }

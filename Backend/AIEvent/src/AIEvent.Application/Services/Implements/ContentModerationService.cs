@@ -29,16 +29,24 @@ namespace AIEvent.Application.Services.Implements
             try
             {
                 var prompt = $$"""
-                You are a strict JSON-only content moderator. 
-                Analyze the JSON below and return ONLY a valid JSON array of field names containing profanity, hate speech, or inappropriate content.
+                    You are a strict JSON-only content moderator.
+                    Analyze the JSON object below and detect any fields whose values contain:
+                    - Profanity or vulgar language (Vietnamese or English)
+                    - Hate speech or discriminatory expressions
+                    - Insults, abusive or toxic language
+                    - Sexual or explicit content
+                    - Religious disrespect, blasphemy, or offensive remarks about any belief system
+                    - Threats, harassment, or aggressive harmful expressions
+                    - Any inappropriate, offensive, or harmful language
+                    RULES:
+                    - Return ONLY a valid JSON array of field names.
+                    - No explanations, no markdown, no additional text.
+                    - Use double quotes for all strings.
+                    - Valid examples: [], ["bio"], ["title", "comment"]
+                    - If all content is clean, return exactly: []
 
-                RULES:
-                - Return ONLY the JSON array. No text, no markdown, no explanation.
-                - Use double quotes. Valid examples: [], ["bio"], ["title", "comment"]
-                - If clean, return exactly: []
-
-                JSON:
-                {{jsonObject}}
+                    JSON:
+                    {{jsonObject}}
                 """;
 
                 var requestBody = new

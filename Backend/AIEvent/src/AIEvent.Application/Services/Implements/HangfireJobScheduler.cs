@@ -22,11 +22,16 @@ namespace AIEvent.Application.Services.Implements
             _recurringJobManager.AddOrUpdate<IPaymentService>(
                 "auto-process-pending-payouts",
                 service => service.ProcessPendingPayoutsAsync(),
-                "*/5 * * * *");
+                "0 */3 * * *");
 
             _recurringJobManager.AddOrUpdate<INotificationService>(
                 "auto-process-event-booking-reminder",
                 service => service.SendEventBookingReminderAsync(),
+                "*/5 * * * *");
+
+            _recurringJobManager.AddOrUpdate<INotificationService>(
+                "auto-send-favorite-event-ticket-sale-notification",
+                service => service.SendFavoriteEventTicketSaleNotificationAsync(),
                 "*/5 * * * *");
 
             _recurringJobManager.AddOrUpdate<IPaymentService>(

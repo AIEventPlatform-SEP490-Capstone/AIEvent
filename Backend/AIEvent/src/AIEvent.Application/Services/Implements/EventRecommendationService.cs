@@ -66,9 +66,8 @@ namespace AIEvent.Application.Services.Implements
                     chatHistory = null;
                 }
             }
-
-            var userEmbePrompt = userPrompt + ". Lấy sự kiện có StartTime trong tương lai";
-            var queryEmbedding = await _voyageEmbeddingService.GetEmbeddingAsync(userEmbePrompt);
+             
+            var queryEmbedding = await _voyageEmbeddingService.GetEmbeddingAsync(userPrompt);
              
             var results = await _pineconeService.QuerySimilarAsync(queryEmbedding, isUser: false, topK);
 

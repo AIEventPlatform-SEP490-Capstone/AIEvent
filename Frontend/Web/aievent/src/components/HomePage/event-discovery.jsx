@@ -1,5 +1,5 @@
 import React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader } from "../ui/card";
@@ -33,24 +33,53 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Tag,
 } from "lucide-react";
 import { useFavoriteEvents } from "../../hooks/useFavoriteEvents";
 import { useSelector } from "react-redux";
 import { SaleStatusBadge } from "./SaleStatusBadge";
+import { useCategories } from "../../hooks/useCategories";
 
-const categories = [
-  { id: "all", name: "Tất cả", icon: Sparkles },
-  { id: "Technology", name: "Công nghệ", icon: Briefcase },
-  { id: "Music", name: "Âm nhạc", icon: Music },
-  { id: "Networking", name: "Giao lưu", icon: Coffee },
-  { id: "Arts & Culture", name: "Nghệ thuật", icon: Palette },
-  { id: "Food & Drink", name: "Ẩm thực", icon: Utensils },
-  { id: "Education", name: "Giáo dục", icon: GraduationCap },
-  { id: "Sports & Fitness", name: "Thể thao", icon: Dumbbell },
-  { id: "Health & Wellness", name: "Sức khỏe", icon: Stethoscope },
-  { id: "Environment", name: "Môi trường", icon: Leaf },
-  { id: "Business", name: "Kinh doanh", icon: Briefcase },
-];
+// Icon mapping based on category name keywords
+const categoryIconMap = {
+  "technology": Briefcase,
+  "công nghệ": Briefcase,
+  "music": Music,
+  "âm nhạc": Music,
+  "networking": Coffee,
+  "giao lưu": Coffee,
+  "arts": Palette,
+  "culture": Palette,
+  "nghệ thuật": Palette,
+  "văn hóa": Palette,
+  "food": Utensils,
+  "drink": Utensils,
+  "ẩm thực": Utensils,
+  "education": GraduationCap,
+  "giáo dục": GraduationCap,
+  "sports": Dumbbell,
+  "fitness": Dumbbell,
+  "thể thao": Dumbbell,
+  "health": Stethoscope,
+  "wellness": Stethoscope,
+  "sức khỏe": Stethoscope,
+  "environment": Leaf,
+  "môi trường": Leaf,
+  "business": Briefcase,
+  "kinh doanh": Briefcase,
+};
+
+// Helper function to get icon for a category
+const getCategoryIcon = (categoryName) => {
+  if (!categoryName) return Tag;
+  const lowerName = categoryName.toLowerCase();
+  for (const [keyword, icon] of Object.entries(categoryIconMap)) {
+    if (lowerName.includes(keyword)) {
+      return icon;
+    }
+  }
+  return Tag; // Default icon
+};
 
 const userAttendedEvents = new Set([1, 2, 3]); // Event IDs that user has attended
 
@@ -74,6 +103,27 @@ export function EventDiscovery({
   const [currentSlide, setCurrentSlide] = useState(0);
   const { getFavoriteEvents, addFavoriteEvent, removeFavoriteEvent } = useFavoriteEvents();
   const { isAuthenticated } = useSelector((state) => state.auth);
+  const { categories: dbCategories, loading: categoriesLoading } = useCategories();
+
+  // Build categories list from DB with "All" option
+  const categories = useMemo(() => {
+    const allOption = { id: "all", name: "Tất cả", icon: Filter };
+    
+    if (!dbCategories || dbCategories.length === 0) {
+      return [allOption];
+    }
+
+    // Debug: log để xem cấu trúc dữ liệu từ API
+    console.log("dbCategories from API:", dbCategories);
+
+    const mappedCategories = dbCategories.map((cat) => ({
+      id: cat.eventCategoryId,
+      name: cat.name || cat.categoryName || cat.eventCategoryName || "",
+      icon: getCategoryIcon(cat.name || cat.categoryName || cat.eventCategoryName),
+    }));
+
+    return [allOption, ...mappedCategories];
+  }, [dbCategories]);
 
   // Load favorite events only when user is authenticated
   useEffect(() => {

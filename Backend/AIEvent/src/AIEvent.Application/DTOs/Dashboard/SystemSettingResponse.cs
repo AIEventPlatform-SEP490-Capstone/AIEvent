@@ -7,5 +7,6 @@
         public required int DatePayout { get; set; }
         public required int EventReminderHours { get; set; }
         public DateTimeOffset? DateApply { get; set; }
+        public DateTimeOffset? CreateTime { get; set; }
     }
 }

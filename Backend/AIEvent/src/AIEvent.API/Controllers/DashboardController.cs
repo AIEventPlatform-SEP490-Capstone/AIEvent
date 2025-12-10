@@ -1,7 +1,8 @@
 ﻿using AIEvent.API.Extensions;
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
-using AIEvent.Application.DTOs.Dashboard; 
+using AIEvent.Application.DTOs.Dashboard;
+using AIEvent.Application.DTOs.RevenueReport;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Enums;
@@ -167,22 +168,23 @@ namespace AIEvent.API.Controllers
 
         [HttpGet("history-system-setting")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<SuccessResponse<List<SystemSettingResponse>>>> GetListSystemSetting()
+        public async Task<ActionResult<SuccessResponse<BasePaginated<SystemSettingResponse>>>> GetListSystemSetting(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
         {
             string userId = User.GetRequiredUserId().ToString();
-            var result = await _dashboardService.GetSystemSettingListAsync(userId);
+            var result = await _dashboardService.GetSystemSettingListAsync(userId, pageNumber, pageSize);
 
             if (!result.IsSuccess)
             {
                 return BadRequest(result.Error!);
             }
 
-            return Ok(SuccessResponse<List<SystemSettingResponse>>.SuccessResult(
+            return Ok(SuccessResponse<BasePaginated<SystemSettingResponse>>.SuccessResult(
                 result.Value!,
                 SuccessCodes.Success,
                 "SystemSetting retrieved successfully"));
         }
-
         [HttpGet("admin-overview")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<SuccessResponse<AdminDashboardResponse>>> GetAdminDashboard(
@@ -259,6 +261,27 @@ namespace AIEvent.API.Controllers
                 result.Value!,
                 SuccessCodes.Success,
                 "System report retrieved successfully"));
+        }
+
+        [HttpGet("admin/payout-history")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<PayoutHistoryResponse>>>> GetPayoutHistory(
+            [FromQuery] int? year = null,
+            [FromQuery] int? month = null,
+            [FromQuery] string? search = null,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            var result = await _dashboardService.GetPayoutHistoryAsync(search, year, month, pageNumber, pageSize);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<PayoutHistoryResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Payout history retrieved successfully"));
         }
 
         [HttpGet("organizer-approved-statistics")]

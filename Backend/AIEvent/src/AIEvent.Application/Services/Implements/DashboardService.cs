@@ -1,6 +1,7 @@
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Dashboard;
+using AIEvent.Application.DTOs.RevenueReport;
 using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
@@ -401,7 +402,7 @@ namespace AIEvent.Application.Services.Implements
                 if (existedSetting != null)
                 {
                     return ErrorResponse.FailureResult(
-                        "System setting can only be update once per month", 
+                        "System setting can only be update once per month",
                         ErrorCodes.InvalidInput);
                 }
 
@@ -454,32 +455,48 @@ namespace AIEvent.Application.Services.Implements
                 FlatformFee = systemSetting.FlatformFee,
                 EventReminderHours = systemSetting.EventReminderHours,
                 DateApply = systemSetting.UpdatedAt,
+                CreateTime = systemSetting.CreatedAt,
             };
 
             return Result<SystemSettingResponse>.Success(request);
         }
 
-        public async Task<Result<List<SystemSettingResponse>>> GetSystemSettingListAsync(string adminId)
+        public async Task<Result<BasePaginated<SystemSettingResponse>>> GetSystemSettingListAsync(string adminId, int pageNumber = 1, int pageSize = 10)
         {
-            var systemSettings = await _unitOfWork.SystemSettingRepository
-                .Query()
-                .AsNoTracking()
-                .Where(s => !s.IsDeleted && s.CreatedBy == adminId)
-                .OrderByDescending(s => s.CreatedAt)
-                .Select(s => new SystemSettingResponse   
-                {
-                    DatePayout = s.DatePayout,
-                    FixFee = s.FixFee,
-                    FlatformFee = s.FlatformFee,
-                    EventReminderHours = s.EventReminderHours,
-                    DateApply = s.UpdatedAt ?? s.CreatedAt
-                })
-                .ToListAsync();
+            try
+            {
+                var query = _unitOfWork.SystemSettingRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(s => !s.IsDeleted && s.CreatedBy == adminId);
 
-            if (!systemSettings.Any())
-                return ErrorResponse.FailureResult("No Permission or No System Settings Found", ErrorCodes.PermissionDenied);
+                var totalCount = await query.CountAsync();
 
-            return Result<List<SystemSettingResponse>>.Success(systemSettings);
+                var systemSettings = await query
+                    .OrderByDescending(s => s.CreatedAt)
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(s => new SystemSettingResponse   
+                    {
+                        DatePayout = s.DatePayout,
+                        FixFee = s.FixFee,
+                        FlatformFee = s.FlatformFee,
+                        EventReminderHours = s.EventReminderHours,
+                        DateApply = s.UpdatedAt ?? s.CreatedAt,
+                        CreateTime = s.CreatedAt
+                    })
+                    .ToListAsync();
+
+                if (!systemSettings.Any() && totalCount == 0)
+                    return ErrorResponse.FailureResult("No Permission or No System Settings Found", ErrorCodes.PermissionDenied);
+
+                return Result<BasePaginated<SystemSettingResponse>>.Success(
+                    new BasePaginated<SystemSettingResponse>(systemSettings, totalCount, pageNumber, pageSize));
+            }
+            catch (Exception ex)
+            {
+                return ErrorResponse.FailureResult($"Error getting system settings: {ex.Message}", ErrorCodes.InternalServerError);
+            }
         }
 
         public async Task<Result<AdminDashboardResponse>> GetAdminDashboardAsync(int? year = null, int? month = null)
@@ -1013,12 +1030,28 @@ namespace AIEvent.Application.Services.Implements
                     })
                     .ToListAsync();
 
+                var systemSettingChanges = await _unitOfWork.SystemSettingRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(s => !s.IsDeleted && s.CreatedAt >= thirtyDaysAgo)
+                    .OrderByDescending(s => s.CreatedAt)
+                    .Take(3)
+                    .Select(s => new RecentActivityResponse
+                    {
+                        Id = s.Id,
+                        Title = "Thay đổi cài đặt hệ thống",
+                        Description = $"Phí nền tảng: {s.FlatformFee:P2}, Phí cố định: {s.FixFee:N0} VNĐ, Ngày thanh toán: {s.DatePayout} ngày, Nhắc nhở sự kiện: {s.EventReminderHours} giờ",
+                        CreatedAt = s.CreatedAt
+                    })
+                    .ToListAsync();
+
                 activities.AddRange(recentUsers);
                 activities.AddRange(recentEvents);
                 activities.AddRange(recentOrganizerRequests);
                 activities.AddRange(approvedEvents);
                 activities.AddRange(rejectedEvents);
                 activities.AddRange(cancelEvents);
+                activities.AddRange(systemSettingChanges);
 
                 var sortedActivities = activities
                     .OrderByDescending(a => a.CreatedAt)
@@ -1184,6 +1217,122 @@ namespace AIEvent.Application.Services.Implements
                     ErrorCodes.InternalServerError
                 );
             }
+        }
+
+
+
+        public async Task<Result<BasePaginated<PayoutHistoryResponse>>> GetPayoutHistoryAsync(string? search = null, int? year = null, int? month = null, int pageNumber = 1, int pageSize = 10)
+        {
+            IQueryable<RevenueReport> revenueQuery = _unitOfWork.RevenueReportRepository
+                .Query()
+                .AsNoTracking()
+                .Include(r => r.OrganizerProfile)
+                .Where(r => !r.IsDeleted);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchLower = search.ToLower().Trim();
+                revenueQuery = revenueQuery.Where(r =>
+                    r.OrganizerProfile.ContactName.ToLower().Contains(searchLower) ||
+                    r.OrganizerProfile.ContactEmail.ToLower().Contains(searchLower) ||
+                    (r.OrganizerProfile.CompanyName != null && r.OrganizerProfile.CompanyName.ToLower().Contains(searchLower)) ||
+                    r.EventName.ToLower().Contains(searchLower));
+            }
+
+            if (year.HasValue)
+                revenueQuery = revenueQuery.Where(r => r.ReportYear == year.Value);
+
+            if (month.HasValue)
+                revenueQuery = revenueQuery.Where(r => r.ReportMonth == month.Value);
+
+            IQueryable<WalletTransaction> walletTransactionQuery = _unitOfWork.WalletTransactionRepository
+                .Query()
+                .AsNoTracking()
+                .Include(wt => wt.Wallet)
+                    .ThenInclude(w => w.User)
+                .Where(wt => wt.Status == TransactionStatus.Success
+                    && (wt.Type == TransactionType.Topup || wt.Type == TransactionType.Withdraw)
+                    && !wt.IsDeleted);
+
+            if (year.HasValue)
+                walletTransactionQuery = walletTransactionQuery.Where(wt => wt.CreatedAt.Year == year.Value);
+
+            if (month.HasValue)
+                walletTransactionQuery = walletTransactionQuery.Where(wt => wt.CreatedAt.Month == month.Value);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchLower = search.ToLower().Trim();
+                walletTransactionQuery = walletTransactionQuery.Where(wt =>
+                    (wt.Wallet.User.FullName != null && wt.Wallet.User.FullName.ToLower().Contains(searchLower)) ||
+                    (wt.Wallet.User.Email != null && wt.Wallet.User.Email.ToLower().Contains(searchLower)));
+            }
+
+            var revenueReports = await revenueQuery
+                .OrderByDescending(r => r.PayoutDate)
+                .ThenByDescending(r => r.CreatedAt)
+                .ToListAsync();
+
+            var walletTransactions = await walletTransactionQuery
+                .OrderByDescending(wt => wt.CreatedAt)
+                .ToListAsync();
+
+            int totalCount = revenueReports.Count + walletTransactions.Count;
+
+            var result = new List<PayoutHistoryResponse>(totalCount);
+
+            foreach (var r in revenueReports)
+            {
+                result.Add(new PayoutHistoryResponse
+                {
+                    HistoryType = "Payout",
+                    RevenueReportId = r.Id,
+                    OrganizerProfileId = r.OrganizerProfileId,
+                    OrganizerName = r.OrganizerProfile?.ContactName ?? string.Empty,
+                    OrganizerEmail = r.OrganizerProfile?.ContactEmail ?? string.Empty,
+                    CompanyName = r.OrganizerProfile?.CompanyName,
+                    EventId = r.EventId,
+                    EventName = r.EventName,
+                    GrossRevenue = r.GrossRevenue,
+                    PlatformFee = r.PlatformFee,
+                    NetRevenue = r.NetRevenue,
+                    Amount = r.NetRevenue,
+                    ReportMonth = r.ReportMonth,
+                    ReportYear = r.ReportYear,
+                    TransactionDate = r.PayoutDate,
+                    CreatedAt = r.CreatedAt,
+                    Description = $"Payout cho sự kiện: {r.EventName}"
+                });
+            }
+ 
+            foreach (var wt in walletTransactions)
+            {
+                var user = wt.Wallet?.User;
+                if (user == null) continue;
+
+                result.Add(new PayoutHistoryResponse
+                {
+                    HistoryType = wt.Type == TransactionType.Topup ? "Topup" : "Withdraw",
+                    WalletTransactionId = wt.Id,
+                    OrganizerName = user.FullName ?? string.Empty,
+                    OrganizerEmail = user.Email ?? string.Empty,
+                    Amount = wt.Amount,
+                    ReportMonth = wt.CreatedAt.Month,
+                    ReportYear = wt.CreatedAt.Year,
+                    TransactionDate = wt.CreatedAt.DateTime,
+                    CreatedAt = wt.CreatedAt,
+                    Description = wt.Description,
+                    TransactionType = wt.Type
+                });
+            }
+             
+            var paginatedResult = result
+                .OrderByDescending(x => x.TransactionDate ?? x.CreatedAt.DateTime)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return new BasePaginated<PayoutHistoryResponse>(paginatedResult, totalCount, pageNumber, pageSize);
         }
 
     }

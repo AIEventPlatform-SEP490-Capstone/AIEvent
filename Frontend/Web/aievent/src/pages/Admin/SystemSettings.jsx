@@ -1,956 +1,580 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Settings, 
-  Save, 
-  AlertCircle,
-  RotateCcw,
-  TrendingUp,
-  CreditCard,
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import {
+  Settings,
+  Plus,
+  Calendar,
+  Edit3,
+  X,
+  Percent,
+  Wallet,
   Clock,
-  Globe,
-  Image as ImageIcon,
-  Languages,
-  Calculator
+  BellRing,
+  Copy,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  CheckCircle2
 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog';
 import LoadingSpinner from '../../components/LoadingSpinner/LoadingSpinner';
 import { dashboardAPI } from '../../api/dashboardAPI';
 import { showSuccess, showError } from '../../lib/toastUtils';
 
 const SystemSettings = () => {
-  const [activeTab, setActiveTab] = useState('system');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState(null);
-  
-  // Website Configuration
-  const [websiteFormData, setWebsiteFormData] = useState({
-    websiteName: '',
-    language: 'vi',
-    logo: null,
-    logoPreview: null
-  });
-  const [websiteInitialData, setWebsiteInitialData] = useState({
-    websiteName: '',
-    language: 'vi',
-    logo: null,
-    logoPreview: null
-  });
+  const [allHistory, setAllHistory] = useState([]);
+  const [displayList, setDisplayList] = useState([]);
+  const [currentConfig, setCurrentConfig] = useState(null);
 
-  // System Configuration
-  const [systemFormData, setSystemFormData] = useState({
+  // Phân trang
+  const [pageNumber, setPageNumber] = useState(1);
+  const pageSize = 10;
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // Tìm kiếm
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingMode, setEditingMode] = useState('create');
+  const [selectedTemplate, setSelectedTemplate] = useState('current');
+
+  const [editForm, setEditForm] = useState({
     flatformFee: 0.07,
     fixFee: 45000,
     datePayout: 7,
     eventReminderHours: 2
   });
-  const [systemInitialData, setSystemInitialData] = useState({
-    flatformFee: 0.07,
-    fixFee: 45000,
-    datePayout: 7,
-    eventReminderHours: 2
-  });
-  
-  // Example revenue for calculation
-  const [exampleRevenue, setExampleRevenue] = useState(1000000);
+  const [effectiveDate, setEffectiveDate] = useState('');
+  const [displayFixFee, setDisplayFixFee] = useState('45.000');
 
+  const [confirmDialog, setConfirmDialog] = useState({ open: false });
+  const formRef = useRef(null);
+
+  // ============== HÀM HỖ TRỢ ==============
+  const getTomorrow = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  };
+
+  const formatVND = (num) => {
+    if (!num && num !== 0) return '';
+    return new Intl.NumberFormat('vi-VN').format(num);
+  };
+
+  const formatDateTime = (dateInput) => {
+    if (!dateInput) return 'Chưa xác định';
+    const date = new Date(dateInput);
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    return date.toLocaleString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+  };
+
+  const formatDateOnly = (dateInput) => {
+    const date = new Date(dateInput);
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleDateString('vi-VN');
+  };
+
+  // Validate phí cố định
+  const MIN_FIX_FEE = 10000;
+  const MAX_FIX_FEE = 100000000;
+  const fixFeeError = editForm.fixFee < MIN_FIX_FEE || editForm.fixFee > MAX_FIX_FEE
+    ? `Phí cố định phải từ ${formatVND(MIN_FIX_FEE)} ₫ đến ${formatVND(MAX_FIX_FEE)} ₫`
+    : '';
+
+  // ============== TÌM CẤU HÌNH ĐANG ÁP DỤNG ==============
+  const activeConfigId = useMemo(() => {
+    if (allHistory.length === 0) return null;
+
+    const now = new Date();
+    let active = null;
+    let latestApplyDate = null;
+
+    // Tìm cấu hình có dateApply <= now và gần nhất
+    for (const config of allHistory) {
+      const applyDate = new Date(config.dateApply);
+      if (applyDate <= now && (!latestApplyDate || applyDate > latestApplyDate)) {
+        latestApplyDate = applyDate;
+        active = config;
+      }
+    }
+
+    return active?.id || null;
+  }, [allHistory]);
+
+  // ============== TÌM KIẾM + SẮP XẾP ==============
+  const filteredAndSortedList = useMemo(() => {
+    let list = [...allHistory];
+
+    // Tìm kiếm
+    if (searchTerm.trim()) {
+      const lower = searchTerm.toLowerCase().trim();
+      list = list.filter(item => {
+        const nameMatch = item.name?.toLowerCase().includes(lower);
+        const dateMatch = formatDateOnly(item.dateApply)?.includes(lower) ||
+                         item.dateApply?.includes(lower);
+        return nameMatch || dateMatch;
+      });
+    }
+
+    // Sắp xếp: mới nhất trước
+    list.sort((a, b) => new Date(b.dateApply) - new Date(a.dateApply));
+
+    return list;
+  }, [allHistory, searchTerm]);
+
+  // Cập nhật displayList khi có thay đổi
   useEffect(() => {
-    fetchSettings();
-  }, []);
+    const start = (pageNumber - 1) * pageSize;
+    const end = start + pageSize;
+    const paginated = filteredAndSortedList.slice(start, end);
 
-  const fetchSettings = async () => {
+    setDisplayList(paginated);
+    setTotalItems(filteredAndSortedList.length);
+    setTotalPages(Math.ceil(filteredAndSortedList.length / pageSize));
+  }, [filteredAndSortedList, pageNumber]);
+
+  // ============== LOAD DỮ LIỆU ==============
+  const fetchAllData = async (page = 1) => {
     try {
       setIsLoading(true);
-      setError(null);
-      
-      // Fetch system settings
-      const systemData = await dashboardAPI.getSystemSettings();
-      if (systemData) {
-        const settings = {
-          flatformFee: systemData.flatformFee || 0.07,
-          fixFee: systemData.fixFee || 45000,
-          datePayout: systemData.datePayout || 7,
-          eventReminderHours: systemData.eventReminderHours || 2
-        };
-        setSystemFormData(settings);
-        setSystemInitialData(settings);
-      }
+      const [systemData, historyResponse] = await Promise.all([
+        dashboardAPI.getSystemSettings(),
+        dashboardAPI.getHistorySystemSettings({ pageNumber: page, pageSize })
+      ]);
 
-      // TODO: Fetch website settings from API
-      // For now, using default values
-      const defaultWebsite = {
-        websiteName: 'AIEvent Platform',
-        language: 'vi',
-        logo: null,
-        logoPreview: null
-      };
-      setWebsiteFormData(defaultWebsite);
-      setWebsiteInitialData(defaultWebsite);
+      setCurrentConfig(systemData);
+
+      const history = historyResponse;
+
+      const formattedHistory = (history.items || []).map((item, idx) => ({
+        ...item,
+        id: item.id || `hist-${page}-${idx}`,
+        name: `Cấu hình #${(page - 1) * pageSize + idx + 1}`,
+        createTime: item.createTime || item.createdAt || item.dateApply || new Date().toISOString(),
+      }));
+
+      setAllHistory(prev => {
+        const existingIds = new Set(prev.map(x => x.id));
+        const newItems = formattedHistory.filter(x => !existingIds.has(x.id));
+        return [...prev, ...newItems];
+      });
+
+      setPageNumber(history.pageNumber || page);
     } catch (err) {
-      console.error('Error fetching settings:', err);
-      setError(err.response?.data?.message || 'Không thể tải cài đặt');
+      showError('Không thể tải dữ liệu');
+      console.error(err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Website Configuration Handlers
-  const handleWebsiteInputChange = (field, value) => {
-    setWebsiteFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  useEffect(() => {
+    fetchAllData(1);
+  }, []);
+
+  // Reset trang khi search
+  useEffect(() => {
+    setPageNumber(1);
+  }, [searchTerm]);
+
+  // ============== FORM HANDLERS ==============
+  const scrollToForm = () => {
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const handleLogoChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        showError('Kích thước file logo không được vượt quá 5MB');
-        return;
+  const startCreate = () => {
+    const defaultForm = {
+      flatformFee: currentConfig?.flatformFee || 0.07,
+      fixFee: currentConfig?.fixFee || 45000,
+      datePayout: currentConfig?.datePayout || 7,
+      eventReminderHours: currentConfig?.eventReminderHours || 2
+    };
+    setEditForm(defaultForm);
+    setDisplayFixFee(formatVND(defaultForm.fixFee));
+    setSelectedTemplate('current');
+    setEditingMode('create');
+    setIsEditing(true);
+    setTimeout(scrollToForm, 100);
+  };
+
+  const startReapply = (config) => {
+    const form = {
+      flatformFee: config.flatformFee,
+      fixFee: config.fixFee,
+      datePayout: config.datePayout,
+      eventReminderHours: config.eventReminderHours
+    };
+    setEditForm(form);
+    setDisplayFixFee(formatVND(form.fixFee));
+    setSelectedTemplate(config.id);
+    setEffectiveDate(getTomorrow());
+    setEditingMode('reapply');
+    setIsEditing(true);
+    setTimeout(scrollToForm, 100);
+  };
+
+  const handleTemplateChange = (value) => {
+    setSelectedTemplate(value);
+    if (value === 'current' && currentConfig) {
+      setEditForm({
+        flatformFee: currentConfig.flatformFee,
+        fixFee: currentConfig.fixFee,
+        datePayout: currentConfig.datePayout,
+        eventReminderHours: currentConfig.eventReminderHours
+      });
+      setDisplayFixFee(formatVND(currentConfig.fixFee));
+    } else {
+      const config = allHistory.find(c => c.id === value);
+      if (config) {
+        setEditForm({
+          flatformFee: config.flatformFee,
+          fixFee: config.fixFee,
+          datePayout: config.datePayout,
+          eventReminderHours: config.eventReminderHours
+        });
+        setDisplayFixFee(formatVND(config.fixFee));
       }
-      if (!file.type.startsWith('image/')) {
-        showError('File phải là hình ảnh');
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setWebsiteFormData(prev => ({
-          ...prev,
-          logo: file,
-          logoPreview: reader.result
-        }));
-      };
-      reader.readAsDataURL(file);
     }
   };
 
-  const handleWebsiteSave = async () => {
-    try {
-      setIsSaving(true);
-      setError(null);
-      
-      // TODO: Call API to update website settings
-      // await dashboardAPI.updateWebsiteSettings(websiteFormData);
-      
-      setWebsiteInitialData({ ...websiteFormData });
-      showSuccess('Cập nhật cấu hình trang web thành công!');
-    } catch (err) {
-      console.error('Error updating website settings:', err);
-      const errorMessage = err.response?.data?.message || 'Không thể cập nhật cấu hình trang web';
-      setError(errorMessage);
-      showError(errorMessage);
-    } finally {
-      setIsSaving(false);
-    }
+  const handleInputChange = (field, value) => {
+    let val = value;
+    if (field === 'flatformFee') val = Math.max(0, Math.min(1, parseFloat(value) || 0));
+    if (field === 'datePayout') val = Math.max(5, Math.min(15, parseInt(value) || 5));
+    if (field === 'eventReminderHours') val = Math.max(1, Math.min(4, parseInt(value) || 1));
+    setEditForm(prev => ({ ...prev, [field]: val }));
   };
 
-  const handleWebsiteReset = () => {
-    setWebsiteFormData({ ...websiteInitialData });
-    showSuccess('Đã khôi phục về giá trị ban đầu');
+  const handleFixFeeChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    const num = raw === '' ? 0 : parseInt(raw, 10);
+    setEditForm(prev => ({ ...prev, fixFee: num }));
+    setDisplayFixFee(raw === '' ? '' : formatVND(num));
   };
 
-  const hasWebsiteChanges = () => {
-    return (
-      websiteFormData.websiteName !== websiteInitialData.websiteName ||
-      websiteFormData.language !== websiteInitialData.language ||
-      websiteFormData.logo !== websiteInitialData.logo
-    );
-  };
+  const handleFixFeeFocus = () => setDisplayFixFee(editForm.fixFee === 0 ? '' : editForm.fixFee.toString());
+  const handleFixFeeBlur = () => setDisplayFixFee(formatVND(editForm.fixFee));
 
-  // System Configuration Handlers
-  const handleSystemInputChange = (field, value) => {
-    let processedValue = value;
-    
-    if (field === 'flatformFee') {
-      processedValue = parseFloat(value) || 0;
-      if (processedValue < 0) processedValue = 0;
-      if (processedValue > 1) processedValue = 1;
-    } else if (field === 'fixFee') {
-      processedValue = parseInt(value) || 0;
-      if (processedValue < 0) processedValue = 0;
-    } else if (field === 'datePayout') {
-      processedValue = parseInt(value) || 1;
-      if (processedValue < 1) processedValue = 1;
-      if (processedValue > 7) processedValue = 7;
-    } else if (field === 'eventReminderHours') {
-      processedValue = parseInt(value) || 1;
-      if (processedValue < 1) processedValue = 1;
-      if (processedValue > 4) processedValue = 4;
-    }
+  const saveConfig = () => {
+    if (!effectiveDate) return showError('Vui lòng chọn ngày có hiệu lực');
+    if (fixFeeError) return showError(fixFeeError);
 
-    setSystemFormData(prev => ({
-      ...prev,
-      [field]: processedValue
-    }));
-  };
+    const applyDate = new Date(effectiveDate);
+    applyDate.setHours(0, 0, 0, 0);
 
-  const handleSystemSave = async () => {
-    try {
-      setIsSaving(true);
-      setError(null);
-      
-      // Validate datePayout (1-7 days)
-      if (systemFormData.datePayout < 1 || systemFormData.datePayout > 7) {
-        showError('Số ngày thanh toán phải từ 1 đến 7 ngày');
-        setIsSaving(false);
-        return;
+    setConfirmDialog({
+      open: true,
+      title: editingMode === 'create' ? 'Tạo cấu hình mới' : 'Áp dụng lại cấu hình',
+      description: `Cấu hình sẽ có hiệu lực từ <strong>${formatDateTime(applyDate)}</strong>.`,
+      onConfirm: async () => {
+        try {
+          setIsSaving(true);
+          await dashboardAPI.updateSystemSettings({
+            ...editForm,
+            dateApply: applyDate.toISOString()
+          });
+          showSuccess(`Thành công! Hiệu lực từ ${formatDateTime(applyDate)}`);
+          setIsEditing(false);
+          await fetchAllData(1);
+          const newCurrent = await dashboardAPI.getSystemSettings();
+          setCurrentConfig(newCurrent);
+        } catch (err) {
+          showError(err.response?.data?.message || 'Thao tác thất bại');
+        } finally {
+          setIsSaving(false);
+          setConfirmDialog({ open: false });
+        }
       }
-      
-      // Validate eventReminderHours (1-4 hours)
-      if (systemFormData.eventReminderHours < 1 || systemFormData.eventReminderHours > 4) {
-        showError('Thời gian nhắc nhở sự kiện phải từ 1 đến 4 giờ');
-        setIsSaving(false);
-        return;
-      }
-      
-      await dashboardAPI.updateSystemSettings(systemFormData);
-      setSystemInitialData({ ...systemFormData });
-      showSuccess('Cập nhật cấu hình hệ thống thành công!');
-    } catch (err) {
-      console.error('Error updating system settings:', err);
-      const errorMessage = err.response?.data?.message || 'Không thể cập nhật cấu hình hệ thống';
-      setError(errorMessage);
-      showError(errorMessage);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleSystemReset = () => {
-    setSystemFormData({ ...systemInitialData });
-    showSuccess('Đã khôi phục về giá trị ban đầu');
-  };
-
-  const hasSystemChanges = () => {
-    return (
-      systemFormData.flatformFee !== systemInitialData.flatformFee ||
-      systemFormData.fixFee !== systemInitialData.fixFee ||
-      systemFormData.datePayout !== systemInitialData.datePayout ||
-      systemFormData.eventReminderHours !== systemInitialData.eventReminderHours
-    );
+    });
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[600px]">
-        <div className="text-center">
-          <LoadingSpinner size="lg" />
-          <p className="mt-4 text-muted-foreground text-lg">Đang tải cài đặt...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <LoadingSpinner size="lg" />
+        <span className="ml-4 text-lg">Đang tải...</span>
       </div>
     );
   }
 
-  const hasChanges = activeTab === 'website' ? hasWebsiteChanges() : hasSystemChanges();
-
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 mt-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-              <Settings className="h-6 w-6 text-gray-700" />
+    <>
+      <div className="min-h-screen bg-gray-50">
+        <div className="p-6 pb-20">
+          <div className="max-w-5xl mx-auto space-y-8">
+
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gray-100 rounded-xl">
+                  <Settings className="h-8 w-8 text-gray-700" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">Cài đặt hệ thống</h1>
+                  <p className="text-gray-600">Quản lý phí nền tảng và chính sách thanh toán</p>
+                </div>
+              </div>
+              {!isEditing && (
+                <Button onClick={startCreate} size="lg" className="gap-3">
+                  <Plus className="h-5 w-5" />
+                  Tạo cấu hình mới
+                </Button>
+              )}
             </div>
-            <div>
-              <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">Cài đặt hệ thống</h1>
-              <p className="text-gray-500 text-base mt-1">Quản lý các thông số và cấu hình của hệ thống</p>
+
+            {/* Form chỉnh sửa */}
+            {isEditing && (
+              <div ref={formRef}>
+                <Card className="border-2 border-dashed border-gray-300 bg-white shadow-lg">
+                  <CardHeader className="border-b bg-gray-100">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <Edit3 className="h-7 w-7 text-gray-700" />
+                        <div>
+                          <CardTitle className="text-2xl">
+                            {editingMode === 'create' ? 'Tạo cấu hình mới' : 'Chỉnh sửa & áp dụng lại'}
+                          </CardTitle>
+                          <p className="text-gray-600 mt-1">Bạn có thể chọn mẫu hoặc tự điều chỉnh</p>
+                        </div>
+                      </div>
+                      <Button size="icon" variant="ghost" onClick={() => setIsEditing(false)}>
+                        <X className="h-5 w-5" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="pt-8 space-y-8">
+                    <div>
+                      <Label>Chọn từ cấu hình có sẵn (tùy chọn)</Label>
+                      <Select value={selectedTemplate} onValueChange={handleTemplateChange}>
+                        <SelectTrigger className="mt-2 w-full max-w-md">
+                          <SelectValue placeholder="Chọn mẫu..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="current">Cấu hình hiện tại</SelectItem>
+                          {allHistory.map(config => (
+                            <SelectItem key={config.id} value={config.id}>
+                              {config.name} • {formatDateTime(config.dateApply)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-6">
+                        <div className="flex items-center gap-4">
+                          <Percent className="h-5 w-5 text-gray-600" />
+                          <div className="flex-1">
+                            <Label>Phí nền tảng (%)</Label>
+                            <Input type="number" step="0.01" value={(editForm.flatformFee * 100).toFixed(2)}
+                              onChange={(e) => handleInputChange('flatformFee', e.target.value / 100)}
+                              className="mt-1 text-lg" />
+                            <input type="range" min="0" max="100" step="0.1" value={editForm.flatformFee * 100}
+                              onChange={(e) => handleInputChange('flatformFee', e.target.value / 100)}
+                              className="w-full mt-3 h-2 bg-gray-200 rounded-lg cursor-pointer" />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          <Wallet className="h-5 w-5 text-gray-600" />
+                          <div className="flex-1">
+                            <Label>Phí cố định (VNĐ)</Label>
+                            <Input type="text" value={displayFixFee} onChange={handleFixFeeChange}
+                              onFocus={handleFixFeeFocus} onBlur={handleFixFeeBlur}
+                              placeholder="0" className={`mt-1 text-lg font-medium ${fixFeeError ? 'border-red-500' : ''}`} />
+                            {fixFeeError && <p className="text-red-600 text-sm mt-1">{fixFeeError}</p>}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-6">
+                        <div className="flex items-center gap-4">
+                          <Clock className="h-5 w-5 text-gray-600" />
+                          <div className="flex-1">
+                            <Label>Ngày thanh toán (5-15 ngày)</Label>
+                            <Input type="number" min="5" max="15" value={editForm.datePayout}
+                              onChange={(e) => handleInputChange('datePayout', e.target.value)}
+                              className="mt-1 text-lg" />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          <BellRing className="h-5 w-5 text-gray-600" />
+                          <div className="flex-1">
+                            <Label>Nhắc nhở trước (1-4 giờ)</Label>
+                            <Input type="number" min="1" max="4" value={editForm.eventReminderHours}
+                              onChange={(e) => handleInputChange('eventReminderHours', e.target.value)}
+                              className="mt-1 text-lg" />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          <Calendar className="h-5 w-5 text-gray-600" />
+                          <div className="flex-1">
+                            <Label className="text-red-600 font-medium">Ngày có hiệu lực *</Label>
+                            <Input type="date" min={getTomorrow()} value={effectiveDate}
+                              onChange={(e) => setEffectiveDate(e.target.value)} className="mt-1 text-lg" />
+                            {effectiveDate && (
+                              <p className="text-sm font-medium text-gray-700 mt-2">
+                                Hiệu lực từ: <strong>{formatDateTime(effectiveDate + 'T00:00:00')}</strong>
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-4 pt-6 border-t">
+                      <Button variant="outline" size="lg" onClick={() => setIsEditing(false)}>Hủy</Button>
+                      <Button size="lg" onClick={saveConfig}
+                        disabled={isSaving || !effectiveDate || !!fixFeeError} className="px-10">
+                        {isSaving ? 'Đang lưu...' : 'Lưu & Áp dụng'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Lịch sử + Tìm kiếm + Phân trang */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <h2 className="text-2xl font-semibold text-gray-800">Lịch sử cấu hình</h2>
+                
+                <div className="relative w-full max-w-sm">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Tìm kiếm theo tên hoặc ngày áp dụng..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              <div className="text-sm text-gray-500">
+                Tìm thấy <strong>{filteredAndSortedList.length}</strong> cấu hình
+                {searchTerm && ` phù hợp với "${searchTerm}"`}
+              </div>
+
+              {displayList.length === 0 ? (
+                <Card className="p-10 text-center text-gray-500">
+                  {searchTerm ? 'Không tìm thấy cấu hình nào phù hợp' : 'Chưa có lịch sử cấu hình'}
+                </Card>
+              ) : (
+                displayList.map((config) => {
+                  const isActive = config.id === activeConfigId;
+
+                  return (
+                    <Card
+                      key={config.id}
+                      className={`p-6 border-2 transition-all ${
+                        isActive
+                          ? 'border-blue-500 bg-blue-50/70 shadow-lg'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-5">
+                          {isActive ? (
+                            <CheckCircle2 className="h-8 w-8 text-blue-600" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full border-2 border-dashed border-gray-400" />
+                          )}
+                          <div>
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className={`text-lg font-bold ${isActive ? 'text-blue-900' : 'text-gray-800'}`}>
+                                {config.name}
+                              </span>
+                              {isActive && (
+                                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                                  Đang áp dụng
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-gray-600">
+                              Áp dụng từ: <strong>{formatDateTime(config.dateApply)}</strong>
+                              {' '} - {' '}
+                              Thời gian tạo: <strong>{formatDateTime(config.createTime)}</strong>
+                            </p>
+
+                            <div className="flex items-center gap-8 mt-4 text-gray-700">
+                              <span className="flex items-center gap-2"><Percent className="h-4 w-4" /><strong>{(config.flatformFee * 100).toFixed(2)}%</strong></span>
+                              <span className="flex items-center gap-2"><Wallet className="h-4 w-4" /><strong>{formatVND(config.fixFee)} ₫</strong></span>
+                              <span className="flex items-center gap-2"><Clock className="h-4 w-4" /><strong>{config.datePayout} ngày</strong></span>
+                              <span className="flex items-center gap-2"><BellRing className="h-4 w-4" /><strong>{config.eventReminderHours}h</strong></span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <Button onClick={() => startReapply(config)} variant="outline" size="sm">
+                          <Copy className="h-4 w-4 mr-2" />
+                          Áp dụng lại
+                        </Button>
+                      </div>
+                    </Card>
+                  );
+                })
+              )}
+
+              {/* Phân trang */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-3 mt-8">
+                  <Button size="sm" variant="outline" disabled={pageNumber === 1}
+                    onClick={() => setPageNumber(p => Math.max(1, p - 1))}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+
+                  <span className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md">
+                    Trang {pageNumber} / {totalPages}
+                  </span>
+
+                  <Button size="sm" variant="outline" disabled={pageNumber === totalPages}
+                    onClick={() => setPageNumber(p => Math.min(totalPages, p + 1))}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
-          {activeTab === 'system' && (
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                {hasSystemChanges() ? (
-                  <>
-                    <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
-                    <span className="text-gray-700 hidden md:inline">Bạn có thay đổi chưa được lưu</span>
-                  </>
-                ) : (
-                  <>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                    <span className="text-gray-500 hidden md:inline">Tất cả thay đổi đã được lưu</span>
-                  </>
-                )}
-              </div>
-              <div className="flex space-x-3">
-                <Button
-                  onClick={handleSystemReset}
-                  disabled={!hasSystemChanges() || isSaving}
-                  variant="outline"
-                  className="border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-gray-700 transition-all px-6 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Khôi phục</span>
-                </Button>
-                <Button
-                  onClick={handleSystemSave}
-                  disabled={isSaving || !hasSystemChanges()}
-                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow transition-all px-8 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSaving ? (
-                    <>
-                      <LoadingSpinner size="sm" className="mr-2" />
-                      <span className="hidden sm:inline">Đang lưu...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      <span className="hidden sm:inline">Lưu cài đặt</span>
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
-          {activeTab === 'website' && hasChanges && (
-            <div className="hidden md:flex items-center space-x-2 bg-amber-50 border border-amber-200 px-4 py-2 rounded-lg">
-              <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
-              <span className="text-amber-700 text-sm font-medium">Có thay đổi chưa lưu</span>
-            </div>
-          )}
         </div>
       </div>
 
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
-          <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm text-red-800 font-medium">Có lỗi xảy ra</p>
-            <p className="text-sm text-red-700 mt-1">{error}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-
-        {/* Website Configuration Tab */}
-        <TabsContent value="website" className="mt-6">
-          <div className="space-y-6">
-            <Card className="border border-gray-200 shadow-sm">
-              <CardHeader className="border-b border-gray-100 pb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <Globe className="h-5 w-5 text-gray-700" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg font-semibold text-gray-900">Thông tin trang web</CardTitle>
-                    <CardDescription className="text-xs text-gray-500 mt-0.5">Cấu hình thông tin cơ bản của website</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="space-y-6">
-                  <div>
-                    <Label htmlFor="websiteName" className="text-sm font-medium text-gray-700 mb-2 block">
-                      Tên trang web
-                    </Label>
-                    <Input
-                      id="websiteName"
-                      type="text"
-                      value={websiteFormData.websiteName}
-                      onChange={(e) => handleWebsiteInputChange('websiteName', e.target.value)}
-                      className="h-11 text-base border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Nhập tên trang web"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="language" className="text-sm font-medium text-gray-700 mb-2 block flex items-center">
-                      <Languages className="h-4 w-4 mr-2 text-gray-500" />
-                      Ngôn ngữ
-                    </Label>
-                    <Select value={websiteFormData.language} onValueChange={(value) => handleWebsiteInputChange('language', value)}>
-                      <SelectTrigger className="h-11 border-gray-300 focus:ring-2 focus:ring-blue-500">
-                        <SelectValue placeholder="Chọn ngôn ngữ" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="vi">Tiếng Việt</SelectItem>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="zh">中文</SelectItem>
-                        <SelectItem value="ja">日本語</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="logo" className="text-sm font-medium text-gray-700 mb-2 block">
-                      Logo trang web
-                    </Label>
-                    <div className="space-y-4">
-                      {websiteFormData.logoPreview && (
-                        <div className="relative w-32 h-32 border-2 border-gray-200 rounded-lg overflow-hidden bg-gray-50">
-                          <img
-                            src={websiteFormData.logoPreview}
-                            alt="Logo preview"
-                            className="w-full h-full object-contain"
-                          />
-                        </div>
-                      )}
-                      <div className="flex items-center space-x-3">
-                        <label
-                          htmlFor="logo-upload"
-                          className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          <ImageIcon className="h-4 w-4 mr-2" />
-                          {websiteFormData.logo ? 'Thay đổi logo' : 'Chọn logo'}
-                        </label>
-                        <input
-                          id="logo-upload"
-                          type="file"
-                          accept="image/*"
-                          onChange={handleLogoChange}
-                          className="hidden"
-                        />
-                        {websiteFormData.logo && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => {
-                              setWebsiteFormData(prev => ({
-                                ...prev,
-                                logo: null,
-                                logoPreview: null
-                              }));
-                            }}
-                            className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                          >
-                            Xóa
-                          </Button>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        Định dạng hỗ trợ: JPG, PNG, SVG. Kích thước tối đa: 5MB. Khuyến nghị: 200x200px hoặc lớn hơn.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Action Buttons */}
-            <Card className="border border-gray-200 shadow-sm bg-white">
-              <CardContent className="pt-6">
-                <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 sm:space-x-4">
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    {hasWebsiteChanges() ? (
-                      <>
-                        <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
-                        <span className="text-gray-700">Bạn có thay đổi chưa được lưu</span>
-                      </>
-                    ) : (
-                      <>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                        <span className="text-gray-500">Tất cả thay đổi đã được lưu</span>
-                      </>
-                    )}
-                  </div>
-                  <div className="flex space-x-3 w-full sm:w-auto">
-                    <Button
-                      onClick={handleWebsiteReset}
-                      disabled={!hasWebsiteChanges() || isSaving}
-                      variant="outline"
-                      className="flex-1 sm:flex-none border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-gray-700 transition-all px-6 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <RotateCcw className="h-4 w-4 mr-2" />
-                      Khôi phục
-                    </Button>
-                    <Button
-                      onClick={handleWebsiteSave}
-                      disabled={isSaving || !hasWebsiteChanges()}
-                      className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow transition-all px-8 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSaving ? (
-                        <>
-                          <LoadingSpinner size="sm" className="mr-2" />
-                          Đang lưu...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-4 w-4 mr-2" />
-                          Lưu cài đặt
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* System Configuration Tab */}
-        <TabsContent value="system" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Settings */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Grid Layout for Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Phí nền tảng Card */}
-                <Card className="border border-gray-200 shadow-sm">
-                  <CardHeader className="border-b border-gray-100 pb-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                          <TrendingUp className="h-5 w-5 text-gray-700" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-lg font-semibold text-gray-900">Phí nền tảng</CardTitle>
-                          <CardDescription className="text-xs text-gray-500 mt-0.5">Tính theo % doanh thu</CardDescription>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-gray-900">{(systemFormData.flatformFee * 100).toFixed(2)}%</div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="flatformFee" className="text-sm font-medium text-gray-700 mb-2 block">
-                          Tỷ lệ phí (0% - 100%)
-                        </Label>
-                        {/* Range Slider */}
-                        <div className="space-y-2 mb-4">
-                          <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.001"
-                            value={systemFormData.flatformFee}
-                            onChange={(e) => handleSystemInputChange('flatformFee', e.target.value)}
-                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                            style={{
-                              background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${systemFormData.flatformFee * 100}%, rgb(229, 231, 235) ${systemFormData.flatformFee * 100}%, rgb(229, 231, 235) 100%)`
-                            }}
-                          />
-                          <div className="flex justify-between text-xs text-gray-500">
-                            <span>0%</span>
-                            <span>50%</span>
-                            <span>100%</span>
-                          </div>
-                        </div>
-                        {/* Input số */}
-                        <div className="relative">
-                          <Input
-                            id="flatformFee"
-                            type="number"
-                            step="0.001"
-                            min="0"
-                            max="1"
-                            value={systemFormData.flatformFee}
-                            onChange={(e) => handleSystemInputChange('flatformFee', e.target.value)}
-                            className="h-11 text-base border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-20"
-                            placeholder="0.07"
-                          />
-                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                            <span className="text-gray-600 font-medium text-sm">
-                              {(systemFormData.flatformFee * 100).toFixed(2)}%
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Phí cố định Card */}
-                <Card className="border border-gray-200 shadow-sm">
-                  <CardHeader className="border-b border-gray-100 pb-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                          <CreditCard className="h-5 w-5 text-gray-700" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-lg font-semibold text-gray-900">Phí cố định</CardTitle>
-                          <CardDescription className="text-xs text-gray-500 mt-0.5">Áp dụng cho mọi giao dịch</CardDescription>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xl font-bold text-gray-900">{(systemFormData.fixFee || 0).toLocaleString('vi-VN')}</div>
-                        <div className="text-xs text-gray-500">VNĐ</div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="fixFee" className="text-sm font-medium text-gray-700 mb-2 block">
-                          Số tiền cố định (VNĐ)
-                        </Label>
-                        <div className="relative">
-                          <div className="absolute left-3 top-1/2 -translate-y-1/2">
-                            <span className="text-gray-400 text-sm">VNĐ</span>
-                          </div>
-                          <Input
-                            id="fixFee"
-                            type="number"
-                            min="0"
-                            value={systemFormData.fixFee}
-                            onChange={(e) => handleSystemInputChange('fixFee', e.target.value)}
-                            className="h-11 text-base border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pl-16"
-                            placeholder="45000"
-                          />
-                        </div>
-                        {/* Quick select buttons */}
-                        <div className="grid grid-cols-4 gap-2 mt-3">
-                          {[20000, 45000, 50000, 100000].map((amount) => (
-                            <button
-                              key={amount}
-                              onClick={() => handleSystemInputChange('fixFee', amount)}
-                              className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                                systemFormData.fixFee === amount
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                              }`}
-                            >
-                              {(amount / 1000).toFixed(0)}K
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Ngày thanh toán Card */}
-              <Card className="border border-gray-200 shadow-sm">
-                <CardHeader className="border-b border-gray-100 pb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <Clock className="h-5 w-5 text-gray-700" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg font-semibold text-gray-900">Ngày thanh toán</CardTitle>
-                        <CardDescription className="text-xs text-gray-500 mt-0.5">Tự động chuyển tiền sau sự kiện</CardDescription>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-gray-900">{systemFormData.datePayout}</div>
-                      <div className="text-xs text-gray-500">ngày</div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="datePayout" className="text-sm font-medium text-gray-700 mb-2 block">
-                        Số ngày chờ thanh toán (1-7 ngày)
-                      </Label>
-                      {/* Range Slider */}
-                      <div className="space-y-2 mb-4">
-                        <input
-                          type="range"
-                          min="1"
-                          max="7"
-                          step="1"
-                          value={systemFormData.datePayout}
-                          onChange={(e) => handleSystemInputChange('datePayout', e.target.value)}
-                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                          style={{
-                            background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${((systemFormData.datePayout - 1) / 6) * 100}%, rgb(229, 231, 235) ${((systemFormData.datePayout - 1) / 6) * 100}%, rgb(229, 231, 235) 100%)`
-                          }}
-                        />
-                        <div className="flex justify-between text-xs text-gray-500">
-                          <span>1</span>
-                          <span>4</span>
-                          <span>7</span>
-                        </div>
-                      </div>
-                      {/* Input số */}
-                      <div className="relative">
-                        <Input
-                          id="datePayout"
-                          type="number"
-                          min="1"
-                          max="7"
-                          value={systemFormData.datePayout}
-                          onChange={(e) => handleSystemInputChange('datePayout', e.target.value)}
-                          className="h-11 text-base border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-16"
-                          placeholder="7"
-                        />
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                          <span className="text-gray-600 font-medium text-sm">ngày</span>
-                        </div>
-                      </div>
-                      {/* Quick select buttons */}
-                      <div className="grid grid-cols-4 gap-2 mt-3">
-                        {[1, 3, 5, 7].map((days) => (
-                          <button
-                            key={days}
-                            onClick={() => handleSystemInputChange('datePayout', days)}
-                            className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                              systemFormData.datePayout === days
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
-                          >
-                            {days}d
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Event Reminder Hours Card */}
-              <Card className="border border-gray-200 shadow-sm">
-                <CardHeader className="border-b border-gray-100 pb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <Clock className="h-5 w-5 text-gray-700" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg font-semibold text-gray-900">Thời gian nhắc nhở sự kiện</CardTitle>
-                        <CardDescription className="text-xs text-gray-500 mt-0.5">Gửi thông báo trước khi sự kiện bắt đầu</CardDescription>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-gray-900">{systemFormData.eventReminderHours}</div>
-                      <div className="text-xs text-gray-500">giờ</div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="eventReminderHours" className="text-sm font-medium text-gray-700 mb-2 block">
-                        Số giờ nhắc nhở trước sự kiện (1-4 giờ)
-                      </Label>
-                      {/* Range Slider */}
-                      <div className="space-y-2 mb-4">
-                        <input
-                          type="range"
-                          min="1"
-                          max="4"
-                          step="1"
-                          value={systemFormData.eventReminderHours}
-                          onChange={(e) => handleSystemInputChange('eventReminderHours', e.target.value)}
-                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                          style={{
-                            background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${((systemFormData.eventReminderHours - 1) / 3) * 100}%, rgb(229, 231, 235) ${((systemFormData.eventReminderHours - 1) / 3) * 100}%, rgb(229, 231, 235) 100%)`
-                          }}
-                        />
-                        <div className="flex justify-between text-xs text-gray-500">
-                          <span>1</span>
-                          <span>2.5</span>
-                          <span>4</span>
-                        </div>
-                      </div>
-                      {/* Input số */}
-                      <div className="relative">
-                        <Input
-                          id="eventReminderHours"
-                          type="number"
-                          min="1"
-                          max="4"
-                          value={systemFormData.eventReminderHours}
-                          onChange={(e) => handleSystemInputChange('eventReminderHours', e.target.value)}
-                          className="h-11 text-base border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-16"
-                          placeholder="2"
-                        />
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                          <span className="text-gray-600 font-medium text-sm">giờ</span>
-                        </div>
-                      </div>
-                      {/* Quick select buttons */}
-                      <div className="grid grid-cols-4 gap-2 mt-3">
-                        {[1, 2, 3, 4].map((hours) => (
-                          <button
-                            key={hours}
-                            onClick={() => handleSystemInputChange('eventReminderHours', hours)}
-                            className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                              systemFormData.eventReminderHours === hours
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
-                          >
-                            {hours}h
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Right Column - Calculation Example */}
-            <div className="lg:col-span-1">
-              <Card className="border border-gray-200 shadow-sm bg-white sticky top-6">
-                <CardHeader className="border-b border-gray-100 pb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <Calculator className="h-5 w-5 text-gray-700" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg font-semibold text-gray-900">Ví dụ tính phí</CardTitle>
-                      <CardDescription className="text-xs text-gray-500 mt-0.5">Tính toán theo thời gian thực</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="exampleRevenue" className="text-sm font-medium text-gray-700 mb-2 block">
-                        Tiền nhận được (VNĐ)
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          id="exampleRevenue"
-                          type="number"
-                          min="0"
-                          value={exampleRevenue}
-                          onChange={(e) => setExampleRevenue(parseInt(e.target.value) || 0)}
-                          className="pr-20 h-11 text-base font-medium border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                          placeholder="1000000"
-                        />
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                          <span className="text-gray-600 font-semibold text-sm">VNĐ</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="pt-4 border-t border-gray-200">
-                      <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-600">Tiền nhận được:</span>
-                            <span className="font-semibold text-gray-900">{exampleRevenue.toLocaleString('vi-VN')} VNĐ</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-600">Phí nền tảng:</span>
-                            <span className="font-semibold text-blue-600">
-                              ({((systemFormData.flatformFee || 0) * 100).toFixed(2)}%) {(exampleRevenue * (systemFormData.flatformFee || 0)).toLocaleString('vi-VN')} VNĐ
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-600">Phí cố định:</span>
-                            <span className="font-semibold text-green-600">
-                              {(systemFormData.fixFee || 0).toLocaleString('vi-VN')} VNĐ
-                            </span>
-                          </div>
-                          <div className="pt-3 border-t-2 border-gray-300 flex items-center justify-between">
-                            <span className="text-base font-semibold text-gray-900">Tổng phí:</span>
-                            <span className="text-lg font-bold text-blue-600">
-                              {(
-                                exampleRevenue * (systemFormData.flatformFee || 0) + 
-                                (systemFormData.fixFee || 0)
-                              ).toLocaleString('vi-VN')} VNĐ
-                            </span>
-                          </div>
-                          <div className="pt-2 border-t border-gray-200 flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-700">Tiền còn lại:</span>
-                            <span className="text-base font-bold text-green-600">
-                              {(
-                                exampleRevenue - 
-                                (exampleRevenue * (systemFormData.flatformFee || 0)) - 
-                                (systemFormData.fixFee || 0)
-                              ).toLocaleString('vi-VN')} VNĐ
-                            </span>
-                          </div>
-                        </div>
-                        <div className="mt-4 pt-3 border-t border-gray-100 bg-gray-50 rounded p-2">
-                          <p className="text-xs text-gray-600 leading-relaxed">
-                            <span className="font-semibold text-gray-700">Công thức:</span><br />
-                            {exampleRevenue.toLocaleString('vi-VN')} × {(systemFormData.flatformFee || 0).toFixed(2)} + {(systemFormData.fixFee || 0).toLocaleString('vi-VN')} = {' '}
-                            <span className="font-bold text-blue-600">
-                              {(
-                                exampleRevenue * (systemFormData.flatformFee || 0) + 
-                                (systemFormData.fixFee || 0)
-                              ).toLocaleString('vi-VN')} VNĐ
-                            </span>
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
-
-      {/* Info Card */}
-      <Card className="border border-gray-200 shadow-sm bg-white">
-        <CardContent className="pt-6">
-          <div className="flex items-center space-x-4 mb-6">
-            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-              <AlertCircle className="h-6 w-6 text-gray-700" />
-            </div>
-            <div>
-              <h4 className="text-xl font-bold text-gray-900">Lưu ý quan trọng</h4>
-              <p className="text-sm text-gray-600 mt-0.5">Những điều bạn cần biết trước khi thay đổi cài đặt</p>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white rounded-lg p-5 border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all">
-              <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <TrendingUp className="h-4 w-4 text-gray-700" />
-                </div>
-                <div className="flex-1">
-                  <h5 className="text-sm font-semibold text-gray-900 mb-1">Ảnh hưởng giao dịch tương lai</h5>
-                  <p className="text-xs text-gray-600 leading-relaxed">Thay đổi các thông số này sẽ ảnh hưởng đến tất cả các giao dịch mới trong tương lai</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg p-5 border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all">
-              <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Calculator className="h-4 w-4 text-gray-700" />
-                </div>
-                <div className="flex-1">
-                  <h5 className="text-sm font-semibold text-gray-900 mb-1">Cách tính phí nền tảng</h5>
-                  <p className="text-xs text-gray-600 leading-relaxed">Phí nền tảng được tính theo tỷ lệ phần trăm của doanh thu (ví dụ: 0.07 = 7%)</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg p-5 border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all">
-              <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <CreditCard className="h-4 w-4 text-gray-700" />
-                </div>
-                <div className="flex-1">
-                  <h5 className="text-sm font-semibold text-gray-900 mb-1">Phí cố định mỗi giao dịch</h5>
-                  <p className="text-xs text-gray-600 leading-relaxed">Phí cố định được áp dụng cho mỗi giao dịch thành công, không phụ thuộc giá trị</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg p-5 border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all">
-              <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Clock className="h-4 w-4 text-gray-700" />
-                </div>
-                <div className="flex-1">
-                  <h5 className="text-sm font-semibold text-gray-900 mb-1">Chu kỳ thanh toán tự động</h5>
-                  <p className="text-xs text-gray-600 leading-relaxed">Số ngày sau khi sự kiện kết thúc để hệ thống tự động thanh toán cho organizer</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+      {/* Confirm Dialog */}
+      <AlertDialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog({ open: false })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription className="text-base"
+              dangerouslySetInnerHTML={{ __html: confirmDialog.description || '' }} />
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDialog.onConfirm} disabled={isSaving}>
+              {isSaving ? 'Đang xử lý...' : 'Xác nhận'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
 export default SystemSettings;
-

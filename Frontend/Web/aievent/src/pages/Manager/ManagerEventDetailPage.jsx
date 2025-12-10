@@ -15,6 +15,7 @@ import {
   Tag,
   CheckCircle,
   AlertCircle,
+  AlertTriangle,
   UserPlus,
   Ticket,
   Globe,
@@ -30,6 +31,7 @@ import {
   Image as ImageIcon,
   Shield,
   X,
+  XCircle,
   Sparkles,
   ChevronLeft,
   ChevronRight,
@@ -43,7 +45,7 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Separator } from '../../components/ui/separator';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
 import { Textarea } from '../../components/ui/textarea';
 import { Label } from '../../components/ui/label';
 import { useEvents } from '../../hooks/useEvents';
@@ -73,6 +75,9 @@ const ManagerEventDetailPage = () => {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
+  const [cancelReason, setCancelReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
 
   // Add state for image carousel
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -80,12 +85,16 @@ const ManagerEventDetailPage = () => {
   // Add loading states for approval/rejection actions
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
+  const [isResolvingPayment, setIsResolvingPayment] = useState(false);
+  
+  // State for resolve payment confirmation dialog
+  const [isResolvePaymentDialogOpen, setIsResolvePaymentDialogOpen] = useState(false);
   
   // Add state for ticket sale countdown
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [saleStarted, setSaleStarted] = useState(false);
 
-  const { getEventById, deleteEvent: deleteEventAPI, confirmEvent: confirmEventAPI, loading: eventLoading } = useEvents();
+  const { getEventById, deleteEvent: deleteEventAPI, confirmEvent: confirmEventAPI, cancelEventByManager, loading: eventLoading } = useEvents();
   
   // Countdown timer effect for ticket sale
   useEffect(() => {
@@ -256,13 +265,13 @@ Vui lòng nhập lý do hủy bỏ sự kiện:`);
       } catch (error) {
         console.error('Error deleting event:', error);
         if (error.response?.status === 403) {
-          toast.error('❌ Bạn không có quyền xóa sự kiện này');
+          toast.error(' Bạn không có quyền xóa sự kiện này');
         } else if (error.response?.status === 404) {
-          toast.error('❌ Sự kiện không tồn tại hoặc đã bị xóa');
+          toast.error(' Sự kiện không tồn tại hoặc đã bị xóa');
         } else if (error.response?.status === 400) {
-          toast.error('❌ Không thể xóa sự kiện đã có người đăng ký');
+          toast.error(' Không thể xóa sự kiện đã có người đăng ký');
         } else {
-          toast.error('❌ Có lỗi xảy ra khi xóa sự kiện');
+          toast.error(' Có lỗi xảy ra khi xóa sự kiện');
         }
       }
     } else {
@@ -296,13 +305,13 @@ Nhấn OK để xác nhận xóa.`;
       } catch (error) {
         console.error('Error deleting event:', error);
         if (error.response?.status === 403) {
-          toast.error('❌ Bạn không có quyền xóa sự kiện này');
+          toast.error(' Bạn không có quyền xóa sự kiện này');
         } else if (error.response?.status === 404) {
-          toast.error('❌ Sự kiện không tồn tại hoặc đã bị xóa');
+          toast.error(' Sự kiện không tồn tại hoặc đã bị xóa');
         } else if (error.response?.status === 400) {
-          toast.error('❌ Không thể xóa sự kiện đã có người đăng ký');
+          toast.error(' Không thể xóa sự kiện đã có người đăng ký');
         } else {
-          toast.error('❌ Có lỗi xảy ra khi xóa sự kiện');
+          toast.error(' Có lỗi xảy ra khi xóa sự kiện');
         }
       }
     }
@@ -398,6 +407,83 @@ Nhấn OK để xác nhận xóa.`;
       toast.error('Có lỗi xảy ra khi từ chối sự kiện');
     } finally {
       setIsRejecting(false);
+    }
+  };
+
+  const handleCancelEventByManager = async () => {
+    if (!cancelReason.trim()) {
+      toast.error('Vui lòng nhập lý do hủy');
+      return;
+    }
+
+    setIsCancelling(true);
+    try {
+      const response = await cancelEventByManager(eventId, cancelReason.trim());
+      if (response !== null) {
+        setIsCancelDialogOpen(false);
+        setCancelReason('');
+        await loadEventDetail();
+      }
+    } catch (error) {
+      console.error('Error cancelling event by manager:', error);
+    } finally {
+      setIsCancelling(false);
+      }
+    };
+  const handleResolveErrorPayment = async () => {
+    // Prevent multiple clicks
+    if (isResolvingPayment) return;
+
+    setIsResolvingPayment(true);
+    try {
+      const eventAPI = (await import('../../api/eventAPI')).default;
+      const response = await eventAPI.resolveErrorPayment(eventId);
+
+      if (response) {
+        toast.success('✅ Thanh toán lại thành công! Trạng thái sự kiện đã được cập nhật sang "Đã thanh toán".', {
+          duration: 4000,
+        });
+        setIsResolvePaymentDialogOpen(false);
+        // Reload the event details to reflect the new status
+        loadEventDetail();
+      }
+    } catch (error) {
+      console.error('Error resolving payment:', error);
+      
+      // Get error message from response
+      const errorMessage = error.response?.data?.message || error.message;
+      const statusCode = error.response?.data?.statusCode;
+      
+      // Handle specific error cases
+      if (errorMessage?.includes('Event not found')) {
+        toast.error(' Không tìm thấy sự kiện hoặc sự kiện không ở trạng thái lỗi thanh toán');
+      } else if (errorMessage?.includes('Payment information not found')) {
+        toast.error(' Nhà tổ chức chưa thêm thông tin thanh toán. Vui lòng yêu cầu nhà tổ chức cập nhật thông tin ngân hàng.', {
+          duration: 5000,
+        });
+      } else if (errorMessage?.includes('Organizer profile not found')) {
+        toast.error(' Không tìm thấy thông tin nhà tổ chức');
+      } else if (errorMessage?.includes('System setting not found')) {
+        toast.error(' Lỗi cấu hình hệ thống. Vui lòng liên hệ quản trị viên.');
+      } else if (errorMessage?.includes('Payout amount is negative')) {
+        toast.error(' Số tiền thanh toán không hợp lệ (âm). Vui lòng kiểm tra lại doanh thu sự kiện.');
+      } else if (errorMessage?.includes('Payout transaction failed')) {
+        toast.error(' Giao dịch thanh toán thất bại. Vui lòng thử lại sau hoặc kiểm tra thông tin ngân hàng.', {
+          duration: 5000,
+        });
+      } else if (errorMessage?.includes('Failed to process payout')) {
+        toast.error(' Lỗi xử lý thanh toán: ' + errorMessage, {
+          duration: 5000,
+        });
+      } else if (error.response?.status === 403) {
+        toast.error(' Bạn không có quyền thực hiện thao tác này');
+      } else if (error.response?.status === 400) {
+        toast.error(' ' + (errorMessage || 'Không thể thanh toán lại cho sự kiện này'));
+      } else {
+        toast.error(' Có lỗi xảy ra khi thanh toán lại: ' + (errorMessage || 'Vui lòng thử lại sau'));
+      }
+    } finally {
+      setIsResolvingPayment(false);
     }
   };
 
@@ -517,6 +603,46 @@ Nhấn OK để xác nhận xóa.`;
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
+            {/* Warning Banner for IsFlagWarning */}
+            {event.isFlagWarning && (
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-2xl p-6 shadow-lg">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-amber-500 flex items-center justify-center">
+                      <AlertTriangle className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-amber-900 mb-2">Cảnh báo vi phạm</h3>
+                    <p className="text-amber-800 leading-relaxed">
+                      <strong>Lý do hủy sự kiện:</strong> {event.reasonCancel}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+           
+
+            {/* Rejection Reason Banner */}
+            {event.status === EventStatus.Rejected && event.rejectReason && (
+              <div className="bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-300 rounded-2xl p-6 shadow-lg">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center">
+                      <XCircle className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-red-900 mb-2">Sự kiện bị từ chối</h3>
+                    <p className="text-red-800 leading-relaxed">
+                      <strong>Lý do:</strong> {event.rejectReason}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-3">
               <h1 className="text-4xl font-bold text-foreground leading-tight">{event.title}</h1>
               <p className="text-lg text-muted-foreground leading-relaxed">{event.description}</p>
@@ -775,6 +901,33 @@ Nhấn OK để xác nhận xóa.`;
               </SidebarCard>
             )}
 
+            {/* Error Payment Resolution - Only for ErrorPayment status */}
+            {event && event.status === EventStatus.ErrorPayment && (
+              <SidebarCard title="Thanh toán lỗi" icon={<AlertTriangle className="w-5 h-5 text-orange-600" />} gradient>
+                <div className="space-y-3">
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">
+                    <p className="text-sm text-orange-800">
+                      Sự kiện này gặp lỗi trong quá trình thanh toán. Nhấn nút bên dưới để thử thanh toán lại.
+                    </p>
+                  </div>
+                  <div className="relative">
+                    <ActionButton
+                      icon={CheckCircle}
+                      label={isResolvingPayment ? "Đang xử lý..." : "Thanh toán lại"}
+                      onClick={() => setIsResolvePaymentDialogOpen(true)}
+                      variant="primary"
+                      disabled={isResolvingPayment}
+                    />
+                    {isResolvingPayment && (
+                      <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center rounded-lg">
+                        <Loader2 className="w-6 h-6 text-white animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </SidebarCard>
+            )}
+
             {/* Quick Actions - Enhanced */}
             <SidebarCard title="Hành động nhanh" gradient>
               <div className="space-y-3">
@@ -792,14 +945,115 @@ Nhấn OK để xác nhận xóa.`;
                   variant="secondary"
                 />
                 
-                <div className="border-t border-gray-200 my-2"></div>
-                
-                <ActionButton
-                  icon={Trash2}
-                  label="Xóa sự kiện"
-                  onClick={handleDeleteEvent}
-                  variant="danger"
-                />
+                {(event.status === EventStatus.Approved || event.status === EventStatus.WaitingForPayout) && (
+                  <>
+                    <div className="border-t border-gray-200 my-2"></div>
+
+                    <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+                      <DialogTrigger asChild>
+                        <div className="relative">
+                          <ActionButton
+                            icon={Flag}
+                            label="Hủy sự kiện vi phạm"
+                            variant="danger"
+                            onClick={() => setIsCancelDialogOpen(true)}
+                          />
+                          {isCancelling && (
+                            <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center rounded-lg">
+                              <Loader2 className="w-6 h-6 text-white animate-spin" />
+                            </div>
+                          )}
+                        </div>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle className="flex items-center gap-2 text-red-600">
+                            <Flag className="w-5 h-5" />
+                            Hủy sự kiện vi phạm
+                          </DialogTitle>
+                          <DialogDescription>
+                            Gửi thông báo đến organizer và gán cờ cho sự kiện vi phạm. Vui lòng cung cấp lý do hủy.
+                          </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="space-y-4">
+                          {/* Event Info Card */}
+                          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <h4 className="font-semibold text-gray-900 mb-2">{event.title}</h4>
+                            <div className="space-y-1 text-sm text-gray-600">
+                              <p><strong>Trạng thái:</strong> {EventStatusDisplay[event.status] || event.status}</p>
+                              {event.totalPersonJoin > 0 && (
+                                <p><strong>Người tham gia:</strong> {event.totalPersonJoin} người</p>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Warning Message */}
+                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                            <div className="flex items-start gap-2">
+                              <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                              <p className="text-sm text-amber-800">
+                                Hành động này sẽ hủy bỏ sự kiện và thông báo cho người tham gia. Organizer sẽ bị gán cờ vi phạm.
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Reason Input */}
+                          <div>
+                            <Label htmlFor="cancel-reason" className="text-sm font-semibold">
+                              Lý do hủy <span className="text-red-500">*</span>
+                            </Label>
+                            <Textarea
+                              id="cancel-reason"
+                              placeholder="Nhập lý do hủy sự kiện vi phạm..."
+                              value={cancelReason}
+                              onChange={(e) => setCancelReason(e.target.value)}
+                              rows={4}
+                              className="mt-2"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Lý do này sẽ được gửi đến organizer và lưu vào hệ thống
+                            </p>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              className="flex-1"
+                              onClick={() => {
+                                setCancelReason('');
+                                setIsCancelDialogOpen(false);
+                              }}
+                              disabled={isCancelling}
+                            >
+                              Hủy bỏ
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              className="flex-1"
+                              onClick={handleCancelEventByManager}
+                              disabled={isCancelling || !cancelReason.trim()}
+                            >
+                              {isCancelling ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Đang hủy...
+                                </>
+                              ) : (
+                                <>
+                                  <Flag className="w-4 h-4 mr-2" />
+                                  Xác nhận hủy
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </>
+                )}
+
               </div>
             </SidebarCard>
 
@@ -1014,6 +1268,67 @@ Nhấn OK để xác nhận xóa.`;
               <X className="h-4 w-4" />
             </button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Resolve Payment Confirmation Dialog */}
+      <Dialog open={isResolvePaymentDialogOpen} onOpenChange={setIsResolvePaymentDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-orange-600">
+              <AlertTriangle className="w-5 h-5" />
+              Xác nhận thanh toán lại
+            </DialogTitle>
+            <DialogDescription>
+              Bạn có chắc chắn muốn thử thanh toán lại cho sự kiện này?
+            </DialogDescription>
+          </DialogHeader>
+          
+          {event && (
+            <div className="space-y-4">
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-900 mb-2">{event.title}</h4>
+                <div className="space-y-1 text-sm text-gray-600">
+                  <p><strong>Trạng thái:</strong> Lỗi thanh toán</p>
+                  <p><strong>Số tiền thanh toán:</strong> {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(event.payoutAmount || 0)}</p>
+                </div>
+              </div>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  ℹ️ Hệ thống sẽ thử xử lý lại giao dịch thanh toán cho nhà tổ chức.
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setIsResolvePaymentDialogOpen(false)}
+                  disabled={isResolvingPayment}
+                >
+                  Hủy
+                </Button>
+                <Button
+                  className="flex-1 bg-orange-600 hover:bg-orange-700"
+                  onClick={handleResolveErrorPayment}
+                  disabled={isResolvingPayment}
+                >
+                  {isResolvingPayment ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Xác nhận
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
