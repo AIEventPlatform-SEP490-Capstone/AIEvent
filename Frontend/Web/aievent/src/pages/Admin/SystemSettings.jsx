@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Settings,
   Plus,
-  CheckCircle2,
   Calendar,
   Edit3,
   X,
@@ -12,7 +11,9 @@ import {
   BellRing,
   Copy,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Search,
+  CheckCircle2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -27,14 +28,18 @@ import { showSuccess, showError } from '../../lib/toastUtils';
 const SystemSettings = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [configList, setConfigList] = useState([]);
-  const [activeConfigId, setActiveConfigId] = useState(null);
+  const [allHistory, setAllHistory] = useState([]);
+  const [displayList, setDisplayList] = useState([]);
+  const [currentConfig, setCurrentConfig] = useState(null);
 
   // Phân trang
   const [pageNumber, setPageNumber] = useState(1);
   const pageSize = 10;
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+
+  // Tìm kiếm
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [isEditing, setIsEditing] = useState(false);
   const [editingMode, setEditingMode] = useState('create');
@@ -50,7 +55,6 @@ const SystemSettings = () => {
   const [displayFixFee, setDisplayFixFee] = useState('45.000');
 
   const [confirmDialog, setConfirmDialog] = useState({ open: false });
-
   const formRef = useRef(null);
 
   // ============== HÀM HỖ TRỢ ==============
@@ -67,26 +71,8 @@ const SystemSettings = () => {
 
   const formatDateTime = (dateInput) => {
     if (!dateInput) return 'Chưa xác định';
-
-    let date;
-    if (dateInput instanceof Date && !isNaN(dateInput)) {
-      date = dateInput;
-    } else if (typeof dateInput === 'string') {
-      if (dateInput.includes('T') || dateInput.includes('Z') || /[\+\-]/.test(dateInput.slice(10))) {
-        date = new Date(dateInput);
-      } else {
-        return 'Invalid Date';
-      }
-    } else if (typeof dateInput === 'number' || (!isNaN(dateInput) && String(dateInput).length >= 10)) {
-      const ts = Number(dateInput);
-      const millis = String(ts).length <= 10 ? ts * 1000 : ts;
-      date = new Date(millis);
-    } else {
-      return 'Invalid Date';
-    }
-
-    if (isNaN(date?.getTime())) return 'Invalid Date';
-
+    const date = new Date(dateInput);
+    if (isNaN(date.getTime())) return 'Invalid Date';
     return date.toLocaleString('vi-VN', {
       day: '2-digit',
       month: '2-digit',
@@ -97,12 +83,70 @@ const SystemSettings = () => {
     });
   };
 
-  // ============== VALIDATE PHÍ CỐ ĐỊNH (SAU formatVND) ==============
+  const formatDateOnly = (dateInput) => {
+    const date = new Date(dateInput);
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleDateString('vi-VN');
+  };
+
+  // Validate phí cố định
   const MIN_FIX_FEE = 10000;
   const MAX_FIX_FEE = 100000000;
   const fixFeeError = editForm.fixFee < MIN_FIX_FEE || editForm.fixFee > MAX_FIX_FEE
     ? `Phí cố định phải từ ${formatVND(MIN_FIX_FEE)} ₫ đến ${formatVND(MAX_FIX_FEE)} ₫`
     : '';
+
+  // ============== TÌM CẤU HÌNH ĐANG ÁP DỤNG ==============
+  const activeConfigId = useMemo(() => {
+    if (allHistory.length === 0) return null;
+
+    const now = new Date();
+    let active = null;
+    let latestApplyDate = null;
+
+    // Tìm cấu hình có dateApply <= now và gần nhất
+    for (const config of allHistory) {
+      const applyDate = new Date(config.dateApply);
+      if (applyDate <= now && (!latestApplyDate || applyDate > latestApplyDate)) {
+        latestApplyDate = applyDate;
+        active = config;
+      }
+    }
+
+    return active?.id || null;
+  }, [allHistory]);
+
+  // ============== TÌM KIẾM + SẮP XẾP ==============
+  const filteredAndSortedList = useMemo(() => {
+    let list = [...allHistory];
+
+    // Tìm kiếm
+    if (searchTerm.trim()) {
+      const lower = searchTerm.toLowerCase().trim();
+      list = list.filter(item => {
+        const nameMatch = item.name?.toLowerCase().includes(lower);
+        const dateMatch = formatDateOnly(item.dateApply)?.includes(lower) ||
+                         item.dateApply?.includes(lower);
+        return nameMatch || dateMatch;
+      });
+    }
+
+    // Sắp xếp: mới nhất trước
+    list.sort((a, b) => new Date(b.dateApply) - new Date(a.dateApply));
+
+    return list;
+  }, [allHistory, searchTerm]);
+
+  // Cập nhật displayList khi có thay đổi
+  useEffect(() => {
+    const start = (pageNumber - 1) * pageSize;
+    const end = start + pageSize;
+    const paginated = filteredAndSortedList.slice(start, end);
+
+    setDisplayList(paginated);
+    setTotalItems(filteredAndSortedList.length);
+    setTotalPages(Math.ceil(filteredAndSortedList.length / pageSize));
+  }, [filteredAndSortedList, pageNumber]);
 
   // ============== LOAD DỮ LIỆU ==============
   const fetchAllData = async (page = 1) => {
@@ -113,32 +157,24 @@ const SystemSettings = () => {
         dashboardAPI.getHistorySystemSettings({ pageNumber: page, pageSize })
       ]);
 
-      const history = historyResponse;
+      setCurrentConfig(systemData);
 
-      const currentConfig = {
-        id: 'current',
-        name: 'Cấu hình hiện tại',
-        dateApply: systemData?.updatedAt || new Date().toISOString(),
-        createTime: systemData?.updatedAt || new Date().toISOString(),
-        ...systemData
-      };
+      const history = historyResponse;
 
       const formattedHistory = (history.items || []).map((item, idx) => ({
         ...item,
         id: item.id || `hist-${page}-${idx}`,
-        name: `Cấu hình cũ #${(page - 1) * pageSize + idx + 1}`,
+        name: `Cấu hình #${(page - 1) * pageSize + idx + 1}`,
         createTime: item.createTime || item.createdAt || item.dateApply || new Date().toISOString(),
       }));
 
-      const fullList = [currentConfig, ...formattedHistory]
-        .sort((a, b) => new Date(b.dateApply) - new Date(a.dateApply));
+      setAllHistory(prev => {
+        const existingIds = new Set(prev.map(x => x.id));
+        const newItems = formattedHistory.filter(x => !existingIds.has(x.id));
+        return [...prev, ...newItems];
+      });
 
-      setConfigList(fullList);
-      setActiveConfigId('current');
       setPageNumber(history.pageNumber || page);
-      setTotalItems(history.totalItems || 0);
-      setTotalPages(history.totalPages || 1);
-      setEffectiveDate(getTomorrow());
     } catch (err) {
       showError('Không thể tải dữ liệu');
       console.error(err);
@@ -151,23 +187,26 @@ const SystemSettings = () => {
     fetchAllData(1);
   }, []);
 
-  // ============== HÀM XỬ LÝ FORM ==============
+  // Reset trang khi search
+  useEffect(() => {
+    setPageNumber(1);
+  }, [searchTerm]);
+
+  // ============== FORM HANDLERS ==============
   const scrollToForm = () => {
     formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const startCreate = () => {
-    const current = configList.find(c => c.id === 'current');
     const defaultForm = {
-      flatformFee: current?.flatformFee || 0.07,
-      fixFee: current?.fixFee || 45000,
-      datePayout: current?.datePayout || 7,
-      eventReminderHours: current?.eventReminderHours || 2
+      flatformFee: currentConfig?.flatformFee || 0.07,
+      fixFee: currentConfig?.fixFee || 45000,
+      datePayout: currentConfig?.datePayout || 7,
+      eventReminderHours: currentConfig?.eventReminderHours || 2
     };
     setEditForm(defaultForm);
     setDisplayFixFee(formatVND(defaultForm.fixFee));
     setSelectedTemplate('current');
-    setEffectiveDate(getTomorrow());
     setEditingMode('create');
     setIsEditing(true);
     setTimeout(scrollToForm, 100);
@@ -191,15 +230,25 @@ const SystemSettings = () => {
 
   const handleTemplateChange = (value) => {
     setSelectedTemplate(value);
-    const config = configList.find(c => c.id === value);
-    if (config) {
+    if (value === 'current' && currentConfig) {
       setEditForm({
-        flatformFee: config.flatformFee,
-        fixFee: config.fixFee,
-        datePayout: config.datePayout,
-        eventReminderHours: config.eventReminderHours
+        flatformFee: currentConfig.flatformFee,
+        fixFee: currentConfig.fixFee,
+        datePayout: currentConfig.datePayout,
+        eventReminderHours: currentConfig.eventReminderHours
       });
-      setDisplayFixFee(formatVND(config.fixFee));
+      setDisplayFixFee(formatVND(currentConfig.fixFee));
+    } else {
+      const config = allHistory.find(c => c.id === value);
+      if (config) {
+        setEditForm({
+          flatformFee: config.flatformFee,
+          fixFee: config.fixFee,
+          datePayout: config.datePayout,
+          eventReminderHours: config.eventReminderHours
+        });
+        setDisplayFixFee(formatVND(config.fixFee));
+      }
     }
   };
 
@@ -231,7 +280,7 @@ const SystemSettings = () => {
     setConfirmDialog({
       open: true,
       title: editingMode === 'create' ? 'Tạo cấu hình mới' : 'Áp dụng lại cấu hình',
-      description: `Cấu hình sẽ có hiệu lực từ <strong>${formatDateTime(applyDate)}</strong>. Các giao dịch trước ngày này sẽ vẫn giữ theo cấu hình trước đó.`,
+      description: `Cấu hình sẽ có hiệu lực từ <strong>${formatDateTime(applyDate)}</strong>.`,
       onConfirm: async () => {
         try {
           setIsSaving(true);
@@ -241,7 +290,9 @@ const SystemSettings = () => {
           });
           showSuccess(`Thành công! Hiệu lực từ ${formatDateTime(applyDate)}`);
           setIsEditing(false);
-          await fetchAllData(pageNumber);
+          await fetchAllData(1);
+          const newCurrent = await dashboardAPI.getSystemSettings();
+          setCurrentConfig(newCurrent);
         } catch (err) {
           showError(err.response?.data?.message || 'Thao tác thất bại');
         } finally {
@@ -315,7 +366,8 @@ const SystemSettings = () => {
                           <SelectValue placeholder="Chọn mẫu..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {configList.map(config => (
+                          <SelectItem value="current">Cấu hình hiện tại</SelectItem>
+                          {allHistory.map(config => (
                             <SelectItem key={config.id} value={config.id}>
                               {config.name} • {formatDateTime(config.dateApply)}
                             </SelectItem>
@@ -330,22 +382,12 @@ const SystemSettings = () => {
                           <Percent className="h-5 w-5 text-gray-600" />
                           <div className="flex-1">
                             <Label>Phí nền tảng (%)</Label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              value={(editForm.flatformFee * 100).toFixed(2)}
+                            <Input type="number" step="0.01" value={(editForm.flatformFee * 100).toFixed(2)}
                               onChange={(e) => handleInputChange('flatformFee', e.target.value / 100)}
-                              className="mt-1 text-lg"
-                            />
-                            <input
-                              type="range"
-                              min="0"
-                              max="100"
-                              step="0.1"
-                              value={editForm.flatformFee * 100}
+                              className="mt-1 text-lg" />
+                            <input type="range" min="0" max="100" step="0.1" value={editForm.flatformFee * 100}
                               onChange={(e) => handleInputChange('flatformFee', e.target.value / 100)}
-                              className="w-full mt-3 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                            />
+                              className="w-full mt-3 h-2 bg-gray-200 rounded-lg cursor-pointer" />
                           </div>
                         </div>
 
@@ -353,18 +395,10 @@ const SystemSettings = () => {
                           <Wallet className="h-5 w-5 text-gray-600" />
                           <div className="flex-1">
                             <Label>Phí cố định (VNĐ)</Label>
-                            <Input
-                              type="text"
-                              value={displayFixFee}
-                              onChange={handleFixFeeChange}
-                              onFocus={handleFixFeeFocus}
-                              onBlur={handleFixFeeBlur}
-                              placeholder="0"
-                              className={`mt-1 text-lg font-medium ${fixFeeError ? 'border-red-500 focus:ring-red-500' : ''}`}
-                            />
-                            {fixFeeError && (
-                              <p className="text-red-600 text-sm mt-1">{fixFeeError}</p>
-                            )}
+                            <Input type="text" value={displayFixFee} onChange={handleFixFeeChange}
+                              onFocus={handleFixFeeFocus} onBlur={handleFixFeeBlur}
+                              placeholder="0" className={`mt-1 text-lg font-medium ${fixFeeError ? 'border-red-500' : ''}`} />
+                            {fixFeeError && <p className="text-red-600 text-sm mt-1">{fixFeeError}</p>}
                           </div>
                         </div>
                       </div>
@@ -374,14 +408,9 @@ const SystemSettings = () => {
                           <Clock className="h-5 w-5 text-gray-600" />
                           <div className="flex-1">
                             <Label>Ngày thanh toán (5-15 ngày)</Label>
-                            <Input
-                              type="number"
-                              min="5"
-                              max="15"
-                              value={editForm.datePayout}
+                            <Input type="number" min="5" max="15" value={editForm.datePayout}
                               onChange={(e) => handleInputChange('datePayout', e.target.value)}
-                              className="mt-1 text-lg"
-                            />
+                              className="mt-1 text-lg" />
                           </div>
                         </div>
 
@@ -389,14 +418,9 @@ const SystemSettings = () => {
                           <BellRing className="h-5 w-5 text-gray-600" />
                           <div className="flex-1">
                             <Label>Nhắc nhở trước (1-4 giờ)</Label>
-                            <Input
-                              type="number"
-                              min="1"
-                              max="4"
-                              value={editForm.eventReminderHours}
+                            <Input type="number" min="1" max="4" value={editForm.eventReminderHours}
                               onChange={(e) => handleInputChange('eventReminderHours', e.target.value)}
-                              className="mt-1 text-lg"
-                            />
+                              className="mt-1 text-lg" />
                           </div>
                         </div>
 
@@ -404,13 +428,8 @@ const SystemSettings = () => {
                           <Calendar className="h-5 w-5 text-gray-600" />
                           <div className="flex-1">
                             <Label className="text-red-600 font-medium">Ngày có hiệu lực *</Label>
-                            <Input
-                              type="date"
-                              min={getTomorrow()}
-                              value={effectiveDate}
-                              onChange={(e) => setEffectiveDate(e.target.value)}
-                              className="mt-1 text-lg"
-                            />
+                            <Input type="date" min={getTomorrow()} value={effectiveDate}
+                              onChange={(e) => setEffectiveDate(e.target.value)} className="mt-1 text-lg" />
                             {effectiveDate && (
                               <p className="text-sm font-medium text-gray-700 mt-2">
                                 Hiệu lực từ: <strong>{formatDateTime(effectiveDate + 'T00:00:00')}</strong>
@@ -422,15 +441,9 @@ const SystemSettings = () => {
                     </div>
 
                     <div className="flex justify-end gap-4 pt-6 border-t">
-                      <Button variant="outline" size="lg" onClick={() => setIsEditing(false)}>
-                        Hủy
-                      </Button>
-                      <Button
-                        size="lg"
-                        onClick={saveConfig}
-                        disabled={isSaving || !effectiveDate || !!fixFeeError}
-                        className="px-10"
-                      >
+                      <Button variant="outline" size="lg" onClick={() => setIsEditing(false)}>Hủy</Button>
+                      <Button size="lg" onClick={saveConfig}
+                        disabled={isSaving || !effectiveDate || !!fixFeeError} className="px-10">
                         {isSaving ? 'Đang lưu...' : 'Lưu & Áp dụng'}
                       </Button>
                     </div>
@@ -439,87 +452,93 @@ const SystemSettings = () => {
               </div>
             )}
 
-            {/* Lịch sử + Phân trang */}
+            {/* Lịch sử + Tìm kiếm + Phân trang */}
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-4">
                 <h2 className="text-2xl font-semibold text-gray-800">Lịch sử cấu hình</h2>
-                <span className="text-sm text-gray-500">
-                  Tổng: <strong>{totalItems}</strong> cấu hình
-                </span>
+                
+                <div className="relative w-full max-w-sm">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Tìm kiếm theo tên hoặc ngày áp dụng..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
               </div>
 
-              {configList.map((config) => {
-                const isActive = config.id === activeConfigId;
+              <div className="text-sm text-gray-500">
+                Tìm thấy <strong>{filteredAndSortedList.length}</strong> cấu hình
+                {searchTerm && ` phù hợp với "${searchTerm}"`}
+              </div>
 
-                return (
-                  <Card
-                    key={config.id}
-                    className={`p-6 border-2 transition-all ${
-                      isActive
-                        ? 'border-blue-500 bg-blue-50/70 shadow-md'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-5">
-                        {isActive ? (
-                          <CheckCircle2 className="h-8 w-8 text-blue-600" />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full border-2 border-dashed border-gray-400" />
-                        )}
-                        <div>
-                          <div className="flex items-center gap-3 mb-2">
-                            <span className={`text-lg font-bold ${isActive ? 'text-blue-900' : 'text-gray-800'}`}>
-                              {isActive ? 'Cấu hình hiện tại' : config.name}
-                            </span>
-                            {isActive && <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">Đang áp dụng</span>}
-                          </div>
-                          <p className="text-gray-600">
-                            Áp dụng từ: <strong>{formatDateTime(config.dateApply)}</strong>
-                            {' '} - {' '}
-                            Thời gian tạo: <strong>{formatDateTime(config.createTime)}</strong>
-                          </p>
+              {displayList.length === 0 ? (
+                <Card className="p-10 text-center text-gray-500">
+                  {searchTerm ? 'Không tìm thấy cấu hình nào phù hợp' : 'Chưa có lịch sử cấu hình'}
+                </Card>
+              ) : (
+                displayList.map((config) => {
+                  const isActive = config.id === activeConfigId;
 
-                          <div className="flex items-center gap-8 mt-4 text-gray-700">
-                            <span className="flex items-center gap-2">
-                              <Percent className="h-4 w-4" />
-                              <strong>{(config.flatformFee * 100).toFixed(2)}%</strong>
-                            </span>
-                            <span className="flex items-center gap-2">
-                              <Wallet className="h-4 w-4" />
-                              <strong>{formatVND(config.fixFee)} ₫</strong>
-                            </span>
-                            <span className="flex items-center gap-2">
-                              <Clock className="h-4 w-4" />
-                              <strong>{config.datePayout} ngày</strong>
-                            </span>
-                            <span className="flex items-center gap-2">
-                              <BellRing className="h-4 w-4" />
-                              <strong>{config.eventReminderHours}h</strong>
-                            </span>
+                  return (
+                    <Card
+                      key={config.id}
+                      className={`p-6 border-2 transition-all ${
+                        isActive
+                          ? 'border-blue-500 bg-blue-50/70 shadow-lg'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-5">
+                          {isActive ? (
+                            <CheckCircle2 className="h-8 w-8 text-blue-600" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full border-2 border-dashed border-gray-400" />
+                          )}
+                          <div>
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className={`text-lg font-bold ${isActive ? 'text-blue-900' : 'text-gray-800'}`}>
+                                {config.name}
+                              </span>
+                              {isActive && (
+                                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                                  Đang áp dụng
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-gray-600">
+                              Áp dụng từ: <strong>{formatDateTime(config.dateApply)}</strong>
+                              {' '} - {' '}
+                              Thời gian tạo: <strong>{formatDateTime(config.createTime)}</strong>
+                            </p>
+
+                            <div className="flex items-center gap-8 mt-4 text-gray-700">
+                              <span className="flex items-center gap-2"><Percent className="h-4 w-4" /><strong>{(config.flatformFee * 100).toFixed(2)}%</strong></span>
+                              <span className="flex items-center gap-2"><Wallet className="h-4 w-4" /><strong>{formatVND(config.fixFee)} ₫</strong></span>
+                              <span className="flex items-center gap-2"><Clock className="h-4 w-4" /><strong>{config.datePayout} ngày</strong></span>
+                              <span className="flex items-center gap-2"><BellRing className="h-4 w-4" /><strong>{config.eventReminderHours}h</strong></span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {!isActive && (
                         <Button onClick={() => startReapply(config)} variant="outline" size="sm">
                           <Copy className="h-4 w-4 mr-2" />
-                          Chỉnh sửa & áp dụng lại
+                          Áp dụng lại
                         </Button>
-                      )}
-                    </div>
-                  </Card>
-                );
-              })}
+                      </div>
+                    </Card>
+                  );
+                })
+              )}
 
+              {/* Phân trang */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-3 mt-8">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={pageNumber === 1}
-                    onClick={() => fetchAllData(pageNumber - 1)}
-                  >
+                  <Button size="sm" variant="outline" disabled={pageNumber === 1}
+                    onClick={() => setPageNumber(p => Math.max(1, p - 1))}>
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
 
@@ -527,12 +546,8 @@ const SystemSettings = () => {
                     Trang {pageNumber} / {totalPages}
                   </span>
 
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={pageNumber === totalPages}
-                    onClick={() => fetchAllData(pageNumber + 1)}
-                  >
+                  <Button size="sm" variant="outline" disabled={pageNumber === totalPages}
+                    onClick={() => setPageNumber(p => Math.min(totalPages, p + 1))}>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
@@ -547,10 +562,8 @@ const SystemSettings = () => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{confirmDialog.title}</AlertDialogTitle>
-            <AlertDialogDescription
-              className="text-base"
-              dangerouslySetInnerHTML={{ __html: confirmDialog.description || '' }}
-            />
+            <AlertDialogDescription className="text-base"
+              dangerouslySetInnerHTML={{ __html: confirmDialog.description || '' }} />
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Hủy</AlertDialogCancel>
