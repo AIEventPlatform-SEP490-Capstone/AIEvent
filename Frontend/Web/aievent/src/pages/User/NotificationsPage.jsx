@@ -65,6 +65,7 @@ const NotificationIcon = ({ type }) => {
     PayoutCompleted: CreditCard,
     PayoutFailed: AlertCircle,
     EventReminder: Clock,
+    TicketSaleReminder: Ticket,
     ReportEvent: AlertCircle,
     System: Info
   };
@@ -91,6 +92,7 @@ const NotificationTypeBadge = ({ type }) => {
     PayoutCompleted: "Thanh toán hoàn tất",
     PayoutFailed: "Thanh toán thất bại",
     EventReminder: "Nhắc nhở sự kiện",
+    TicketSaleReminder: "Nhắc nhở mua vé",
     ReportEvent: "Báo cáo sự kiện",
     System: "Hệ thống"
   };
@@ -112,6 +114,7 @@ const NotificationTypeBadge = ({ type }) => {
     PayoutCompleted: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
     PayoutFailed: "bg-rose-500/10 text-rose-700 border-rose-200",
     EventReminder: "bg-orange-500/10 text-orange-700 border-orange-200",
+    TicketSaleReminder: "bg-amber-500/10 text-amber-700 border-amber-200",
     ReportEvent: "bg-rose-500/10 text-rose-700 border-rose-200",
     System: "bg-slate-500/10 text-slate-700 border-slate-200"
   };
@@ -248,6 +251,12 @@ export default function NotificationsPage() {
       if (userRole === "manager" && eventId) {
         return PATH.MANAGER_EVENT_DETAIL.replace(":eventId", eventId);
       }
+      if (eventId) {
+        return PATH.EVENT_DETAIL.replace(":id", eventId);
+      }
+    }
+
+    if (type === "TicketSaleReminder") {
       if (eventId) {
         return PATH.EVENT_DETAIL.replace(":id", eventId);
       }

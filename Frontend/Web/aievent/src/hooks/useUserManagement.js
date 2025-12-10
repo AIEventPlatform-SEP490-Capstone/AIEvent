@@ -37,22 +37,22 @@ export const useUserManagement = () => {
   const filters = useSelector(selectUserFilters);
   const activeTab = useSelector(selectActiveTab);
 
-  // Fetch users based on active tab
+  // Fetch users when active tab changes (not on pagination changes to avoid loops)
   useEffect(() => {
     if (activeTab === 'active') {
       dispatch(fetchAllUsers({ 
-        pageNumber: pagination.currentPage,
+        pageNumber: 1,
         pageSize: pagination.pageSize,
         ...filters
       }));
     } else {
       dispatch(fetchAllBannedUsers({ 
-        pageNumber: bannedPagination.currentPage,
+        pageNumber: 1,
         pageSize: bannedPagination.pageSize,
         ...filters
       }));
     }
-  }, [dispatch, activeTab, pagination.currentPage, pagination.pageSize, bannedPagination.currentPage, bannedPagination.pageSize, filters]);
+  }, [dispatch, activeTab]); // Only trigger on tab change
 
   const refreshUsers = () => {
     if (activeTab === 'active') {
