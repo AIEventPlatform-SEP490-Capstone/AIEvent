@@ -104,19 +104,22 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            _unitOfWorkMock.Setup(u => u.UserRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.UserRepository
+                .Query(false))
                 .Returns(new List<User>()
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.EventRepository
+                .Query(false))
                 .Returns(new List<Event> { eventEntity }
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository
+                .Query(false))
                 .Returns(new List<TicketType> { ticketType }
                     .AsQueryable()
                     .BuildMockDbSet()
@@ -212,19 +215,22 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            _unitOfWorkMock.Setup(u => u.UserRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.UserRepository
+                .Query(false))
                 .Returns(new List<User> { user }
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.EventRepository
+                .Query(false))
                 .Returns(new List<Event> { eventEntity }
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository
+                .Query(false))
                 .Returns(new List<TicketType> { ticketType }
                     .AsQueryable()
                     .BuildMockDbSet()
@@ -320,19 +326,22 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            _unitOfWorkMock.Setup(u => u.UserRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.UserRepository
+                .Query(false))
                 .Returns(new List<User> { user }
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.EventRepository
+                .Query(false))
                 .Returns(new List<Event> { eventEntity }
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository
+                .Query(false))
                 .Returns(new List<TicketType> { ticketType }
                     .AsQueryable()
                     .BuildMockDbSet()
@@ -429,19 +438,22 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            _unitOfWorkMock.Setup(u => u.UserRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.UserRepository
+                .Query(false))
                 .Returns(new List<User> { user }
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.EventRepository
+                .Query(false))
                 .Returns(new List<Event> { existingEvent }
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository
+                .Query(false))
                 .Returns(new List<TicketType> { ticketType }
                     .AsQueryable()
                     .BuildMockDbSet()
@@ -539,19 +551,22 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            _unitOfWorkMock.Setup(u => u.UserRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.UserRepository
+                .Query(false))
                 .Returns(new List<User> { user }
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.EventRepository
+                .Query(false))
                 .Returns(new List<Event> { existingEvent }
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository
+                .Query(false))
                 .Returns(new List<TicketType> { ticketType }
                     .AsQueryable()
                     .BuildMockDbSet()
@@ -648,19 +663,22 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            _unitOfWorkMock.Setup(u => u.UserRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.UserRepository
+                .Query(false))
                 .Returns(new List<User> { user }
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.EventRepository
+                .Query(false))
                 .Returns(new List<Event> { existingEvent }
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository
+                .Query(false))
                 .Returns(new List<TicketType> { ticketType }
                     .AsQueryable()
                     .BuildMockDbSet()
@@ -757,19 +775,22 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            _unitOfWorkMock.Setup(u => u.UserRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.UserRepository
+                .Query(false))
                 .Returns(new List<User> { user }
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.EventRepository
+                .Query(false))
                 .Returns(new List<Event> { existingEvent }
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository
+                .Query(false))
                 .Returns(new List<TicketType> { ticketType }
                     .AsQueryable()
                     .BuildMockDbSet()
@@ -853,19 +874,22 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            _unitOfWorkMock.Setup(u => u.UserRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.UserRepository
+                .Query(false))
                 .Returns(new List<User> { user }
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.EventRepository
+                .Query(false))
                 .Returns(new List<Event> { existingEvent }
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository
+                .Query(false))
                 .Returns(new List<TicketType> { ticketType }
                     .AsQueryable()
                     .BuildMockDbSet()
@@ -963,19 +987,22 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            _unitOfWorkMock.Setup(u => u.UserRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.UserRepository
+                .Query(false))
                 .Returns(new List<User> { user }
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.EventRepository
+                .Query(false))
                 .Returns(new List<Event> { existingEvent }
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository
+                .Query(false))
                 .Returns(new List<TicketType> { ticketType }
                     .AsQueryable()
                     .BuildMockDbSet()
@@ -1074,19 +1101,22 @@ namespace AIEvent.Application.Test.Services
                 }
             };
 
-            _unitOfWorkMock.Setup(u => u.UserRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.UserRepository
+                .Query(false))
                 .Returns(new List<User> { user }
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.EventRepository
+                .Query(false))
                 .Returns(new List<Event> { existingEvent }
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository
+                .Query(false))
                 .Returns(new List<TicketType> { ticketType }
                     .AsQueryable()
                     .BuildMockDbSet()
@@ -1184,19 +1214,22 @@ namespace AIEvent.Application.Test.Services
             };
 
             // ===== Mock Repositories =====
-            _unitOfWorkMock.Setup(u => u.UserRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.UserRepository
+                .Query(false))
                 .Returns(new List<User> { user }
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.EventRepository
+                .Query(false))
                 .Returns(new List<Event> { eventEntity }
                     .AsQueryable()
                     .BuildMockDbSet()
                     .Object);
 
-            _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
+            _unitOfWorkMock.Setup(u => u.TicketTypeRepository
+                .Query(false))
                 .Returns(new List<TicketType> { ticketType }
                     .AsQueryable()
                     .BuildMockDbSet()
@@ -1296,14 +1329,21 @@ namespace AIEvent.Application.Test.Services
             };
 
             // ===== Mock Repositories =====
-            _unitOfWorkMock.Setup(u => u.UserRepository.Query(false))
-                .Returns(new List<User> { user }.AsQueryable().BuildMockDbSet().Object);
+            _unitOfWorkMock.Setup(u => u.UserRepository
+                .Query(false))
+                .Returns(new List<User> { user }
+                .AsQueryable()
+                .BuildMockDbSet().Object);
 
             _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
-                .Returns(new List<Event> { eventEntity }.AsQueryable().BuildMockDbSet().Object);
+                .Returns(new List<Event> { eventEntity }
+                .AsQueryable()
+                .BuildMockDbSet().Object);
 
             _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
-                .Returns(new List<TicketType> { ticketType }.AsQueryable().BuildMockDbSet().Object);
+                .Returns(new List<TicketType> { ticketType }
+                .AsQueryable()
+                .BuildMockDbSet().Object);
 
             _unitOfWorkMock.Setup(u => u.BookingRepository.AddAsync(It.IsAny<Booking>()))
                 .ReturnsAsync((Booking b) => b);
@@ -1426,13 +1466,19 @@ namespace AIEvent.Application.Test.Services
 
             // ===== Mock Repositories =====
             _unitOfWorkMock.Setup(u => u.UserRepository.Query(false))
-                .Returns(new List<User> { user }.AsQueryable().BuildMockDbSet().Object);
+                .Returns(new List<User> { user }
+                .AsQueryable()
+                .BuildMockDbSet().Object);
 
             _unitOfWorkMock.Setup(u => u.EventRepository.Query(false))
-                .Returns(new List<Event> { eventEntity }.AsQueryable().BuildMockDbSet().Object);
+                .Returns(new List<Event> { eventEntity }
+                .AsQueryable()
+                .BuildMockDbSet().Object);
 
             _unitOfWorkMock.Setup(u => u.TicketTypeRepository.Query(false))
-                .Returns(new List<TicketType> { ticketType }.AsQueryable().BuildMockDbSet().Object);
+                .Returns(new List<TicketType> { ticketType }
+                .AsQueryable()
+                .BuildMockDbSet().Object);
 
             _unitOfWorkMock.Setup(u => u.BookingRepository.AddAsync(It.IsAny<Booking>()))
                 .ReturnsAsync((Booking b) => b);
@@ -1451,7 +1497,9 @@ namespace AIEvent.Application.Test.Services
 
             var walletUser = new Wallet { Id = Guid.NewGuid(), UserId = userId, Balance = 1000, IsDeleted = false };
             _unitOfWorkMock.Setup(u => u.WalletRepository.Query(false))
-                .Returns(new List<Wallet> { walletUser }.AsQueryable().BuildMockDbSet().Object);
+                .Returns(new List<Wallet> { walletUser }
+                .AsQueryable()
+                .BuildMockDbSet().Object);
 
             _unitOfWorkMock.Setup(u => u.PaymentTransactionRepository.AddAsync(It.IsAny<PaymentTransaction>()))
                 .ReturnsAsync((PaymentTransaction b) => b);
@@ -2545,8 +2593,9 @@ namespace AIEvent.Application.Test.Services
             };
 
             var mockTicketQuery = new List<Ticket> { ticket }.AsQueryable().BuildMock();
-            _unitOfWorkMock.Setup(u => u.TicketRepository.Query(false))
-                           .Returns(mockTicketQuery);
+            _unitOfWorkMock.Setup(u => u.TicketRepository
+                .Query(false))
+                .Returns(mockTicketQuery);
 
             var mockStaffList = new List<StaffProfile>
             {
@@ -2573,8 +2622,9 @@ namespace AIEvent.Application.Test.Services
             .AsQueryable()
             .BuildMock();
 
-            _unitOfWorkMock.Setup(u => u.StaffProfileRepository.Query(false))
-                           .Returns(mockStaffList);
+            _unitOfWorkMock.Setup(u => u.StaffProfileRepository
+                .Query(false))
+                .Returns(mockStaffList);
 
             // Act
             var result = await _bookingService.CheckInforAsync(UserId, qrContent);
@@ -3187,6 +3237,80 @@ namespace AIEvent.Application.Test.Services
 
 
         [Fact]
+        public async Task UTCID12_CheckInTicket_EventEnded_ShouldReturnEventEnded()
+        {
+            // Arrange
+            string qrContent = "TKT001.SIGN";
+            var userId = UserId;
+            var organizerId = OrgId;
+
+            var ticket = new Ticket
+            {
+                TicketCode = "TKT001",
+                EventName = "Event Test",
+                Status = TicketStatus.Valid,
+                EndTime = DateTime.UtcNow.AddHours(-1), 
+                QrCodeUrl = "test",
+                User = new User { FullName = "User A" },
+                TicketType = new TicketType
+                {
+                    TicketName = "VIP",
+                    CreatedBy = organizerId.ToString(),
+                    TicketQuantity = 100,
+                }
+            };
+
+            _ticketSignatureServiceMock
+                .Setup(x => x.ValidateSignature("TKT001", "SIGN"))
+                .Returns(true);
+
+            var ticketQuery = new List<Ticket> { ticket }.AsQueryable().BuildMock();
+            _unitOfWorkMock.Setup(u => u.TicketRepository.Query(false))
+                           .Returns(ticketQuery);
+
+            var staff = new List<StaffProfile>
+            {
+                new StaffProfile
+                {
+                    UserId = userId,
+                    OrganizerProfile = new OrganizerProfile
+                    {
+                        Id = organizerId,
+                        UserId = Guid.NewGuid(),
+                        Address = "ABC",
+                        ContactEmail = "org@test.com",
+                        ContactName = "Org",
+                        ContactPhone = "123456789",
+                        EventExperienceLevel = 0,
+                        EventFrequency = 0,
+                        EventSize = 0,
+                        OrganizationType = 0,
+                        OrganizerType = 0
+                    },
+                    IsDeleted = false
+                }
+            }.AsQueryable().BuildMock();
+                    _unitOfWorkMock.Setup(u => u.StaffProfileRepository.Query(false))
+                                   .Returns(staff);
+
+            // Act
+            var result = await _bookingService.CheckInTicketAsync(userId, qrContent);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal("Event already ended", result.Error!.Message);
+            Assert.Equal(ErrorCodes.InvalidInput, result.Error.StatusCode);
+
+            // Verify 
+            _ticketSignatureServiceMock.Verify(x => x.ValidateSignature("TKT001", "SIGN"), Times.Once);
+            _unitOfWorkMock.Verify(u => u.TicketRepository.Query(false), Times.Once);
+            _unitOfWorkMock.Verify(u => u.StaffProfileRepository.Query(false), Times.Once);
+            _unitOfWorkMock.Verify(u => u.TicketRepository.UpdateAsync(It.IsAny<Ticket>()), Times.Never);
+            _unitOfWorkMock.Verify(u => u.SaveChangesAsync(), Times.Never);
+        }
+
+
+        [Fact]
         public async Task UTCID13_CheckInTicket_Success_ShouldReturnSuccess()
         {
             // Arrange
@@ -3253,7 +3377,7 @@ namespace AIEvent.Application.Test.Services
             Assert.Equal("TKT001", result.Value.TicketCode);
             Assert.Equal("User A", result.Value.FullName);
 
-            // Verify đúng flow
+            // Verify 
             _ticketSignatureServiceMock.Verify(x => x.ValidateSignature("TKT001", "SIGN"), Times.Once);
             _unitOfWorkMock.Verify(u => u.TicketRepository.Query(false), Times.Once);
             _unitOfWorkMock.Verify(u => u.StaffProfileRepository.Query(false), Times.Once);

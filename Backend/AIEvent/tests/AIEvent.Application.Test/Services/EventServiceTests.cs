@@ -34,14 +34,16 @@ namespace AIEvent.Application.Test.Services
        private readonly Mock<INotificationService> _mockNotificationService;
        private readonly Mock<ILogger<EventService>> _mockLogger;
        private readonly IEventService _eventService;
+       private readonly Mock<IPineconeVectorService> _mockPineconeVectorService;
 
-       public EventServiceTests()
+        public EventServiceTests()
        {
            _mockUnitOfWork = new Mock<IUnitOfWork>();
            _mockTransactionHelper = new Mock<ITransactionHelper>();
            _mockMapper = new Mock<IMapper>();
            _mockHangfireJobService = new Mock<IHangfireJobService>();
            _mockNotificationService = new Mock<INotificationService>();
+            _mockPineconeVectorService = new Mock<IPineconeVectorService>();
            _mockpayOSService = new Mock<IPayOSService>();
            _mockLogger = new Mock<ILogger<EventService>>();
 
@@ -52,7 +54,8 @@ namespace AIEvent.Application.Test.Services
                _mockHangfireJobService.Object,
                _mockNotificationService.Object,
                _mockpayOSService.Object,
-               _mockLogger.Object);
+               _mockLogger.Object,
+               _mockPineconeVectorService.Object);
        }
 
 
