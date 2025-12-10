@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useEvents } from './useEvents';
 
 const getRecommendedEvents = (allEvents) => {
@@ -21,13 +21,19 @@ export const useHomepageEvents = (initialPage = 1, pageSize = 6) => {
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState('all');
   
   const { getEvents } = useEvents();
 
-  const loadEvents = async (page = currentPage, category = 'all') => {
+  const loadEvents = async (page = currentPage, category = selectedCategory) => {
     try {
       setLoading(true);
       setError(null);
+      
+      // Update selected category
+      if (category !== selectedCategory) {
+        setSelectedCategory(category);
+      }
       
       // Prepare API parameters
       const params = {
@@ -64,14 +70,14 @@ export const useHomepageEvents = (initialPage = 1, pageSize = 6) => {
     }
   };
 
-  // Load events on mount
+  // Load events on mount only
   useEffect(() => {
-    loadEvents(currentPage);
-  }, [currentPage]);
+    loadEvents(1, 'all');
+  }, []);
 
   const goToPage = (page) => {
     if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
+      loadEvents(page, selectedCategory);
     }
   };
 
@@ -80,7 +86,7 @@ export const useHomepageEvents = (initialPage = 1, pageSize = 6) => {
     recommendedEvents,
     loading,
     error,
-    refreshEvents: () => loadEvents(currentPage),
+    refreshEvents: () => loadEvents(currentPage, selectedCategory),
     currentPage,
     totalPages,
     totalCount,

@@ -47,7 +47,7 @@ const HomePage = () => {
   // Handle category filtering
   const handleCategoryChange = (category = selectedCategory) => {
     setSelectedCategory(category);
-    loadEvents(1, '', category); // Reset to first page when filtering, no search query
+    loadEvents(1, category); // Reset to first page when filtering
   };
 
   // Handle view all AI recommendations
