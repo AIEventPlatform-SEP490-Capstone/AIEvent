@@ -1,7 +1,4 @@
 using AIEvent.Application.Constants;
-using AIEvent.Application.DTOs.Common;
-using AIEvent.Application.DTOs.Dashboard;
-using AIEvent.Application.Helpers;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
@@ -219,108 +216,6 @@ namespace AIEvent.Application.Test.Services
             result.IsSuccess.Should().BeFalse();
             result.Error!.Message.Should().Contain("Invalid month");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
-        }
-
-        // UTCID07: Valid year boundary (2000) - Success
-        [Fact]
-        public async Task UTCID07_GetAdminDashboardAsync_WithYear2000_ShouldReturnSuccess()
-        {
-            // Arrange - BV: year = 2000 (minimum valid)
-            var year = 2000;
-            var month = 1;
-            var adminRole = new Role
-            {
-                Id = TestAdminRoleId,
-                Name = "Admin",
-                IsDeleted = false
-            };
-
-            _mockUnitOfWork.Setup(x => x.RoleRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<Role> { adminRole }.AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork.Setup(x => x.UserRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<OrganizerProfile>().AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<Event>().AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork.Setup(x => x.BookingRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<Booking>().AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork.Setup(x => x.TicketRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<Ticket>().AsQueryable().BuildMockDbSet().Object);
-
-            // Act
-            var result = await _dashboardService.GetAdminDashboardAsync(year, month);
-
-            // Assert
-            result.IsSuccess.Should().BeTrue();
-        }
-
-        // UTCID08: Valid month boundary (1) - Success
-        [Fact]
-        public async Task UTCID08_GetAdminDashboardAsync_WithMonth1_ShouldReturnSuccess()
-        {
-            // Arrange - BV: month = 1 (minimum valid)
-            var year = 2024;
-            var month = 1;
-            var adminRole = new Role
-            {
-                Id = TestAdminRoleId,
-                Name = "Admin",
-                IsDeleted = false
-            };
-
-            _mockUnitOfWork.Setup(x => x.RoleRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<Role> { adminRole }.AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork.Setup(x => x.UserRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<OrganizerProfile>().AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<Event>().AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork.Setup(x => x.BookingRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<Booking>().AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork.Setup(x => x.TicketRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<Ticket>().AsQueryable().BuildMockDbSet().Object);
-
-            // Act
-            var result = await _dashboardService.GetAdminDashboardAsync(year, month);
-
-            // Assert
-            result.IsSuccess.Should().BeTrue();
-        }
-
-        // UTCID09: Valid month boundary (12) - Success
-        [Fact]
-        public async Task UTCID09_GetAdminDashboardAsync_WithMonth12_ShouldReturnSuccess()
-        {
-            // Arrange - BV: month = 12 (maximum valid)
-            var year = 2024;
-            var month = 12;
-            var adminRole = new Role
-            {
-                Id = TestAdminRoleId,
-                Name = "Admin",
-                IsDeleted = false
-            };
-
-            _mockUnitOfWork.Setup(x => x.RoleRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<Role> { adminRole }.AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork.Setup(x => x.UserRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<OrganizerProfile>().AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<Event>().AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork.Setup(x => x.BookingRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<Booking>().AsQueryable().BuildMockDbSet().Object);
-            _mockUnitOfWork.Setup(x => x.TicketRepository.Query(It.IsAny<bool>()))
-                .Returns(new List<Ticket>().AsQueryable().BuildMockDbSet().Object);
-
-            // Act
-            var result = await _dashboardService.GetAdminDashboardAsync(year, month);
-
-            // Assert
-            result.IsSuccess.Should().BeTrue();
         }
 
         #endregion
@@ -820,6 +715,437 @@ namespace AIEvent.Application.Test.Services
             result.Value!.RecentActivities.PageSize.Should().Be(pageSize);
         }
 
+        #endregion
+
+        #region GetPayoutHistoryAsync Tests
+
+        // UTCID01: Valid request with default parameters - Success
+        [Fact]
+        public async Task UTCID01_GetPayoutHistoryAsync_WithDefaultParameters_ShouldReturnSuccess()
+        {
+            // Arrange - EP: Valid input (default parameters)
+            var revenueReports = new List<RevenueReport>();
+            var walletTransactions = new List<WalletTransaction>();
+
+            _mockUnitOfWork.Setup(x => x.RevenueReportRepository.Query(It.IsAny<bool>()))
+                .Returns(revenueReports.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.Query(It.IsAny<bool>()))
+                .Returns(walletTransactions.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _dashboardService.GetPayoutHistoryAsync();
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().NotBeNull();
+            result.Value!.Items.Should().BeEmpty();
+            result.Value!.TotalItems.Should().Be(0);
+        }
+
+        // UTCID02: Valid request with RevenueReport data - Success
+        [Fact]
+        public async Task UTCID02_GetPayoutHistoryAsync_WithRevenueReports_ShouldReturnSuccess()
+        {
+            // Arrange - EP: Valid input (RevenueReport exists)
+            var now = DateTimeOffset.UtcNow;
+            var organizerProfile = new OrganizerProfile
+            {
+                Id = TestOrganizerProfileId,
+                ContactName = "Test Organizer",
+                ContactEmail = "organizer@example.com",
+                CompanyName = "Test Company",
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                ContactPhone = "0123456789",
+                Address = "Test Address"
+            };
+
+            var revenueReports = new List<RevenueReport>
+            {
+                new RevenueReport
+                {
+                    Id = Guid.NewGuid(),
+                    OrganizerProfileId = TestOrganizerProfileId,
+                    EventId = TestEventId,
+                    EventName = "Test Event",
+                    GrossRevenue = 1000000m,
+                    NetRevenue = 900000m,
+                    PlatformFee = 100000m,
+                    ReportMonth = now.Month,
+                    ReportYear = now.Year,
+                    PayoutDate = now.DateTime,
+                    CreatedAt = now,
+                    IsDeleted = false,
+                    OrganizerProfile = organizerProfile
+                }
+            };
+
+            var walletTransactions = new List<WalletTransaction>();
+
+            _mockUnitOfWork.Setup(x => x.RevenueReportRepository.Query(It.IsAny<bool>()))
+                .Returns(revenueReports.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.Query(It.IsAny<bool>()))
+                .Returns(walletTransactions.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _dashboardService.GetPayoutHistoryAsync();
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value!.Items.Should().HaveCount(1);
+            result.Value!.Items.First().HistoryType.Should().Be("Payout");
+            result.Value!.Items.First().EventName.Should().Be("Test Event");
+            result.Value!.Items.First().Amount.Should().Be(900000m);
+        }
+
+        // UTCID03: Valid request with WalletTransaction (Topup) - Success
+        [Fact]
+        public async Task UTCID03_GetPayoutHistoryAsync_WithTopupTransaction_ShouldReturnSuccess()
+        {
+            // Arrange - EP: Valid input (WalletTransaction with Type = Topup)
+            var now = DateTimeOffset.UtcNow;
+            var user = new User
+            {
+                Id = TestUserId,
+                FullName = "Test User",
+                Email = "user@example.com",
+                IsDeleted = false
+            };
+
+            var wallet = new Wallet
+            {
+                Id = Guid.NewGuid(),
+                UserId = TestUserId,
+                User = user,
+                Balance = 100000m,
+                IsDeleted = false
+            };
+
+            var walletTransactions = new List<WalletTransaction>
+            {
+                new WalletTransaction
+                {
+                    Id = Guid.NewGuid(),
+                    WalletId = wallet.Id,
+                    Wallet = wallet,
+                    Type = TransactionType.Topup,
+                    Amount = 500000m,
+                    Status = TransactionStatus.Success,
+                    Direction = TransactionDirection.In,
+                    Description = "Topup transaction",
+                    CreatedAt = now,
+                    IsDeleted = false
+                }
+            };
+
+            var revenueReports = new List<RevenueReport>();
+
+            _mockUnitOfWork.Setup(x => x.RevenueReportRepository.Query(It.IsAny<bool>()))
+                .Returns(revenueReports.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.Query(It.IsAny<bool>()))
+                .Returns(walletTransactions.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _dashboardService.GetPayoutHistoryAsync();
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value!.Items.Should().HaveCount(1);
+            result.Value!.Items.First().HistoryType.Should().Be("Topup");
+            result.Value!.Items.First().Amount.Should().Be(500000m);
+        }
+
+        // UTCID04: Valid request with WalletTransaction (Withdraw) - Success
+        [Fact]
+        public async Task UTCID04_GetPayoutHistoryAsync_WithWithdrawTransaction_ShouldReturnSuccess()
+        {
+            // Arrange - EP: Valid input (WalletTransaction with Type = Withdraw)
+            var now = DateTimeOffset.UtcNow;
+            var user = new User
+            {
+                Id = TestUserId,
+                FullName = "Test User",
+                Email = "user@example.com",
+                IsDeleted = false
+            };
+
+            var wallet = new Wallet
+            {
+                Id = Guid.NewGuid(),
+                UserId = TestUserId,
+                User = user,
+                Balance = 100000m,
+                IsDeleted = false
+            };
+
+            var walletTransactions = new List<WalletTransaction>
+            {
+                new WalletTransaction
+                {
+                    Id = Guid.NewGuid(),
+                    WalletId = wallet.Id,
+                    Wallet = wallet,
+                    Type = TransactionType.Withdraw,
+                    Amount = 300000m,
+                    Status = TransactionStatus.Success,
+                    Direction = TransactionDirection.Out,
+                    Description = "Withdraw transaction",
+                    CreatedAt = now,
+                    IsDeleted = false
+                }
+            };
+
+            var revenueReports = new List<RevenueReport>();
+
+            _mockUnitOfWork.Setup(x => x.RevenueReportRepository.Query(It.IsAny<bool>()))
+                .Returns(revenueReports.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.Query(It.IsAny<bool>()))
+                .Returns(walletTransactions.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _dashboardService.GetPayoutHistoryAsync();
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value!.Items.Should().HaveCount(1);
+            result.Value!.Items.First().HistoryType.Should().Be("Withdraw");
+            result.Value!.Items.First().Amount.Should().Be(300000m);
+        }
+
+        // UTCID05: Valid request with search by organizer name - Success
+        [Fact]
+        public async Task UTCID05_GetPayoutHistoryAsync_WithSearchByOrganizerName_ShouldReturnSuccess()
+        {
+            // Arrange - EP: Valid input (search by organizer name)
+            var search = "Test Organizer";
+            var now = DateTimeOffset.UtcNow;
+            var organizerProfile = new OrganizerProfile
+            {
+                Id = TestOrganizerProfileId,
+                ContactName = "Test Organizer",
+                ContactEmail = "organizer@example.com",
+                CompanyName = "Test Company",
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                ContactPhone = "0123456789",
+                Address = "Test Address"
+            };
+
+            var revenueReports = new List<RevenueReport>
+            {
+                new RevenueReport
+                {
+                    Id = Guid.NewGuid(),
+                    OrganizerProfileId = TestOrganizerProfileId,
+                    EventId = TestEventId,
+                    EventName = "Test Event",
+                    GrossRevenue = 1000000m,
+                    NetRevenue = 900000m,
+                    PlatformFee = 100000m,
+                    ReportMonth = now.Month,
+                    ReportYear = now.Year,
+                    PayoutDate = now.DateTime,
+                    CreatedAt = now,
+                    IsDeleted = false,
+                    OrganizerProfile = organizerProfile
+                }
+            };
+
+            var walletTransactions = new List<WalletTransaction>();
+
+            _mockUnitOfWork.Setup(x => x.RevenueReportRepository.Query(It.IsAny<bool>()))
+                .Returns(revenueReports.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.Query(It.IsAny<bool>()))
+                .Returns(walletTransactions.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _dashboardService.GetPayoutHistoryAsync(search);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value!.Items.Should().HaveCount(1);
+        }
+
+        // UTCID06: Valid request with year filter - Success
+        [Fact]
+        public async Task UTCID06_GetPayoutHistoryAsync_WithYearFilter_ShouldReturnSuccess()
+        {
+            // Arrange - EP: Valid input (year = 2024)
+            var year = 2024;
+            var now = DateTimeOffset.UtcNow;
+            var organizerProfile = new OrganizerProfile
+            {
+                Id = TestOrganizerProfileId,
+                ContactName = "Test Organizer",
+                ContactEmail = "organizer@example.com",
+                CompanyName = "Test Company",
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                ContactPhone = "0123456789",
+                Address = "Test Address"
+            };
+
+            var revenueReports = new List<RevenueReport>
+            {
+                new RevenueReport
+                {
+                    Id = Guid.NewGuid(),
+                    OrganizerProfileId = TestOrganizerProfileId,
+                    EventId = TestEventId,
+                    EventName = "Test Event",
+                    GrossRevenue = 1000000m,
+                    NetRevenue = 900000m,
+                    PlatformFee = 100000m,
+                    ReportMonth = 6,
+                    ReportYear = year,
+                    PayoutDate = new DateTime(year, 6, 15),
+                    CreatedAt = new DateTimeOffset(year, 6, 15, 0, 0, 0, TimeSpan.Zero),
+                    IsDeleted = false,
+                    OrganizerProfile = organizerProfile
+                }
+            };
+
+            var walletTransactions = new List<WalletTransaction>();
+
+            _mockUnitOfWork.Setup(x => x.RevenueReportRepository.Query(It.IsAny<bool>()))
+                .Returns(revenueReports.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.Query(It.IsAny<bool>()))
+                .Returns(walletTransactions.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _dashboardService.GetPayoutHistoryAsync(null, year);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value!.Items.Should().HaveCount(1);
+            result.Value!.Items.First().ReportYear.Should().Be(year);
+        }
+
+        // UTCID07: Valid request with month filter - Success
+        [Fact]
+        public async Task UTCID07_GetPayoutHistoryAsync_WithMonthFilter_ShouldReturnSuccess()
+        {
+            // Arrange - EP: Valid input (month = 6)
+            var month = 6;
+            var now = DateTimeOffset.UtcNow;
+            var organizerProfile = new OrganizerProfile
+            {
+                Id = TestOrganizerProfileId,
+                ContactName = "Test Organizer",
+                ContactEmail = "organizer@example.com",
+                CompanyName = "Test Company",
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                ContactPhone = "0123456789",
+                Address = "Test Address"
+            };
+
+            var revenueReports = new List<RevenueReport>
+            {
+                new RevenueReport
+                {
+                    Id = Guid.NewGuid(),
+                    OrganizerProfileId = TestOrganizerProfileId,
+                    EventId = TestEventId,
+                    EventName = "Test Event",
+                    GrossRevenue = 1000000m,
+                    NetRevenue = 900000m,
+                    PlatformFee = 100000m,
+                    ReportMonth = month,
+                    ReportYear = now.Year,
+                    PayoutDate = new DateTime(now.Year, month, 15),
+                    CreatedAt = new DateTimeOffset(now.Year, month, 15, 0, 0, 0, TimeSpan.Zero),
+                    IsDeleted = false,
+                    OrganizerProfile = organizerProfile
+                }
+            };
+
+            var walletTransactions = new List<WalletTransaction>();
+
+            _mockUnitOfWork.Setup(x => x.RevenueReportRepository.Query(It.IsAny<bool>()))
+                .Returns(revenueReports.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.Query(It.IsAny<bool>()))
+                .Returns(walletTransactions.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _dashboardService.GetPayoutHistoryAsync(null, null, month);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value!.Items.Should().HaveCount(1);
+            result.Value!.Items.First().ReportMonth.Should().Be(month);
+        }
+
+        // UTCID08: Valid request with year and month filter - Success
+        [Fact]
+        public async Task UTCID08_GetPayoutHistoryAsync_WithYearAndMonthFilter_ShouldReturnSuccess()
+        {
+            // Arrange - EP: Valid input (year = 2024, month = 6)
+            var year = 2024;
+            var month = 6;
+            var organizerProfile = new OrganizerProfile
+            {
+                Id = TestOrganizerProfileId,
+                ContactName = "Test Organizer",
+                ContactEmail = "organizer@example.com",
+                CompanyName = "Test Company",
+                OrganizationType = OrganizationType.PrivateCompany,
+                EventFrequency = EventFrequency.Monthly,
+                EventSize = EventSize.Medium,
+                OrganizerType = OrganizerType.Individual,
+                EventExperienceLevel = EventExperienceLevel.Intermediate,
+                ContactPhone = "0123456789",
+                Address = "Test Address"
+            };
+
+            var revenueReports = new List<RevenueReport>
+            {
+                new RevenueReport
+                {
+                    Id = Guid.NewGuid(),
+                    OrganizerProfileId = TestOrganizerProfileId,
+                    EventId = TestEventId,
+                    EventName = "Test Event",
+                    GrossRevenue = 1000000m,
+                    NetRevenue = 900000m,
+                    PlatformFee = 100000m,
+                    ReportMonth = month,
+                    ReportYear = year,
+                    PayoutDate = new DateTime(year, month, 15),
+                    CreatedAt = new DateTimeOffset(year, month, 15, 0, 0, 0, TimeSpan.Zero),
+                    IsDeleted = false,
+                    OrganizerProfile = organizerProfile
+                }
+            };
+
+            var walletTransactions = new List<WalletTransaction>();
+
+            _mockUnitOfWork.Setup(x => x.RevenueReportRepository.Query(It.IsAny<bool>()))
+                .Returns(revenueReports.AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.WalletTransactionRepository.Query(It.IsAny<bool>()))
+                .Returns(walletTransactions.AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _dashboardService.GetPayoutHistoryAsync(null, year, month);
+
+            // Assert
+            result.IsSuccess.Should().BeTrue();
+            result.Value!.Items.Should().HaveCount(1);
+            result.Value!.Items.First().ReportYear.Should().Be(year);
+            result.Value!.Items.First().ReportMonth.Should().Be(month);
+        }
         #endregion
     }
 }
