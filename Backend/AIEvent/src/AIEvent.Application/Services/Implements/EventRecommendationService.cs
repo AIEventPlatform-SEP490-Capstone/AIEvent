@@ -469,7 +469,7 @@ namespace AIEvent.Application.Services.Implements
                 {
                     Id = u.Id,
                     FriendName = u.FullName!,
-                    District = u.District ?? "",
+                    District = u.Address ?? "",
                     Image = u.AvatarImgUrl ?? "",
                     InterestsJson = u.UserInterestsJson ?? "[]"
                 })
