@@ -51,11 +51,6 @@ const FavoriteEventsPage = () => {
     refreshCategories();
   }, []);
 
-  // Fetch categories once on component mount
-  useEffect(() => {
-    refreshCategories();
-  }, []);
-
   // If user is not authenticated, redirect to login page
   useEffect(() => {
     if (!isAuthenticated) {
@@ -356,15 +351,14 @@ const FavoriteEventsPage = () => {
         <div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {paginatedFavoriteEvents.map((event) => (
-              <div key={event.eventId} onClick={() => handleViewDetail(event.eventId)}>
-                <EventCard
-                  event={event}
-                  isLiked={true}
-                  onLike={handleRemoveFavorite}
-                  onViewDetail={handleViewDetail}
-                  showReason={false}
-                />
-              </div>
+              <EventCard
+                key={event.eventId || event.id}
+                event={event}
+                isLiked={true}
+                onLike={handleRemoveFavorite}
+                onViewDetail={handleViewDetail}
+                showReason={false}
+              />
             ))}
           </div>
 

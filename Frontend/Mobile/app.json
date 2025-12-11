@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "AIEvent",
-    "slug": "aievent",
+    "slug": "aaa",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./src/assets/images/AIEventLogo.png",
@@ -13,14 +13,6 @@
     },
     "assetBundlePatterns": [
       "**/*"
-    ],
-    "fonts": [
-      "./src/assets/fonts/OpenSans-Regular.ttf",
-      "./src/assets/fonts/OpenSans-Bold.ttf",
-      "./src/assets/fonts/OpenSans-SemiBold.ttf",
-      "./src/assets/fonts/OpenSans-Light.ttf",
-      "./src/assets/fonts/OpenSans-ExtraBold.ttf",
-      "./src/assets/fonts/Roboto-Black.ttf"
     ],
     "ios": {
       "supportsTablet": true,
@@ -37,7 +29,8 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE"
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -50,8 +43,15 @@
           "photosPermission": "The app accesses your photos to let you share them.",
           "cameraPermission": "The app accesses your camera to let you take photos."
         }
-      ]
+      ],
+      "expo-font"
     ],
-    "sdkVersion": "54.0.0"
+    "sdkVersion": "54.0.0",
+    "extra": {
+      "eas": {
+        "projectId": "cf6a3e13-a337-4b0f-9119-de84f78cc3ec"
+      }
+    },
+    "owner": "thanhthoai9081333s-organization"
   }
 }

@@ -938,12 +938,12 @@ Nhấn OK để xác nhận xóa.`;
                   variant="secondary"
                 />
                 
-                <ActionButton
+                {/* <ActionButton
                   icon={Copy}
                   label="Sao chép sự kiện"
                   onClick={handleCloneEvent}
                   variant="secondary"
-                />
+                /> */}
                 
                 {(event.status === EventStatus.Approved || event.status === EventStatus.WaitingForPayout) && (
                   <>

@@ -827,7 +827,7 @@ const EventDetailGuestPage = ({ previewData }) => {
               </div>
             )}
 
-            <RatingSection eventId={event.eventId || id} />
+            <RatingSection eventId={event.eventId || id} eventEndTime={event.endTime} />
           </div>
 
           {/* Sidebar - Enhanced */}
@@ -953,13 +953,6 @@ const EventDetailGuestPage = ({ previewData }) => {
                                 <MapPin className="w-3 h-3 text-gray-400" />
                                 {friend.district || "Chưa cập nhật khu vực"}
                               </p>
-
-                              <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                                <Activity className="w-3 h-3 text-gray-400" />
-                                {friend.eventNumber > 0
-                                  ? `${friend.eventNumber} sự kiện đã tham gia` 
-                                  : "Chưa tham gia sự kiện nào"}
-                              </div>
 
                               {/* Stop propagation so clicking the button doesn't trigger card click */}
                               <div className="mt-2" onClick={(e) => e.stopPropagation()}>
@@ -1357,12 +1350,6 @@ const EventDetailGuestPage = ({ previewData }) => {
                   Chọn nơi bạn muốn chia sẻ
                 </p>
               </div>
-              <button
-                onClick={() => setIsShareOpen(false)}
-                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center"
-              >
-                <X className="w-4 h-4 text-gray-500" />
-              </button>
             </div>
 
             {/* Social Options Grid */}

@@ -81,6 +81,167 @@ const DICTIONARIES = {
   },
 };
 
+
+const EditableInput = ({ label, id, value, onChange, type = "text", isEditable = true, icon: Icon, editMode }) => {
+  return (
+    <div className="space-y-2">
+      <label className="block text-xs font-semibold text-gray-700">
+        {label}
+      </label>
+      <div className="relative">
+        {Icon && (
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <Icon size={18} />
+          </div>
+        )}
+        <input
+          id={id}
+          name={id}
+          type={type}
+          value={value ?? ""}
+          disabled={!editMode || !isEditable}
+          onChange={(e) => onChange(e.target.value)}
+          className={`block w-full ${Icon ? 'pl-10' : 'pl-3'} pr-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${editMode && isEditable
+            ? "border-gray-300 bg-white text-gray-900"
+            : "border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
+            }`}
+        />
+      </div>
+    </div>
+  );
+};
+
+const EditableTextarea = ({ label, id, value, onChange, isEditable = true, icon: Icon, editMode }) => {
+  return (
+    <div className="space-y-2">
+      {label && (
+        <label className="block text-xs font-semibold text-gray-700">
+          {label}
+        </label>
+      )}
+      <div className="relative">
+        {Icon && (
+          <div className="absolute left-3 top-3 text-gray-400">
+            <Icon size={18} />
+          </div>
+        )}
+        <textarea
+          id={id}
+          name={id}
+          rows={6}
+          value={value ?? ""}
+          disabled={!editMode || !isEditable}
+          onChange={(e) => onChange(e.target.value)}
+          className={`block w-full ${Icon ? 'pl-10' : 'pl-3'} pr-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-y ${editMode && isEditable
+            ? "border-gray-300 bg-white text-gray-900"
+            : "border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
+            }`}
+        />
+      </div>
+    </div>
+  );
+};
+
+const EditableSelect = ({ label, id, options, value, onChange, isEditable = true, icon: Icon, editMode }) => {
+  return (
+    <div className="space-y-2">
+      <label className="block text-xs font-semibold text-gray-700">
+        {label}
+      </label>
+      <div className="relative">
+        {Icon && (
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10">
+            <Icon size={18} />
+          </div>
+        )}
+        <select
+          id={id}
+          name={id}
+          value={value ?? ""}
+          disabled={!editMode || !isEditable}
+          onChange={(e) => onChange(e.target.value)}
+          className={`block w-full ${Icon ? 'pl-10' : 'pl-3'} pr-10 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all appearance-none bg-white ${editMode && isEditable
+            ? "border-gray-300 bg-white text-gray-900"
+            : "border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
+            }`}
+        >
+          <option value="">-- Chọn --</option>
+          {Object.entries(options).map(([k, v]) => (
+            <option key={k} value={k}>
+              {v}
+            </option>
+          ))}
+        </select>
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+          <ChevronDown size={18} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const EditableUrlInput = ({ label, id, value, onChange, isEditable = true, icon: Icon, editMode, copiedAccountNumber, handleCopy }) => {
+  return (
+    <div className="space-y-2">
+      <label className="block text-xs font-semibold text-gray-700">{label}</label>
+      <div className="relative group">
+        {Icon && (
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+            <Icon size={18} />
+          </div>
+        )}
+
+        <input
+          id={id}
+          type="url"
+          value={value ?? ""}
+          disabled={!editMode || !isEditable}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="https://example.com"
+          className={`block w-full ${Icon ? "pl-10" : "pl-3"} pr-12 py-2.5 rounded-lg border 
+          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all
+          ${editMode && isEditable
+              ? "border-gray-300 bg-white text-gray-900"
+              : "border-transparent bg-transparent text-gray-500 cursor-default"
+            }`}
+        />
+
+        {!editMode && value && (
+          <>
+            <a
+              href={value}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`absolute inset-0 ${Icon ? "pl-10" : "pl-3"} pr-12 py-2.5 
+              flex items-center text-blue-600 hover:underline text-sm truncate pointer-events-auto`}
+            >
+              {value.replace(/^https?:\/\//, "").replace(/^www\./, "")}
+            </a>
+
+            <button
+              onClick={() => handleCopy(value || "", id)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded hover:bg-gray-100 transition"
+              title="Sao chép liên kết"
+            >
+              {copiedAccountNumber === id ? (
+                <CheckCircle2 size={16} className="text-green-600" />
+              ) : (
+                <Copy size={16} className="text-gray-500" />
+              )}
+            </button>
+          </>
+        )}
+
+        {!editMode && !value && (
+          <div className={`absolute inset-0 ${Icon ? "pl-10" : "pl-3"} flex items-center text-gray-400 text-sm`}>
+            Chưa có
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function OrganizerProfilePage() {
   const { getOrganizerProfile, updateOrganizer } = useOrganizers();
   const containerRef = useRef(null);
@@ -115,7 +276,7 @@ export default function OrganizerProfilePage() {
   });
 
   // store ref to last focused element id and caret positions to restore after setState
-  const lastFocusRef = useRef({ id: null, start: null, end: null });
+
 
   //  Fetch dữ liệu từ API
   useEffect(() => {
@@ -422,255 +583,13 @@ export default function OrganizerProfilePage() {
     }, 0);
   };
 
-  /**
-   * Input (text) component which preserves caret/focus.
-   */
-  const Input = ({ label, id, value, onChange, type = "text", isEditable = true, icon: Icon }) => {
-    const handleLocalChange = (e) => {
-      const v = e.target.value;
-      // remember caret position before update
-      lastFocusRef.current = {
-        id,
-        start: e.target.selectionStart,
-        end: e.target.selectionEnd,
-      };
-      onChange(v);
-      restoreFocusForId(id);
-    };
 
-    const handleFocus = (e) => {
-      lastFocusRef.current = {
-        id,
-        start: e.target.selectionStart,
-        end: e.target.selectionEnd,
-      };
-    };
 
-    const handleSelect = (e) => {
-      lastFocusRef.current = {
-        id,
-        start: e.target.selectionStart,
-        end: e.target.selectionEnd,
-      };
-    };
 
-    return (
-      <div className="space-y-2">
-        <label className="block text-xs font-semibold text-gray-700">
-          {label}
-        </label>
-        <div className="relative">
-          {Icon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-              <Icon size={18} />
-            </div>
-          )}
-          <input
-            id={id}
-            name={id}
-            type={type}
-            value={value ?? ""}
-            disabled={!editMode || !isEditable}
-            onChange={handleLocalChange}
-            onFocus={handleFocus}
-            onSelect={handleSelect}
-            className={`block w-full ${Icon ? 'pl-10' : 'pl-3'} pr-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${editMode && isEditable
-              ? "border-gray-300 bg-white text-gray-900"
-              : "border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
-              }`}
-          />
-        </div>
-      </div>
-    );
-  };
 
-  /**
-   * Textarea with caret preservation.
-   */
-  const Textarea = ({ label, id, value, onChange, isEditable = true, icon: Icon }) => {
-    const handleLocalChange = (e) => {
-      const v = e.target.value;
-      lastFocusRef.current = {
-        id,
-        start: e.target.selectionStart,
-        end: e.target.selectionEnd,
-      };
-      onChange(v);
-      restoreFocusForId(id);
-    };
 
-    const handleFocus = (e) => {
-      lastFocusRef.current = {
-        id,
-        start: e.target.selectionStart,
-        end: e.target.selectionEnd,
-      };
-    };
 
-    return (
-      <div className="space-y-2">
-        {label && (
-          <label className="block text-xs font-semibold text-gray-700">
-            {label}
-          </label>
-        )}
-        <div className="relative">
-          {Icon && (
-            <div className="absolute left-3 top-3 text-gray-400">
-              <Icon size={18} />
-            </div>
-          )}
-          <textarea
-            id={id}
-            name={id}
-            rows={6}
-            value={value ?? ""}
-            disabled={!editMode || !isEditable}
-            onChange={handleLocalChange}
-            onFocus={handleFocus}
-            className={`block w-full ${Icon ? 'pl-10' : 'pl-3'} pr-3 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-y ${editMode && isEditable
-              ? "border-gray-300 bg-white text-gray-900"
-              : "border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
-              }`}
-          />
-        </div>
-      </div>
-    );
-  };
 
-  /**
-   * Select that preserves focus after change.
-   */
-  const Select = ({ label, id, options, value, onChange, isEditable = true, icon: Icon }) => {
-    const handleLocalChange = (e) => {
-      const v = e.target.value;
-      // For select, we just remember the id (caret not applicable)
-      lastFocusRef.current = { id, start: null, end: null };
-      onChange(v);
-      restoreFocusForId(id);
-    };
-
-    const handleFocus = (e) => {
-      lastFocusRef.current = { id, start: null, end: null };
-    };
-
-    return (
-      <div className="space-y-2">
-        <label className="block text-xs font-semibold text-gray-700">
-          {label}
-        </label>
-        <div className="relative">
-          {Icon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10">
-              <Icon size={18} />
-            </div>
-          )}
-          <select
-            id={id}
-            name={id}
-            value={value ?? ""}
-            disabled={!editMode || !isEditable}
-            onChange={handleLocalChange}
-            onFocus={handleFocus}
-            className={`block w-full ${Icon ? 'pl-10' : 'pl-3'} pr-10 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all appearance-none bg-white ${editMode && isEditable
-              ? "border-gray-300 bg-white text-gray-900"
-              : "border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
-              }`}
-          >
-            <option value="">-- Chọn --</option>
-            {Object.entries(options).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </select>
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-            <ChevronDown size={18} />
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const UrlInput = ({ label, id, value, onChange, isEditable = true, icon: Icon }) => {
-    const handleLocalChange = (e) => {
-      const v = e.target.value;
-      lastFocusRef.current = { id, start: e.target.selectionStart, end: e.target.selectionEnd };
-      onChange(v);
-      restoreFocusForId(id);
-    };
-
-    const handleCopy = () => {
-      navigator.clipboard.writeText(value || "");
-      setCopiedAccountNumber(id); // tái sử dụng state copiedAccountNumber đã có sẵn
-      setTimeout(() => setCopiedAccountNumber(null), 2000);
-    };
-
-    return (
-      <div className="space-y-2">
-        <label className="block text-xs font-semibold text-gray-700">{label}</label>
-        <div className="relative group">
-          {/* Icon bên trái */}
-          {Icon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-              <Icon size={18} />
-            </div>
-          )}
-
-          {/* Input thật – chỉ hiển thị khi đang edit */}
-          <input
-            id={id}
-            type="url"
-            value={value ?? ""}
-            disabled={!editMode || !isEditable}
-            onChange={handleLocalChange}
-            placeholder="https://example.com"
-            className={`block w-full ${Icon ? "pl-10" : "pl-3"} pr-12 py-2.5 rounded-lg border 
-            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all
-            ${editMode && isEditable
-                ? "border-gray-300 bg-white text-gray-900"
-                : "border-transparent bg-transparent text-gray-500 cursor-default"
-              }`}
-          />
-
-          {/* Overlay hiển thị link đẹp khi KHÔNG edit */}
-          {!editMode && value && (
-            <>
-              <a
-                href={value}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`absolute inset-0 ${Icon ? "pl-10" : "pl-3"} pr-12 py-2.5 
-                flex items-center text-blue-600 hover:underline text-sm truncate pointer-events-auto`}
-              >
-                {value.replace(/^https?:\/\//, "").replace(/^www\./, "")}
-              </a>
-
-              {/* Nút copy */}
-              <button
-                onClick={handleCopy}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded hover:bg-gray-100 transition"
-                title="Sao chép liên kết"
-              >
-                {copiedAccountNumber === id ? (
-                  <CheckCircle2 size={16} className="text-green-600" />
-                ) : (
-                  <Copy size={16} className="text-gray-500" />
-                )}
-              </button>
-            </>
-          )}
-
-          {/* Khi không có dữ liệu và không edit → hiển thị placeholder xám */}
-          {!editMode && !value && (
-            <div className={`absolute inset-0 ${Icon ? "pl-10" : "pl-3"} flex items-center text-gray-400 text-sm`}>
-              Chưa có
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
 
   const dictionaries = DICTIONARIES; // local alias for readability
 
@@ -788,7 +707,7 @@ export default function OrganizerProfilePage() {
                   </div>
                   <div className="p-6 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Input
+                      <EditableInput editMode={editMode}
                         label="Họ và tên"
                         id="contactName"
                         value={profile.contactName || ""}
@@ -796,7 +715,7 @@ export default function OrganizerProfilePage() {
                         isEditable={isFieldEditable("contactName")}
                         icon={User}
                       />
-                      <Input
+                      <EditableInput editMode={editMode}
                         label="Email"
                         id="contactEmail"
                         type="email"
@@ -805,7 +724,7 @@ export default function OrganizerProfilePage() {
                         isEditable={isFieldEditable("contactEmail")}
                         icon={Mail}
                       />
-                      <Input
+                      <EditableInput editMode={editMode}
                         label="Số điện thoại"
                         id="contactPhone"
                         value={profile.contactPhone || ""}
@@ -813,7 +732,7 @@ export default function OrganizerProfilePage() {
                         isEditable={isFieldEditable("contactPhone")}
                         icon={Phone}
                       />
-                      <Input
+                      <EditableInput editMode={editMode}
                         label="Số CMND/CCCD"
                         id="identityNumber"
                         value={profile.identityNumber || ""}
@@ -832,7 +751,7 @@ export default function OrganizerProfilePage() {
                     </h2>
                   </div>
                   <div className="p-6 space-y-4">
-                    <Input
+                    <EditableInput editMode={editMode}
                       label="Địa chỉ"
                       id="address"
                       value={profile.address || ""}
@@ -850,7 +769,7 @@ export default function OrganizerProfilePage() {
                     </h2>
                   </div>
                   <div className="p-6">
-                    <Textarea
+                    <EditableTextarea editMode={editMode}
                       label=""
                       id="experienceDescription"
                       value={profile.experienceDescription || ""}
@@ -1085,7 +1004,7 @@ export default function OrganizerProfilePage() {
                   </div>
                   <div className="p-6 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Input
+                      <EditableInput editMode={editMode}
                         label="Tên công ty"
                         id="companyName"
                         value={profile.companyName || ""}
@@ -1093,7 +1012,7 @@ export default function OrganizerProfilePage() {
                         isEditable={isFieldEditable("companyName")}
                         icon={Building2}
                       />
-                      <Input
+                      <EditableInput editMode={editMode}
                         label="Mã số thuế"
                         id="taxCode"
                         value={profile.taxCode || ""}
@@ -1101,7 +1020,7 @@ export default function OrganizerProfilePage() {
                         isEditable={isFieldEditable("taxCode")}
                         icon={Receipt}
                       />
-                      <Input
+                      <EditableInput editMode={editMode}
                         label="Website"
                         id="website"
                         value={profile.website || ""}
@@ -1110,7 +1029,7 @@ export default function OrganizerProfilePage() {
                         icon={Globe}
                       />
                     </div>
-                    <Textarea
+                    <EditableTextarea editMode={editMode}
                       label="Giới thiệu công ty"
                       id="companyDescription"
                       value={profile.companyDescription || ""}
@@ -1129,7 +1048,7 @@ export default function OrganizerProfilePage() {
                   </div>
                   <div className="p-6 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Select
+                      <EditableSelect editMode={editMode}
                         label="Loại Organizer"
                         id="organizerType"
                         value={profile.organizerType || ""}
@@ -1138,7 +1057,7 @@ export default function OrganizerProfilePage() {
                         isEditable={isFieldEditable("organizerType")}
                         icon={Briefcase}
                       />
-                      <Select
+                      <EditableSelect editMode={editMode}
                         label="Loại hình tổ chức"
                         id="organizationType"
                         value={profile.organizationType || ""}
@@ -1147,7 +1066,7 @@ export default function OrganizerProfilePage() {
                         isEditable={isFieldEditable("organizationType")}
                         icon={Building2}
                       />
-                      <Select
+                      <EditableSelect editMode={editMode}
                         label="Tần suất tổ chức sự kiện"
                         id="eventFrequency"
                         value={profile.eventFrequency || ""}
@@ -1156,7 +1075,7 @@ export default function OrganizerProfilePage() {
                         isEditable={isFieldEditable("eventFrequency")}
                         icon={Calendar}
                       />
-                      <Select
+                      <EditableSelect editMode={editMode}
                         label="Quy mô sự kiện"
                         id="eventSize"
                         value={profile.eventSize || ""}
@@ -1165,7 +1084,7 @@ export default function OrganizerProfilePage() {
                         isEditable={isFieldEditable("eventSize")}
                         icon={Users}
                       />
-                      <Select
+                      <EditableSelect editMode={editMode}
                         label="Kinh nghiệm tổ chức"
                         id="eventExperienceLevel"
                         value={profile.eventExperienceLevel || ""}
@@ -1191,7 +1110,7 @@ export default function OrganizerProfilePage() {
                 <div className="p-6 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Website – trong tab "business" */}
-                    <UrlInput
+                    <EditableInput editMode={editMode}
                       label="Website"
                       id="website"
                       value={profile.website || ""}
@@ -1201,7 +1120,7 @@ export default function OrganizerProfilePage() {
                     />
 
                     {/* Facebook – trong tab "social" */}
-                    <UrlInput
+                    <EditableInput editMode={editMode}
                       label="Facebook"
                       id="urlFacebook"
                       value={profile.urlFacebook || ""}
@@ -1211,7 +1130,7 @@ export default function OrganizerProfilePage() {
                     />
 
                     {/* Instagram – trong tab "social" */}
-                    <UrlInput
+                    <EditableInput editMode={editMode}
                       label="Instagram"
                       id="urlInstagram"
                       value={profile.urlInstagram || ""}
@@ -1221,7 +1140,7 @@ export default function OrganizerProfilePage() {
                     />
 
                     {/* LinkedIn – trong tab "social" */}
-                    <UrlInput
+                    <EditableInput editMode={editMode}
                       label="LinkedIn"
                       id="urlLinkedIn"
                       value={profile.urlLinkedIn || ""}

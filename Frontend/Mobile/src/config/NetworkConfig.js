@@ -1,7 +1,8 @@
 export const NETWORK_CONFIG = {
   // IP address của máy tính chạy backend
   // Lấy IP bằng cách chạy: ipconfig (Windows) hoặc ifconfig (Mac/Linux)
-  IP_ADDRESS: '192.168.123.185',
+  // IP_ADDRESS: '192.168.1.253',
+  IP_ADDRESS: '10.38.1.40',
 
   // Port của backend API
   HTTP_PORT: '5059',

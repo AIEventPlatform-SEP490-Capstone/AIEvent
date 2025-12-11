@@ -77,6 +77,10 @@ import datetimeValidation from '../../utils/datetimeValidation';
 import { stripHtml } from '../../utils/stripHtml';
 // Import number formatting utility
 import { formatNumberWithSeparator, removeNumberFormatting } from '../../utils/numberFormat';
+// Import AI text import dialog
+import ImportEventTextDialog from '../../components/Event/ImportEventTextDialog';
+// Import Wand2 icon for AI button
+import { Wand2 } from 'lucide-react';
 // Validation schema
 const createEventSchema = z.object({
   title: z.string().min(1, 'Tiêu đề sự kiện là bắt buộc').max(200, 'Tiêu đề không được vượt quá 200 ký tự'),
@@ -194,6 +198,9 @@ const CreateEventPage = () => {
   
   // Add state for selected category
   const [selectedCategory, setSelectedCategory] = useState(null);
+  
+  // Add state for AI import dialog
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   
   // Redux hooks
   const { categories, loading: categoriesLoading } = useCategories();
@@ -1625,6 +1632,74 @@ const CreateEventPage = () => {
     
     return hasTagErrors || hasImageErrors || hasEvidenceImageErrors || hasTimelineErrors || hasTicketNameErrors;
   };
+
+  // Handle AI import data
+  const handleImportFromAI = (parsedData) => {
+    // Set basic fields
+    if (parsedData.title) setValue('title', parsedData.title);
+    if (parsedData.description) setValue('description', parsedData.description);
+    if (parsedData.detailedDescription) setValue('detailedDescription', parsedData.detailedDescription);
+    if (parsedData.locationName) setValue('locationName', parsedData.locationName);
+    if (parsedData.address) setValue('address', parsedData.address);
+    if (parsedData.linkRef) setValue('linkRef', parsedData.linkRef);
+    
+    // Match district with PredefinedCities
+    if (parsedData.district) {
+      const districtInput = parsedData.district.toLowerCase().trim();
+      const matchedDistrict = PredefinedCities.find(city => {
+        const cityLower = city.toLowerCase();
+        // Exact match
+        if (cityLower === districtInput) return true;
+        // Partial match (e.g., "Quận 10" matches "quận 10, tp.hcm")
+        if (districtInput.includes(cityLower) || cityLower.includes(districtInput)) return true;
+        // Match without "Quận" prefix (e.g., "10" matches "Quận 10")
+        const numberMatch = districtInput.match(/\d+/);
+        if (numberMatch && cityLower.includes(numberMatch[0])) return true;
+        return false;
+      });
+      
+      if (matchedDistrict) {
+        setValue('district', matchedDistrict);
+      }
+    }
+    
+    // Set datetime fields
+    if (parsedData.startTime) setValue('startTime', parsedData.startTime);
+    if (parsedData.endTime) setValue('endTime', parsedData.endTime);
+    if (parsedData.saleStartTime) setValue('saleStartTime', parsedData.saleStartTime);
+    if (parsedData.saleEndTime) setValue('saleEndTime', parsedData.saleEndTime);
+    
+    // Set ticket types - use replace instead of remove/append loop
+    if (parsedData.ticketTypes && parsedData.ticketTypes.length > 0) {
+      const newTickets = parsedData.ticketTypes.map((ticket) => ({
+        ticketName: ticket.ticketName || '',
+        ticketPrice: ticket.ticketPrice || 10000,
+        ticketQuantity: ticket.ticketQuantity || 20,
+        ticketDescription: ticket.ticketDescription || '',
+      }));
+      
+      // Use setValue to replace all tickets at once
+      setValue('ticketTypes', newTickets);
+    }
+    
+    // Handle AI generated images (multiple)
+    if (parsedData.generatedImages && parsedData.generatedImages.length > 0) {
+      // Add AI generated images to preview (limit to 5 total)
+      const currentCount = imagePreview.length;
+      const availableSlots = 5 - currentCount;
+      const imagesToAdd = parsedData.generatedImages.slice(0, availableSlots);
+      
+      if (imagesToAdd.length > 0) {
+        setImagePreview(prev => [...imagesToAdd, ...prev]);
+        setImageError('');
+        toast.success(`Đã thêm ${imagesToAdd.length} ảnh AI vào sự kiện`);
+      }
+    }
+    
+    // Trigger validation after import
+    validateDates();
+  };
+
   if (!user || !['Organizer', 'Admin', 'Manager'].includes(user.role)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -1658,10 +1733,27 @@ const CreateEventPage = () => {
     <div className={`min-h-screen bg-background transition-all duration-300 ${sidebarState}`}>
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-balance">Tạo sự kiện mới</h1>
-          <p className="text-muted-foreground">Tạo và quản lý sự kiện của bạn</p>
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-balance">Tạo sự kiện mới</h1>
+            <p className="text-muted-foreground">Tạo và quản lý sự kiện của bạn</p>
+          </div>
+          <Button
+            type="button"
+            onClick={() => setIsImportDialogOpen(true)}
+            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg"
+          >
+            <Wand2 className="w-4 h-4 mr-2" />
+            Import bằng AI
+          </Button>
         </div>
+        
+        {/* AI Import Dialog */}
+        <ImportEventTextDialog
+          open={isImportDialogOpen}
+          onOpenChange={setIsImportDialogOpen}
+          onImport={handleImportFromAI}
+        />
         {/* Event Banner with Editable Image */}
          <div className="relative h-96 w-full overflow-hidden bg-gray-100 mb-6">
               {imagePreview && imagePreview.length > 0 ? (

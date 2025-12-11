@@ -50,6 +50,7 @@ export default function ModernAIChat() {
   ]);
   const [inputValue, setInputValue] = useState("");
   const [speakingMessageId, setSpeakingMessageId] = useState(null);
+  const [currentSessionId, setCurrentSessionId] = useState(null);
   const messagesEndRef = useRef(null);
   const scrollAreaRef = useRef(null);
 
@@ -126,7 +127,7 @@ export default function ModernAIChat() {
   };
   
   
-  const { sendMessage, isLoading } = useAiChat();
+  const { sendMessage, isLoading, resetSession, setCurrentSessionId: setHookSessionId, getChatSessions } = useAiChat();
 
   const handleSpeechResult = useCallback((text) => {
     if (!text) return;
@@ -201,11 +202,15 @@ export default function ModernAIChat() {
     const userPrompt = promptToSend;
     setInputValue("");
 
+    // Store the session ID we're using before sending
+    const sessionIdToUse = currentSessionId;
+    const wasNewSession = !currentSessionId;
+
     try {
-      const response = await sendMessage(userPrompt);
+      // API response structure: { statusCode, message, data: "response text" }
+      const response = await sendMessage(userPrompt, sessionIdToUse);
       
-      // Extract response data from API response
-      // Response structure: { statusCode, message, data: "response text" }
+      // Extract response text - data is a string, not an object
       const responseText = response?.data || response?.message || "";
       
       // Parse event information if available
@@ -220,6 +225,27 @@ export default function ModernAIChat() {
       };
 
       setMessages((prev) => [...prev, aiMessage]);
+
+      // If this was a new session, reload sessions to get the new sessionId
+      // The API doesn't return sessionId in the POST response
+      if (wasNewSession && getChatSessions) {
+        try {
+          const sessionsResponse = await getChatSessions(1, 10);
+          const sessionsList = sessionsResponse?.data?.items || sessionsResponse?.items || [];
+          
+          // Get the newest session (first in list, as API returns newest first)
+          if (sessionsList.length > 0) {
+            const newestSession = sessionsList[0];
+            if (newestSession?.sessionId) {
+              setCurrentSessionId(newestSession.sessionId);
+              setHookSessionId(newestSession.sessionId);
+            }
+          }
+        } catch (sessionError) {
+          console.error("Error loading sessions after message:", sessionError);
+          // Don't fail the whole flow if session loading fails
+        }
+      }
     } catch (error) {
       console.error("Error sending message:", error);
       const errorMessage = {
@@ -237,6 +263,26 @@ export default function ModernAIChat() {
   if (!isAuthenticated) {
     return null;
   }
+
+  // Reset session and messages when closing the chat
+  const handleCloseChat = () => {
+    // Only reset if not currently loading (no ongoing request)
+    if (!isLoading) {
+      setCurrentSessionId(null);
+      resetSession();
+      // Optionally reset messages to welcome message
+      setMessages([
+        {
+          id: "1",
+          content:
+            "Xin chào! 👋 Tôi là AI Assistant của AIEvent. Tôi có thể giúp bạn tìm kiếm sự kiện theo nhu cầu của bạn, hoặc trả lời các câu hỏi về sự kiện bạn quan tâm. Bạn cần hỗ trợ gì?",
+          sender: "ai",
+          timestamp: new Date(),
+        },
+      ]);
+    }
+    setIsOpen(false);
+  };
 
   if (!isOpen) {
     return (
@@ -281,8 +327,9 @@ export default function ModernAIChat() {
     <Button
       variant="ghost"
       size="icon"
-      onClick={() => setIsOpen(false)}
-      className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+      onClick={handleCloseChat}
+      disabled={isLoading}
+      className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <X className="h-4 w-4" />
     </Button>

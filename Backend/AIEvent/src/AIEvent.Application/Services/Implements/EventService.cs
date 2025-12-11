@@ -26,9 +26,11 @@ namespace AIEvent.Application.Services.Implements
         private readonly INotificationService _notificationService;
         private readonly IPayOSService _payOSService;
         private readonly ILogger<EventService> _logger;
+        private readonly IPineconeVectorService _pineconeVectorService;
+
         public EventService(IUnitOfWork unitOfWork, ITransactionHelper transactionHelper, IMapper mapper, 
             IHangfireJobService hangfireJobService, INotificationService notificationService, IPayOSService payOSService,
-            ILogger<EventService> logger)
+            ILogger<EventService> logger, IPineconeVectorService pineconeVectorService)
         {
             _unitOfWork = unitOfWork;
             _transactionHelper = transactionHelper;
@@ -37,6 +39,7 @@ namespace AIEvent.Application.Services.Implements
             _notificationService = notificationService;
             _payOSService = payOSService;
             _logger = logger;
+            _pineconeVectorService = pineconeVectorService;
         }
 
         public async Task<Result> CreateEventAsync(Guid organizerId, CreateEventRequest request)
@@ -601,6 +604,9 @@ namespace AIEvent.Application.Services.Implements
                     return Result.Success();
                 }
                 await _unitOfWork.EventRepository.DeleteAsync(existingEvent!);
+
+                await _pineconeVectorService.DeleteVectorAsync(eventId.ToString(), isUser: false);
+
                 return Result.Success();
             });
         }
@@ -1006,27 +1012,19 @@ namespace AIEvent.Application.Services.Implements
                     .AsNoTracking()
                     .Select(r => new { r.Id, r.Name, r.IsDeleted })
                     .FirstOrDefaultAsync(r => !r.IsDeleted && r.Name == "Manager");
+
                 if (managerRole == null)
                     return ErrorResponse.FailureResult("Role 'Manager' not found", ErrorCodes.NotFound);
 
-                var managerUsers = await _unitOfWork.UserRepository
-                    .Query()
-                    .AsNoTracking()
-                    .Where(u => u.RoleId == managerRole.Id)
-                    .Select(u => u.Id)
-                    .ToListAsync();
-
-                var notifications = managerUsers.Select(managerId => new Notification
+                await _notificationService.CreateNotificationToAllAsync(new CreateNotificationToAllRequest
                 {
                     EventId = eventId,
-                    UserId = managerId,
                     Title = $"Báo cáo mới về sự kiện '{eventEntity.Title}'",
                     Message = $"Một người dùng vừa báo cáo sự kiện '{eventEntity.Title}' về vấn đề '{report.Type.GetDescription()}'",
                     Type = NotificationType.ReportEvent,
-                    IsRead = false,
-                }).ToList();
+                    TargetRoles = [managerRole.Id]
+                });
 
-                await _unitOfWork.NotificationRepository.AddRangeAsync(notifications);
                 await _unitOfWork.SaveChangesAsync();
 
                 return Result.Success();
@@ -1132,14 +1130,13 @@ namespace AIEvent.Application.Services.Implements
             if (eventEntity == null)
                 return ErrorResponse.FailureResult("Event not found", ErrorCodes.NotFound);
 
-            await _unitOfWork.NotificationRepository.AddAsync(new Notification
+            await _notificationService.CreateNotificationAsync(new CreateNotificationRequest
             {
                 EventId = report.EventId,
                 UserId = report.UserId,
                 Title = $"Báo cáo sự kiện '{eventEntity.Title}'",
                 Message = $"Báo cáo sự kiện '{eventEntity.Title}' về vấn đề '{report.Type.GetDescription()}' của bạn đã được phản hồi",
                 Type = NotificationType.ReportEvent,
-                IsRead = false,
             });
 
             await _unitOfWork.EventReportRepository.UpdateAsync(report);

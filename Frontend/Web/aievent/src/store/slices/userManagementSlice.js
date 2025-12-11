@@ -4,10 +4,11 @@ import { userManagementAPI } from '../../api/userManagementAPI';
 // Async thunks
 export const fetchAllUsers = createAsyncThunk(
   'userManagement/fetchAll',
-  async ({ pageNumber = 1, pageSize = 10, email = '', name = '', role = '' }, { rejectWithValue }) => {
+  async ({ pageNumber = 1, pageSize = 6, email = '', name = '', role = '' }, { rejectWithValue }) => {
     try {
       const response = await userManagementAPI.getAllUsers(pageNumber, pageSize, email, name, role);
-      return response;
+      // Include requested pageNumber in response to ensure pagination state is correct
+      return { ...response, requestedPageNumber: pageNumber, requestedPageSize: pageSize };
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -16,10 +17,11 @@ export const fetchAllUsers = createAsyncThunk(
 
 export const fetchAllBannedUsers = createAsyncThunk(
   'userManagement/fetchAllBanned',
-  async ({ pageNumber = 1, pageSize = 10, email = '', name = '', role = '' }, { rejectWithValue }) => {
+  async ({ pageNumber = 1, pageSize = 6, email = '', name = '', role = '' }, { rejectWithValue }) => {
     try {
       const response = await userManagementAPI.getAllBannedUsers(pageNumber, pageSize, email, name, role);
-      return response;
+      // Include requested pageNumber in response to ensure pagination state is correct
+      return { ...response, requestedPageNumber: pageNumber, requestedPageSize: pageSize };
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -73,13 +75,13 @@ const userManagementSlice = createSlice({
     error: null,
     pagination: {
       currentPage: 1,
-      pageSize: 10,
+      pageSize: 6,
       totalItems: 0,
       totalPages: 0
     },
     bannedPagination: {
       currentPage: 1,
-      pageSize: 10,
+      pageSize: 6,
       totalItems: 0,
       totalPages: 0
     },
@@ -127,8 +129,9 @@ const userManagementSlice = createSlice({
         const data = action.payload.data || action.payload;
         state.users = data.items || [];
         state.pagination = {
-          currentPage: data.pageNumber || 1,
-          pageSize: data.pageSize || 10,
+          // Use requestedPageNumber as fallback if API doesn't return pageNumber
+          currentPage: data.pageNumber || action.payload.requestedPageNumber || 1,
+          pageSize: data.pageSize || action.payload.requestedPageSize || 10,
           totalItems: data.totalItems || 0,
           totalPages: data.totalPages || 0
         };
@@ -149,8 +152,9 @@ const userManagementSlice = createSlice({
         const data = action.payload.data || action.payload;
         state.bannedUsers = data.items || [];
         state.bannedPagination = {
-          currentPage: data.pageNumber || 1,
-          pageSize: data.pageSize || 10,
+          // Use requestedPageNumber as fallback if API doesn't return pageNumber
+          currentPage: data.pageNumber || action.payload.requestedPageNumber || 1,
+          pageSize: data.pageSize || action.payload.requestedPageSize || 10,
           totalItems: data.totalItems || 0,
           totalPages: data.totalPages || 0
         };
