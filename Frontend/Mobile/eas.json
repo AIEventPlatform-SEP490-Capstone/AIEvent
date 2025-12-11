@@ -1,0 +1,26 @@
+{
+  "cli": {
+    "version": ">= 7.0.0"
+  },
+  "build": {
+    "production": {
+      "android": {
+        "buildType": "apk",
+        "env": {
+          "EXPO_NO_INIT_GRADLE": "1"
+        }
+      }
+    },
+    "preview": {
+      "android": {
+        "buildType": "apk",
+        "env": {
+          "EXPO_NO_INIT_GRADLE": "1"
+        }
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

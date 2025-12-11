@@ -37,7 +37,8 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE"
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -52,6 +53,12 @@
         }
       ]
     ],
-    "sdkVersion": "54.0.0"
+    "sdkVersion": "54.0.0",
+    "extra": {
+      "eas": {
+        "projectId": "01462c11-881c-4837-b0aa-f98a625b725e"
+      }
+    },
+    "owner": "thanhthoai90813s-organization"
   }
 }
