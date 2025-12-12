@@ -12,7 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import styles from './styles';
 import CustomText from '../../components/common/customTextRN';
 import { LinearGradient } from 'expo-linear-gradient';
-import EventCard from '../../components/presentation/EventCard';
+import EventCardWithFavorite from '../../components/presentation/EventCardWithFavorite';
 import Colors from '../../constants/Colors';
 import { fetchFavoriteEvents, selectFavoriteEvents, selectFavoriteEventsLoading, selectFavoriteEventsError } from '../../redux/slices/favoriteEventsSlice';
 
@@ -68,7 +68,7 @@ const FavoriteEventsScreen = () => {
   };
 
   const renderEventCard = ({ item }) => (
-    <EventCard event={item} onPress={handleEventPress} />
+    <EventCardWithFavorite event={item} onPress={handleEventPress} />
   );
 
   // Robust keyExtractor that handles undefined IDs
