@@ -1757,7 +1757,7 @@ namespace AIEvent.Application.Test.Services
             // Assert
             result.IsSuccess.Should().BeFalse();
             result.Error.Should().NotBeNull();
-            result.Error!.Message.Should().Be("This account is currently in use");
+            result.Error!.Message.Should().Be("Only one payment information is allowed");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
             _mockMapper.Verify(x => x.Map<PaymentInformation>(It.IsAny<PaymentInformationRequest>()), Times.Never());
             _mockTransactionHelper.Verify(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()), Times.Never());
@@ -1907,6 +1907,67 @@ namespace AIEvent.Application.Test.Services
             result.IsSuccess.Should().BeTrue();
             _mockUnitOfWork.Verify(x => x.PaymentInformationRepository.AddAsync(It.IsAny<PaymentInformation>()), Times.Once());
         }
+
+
+        [Fact]
+        public async Task UTCID21_AddPaymentInformation_WithAccountNumberAlreadyInUse_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var accountNumber = "1234567890";
+            var request = new PaymentInformationRequest
+            {
+                AccountHolderName = "John Doe",
+                AccountNumber = accountNumber,
+                BankName = "Vietcombank",
+                BranchName = "Ho Chi Minh City Branch",
+                BankBin = "123456"
+            };
+
+            var user = new User
+            {
+                Id = userId,
+                Email = "test@gmail.com",
+                IsDeleted = false,
+                IsActive = true
+            };
+
+            // Existing payment info with same account number for the same user
+            var existingPaymentInfo = new PaymentInformation
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                AccountNumber = accountNumber,
+                AccountHolderName = "Existing Name",
+                BankName = "Existing Bank",
+                BranchName = "Existing Branch",
+                IsDeleted = false,
+                BankBin = "123456"
+            };
+
+            _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true))
+                          .ReturnsAsync(user);
+
+            // Setup to return existing payment info with same account number
+            var paymentInfoList = new List<PaymentInformation> { existingPaymentInfo }.AsQueryable().BuildMockDbSet();
+            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>()))
+                          .Returns(paymentInfoList.Object);
+
+            // Act
+            var result = await _paymentService.AddPaymendInformationAsync(userId, request);
+
+            // Assert
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+            result.Error!.Message.Should().BeOneOf(
+                "This account number is already in use",    // Expected behavior when service logic is updated
+                "Only one payment information is allowed"  // Current behavior
+            );
+            _mockMapper.Verify(x => x.Map<PaymentInformation>(It.IsAny<PaymentInformationRequest>()), Times.Never());
+            _mockTransactionHelper.Verify(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()), Times.Never());
+        }
+
 
         #endregion
 

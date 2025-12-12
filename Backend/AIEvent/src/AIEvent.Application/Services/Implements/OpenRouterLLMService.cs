@@ -65,9 +65,9 @@ namespace AIEvent.Application.Services.Implements
             Lịch sử hội thoại trước đó (để hiểu rõ hơn về sở thích và yêu cầu của người dùng theo lịch sử chat từ cũ nhất đến mới nhất):
             {string.Join("\n\n", historyItems)}
             ";
-                    }
+            }
 
-                    var prompt = $@"
+            var prompt = $@"
             Người dùng hỏi: ""{query}"".
 
             {chatHistoryText}
@@ -130,13 +130,13 @@ namespace AIEvent.Application.Services.Implements
             ";
 
             var sessionName = await GenerateTextAsync(sessionNamePrompt);
-             
+
             sessionName = sessionName.Trim();
             if (sessionName.Length > 50)
             {
                 sessionName = sessionName.Substring(0, 50).Trim();
             }
-             
+
             if (string.IsNullOrWhiteSpace(sessionName) || sessionName.Length < 3)
             {
                 sessionName = prompt.Length > 50 ? prompt.Substring(0, 50) + "..." : prompt;
