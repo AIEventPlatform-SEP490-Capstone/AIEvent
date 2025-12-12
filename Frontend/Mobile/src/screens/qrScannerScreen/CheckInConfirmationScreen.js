@@ -42,14 +42,19 @@ const CheckInConfirmationScreen = ({ route, navigation }) => {
         );
       }
     } catch (error) {
-      console.error('Error checking in:', error);
+      // Error already logged in BaseApiService
+      // Show user-friendly message based on error type
+      const errorMessage = error.isBusinessError 
+        ? error.message 
+        : 'Đã xảy ra lỗi khi thực hiện check-in. Vui lòng thử lại.';
+      
       Alert.alert(
-        'Lỗi',
-        'Đã xảy ra lỗi khi thực hiện check-in. Vui lòng thử lại.',
+        error.isBusinessError ? 'Thông báo' : 'Lỗi',
+        errorMessage,
         [
           {
             text: 'OK',
-            onPress: () => navigation.goBack(), // Go back to QR scanner screen on error
+            onPress: () => navigation.goBack(),
           },
         ]
       );
