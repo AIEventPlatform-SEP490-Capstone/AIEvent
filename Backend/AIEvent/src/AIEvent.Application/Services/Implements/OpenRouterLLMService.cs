@@ -65,9 +65,9 @@ namespace AIEvent.Application.Services.Implements
             Lịch sử hội thoại trước đó (để hiểu rõ hơn về sở thích và yêu cầu của người dùng theo lịch sử chat từ cũ nhất đến mới nhất):
             {string.Join("\n\n", historyItems)}
             ";
-                    }
+            }
 
-                    var prompt = $@"
+            var prompt = $@"
             Người dùng hỏi: ""{query}"".
 
             {chatHistoryText}
