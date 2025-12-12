@@ -293,7 +293,7 @@ namespace AIEvent.Application.Services.Implements
             var friend = await _unitOfWork.UserRepository
                 .Query()
                 .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Id == friendId && u.IsActive);
+                .FirstOrDefaultAsync(u => u.Id == friendId && u.IsActive && !u.IsDeleted);
 
             if (friend == null)
                 return ErrorResponse.FailureResult("Friend not found", ErrorCodes.NotFound);
