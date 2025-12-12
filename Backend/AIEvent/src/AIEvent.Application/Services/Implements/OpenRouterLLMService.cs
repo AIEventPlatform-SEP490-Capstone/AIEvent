@@ -49,7 +49,7 @@ namespace AIEvent.Application.Services.Implements
 
             return content ?? string.Empty;
         }
-         
+
         public async Task<string> GenerateRAGResponseAsync(string query, List<string> contexts, List<(string prompt, string response)>? chatHistory = null)
         {
             var contextText = string.Join("\n---\n", contexts);
@@ -57,37 +57,66 @@ namespace AIEvent.Application.Services.Implements
             var chatHistoryText = "";
             if (chatHistory != null && chatHistory.Any())
             {
-                var historyItems = chatHistory.Select((h, index) => 
+                var historyItems = chatHistory.Select((h, index) =>
                     $@"Cuộc hội thoại {index + 1}:
-                    - Người dùng: {h.prompt}
-                    - Trợ lý: {h.response}").ToList();
+            - Người dùng: {h.prompt}
+            - Trợ lý: {h.response}").ToList();
                 chatHistoryText = $@"
-            Lịch sử hội thoại trước đó (để hiểu rõ hơn về sở thích và yêu cầu của người dùng):
-            {string.Join("\n\n", historyItems)}
-            ";
+    Lịch sử hội thoại trước đó (để hiểu rõ hơn về sở thích và yêu cầu của người dùng theo lịch sử chat từ cũ nhất đến mới nhất):
+    {string.Join("\n\n", historyItems)}
+    ";
             }
 
             var prompt = $@"
-            Người dùng hỏi: ""{query}"".
-            {chatHistoryText}
-            Dưới đây là danh sách sự kiện liên quan (ngữ cảnh). Bạn chỉ được sử dụng thông tin trong danh sách này:
-            {contextText}
-            Hãy lựa chọn **một hoặc nhiều sự kiện phù hợp nhất** với yêu cầu người dùng.
-            Đối với mỗi sự kiện được chọn, trả về theo định dạng sau:
-            1) Mở đầu bằng **một câu tự nhiên** giải thích lý do sự kiện này phù hợp.
-            2) Sau đó là **form chuẩn**:
+    Người dùng hỏi: ""{query}"".
 
-            - **Tiêu đề:** [Tiêu đề sự kiện]
-            - **Địa điểm:** [Địa điểm tổ chức]
-            - **Thời gian:** [dd/MM/yyyy HH:mm → dd/MM/yyyy HH:mm]
-            - **Giá vé:** [Miễn phí hoặc giá vé]
+    {chatHistoryText}
 
-            3) Kết thúc bằng:
-              Xem chi tiết: [link đã có trong context]
+    Bạn là trợ lý hội thoại thông minh. Hãy trả lời bằng giọng văn tự nhiên, gần gũi, dễ hiểu, giống như cách một người bình thường giải thích.
 
-            Nếu có nhiều sự kiện phù hợp, hãy trình bày theo từng mục tách biệt.
-            Không được tự tạo hoặc suy diễn bất kỳ thông tin nào ngoài context.
-            ";
+    Nhiệm vụ chính của bạn:
+    - Trả lời dựa trên NGỮ CẢNH cung cấp bên dưới.
+    - Luôn thân thiện, mềm mại, không mang giọng điệu máy móc.
+    - Tuyệt đối không được tạo mới, suy diễn hay bổ sung thông tin ngoài ngữ cảnh.
+    - Thể hiện sự linh hoạt theo đúng ý nghĩa thật sự của câu hỏi.
+    - Nếu có lịch sử hội thoại, hãy dùng nó để hiểu mạch trò chuyện nhưng không được vượt khỏi dữ liệu ngữ cảnh.
+
+    --- NGỮ CẢNH BẮT ĐẦU ---
+    {contextText}
+    --- NGỮ CẢNH KẾT THÚC ---
+
+    Cách phản hồi theo tình huống:
+
+    1) Nếu câu hỏi liên quan đến việc tìm hiểu hoặc lựa chọn sự kiện:
+       - Xác định những sự kiện phù hợp nhất với câu hỏi.  
+       - Nếu người dùng muốn 1, nhiều hoặc không chỉ rõ số lượng, hãy chọn theo mức độ liên quan.
+       - Nếu không chắc người dùng muốn sự kiện nào → hỏi lại một cách nhẹ nhàng để xác nhận.  
+       - Mỗi sự kiện được trình bày theo mẫu rõ ràng, tự nhiên:
+            - Tiêu đề: ...
+            - Địa điểm: ...
+            - Thời gian: ...
+            - Giá vé: ...
+            - Xem chi tiết: ...
+       - Trước khi liệt kê, hãy mở đầu bằng vài câu giải thích lý do sự kiện phù hợp.
+
+    2) Nếu câu hỏi không yêu cầu tìm sự kiện, nhưng có thể trả lời bằng dữ liệu trong ngữ cảnh:
+       - Hãy giải thích tự nhiên dựa trên thông tin có trong ngữ cảnh.
+       - Không liệt kê sự kiện nếu không cần thiết.
+
+    3) Nếu câu hỏi không yêu cầu tìm kiếm sự kiện, hoặc không có dữ liệu trong ngữ cảnh hỗ trợ:
+- Giải thích nhẹ nhàng rằng bạn không tìm thấy thông tin phù hợp.
+       - Đề nghị người dùng mô tả rõ hơn nếu họ muốn nhận gợi ý chính xác.
+
+    4) Lịch sử hội thoại (nếu có) chỉ đóng vai trò giúp bạn hiểu người dùng thích gì hoặc đang tìm điều gì,
+       nhưng bạn vẫn phải tuân thủ tuyệt đối thông tin trong ngữ cảnh.
+
+    5) Nếu người dùng hỏi về trải nghiệm, lời khuyên, chuẩn bị, cảm nhận, hoặc các câu hỏi mang tính chủ quan
+       mà ngữ cảnh không cung cấp dữ liệu cụ thể:
+       - Hãy trả lời tự nhiên bằng cách đưa ra lời khuyên cụ thể về sự kiện, lịch sự và hữu ích.
+       - KHÔNG tạo thông tin chi tiết về sự kiện nếu chúng không xuất hiện trong ngữ cảnh.
+
+    Hãy bắt đầu trả lời ngay bây giờ.
+    ";
 
             return await GenerateTextAsync(prompt);
         }
