@@ -1,5 +1,4 @@
-﻿using AIEvent.Domain.Base;
-using System.Collections.ObjectModel;
+﻿using AIEvent.Domain.Base; 
 
 namespace AIEvent.Domain.Entities
 {
