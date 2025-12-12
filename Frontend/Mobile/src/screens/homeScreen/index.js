@@ -8,6 +8,7 @@ import {
   FlatList,
   Dimensions,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -59,12 +60,29 @@ const HomeScreen = () => {
   const [loadingAIEvents, setLoadingAIEvents] = useState(false);
   const [showAIEvents, setShowAIEvents] = useState(false);
   const [aiRequestCount, setAiRequestCount] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
 
   useEffect(() => {
     loadEvents();
     refreshCategories();
   }, []);
+
+  // Pull-to-refresh handler
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([loadEvents(), refreshCategories()]);
+      // Reset AI events state on refresh
+      setAiEvents([]);
+      setShowAIEvents(false);
+      setAiRequestCount(0);
+    } catch (error) {
+      console.error('Error refreshing:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     if (searchText.trim() === '' && !selectedCategory) {
@@ -496,6 +514,14 @@ const HomeScreen = () => {
         style={styles.content}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.contentContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[Colors.primary]}
+            tintColor={Colors.primary}
+          />
+        }
       >
         {/* AI Recommended Events Section */}
         {showAIEvents && (
