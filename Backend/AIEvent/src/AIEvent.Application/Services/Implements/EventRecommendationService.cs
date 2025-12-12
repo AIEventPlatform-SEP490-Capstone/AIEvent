@@ -300,7 +300,7 @@ namespace AIEvent.Application.Services.Implements
                 (pageNumber - 1) * pageSize,
                 pageSize,
                 c => c.CreatedAt,
-                sortDescending: true);
+                sortDescending: false);
 
             var result = chatLogs.Select(c => new ChatLogResponse
             {
