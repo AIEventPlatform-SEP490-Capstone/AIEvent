@@ -7635,5 +7635,364 @@ namespace AIEvent.Application.Test.Services
 
        #endregion
 
+       #region CancelEventAsync Tests
+
+       [Fact]
+       public async Task UTCID01_CancelEventAsync_WithEmptyEventId_ShouldReturnFailure()
+       {
+           // Arrange
+           var eventId = Guid.Empty;
+           var request = new CancelEventRequest
+           {
+               ReasonCancel = "Test reason"
+           };
+
+           // Act
+           var result = await _eventService.CancelEventAsync(eventId, request);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Invalid eventId");
+       }
+
+       [Fact]
+       public async Task UTCID02_CancelEventAsync_WithNullRequest_ShouldReturnFailure()
+       {
+           // Arrange
+           var eventId = Guid.NewGuid();
+           CancelEventRequest request = null!;
+
+           // Act
+           var result = await _eventService.CancelEventAsync(eventId, request);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Request cannot be null");
+       }
+
+       [Fact]
+       public async Task UTCID03_CancelEventAsync_WithEventNotFound_ShouldReturnFailure()
+       {
+           // Arrange
+           var eventId = Guid.NewGuid();
+           var request = new CancelEventRequest
+           {
+               ReasonCancel = "Test reason"
+           };
+
+           var mockEventQueryable = new List<Event>().AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+           // Act
+           var result = await _eventService.CancelEventAsync(eventId, request);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Event not found or inactive");
+       }
+
+       [Fact]
+       public async Task UTCID04_CancelEventAsync_WithDeletedEvent_ShouldReturnFailure()
+       {
+           // Arrange
+           var eventId = Guid.NewGuid();
+           var organizerId = TestOrganizerId;
+           var request = new CancelEventRequest
+           {
+               ReasonCancel = "Test reason"
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
+               OrganizerProfileId = organizerId,
+               DeletedAt = DateTime.UtcNow,
+               IsDeleted = true,
+               Status = EventStatus.PendingApproval,
+               Bookings = new List<Booking>()
+           };
+
+           var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+           // Act
+           var result = await _eventService.CancelEventAsync(eventId, request);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Event not found or inactive");
+       }
+
+       [Fact]
+       public async Task UTCID05_CancelEventAsync_WithAlreadyCancelledEvent_ShouldReturnFailure()
+       {
+           // Arrange
+           var eventId = Guid.NewGuid();
+           var organizerId = TestOrganizerId;
+           var organizerUserId = Guid.NewGuid();
+           var request = new CancelEventRequest
+           {
+               ReasonCancel = "Test reason"
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
+               OrganizerProfileId = organizerId,
+               DeletedAt = null,
+               IsDeleted = false,
+               Status = EventStatus.Cancelled,
+               Bookings = new List<Booking>(),
+               OrganizerProfile = new OrganizerProfile
+               {
+                   Id = organizerId,
+                   UserId = organizerUserId,
+                   ContactName = "Test Organizer",
+                   ContactEmail = "test@test.com",
+                   ContactPhone = "123456789",
+                   Address = "Test Address",
+                   OrganizationType = OrganizationType.PrivateCompany,
+                   EventFrequency = EventFrequency.Occasionally,
+                   EventSize = EventSize.Small,
+                   OrganizerType = OrganizerType.Individual,
+                   EventExperienceLevel = EventExperienceLevel.Beginner,
+                   User = new User
+                   {
+                       Id = organizerUserId,
+                       Email = "organizer@test.com",
+                       FullName = "Test Organizer"
+                   }
+               }
+           };
+
+           var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+           // Act
+           var result = await _eventService.CancelEventAsync(eventId, request);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Event cancelled cannot cancel");
+       }
+
+       [Fact]
+       public async Task UTCID06_CancelEventAsync_WithPublishedEventAndBookingsButNoReason_ShouldReturnFailure()
+       {
+           // Arrange
+           var eventId = Guid.NewGuid();
+           var organizerId = TestOrganizerId;
+           var organizerUserId = Guid.NewGuid();
+           var userId = Guid.NewGuid();
+           var request = new CancelEventRequest
+           {
+               ReasonCancel = null
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
+               OrganizerProfileId = organizerId,
+               DeletedAt = null,
+               IsDeleted = false,
+               Status = EventStatus.Approved,
+               Publish = true,
+               Bookings = new List<Booking>
+               {
+                   new Booking
+                   {
+                       Id = Guid.NewGuid(),
+                       UserId = userId,
+                       EventId = eventId,
+                       Status = BookingStatus.Completed,
+                       TotalAmount = 100
+                   }
+               },
+               OrganizerProfile = new OrganizerProfile
+               {
+                   Id = organizerId,
+                   UserId = organizerUserId,
+                   ContactName = "Test Organizer",
+                   ContactEmail = "test@test.com",
+                   ContactPhone = "123456789",
+                   Address = "Test Address",
+                   OrganizationType = OrganizationType.PrivateCompany,
+                   EventFrequency = EventFrequency.Occasionally,
+                   EventSize = EventSize.Small,
+                   OrganizerType = OrganizerType.Individual,
+                   EventExperienceLevel = EventExperienceLevel.Beginner,
+                   User = new User
+                   {
+                       Id = organizerUserId,
+                       Email = "organizer@test.com",
+                       FullName = "Test Organizer"
+                   }
+               }
+           };
+
+           var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+           // Act
+           var result = await _eventService.CancelEventAsync(eventId, request);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Cancellation of a published event with existing bookings must have a reason.");
+       }
+
+       [Fact]
+       public async Task UTCID07_CancelEventAsync_WithOrganizerProfileNotFound_ShouldReturnFailure()
+       {
+           // Arrange
+           var eventId = Guid.NewGuid();
+           var organizerId = TestOrganizerId;
+           var request = new CancelEventRequest
+           {
+               ReasonCancel = "Test reason"
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
+               OrganizerProfileId = organizerId,
+               DeletedAt = null,
+               IsDeleted = false,
+               Status = EventStatus.Approved,
+               Publish = false,
+               Bookings = new List<Booking>(),
+               OrganizerProfile = null
+           };
+
+           var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+           // Act
+           var result = await _eventService.CancelEventAsync(eventId, request);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Organizer profile not found");
+       }
+
+       [Fact]
+       public async Task UTCID08_CancelEventAsync_WithBookingsAndReason_ShouldEnqueueCancelJobAndReturnSuccess()
+       {
+           // Arrange
+           var eventId = Guid.NewGuid();
+           var organizerId = TestOrganizerId;
+           var organizerUserId = Guid.NewGuid();
+           var userId = Guid.NewGuid();
+           var reasonCancel = "Test cancellation reason";
+           var request = new CancelEventRequest
+           {
+               ReasonCancel = reasonCancel
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
+               OrganizerProfileId = organizerId,
+               DeletedAt = null,
+               IsDeleted = false,
+               Status = EventStatus.Approved,
+               Publish = true,
+               ImgListEvent = "image1.jpg, image2.jpg",
+               Bookings = new List<Booking>
+               {
+                   new Booking
+                   {
+                       Id = Guid.NewGuid(),
+                       UserId = userId,
+                       EventId = eventId,
+                       Status = BookingStatus.Completed,
+                       TotalAmount = 100
+                   }
+               },
+               OrganizerProfile = new OrganizerProfile
+               {
+                   Id = organizerId,
+                   UserId = organizerUserId,
+                   TotalEventFlags = 0,
+                   ContactName = "Test Organizer",
+                   ContactEmail = "test@test.com",
+                   ContactPhone = "123456789",
+                   Address = "Test Address",
+                   OrganizationType = OrganizationType.PrivateCompany,
+                   EventFrequency = EventFrequency.Occasionally,
+                   EventSize = EventSize.Small,
+                   OrganizerType = OrganizerType.Individual,
+                   EventExperienceLevel = EventExperienceLevel.Beginner,
+                   User = new User
+                   {
+                       Id = organizerUserId,
+                       Email = "organizer@test.com",
+                       FullName = "Test Organizer",
+                       IsEmailNotificationEnabled = true
+                   }
+               }
+           };
+
+           var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+           _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.UpdateAsync(It.IsAny<OrganizerProfile>()))
+               .Returns<OrganizerProfile>(profile => Task.FromResult(profile));
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()))
+               .Returns<Event>(evt => Task.FromResult(evt));
+           _mockHangfireJobService.Setup(x => x.EnqueueCancelEventJobAsync(eventId, reasonCancel))
+               .Returns(Task.CompletedTask);
+           _mockHangfireJobService.Setup(x => x.EnqueueCancelEventNotificationJobAsync(It.IsAny<CancelEventNotificationRequest>()))
+               .Returns(Task.CompletedTask);
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(async func => await func());
+
+           // Act
+           var result = await _eventService.CancelEventAsync(eventId, request);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeTrue();
+           _mockUnitOfWork.Verify(x => x.OrganizerProfileRepository.UpdateAsync(It.Is<OrganizerProfile>(p => 
+               p.TotalEventFlags == 1)), Times.Once);
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.Is<Event>(e => 
+               e.Status == EventStatus.Cancelled && 
+               e.IsFlagWarning == true && 
+               e.ReasonCancel == reasonCancel.Trim())), Times.Once);
+           _mockHangfireJobService.Verify(x => x.EnqueueCancelEventJobAsync(eventId, reasonCancel), Times.Once);
+           _mockHangfireJobService.Verify(x => x.EnqueueCancelEventNotificationJobAsync(It.Is<CancelEventNotificationRequest>(r => 
+               r.EventId == eventId && 
+               r.OrganizerUserId == organizerUserId &&
+               r.ReasonCancel == reasonCancel)), Times.Once);
+       }
+
+       #endregion
+
    }
 }
