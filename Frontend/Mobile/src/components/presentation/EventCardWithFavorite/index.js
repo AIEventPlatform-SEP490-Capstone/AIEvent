@@ -10,7 +10,7 @@ import Colors from '../../../constants/Colors';
 import Fonts from '../../../constants/Fonts';
 import { addFavoriteEvent, removeFavoriteEvent } from '../../../redux/slices/favoriteEventsSlice';
 
-const EventCardWithFavorite = ({ event, onPress, isRecommended = false }) => {
+const EventCardWithFavorite = ({ event, onPress, isRecommended = false, isStaff = false }) => {
   const dispatch = useDispatch();
   const [isFavorite, setIsFavorite] = useState(event.isFavorite || false);
 
@@ -177,17 +177,19 @@ const EventCardWithFavorite = ({ event, onPress, isRecommended = false }) => {
           </View>
         )}
         
-        {/* Favorite Button */}
-        <TouchableOpacity 
-          style={styles.favoriteButton} 
-          onPress={toggleFavorite}
-          activeOpacity={0.7}
-        >
-          <Image 
-            source={isFavorite ? Images.heart : Images.heartOutline} 
-            style={[styles.favoriteIcon, isFavorite && { tintColor: Colors.error }]} 
-          />
-        </TouchableOpacity>
+        {/* Favorite Button - Hidden for staff */}
+        {!isStaff && (
+          <TouchableOpacity 
+            style={styles.favoriteButton} 
+            onPress={toggleFavorite}
+            activeOpacity={0.7}
+          >
+            <Image 
+              source={isFavorite ? Images.heart : Images.heartOutline} 
+              style={[styles.favoriteIcon, isFavorite && { tintColor: Colors.error }]} 
+            />
+          </TouchableOpacity>
+        )}
       </View>
       
       {/* Information Section */}
@@ -262,11 +264,14 @@ const EventCardWithFavorite = ({ event, onPress, isRecommended = false }) => {
             </CustomText>
           </View>
           
-          <View style={styles.priceContainer}>
-            <CustomText variant="button" color="white" style={styles.priceText}>
-              {formatPrice(event.price)}
-            </CustomText>
-          </View>
+          {/* Price - Hidden for staff */}
+          {!isStaff && (
+            <View style={styles.priceContainer}>
+              <CustomText variant="button" color="white" style={styles.priceText}>
+                {formatPrice(event.price)}
+              </CustomText>
+            </View>
+          )}
         </View>
       </View>
     </TouchableOpacity>

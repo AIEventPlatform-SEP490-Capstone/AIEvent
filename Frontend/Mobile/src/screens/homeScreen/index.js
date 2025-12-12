@@ -344,7 +344,11 @@ const HomeScreen = () => {
   };
 
   const renderEventCard = ({ item }) => (
-    <EventCardWithFavorite event={item} onPress={handleEventPress} />
+    <EventCardWithFavorite 
+      event={item} 
+      onPress={handleEventPress} 
+      isStaff={isStaffUser(accessToken)}
+    />
   );
 
   const renderCategoryButton = (category, index) => {
