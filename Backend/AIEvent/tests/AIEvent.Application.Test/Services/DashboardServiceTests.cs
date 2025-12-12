@@ -1,4 +1,5 @@
-using AIEvent.Application.Constants;
+﻿using AIEvent.Application.Constants;
+using AIEvent.Application.DTOs.Dashboard;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
@@ -1145,6 +1146,250 @@ namespace AIEvent.Application.Test.Services
             result.Value!.Items.Should().HaveCount(1);
             result.Value!.Items.First().ReportYear.Should().Be(year);
             result.Value!.Items.First().ReportMonth.Should().Be(month);
+        }
+        #endregion
+
+        #region CreateSystemSetting Tests
+        [Fact]
+        public async Task UTCID01_CreateSystemSetting_ShouldFail_WhenFlatformFeeIsZero()
+        {
+            // Arrange
+            var adminId = Guid.NewGuid();
+
+            var request = new SystemSettingRequest
+            {
+                FlatformFee = 0,            
+                FixFee = 100,
+                DatePayout = 5,
+                EventReminderHours = 24,
+                DateApply = DateTime.UtcNow.AddDays(1)
+            };
+
+            // Act
+            var result = await _dashboardService.CreateSystemSetting(adminId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.NotNull(result.Error);
+            Assert.Equal("All fields must be greater than 0", result.Error!.Message);
+            Assert.Equal(ErrorCodes.InvalidInput, result.Error.StatusCode);
+
+            _mockUnitOfWork.Verify(u => u.SystemSettingRepository.AddAsync(It.IsAny<SystemSetting>()), Times.Never);
+            _mockUnitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
+            _mockHangfireJobService.Verify(h => h.EnqueueNotifyPlatformSettingChange(It.IsAny<SystemSetting>()), Times.Never);
+        }
+
+
+        [Fact]
+        public async Task UTCID02_CreateSystemSetting_ShouldFail_WhenFixFeeIsZero()
+        {
+            // Arrange
+            var adminId = Guid.NewGuid();
+
+            var request = new SystemSettingRequest
+            {
+                FlatformFee = 100,         
+                FixFee = 0,                
+                DatePayout = 5,
+                EventReminderHours = 24,
+                DateApply = DateTime.UtcNow.AddDays(1)
+            };
+
+            // Act
+            var result = await _dashboardService.CreateSystemSetting(adminId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.NotNull(result.Error);
+            Assert.Equal("All fields must be greater than 0", result.Error!.Message);
+            Assert.Equal(ErrorCodes.InvalidInput, result.Error.StatusCode);
+
+            // Verify 
+            _mockUnitOfWork.Verify(u => u.SystemSettingRepository.AddAsync(It.IsAny<SystemSetting>()), Times.Never);
+            _mockUnitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
+            _mockHangfireJobService.Verify(h => h.EnqueueNotifyPlatformSettingChange(It.IsAny<SystemSetting>()), Times.Never);
+        }
+
+
+        [Fact]
+        public async Task UTCID03_CreateSystemSetting_ShouldFail_WhenDatePayoutIsZero()
+        {
+            // Arrange
+            var adminId = Guid.NewGuid();
+
+            var request = new SystemSettingRequest
+            {
+                FlatformFee = 100,
+                FixFee = 100,
+                DatePayout = 0,            
+                EventReminderHours = 24,
+                DateApply = DateTime.UtcNow.AddDays(1)
+            };
+
+            // Act
+            var result = await _dashboardService.CreateSystemSetting(adminId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.NotNull(result.Error);
+            Assert.Equal("All fields must be greater than 0", result.Error!.Message);
+            Assert.Equal(ErrorCodes.InvalidInput, result.Error.StatusCode);
+
+            // Verify 
+            _mockUnitOfWork.Verify(u => u.SystemSettingRepository.AddAsync(It.IsAny<SystemSetting>()), Times.Never);
+            _mockUnitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
+            _mockHangfireJobService.Verify(h => h.EnqueueNotifyPlatformSettingChange(It.IsAny<SystemSetting>()), Times.Never);
+        }
+
+
+        [Fact]
+        public async Task UTCID04_CreateSystemSetting_ShouldFail_WhenEventReminderHoursIsZero()
+        {
+            // Arrange
+            var adminId = Guid.NewGuid();
+
+            var request = new SystemSettingRequest
+            {
+                FlatformFee = 100,
+                FixFee = 100,
+                DatePayout = 5,
+                EventReminderHours = 0,        // <= 0, trigger validation
+                DateApply = DateTime.UtcNow.AddDays(1) // valid future date
+            };
+
+            // Act
+            var result = await _dashboardService.CreateSystemSetting(adminId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.NotNull(result.Error);
+            Assert.Equal("All fields must be greater than 0", result.Error!.Message);
+            Assert.Equal(ErrorCodes.InvalidInput, result.Error.StatusCode);
+
+            // Verify 
+            _mockUnitOfWork.Verify(u => u.SystemSettingRepository.AddAsync(It.IsAny<SystemSetting>()), Times.Never);
+            _mockUnitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
+            _mockHangfireJobService.Verify(h => h.EnqueueNotifyPlatformSettingChange(It.IsAny<SystemSetting>()), Times.Never);
+        }
+
+
+        [Fact]
+        public async Task UTCID05_CreateSystemSetting_ShouldFail_WhenDateApplyIsNotInFuture()
+        {
+            // Arrange
+            var adminId = Guid.NewGuid();
+
+            var request = new SystemSettingRequest
+            {
+                FlatformFee = 100,
+                FixFee = 100,
+                DatePayout = 5,
+                EventReminderHours = 24,
+                DateApply = DateTime.UtcNow
+            };
+
+            // Act
+            var result = await _dashboardService.CreateSystemSetting(adminId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.NotNull(result.Error);
+            Assert.Equal("DateApply must be greater than today", result.Error!.Message);
+            Assert.Equal(ErrorCodes.InvalidInput, result.Error.StatusCode);
+
+            // Verify 
+            _mockUnitOfWork.Verify(u => u.SystemSettingRepository.AddAsync(It.IsAny<SystemSetting>()), Times.Never);
+            _mockUnitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
+            _mockHangfireJobService.Verify(h => h.EnqueueNotifyPlatformSettingChange(It.IsAny<SystemSetting>()), Times.Never);
+        }
+
+
+        [Fact]
+        public async Task UTCID06_CreateSystemSetting_ShouldFail_WhenSettingAlreadyExistsThisMonth()
+        {
+            // Arrange
+            var adminId = Guid.NewGuid();
+            var now = DateTime.UtcNow;
+
+            var existingSetting = new SystemSetting
+            {
+                CreatedBy = adminId.ToString(),
+                CreatedAt = now,  
+                IsDeleted = false
+            };
+
+            var request = new SystemSettingRequest
+            {
+                FlatformFee = 100,
+                FixFee = 100,
+                DatePayout = 5,
+                EventReminderHours = 24,
+                DateApply = now.AddDays(1) 
+            };
+
+            _mockUnitOfWork.Setup(u => u.SystemSettingRepository
+                    .Query(false))
+                .Returns(new List<SystemSetting> { existingSetting }
+                    .AsQueryable().BuildMockDbSet().Object);
+
+            // Act
+            var result = await _dashboardService.CreateSystemSetting(adminId, request);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.NotNull(result.Error);
+            Assert.Equal("System setting can only be update once per month", result.Error!.Message);
+            Assert.Equal(ErrorCodes.InvalidInput, result.Error.StatusCode);
+
+            // Verify
+            _mockUnitOfWork.Verify(u => u.SystemSettingRepository.AddAsync(It.IsAny<SystemSetting>()), Times.Never);
+            _mockUnitOfWork.Verify(u => u.SaveChangesAsync(), Times.Never);
+            _mockHangfireJobService.Verify(h => h.EnqueueNotifyPlatformSettingChange(It.IsAny<SystemSetting>()), Times.Never);
+        }
+
+
+        [Fact]
+        public async Task UTCID08_CreateSystemSetting_ShouldSucceed_WhenInputIsValidAndNoExistingSetting()
+        {
+            // Arrange
+            var adminId = Guid.NewGuid();
+            var now = DateTime.UtcNow;
+
+            var request = new SystemSettingRequest
+            {
+                FlatformFee = 100,
+                FixFee = 200,
+                DatePayout = 5,
+                EventReminderHours = 24,
+                DateApply = now.AddDays(1) 
+            };
+
+            _mockUnitOfWork.Setup(u => u.SystemSettingRepository
+                .Query(false))
+                .Returns(new List<SystemSetting>()
+                .AsQueryable()
+                .BuildMockDbSet().Object);
+
+            _mockUnitOfWork.Setup(u => u.SystemSettingRepository
+                .AddAsync(It.IsAny<SystemSetting>()))
+                .ReturnsAsync((SystemSetting s) => s);
+
+            _mockUnitOfWork.Setup(u => u.SaveChangesAsync()).ReturnsAsync(1);
+
+            _mockHangfireJobService.Setup(h => h.EnqueueNotifyPlatformSettingChange(It.IsAny<SystemSetting>()))
+                .Returns(Task.CompletedTask);
+
+            // Act
+            var result = await _dashboardService.CreateSystemSetting(adminId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Null(result.Error);
+
+            // Verify 
+            _mockUnitOfWork.Verify(u => u.SystemSettingRepository.AddAsync(It.IsAny<SystemSetting>()), Times.Once);
+            _mockUnitOfWork.Verify(u => u.SaveChangesAsync(), Times.Once);
+            _mockHangfireJobService.Verify(h => h.EnqueueNotifyPlatformSettingChange(It.IsAny<SystemSetting>()), Times.Once);
         }
         #endregion
     }
