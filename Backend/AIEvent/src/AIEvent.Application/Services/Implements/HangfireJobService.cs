@@ -725,6 +725,7 @@ namespace AIEvent.Application.Services.Implements
                 var organizerProfile = await _unitOfWork.OrganizerProfileRepository
                     .Query()
                     .AsNoTracking()
+                    .Include(o => o.User)
                     .FirstOrDefaultAsync(o => o.Id == request.OrganizerProfileId && !o.IsDeleted);
 
                 if (organizerProfile != null && 
@@ -738,10 +739,14 @@ namespace AIEvent.Application.Services.Implements
 
                     if (adminRole != null)
                     {
+                        var userAccountInfo = organizerProfile.User != null
+                            ? $"Tài khoản: {organizerProfile.User.FullName ?? organizerProfile.User.Email} (Email: {organizerProfile.User.Email}, SĐT: {organizerProfile.User.PhoneNumber ?? "N/A"}, UserId: {organizerProfile.User.Id})"
+                            : "Tài khoản: N/A";
+
                         var adminNotificationRequest = new CreateNotificationToAllRequest
                         {
                             Title = $"Cảnh báo: Organizer đạt {organizerProfile.TotalEventFlags} cờ cảnh báo",
-                            Message = $"Organizer <strong>{organizerProfile.CompanyName ?? organizerProfile.ContactName}</strong> (Email: {organizerProfile.ContactEmail}) đã đạt 3 cờ cảnh báo. Vui lòng xem xét ban tài khoản này.",
+                            Message = $"Organizer <strong>{organizerProfile.CompanyName ?? organizerProfile.ContactName}</strong> (Email: {organizerProfile.ContactEmail}) đã đạt 3 cờ cảnh báo. {userAccountInfo} Vui lòng xem xét ban tài khoản này.",
                             Type = NotificationType.System,
                             TargetRoles = new List<Guid> { adminRole.Id },
                             OrganizerProfileId = organizerProfile.Id

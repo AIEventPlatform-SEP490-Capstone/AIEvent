@@ -1012,27 +1012,19 @@ namespace AIEvent.Application.Services.Implements
                     .AsNoTracking()
                     .Select(r => new { r.Id, r.Name, r.IsDeleted })
                     .FirstOrDefaultAsync(r => !r.IsDeleted && r.Name == "Manager");
+
                 if (managerRole == null)
                     return ErrorResponse.FailureResult("Role 'Manager' not found", ErrorCodes.NotFound);
 
-                var managerUsers = await _unitOfWork.UserRepository
-                    .Query()
-                    .AsNoTracking()
-                    .Where(u => u.RoleId == managerRole.Id)
-                    .Select(u => u.Id)
-                    .ToListAsync();
-
-                var notifications = managerUsers.Select(managerId => new Notification
+                await _notificationService.CreateNotificationToAllAsync(new CreateNotificationToAllRequest
                 {
                     EventId = eventId,
-                    UserId = managerId,
                     Title = $"Báo cáo mới về sự kiện '{eventEntity.Title}'",
                     Message = $"Một người dùng vừa báo cáo sự kiện '{eventEntity.Title}' về vấn đề '{report.Type.GetDescription()}'",
                     Type = NotificationType.ReportEvent,
-                    IsRead = false,
-                }).ToList();
+                    TargetRoles = [managerRole.Id]
+                });
 
-                await _unitOfWork.NotificationRepository.AddRangeAsync(notifications);
                 await _unitOfWork.SaveChangesAsync();
 
                 return Result.Success();
@@ -1138,14 +1130,13 @@ namespace AIEvent.Application.Services.Implements
             if (eventEntity == null)
                 return ErrorResponse.FailureResult("Event not found", ErrorCodes.NotFound);
 
-            await _unitOfWork.NotificationRepository.AddAsync(new Notification
+            await _notificationService.CreateNotificationAsync(new CreateNotificationRequest
             {
                 EventId = report.EventId,
                 UserId = report.UserId,
                 Title = $"Báo cáo sự kiện '{eventEntity.Title}'",
                 Message = $"Báo cáo sự kiện '{eventEntity.Title}' về vấn đề '{report.Type.GetDescription()}' của bạn đã được phản hồi",
                 Type = NotificationType.ReportEvent,
-                IsRead = false,
             });
 
             await _unitOfWork.EventReportRepository.UpdateAsync(report);
