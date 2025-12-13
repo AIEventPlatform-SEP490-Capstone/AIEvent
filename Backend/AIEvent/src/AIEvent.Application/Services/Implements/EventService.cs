@@ -954,6 +954,8 @@ namespace AIEvent.Application.Services.Implements
                     }
 
                     ev.CompletedAt = now;
+                    await _pineconeVectorService.DeleteVectorAsync(ev.Id.ToString(), isUser: false);
+
                 }
 
             await _unitOfWork.EventRepository.UpdateRangeAsync(endedEvents);
