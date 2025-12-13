@@ -8260,8 +8260,10 @@ namespace AIEvent.Application.Test.Services
            var mockPaymentInfoQueryable = new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMock();
            _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(false)).Returns(mockPaymentInfoQueryable);
 
-           // Act
-           var result = await _eventService.ResolveErrorPaymentAsync(eventId);
+            var mockRevenueReportQueryable = new List<RevenueReport>().AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.RevenueReportRepository.Query(false)).Returns(mockRevenueReportQueryable);
+            // Act
+            var result = await _eventService.ResolveErrorPaymentAsync(eventId);
 
            // Assert
            result.Should().NotBeNull();
