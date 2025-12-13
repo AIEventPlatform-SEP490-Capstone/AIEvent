@@ -8262,7 +8262,6 @@ namespace AIEvent.Application.Test.Services
 
            var mockRevenueReportQueryable = new List<RevenueReport>().AsQueryable().BuildMock();
            _mockUnitOfWork.Setup(x => x.RevenueReportRepository.Query(false)).Returns(mockRevenueReportQueryable);
-
             // Act
             var result = await _eventService.ResolveErrorPaymentAsync(eventId);
 
