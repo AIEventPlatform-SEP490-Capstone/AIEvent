@@ -135,7 +135,6 @@ namespace AIEvent.Application.Services.Implements
             IQueryable<Event> events = _unitOfWork.EventRepository
                                                 .Query()
                                                 .AsNoTracking()
-                                                .Include(e => e.TicketTypes)
                                                 .Where(e => e.EndTime.AddDays(7) > DateTime.UtcNow 
                                                     && !e.DeletedAt.HasValue 
 													&& e.Status != EventStatus.Rejected
