@@ -10,6 +10,7 @@ using AIEvent.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PayOS.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace AIEvent.API.Controllers
 {
@@ -43,13 +44,18 @@ namespace AIEvent.API.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public async Task<ActionResult<SuccessResponse<BasePaginated<EventsResponse>>>> GetEvent([FromQuery]string? search,
-                                                                                                 [FromQuery] string? eventCategoryId,
-                                                                                                 [FromQuery] List<EventTagRequest> tags,
-                                                                                                 [FromQuery] string? district, 
-                                                                                                 [FromQuery] TimeLine? timeLine,
-                                                                                                 [FromQuery] int pageNumber = 1,
-                                                                                                 [FromQuery] int pageSize = 5)
+        public async Task<ActionResult<SuccessResponse<BasePaginated<EventsResponse>>>> GetEvent([FromQuery] string? search,
+                                                                                                [FromQuery] string? eventCategoryId,
+                                                                                                [FromQuery] List<EventTagRequest> tags,
+                                                                                                [FromQuery] string? district,
+                                                                                                [FromQuery] TimeLine? timeLine,
+                                                                                                [FromQuery] TicketSaleStatus? ticketSaleStatus,
+                                                                                                [FromQuery] EventProgressStatus? eventProgressStatus,
+                                                                                                [FromQuery, Range(0, double.MaxValue)] decimal? minPrice,  
+                                                                                                [FromQuery, Range(0, double.MaxValue)] decimal? maxPrice, 
+                                                                                                [FromQuery] EventSortBy? sortBy = EventSortBy.NearestTime,
+                                                                                                [FromQuery, Range(1, int.MaxValue)] int pageNumber = 1,    
+                                                                                                [FromQuery]int pageSize = 5)
         {
 
             Guid? userId = null;
@@ -58,7 +64,7 @@ namespace AIEvent.API.Controllers
                 userId = User.GetRequiredUserId();
             }
 
-            var result = await _eventService.GetEventAsync(userId, search, eventCategoryId, tags, district, timeLine, pageNumber, pageSize);
+            var result = await _eventService.GetEventAsync(userId, search, eventCategoryId, tags, district, timeLine, ticketSaleStatus, eventProgressStatus, minPrice, maxPrice, sortBy, pageNumber, pageSize);
             
             if (!result.IsSuccess)
             {
