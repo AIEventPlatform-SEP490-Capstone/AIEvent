@@ -122,13 +122,20 @@ namespace AIEvent.Application.Services.Implements
                                                                                 string? eventCategoryId, 
                                                                                 List<EventTagRequest> tags, 
                                                                                 string? district, 
-                                                                                TimeLine? timeLine, 
+                                                                                TimeLine? timeLine,
+                                                                                TicketSaleStatus? ticketSaleStatus,    
+                                                                                EventProgressStatus? eventProgressStatus, 
+                                                                                decimal? minPrice,                      
+                                                                                decimal? maxPrice,                     
+                                                                                EventSortBy? sortBy = EventSortBy.NearestTime, 
                                                                                 int pageNumber = 1, 
                                                                                 int pageSize = 5)
         {
+            var now = DateTime.UtcNow;
             IQueryable<Event> events = _unitOfWork.EventRepository
                                                 .Query()
                                                 .AsNoTracking()
+                                                .Include(e => e.TicketTypes)
                                                 .Where(e => e.EndTime.AddDays(7) > DateTime.UtcNow 
                                                     && !e.DeletedAt.HasValue 
 													&& e.Status != EventStatus.Rejected
@@ -157,7 +164,6 @@ namespace AIEvent.Application.Services.Implements
 
             if (timeLine.HasValue)
             {
-                var now = DateTime.UtcNow;
                 var today = now.Date;
                 var tomorrow = today.AddDays(1);
                 var endOfToday = today.AddDays(1).AddTicks(-1); 
@@ -188,11 +194,66 @@ namespace AIEvent.Application.Services.Implements
                 }
             }
 
+            if (ticketSaleStatus.HasValue)
+            {
+                switch (ticketSaleStatus.Value)
+                {
+                    case TicketSaleStatus.NotStarted:
+                        events = events.Where(e => !e.SaleStartTime.HasValue || e.SaleStartTime > now);
+                        break;
+                    case TicketSaleStatus.OnSale:
+                        events = events.Where(e =>
+                            e.SaleStartTime.HasValue && e.SaleStartTime <= now &&
+                            (!e.SaleEndTime.HasValue || e.SaleEndTime >= now));
+                        break;
+                    case TicketSaleStatus.SaleEnded:
+                        events = events.Where(e =>
+                            e.SaleEndTime.HasValue && e.SaleEndTime < now);
+                        break;
+                }
+            }
+
+            if (eventProgressStatus.HasValue)
+            {
+                switch (eventProgressStatus.Value)
+                {
+                    case EventProgressStatus.Upcoming:
+                        events = events.Where(e => e.StartTime > now);
+                        break;
+                    case EventProgressStatus.Ongoing:
+                        events = events.Where(e => e.StartTime <= now && e.EndTime >= now);
+                        break;
+                    case EventProgressStatus.Ended:
+                        events = events.Where(e => e.EndTime < now);
+                        break;
+                }
+            }
+
+            if (minPrice.HasValue || maxPrice.HasValue)
+            {
+                events = events.Where(e => e.TicketTypes.Any());
+
+                if (minPrice.HasValue)
+                    events = events.Where(e => e.TicketTypes.Min(tt => tt.TicketPrice) >= minPrice.Value);
+
+                if (maxPrice.HasValue)
+                    events = events.Where(e => e.TicketTypes.Min(tt => tt.TicketPrice) <= maxPrice.Value);
+            }
 
             int totalCount = await events.CountAsync();
 
+            events = sortBy switch
+            {
+                EventSortBy.NearestTime => events.OrderBy(e => e.StartTime),
+                EventSortBy.LatestTime => events.OrderByDescending(e => e.StartTime),
+                EventSortBy.LowestPrice => events
+                    .OrderBy(e => e.TicketTypes.Any() ? e.TicketTypes.Min(tt => tt.TicketPrice) : decimal.MaxValue),
+                EventSortBy.HighestPrice => events
+                    .OrderByDescending(e => e.TicketTypes.Any() ? e.TicketTypes.Max(tt => tt.TicketPrice) : 0),
+                _ => events.OrderBy(e => e.StartTime) 
+            };
+
             var result = await events
-                .OrderByDescending(e => e.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(e => new EventsResponse

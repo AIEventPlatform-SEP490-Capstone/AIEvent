@@ -1488,7 +1488,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -1544,7 +1544,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
 
            // Act
-           var result = await _eventService.GetEventAsync(userId, null, null, null!, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(userId, null, null, null, null!, null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -1590,7 +1590,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(userId, null, null, null!, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(userId, null, null, null!, null, null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -1652,7 +1652,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, "music", null, null!, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, "music", null, null!, null, null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -1717,7 +1717,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, categoryId1.ToString(), null!, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, categoryId1.ToString(), null!, null, null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -1791,7 +1791,7 @@ namespace AIEvent.Application.Test.Services
            var tagRequest = new List<EventTagRequest> { new EventTagRequest { TagId = tagId1 } };
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, tagRequest, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, tagRequest, null, null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -1894,7 +1894,7 @@ namespace AIEvent.Application.Test.Services
            };
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, tagRequest, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, tagRequest, null, null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -1957,7 +1957,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, "Quan 1", null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, "Quan 1", null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2020,7 +2020,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, TimeLine.Today, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, TimeLine.Today, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2083,7 +2083,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, TimeLine.Tomorrow, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, TimeLine.Tomorrow, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2152,7 +2152,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, TimeLine.ThisWeek, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, TimeLine.ThisWeek, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2216,7 +2216,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, TimeLine.ThisMonth, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, TimeLine.ThisMonth, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2279,7 +2279,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2321,7 +2321,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, null, null, null,null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2402,7 +2402,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2471,7 +2471,7 @@ namespace AIEvent.Application.Test.Services
            var tagRequest = new List<EventTagRequest> { new EventTagRequest { TagId = tagId } };
 
            // Act
-           var result = await _eventService.GetEventAsync(null, "rock", categoryId.ToString(), tagRequest, "Quan 1", null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, "rock", categoryId.ToString(), tagRequest, "Quan 1", null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2533,7 +2533,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, 1, 1);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, null, null, null, null, 1, 1);
 
            // Assert
            result.Should().NotBeNull();
