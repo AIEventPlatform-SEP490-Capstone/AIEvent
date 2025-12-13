@@ -780,7 +780,7 @@ export default function OrganizerProfilePage() {
                   </div>
                 </Card>
 
-                {/* Thông tin thẻ */}
+                {/* Thông tin thẻ - Chỉ hỗ trợ 1 thẻ duy nhất */}
                 <Card className="bg-white shadow-md rounded-lg border border-gray-200">
                   <div className="px-6 py-4 border-b border-gray-200">
                     <div className="flex items-center justify-between">
@@ -789,16 +789,18 @@ export default function OrganizerProfilePage() {
                           <Wallet className="w-5 h-5 mr-2 text-blue-600" />
                           Thông tin thẻ
                         </h2>
-                        <p className="text-xs text-gray-600 mt-1">Quản lý và xem thông tin tài khoản ngân hàng của bạn</p>
+                        <p className="text-xs text-gray-600 mt-1">Quản lý thông tin tài khoản ngân hàng (chỉ hỗ trợ 1 thẻ)</p>
                       </div>
-                      <Button
-                        onClick={() => setIsAddPaymentModalOpen(true)}
-                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
-                        size="sm"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Thêm thẻ
-                      </Button>
+                      {paymentInformations.length === 0 && (
+                        <Button
+                          onClick={() => setIsAddPaymentModalOpen(true)}
+                          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
+                          size="sm"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Thêm thẻ
+                        </Button>
+                      )}
                     </div>
                   </div>
                   <div className="p-6">
@@ -824,36 +826,32 @@ export default function OrganizerProfilePage() {
                       <div className="text-center py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
                         <Wallet className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                         <p className="text-gray-600 text-base font-medium">Chưa có thông tin thẻ nào được lưu</p>
-                        <p className="text-gray-500 text-sm mt-1">Thêm thẻ để thanh toán nhanh chóng</p>
+                        <p className="text-gray-500 text-sm mt-1">Thêm thẻ để nhận thanh toán nhanh chóng</p>
                       </div>
                     ) : (
                       <>
-                        <div className="grid gap-4">
-                          {paymentInformations.map((paymentInfo) => (
+                        {/* Hiển thị thẻ duy nhất */}
+                        <div className="max-w-2xl mx-auto">
+                          {paymentInformations[0] && (
                             <div
-                              key={paymentInfo.paymentInformationId}
+                              key={paymentInformations[0].paymentInformationId}
                               className="group relative overflow-hidden bg-gradient-to-br from-[#F8F8F8] to-[#E8E8E8] rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 border border-[#D1D5DB]"
                             >
-                              {/* Decorative Pattern */}
                               <div className="absolute inset-0 opacity-5">
                                 <div className="absolute top-0 right-0 w-48 h-48 bg-gray-300 rounded-full -mr-24 -mt-24"></div>
                                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-gray-300 rounded-full -ml-16 -mb-16"></div>
                               </div>
 
-                              {/* Card Content */}
                               <div className="relative p-5">
-                                {/* Top Section */}
                                 <div className="flex items-start justify-between mb-4">
                                   <div className="flex items-center space-x-3">
-                                    {paymentInfo.bankLogo ? (
+                                    {paymentInformations[0].bankLogo ? (
                                       <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
                                         <img
-                                          src={paymentInfo.bankLogo}
-                                          alt={paymentInfo.bankName}
+                                          src={paymentInformations[0].bankLogo}
+                                          alt={paymentInformations[0].bankName}
                                           className="w-20 h-20 object-contain"
-                                          onError={(e) => {
-                                            e.target.style.display = 'none';
-                                          }}
+                                          onError={(e) => { e.target.style.display = 'none'; }}
                                         />
                                       </div>
                                     ) : (
@@ -863,41 +861,35 @@ export default function OrganizerProfilePage() {
                                     )}
                                     <div>
                                       <Badge className="bg-gray-300/40 text-gray-800 border border-gray-300/50 text-xs px-3 py-1 shadow-sm">
-                                        {paymentInfo.bankShortName || paymentInfo.bankName}
+                                        {paymentInformations[0].bankShortName || paymentInformations[0].bankName}
                                       </Badge>
-                                      {paymentInfo.branchName && (
-                                        <p className="text-gray-600 text-xs mt-1">{paymentInfo.branchName}</p>
+                                      {paymentInformations[0].branchName && (
+                                        <p className="text-gray-600 text-xs mt-1">{paymentInformations[0].branchName}</p>
                                       )}
                                     </div>
                                   </div>
-                                  <div className="flex items-center space-x-2">
-                                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center border border-gray-200 shadow-sm">
-                                      <CreditCard className="w-4 h-4 text-gray-700" />
-                                    </div>
-                                    <button
-                                      onClick={() => handleDeletePaymentInfo(paymentInfo.paymentInformationId)}
-                                      disabled={isDeleting}
-                                      className="w-8 h-8 bg-white hover:bg-red-50 rounded-lg flex items-center justify-center border border-gray-200 hover:border-red-300 shadow-sm transition-all duration-200 hover:scale-105 disabled:opacity-50"
-                                      title="Xóa thông tin thẻ"
-                                    >
-                                      <Trash2 className="w-4 h-4 text-red-600" />
-                                    </button>
-                                  </div>
+                                  <button
+                                    onClick={() => handleDeletePaymentInfo(paymentInformations[0].paymentInformationId)}
+                                    disabled={isDeleting}
+                                    className="w-10 h-10 bg-white hover:bg-red-50 rounded-lg flex items-center justify-center border border-gray-200 hover:border-red-300 shadow-sm transition-all duration-200 hover:scale-105 disabled:opacity-50"
+                                    title="Xóa thông tin thẻ"
+                                  >
+                                    <Trash2 className="w-5 h-5 text-red-600" />
+                                  </button>
                                 </div>
 
-                                {/* Account Number Section */}
                                 <div className="mb-3">
                                   <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Số tài khoản</p>
                                   <div className="flex items-center justify-between">
                                     <p className="text-xl font-bold text-gray-900 tracking-wider">
-                                      {paymentInfo.accountNumber}
+                                      {paymentInformations[0].accountNumber}
                                     </p>
                                     <button
-                                      onClick={() => handleCopyToClipboard(paymentInfo.accountNumber, paymentInfo.accountNumber)}
+                                      onClick={() => handleCopyToClipboard(paymentInformations[0].accountNumber, paymentInformations[0].accountNumber)}
                                       className="ml-3 p-2 bg-white hover:bg-gray-50 rounded-lg transition-all duration-200 border border-gray-200 hover:border-gray-300 hover:scale-105 shadow-sm"
                                       title="Sao chép số tài khoản"
                                     >
-                                      {copiedAccountNumber === paymentInfo.accountNumber ? (
+                                      {copiedAccountNumber === paymentInformations[0].accountNumber ? (
                                         <CheckCircle2 className="w-4 h-4 text-green-600" />
                                       ) : (
                                         <Copy className="w-4 h-4 text-gray-700" />
@@ -906,7 +898,6 @@ export default function OrganizerProfilePage() {
                                   </div>
                                 </div>
 
-                                {/* Account Holder Section */}
                                 <div>
                                   <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Chủ tài khoản</p>
                                   <div className="flex items-center">
@@ -914,12 +905,11 @@ export default function OrganizerProfilePage() {
                                       <User className="w-4 h-4 text-gray-700" />
                                     </div>
                                     <p className="text-base font-semibold text-gray-900">
-                                      {paymentInfo.accountHolderName}
+                                      {paymentInformations[0].accountHolderName}
                                     </p>
                                   </div>
                                 </div>
 
-                                {/* Bottom Decoration */}
                                 <div className="absolute bottom-3 right-3 opacity-10">
                                   <div className="grid grid-cols-4 gap-1">
                                     {[...Array(16)].map((_, i) => (
@@ -929,63 +919,8 @@ export default function OrganizerProfilePage() {
                                 </div>
                               </div>
                             </div>
-                          ))}
+                          )}
                         </div>
-
-                        {/* Pagination */}
-                        {paymentPagination.totalPages > 1 && (
-                          <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
-                            <div className="text-sm text-gray-600">
-                              Hiển thị {(paymentPagination.currentPage - 1) * paymentPagination.pageSize + 1} - {Math.min(paymentPagination.currentPage * paymentPagination.pageSize, paymentPagination.totalItems)} trong số {paymentPagination.totalItems} thẻ
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <button
-                                onClick={() => fetchPaymentInformations(paymentPagination.currentPage - 1)}
-                                disabled={paymentPagination.currentPage === 1 || isLoadingPaymentInfo}
-                                className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-                              >
-                                <ChevronLeft className="w-4 h-4" />
-                              </button>
-                              <div className="flex items-center space-x-1">
-                                {[...Array(paymentPagination.totalPages)].map((_, i) => {
-                                  const page = i + 1;
-                                  if (
-                                    page === 1 ||
-                                    page === paymentPagination.totalPages ||
-                                    (page >= paymentPagination.currentPage - 1 && page <= paymentPagination.currentPage + 1)
-                                  ) {
-                                    return (
-                                      <button
-                                        key={page}
-                                        onClick={() => fetchPaymentInformations(page)}
-                                        disabled={isLoadingPaymentInfo}
-                                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${paymentPagination.currentPage === page
-                                          ? 'bg-blue-600 text-white'
-                                          : 'border border-gray-300 hover:bg-gray-50'
-                                          } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                      >
-                                        {page}
-                                      </button>
-                                    );
-                                  } else if (
-                                    page === paymentPagination.currentPage - 2 ||
-                                    page === paymentPagination.currentPage + 2
-                                  ) {
-                                    return <span key={page} className="px-2">...</span>;
-                                  }
-                                  return null;
-                                })}
-                              </div>
-                              <button
-                                onClick={() => fetchPaymentInformations(paymentPagination.currentPage + 1)}
-                                disabled={paymentPagination.currentPage === paymentPagination.totalPages || isLoadingPaymentInfo}
-                                className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-                              >
-                                <ChevronRight className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        )}
                       </>
                     )}
                   </div>
@@ -1395,18 +1330,17 @@ export default function OrganizerProfilePage() {
       </div>
 
       {/* Add Payment Information Modal */}
-      <Dialog open={isAddPaymentModalOpen} onOpenChange={setIsAddPaymentModalOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden p-0">
-          <div className="p-6 max-h-[90vh] overflow-y-auto">
-            <AddPaymentModal
-              onClose={() => setIsAddPaymentModalOpen(false)}
-              onSuccess={() => {
-                setIsAddPaymentModalOpen(false);
-                fetchPaymentInformations(paymentPagination.currentPage);
-              }}
-            />
-          </div>
-        </DialogContent>
+      <Dialog open={isAddPaymentModalOpen && paymentInformations.length === 0} onOpenChange={setIsAddPaymentModalOpen}>        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden p-0">
+        <div className="p-6 max-h-[90vh] overflow-y-auto">
+          <AddPaymentModal
+            onClose={() => setIsAddPaymentModalOpen(false)}
+            onSuccess={() => {
+              setIsAddPaymentModalOpen(false);
+              fetchPaymentInformations(paymentPagination.currentPage);
+            }}
+          />
+        </div>
+      </DialogContent>
       </Dialog>
     </div>
   );

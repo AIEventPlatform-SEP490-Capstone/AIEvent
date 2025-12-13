@@ -3,20 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   MapPin,
-  Calendar,
-  Clock,
-  Users,
-  Heart,
   Navigation,
   Loader2,
   AlertCircle,
-  RefreshCw,
   ExternalLink,
   Search,
-  Filter,
   X,
-  ChevronDown,
-  ChevronUp,
   Ruler,
   DollarSign,
   GripVertical,
@@ -38,7 +30,7 @@ import locationInfoIcon from "../../assets/location-info.png";
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Fix for default marker icons in Leaflet
+// Fix default marker icons in Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -46,9 +38,9 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// Tính toán khoảng cách giữa hai điểm trên bề mặt trái đất (công thức Haversine)
+// Haversine formula
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371; // Radius of the Earth in km
+  const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
   const a =
@@ -62,26 +54,12 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 
 const createIconSVGString = (iconName, size = 14, color = '#6b7280') => {
   const iconPaths = {
-    MapPin: [
-      'M20 10c0 4.418-8 12-8 12s-8-7.582-8-12a8 8 0 0 1 16 0Z',
-      'M12 11a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z'
-    ],
-    Ruler: [
-      'M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z',
-      'M14.5 12.5l2-2',
-      'M11.5 9.5l2-2',
-      'M8.5 6.5l2-2',
-      'M17.5 15.5l2-2'
-    ],
-    DollarSign: [
-      'M12 2v20',
-      'M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'
-    ]
+    MapPin: ['M20 10c0 4.418-8 12-8 12s-8-7.582-8-12a8 8 0 0 1 16 0Z', 'M12 11a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z'],
+    Ruler: ['M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z', 'M14.5 12.5l2-2', 'M11.5 9.5l2-2', 'M8.5 6.5l2-2', 'M17.5 15.5l2-2'],
+    DollarSign: ['M12 2v20', 'M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6']
   };
-
   const paths = iconPaths[iconName] || iconPaths.MapPin;
   const pathsString = paths.map(path => `<path d="${path}"/>`).join('');
-
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;">${pathsString}</svg>`;
 };
 
@@ -91,9 +69,10 @@ function NearbyEventsPage() {
   const navigate = useNavigate();
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
-  const markersRef = useRef([]);
-  const userMarkerRef = useRef(null);
-  const friendMarkersRef = useRef([]);
+  const markersRef = useRef([]);           // Event markers
+  const userMarkerRef = useRef(null);      // User location marker (green)
+  const friendMarkersRef = useRef([]);     // Friend markers
+  const pickMarkerRef = useRef(null);      // Pick location marker (orange)
 
   const [events, setEvents] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
@@ -103,26 +82,25 @@ function NearbyEventsPage() {
   const [locationError, setLocationError] = useState(null);
   const [eventsError, setEventsError] = useState(null);
   const [mapReady, setMapReady] = useState(false);
-  const [radius, setRadius] = useState(30); // Default radius 30km
+  const [radius, setRadius] = useState(30);
   const [categoryId, setCategoryId] = useState("");
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
-  const [locationInput, setLocationInput] = useState(""); // Input for manual address
-  const [locationType, setLocationType] = useState("auto"); // "auto" or "manual"
+  const [locationInput, setLocationInput] = useState("");
+  const [locationType, setLocationType] = useState("auto");
   const [loadingGeocode, setLoadingGeocode] = useState(false);
-  const [showFilter, setShowFilter] = useState(true); // Toggle filter visibility
-  const [dialogPosition, setDialogPosition] = useState({ x: 0, y: 80 }); // Dialog position - will be calculated on mount
-  const [isDragging, setIsDragging] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const dragRef = useRef(null);
-  
-  // Friends location state
+  const [dialogPosition, setDialogPosition] = useState({ x: 0, y: 80 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isPickingOnMap, setIsPickingOnMap] = useState(false);
+
+  // Friends state
   const [friends, setFriends] = useState([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [isLocationSharingEnabled, setIsLocationSharingEnabled] = useState(false);
   const [togglingLocationSharing, setTogglingLocationSharing] = useState(false);
 
-  // Calculate default position on mount (right side)
+  // Default dialog position
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const defaultX = window.innerWidth - 320 - 20;
@@ -130,104 +108,142 @@ function NearbyEventsPage() {
     }
   }, []);
 
-  // Load categories on component mount
+  // Load categories
   useEffect(() => {
+    const loadCategories = async () => {
+      setLoadingCategories(true);
+      try {
+        const response = await eventCategoryAPI.getEventCategories(1, 100);
+        let categoriesList = [];
+        if (response?.data?.items) categoriesList = response.data.items;
+        else if (response?.data && Array.isArray(response.data)) categoriesList = response.data;
+        else if (response?.items) categoriesList = response.items;
+        else if (Array.isArray(response)) categoriesList = response;
+
+        categoriesList = categoriesList.filter(cat => cat && (cat.eventCategoryId || cat.id));
+        setCategories(categoriesList);
+      } catch (error) {
+        console.error('Error loading categories:', error);
+        setCategories([]);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
     loadCategories();
   }, []);
 
-  const loadCategories = async () => {
-    setLoadingCategories(true);
-    try {
-      const response = await eventCategoryAPI.getEventCategories(1, 100);
-
-      // Handle different response structures
-      let categoriesList = [];
-      if (response?.data?.items) {
-        categoriesList = response.data.items;
-      } else if (response?.data && Array.isArray(response.data)) {
-        categoriesList = response.data;
-      } else if (response?.items) {
-        categoriesList = response.items;
-      } else if (Array.isArray(response)) {
-        categoriesList = response;
-      }
-
-      // Filter out any null/undefined categories and ensure we have valid structure
-      categoriesList = categoriesList.filter(cat => cat && (cat.eventCategoryId || cat.id));
-      setCategories(categoriesList);
-    } catch (error) {
-      console.error('Error loading categories:', error);
-      setCategories([]);
-    } finally {
-      setLoadingCategories(false);
-    }
-  };
-
   // Initialize map
   useEffect(() => {
+    if (!mapRef.current || mapInstanceRef.current) return;
+
     const initMap = () => {
-      if (mapRef.current && !mapInstanceRef.current) {
-        try {
-          // Default center: Ho Chi Minh City
-          const defaultCenter = [10.8231, 106.6297];
+      try {
+        const defaultCenter = [10.8231, 106.6297];
+        mapInstanceRef.current = L.map(mapRef.current, {
+          center: defaultCenter,
+          zoom: 12,
+          zoomControl: true
+        });
 
-          mapInstanceRef.current = L.map(mapRef.current, {
-            center: defaultCenter,
-            zoom: 12,
-            zoomControl: true
-          });
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 19
+        }).addTo(mapInstanceRef.current);
 
-          // Add OpenStreetMap tile layer
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 19
-          }).addTo(mapInstanceRef.current);
-
-          setMapReady(true);
-          addEventMarkers();
-        } catch (err) {
-          console.error('Error initializing map:', err);
-          setLocationError('Không thể khởi tạo bản đồ');
-        }
+        setMapReady(true);
+      } catch (err) {
+        console.error('Error initializing map:', err);
+        setLocationError('Không thể khởi tạo bản đồ');
       }
     };
 
-    const timer = setTimeout(() => {
-      initMap();
-    }, 100);
-
-    return () => {
-      clearTimeout(timer);
-      if (mapInstanceRef.current) {
-        try {
-          mapInstanceRef.current.remove();
-        } catch (err) {
-          console.error('Error removing map:', err);
-        }
-        mapInstanceRef.current = null;
-      }
-    };
+    const timer = setTimeout(initMap, 100);
+    return () => clearTimeout(timer);
   }, []);
 
-  // Add friend markers to map
+  // Handle map click for picking location
+  useEffect(() => {
+    if (!mapInstanceRef.current || !mapReady) return;
+
+    const handleMapClick = (e) => {
+      if (!isPickingOnMap) return;
+
+      const { lat, lng } = e.latlng;
+
+      // Remove previous pick marker
+      if (pickMarkerRef.current) {
+        mapInstanceRef.current.removeLayer(pickMarkerRef.current);
+        pickMarkerRef.current = null;
+      }
+
+      // Remove user marker to prevent overlap
+      if (userMarkerRef.current) {
+        mapInstanceRef.current.removeLayer(userMarkerRef.current);
+        userMarkerRef.current = null;
+      }
+
+      // Create orange pulsing pick marker
+      const pickIcon = L.divIcon({
+        className: 'custom-pick-marker',
+        html: `
+          <div style="
+            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+            width: 44px;
+            height: 44px;
+            border-radius: 50% 50% 50% 0;
+            border: 5px solid white;
+            box-shadow: 0 6px 24px rgba(249, 115, 22, 0.7);
+            animation: pickPulse 1.8s ease-in-out infinite;
+            transform: rotate(-45deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          ">
+            <div style="
+              width: 16px;
+              height: 16px;
+              background: white;
+              border-radius: 50%;
+              transform: rotate(45deg);
+            "></div>
+          </div>
+        `,
+        iconSize: [44, 44],
+        iconAnchor: [22, 44],
+      });
+
+      const newMarker = L.marker([lat, lng], { icon: pickIcon })
+        .addTo(mapInstanceRef.current)
+        .bindPopup('<div style="font-weight:700;color:#ea580c;text-align:center;">✓ Vị trí tìm kiếm đã chọn<br><small>Click lại để thay đổi</small></div>', { closeOnClick: false })
+        .openPopup();
+
+      pickMarkerRef.current = newMarker;
+
+      // Update location and search
+      setUserLocation({ lat, lng });
+      setLocationError(null);
+      setEvents([]);
+
+      // Zoom to selected location
+      mapInstanceRef.current.flyTo([lat, lng], 15, { duration: 1.2 });
+    };
+
+    mapInstanceRef.current.on('click', handleMapClick);
+
+    return () => {
+      mapInstanceRef.current.off('click', handleMapClick);
+    };
+  }, [isPickingOnMap, mapReady]);
+
+  // Add friend markers
   const addFriendMarkers = () => {
     if (!mapInstanceRef.current || !mapReady) return;
 
-    // Clear existing friend markers
-    friendMarkersRef.current.forEach(marker => {
-      if (marker && mapInstanceRef.current) {
-        mapInstanceRef.current.removeLayer(marker);
-      }
-    });
+    friendMarkersRef.current.forEach(marker => marker && mapInstanceRef.current.removeLayer(marker));
     friendMarkersRef.current = [];
 
-    // Add markers for each friend
     friends.forEach((friend) => {
-      // Check if friend has valid coordinates
-      if (friend.latitude !== null && friend.latitude !== undefined &&
-        friend.longitude !== null && friend.longitude !== undefined &&
-        friend.latitude !== 0 && friend.longitude !== 0) {
-        
+      if (friend.latitude && friend.longitude && friend.latitude !== 0 && friend.longitude !== 0) {
         const friendIcon = L.divIcon({
           className: 'friend-marker',
           html: `<div style="
@@ -261,15 +277,9 @@ function NearbyEventsPage() {
           iconAnchor: [14, 14],
         });
 
-        // Calculate distance if user location is available
         let distanceText = '';
         if (userLocation) {
-          const distance = calculateDistance(
-            userLocation.lat,
-            userLocation.lng,
-            friend.latitude,
-            friend.longitude
-          );
+          const distance = calculateDistance(userLocation.lat, userLocation.lng, friend.latitude, friend.longitude);
           distanceText = `<p style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">
             <strong style="color: #374151;">${createIconSVGString('Ruler', 14, '#6b7280')} Khoảng cách:</strong> <span style="color: #8b5cf6; font-weight: 600;">${distance.toFixed(1)} km</span>
           </p>`;
@@ -304,25 +314,15 @@ function NearbyEventsPage() {
     });
   };
 
-  // Add event markers to map
+  // Add event markers
   const addEventMarkers = () => {
     if (!mapInstanceRef.current || !mapReady) return;
 
-    // Clear existing markers
-    markersRef.current.forEach(marker => {
-      if (marker && mapInstanceRef.current) {
-        mapInstanceRef.current.removeLayer(marker);
-      }
-    });
+    markersRef.current.forEach(marker => marker && mapInstanceRef.current.removeLayer(marker));
     markersRef.current = [];
 
-    // Add markers for each event
     events.forEach((event) => {
-      // Check if event has valid coordinates
-      if (event.latitude !== null && event.latitude !== undefined &&
-        event.longitude !== null && event.longitude !== undefined &&
-        event.latitude !== 0 && event.longitude !== 0) {
-        const markerId = `marker-${event.eventId}`;
+      if (event.latitude && event.longitude && event.latitude !== 0 && event.longitude !== 0) {
         const customIcon = new L.Icon({
           iconUrl: locationInfoIcon,
           iconSize: [40, 40],
@@ -331,7 +331,6 @@ function NearbyEventsPage() {
           className: 'event-marker',
         });
 
-        // Thay đổi phần bindPopup trong hàm addEventMarkers
         const marker = L.marker([event.latitude, event.longitude], { icon: customIcon })
           .addTo(mapInstanceRef.current)
           .bindPopup(`
@@ -341,7 +340,7 @@ function NearbyEventsPage() {
                 <p style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">
                   <strong style="color: #374151;">${createIconSVGString('MapPin', 14, '#ef4444')} Địa điểm:</strong> ${event.locationName || 'N/A'}
                 </p>
-                ${event.distance !== null && event.distance !== undefined ? `
+                ${event.distance !== null ? `
                 <p style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">
                   <strong style="color: #374151;">${createIconSVGString('Ruler', 14, '#6b7280')} Khoảng cách:</strong> <span style="color: #3b82f6; font-weight: 600;">${event.distance.toFixed(1)} km</span>
                 </p>
@@ -351,51 +350,38 @@ function NearbyEventsPage() {
                 </p>
               </div>
               <button onclick="window.navigateToEvent('${event.eventId}')" 
-                style="
-                  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-                  color: white;
-                  border: none;
-                  padding: 8px 16px;
-                  border-radius: 6px;
-                  cursor: pointer;
-                  font-size: 13px;
-                  font-weight: 600;
-                  width: 100%;
-                  transition: transform 0.2s;
-                  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
-                " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">Xem chi tiết</button>
+                style="background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%);color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;width:100%;box-shadow:0 2px 4px rgba(59,130,246,0.3);"
+                onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">Xem chi tiết</button>
             </div>
           `)
-          .on('click', () => {
-            setSelectedEvent(event);
-          });
+          .on('click', () => setSelectedEvent(event));
+
         markersRef.current.push(marker);
       }
     });
 
-    // Fit map to show all markers (include user location and friends if available)
-    if (markersRef.current.length > 0 || friendMarkersRef.current.length > 0) {
-      const group = new L.featureGroup([...markersRef.current, ...friendMarkersRef.current]);
-      if (userMarkerRef.current) {
-        group.addLayer(userMarkerRef.current);
-      }
+    // Fit bounds including pick marker
+    const allLayers = [...markersRef.current, ...friendMarkersRef.current];
+    if (userMarkerRef.current) allLayers.push(userMarkerRef.current);
+    if (pickMarkerRef.current) allLayers.push(pickMarkerRef.current);
+
+    if (allLayers.length > 0) {
+      const group = new L.featureGroup(allLayers);
       mapInstanceRef.current.fitBounds(group.getBounds().pad(0.15));
     }
   };
 
-  // Update markers when events or friends change
+  // Re-render markers
   useEffect(() => {
     if (mapReady) {
       addEventMarkers();
       addFriendMarkers();
     }
-  }, [events, friends, mapReady]);
+  }, [events, friends, mapReady, userLocation]);
 
-  // Fetch events from API
+  // Fetch nearby events
   const fetchNearbyEvents = useCallback(async () => {
-    if (!userLocation) {
-      return; // Don't fetch if no user location
-    }
+    if (!userLocation) return;
 
     setLoadingEvents(true);
     setEventsError(null);
@@ -410,26 +396,11 @@ function NearbyEventsPage() {
         pageSize: 100
       });
 
-      // Map API response to component format
       const mappedEvents = (response.items || []).map((event) => {
-        // Check if latitude and longitude are valid (not null, not undefined, not 0)
-        const hasValidCoords =
-          event.latitude !== null &&
-          event.latitude !== undefined &&
-          event.latitude !== 0 &&
-          event.longitude !== null &&
-          event.longitude !== undefined &&
-          event.longitude !== 0;
-
-        // Calculate distance if coordinates are available
+        const hasValidCoords = event.latitude && event.longitude && event.latitude !== 0 && event.longitude !== 0;
         let distance = null;
         if (hasValidCoords) {
-          distance = calculateDistance(
-            userLocation.lat,
-            userLocation.lng,
-            event.latitude,
-            event.longitude
-          );
+          distance = calculateDistance(userLocation.lat, userLocation.lng, event.latitude, event.longitude);
         }
 
         return {
@@ -442,21 +413,14 @@ function NearbyEventsPage() {
           address: event.locationName,
           latitude: hasValidCoords ? event.latitude : null,
           longitude: hasValidCoords ? event.longitude : null,
-          distance: distance,
+          distance,
           ticketPrice: event.ticketPrice || 0,
           categoryName: event.eventCategoryName || "",
-          image: event.imgListEvent && event.imgListEvent.length > 0
-            ? event.imgListEvent[0]
-            : DEFAULT_EVENT_IMAGE
+          image: event.imgListEvent && event.imgListEvent.length > 0 ? event.imgListEvent[0] : DEFAULT_EVENT_IMAGE
         };
-      }).filter(event => event.latitude !== null && event.longitude !== null)
-        .sort((a, b) => {
-          // Sort by distance if available, otherwise by title
-          if (a.distance !== null && b.distance !== null) {
-            return a.distance - b.distance;
-          }
-          return a.title.localeCompare(b.title);
-        });
+      })
+        .filter(event => event.latitude !== null && event.longitude !== null)
+        .sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
 
       setEvents(mappedEvents);
     } catch (error) {
@@ -468,39 +432,37 @@ function NearbyEventsPage() {
     }
   }, [userLocation, radius, categoryId]);
 
-  // Fetch events when user location or radius changes
   useEffect(() => {
-    if (userLocation) {
-      fetchNearbyEvents();
-    }
-  }, [userLocation, radius, fetchNearbyEvents]);
+    if (userLocation) fetchNearbyEvents();
+  }, [userLocation, radius, categoryId, fetchNearbyEvents]);
 
-  // Fetch friends' locations - luôn fetch khi có userLocation, không phụ thuộc vào location sharing
+  // Fetch friends location
   const fetchFriendsLocation = useCallback(async () => {
-    // Chỉ fetch khi có userLocation
-    if (!userLocation) {
-      return;
-    }
-
+    if (!userLocation) return;
     setLoadingFriends(true);
     try {
-      // Gọi API với radius (km), latitude, longitude - API sẽ tự chuyển sang mét
       const response = await friendAPI.getFriendsLocation({
-        radius: radius, // km - API sẽ chuyển sang mét
+        radius,
         latitude: userLocation.lat,
         longitude: userLocation.lng
       });
-      
       const friendsList = Array.isArray(response) ? response : (response?.data || []);
       setFriends(friendsList);
     } catch (error) {
       console.error('Error fetching friends location:', error);
-      // Không hiển thị lỗi nếu không có bạn bè chia sẻ vị trí
       setFriends([]);
     } finally {
       setLoadingFriends(false);
     }
   }, [userLocation, radius]);
+
+  useEffect(() => {
+    if (userLocation) {
+      fetchFriendsLocation();
+      const interval = setInterval(fetchFriendsLocation, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [userLocation, radius, fetchFriendsLocation]);
 
   // Toggle location sharing
   const handleToggleLocationSharing = async (enabled) => {
@@ -508,8 +470,6 @@ function NearbyEventsPage() {
     try {
       await userAPI.toggleLocationSharing(enabled);
       setIsLocationSharingEnabled(enabled);
-      // Không clear friends khi tắt location sharing - vẫn cho phép xem vị trí bạn bè
-      // Chỉ update location của mình qua SignalR khi bật
     } catch (error) {
       console.error('Error toggling location sharing:', error);
       setLocationError('Không thể thay đổi cài đặt chia sẻ vị trí');
@@ -518,232 +478,149 @@ function NearbyEventsPage() {
     }
   };
 
-  // Handle location updates from SignalR
-  const handleLocationUpdate = useCallback((data) => {
-    // data có thể là location update của bạn bè
-    // Cập nhật vị trí của bạn bè trong danh sách
-    if (data && data.friendId) {
-      setFriends(prevFriends => {
-        const updatedFriends = [...prevFriends];
-        const friendIndex = updatedFriends.findIndex(f => f.friendId === data.friendId);
-        if (friendIndex >= 0) {
-          updatedFriends[friendIndex] = {
-            ...updatedFriends[friendIndex],
-            latitude: data.latitude,
-            longitude: data.longitude
-          };
-        }
-        return updatedFriends;
-      });
-    }
-  }, []);
-
-  // Setup SignalR for location sharing
   const { updateLocation: updateLocationViaSignalR } = useLocationSharing(
-    handleLocationUpdate,
+    (data) => {
+      if (data && data.friendId) {
+        setFriends(prev => {
+          const updated = [...prev];
+          const index = updated.findIndex(f => f.friendId === data.friendId);
+          if (index >= 0) {
+            updated[index] = { ...updated[index], latitude: data.latitude, longitude: data.longitude };
+          }
+          return updated;
+        });
+      }
+    },
     isLocationSharingEnabled && userLocation !== null
   );
 
-  // Fetch friends location khi có userLocation - không phụ thuộc vào location sharing
-  useEffect(() => {
-    if (userLocation) {
-      fetchFriendsLocation();
-      // Refresh friends location periodically
-      const interval = setInterval(fetchFriendsLocation, 60000); // Every minute
-      return () => clearInterval(interval);
-    }
-  }, [userLocation, radius, fetchFriendsLocation]);
-
-  // Update location via SignalR when user location changes and sharing is enabled
   useEffect(() => {
     if (isLocationSharingEnabled && userLocation && updateLocationViaSignalR) {
       updateLocationViaSignalR(userLocation.lat, userLocation.lng);
     }
   }, [userLocation, isLocationSharingEnabled, updateLocationViaSignalR]);
 
-  // Add user location marker
+  // User location marker - ONLY show when NOT picking
   useEffect(() => {
-    if (mapInstanceRef.current && userLocation) {
-      // Remove existing user marker
+    if (!mapInstanceRef.current || !userLocation || !mapReady || isPickingOnMap) {
+      // Remove user marker if picking
       if (userMarkerRef.current) {
         mapInstanceRef.current.removeLayer(userMarkerRef.current);
+        userMarkerRef.current = null;
       }
-
-      // Add user location marker (different color)
-      const userIcon = L.divIcon({
-        className: 'user-marker',
-        html: `<div style="
-          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          border: 4px solid white;
-          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          animation: userPulse 2s ease-in-out infinite;
-        ">
-          <div style="
-            width: 12px;
-            height: 12px;
-            background: white;
-            border-radius: 50%;
-          "></div>
-          <style>
-            @keyframes userPulse {
-              0%, 100% {
-                transform: scale(1);
-                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-              }
-              50% {
-                transform: scale(1.15);
-                box-shadow: 0 6px 20px rgba(16, 185, 129, 0.7);
-              }
-            }
-          </style>
-        </div>`,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
-      });
-
-      userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon })
-        .addTo(mapInstanceRef.current)
-        .bindPopup(`<b style="color: #059669;">${createIconSVGString('MapPin', 14, '#059669')} Vị trí của bạn</b>`)
-        .openPopup();
-
-      // Center map on user location
-      mapInstanceRef.current.setView([userLocation.lat, userLocation.lng], 13);
+      return;
     }
-  }, [userLocation]);
 
-  // Expose selectEvent to window for popup buttons
+    if (userMarkerRef.current) {
+      mapInstanceRef.current.removeLayer(userMarkerRef.current);
+    }
+
+    const userIcon = L.divIcon({
+      className: 'user-marker',
+      html: `<div style="
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 4px solid white;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: userPulse 2s ease-in-out infinite;
+      ">
+        <div style="width: 12px; height: 12px; background: white; border-radius: 50%;"></div>
+      </div>`,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
+    });
+
+    userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon })
+      .addTo(mapInstanceRef.current)
+      .bindPopup(`<b style="color: #059669;">${createIconSVGString('MapPin', 14, '#059669')} Vị trí của bạn</b>`)
+      .openPopup();
+
+    mapInstanceRef.current.setView([userLocation.lat, userLocation.lng], 13);
+  }, [userLocation, isPickingOnMap, mapReady]);
+
+  // Cleanup when turning off pick mode
   useEffect(() => {
-    window.selectEvent = (eventId) => {
-      const event = events.find(e => e.eventId === eventId);
-      if (event) {
-        setSelectedEvent(event);
-        // Scroll to event list
-        const eventElement = document.getElementById(`event-${eventId}`);
-        if (eventElement) {
-          eventElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }
-    };
+    if (!isPickingOnMap && pickMarkerRef.current) {
+      mapInstanceRef.current.removeLayer(pickMarkerRef.current);
+      pickMarkerRef.current = null;
+    }
+  }, [isPickingOnMap]);
 
+  // Window functions for popup
+  useEffect(() => {
     window.navigateToEvent = (eventId) => {
-      const event = events.find(e => e.eventId === eventId);
-      if (event && event.eventId) {
-        navigate(`/event/${event.eventId}`);
-      }
+      navigate(`/event/${eventId}`);
     };
 
     return () => {
-      delete window.selectEvent;
       delete window.navigateToEvent;
     };
-  }, [events, navigate]);
+  }, [navigate]);
 
-  
-  // Geocode address to coordinates using Nominatim (OpenStreetMap)
+  // Geocode address
   const geocodeAddress = async (address) => {
     try {
       setLoadingGeocode(true);
-      setLocationError(null);
-
-      // Using Nominatim geocoding service
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&countrycodes=vn`,
-        {
-          headers: {
-            'User-Agent': 'AIEvent/1.0'
-          }
-        }
+        { headers: { 'User-Agent': 'AIEvent/1.0' } }
       );
-
-      if (!response.ok) {
-        throw new Error('Không thể tìm thấy địa chỉ');
-      }
-
+      if (!response.ok) throw new Error('Không thể tìm thấy địa chỉ');
       const data = await response.json();
-
       if (data && data.length > 0) {
-        const result = data[0];
-        const lat = parseFloat(result.lat);
-        const lon = parseFloat(result.lon);
-
-        return {
-          lat,
-          lng: lon,
-          address: result.display_name || address
-        };
-      } else {
-        throw new Error('Không tìm thấy địa chỉ. Vui lòng thử lại với địa chỉ khác.');
+        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), address: data[0].display_name };
       }
+      throw new Error('Không tìm thấy địa chỉ');
     } catch (error) {
-      console.error('Geocoding error:', error);
-      throw new Error(error.message || 'Không thể tìm thấy địa chỉ. Vui lòng thử lại.');
+      throw new Error(error.message || 'Lỗi định vị địa chỉ');
     } finally {
       setLoadingGeocode(false);
     }
   };
 
-  // Handle manual address input
   const handleSearchByAddress = async () => {
     if (!locationInput.trim()) {
       setLocationError('Vui lòng nhập địa chỉ');
       return;
     }
-
     try {
       const location = await geocodeAddress(locationInput);
       setUserLocation(location);
-      setEventsError(null);
-      setEvents([]); // Clear previous events
+      setEvents([]);
     } catch (error) {
       setLocationError(error.message);
     }
   };
 
-  // Lấy vị trí chính xác của người dùng từ geolocation của trình duyệt
   const getUserLocation = () => {
     if (!navigator.geolocation) {
-      setLocationError('Trình duyệt của bạn không hỗ trợ định vị');
+      setLocationError('Trình duyệt không hỗ trợ định vị');
       return;
     }
-
     setLoadingLocation(true);
     setLocationError(null);
-    setEventsError(null);
-    setEvents([]); // Clear previous events
-
+    setEvents([]);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const { latitude, longitude } = position.coords;
-        const newLocation = { lat: latitude, lng: longitude };
+        const newLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
         setUserLocation(newLocation);
         setLoadingLocation(false);
-        
-        // Update location via SignalR if sharing is enabled
         if (isLocationSharingEnabled && updateLocationViaSignalR) {
-          updateLocationViaSignalR(latitude, longitude);
+          updateLocationViaSignalR(newLocation.lat, newLocation.lng);
         }
       },
       (error) => {
-        console.error('Geolocation error:', error);
         let errorMessage = 'Không thể lấy vị trí của bạn. ';
         switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage += 'Vui lòng cấp quyền truy cập vị trí.';
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage += 'Thông tin vị trí không khả dụng.';
-            break;
-          case error.TIMEOUT:
-            errorMessage += 'Yêu cầu vị trí hết thời gian chờ.';
-            break;
-          default:
-            errorMessage += 'Vui lòng thử lại.';
+          case error.PERMISSION_DENIED: errorMessage += 'Vui lòng cấp quyền truy cập vị trí.'; break;
+          case error.POSITION_UNAVAILABLE: errorMessage += 'Thông tin vị trí không khả dụng.'; break;
+          case error.TIMEOUT: errorMessage += 'Yêu cầu vị trí hết thời gian chờ.'; break;
+          default: errorMessage += 'Vui lòng thử lại.'; break;
         }
         setLocationError(errorMessage);
         setLoadingLocation(false);
@@ -757,30 +634,20 @@ function NearbyEventsPage() {
     }
   };
 
-  // Handle drag for dialog
   const handleDrag = (event, info) => {
     const newX = dialogPosition.x + info.delta.x;
     const newY = dialogPosition.y + info.delta.y;
-
     setDialogPosition({
-      x: Math.max(0, Math.min((window.innerWidth || 1920) - 320, newX)),
-      y: Math.max(0, Math.min((window.innerHeight || 1080) - (isMinimized ? 60 : 750), newY))
+      x: Math.max(0, Math.min(window.innerWidth - 320, newX)),
+      y: Math.max(0, Math.min(window.innerHeight - (isMinimized ? 60 : 750), newY))
     });
   };
 
   return (
     <div className="absolute inset-0 w-full h-full overflow-hidden bg-gray-50">
-      {/* Full Screen Map */}
-      <div
-        className="absolute inset-0 w-full h-full transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
-        style={{
-          zIndex: 0
-        }}
-      >
-        <div
-          ref={mapRef}
-          className="w-full h-full"
-        />
+      {/* Map Container */}
+      <div className="absolute inset-0 w-full h-full" style={{ zIndex: 0 }}>
+        <div ref={mapRef} className="w-full h-full" />
         {!mapReady && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
             <div className="text-center">
@@ -791,34 +658,21 @@ function NearbyEventsPage() {
         )}
       </div>
 
-      {/* Error Messages */}
+      {/* Error Alerts */}
       {locationError && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[1001] bg-red-50 border-l-4 border-red-500 rounded-lg p-3 flex items-start gap-3 shadow-lg max-w-md"
-        >
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-[1001] bg-red-50 border-l-4 border-red-500 rounded-lg p-3 flex items-start gap-3 shadow-lg max-w-md">
           <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-red-800">{locationError}</p>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLocationError(null)}
-            className="text-red-500 hover:text-red-700 hover:bg-red-100 h-6 w-6 p-0"
-          >
+          <div className="flex-1"><p className="text-sm font-medium text-red-800">{locationError}</p></div>
+          <Button variant="ghost" size="sm" onClick={() => setLocationError(null)} className="text-red-500 hover:text-red-700 hover:bg-red-100 h-6 w-6 p-0">
             <X className="w-4 h-4" />
           </Button>
         </motion.div>
       )}
 
       {eventsError && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="fixed top-16 left-1/2 transform -translate-x-1/2 z-[1001] bg-red-50 border-l-4 border-red-500 rounded-lg p-3 flex items-start gap-3 shadow-lg max-w-md"
-        >
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
+          className="fixed top-16 left-1/2 -translate-x-1/2 z-[1001] bg-red-50 border-l-4 border-red-500 rounded-lg p-3 flex items-start gap-3 shadow-lg max-w-md">
           <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
           <p className="text-sm font-medium text-red-800">{eventsError}</p>
         </motion.div>
@@ -832,55 +686,18 @@ function NearbyEventsPage() {
         onDrag={handleDrag}
         onDragStart={() => setIsDragging(true)}
         onDragEnd={() => setIsDragging(false)}
-        dragConstraints={{
-          left: 0,
-          right: typeof window !== 'undefined' ? window.innerWidth - 320 : 0,
-          top: 0,
-          bottom: typeof window !== 'undefined' ? window.innerHeight - (isMinimized ? 60 : 750) : 0
-        }}
-        animate={{
-          scale: isDragging ? 1.02 : 1
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 200,
-          damping: 50
-        }}
-        className={`fixed z-[1000] bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col ${isMinimized ? 'h-[60px] overflow-visible' : 'h-[750px] max-h-[85vh] overflow-hidden'
-          } w-[320px] max-w-[90vw]`}
-        style={{
-          left: `${dialogPosition.x}px`,
-          top: `${dialogPosition.y}px`
-        }}
+        animate={{ scale: isDragging ? 1.02 : 1 }}
+        className={`fixed z-[1000] bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col w-[320px] max-w-[90vw] ${isMinimized ? 'h-[60px]' : 'h-[750px] max-h-[85vh] overflow-hidden'}`}
+        style={{ left: `${dialogPosition.x}px`, top: `${dialogPosition.y}px` }}
       >
-        {/* Dialog Header - Draggable Handle - Always visible */}
-        <div
-          ref={dragRef}
-          className={`flex items-center justify-between p-3 bg-gray-50 border-b border-gray-200 cursor-move select-none ${isMinimized ? 'border-b-0' : ''
-            }`}
-          onMouseDown={(e) => setIsDragging(true)}
-        >
+        <div className={`flex items-center justify-between p-3 bg-gray-50 border-b border-gray-200 cursor-move select-none ${isMinimized ? 'border-b-0' : ''}`}>
           <div className="flex items-center gap-2 flex-1">
             <GripVertical className="w-4 h-4 text-gray-400" />
             <h4 className="text-sm font-semibold text-gray-800">Tìm kiếm sự kiện</h4>
           </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsMinimized(!isMinimized);
-              }}
-            >
-              {isMinimized ? (
-                <Maximize2 className="w-4 h-4" />
-              ) : (
-                <Minimize2 className="w-4 h-4" />
-              )}
-            </Button>
-          </div>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsMinimized(!isMinimized)}>
+            {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+          </Button>
         </div>
 
         {!isMinimized && (
@@ -889,86 +706,51 @@ function NearbyEventsPage() {
             <div className="p-4 border-b border-gray-200 bg-white">
               {locationType === "auto" ? (
                 <div className="flex gap-2">
-                  <Input
-                    type="text"
-                    value={userLocation?.address || ""}
-                    placeholder="Vị trí hiện tại"
-                    readOnly
-                    className="flex-1"
-                  />
-                  <Button
-                    onClick={getUserLocation}
-                    disabled={loadingLocation}
-                    size="icon"
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    {loadingLocation ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Search className="w-4 h-4" />
-                    )}
+                  <Input value={userLocation?.address || "Vị trí hiện tại"} readOnly className="flex-1" />
+                  <Button onClick={getUserLocation} disabled={loadingLocation} size="icon" className="bg-blue-600 hover:bg-blue-700 text-white">
+                    {loadingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                   </Button>
                 </div>
               ) : (
                 <div className="flex gap-2">
                   <Input
-                    type="text"
                     placeholder="Nhập địa chỉ..."
                     value={locationInput}
                     onChange={(e) => setLocationInput(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        handleSearchByAddress();
-                      }
-                    }}
-                    className="flex-1"
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearchByAddress()}
                     disabled={loadingGeocode}
+                    className="flex-1"
                   />
-                  <Button
-                    onClick={handleSearchByAddress}
-                    disabled={loadingGeocode || !locationInput.trim()}
-                    size="icon"
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    {loadingGeocode ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Search className="w-4 h-4" />
-                    )}
+                  <Button onClick={handleSearchByAddress} disabled={loadingGeocode || !locationInput.trim()} size="icon" className="bg-blue-600 hover:bg-blue-700 text-white">
+                    {loadingGeocode ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                   </Button>
                 </div>
               )}
 
               <div className="flex gap-2 mt-2">
-                <Button
-                  type="button"
-                  variant={locationType === "auto" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => {
-                    setLocationType("auto");
-                    setLocationInput("");
-                    setLocationError(null);
-                  }}
-                  className="flex-1 text-xs"
-                >
-                  <Navigation className="w-3 h-3 mr-1" />
-                  Tự động
+                <Button variant={locationType === "auto" ? "default" : "outline"} size="sm" onClick={() => { setLocationType("auto"); setLocationInput(""); setIsPickingOnMap(false); }} className="flex-1 text-xs">
+                  <Navigation className="w-3 h-3 mr-1" /> Tự động
                 </Button>
-                <Button
-                  type="button"
-                  variant={locationType === "manual" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => {
-                    setLocationType("manual");
-                    setUserLocation(null);
-                    setEvents([]);
-                    setLocationError(null);
-                  }}
-                  className="flex-1 text-xs"
-                >
-                  <MapPin className="w-3 h-3 mr-1" />
-                  Nhập địa chỉ
+                <Button variant={locationType === "manual" ? "default" : "outline"} size="sm" onClick={() => { setLocationType("manual"); setUserLocation(null); setEvents([]); setIsPickingOnMap(false); }} className="flex-1 text-xs">
+                  <MapPin className="w-3 h-3 mr-1" /> Nhập địa chỉ
                 </Button>
+              </div>
+
+              <div className="mt-3">
+                <Button
+                  variant={isPickingOnMap ? "destructive" : "outline"}
+                  size="sm"
+                  onClick={() => setIsPickingOnMap(!isPickingOnMap)}
+                  className={`w-full text-xs ${isPickingOnMap ? "bg-orange-600 hover:bg-orange-700" : ""}`}
+                >
+                  <MapPin className="w-4 h-4 mr-2" />
+                  {isPickingOnMap ? "Đang chọn trên bản đồ... (Click để hủy)" : "Chọn vị trí trên bản đồ"}
+                </Button>
+                {isPickingOnMap && (
+                  <p className="text-xs text-gray-600 mt-2 text-center">
+                    Nhấp vào bản đồ để chọn vị trí tìm kiếm (có thể thay đổi nhiều lần)
+                  </p>
+                )}
               </div>
             </div>
 
@@ -979,78 +761,32 @@ function NearbyEventsPage() {
                   <Radius className="w-4 h-4 text-gray-600" />
                   <h4 className="text-sm font-semibold text-gray-800">Bán kính tìm kiếm</h4>
                 </div>
-                {categoryId && (
-                  <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full">
-                    1 selected
-                  </span>
-                )}
               </div>
-
-              {categoryId && (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
-                    {categories.find(c => (c.eventCategoryId || c.id) === categoryId)?.eventCategoryName || categories.find(c => (c.eventCategoryId || c.id) === categoryId)?.name || 'Category'}
-                    <button
-                      onClick={() => setCategoryId("")}
-                      className="hover:bg-blue-200 rounded-full p-0.5"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                </div>
-              )}
 
               <div className="grid grid-cols-1 gap-3">
                 <div>
-                  <Label className="text-xs font-medium text-gray-700 mb-2 block">
-                    Bán kính tìm kiếm
-                  </Label>
+                  <Label className="text-xs font-medium text-gray-700 mb-2 block">Bán kính</Label>
                   <div className="flex gap-2">
                     {[5, 10, 20, 30].map((km) => (
-                      <Button
-                        key={km}
-                        type="button"
-                        variant={radius === km ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setRadius(km)}
-                        className={`flex-1 text-xs ${radius === km
-                          ? "bg-blue-600 hover:bg-blue-700 text-white"
-                          : "bg-white hover:bg-gray-50"
-                          }`}
-                      >
+                      <Button key={km} variant={radius === km ? "default" : "outline"} size="sm" onClick={() => setRadius(km)}
+                        className={`flex-1 text-xs ${radius === km ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}`}>
                         {km}km
                       </Button>
                     ))}
                   </div>
                 </div>
-                
-                {/* Location Sharing Toggle */}
+
                 <div className="pt-2 border-t border-gray-200">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Share2 className="w-4 h-4 text-gray-600" />
-                      <Label className="text-xs font-medium text-gray-700">
-                        Chia sẻ vị trí
-                      </Label>
+                      <Label className="text-xs font-medium text-gray-700">Chia sẻ vị trí</Label>
                     </div>
-                    <Button
-                      type="button"
-                      variant={isLocationSharingEnabled ? "default" : "outline"}
-                      size="sm"
+                    <Button variant={isLocationSharingEnabled ? "default" : "outline"} size="sm"
                       onClick={() => handleToggleLocationSharing(!isLocationSharingEnabled)}
                       disabled={togglingLocationSharing || !userLocation}
-                      className={`text-xs ${isLocationSharingEnabled
-                        ? "bg-purple-600 hover:bg-purple-700 text-white"
-                        : "bg-white hover:bg-gray-50"
-                        }`}
-                    >
-                      {togglingLocationSharing ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        <>
-                          {isLocationSharingEnabled ? "Đang bật" : "Bật"}
-                        </>
-                      )}
+                      className={`text-xs ${isLocationSharingEnabled ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}`}>
+                      {togglingLocationSharing ? <Loader2 className="w-3 h-3 animate-spin" /> : (isLocationSharingEnabled ? "Đang bật" : "Bật")}
                     </Button>
                   </div>
                   {friends.length > 0 && (
@@ -1083,12 +819,8 @@ function NearbyEventsPage() {
                   <div className="bg-blue-100 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                     <Navigation className="w-8 h-8 text-blue-600" />
                   </div>
-                  <h3 className="text-sm font-semibold text-gray-800 mb-2">
-                    Bắt đầu tìm kiếm
-                  </h3>
-                  <p className="text-xs text-gray-600">
-                    Nhập địa chỉ hoặc lấy vị trí để tìm sự kiện
-                  </p>
+                  <h3 className="text-sm font-semibold text-gray-800 mb-2">Bắt đầu tìm kiếm</h3>
+                  <p className="text-xs text-gray-600">Chọn vị trí để tìm sự kiện gần bạn</p>
                 </div>
               )}
 
@@ -1097,18 +829,13 @@ function NearbyEventsPage() {
                   <div className="bg-gray-100 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                     <MapPin className="w-8 h-8 text-gray-400" />
                   </div>
-                  <h3 className="text-sm font-semibold text-gray-800 mb-2">
-                    Không tìm thấy sự kiện
-                  </h3>
-                  <p className="text-xs text-gray-600">
-                    Không có sự kiện nào trong bán kính {radius}km
-                  </p>
+                  <h3 className="text-sm font-semibold text-gray-800 mb-2">Không tìm thấy sự kiện</h3>
+                  <p className="text-xs text-gray-600">Không có sự kiện nào trong bán kính {radius}km</p>
                 </div>
               )}
 
               <div className="p-4 space-y-3">
                 {events.map((event, index) => (
-
                   <motion.div
                     key={event.eventId}
                     initial={{ opacity: 0, y: 10 }}
@@ -1118,74 +845,36 @@ function NearbyEventsPage() {
                       setSelectedEvent(event);
                       if (mapInstanceRef.current && event.latitude && event.longitude) {
                         mapInstanceRef.current.flyTo([event.latitude, event.longitude], 15);
-                        const marker = markersRef.current.find(
-                          (m, i) => events[i]?.eventId === event.eventId
-                        );
-                        if (marker) {
-                          marker.openPopup();
-                        }
+                        const marker = markersRef.current.find((m, i) => events[i]?.eventId === event.eventId);
+                        if (marker) marker.openPopup();
                       }
                     }}
-                    className={`cursor-pointer bg-white rounded-lg border transition-all duration-200 hover:shadow-lg ${selectedEvent?.eventId === event.eventId
-                      ? 'border-blue-500 shadow-md'
-                      : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                    className={`cursor-pointer bg-white rounded-lg border transition-all duration-200 hover:shadow-lg ${selectedEvent?.eventId === event.eventId ? 'border-blue-500 shadow-md' : 'border-gray-200 hover:border-gray-300'}`}
                   >
                     <div className="flex gap-3 p-3">
-                      {/* Event Image */}
                       <div className="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden bg-gray-200">
-                        <img
-                          src={event.image}
-                          alt={event.title}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.target.src = DEFAULT_EVENT_IMAGE;
-                          }}
-                        />
+                        <img src={event.image} alt={event.title} className="w-full h-full object-cover" onError={(e) => e.target.src = DEFAULT_EVENT_IMAGE} />
                       </div>
-
-                      {/* Event Info */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm text-gray-900 mb-1 line-clamp-2">
-                          {event.title}
-                        </h3>
-
-                        {event.distance !== null && event.distance !== undefined && (
+                        <h3 className="font-semibold text-sm text-gray-900 mb-1 line-clamp-2">{event.title}</h3>
+                        {event.distance !== null && (
                           <div className="flex items-center gap-1 text-xs text-blue-600 mb-1">
                             <MapPin className="w-3 h-3" />
                             <span>{event.distance.toFixed(1)} km</span>
                           </div>
                         )}
-
                         <div className="flex items-center gap-1 text-xs text-gray-600 mb-1">
                           <MapPin className="w-3 h-3 text-gray-400" />
                           <span className="line-clamp-1">{event.locationName}</span>
                         </div>
-
                         <div className="flex items-center gap-2 mt-2 mb-2">
-                          {event.categoryName && (
-                            <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
-                              {event.categoryName}
-                            </span>
-                          )}
-                          <span className={`text-xs font-semibold ${event.ticketPrice === 0 ? 'text-green-600' : 'text-blue-600'
-                            }`}>
-                            {event.ticketPrice === 0
-                              ? 'Miễn phí'
-                              : `${(event.ticketPrice / 1000).toFixed(0)}k`}
+                          {event.categoryName && <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">{event.categoryName}</span>}
+                          <span className={`text-xs font-semibold ${event.ticketPrice === 0 ? 'text-green-600' : 'text-blue-600'}`}>
+                            {event.ticketPrice === 0 ? 'Miễn phí' : `${(event.ticketPrice / 1000).toFixed(0)}k`}
                           </span>
                         </div>
-
-                        <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEventClick(event);
-                          }}
-                          size="sm"
-                          className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs h-7 mt-1"
-                        >
-                          <ExternalLink className="w-3 h-3 mr-1" />
-                          Xem chi tiết
+                        <Button onClick={(e) => { e.stopPropagation(); handleEventClick(event); }} size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs h-7 mt-1">
+                          <ExternalLink className="w-3 h-3 mr-1" /> Xem chi tiết
                         </Button>
                       </div>
                     </div>
@@ -1199,63 +888,22 @@ function NearbyEventsPage() {
 
       {/* Custom Styles */}
       <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f5f9;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8;
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* Marker animations */
-        @keyframes markerPulse {
-          0%, 100% {
-            transform: scale(1);
-            filter: drop-shadow(0 4px 12px rgba(59, 130, 246, 0.4));
-          }
-          50% {
-            transform: scale(1.1);
-            filter: drop-shadow(0 6px 20px rgba(59, 130, 246, 0.6));
-          }
+        @keyframes pickPulse {
+          0%, 100% { transform: rotate(-45deg) scale(1); box-shadow: 0 6px 24px rgba(249, 115, 22, 0.7); }
+          50% { transform: rotate(-45deg) scale(1.2); box-shadow: 0 10px 36px rgba(249, 115, 22, 0.9); }
         }
 
         @keyframes userPulse {
-          0%, 100% {
-            transform: scale(1);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-          }
-          50% {
-            transform: scale(1.15);
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.7);
-          }
+          0%, 100% { transform: scale(1); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); }
+          50% { transform: scale(1.15); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.7); }
         }
 
-        .leaflet-div-icon {
-          background: transparent !important;
-          border: none !important;
-        }
-
-        .event-marker img {
-          animation: markerPulse 2s ease-in-out infinite;
-          transition: transform 0.3s ease;
-        }
-
-        .event-marker:hover img {
-          animation-play-state: paused !important;
-          transform: scale(1.15) !important;
-          filter: drop-shadow(0 8px 24px rgba(59, 130, 246, 0.8)) !important;
-        }
-
-        .user-marker div {
-          animation: userPulse 2s ease-in-out infinite;
-        }
+        .leaflet-div-icon { background: transparent !important; border: none !important; }
       `}</style>
     </div>
   );
