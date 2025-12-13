@@ -2,8 +2,12 @@ using AIEvent.Application.Constants;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Entities;
+using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore.Query;
+using MockQueryable.EntityFrameworkCore;
+using MockQueryable.Moq;
 using Moq;
 
 namespace AIEvent.Application.Test.Services
@@ -627,6 +631,543 @@ namespace AIEvent.Application.Test.Services
             _mockChatLogRepository.Verify(x => x.AddAsync(It.IsAny<ChatLog>()), Times.Once);
         }
 
+        #endregion
+
+        #region GetEventAIRecommendAsync Tesst
+        [Fact]
+        public async Task UTCID01_GetEventAIRecommend_UserNotFound_ShouldReturnError()
+        {
+            // Arrange
+            var nonExistentUserId = TestUserId;
+
+            var emptyUserList = new List<User>().AsQueryable().BuildMock();
+
+            _mockUnitOfWork.Setup(u => u.UserRepository.Query(false))
+                .Returns(emptyUserList);
+
+            // Act
+            var result = await _eventRecommendationService.GetEventAIRecommendAsync(
+                pageNumber: 1,
+                pageSize: 10,
+                userId: nonExistentUserId
+            );
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.NotNull(result.Error);
+            Assert.Equal("User not found", result.Error!.Message);
+            Assert.Equal(ErrorCodes.NotFound, result.Error.StatusCode);
+
+            _mockUnitOfWork.Verify(u => u.UserRepository.Query(false), Times.Once);
+        }
+
+
+        [Fact]
+        public async Task UTCID02_GetEventAIRecommend_PineconeValidId_ShouldIncludeEventId()
+        {
+            // Arrange
+            var user = new User
+            {
+                Id = TestUserId,
+                IsActive = true,
+                IsDeleted = false,
+                Address = "Hanoi",
+                District = "Ba Dinh",
+                UserInterestsJson = "[\"Music\"]",
+                InterestedDistrictsJson = "[\"Cau Giay\"]",
+                BudgetOption = BudgetOption.Flexible,
+            };
+            var userList = new List<User> { user }.AsQueryable().BuildMock();
+
+            _mockUnitOfWork.Setup(u => u.UserRepository.Query(false))
+                .Returns(userList);
+
+            _mockVoyageEmbeddingService
+                .Setup(v => v.GetEmbeddingAsync(It.IsAny<string>()))
+                .ReturnsAsync(new float[] { 0.1f, 0.2f });
+
+
+            var validGuid = Guid.NewGuid().ToString();
+            _mockPineconeService
+                .Setup(p => p.QuerySimilarAsync(It.IsAny<float[]>(), false, 6))
+                .ReturnsAsync(new List<(string Id, double Score, Dictionary<string, object>? Metadata)>
+                {
+                    (validGuid, 0.9, null)
+                });
+
+            var eventEntity = new Event
+            {
+                Id = Guid.Parse(validGuid),
+                Title = "Event 1",
+                Description = "Desc",
+                EventCategory = new EventCategory { CategoryName = "Cat" },
+                LocationName = "Loc",
+                Status = EventStatus.Approved,
+                Publish = true,
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow,
+                StartTime = DateTime.UtcNow,
+                EndTime = DateTime.UtcNow,
+                TicketTypes = new List<TicketType> // Thêm phần này
+                {
+                    new TicketType 
+                    { 
+                        TicketPrice = 100 ,
+                        TicketName = "test",
+                        TicketQuantity = 1 ,
+                    }
+                },
+                FavoriteEvents = new List<FavoriteEvent>() 
+            };
+            var eventList = new List<Event> { eventEntity }.AsQueryable().BuildMock();
+
+            _mockUnitOfWork.Setup(u => u.EventRepository.Query(false))
+                .Returns(eventList);
+
+            _mockLlmService.Setup(l => l.GenerateShortReasonAsync(It.IsAny<string>()))
+                .ReturnsAsync("Reason");
+
+            // Act
+            var result = await _eventRecommendationService.GetEventAIRecommendAsync(1, 10, TestUserId);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Single(result.Value!.Items);
+            Assert.Equal(eventEntity.Id, result.Value!.Items.First().EventId);
+            Assert.Equal("Reason", result.Value!.Items.First().Reason);
+        }
+
+
+        [Fact]
+        public async Task UTCID03_GetEventAIRecommend_EventValid_ShouldBeIncluded()
+        {
+            // Arrange
+            var userList = new List<User>
+            {
+                new User
+                {
+                    Id = TestUserId,
+                    IsActive = true,
+                    IsDeleted = false,
+                    BudgetOption = BudgetOption.Flexible
+                }
+            }.AsQueryable().BuildMock();
+
+            _mockUnitOfWork.Setup(u => u.UserRepository.Query(false))
+                .Returns(userList);
+
+            _mockVoyageEmbeddingService.Setup(v => v.GetEmbeddingAsync(It.IsAny<string>()))
+                .ReturnsAsync(new float[] { 0.1f, 0.2f });
+
+            var validGuid = Guid.NewGuid().ToString();
+            _mockPineconeService.Setup(p => p.QuerySimilarAsync(It.IsAny<float[]>(), false, 6))
+                .ReturnsAsync(new List<(string Id, double Score, Dictionary<string, object>? Metadata)>
+                {
+            (validGuid, 0.9, null)
+                });
+
+            // Event hợp lệ
+            var eventEntity = new Event
+            {
+                Id = Guid.Parse(validGuid),
+                Description = "Desc",
+                CreatedAt = DateTime.UtcNow,
+                StartTime = DateTime.UtcNow,
+                EndTime = DateTime.UtcNow,
+                Title = "Event Valid",
+                EventCategory = new EventCategory { CategoryName = "Cat" },
+                Status = EventStatus.Approved,
+                Publish = true,
+                IsDeleted = false,
+                TicketTypes = new List<TicketType> 
+                {
+                    new TicketType
+                    {
+                        TicketPrice = 100 ,
+                        TicketName = "test",
+                        TicketQuantity = 1 ,
+                    }
+                },
+                FavoriteEvents = new List<FavoriteEvent>()
+            };
+            var eventList = new List<Event> { eventEntity }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(u => u.EventRepository.Query(false)).Returns(eventList);
+
+            _mockLlmService.Setup(l => l.GenerateShortReasonAsync(It.IsAny<string>()))
+                .ReturnsAsync("Reason");
+
+            // Act
+            var result = await _eventRecommendationService.GetEventAIRecommendAsync(1, 10, TestUserId);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Single(result.Value!.Items);
+            Assert.Equal(eventEntity.Id, result.Value!.Items.First().EventId);
+        }
+
+
+        [Fact]
+        public async Task UTCID04_GetEventAIRecommend_EventInvalid_ShouldBeExcluded()
+        {
+            // Arrange
+            var userList = new List<User>
+            {
+                new User { Id = TestUserId, IsActive = true, IsDeleted = false, BudgetOption = BudgetOption.Flexible }
+            }.AsQueryable().BuildMock();
+
+            _mockUnitOfWork.Setup(u => u.UserRepository.Query(false)).Returns(userList);
+            _mockVoyageEmbeddingService.Setup(v => v.GetEmbeddingAsync(It.IsAny<string>()))
+                .ReturnsAsync(new float[] { 0.1f, 0.2f });
+
+            var validGuid = Guid.NewGuid().ToString();
+            _mockPineconeService.Setup(p => p.QuerySimilarAsync(It.IsAny<float[]>(), false, 6))
+                .ReturnsAsync(new List<(string Id, double Score, Dictionary<string, object>? Metadata)>
+                {
+            (validGuid, 0.9, null)
+                });
+
+            var eventEntity = new Event
+            {
+                Id = Guid.Parse(validGuid),
+                Title = "Event Invalid",
+                Description = "Desc",
+                CreatedAt = DateTime.UtcNow,
+                StartTime = DateTime.UtcNow,
+                EndTime = DateTime.UtcNow,
+                EventCategory = new EventCategory { CategoryName = "Cat" },
+                Status = EventStatus.PendingApproval,
+                Publish = false,
+                IsDeleted = true,
+                TicketTypes = new List<TicketType>
+                {
+                    new TicketType { TicketPrice = 50, TicketName = "test", TicketQuantity = 1 }
+                },
+                FavoriteEvents = new List<FavoriteEvent>()
+            };
+            var eventList = new List<Event> { eventEntity }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(u => u.EventRepository.Query(false)).Returns(eventList);
+
+            _mockLlmService.Setup(l => l.GenerateShortReasonAsync(It.IsAny<string>()))
+                .ReturnsAsync("Reason");
+
+            // Act
+            var result = await _eventRecommendationService.GetEventAIRecommendAsync(1, 10, TestUserId);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Empty(result.Value!.Items); 
+        }
+
+
+        [Fact]
+        public async Task UTCID05_GetEventAIRecommend_EventIdsEmpty_ShouldReturnEmptyList()
+        {
+            // Arrange
+            var userList = new List<User>
+            {
+                new User { Id = TestUserId, IsActive = true, IsDeleted = false, BudgetOption = BudgetOption.Flexible }
+            }.AsQueryable().BuildMock();
+
+            _mockUnitOfWork.Setup(u => u.UserRepository.Query(false)).Returns(userList);
+            _mockVoyageEmbeddingService.Setup(v => v.GetEmbeddingAsync(It.IsAny<string>()))
+                .ReturnsAsync(new float[] { 0.1f, 0.2f });
+
+            _mockPineconeService.Setup(p => p.QuerySimilarAsync(It.IsAny<float[]>(), false, 6))
+                .ReturnsAsync(new List<(string Id, double Score, Dictionary<string, object>? Metadata)>());
+
+            var eventEntity = new Event
+            {
+                Id = Guid.NewGuid(),
+                Title = "Event",
+                Description = "Desc",
+                CreatedAt = DateTime.UtcNow,
+                StartTime = DateTime.UtcNow,
+                EndTime = DateTime.UtcNow,
+                EventCategory = new EventCategory { CategoryName = "Cat" },
+                Status = EventStatus.Approved,
+                Publish = true,
+                IsDeleted = false,
+                TicketTypes = new List<TicketType> { new TicketType { TicketPrice = 50, TicketName = "test", TicketQuantity = 1 } },
+                FavoriteEvents = new List<FavoriteEvent>()
+            };
+            var eventList = new List<Event> { eventEntity }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(u => u.EventRepository.Query(false)).Returns(eventList);
+
+            _mockLlmService.Setup(l => l.GenerateShortReasonAsync(It.IsAny<string>()))
+                .ReturnsAsync("Reason");
+
+            // Act
+            var result = await _eventRecommendationService.GetEventAIRecommendAsync(1, 10, TestUserId);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Empty(result.Value!.Items);
+        }
+        #endregion
+
+        #region
+        [Fact]
+        public async Task UTCID01_GetFriendsByEvent_UserNotFound_ShouldReturnError()
+        {
+            // Arrange
+            var emptyUserList = new List<User>().AsQueryable().BuildMock();
+
+            _mockUnitOfWork.Setup(u => u.UserRepository.Query(false))
+                .Returns(emptyUserList);
+
+            var randomUserId = Guid.NewGuid();
+            var someEventId = Guid.NewGuid().ToString();
+
+            // Act
+            var result = await _eventRecommendationService.GetFriendsByEventAsync(1, 10, randomUserId, someEventId);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.NotNull(result.Error);
+            Assert.Equal("User not found", result.Error!.Message);
+            Assert.Equal(ErrorCodes.NotFound, result.Error.StatusCode);
+        }
+
+
+        [Fact]
+        public async Task UTCID02_GetFriendsByEvent_JSONNullOrMalformed_ShouldBuildDescriptionCorrectly()
+        {
+            // Arrange
+            var user = new User
+            {
+                Id = TestUserId,
+                IsActive = true,
+                IsDeleted = false,
+                District = null,                  // null district
+                UserInterestsJson = null,         // null JSON
+                InterestedDistrictsJson = "",     // empty JSON
+                FavoriteEventTypesJson = "[malformed]", // malformed JSON
+                ProfessionalSkillsJson = null,
+                LanguagesJson = "",
+                Occupation = null,
+                JobTitle = null,
+                CareerGoal = null,
+                Introduction = null
+            };
+
+            var userList = new List<User> { user }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(u => u.UserRepository.Query(false))
+                .Returns(userList);
+
+            // Mock embedding service trả về vector hợp lệ để luồng tiếp tục
+            _mockVoyageEmbeddingService
+                .Setup(v => v.GetEmbeddingAsync(It.IsAny<string>()))
+                .ReturnsAsync(new float[] { 0.1f, 0.2f });
+
+            // Mock FriendshipRepository trả về rỗng
+            _mockUnitOfWork.Setup(u => u.FriendshipRepository.Query(false))
+                .Returns(new List<Friendship>().AsQueryable().BuildMock());
+
+            // Mock BookingRepository trả về rỗng
+            _mockUnitOfWork.Setup(u => u.BookingRepository.Query(false))
+                .Returns(new List<Booking>().AsQueryable().BuildMock());
+
+            // Act
+            var result = await _eventRecommendationService.GetFriendsByEventAsync(1, 10, TestUserId, Guid.NewGuid().ToString());
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Value);
+            Assert.Empty(result.Value!.Items);
+
+            // Kiểm tra rằng descriptionText mặc định được dùng khi không có info
+            _mockVoyageEmbeddingService.Verify(v => v.GetEmbeddingAsync(
+                It.Is<string>(s => s == "A user with flexible preferences.")), Times.Once);
+        }
+
+
+        [Fact]
+        public async Task UTCID03_GetFriendsByEvent_EmbeddingNull_ShouldReturnError()
+        {
+            // Arrange
+            var user = new User
+            {
+                Id = TestUserId,
+                IsActive = true,
+                IsDeleted = false,
+                District = "Ba Dinh",
+                UserInterestsJson = "[\"Music\"]",
+                InterestedDistrictsJson = "[\"Cau Giay\"]",
+                FavoriteEventTypesJson = "[\"Concert\"]",
+                ProfessionalSkillsJson = "[\"Singing\"]",
+                LanguagesJson = "[\"English\"]",
+                Occupation = "Singer",
+                JobTitle = "Lead Vocal",
+                CareerGoal = "Become famous",
+                Introduction = "Hello world!"
+            };
+
+            var userList = new List<User> { user }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(u => u.UserRepository.Query(false))
+                .Returns(userList);
+
+            _mockVoyageEmbeddingService
+                .Setup(v => v.GetEmbeddingAsync(It.IsAny<string>()))
+                .ReturnsAsync((float[]?)null);
+
+            var eventId = Guid.NewGuid().ToString();
+
+            // Act
+            var result = await _eventRecommendationService.GetFriendsByEventAsync(1, 10, TestUserId, eventId);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.NotNull(result.Error);
+            Assert.Equal("Embedding failed", result.Error!.Message);
+            Assert.Equal(ErrorCodes.InternalServerError, result.Error.StatusCode);
+        }
+
+
+        [Fact]
+        public async Task UTCID04_GetFriendsByEvent_InvalidEventId_ShouldReturnError()
+        {
+            // Arrange
+            var user = new User
+            {
+                Id = TestUserId,
+                IsActive = true,
+                IsDeleted = false,
+                District = "Ba Dinh",
+                UserInterestsJson = "[\"Music\"]",
+                InterestedDistrictsJson = "[\"Cau Giay\"]",
+                FavoriteEventTypesJson = "[\"Concert\"]",
+                ProfessionalSkillsJson = "[\"Singing\"]",
+                LanguagesJson = "[\"English\"]",
+                Occupation = "Singer",
+                JobTitle = "Lead Vocal",
+                CareerGoal = "Become famous",
+                Introduction = "Hello world!"
+            };
+
+            var userList = new List<User> { user }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(u => u.UserRepository.Query(false))
+                .Returns(userList);
+
+            _mockVoyageEmbeddingService
+                .Setup(v => v.GetEmbeddingAsync(It.IsAny<string>()))
+                .ReturnsAsync(new float[] { 0.1f, 0.2f });
+
+            _mockUnitOfWork.Setup(u => u.FriendshipRepository.Query(false))
+                .Returns(new List<Friendship>().AsQueryable().BuildMock());
+
+            _mockUnitOfWork.Setup(u => u.BookingRepository.Query(false))
+                .Returns(new List<Booking>().AsQueryable().BuildMock());
+
+            var invalidEventId = "not-a-guid";
+
+            // Act
+            var result = await _eventRecommendationService.GetFriendsByEventAsync(1, 10, TestUserId, invalidEventId);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.NotNull(result.Error);
+            Assert.Equal("Invalid ticket ID format", result.Error!.Message);
+            Assert.Equal(ErrorCodes.InvalidInput, result.Error.StatusCode);
+        }
+
+
+        [Fact]
+        public async Task UTCID05_GetFriendsByEvent_AllValid_ShouldReturnBasePaginatedWithReason()
+        {
+            // Arrange
+            var user = new User
+            {
+                Id = TestUserId,
+                IsActive = true,
+                IsDeleted = false,
+                District = "Ba Dinh",
+                UserInterestsJson = "[\"Music\"]",
+                InterestedDistrictsJson = "[\"Cau Giay\"]",
+                FavoriteEventTypesJson = "[\"Concert\"]",
+                ProfessionalSkillsJson = "[\"Singing\"]",
+                LanguagesJson = "[\"English\"]",
+                Occupation = "Singer",
+                JobTitle = "Lead Vocal",
+                CareerGoal = "Become famous",
+                Introduction = "Hello world!"
+            };
+
+            var participant1 = Guid.NewGuid();
+            var participant2 = Guid.NewGuid();
+            var eventId = Guid.NewGuid();
+
+            var participantUser1 = new User
+            {
+                Id = participant1,
+                FullName = "Alice",
+                District = "Cau Giay",
+                UserInterestsJson = "[\"Music\"]",
+                IsActive = true,
+                IsDeleted = false,
+                Role = new Role { Name = "User" }
+            };
+            var participantUser2 = new User
+            {
+                Id = participant2,
+                FullName = "Bob",
+                District = "Ba Dinh",
+                UserInterestsJson = "[\"Concert\"]",
+                IsActive = true,
+                IsDeleted = false,
+                Role = new Role { Name = "User" }
+            };
+
+            // EF async mock
+            var allUsers = new List<User> { user, participantUser1, participantUser2 }
+                .AsQueryable()
+                .BuildMock()
+                .BuildMockDbSet()
+                .Object;
+
+            _mockUnitOfWork.Setup(u => u.UserRepository.Query(false)).Returns(allUsers);
+
+            // Mock embedding
+            _mockVoyageEmbeddingService.Setup(v => v.GetEmbeddingAsync(It.IsAny<string>()))
+                .ReturnsAsync(new float[] { 0.1f, 0.2f });
+
+            // No friends yet
+            _mockUnitOfWork.Setup(u => u.FriendshipRepository.Query(false))
+                .Returns(new List<Friendship>().AsQueryable().BuildMock().BuildMockDbSet().Object);
+
+            // Bookings
+            _mockUnitOfWork.Setup(u => u.BookingRepository.Query(false))
+                .Returns(new List<Booking>
+                {
+            new Booking { EventId = eventId, UserId = participant1, Status = BookingStatus.Completed, PaymentStatus = PaymentStatus.Paid },
+            new Booking { EventId = eventId, UserId = participant2, Status = BookingStatus.Completed, PaymentStatus = PaymentStatus.Paid }
+                }.AsQueryable().BuildMock().BuildMockDbSet().Object);
+
+            _mockPineconeService.Setup(p => p.QuerySimilarFriendInEventAsync(
+                It.IsAny<float[]>(),
+                true,
+                6,
+                It.IsAny<List<string>>(),
+                It.IsAny<List<string>>()
+            )).ReturnsAsync(new List<(string Id, double Score, Dictionary<string, object>? Metadata)>
+            {
+                (participant1.ToString(), 0.9, null),
+                (participant2.ToString(), 0.8, null)
+            });
+
+            // Mock LLM
+            _mockLlmService.Setup(l => l.GenerateReasonFriendAsync(It.IsAny<string>()))
+                .ReturnsAsync("Matched based on interests");
+
+            // Act
+            var result = await _eventRecommendationService.GetFriendsByEventAsync(1, 10, TestUserId, eventId.ToString());
+
+            // Assert
+            Assert.True(result.IsSuccess, result.Error?.Message);
+            Assert.NotNull(result.Value);
+            Assert.Equal(2, result.Value!.Items.Count);
+            Assert.Contains(result.Value.Items, f => f.FriendName == "Alice" && f.Reason == "Matched based on interests");
+            Assert.Contains(result.Value.Items, f => f.FriendName == "Bob" && f.Reason == "Matched based on interests");
+        }
         #endregion
     }
 }

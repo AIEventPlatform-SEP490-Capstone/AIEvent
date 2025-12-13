@@ -21,5 +21,13 @@ export const getBaseUrl = () => {
   return `${protocol}://${NETWORK_CONFIG.IP_ADDRESS}:${port}/api`;
 };
 
+export const getSignalRBaseUrl = () => {
+  const protocol = NETWORK_CONFIG.USE_HTTPS ? 'https' : 'http';
+  const port = NETWORK_CONFIG.USE_HTTPS
+    ? NETWORK_CONFIG.HTTPS_PORT
+    : NETWORK_CONFIG.HTTP_PORT;
+  return `${protocol}://${NETWORK_CONFIG.IP_ADDRESS}:${port}`;
+};
+
 if (NETWORK_CONFIG.DEBUG_MODE) {
 }

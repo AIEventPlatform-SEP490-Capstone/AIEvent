@@ -175,13 +175,8 @@ class BookingService {
         message: response?.data?.message || 'Check-in information fetched successfully',
       };
     } catch (error) {
-      console.error('Error in checkInfor:', error);
-      return {
-        success: false,
-        data: null,
-        message: `Failed to fetch check-in information: ${error.message}`,
-        error: error.message,
-      };
+      // Re-throw with business error flag preserved for proper logging upstream
+      throw error;
     }
   }
 
@@ -200,18 +195,8 @@ class BookingService {
         message: response?.data?.message || 'Check-in successful',
       };
     } catch (error) {
-
-      let errorMessage = error.message;
-      if (error.message && (error.message.includes('Invalid data') || error.message.includes('Bad Request'))) {
-        errorMessage = 'Bad Request: Invalid data provided';
-      }
-      
-      return {
-        success: false,
-        data: null,
-        message: errorMessage,
-        error: error.message,
-      };
+      // Re-throw with business error flag preserved for proper logging upstream
+      throw error;
     }
   }
 }
