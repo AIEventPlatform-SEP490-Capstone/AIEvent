@@ -78,7 +78,7 @@ const QrScannerScreen = () => {
         showErrorAlert(response.message || 'Không thể lấy thông tin vé');
       }
     } catch (error) {
-      console.error('Error getting check-in information:', error);
+      // Error already logged in BaseApiService, just show alert to user
       showErrorAlert(error.message || 'Lỗi không xác định');
     } finally {
       // Reset processing state after a delay to allow navigation
