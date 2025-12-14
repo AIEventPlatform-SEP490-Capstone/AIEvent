@@ -21,18 +21,26 @@ export const useHomepageEvents = (initialPage = 1, pageSize = 6) => {
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [filters, setFilters] = useState({
+    selectedCategory: 'all',
+    searchQuery: '',
+    minPrice: '',
+    maxPrice: '',
+    eventProgressStatus: 'all',
+    ticketSaleStatus: 'all',
+    sortBy: 'NearestTime'
+  });
   
   const { getEvents } = useEvents();
 
-  const loadEvents = async (page = currentPage, category = selectedCategory) => {
+  const loadEvents = async (page = currentPage, newFilters = filters) => {
     try {
       setLoading(true);
       setError(null);
       
-      // Update selected category
-      if (category !== selectedCategory) {
-        setSelectedCategory(category);
+      // Update filters
+      if (newFilters !== filters) {
+        setFilters(newFilters);
       }
       
       // Prepare API parameters
@@ -41,9 +49,37 @@ export const useHomepageEvents = (initialPage = 1, pageSize = 6) => {
         pageSize: pageSize
       };
       
+      // Add search query if present
+      if (newFilters.searchQuery) {
+        params.search = newFilters.searchQuery;
+      }
+      
       // Add category filter if not "all"
-      if (category !== "all") {
-        params.eventCategoryId = category;
+      if (newFilters.selectedCategory !== "all") {
+        params.eventCategoryId = newFilters.selectedCategory;
+      }
+      
+      // Add price range filters
+      if (newFilters.minPrice !== '' && !isNaN(parseFloat(newFilters.minPrice))) {
+        params.minPrice = parseFloat(newFilters.minPrice);
+      }
+      if (newFilters.maxPrice !== '' && !isNaN(parseFloat(newFilters.maxPrice))) {
+        params.maxPrice = parseFloat(newFilters.maxPrice);
+      }
+      
+      // Add event progress status filter
+      if (newFilters.eventProgressStatus !== 'all') {
+        params.eventProgressStatus = newFilters.eventProgressStatus;
+      }
+      
+      // Add ticket sale status filter
+      if (newFilters.ticketSaleStatus !== 'all') {
+        params.ticketSaleStatus = newFilters.ticketSaleStatus;
+      }
+      
+      // Add sort by
+      if (newFilters.sortBy) {
+        params.sortBy = newFilters.sortBy;
       }
       
       // Fetch events from API
@@ -72,13 +108,19 @@ export const useHomepageEvents = (initialPage = 1, pageSize = 6) => {
 
   // Load events on mount only
   useEffect(() => {
-    loadEvents(1, 'all');
+    loadEvents(1, filters);
   }, []);
 
   const goToPage = (page) => {
     if (page >= 1 && page <= totalPages) {
-      loadEvents(page, selectedCategory);
+      loadEvents(page, filters);
     }
+  };
+
+  const updateFilters = (newFilters) => {
+    const updatedFilters = { ...filters, ...newFilters };
+    setFilters(updatedFilters);
+    loadEvents(1, updatedFilters); // Reset to page 1 when filters change
   };
 
   return {
@@ -86,12 +128,14 @@ export const useHomepageEvents = (initialPage = 1, pageSize = 6) => {
     recommendedEvents,
     loading,
     error,
-    refreshEvents: () => loadEvents(currentPage, selectedCategory),
+    refreshEvents: () => loadEvents(currentPage, filters),
     currentPage,
     totalPages,
     totalCount,
     goToPage,
-    loadEvents // Expose loadEvents to allow filtering
+    loadEvents,
+    filters,
+    updateFilters
   };
 };
 

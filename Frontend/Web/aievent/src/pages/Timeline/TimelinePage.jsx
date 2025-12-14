@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, addWeeks, isSameMonth, isSameDay, parseISO, startOfDay } from "date-fns";
 import { vi } from "date-fns/locale";
-import { Calendar as CalendarIcon, MapPin, Ticket, ChevronLeft, ChevronRight, Search, Sparkles, TrendingUp, Clock, ChevronDown, Eye, Heart, MessageCircle, Share2, ExternalLink, Image as ImageIcon } from "lucide-react";
+import { Calendar as CalendarIcon, MapPin, Ticket, ChevronLeft, ChevronRight, Search, Sparkles, TrendingUp, Clock, ChevronDown, Eye, Heart, MessageCircle, Share2, ExternalLink, Image as ImageIcon, CalendarPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -10,7 +10,6 @@ import { bookingAPI } from "../../api/bookingAPI";
 import { eventAPI } from "../../api/eventAPI";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "../../components/ui/dialog";
 import MapDirection from "../../components/Event/MapDirection";
-import GoogleCalendarButton from "../../components/Event/GoogleCalendarButton";
 import { Separator } from "../../components/ui/separator";
 import { Badge } from "../../components/ui/badge";
 import { PATH } from "../../routes/path";
@@ -34,13 +33,16 @@ const TimelinePage = () => {
   const [viewMode, setViewMode] = useState("month");
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [currentDay, setCurrentDay] = useState(new Date());
-  const [displayLimit, setDisplayLimit] = useState(20); // Giới hạn số lượng events hiển thị ban đầu
-  const [dayEventLimits, setDayEventLimits] = useState({}); // Giới hạn số lượng events hiển thị cho mỗi ngày trong Month View
-  const [weekDayEventLimits, setWeekDayEventLimits] = useState({}); // Giới hạn số lượng events hiển thị cho mỗi ngày trong Week View
-  const [dayViewLimit, setDayViewLimit] = useState(20); // Giới hạn số lượng events hiển thị trong Day View
-  const [activeTab, setActiveTab] = useState("info"); // Tab state: "info", "tickets", "actions"
-  const [isMapModalOpen, setIsMapModalOpen] = useState(false); // State for map modal
+  const [displayLimit, setDisplayLimit] = useState(20);
+  const [dayEventLimits, setDayEventLimits] = useState({});
+  const [weekDayEventLimits, setWeekDayEventLimits] = useState({});
+  const [dayViewLimit, setDayViewLimit] = useState(20);
+  const [activeTab, setActiveTab] = useState("info");
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const responsiveScaleClasses = "transform-gpu origin-top scale-100 sm:scale-95 lg:scale-90";
+
+  // State cho hiệu ứng "Đã thêm" Google Calendar
+  const [googleAdded, setGoogleAdded] = useState(false);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -61,7 +63,6 @@ const TimelinePage = () => {
     const monthEnd = endOfMonth(monthStart);
     const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
     const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
-
     const days = [];
     let day = startDate;
     while (day <= endDate) {
@@ -99,17 +100,14 @@ const TimelinePage = () => {
     );
   }, [events, search, filterTab]);
 
-  // Giới hạn số lượng events hiển thị để tối ưu performance
   const displayedEvents = useMemo(() => {
     return filteredEvents.slice(0, displayLimit);
   }, [filteredEvents, displayLimit]);
 
-  // Reset display limit khi filter hoặc search thay đổi
   useEffect(() => {
     setDisplayLimit(20);
   }, [filterTab, search]);
 
-  // Reset day view limit khi chuyển ngày
   useEffect(() => {
     setDayViewLimit(20);
   }, [currentDay]);
@@ -150,29 +148,114 @@ const TimelinePage = () => {
     }
   };
 
-  const viewQR = async (ticketId) => {
-    try {
-      setQrLoadingId(ticketId);
-      const res = await bookingAPI.getTicketQR(ticketId);
-      const qr = res?.qrCode;
-      setQrByTicketId((prev) => ({ ...prev, [ticketId]: qr }));
-    } finally {
-      setQrLoadingId(null);
-    }
+  // ================================
+  // HÀM THÊM VÀO CÁC LỊCH CÁ NHÂN
+  // ================================
+
+  const addToGoogleCalendar = () => {
+    const event = eventDetail || selectedEvent;
+    if (!event) return;
+
+    const startTime = parseISO(event.startTime);
+    const endTime = parseISO(event.endTime || event.startTime);
+
+    const title = encodeURIComponent(event.title || "Sự kiện");
+    const location = encodeURIComponent(event.address || event.locationName || "");
+    const description = encodeURIComponent(
+      `${event.description || event.detailedDescription || "Không có mô tả"}\n\nĐặt vé tại: ${window.location.origin}`
+    );
+
+    const formatDate = (date) => date.toISOString().replace(/-|:|\.\d\d\d/g, "").slice(0, -1) + "Z";
+
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${formatDate(startTime)}/${formatDate(endTime)}&location=${location}&details=${description}&sf=true&output=xml`;
+
+    window.open(url, "google-calendar", "width=800,height=700");
+
+    // Hiệu ứng thành công
+    setGoogleAdded(true);
+    setTimeout(() => setGoogleAdded(false), 4000);
+  };
+
+  const generateICS = () => {
+    const event = eventDetail || selectedEvent;
+    if (!event) return;
+
+    const start = parseISO(event.startTime);
+    const end = parseISO(event.endTime || event.startTime);
+
+    const formatDate = (date) => date.toISOString().replace(/-|:|\.\d\d\d\d/g, "").slice(0, -1);
+
+    const title = (event.title || "Sự kiện").replace(/,/g, "\\,");
+    const location = (event.address || event.locationName || "").replace(/,/g, "\\,");
+    const description = (event.description || event.detailedDescription || "Đã đặt vé qua hệ thống")
+      .replace(/,/g, "\\,")
+      .replace(/\n/g, "\\n");
+
+    const icsContent = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Your App//Timeline Events//VI",
+      "CALSCALE:GREGORIAN",
+      "METHOD:PUBLISH",
+      "BEGIN:VEVENT",
+      `DTSTART:${formatDate(start)}`,
+      `DTEND:${formatDate(end)}`,
+      `SUMMARY:${title}`,
+      `LOCATION:${location}`,
+      `DESCRIPTION:${description}`,
+      `URL:${window.location.origin}`,
+      "STATUS:CONFIRMED",
+      "SEQUENCE:0",
+      "BEGIN:VALARM",
+      "TRIGGER:-PT15M",
+      "DESCRIPTION:Nhắc nhở: ${title}",
+      "ACTION:DISPLAY",
+      "END:VALARM",
+      "END:VEVENT",
+      "END:VCALENDAR"
+    ].join("\r\n");
+
+    const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const openOutlookCalendar = () => {
+    const event = eventDetail || selectedEvent;
+    if (!event) return;
+
+    const start = parseISO(event.startTime);
+    const end = parseISO(event.endTime || event.startTime);
+
+    const formatDate = (date) => date.toISOString().replace(/-|:|\.\d\d\d/g, "").slice(0, -1);
+
+    const subject = encodeURIComponent(event.title || "Sự kiện");
+    const location = encodeURIComponent(event.address || event.locationName || "");
+    const body = encodeURIComponent(
+      `${event.description || event.detailedDescription || ""}\n\nĐặt vé tại: ${window.location.origin}`
+    );
+
+    const url = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${subject}&startdt=${formatDate(start)}&enddt=${formatDate(end)}&location=${location}&body=${body}&allday=false`;
+
+    window.open(url, "outlook-calendar", "width=900,height=800");
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Hero Header with Animated Background */}
+      {/* Hero Header */}
       <div className={`container mx-auto px-4 pt-6 max-w-7xl ${responsiveScaleClasses} transition-transform duration-300`}>
         <div className="relative text-white overflow-hidden rounded-3xl shadow-2xl" style={{ background: 'linear-gradient(to right, rgb(30 41 59) 0%, rgb(55 65 81) 30%, rgb(75 85 99) 50%, rgb(29 78 216) 100%)' }}>
-          {/* Animated Background Patterns */}
           <div className="absolute inset-0 overflow-hidden rounded-3xl">
             <div className="absolute -top-1/2 -right-1/4 w-96 h-96 bg-blue-400/10 rounded-full blur-3xl animate-pulse"></div>
             <div className="absolute -bottom-1/2 -left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
             <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-slate-700/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
           </div>
-
           <div className="relative px-4 py-12">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
               <div className="space-y-2 animate-fade-in">
@@ -181,8 +264,6 @@ const TimelinePage = () => {
                   <h1 className="text-4xl font-bold tracking-tight">Timeline Sự Kiện</h1>
                 </div>
                 <p className="text-blue-100 text-lg">Khám phá và quản lý các sự kiện của bạn một cách dễ dàng</p>
-
-                {/* Enhanced Stats Cards */}
                 <div className="flex flex-wrap gap-4 pt-4">
                   <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:scale-105 hover:rotate-1">
                     <div className="flex items-center gap-3">
@@ -228,7 +309,7 @@ const TimelinePage = () => {
       </div>
 
       <div className={`container mx-auto px-4 py-8 max-w-7xl ${responsiveScaleClasses} transition-transform duration-300`}>
-        {/* Enhanced Search Bar with Glassmorphism */}
+        {/* Search & Filter */}
         <div className="mb-8 space-y-4 animate-slide-up">
           <div className="relative backdrop-blur-xl bg-white/80 border border-white/20 shadow-2xl rounded-2xl overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5"></div>
@@ -240,71 +321,40 @@ const TimelinePage = () => {
               className="relative pl-12 h-14 text-lg bg-transparent border-none focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
-
-          {/* Enhanced Filter Tabs with Sliding Indicator */}
           <div className="flex flex-wrap items-center justify-between gap-3 py-1">
             <div className="relative bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-1.5 shadow-inner">
               <div className="flex flex-wrap items-center gap-1 relative z-10">
-                <Button
-                  variant={filterTab === "all" ? "default" : "ghost"}
-                  onClick={() => setFilterTab("all")}
-                  className={`rounded-xl transition-all duration-300 ${filterTab === "all" ? "shadow-lg" : "hover:bg-white/50"}`}
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Tất cả
+                <Button variant={filterTab === "all" ? "default" : "ghost"} onClick={() => setFilterTab("all")} className={`rounded-xl transition-all duration-300 ${filterTab === "all" ? "shadow-lg" : "hover:bg-white/50"}`}>
+                  <Sparkles className="w-4 h-4 mr-2" /> Tất cả
                 </Button>
-                <Button
-                  variant={filterTab === "upcoming" ? "default" : "ghost"}
-                  onClick={() => setFilterTab("upcoming")}
-                  className={`rounded-xl transition-all duration-300 ${filterTab === "upcoming" ? "shadow-lg" : "hover:bg-white/50"}`}
-                >
-                  <Clock className="w-4 h-4 mr-2" />
-                  Sắp tới
+                <Button variant={filterTab === "upcoming" ? "default" : "ghost"} onClick={() => setFilterTab("upcoming")} className={`rounded-xl transition-all duration-300 ${filterTab === "upcoming" ? "shadow-lg" : "hover:bg-white/50"}`}>
+                  <Clock className="w-4 h-4 mr-2" /> Sắp tới
                 </Button>
-                <Button
-                  variant={filterTab === "attended" ? "default" : "ghost"}
-                  onClick={() => setFilterTab("attended")}
-                  className={`rounded-xl transition-all duration-300 ${filterTab === "attended" ? "shadow-lg" : "hover:bg-white/50"}`}
-                >
-                  <CalendarIcon className="w-4 h-4 mr-2" />
-                  Đã tham gia
+                <Button variant={filterTab === "attended" ? "default" : "ghost"} onClick={() => setFilterTab("attended")} className={`rounded-xl transition-all duration-300 ${filterTab === "attended" ? "shadow-lg" : "hover:bg-white/50"}`}>
+                  <CalendarIcon className="w-4 h-4 mr-2" /> Đã tham gia
                 </Button>
               </div>
             </div>
-
-            {/* Enhanced Navigation Controls */}
             <div className="flex items-center gap-3 bg-white/90 backdrop-blur-lg border border-gray-200 rounded-2xl p-2 shadow-lg">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-md"
-                onClick={() => {
-                  if (viewMode === "month") setCurrentMonth(addMonths(currentMonth, -1));
-                  else if (viewMode === "week") setCurrentWeek(addWeeks(currentWeek, -1));
-                  else if (viewMode === "day") setCurrentDay(addDays(currentDay, -1));
-                }}
-              >
+              <Button variant="ghost" size="icon" onClick={() => {
+                if (viewMode === "month") setCurrentMonth(addMonths(currentMonth, -1));
+                else if (viewMode === "week") setCurrentWeek(addWeeks(currentWeek, -1));
+                else if (viewMode === "day") setCurrentDay(addDays(currentDay, -1));
+              }}>
                 <ChevronLeft className="w-5 h-5" />
               </Button>
               <div className="text-sm font-semibold px-4 min-w-[180px] text-center bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                 {viewMode === "month" && format(currentMonth, "MMMM yyyy", { locale: vi })}
                 {viewMode === "week" && (
-                  <>
-                    {format(weekMatrix[0], "dd/MM", { locale: vi })} - {format(weekMatrix[6], "dd/MM yyyy", { locale: vi })}
-                  </>
+                  <>{format(weekMatrix[0], "dd/MM", { locale: vi })} - {format(weekMatrix[6], "dd/MM yyyy", { locale: vi })}</>
                 )}
                 {viewMode === "day" && format(currentDay, "dd MMMM yyyy", { locale: vi })}
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-md"
-                onClick={() => {
-                  if (viewMode === "month") setCurrentMonth(addMonths(currentMonth, 1));
-                  else if (viewMode === "week") setCurrentWeek(addWeeks(currentWeek, 1));
-                  else if (viewMode === "day") setCurrentDay(addDays(currentDay, 1));
-                }}
-              >
+              <Button variant="ghost" size="icon" onClick={() => {
+                if (viewMode === "month") setCurrentMonth(addMonths(currentMonth, 1));
+                else if (viewMode === "week") setCurrentWeek(addWeeks(currentWeek, 1));
+                else if (viewMode === "day") setCurrentDay(addDays(currentDay, 1));
+              }}>
                 <ChevronRight className="w-5 h-5" />
               </Button>
             </div>
@@ -312,7 +362,7 @@ const TimelinePage = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Enhanced Events List with Skeleton Loading */}
+          {/* Danh sách sự kiện bên trái */}
           <div className="lg:col-span-1 space-y-4 max-h-[72vh] overflow-auto pr-2 pt-4 pb-2 custom-scrollbar">
             {loading ? (
               <div className="space-y-4">
@@ -340,11 +390,7 @@ const TimelinePage = () => {
                   </div>
                   <h3 className="text-xl font-bold mb-2">Chưa có sự kiện nào</h3>
                   <p className="text-gray-500 mb-6">Hãy bắt đầu khám phá và đặt vé ngay!</p>
-                  <Button
-                    size="lg"
-                    className="rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-                    onClick={() => navigate(PATH.HOME)}
-                  >
+                  <Button size="lg" className="rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105" onClick={() => navigate(PATH.HOME)}>
                     Khám phá sự kiện →
                   </Button>
                 </CardContent>
@@ -354,16 +400,11 @@ const TimelinePage = () => {
                 {displayedEvents.map((e, idx) => (
                   <Card
                     key={e.eventId}
-                    className={`relative cursor-pointer rounded-2xl border-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 animate-fade-in group overflow-hidden ${selectedEvent?.eventId === e.eventId
-                      ? "ring-2 ring-blue-500 shadow-lg"
-                      : "hover:border-blue-300"
-                      }`}
+                    className={`relative cursor-pointer rounded-2xl border-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 animate-fade-in group overflow-hidden ${selectedEvent?.eventId === e.eventId ? "ring-2 ring-blue-500 shadow-lg" : "hover:border-blue-300"}`}
                     style={{ animationDelay: `${idx * 50}ms` }}
                     onClick={() => loadTickets(e)}
                   >
-                    {/* Gradient Border Effect */}
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 opacity-0 group-hover:opacity-20 transition-opacity blur-xl"></div>
-
                     <CardContent className="relative p-5 bg-white rounded-2xl">
                       <div className="flex items-start gap-4">
                         <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-lg transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
@@ -393,8 +434,6 @@ const TimelinePage = () => {
                         </div>
                       </div>
                     </CardContent>
-
-                    {/* Hover Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-blue-600/90 via-blue-600/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-2xl flex items-end p-5">
                       <div className="text-white text-sm font-medium transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                         Nhấn để xem chi tiết →
@@ -402,8 +441,6 @@ const TimelinePage = () => {
                     </div>
                   </Card>
                 ))}
-
-                {/* Enhanced Load More Button */}
                 {displayedEvents.length < filteredEvents.length && (
                   <div className="pt-4 pb-2">
                     <Button
@@ -420,11 +457,11 @@ const TimelinePage = () => {
             )}
           </div>
 
-          {/* Enhanced Calendar View */}
+          {/* Lịch bên phải */}
           <div className="lg:col-span-2">
             <Card className="overflow-hidden rounded-2xl border-2 shadow-2xl bg-white">
               <CardContent className="p-0">
-                {/* Enhanced View Mode Tabs */}
+                {/* Tab chuyển view mode */}
                 <div className="flex items-center justify-between p-5 border-b-2 border-gray-200 bg-gradient-to-r from-gray-50 via-white to-gray-50 shadow-sm">
                   <div className="text-sm text-muted-foreground flex items-center gap-4">
                     <span className="inline-flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 shadow-sm">
@@ -443,43 +480,13 @@ const TimelinePage = () => {
                     </span>
                   </div>
                   <div className="hidden sm:flex gap-2 bg-gray-100 rounded-xl p-1">
-                    <Button
-                      size="sm"
-                      variant={viewMode === "month" ? "default" : "ghost"}
-                      onClick={() => {
-                        setViewMode("month");
-                        setCurrentMonth(selectedDate);
-                      }}
-                      className={`rounded-lg transition-all duration-300 ${viewMode === "month" ? "shadow-md" : "hover:bg-white/70"}`}
-                    >
-                      Tháng
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={viewMode === "week" ? "default" : "ghost"}
-                      onClick={() => {
-                        setViewMode("week");
-                        setCurrentWeek(selectedDate);
-                      }}
-                      className={`rounded-lg transition-all duration-300 ${viewMode === "week" ? "shadow-md" : "hover:bg-white/70"}`}
-                    >
-                      Tuần
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={viewMode === "day" ? "default" : "ghost"}
-                      onClick={() => {
-                        setViewMode("day");
-                        setCurrentDay(selectedDate);
-                      }}
-                      className={`rounded-lg transition-all duration-300 ${viewMode === "day" ? "shadow-md" : "hover:bg-white/70"}`}
-                    >
-                      Ngày
-                    </Button>
+                    <Button size="sm" variant={viewMode === "month" ? "default" : "ghost"} onClick={() => { setViewMode("month"); setCurrentMonth(selectedDate); }} className={`rounded-lg transition-all duration-300 ${viewMode === "month" ? "shadow-md" : "hover:bg-white/70"}`}>Tháng</Button>
+                    <Button size="sm" variant={viewMode === "week" ? "default" : "ghost"} onClick={() => { setViewMode("week"); setCurrentWeek(selectedDate); }} className={`rounded-lg transition-all duration-300 ${viewMode === "week" ? "shadow-md" : "hover:bg-white/70"}`}>Tuần</Button>
+                    <Button size="sm" variant={viewMode === "day" ? "default" : "ghost"} onClick={() => { setViewMode("day"); setCurrentDay(selectedDate); }} className={`rounded-lg transition-all duration-300 ${viewMode === "day" ? "shadow-md" : "hover:bg-white/70"}`}>Ngày</Button>
                   </div>
                 </div>
 
-                {/* Month View - Enhanced */}
+                {/* Month View */}
                 {viewMode === "month" && (
                   <>
                     <div className="grid grid-cols-7 text-sm font-bold text-gray-700 border-b-2 border-gray-300 bg-gradient-to-r from-gray-100 to-gray-50 shadow-sm">
@@ -498,62 +505,31 @@ const TimelinePage = () => {
                         return (
                           <div
                             key={idx}
-                            className={`min-h-[110px] cursor-pointer transition-all duration-300 relative group border border-gray-200 ${
-                              hasEvents 
-                                ? "bg-gradient-to-br from-blue-50 via-sky-50 to-blue-100 border-l-4 border-l-blue-500 shadow-sm" 
-                                : "bg-white"
-                            } ${!isCurrentMonth ? "opacity-40 bg-gray-50" : ""} ${
-                              selected ? "ring-2 ring-blue-500 shadow-lg z-10 bg-blue-50" : ""
-                            } hover:shadow-lg hover:z-10 hover:scale-[1.01]`}
+                            className={`min-h-[110px] cursor-pointer transition-all duration-300 relative group border border-gray-200 ${hasEvents ? "bg-gradient-to-br from-blue-50 via-sky-50 to-blue-100 border-l-4 border-l-blue-500 shadow-sm" : "bg-white"} ${!isCurrentMonth ? "opacity-40 bg-gray-50" : ""} ${selected ? "ring-2 ring-blue-500 shadow-lg z-10 bg-blue-50" : ""} hover:shadow-lg hover:z-10 hover:scale-[1.01]`}
                             onClick={() => setSelectedDate(day)}
                           >
-                            {/* Glow effect for days with events */}
-                            {hasEvents && (
-                              <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 via-sky-400/5 to-transparent pointer-events-none rounded-sm"></div>
-                            )}
-                            
-                            {/* Paper texture effect */}
+                            {hasEvents && <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 via-sky-400/5 to-transparent pointer-events-none rounded-sm"></div>}
                             <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent pointer-events-none"></div>
-
                             <div className="relative p-2 text-sm flex items-center justify-between z-10">
                               <div className={`font-semibold transition-all duration-300 ${isToday ? "w-7 h-7 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg" : hasEvents ? "text-blue-700 font-bold" : ""}`}>
                                 {format(day, "d")}
                               </div>
                             </div>
                             {dayEvents.length > 0 && (
-                              <img 
-                                src={pushpinImage} 
-                                alt="pushpin" 
-                                className="absolute bottom-19 left-15 w-15 h-15 object-contain drop-shadow-xl z-20"
-                                style={{ 
-                                  transform: 'rotate(-11deg)',
-                                  filter: 'brightness(1) contrast(1.2) saturate(1.2)'
-                                }}
-                              />
+                              <img src={pushpinImage} alt="pushpin" className="absolute bottom-19 left-15 w-15 h-15 object-contain drop-shadow-xl z-20" style={{ transform: 'rotate(-11deg)', filter: 'brightness(1) contrast(1.2) saturate(1.2)' }} />
                             )}
                             <div className="relative px-2 pb-2 space-y-1 overflow-y-auto max-h-[calc(110px-40px)]">
                               {(() => {
-                                const MAX_DISPLAY = 3; // Giới hạn hiển thị 3 sự kiện đầu tiên trong Month View
+                                const MAX_DISPLAY = 3;
                                 const dayKey = format(day, "yyyy-MM-dd");
                                 const limit = dayEventLimits[dayKey] || MAX_DISPLAY;
                                 const displayedEvents = dayEvents.slice(0, limit);
                                 const remaining = dayEvents.length - limit;
-
                                 return (
                                   <>
                                     {displayedEvents.map((e) => (
-                                      <div
-                                        key={e.eventId}
-                                        className="rounded-lg bg-gradient-to-r from-slate-500 via-purple-500 to-purple-200 text-white border-0 px-2 py-1.5 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 flex-shrink-0 shadow-md"
-                                        onClick={(evt) => {
-                                          evt.stopPropagation();
-                                          loadTickets(e);
-                                        }}
-                                        title={e.title}
-                                      >
-                                        <div className="font-bold text-[10px] text-white mb-0.5 line-clamp-2 leading-tight drop-shadow-sm">
-                                          {e.title}
-                                        </div>
+                                      <div key={e.eventId} className="rounded-lg bg-gradient-to-r from-slate-500 via-purple-500 to-purple-200 text-white border-0 px-2 py-1.5 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 flex-shrink-0 shadow-md" onClick={(evt) => { evt.stopPropagation(); loadTickets(e); }} title={e.title}>
+                                        <div className="font-bold text-[10px] text-white mb-0.5 line-clamp-2 leading-tight drop-shadow-sm">{e.title}</div>
                                         <div className="text-[9px] text-purple-100 font-semibold flex items-center gap-1">
                                           <Clock className="w-2.5 h-2.5" />
                                           {format(parseISO(e.startTime), "HH:mm", { locale: vi })}
@@ -561,17 +537,7 @@ const TimelinePage = () => {
                                       </div>
                                     ))}
                                     {remaining > 0 && (
-                                      <div
-                                        className="text-[9px] text-blue-600 font-bold px-2 py-1 cursor-pointer hover:bg-blue-200 rounded-lg transition-all bg-blue-100 border border-blue-300 shadow-sm"
-                                        onClick={(evt) => {
-                                          evt.stopPropagation();
-                                          setDayEventLimits(prev => ({
-                                            ...prev,
-                                            [dayKey]: Math.min(limit + 5, dayEvents.length)
-                                          }));
-                                        }}
-                                        title={`Xem thêm ${remaining} sự kiện`}
-                                      >
+                                      <div className="text-[9px] text-blue-600 font-bold px-2 py-1 cursor-pointer hover:bg-blue-200 rounded-lg transition-all bg-blue-100 border border-blue-300 shadow-sm" onClick={(evt) => { evt.stopPropagation(); setDayEventLimits(prev => ({ ...prev, [dayKey]: Math.min(limit + 5, dayEvents.length) })); }} title={`Xem thêm ${remaining} sự kiện`}>
                                         +{remaining} sự kiện
                                       </div>
                                     )}
@@ -604,36 +570,34 @@ const TimelinePage = () => {
                         return (
                           <div
                             key={idx}
-                            className={`min-h-[450px] cursor-pointer transition-all duration-300 relative group border border-gray-200 ${
-                              hasEvents 
-                                ? "bg-gradient-to-br from-blue-50 via-sky-50 to-blue-100 border-l-4 border-l-blue-500 shadow-sm" 
-                                : "bg-white"
-                            } ${selected ? "ring-2 ring-blue-500 shadow-lg z-10 bg-blue-50" : ""} hover:shadow-lg hover:z-10`}
+                            className={`min-h-[450px] cursor-pointer transition-all duration-300 relative group border border-gray-200 ${hasEvents
+                              ? "bg-gradient-to-br from-blue-50 via-sky-50 to-blue-100 border-l-4 border-l-blue-500 shadow-sm"
+                              : "bg-white"
+                              } ${selected ? "ring-2 ring-blue-500 shadow-lg z-10 bg-blue-50" : ""} hover:shadow-lg hover:z-10`}
                             onClick={() => setSelectedDate(day)}
                           >
                             {/* Glow effect for days with events */}
                             {hasEvents && (
                               <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 via-sky-400/5 to-transparent pointer-events-none rounded-sm"></div>
                             )}
-                            
+
                             {/* Paper texture effect */}
                             <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent pointer-events-none"></div>
 
-                            <div className={`relative p-4 flex items-center justify-between border-b-2 z-10 ${
-                              hasEvents 
-                                ? "border-blue-200 bg-gradient-to-b from-blue-100/50 to-white" 
-                                : "border-gray-200 bg-gradient-to-b from-gray-50 to-white"
-                            }`}>
+                            <div className={`relative p-4 flex items-center justify-between border-b-2 z-10 ${hasEvents
+                              ? "border-blue-200 bg-gradient-to-b from-blue-100/50 to-white"
+                              : "border-gray-200 bg-gradient-to-b from-gray-50 to-white"
+                              }`}>
                               <div className={`text-lg font-bold transition-all duration-300 ${isToday ? "w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg" : hasEvents ? "text-blue-700" : ""}`}>
                                 {format(day, "d")}
                               </div>
                             </div>
                             {dayEvents.length > 0 && (
-                              <img 
-                                src={pushpinImage} 
-                                alt="pushpin" 
+                              <img
+                                src={pushpinImage}
+                                alt="pushpin"
                                 className="absolute top-2 right-2 w-10 h-10 object-contain drop-shadow-xl z-20"
-                                style={{ 
+                                style={{
                                   transform: 'rotate(-15deg)',
                                   filter: 'brightness(1.1) contrast(1.2) saturate(1.3)'
                                 }}
@@ -796,7 +760,7 @@ const TimelinePage = () => {
             setIsMapModalOpen(false); // Reset map modal when ticket dialog closes
           }
         }}>
-        <DialogContent className={`max-w-7xl max-h-[90vh] p-0 rounded-xl overflow-hidden border-2 ${responsiveScaleClasses} transition-transform duration-300`}>
+          <DialogContent className={`max-w-7xl max-h-[90vh] p-0 rounded-xl overflow-hidden border-2 ${responsiveScaleClasses} transition-transform duration-300`}>
             {/* Header với Gradient và Overlay Image */}
             <div className="relative h-36 overflow-hidden">
               {/* Background Image với Overlay */}
@@ -849,8 +813,8 @@ const TimelinePage = () => {
                 {/* Event Status Badge */}
                 <div className="mt-2 flex items-center gap-2">
                   <Badge className={`px-2 py-0.5 text-xs font-semibold ${new Date(eventDetail?.endTime || selectedEvent?.endTime || 0) < new Date()
-                      ? "bg-emerald-500/90 text-white border-0"
-                      : "bg-sky-500/90 text-white border-0"
+                    ? "bg-emerald-500/90 text-white border-0"
+                    : "bg-sky-500/90 text-white border-0"
                     }`}>
                     {new Date(eventDetail?.endTime || selectedEvent?.endTime || 0) < new Date() ? "✓ Đã hoàn thành" : "Sắp diễn ra"}
                   </Badge>
@@ -904,11 +868,10 @@ const TimelinePage = () => {
                       variant={activeTab === "info" ? "default" : "ghost"}
                       size="sm"
                       onClick={() => setActiveTab("info")}
-                      className={`rounded-t-md rounded-b-none border-b-2 transition-all duration-300 text-sm ${
-                        activeTab === "info"
-                          ? "border-blue-500 bg-blue-50 text-blue-700 font-semibold shadow-sm hover:text-blue-700"
-                          : "border-transparent hover:bg-gray-50 hover:text-gray-900 text-gray-700"
-                      }`}
+                      className={`rounded-t-md rounded-b-none border-b-2 transition-all duration-300 text-sm ${activeTab === "info"
+                        ? "border-blue-500 bg-blue-50 text-blue-700 font-semibold shadow-sm hover:text-blue-700"
+                        : "border-transparent hover:bg-gray-50 hover:text-gray-900 text-gray-700"
+                        }`}
                     >
                       <Sparkles className="w-3.5 h-3.5 mr-1.5" />
                       Thông tin sự kiện
@@ -917,11 +880,10 @@ const TimelinePage = () => {
                       variant={activeTab === "actions" ? "default" : "ghost"}
                       size="sm"
                       onClick={() => setActiveTab("actions")}
-                      className={`rounded-t-md rounded-b-none border-b-2 transition-all duration-300 text-sm ${
-                        activeTab === "actions"
-                          ? "border-blue-500 bg-blue-50 text-blue-700 font-semibold shadow-sm hover:text-blue-700"
-                          : "border-transparent hover:bg-gray-50 hover:text-gray-900 text-gray-700"
-                      }`}
+                      className={`rounded-t-md rounded-b-none border-b-2 transition-all duration-300 text-sm ${activeTab === "actions"
+                        ? "border-blue-500 bg-blue-50 text-blue-700 font-semibold shadow-sm hover:text-blue-700"
+                        : "border-transparent hover:bg-gray-50 hover:text-gray-900 text-gray-700"
+                        }`}
                     >
                       <Share2 className="w-3.5 h-3.5 mr-1.5" />
                       Thao tác nhanh
@@ -996,32 +958,61 @@ const TimelinePage = () => {
                           </CardContent>
                         </Card>
                       </div>
-                    )}       
+                    )}
 
                     {/* Tab Content: Thao tác nhanh */}
                     {activeTab === "actions" && (
                       <Card className="rounded-lg border-2 shadow-lg">
                         <CardContent className="p-4">
-                          <h3 className="text-base font-bold mb-3 flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-md bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center">
-                              <Share2 className="w-3.5 h-3.5 text-white" />
-                            </div>
-                            Thao tác nhanh
+                          <h3 className="text-base font-bold mb-4 flex items-center gap-2">
+                            <CalendarPlus className="w-5 h-5 text-blue-600" />
+                            Thêm vào lịch cá nhân
                           </h3>
-                          <div className="space-y-2">
-                            <GoogleCalendarButton
-                              event={eventDetail || selectedEvent}
-                              variant="outline"
-                              size="sm"
-                              className="w-full rounded-md border-2 hover:bg-blue-50 hover:border-blue-300 hover:text-gray-900 text-gray-700 transition-all duration-300 justify-start h-10 text-sm"
-                            />
+                          <div className="space-y-3">
+                            {/* Google Calendar */}
+                            <Button
+                              onClick={addToGoogleCalendar}
+                              className={`w-full h-12 rounded-xl font-medium shadow-lg hover:shadow-xl transition-all duration-500 ${googleAdded ? "bg-emerald-500 hover:bg-emerald-600 text-white" : "bg-gradient-to-r from-red-500 to-pink-500 text-white hover:from-red-600 hover:to-pink-600"}`}
+                            >
+                              {googleAdded ? (
+                                <>✓ Đã thêm vào Google Calendar</>
+                              ) : (
+                                <>Google Calendar</>
+                              )}
+                            </Button>
+
+                            {/* Apple & Outlook */}
+                            <div className="grid grid-cols-2 gap-3">
+                              <Button
+                                variant="outline"
+                                onClick={generateICS}
+                                className="h-12 rounded-xl border-2 font-medium hover:bg-purple-50 hover:border-purple-300 hover:shadow-md"
+                              >
+                                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M17.5 2h-11C5.1 2 4 3.1 4 4.5v15c0 1.4 1.1 2.5 2.5 2.5h11c1.4 0 2.5-1.1 2.5-2.5v-15c0-1.4-1.1-2.5-2.5-2.5zM12 4c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm2 16H10v-1h4v1zm3-3H7v-9h10v9z"/>
+                                </svg>
+                                Apple Calendar
+                              </Button>
+
+                              <Button
+                                variant="outline"
+                                onClick={openOutlookCalendar}
+                                className="h-12 rounded-xl border-2 font-medium hover:bg-blue-50 hover:border-blue-300 hover:shadow-md"
+                              >
+                                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/>
+                                </svg>
+                                Outlook
+                              </Button>
+                            </div>
+
                             <Button
                               variant="outline"
-                              size="sm"
-                              className="w-full rounded-md border-2 hover:bg-purple-50 hover:border-purple-300 hover:text-gray-900 text-gray-700 transition-all duration-300 justify-start h-10 text-sm"
+                              onClick={() => { const eventId = eventDetail?.eventId || selectedEvent?.eventId; setTicketDialogOpen(false); navigate(PATH.EVENT_DETAIL.replace(":id", eventId)); }}
+                              className="w-full rounded-xl border-2 hover:bg-gray-50 h-11 text-sm font-medium"
                             >
-                              <Share2 className="w-4 h-4 mr-2" />
-                              Chia sẻ sự kiện
+                              <ExternalLink className="w-4 h-4 mr-2" />
+                              Xem trang chi tiết sự kiện
                             </Button>
                           </div>
                         </CardContent>
@@ -1093,7 +1084,7 @@ const TimelinePage = () => {
                         <p className="text-gray-700 leading-relaxed mb-2 text-xs">
                           {eventDetail?.locationName || eventDetail?.address || selectedEvent?.address || "Chưa có địa chỉ"}
                         </p>
-                        
+
                         {/* Mini Map Preview */}
                         {(eventDetail?.latitude && eventDetail?.longitude) ? (
                           <div className="relative h-20 rounded-md overflow-hidden border border-gray-200 mb-2">
@@ -1133,7 +1124,7 @@ const TimelinePage = () => {
                             <span className="absolute bottom-1 text-[10px] text-gray-500">Bản đồ không khả dụng</span>
                           </div>
                         )}
-                        
+
                         {/* View Map Button */}
                         {(eventDetail?.address || selectedEvent?.address || eventDetail?.locationName) && (
                           <Dialog open={isMapModalOpen} onOpenChange={setIsMapModalOpen}>

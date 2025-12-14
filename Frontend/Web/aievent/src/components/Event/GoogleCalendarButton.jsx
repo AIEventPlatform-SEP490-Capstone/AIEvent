@@ -1,101 +1,74 @@
-import React from "react";
-import { Calendar } from "lucide-react";
 import { Button } from "../ui/button";
+import { CalendarPlus } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { useState } from "react";
 
-/**
- * Component để thêm sự kiện vào Google Calendar
- * @param {Object} event - Đối tượng sự kiện
- * @param {string} event.title - Tiêu đề sự kiện
- * @param {string} event.startTime - Thời gian bắt đầu (ISO string)
- * @param {string} event.endTime - Thời gian kết thúc (ISO string)
- * @param {string} event.address - Địa chỉ sự kiện
- * @param {string} event.locationName - Tên địa điểm
- * @param {string} event.description - Mô tả sự kiện
- * @param {string} event.detailedDescription - Mô tả chi tiết
- * @param {Object} className - CSS classes tùy chỉnh
- * @param {Object} variant - Button variant
- * @param {string} size - Button size
- */
-const GoogleCalendarButton = ({ 
-  event, 
-  className = "", 
-  variant = "outline",
-  size = "sm" 
-}) => {
-  /**
-   * Chuyển đổi Date sang định dạng Google Calendar (YYYYMMDDTHHmmssZ)
-   * @param {Date} date - Ngày cần chuyển đổi
-   * @returns {string} - Chuỗi ngày định dạng Google Calendar
-   */
-  const formatDateForGoogleCalendar = (date) => {
-    const d = new Date(date);
-    const year = d.getUTCFullYear();
-    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(d.getUTCDate()).padStart(2, '0');
-    const hours = String(d.getUTCHours()).padStart(2, '0');
-    const minutes = String(d.getUTCMinutes()).padStart(2, '0');
-    const seconds = String(d.getUTCSeconds()).padStart(2, '0');
-    
-    return `${year}${month}${day}T${hours}${minutes}${seconds}Z`;
-  };
+const GoogleCalendarButton = ({ event, variant = "outline", size = "sm", className = "" }) => {
+  const [added, setAdded] = useState(false);
 
-  /**
-   * Tạo URL Google Calendar từ thông tin sự kiện
-   * @returns {string} - URL Google Calendar
-   */
-  const generateGoogleCalendarUrl = () => {
-    if (!event) {
-      console.error("Event data is required");
-      return "#";
-    }
+  const addToGoogleCalendar = (e) => {
+    e.stopPropagation();
 
-    const title = event.title || "Sự kiện";
-    const startTime = event.startTime ? formatDateForGoogleCalendar(event.startTime) : "";
-    const endTime = event.endTime ? formatDateForGoogleCalendar(event.endTime) : "";
-    
-    // Lấy địa chỉ từ locationName hoặc address
-    const location = event.locationName || event.address || "";
+    if (!event) return;
 
-    // Lấy mô tả từ detailedDescription hoặc description
-    const description = event.detailedDescription || event.description || "";
+    const startTime = parseISO(event.startTime);
+    const endTime = parseISO(event.endTime || event.startTime);
 
-    // Tạo URL Google Calendar
-    // URLSearchParams sẽ tự động encode các giá trị
-    const baseUrl = "https://calendar.google.com/calendar/render";
-    const params = new URLSearchParams({
-      action: "TEMPLATE",
-      text: title,
-      dates: `${startTime}/${endTime}`,
-      details: description,
-      location: location,
-    });
+    const title = event.title || "Sự kiện không tên";
+    const location = event.address || event.locationName || "";
+    const description = `${
+      event.description || event.detailedDescription || "Không có mô tả"
+    }\n\nĐặt vé tại: ${window.location.origin}${window.location.pathname}`;
 
-    return `${baseUrl}?${params.toString()}`;
-  };
+    // Format: YYYYMMDDTHHmmssZ
+    const formatDate = (date) =>
+      date.toISOString().replace(/-|:|\.\d\d\d/g, "").slice(0, -1) + "Z";
 
-  /**
-   * Xử lý khi click vào button
-   */
-  const handleAddToCalendar = () => {
-    const url = generateGoogleCalendarUrl();
-    if (url && url !== "#") {
-      // Mở Google Calendar trong tab mới
-      window.open(url, "_blank", "noopener,noreferrer");
-    }
+    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+      title
+    )}&dates=${formatDate(startTime)}/${formatDate(endTime)}&location=${encodeURIComponent(
+      location
+    )}&details=${encodeURIComponent(description)}&sf=true&output=xml`;
+
+    // Mở popup Google Calendar ngay lập tức
+    window.open(googleCalendarUrl, "google-calendar-popup", "width=800,height=700");
+
+    // Hiệu ứng "Đã thêm"
+    setAdded(true);
+    setTimeout(() => setAdded(false), 4000);
   };
 
   return (
     <Button
-      variant={variant}
+      variant={added ? "default" : variant}
       size={size}
-      onClick={handleAddToCalendar}
-      className={className}
+      onClick={addToGoogleCalendar}
+      className={`transition-all duration-500 group relative overflow-hidden ${className} ${
+        added ? "bg-emerald-500 hover:bg-emerald-600" : ""
+      }`}
     >
-      <Calendar className="w-4 h-4 mr-2" />
-      Thêm vào Google Calendar
+      <span className="relative z-10 flex items-center gap-2">
+        {added ? (
+          <>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Đã thêm vào Google Calendar
+          </>
+        ) : (
+          <>
+            <CalendarPlus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            Thêm vào Google Calendar
+          </>
+        )}
+      </span>
+
+      {/* Hiệu ứng sóng khi thêm thành công */}
+      {added && (
+        <span className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-teal-500 opacity-30 animate-ping"></span>
+      )}
     </Button>
   );
 };
 
 export default GoogleCalendarButton;
-

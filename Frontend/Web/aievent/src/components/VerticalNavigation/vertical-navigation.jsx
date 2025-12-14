@@ -67,6 +67,7 @@ export function VerticalNavigation() {
   // Get user data from Redux store
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const invitations = useSelector(selectInvitations);
+  const { unreadCount } = useSelector((state) => state.notifications);
   const pathname = location.pathname;
 
   const isOrganizerRoute = pathname.startsWith("/organizer");
@@ -536,11 +537,13 @@ export function VerticalNavigation() {
                             </div>
                           </>
                         ) : (
-                          <div className="absolute -top-1 right-0 z-20">
-                            <div className="bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center">
-                              9
+                          unreadCount > 0 && (
+                            <div className="absolute -top-1 right-0 z-20">
+                              <div className="bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center">
+                                {unreadCount > 99 ? "99+" : unreadCount}
+                              </div>
                             </div>
-                          </div>
+                          )
                         )}
                       </NavLink>
                     </SidebarMenuButton>
@@ -580,16 +583,11 @@ export function VerticalNavigation() {
                               )}
                             </>
                           ) : (
-                            <div className="absolute -top-1 right-0 z-20">
-                              <div className="bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center">
-                                2
+                            pendingInvitationsCount > 0 && (
+                              <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center">
+                                {pendingInvitationsCount > 99 ? "99+" : pendingInvitationsCount}
                               </div>
-                            </div>
-                          )}
-                          {isCollapsed && pendingInvitationsCount > 0 && (
-                            <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                              {pendingInvitationsCount}
-                            </div>
+                            )
                           )}
                         </NavLink>
                       </SidebarMenuButton>

@@ -1,90 +1,148 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { dashboardAPI } from '../../api/dashboardAPI';
 import { eventCategoryAPI } from '../../api/eventCategoryAPI';
 import { EventStatus, EventStatusDisplay } from '../../constants/eventConstants';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area } from 'recharts';
-import { Filter, X, Calendar, Users, DollarSign, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
+  ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area 
+} from 'recharts';
+import { 
+  Calendar, Users, DollarSign, CheckCircle, TrendingUp, 
+  Filter, RefreshCw, ChevronDown, LayoutGrid, List,
+  Wallet, Tag, FolderOpen
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
+import { 
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
+} from '../../components/ui/select';
+
+const CHART_COLORS = {
+  primary: '#6366f1',
+  success: '#22c55e', 
+  warning: '#f59e0b',
+  danger: '#ef4444',
+  info: '#06b6d4',
+  purple: '#a855f7',
+  pink: '#ec4899',
+  slate: '#64748b'
+};
+
+const STATUS_COLORS = {
+  0: CHART_COLORS.warning,   // PendingApproval
+  1: CHART_COLORS.success,   // Approved
+  2: CHART_COLORS.danger,    // Rejected
+  3: CHART_COLORS.slate,     // Cancelled
+  4: CHART_COLORS.info,      // WaitingForPayout
+  5: CHART_COLORS.primary,   // PaidOut
+  6: CHART_COLORS.pink       // ErrorPayment
+};
+
+const PIE_COLORS = [
+  CHART_COLORS.primary, CHART_COLORS.success, CHART_COLORS.warning,
+  CHART_COLORS.info, CHART_COLORS.purple, CHART_COLORS.pink,
+  CHART_COLORS.danger, CHART_COLORS.slate
+];
 
 const OrganizerDashboard = () => {
+  // Data states
   const [eventStatistics, setEventStatistics] = useState(null);
   const [buyerStatistics, setBuyerStatistics] = useState(null);
   const [checkInStatistics, setCheckInStatistics] = useState(null);
   const [revenueStatistics, setRevenueStatistics] = useState(null);
   const [netRevenueStatistics, setNetRevenueStatistics] = useState(null);
   const [revenueByCategoryTag, setRevenueByCategoryTag] = useState(null);
+  
+  // UI states
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [categories, setCategories] = useState([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [showChartSelector, setShowChartSelector] = useState(false);
-  
-  // Chart visibility state
-  const [visibleCharts, setVisibleCharts] = useState({
-    eventsByStatus: true,
-    revenueByEvent: true,
-    eventsOverTime: true,
-    buyersByEvent: true,
-    checkInsByEvent: true,
-    eventsByCategory: true
-  });
+  const [activeTab, setActiveTab] = useState('overview');
   
   // Filter states
   const [filters, setFilters] = useState({
     categoryId: '',
     startDate: '',
     endDate: '',
-    year: '',
-    month: '',
-    day: ''
+    year: new Date().getFullYear().toString(),
+    month: ''
   });
 
-  // Generate options for year, month, and day dropdowns
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 10 }, (_, i) => currentYear - 5 + i); // 10 years around current year
-  const months = Array.from({ length: 12 }, (_, i) => i + 1); // 1-12
-  const days = Array.from({ length: 31 }, (_, i) => i + 1); // 1-31
+  const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+  const months = [
+    { value: '1', label: 'Tháng 1' }, { value: '2', label: 'Tháng 2' },
+    { value: '3', label: 'Tháng 3' }, { value: '4', label: 'Tháng 4' },
+    { value: '5', label: 'Tháng 5' }, { value: '6', label: 'Tháng 6' },
+    { value: '7', label: 'Tháng 7' }, { value: '8', label: 'Tháng 8' },
+    { value: '9', label: 'Tháng 9' }, { value: '10', label: 'Tháng 10' },
+    { value: '11', label: 'Tháng 11' }, { value: '12', label: 'Tháng 12' }
+  ];
 
-  // Load categories on component mount
   useEffect(() => {
     loadCategories();
+    fetchData();
   }, []);
 
   const loadCategories = async () => {
-    setCategoriesLoading(true);
     try {
       const response = await eventCategoryAPI.getEventCategories(1, 100);
-      if (response?.data?.items) {
-        setCategories(response.data.items);
-      } else if (response?.data) {
-        setCategories(response.data);
-      }
+      const items = response?.data?.items || response?.data || [];
+      setCategories(items);
     } catch (err) {
       console.error('Error loading categories:', err);
-      // Set fallback categories if API fails
-      setCategories([
-        { eventCategoryId: '1', eventCategoryName: 'Technology' },
-        { eventCategoryId: '2', eventCategoryName: 'Music' },
-        { eventCategoryId: '3', eventCategoryName: 'Networking' },
-        { eventCategoryId: '4', eventCategoryName: 'Workshop' },
-        { eventCategoryId: '5', eventCategoryName: 'Conference' }
-      ]);
-    } finally {
-      setCategoriesLoading(false);
     }
   };
 
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const getFilterParams = () => {
+    const params = {};
+    if (filters.categoryId) params.categoryId = filters.categoryId;
+    if (filters.startDate) params.startDate = filters.startDate;
+    if (filters.endDate) params.endDate = filters.endDate;
+    if (filters.year) params.year = parseInt(filters.year);
+    if (filters.month) params.month = parseInt(filters.month);
+    return params;
+  };
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const filterParams = getFilterParams();
+      
+      const [eventStats, buyerStats, checkInStats, revenueStats, netRevenueStats, revenueCatTag] = 
+        await Promise.all([
+          dashboardAPI.getEventStatistics(filterParams).catch(() => null),
+          dashboardAPI.getBuyerStatistics(filterParams).catch(() => null),
+          dashboardAPI.getCheckInStatistics(filterParams).catch(() => null),
+          dashboardAPI.getRevenueStatistics(filterParams).catch(() => null),
+          dashboardAPI.getNetRevenueStatistics(filterParams).catch(() => null),
+          dashboardAPI.getRevenueByCategoryTag(filterParams).catch(() => null)
+        ]);
+
+      setEventStatistics(eventStats);
+      setBuyerStatistics(buyerStats);
+      setCheckInStatistics(checkInStats);
+      setRevenueStatistics(revenueStats);
+      setNetRevenueStatistics(netRevenueStats);
+      setRevenueByCategoryTag(revenueCatTag);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError('Không thể tải dữ liệu. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFilterChange = (name, value) => {
+    setFilters(prev => ({ ...prev, [name]: value }));
   };
 
   const applyFilters = () => {
     fetchData();
-    setShowFilters(false); // Close filters after applying
+    setShowFilters(false);
   };
 
   const clearFilters = () => {
@@ -92,405 +150,153 @@ const OrganizerDashboard = () => {
       categoryId: '',
       startDate: '',
       endDate: '',
-      year: '',
-      month: '',
-      day: ''
+      year: currentYear.toString(),
+      month: ''
     });
   };
 
-  const getFilterParams = () => {
-    const params = {};
-    
-    // Map category name to ID if a category is selected
-    if (filters.categoryId) {
-      params.categoryId = filters.categoryId;
-    }
-    
-    if (filters.startDate) params.startDate = filters.startDate;
-    if (filters.endDate) params.endDate = filters.endDate;
-    if (filters.year) params.year = parseInt(filters.year);
-    if (filters.month) params.month = parseInt(filters.month);
-    if (filters.day) params.day = parseInt(filters.day);
-    return params;
+  // Format currency
+  const formatCurrency = (value) => {
+    if (!value) return '0₫';
+    return new Intl.NumberFormat('vi-VN', { 
+      style: 'currency', 
+      currency: 'VND',
+      maximumFractionDigits: 0
+    }).format(value);
   };
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const filterParams = getFilterParams();
-      
-      // Fetch all dashboard data in parallel
-      const [
-        eventStats,
-        buyerStats,
-        checkInStats,
-        revenueStats,
-        netRevenueStats,
-        revenueCategoryTag
-      ] = await Promise.all([
-        dashboardAPI.getEventStatistics(filterParams).catch(err => {
-          console.error('Error fetching event statistics:', err);
-          return { totalEvents: 0, eventsByStatus: [], eventsByTag: [], eventsByCategory: [], eventsByDate: [] };
-        }),
-        dashboardAPI.getBuyerStatistics(filterParams).catch(err => {
-          console.error('Error fetching buyer statistics:', err);
-          return { totalBuyers: 0, buyersByEvent: [] };
-        }),
-        dashboardAPI.getCheckInStatistics(filterParams).catch(err => {
-          console.error('Error fetching check-in statistics:', err);
-          return { totalCheckedIn: 0, checkInsByEvent: [] };
-        }),
-        dashboardAPI.getRevenueStatistics(filterParams).catch(err => {
-          console.error('Error fetching revenue statistics:', err);
-          return { totalRevenue: 0, revenueByEvent: [] };
-        }),
-        dashboardAPI.getNetRevenueStatistics(filterParams).catch(err => {
-          console.error('Error fetching net revenue statistics:', err);
-          return { totalNetRevenue: 0, netRevenueByEvent: [] };
-        }),
-        dashboardAPI.getRevenueByCategoryTag(filterParams).catch(err => {
-          console.error('Error fetching revenue by category/tag:', err);
-          return { revenueByCategory: [], revenueByTag: [] };
-        })
-      ]);
-
-      setEventStatistics(eventStats);
-      setBuyerStatistics(buyerStats);
-      setCheckInStatistics(checkInStats);
-      setRevenueStatistics(revenueStats);
-      setNetRevenueStatistics(netRevenueStats);
-      setRevenueByCategoryTag(revenueCategoryTag);
-      setLoading(false);
-    } catch (err) {
-      console.error('Error fetching dashboard data:', err);
-      setError('Failed to load dashboard data. Please try again later.');
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  // Toggle chart visibility
-  const toggleChartVisibility = (chartName) => {
-    setVisibleCharts(prev => ({
-      ...prev,
-      [chartName]: !prev[chartName]
-    }));
-  };
-
-  // Toggle all charts
-  const toggleAllCharts = (isVisible) => {
-    setVisibleCharts({
-      eventsByStatus: isVisible,
-      revenueByEvent: isVisible,
-      eventsOverTime: isVisible,
-      buyersByEvent: isVisible,
-      checkInsByEvent: isVisible,
-      eventsByCategory: isVisible
-    });
-  };
-
-  // Format data for charts
-  const getEventsByStatusData = () => {
-    if (!eventStatistics || !eventStatistics.eventsByStatus) return [];
-    
+  // Chart data transformers
+  const eventsByStatusData = useMemo(() => {
+    if (!eventStatistics?.eventsByStatus) return [];
     return eventStatistics.eventsByStatus.map(item => {
-      // Map backend status integer to frontend enum
-      let statusKey = null;
-      switch (item.status) {
-        case 0: // PendingApproval
-          statusKey = EventStatus.PendingApproval;
-          break;
-        case 1: // Approved
-          statusKey = EventStatus.Approved;
-          break;
-        case 2: // Rejected
-          statusKey = EventStatus.Rejected;
-          break;
-        case 3: // Cancelled
-          statusKey = EventStatus.Cancelled;
-          break;
-        case 4: // WaitingForPayout
-          statusKey = EventStatus.WaitingForPayout;
-          break;
-        case 5: // PaidOut
-          statusKey = EventStatus.PaidOut;
-          break;
-        default:
-          statusKey = null;
-      }
-      
-      // Use display name if available, otherwise use status name from backend
-      const displayName = statusKey ? EventStatusDisplay[statusKey] : item.statusName;
-      
+      const statusKeys = Object.keys(EventStatus);
+      const statusKey = statusKeys[item.status] || null;
       return {
-        name: displayName || 'Unknown',
-        value: item.count || 0
+        name: statusKey ? EventStatusDisplay[EventStatus[statusKey]] : item.statusName || 'Khác',
+        value: item.count || 0,
+        fill: STATUS_COLORS[item.status] || CHART_COLORS.slate
       };
     });
-  };
+  }, [eventStatistics]);
 
-  const getEventsByCategoryData = () => {
-    if (!eventStatistics || !eventStatistics.eventsByCategory) return [];
-    return eventStatistics.eventsByCategory.map(item => ({
-      name: item.categoryName || 'Unknown',
-      value: item.count || 0
+  const eventsByCategoryData = useMemo(() => {
+    if (!eventStatistics?.eventsByCategory) return [];
+    return eventStatistics.eventsByCategory.map((item, idx) => ({
+      name: item.categoryName || 'Khác',
+      value: item.count || 0,
+      fill: PIE_COLORS[idx % PIE_COLORS.length]
     }));
-  };
+  }, [eventStatistics]);
 
-  const getRevenueByEventData = () => {
-    if (!revenueStatistics || !revenueStatistics.revenueByEvent) return [];
-    return revenueStatistics.revenueByEvent.map(item => ({
-      name: item.eventName || 'Unknown Event',
-      revenue: item.revenue || 0
+  const revenueByEventData = useMemo(() => {
+    if (!revenueStatistics?.revenueByEvent) return [];
+    return revenueStatistics.revenueByEvent.slice(0, 10).map(item => ({
+      name: item.eventName?.length > 20 ? item.eventName.substring(0, 20) + '...' : item.eventName || 'N/A',
+      revenue: item.revenue || 0,
+      fullName: item.eventName
     }));
-  };
+  }, [revenueStatistics]);
 
-  const getBuyersByEventData = () => {
-    if (!buyerStatistics || !buyerStatistics.buyersByEvent) return [];
-    return buyerStatistics.buyersByEvent.map(item => ({
-      name: item.eventName || 'Unknown Event',
-      buyers: item.buyerCount || 0
+  const buyersByEventData = useMemo(() => {
+    if (!buyerStatistics?.buyersByEvent) return [];
+    return buyerStatistics.buyersByEvent.slice(0, 10).map(item => ({
+      name: item.eventName?.length > 20 ? item.eventName.substring(0, 20) + '...' : item.eventName || 'N/A',
+      buyers: item.buyerCount || 0,
+      fullName: item.eventName
     }));
-  };
+  }, [buyerStatistics]);
 
-  const getCheckInsByEventData = () => {
-    if (!checkInStatistics || !checkInStatistics.checkInsByEvent) return [];
-    return checkInStatistics.checkInsByEvent.map(item => ({
-      name: item.eventName || 'Unknown Event',
-      checkIns: item.checkInCount || 0
+  const checkInsByEventData = useMemo(() => {
+    if (!checkInStatistics?.checkInsByEvent) return [];
+    return checkInStatistics.checkInsByEvent.slice(0, 10).map(item => ({
+      name: item.eventName?.length > 20 ? item.eventName.substring(0, 20) + '...' : item.eventName || 'N/A',
+      checkIns: item.checkedInCount || 0,
+      fullName: item.eventName
     }));
-  };
+  }, [checkInStatistics]);
 
-  const getEventsByDateData = () => {
-    if (!eventStatistics || !eventStatistics.eventsByDate) return [];
+  const eventsByDateData = useMemo(() => {
+    if (!eventStatistics?.eventsByDate) return [];
     return eventStatistics.eventsByDate.map(item => ({
-      date: item.date || 'Unknown Date',
+      date: new Date(item.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
       count: item.count || 0
     }));
-  };
+  }, [eventStatistics]);
 
-  // Colors for charts
-  const COLORS = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796'];
+  const revenueByCategoryData = useMemo(() => {
+    if (!revenueByCategoryTag?.revenueByCategory) return [];
+    return revenueByCategoryTag.revenueByCategory.map((item, idx) => ({
+      name: item.categoryName || 'Khác',
+      value: item.revenue || 0,
+      fill: PIE_COLORS[idx % PIE_COLORS.length]
+    }));
+  }, [revenueByCategoryTag]);
 
-  // Widget data
-  const widgetData = [
+  // Stats cards data
+  const statsCards = [
     {
-      title: "TỔNG SỐ SỰ KIỆN",
+      title: 'Tổng sự kiện',
       value: eventStatistics?.totalEvents || 0,
-      description: "Tất cả sự kiện bạn đã tạo",
-      icon: <Calendar size={20} />,
-      color: "primary"
+      icon: Calendar,
+      color: 'text-indigo-600',
+      bgColor: 'bg-indigo-50',
+      description: 'Sự kiện đã tạo'
     },
     {
-      title: "TỔNG SỐ NGƯỜI MUA",
+      title: 'Người mua vé',
       value: buyerStatistics?.totalBuyers || 0,
-      description: "Những người đã mua vé",
-      icon: <Users size={20} />,
-      color: "success"
+      icon: Users,
+      color: 'text-emerald-600',
+      bgColor: 'bg-emerald-50',
+      description: 'Tổng người mua'
     },
     {
-      title: "TỔNG DOANH THU",
-      value: revenueStatistics?.totalRevenue ? `${revenueStatistics.totalRevenue.toLocaleString('vi-VN')}₫` : '0₫',
-      description: "Tổng doanh thu từ tất cả sự kiện",
-      icon: <DollarSign size={20} />,
-      color: "info"
+      title: 'Tổng doanh thu',
+      value: formatCurrency(revenueStatistics?.totalRevenue),
+      icon: DollarSign,
+      color: 'text-amber-600',
+      bgColor: 'bg-amber-50',
+      description: 'Doanh thu gộp'
     },
     {
-      title: "ĐÃ ĐĂNG KÝ",
+      title: 'Doanh thu ròng',
+      value: formatCurrency(netRevenueStatistics?.totalNetRevenue),
+      icon: Wallet,
+      color: 'text-cyan-600',
+      bgColor: 'bg-cyan-50',
+      description: 'Sau phí nền tảng'
+    },
+    {
+      title: 'Đã check-in',
       value: checkInStatistics?.totalCheckedIn || 0,
-      description: "Người tham gia đã đăng ký",
-      icon: <CheckCircle size={20} />,
-      color: "warning"
+      icon: CheckCircle,
+      color: 'text-violet-600',
+      bgColor: 'bg-violet-50',
+      description: 'Người tham dự'
     }
   ];
 
-  // Calculate chart height based on visibility
-  const getChartHeight = () => {
-    const visibleCount = Object.values(visibleCharts).filter(Boolean).length;
-    
-    // Adjust height based on number of visible charts
-    if (visibleCount <= 2) return 350;
-    if (visibleCount <= 4) return 300;
-    return 250;
-  };
-
-  // Chart definitions
-  const chartDefinitions = [
-    {
-      id: 'eventsByStatus',
-      title: 'Sự Kiện Theo Trạng Thái',
-      visible: visibleCharts.eventsByStatus,
-      component: (
-        <ResponsiveContainer width="100%" height={getChartHeight()}>
-          <PieChart>
-            <Pie
-              data={getEventsByStatusData()}
-              cx="50%"
-              cy="50%"
-              labelLine={true}
-              outerRadius={Math.min(getChartHeight() / 3, 80)}
-              fill="#8884d8"
-              dataKey="value"
-              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-            >
-              {getEventsByStatusData().map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip formatter={(value) => [value, 'Sự Kiện']} />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
-      )
-    },
-    {
-      id: 'revenueByEvent',
-      title: 'Doanh Thu Theo Sự Kiện',
-      visible: visibleCharts.revenueByEvent,
-      component: (
-        <ResponsiveContainer width="100%" height={getChartHeight()}>
-          <BarChart
-            data={getRevenueByEventData()}
-            margin={{
-              top: 5,
-              right: 30,
-              left: 20,
-              bottom: 5,
-            }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip formatter={(value) => [`${value.toLocaleString('vi-VN')}₫`, 'Doanh Thu']} />
-            <Legend />
-            <Bar dataKey="revenue" fill="#4e73df" name="Doanh Thu (₫)" />
-          </BarChart>
-        </ResponsiveContainer>
-      )
-    },
-    {
-      id: 'eventsOverTime',
-      title: 'Sự Kiện Theo Thời Gian',
-      visible: visibleCharts.eventsOverTime,
-      component: (
-        <ResponsiveContainer width="100%" height={getChartHeight()}>
-          <AreaChart
-            data={getEventsByDateData()}
-            margin={{
-              top: 10,
-              right: 30,
-              left: 0,
-              bottom: 0,
-            }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip />
-            <Area type="monotone" dataKey="count" stroke="#4e73df" fill="rgba(78, 115, 223, 0.2)" />
-          </AreaChart>
-        </ResponsiveContainer>
-      )
-    },
-    {
-      id: 'buyersByEvent',
-      title: 'Người Mua Theo Sự Kiện',
-      visible: visibleCharts.buyersByEvent,
-      component: (
-        <ResponsiveContainer width="100%" height={getChartHeight()}>
-          <BarChart
-            data={getBuyersByEventData()}
-            margin={{
-              top: 5,
-              right: 30,
-              left: 20,
-              bottom: 5,
-            }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip formatter={(value) => [value, 'Người Mua']} />
-            <Legend />
-            <Bar dataKey="buyers" fill="#1cc88a" name="Người Mua" />
-          </BarChart>
-        </ResponsiveContainer>
-      )
-    },
-    {
-      id: 'checkInsByEvent',
-      title: 'Đăng Ký Theo Sự Kiện',
-      visible: visibleCharts.checkInsByEvent,
-      component: (
-        <ResponsiveContainer width="100%" height={getChartHeight()}>
-          <BarChart
-            data={getCheckInsByEventData()}
-            margin={{
-              top: 5,
-              right: 30,
-              left: 20,
-              bottom: 5,
-            }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip formatter={(value) => [value, 'Đăng Ký']} />
-            <Legend />
-            <Bar dataKey="checkIns" fill="#f6c23e" name="Đăng Ký" />
-          </BarChart>
-        </ResponsiveContainer>
-      )
-    },
-    {
-      id: 'eventsByCategory',
-      title: 'Sự Kiện Theo Danh Mục',
-      visible: visibleCharts.eventsByCategory,
-      component: (
-        <ResponsiveContainer width="100%" height={getChartHeight()}>
-          <PieChart>
-            <Pie
-              data={getEventsByCategoryData()}
-              cx="50%"
-              cy="50%"
-              labelLine={true}
-              outerRadius={Math.min(getChartHeight() / 3, 80)}
-              fill="#8884d8"
-              dataKey="value"
-              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-            >
-              {getEventsByCategoryData().map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip formatter={(value) => [value, 'Sự Kiện']} />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
-      )
-    }
-  ];
-
-  // Calculate grid layout based on visible charts
-  const getChartGridColumns = () => {
-    const visibleCount = Object.values(visibleCharts).filter(Boolean).length;
-    
-    if (visibleCount === 0) return '1fr';
-    if (visibleCount === 1) return '1fr';
-    if (visibleCount === 2) return '1fr 1fr';
-    if (visibleCount <= 4) return 'repeat(2, 1fr)';
-    return 'repeat(3, 1fr)';
+  // Custom tooltip
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div className="bg-white px-4 py-3 shadow-lg rounded-lg border border-gray-100">
+        <p className="font-medium text-gray-900 mb-1">{payload[0]?.payload?.fullName || label}</p>
+        {payload.map((entry, idx) => (
+          <p key={idx} className="text-sm" style={{ color: entry.color }}>
+            {entry.name}: {entry.name === 'revenue' ? formatCurrency(entry.value) : entry.value.toLocaleString('vi-VN')}
+          </p>
+        ))}
+      </div>
+    );
   };
 
   if (loading) {
     return (
-      <div className="organizer-dashboard">
-        <div className="dashboard-loading">
-          <div className="spinner"></div>
-          <p>Loading dashboard data...</p>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <RefreshCw className="w-10 h-10 text-indigo-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Đang tải dữ liệu...</p>
         </div>
       </div>
     );
@@ -498,930 +304,557 @@ const OrganizerDashboard = () => {
 
   if (error) {
     return (
-      <div className="organizer-dashboard">
-        <div className="dashboard-error">
-          <div className="error-icon">⚠️</div>
-          <h3>Error Loading Dashboard</h3>
-          <p>{error}</p>
-          <button className="retry-button" onClick={fetchData}>
-            Try Again
-          </button>
-        </div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6 text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">⚠️</span>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Lỗi tải dữ liệu</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <Button onClick={fetchData}>Thử lại</Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="organizer-dashboard">
-      <style>
-        {`
-          .organizer-dashboard {
-            padding: 20px;
-            background-color: hsl(var(--background));
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            position: relative;
-            overflow-x: hidden;
-          }
-
-          .dashboard-bg-pattern {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: 
-              radial-gradient(circle at 10% 20%, rgba(0, 0, 0, 0.03) 0%, transparent 20%),
-              radial-gradient(circle at 90% 80%, rgba(0, 0, 0, 0.03) 0%, transparent 20%);
-            pointer-events: none;
-            z-index: 0;
-          }
-
-          .dashboard-content {
-            position: relative;
-            z-index: 1;
-          }
-
-          .dashboard-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            animation: fadeInDown 0.5s ease-out;
-          }
-
-          .dashboard-title {
-            font-size: 28px;
-            font-weight: 700;
-            color: #1e293b;
-            margin: 0;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            animation: fadeIn 0.8s ease-out;
-          }
-
-          .header-actions {
-            display: flex;
-            gap: 15px;
-            animation: fadeIn 0.8s ease-out;
-          }
-
-          .filter-toggle, .chart-toggle {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            width: 44px;
-            height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-            color: #1e293b;
-          }
-
-          .filter-toggle:hover, .chart-toggle:hover {
-            background: rgba(255, 255, 255, 0.25);
-            transform: translateY(-3px) scale(1.1);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-          }
-
-          .filter-toggle.active, .chart-toggle.active {
-            background: linear-gradient(135deg, #4e73df 0%, #2e59d9 100%);
-            color: white;
-            border-color: rgba(255, 255, 255, 0.3);
-            transform: rotate(90deg);
-          }
-
-          .filter-toggle.active:hover, .chart-toggle.active:hover {
-            transform: rotate(90deg) scale(1.1);
-          }
-
-          /* Ripple effect for buttons */
-          .filter-toggle::after, .chart-toggle::after {
-            content: "";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-          }
-
-          .filter-toggle:active::after, .chart-toggle:active::after {
-            width: 200px;
-            height: 200px;
-          }
-
-          .dashboard-filters {
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-            padding: 25px;
-            margin-bottom: 25px;
-            position: relative;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            animation: slideInDown 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            backdrop-filter: blur(10px);
-          }
-
-          .filter-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-          }
-
-          .filter-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: #333;
-            margin: 0;
-          }
-
-          .close-filter {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #999;
-            font-size: 20px;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            transition: all 0.2s ease;
-          }
-
-          .close-filter:hover {
-            color: #333;
-            background: rgba(0, 0, 0, 0.05);
-            transform: rotate(90deg);
-          }
-
-          .filter-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            margin-bottom: 20px;
-          }
-
-          .filter-group {
-            flex: 1;
-            min-width: 200px;
-            animation: fadeInUp 0.3s ease-out;
-          }
-
-          .filter-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #555;
-            font-size: 14px;
-          }
-
-          .filter-group input, .filter-group select {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #d1d3e2;
-            border-radius: 8px;
-            box-sizing: border-box;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.8);
-          }
-
-          .filter-group input:focus, .filter-group select:focus {
-            border-color: #4e73df;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(78, 115, 223, 0.2);
-            background: white;
-          }
-
-          .filter-buttons {
-            display: flex;
-            gap: 12px;
-            margin-top: 15px;
-            justify-content: flex-end;
-          }
-
-          .filter-buttons button {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-          }
-
-          .filter-buttons button::after {
-            content: "";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-          }
-
-          .filter-buttons button:active::after {
-            width: 300px;
-            height: 300px;
-          }
-
-          .apply-btn {
-            background: linear-gradient(135deg, #4e73df 0%, #2e59d9 100%);
-            color: white;
-            box-shadow: 0 4px 15px rgba(78, 115, 223, 0.3);
-          }
-
-          .apply-btn:hover {
-            background: linear-gradient(135deg, #2e59d9 0%, #1a3fb6 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(78, 115, 223, 0.4);
-          }
-
-          .clear-btn {
-            background: linear-gradient(135deg, #858796 0%, #6c6e7e 100%);
-            color: white;
-            box-shadow: 0 4px 15px rgba(133, 135, 150, 0.3);
-          }
-
-          .clear-btn:hover {
-            background: linear-gradient(135deg, #6c6e7e 0%, #5a5c69 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(133, 135, 150, 0.4);
-          }
-
-          .dashboard-widgets {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 25px;
-            margin-bottom: 30px;
-          }
-
-          .widget {
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-            padding: 25px;
-            display: flex;
-            flex-direction: column;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            animation: fadeInUp 0.5s ease-out;
-            transform: translateY(0);
-            backdrop-filter: blur(10px);
-            position: relative;
-            overflow: hidden;
-          }
-
-          .widget::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: linear-gradient(90deg, #4e73df, #1cc88a);
-          }
-
-          .widget:hover {
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-          }
-
-          .widget-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-          }
-
-          .widget-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #555;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-          }
-
-          .widget-icon {
-            width: 45px;
-            height: 45px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-          }
-
-          .widget:hover .widget-icon {
-            transform: scale(1.1) rotate(5deg);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
-          }
-
-          .widget-icon.primary {
-            background: linear-gradient(135deg, rgba(78, 115, 223, 0.15) 0%, rgba(46, 89, 217, 0.15) 100%);
-            color: #4e73df;
-          }
-
-          .widget-icon.success {
-            background: linear-gradient(135deg, rgba(28, 200, 138, 0.15) 0%, rgba(23, 162, 111, 0.15) 100%);
-            color: #1cc88a;
-          }
-
-          .widget-icon.info {
-            background: linear-gradient(135deg, rgba(54, 185, 204, 0.15) 0%, rgba(43, 147, 163, 0.15) 100%);
-            color: #36b9cc;
-          }
-
-          .widget-icon.warning {
-            background: linear-gradient(135deg, rgba(246, 194, 62, 0.15) 0%, rgba(197, 155, 49, 0.15) 100%);
-            color: #f6c23e;
-          }
-
-          .widget-value {
-            font-size: 28px;
-            font-weight: 800;
-            margin-bottom: 5px;
-            color: #333;
-            transition: all 0.3s ease;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.05);
-          }
-
-          .widget:hover .widget-value {
-            color: #4e73df;
-            transform: scale(1.05);
-          }
-
-          .widget-description {
-            font-size: 13px;
-            color: #777;
-            font-weight: 500;
-          }
-
-          .chart-selector {
-            position: absolute;
-            top: 60px;
-            right: 0;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-            padding: 25px;
-            width: 320px;
-            z-index: 1000; /* Increased z-index to ensure it's above other elements */
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            transform-origin: top right;
-            backdrop-filter: blur(10px);
-          }
-
-          .chart-selector-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-          }
-
-          .chart-selector-title {
-            font-size: 18px;
-            font-weight: 700;
-            margin: 0;
-            color: #333;
-          }
-
-          .chart-selector-actions {
-            display: flex;
-            gap: 10px;
-          }
-
-          .chart-selector-actions button {
-            background: rgba(0, 0, 0, 0.05);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            border-radius: 6px;
-            padding: 6px 16px; /* Increased padding for wider buttons */
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            color: #555;
-            min-width: 80px; /* Set minimum width for better consistency */
-          }
-
-          .chart-selector-actions button:hover {
-            background: rgba(78, 115, 223, 0.1);
-            border-color: rgba(78, 115, 223, 0.3);
-            color: #4e73df;
-            transform: translateY(-1px);
-          }
-
-          .chart-options {
-            max-height: 300px;
-            overflow-y: auto;
-            padding-right: 5px; /* Add padding to prevent clipping */
-          }
-
-          .chart-option {
-            display: flex;
-            align-items: center;
-            padding: 12px 8px; /* Adjust padding to ensure visibility */
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-            transition: all 0.2s ease;
-            border-radius: 6px;
-            margin: 0 5px; /* Add margin to prevent clipping */
-          }
-
-          .chart-option:last-child {
-            border-bottom: none;
-          }
-
-          .chart-option:hover {
-            background: rgba(78, 115, 223, 0.05);
-            padding-left: 12px; /* Adjust hover padding */
-          }
-
-          .chart-option input {
-            margin-right: 12px;
-            transform: scale(1.3);
-            cursor: pointer;
-            accent-color: #4e73df;
-            flex-shrink: 0; /* Prevent checkbox from shrinking */
-          }
-
-          .chart-option label {
-            font-size: 15px;
-            color: #444;
-            cursor: pointer;
-            flex: 1;
-            transition: all 0.2s ease;
-            font-weight: 500;
-            overflow: hidden; /* Prevent text overflow */
-            text-overflow: ellipsis; /* Add ellipsis for long text */
-            white-space: nowrap; /* Prevent text wrapping */
-          }
-
-          .chart-option:hover label {
-            color: #4e73df;
-          }
-
-          .dashboard-charts {
-            display: grid;
-            grid-template-columns: ${getChartGridColumns()};
-            gap: 25px;
-            position: relative;
-          }
-
-          .chart-container {
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-            padding: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            animation: fadeIn 0.6s ease-out;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            backdrop-filter: blur(10px);
-            position: relative;
-            overflow: hidden;
-          }
-
-          .chart-container::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: linear-gradient(90deg, #4e73df, #1cc88a, #36b9cc, #f6c23e);
-          }
-
-          .chart-container:hover {
-            transform: translateY(-5px) scale(1.01);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-          }
-
-          .chart-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-          }
-
-          .chart-title {
-            font-size: 20px;
-            font-weight: 700;
-            color: #333;
-            margin: 0;
-          }
-
-          .dashboard-loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 60vh;
-            color: white;
-          }
-
-          .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid rgba(255, 255, 255, 0.3);
-            border-top: 5px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-          }
-
-          /* Animations */
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-
-          @keyframes fadeInDown {
-            from {
-              opacity: 0;
-              transform: translateY(-20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-
-          @keyframes fadeInUp {
-            from {
-              opacity: 0;
-              transform: translateY(20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-
-          @keyframes slideInDown {
-            from {
-              opacity: 0;
-              transform: translateY(-30px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-
-          @keyframes slideInRight {
-            from {
-              opacity: 0;
-              transform: translateX(30px);
-            }
-            to {
-              opacity: 1;
-              transform: translateX(0);
-            }
-          }
-
-          @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
-          }
-
-          .dashboard-error {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 60vh;
-            text-align: center;
-            padding: 20px;
-            animation: fadeIn 0.5s ease-out;
-            color: white;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 15px;
-          }
-
-          .error-icon {
-            font-size: 48px;
-            margin-bottom: 20px;
-            animation: pulse 2s infinite;
-          }
-
-          @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-          }
-
-          .dashboard-error h3 {
-            color: white;
-            margin-bottom: 10px;
-            font-size: 24px;
-          }
-
-          .dashboard-error p {
-            color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 20px;
-            max-width: 500px;
-            font-size: 16px;
-          }
-
-          .retry-button {
-            background: linear-gradient(135deg, #4e73df 0%, #2e59d9 100%);
-            color: white;
-            border: none;
-            padding: 14px 28px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 15px rgba(78, 115, 223, 0.3);
-          }
-
-          .retry-button:hover {
-            background: linear-gradient(135deg, #2e59d9 0%, #1a3fb6 100%);
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(78, 115, 223, 0.4);
-          }
-
-          @media (max-width: 1200px) {
-            .dashboard-charts {
-              grid-template-columns: repeat(2, 1fr);
-            }
-          }
-
-          @media (max-width: 992px) {
-            .dashboard-charts {
-              grid-template-columns: 1fr;
-            }
-            
-            .organizer-dashboard {
-              padding: 15px;
-            }
-            
-            .dashboard-title {
-              font-size: 24px;
-            }
-          }
-
-          @media (max-width: 768px) {
-            .dashboard-widgets {
-              grid-template-columns: 1fr;
-            }
-
-            .dashboard-charts {
-              grid-template-columns: 1fr;
-            }
-
-            .filter-row {
-              flex-direction: column;
-            }
-
-            .filter-buttons {
-              justify-content: center;
-            }
-
-            .chart-selector {
-              width: 280px;
-              right: -20px;
-            }
-          }
-
-          @media (max-width: 576px) {
-            .dashboard-header {
-              flex-direction: column;
-              align-items: flex-start;
-              gap: 15px;
-            }
-
-            .header-actions {
-              align-self: flex-end;
-            }
-
-            .chart-selector {
-              width: 250px;
-              right: -10px;
-            }
-            
-            .chart-container {
-              padding: 20px;
-            }
-            
-            .chart-title {
-              font-size: 18px;
-            }
-          }
-        `}
-      </style>
-      
-      <div className="dashboard-bg-pattern"></div>
-      <div className="dashboard-content">
-        {/* Dashboard Header */}
-        <div className="dashboard-header">
-          <h1 className="dashboard-title">Bảng Điều Khiển Của Nhà Tổ Chức</h1>
-          <div className="header-actions">
-            <div 
-              className={`chart-toggle ${showChartSelector ? 'active' : ''}`}
-              onClick={() => setShowChartSelector(!showChartSelector)}
-            >
-              <Eye size={20} />
-            </div>
-            <div 
-              className={`filter-toggle ${showFilters ? 'active' : ''}`}
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              {showFilters ? <X size={20} /> : <Filter size={20} />}
-            </div>
-          </div>
+    <div className="p-6 space-y-6 bg-gray-50/50 min-h-screen">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Bảng điều khiển</h1>
+          <p className="text-gray-500 mt-1">Tổng quan hoạt động sự kiện của bạn</p>
         </div>
-
-        {/* Chart Selector Dropdown */}
-        {showChartSelector && (
-          <div className="chart-selector">
-            <div className="chart-selector-header">
-              <h3 className="chart-selector-title">Chọn Biểu Đồ Hiển Thị</h3>
-              <div className="chart-selector-actions">
-                <button onClick={() => toggleAllCharts(true)}>Tất Cả</button>
-                <button onClick={() => toggleAllCharts(false)}>Không</button>
-              </div>
-            </div>
-            <div className="chart-options">
-              {chartDefinitions.map(chart => (
-                <div className="chart-option" key={chart.id}>
-                  <input
-                    type="checkbox"
-                    id={`chart-${chart.id}`}
-                    checked={visibleCharts[chart.id]}
-                    onChange={() => toggleChartVisibility(chart.id)}
-                  />
-                  <label htmlFor={`chart-${chart.id}`}>{chart.title}</label>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Filter Section */}
-        {showFilters && (
-          <div className="dashboard-filters">
-            <div className="filter-header">
-              <h2 className="filter-title">Lọc Dữ Liệu Bảng Điều Khiển</h2>
-              <button 
-                className="close-filter"
-                onClick={() => setShowFilters(false)}
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="filter-row">
-              <div className="filter-group">
-                <label htmlFor="categoryId">Danh Mục</label>
-                <select
-                  id="categoryId"
-                  name="categoryId"
-                  value={filters.categoryId}
-                  onChange={handleFilterChange}
-                  disabled={categoriesLoading}
-                >
-                  <option value="">All Categories</option>
-                  {categories.map(category => (
-                    <option 
-                      key={category.eventCategoryId} 
-                      value={category.eventCategoryId}
-                    >
-                      {category.eventCategoryName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="filter-group">
-                <label htmlFor="startDate">Ngày Bắt Đầu</label>
-                <input
-                  type="date"
-                  id="startDate"
-                  name="startDate"
-                  value={filters.startDate}
-                  onChange={handleFilterChange}
-                />
-              </div>
-              <div className="filter-group">
-                <label htmlFor="endDate">Ngày Kết Thúc</label>
-                <input
-                  type="date"
-                  id="endDate"
-                  name="endDate"
-                  value={filters.endDate}
-                  onChange={handleFilterChange}
-                />
-              </div>
-            </div>
-            <div className="filter-row">
-              <div className="filter-group">
-                <label htmlFor="year">Năm</label>
-                <select
-                  id="year"
-                  name="year"
-                  value={filters.year}
-                  onChange={handleFilterChange}
-                >
-                  <option value="">All Years</option>
-                  {years.map(year => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="filter-group">
-                <label htmlFor="month">Tháng</label>
-                <select
-                  id="month"
-                  name="month"
-                  value={filters.month}
-                  onChange={handleFilterChange}
-                >
-                  <option value="">All Months</option>
-                  {months.map(month => (
-                    <option key={month} value={month}>{month}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="filter-group">
-                <label htmlFor="day">Ngày</label>
-                <select
-                  id="day"
-                  name="day"
-                  value={filters.day}
-                  onChange={handleFilterChange}
-                >
-                  <option value="">All Days</option>
-                  {days.map(day => (
-                    <option key={day} value={day}>{day}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="filter-buttons">
-              <button className="clear-btn" onClick={clearFilters}>Xóa Bộ Lọc</button>
-              <button className="apply-btn" onClick={applyFilters}>Áp Dụng</button>
-            </div>
-          </div>
-        )}
-
-        <div className="dashboard-widgets">
-          {widgetData.map((widget, index) => (
-            <div className="widget" key={index} style={{ animationDelay: `${index * 0.1}s` }}>
-              <div className="widget-header">
-                <div className="widget-title">{widget.title}</div>
-                <div className={`widget-icon ${widget.color}`}>
-                  {widget.icon}
-                </div>
-              </div>
-              <div className="widget-value">{widget.value}</div>
-              <div className="widget-description">{widget.description}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="dashboard-charts">
-          {chartDefinitions
-            .filter(chart => chart.visible)
-            .map((chart, index) => (
-              <div className="chart-container" key={chart.id} style={{ animationDelay: `${index * 0.1}s` }}>
-                <div className="chart-header">
-                  <h3 className="chart-title">{chart.title}</h3>
-                </div>
-                {chart.component}
-              </div>
-            ))}
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+            className="gap-2"
+          >
+            <Filter className="w-4 h-4" />
+            Bộ lọc
+            <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+          </Button>
+          <Button size="sm" onClick={fetchData} className="gap-2">
+            <RefreshCw className="w-4 h-4" />
+            Làm mới
+          </Button>
         </div>
       </div>
+
+      {/* Filters Panel */}
+      {showFilters && (
+        <Card className="animate-in slide-in-from-top-2 duration-200">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base">Lọc dữ liệu</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Danh mục</label>
+                <Select value={filters.categoryId || 'all'} onValueChange={(v) => handleFilterChange('categoryId', v === 'all' ? '' : v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tất cả danh mục" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả danh mục</SelectItem>
+                    {categories.map(cat => (
+                      <SelectItem key={cat.eventCategoryId} value={cat.eventCategoryId}>
+                        {cat.eventCategoryName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Năm</label>
+                <Select value={filters.year} onValueChange={(v) => handleFilterChange('year', v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn năm" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map(year => (
+                      <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Tháng</label>
+                <Select value={filters.month || 'all'} onValueChange={(v) => handleFilterChange('month', v === 'all' ? '' : v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tất cả tháng" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tất cả tháng</SelectItem>
+                    {months.map(m => (
+                      <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Từ ngày</label>
+                <input
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                  className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Đến ngày</label>
+                <input
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                  className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
+              <Button variant="outline" size="sm" onClick={clearFilters}>Xóa bộ lọc</Button>
+              <Button size="sm" onClick={applyFilters}>Áp dụng</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {statsCards.map((stat, idx) => (
+          <Card key={idx} className="hover:shadow-md transition-shadow">
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-500">{stat.title}</p>
+                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-xs text-gray-400">{stat.description}</p>
+                </div>
+                <div className={`p-3 rounded-xl ${stat.bgColor}`}>
+                  <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="flex gap-1 p-1 bg-gray-100 rounded-lg w-fit">
+        {[
+          { id: 'overview', label: 'Tổng quan', icon: LayoutGrid },
+          { id: 'revenue', label: 'Doanh thu', icon: TrendingUp },
+          { id: 'events', label: 'Sự kiện', icon: Calendar }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              activeTab === tab.id 
+                ? 'bg-white text-gray-900 shadow-sm' 
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <tab.icon className="w-4 h-4" />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Charts Grid */}
+      {activeTab === 'overview' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Events by Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Tag className="w-4 h-4 text-indigo-600" />
+                Sự kiện theo trạng thái
+              </CardTitle>
+              <CardDescription>Phân bố trạng thái các sự kiện</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {eventsByStatusData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Pie
+                      data={eventsByStatusData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {eventsByStatusData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => [value, 'Sự kiện']} />
+                    <Legend 
+                      verticalAlign="bottom" 
+                      height={36}
+                      formatter={(value) => <span className="text-sm text-gray-600">{value}</span>}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[280px] flex items-center justify-center text-gray-400">
+                  Chưa có dữ liệu
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Events by Category */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <FolderOpen className="w-4 h-4 text-emerald-600" />
+                Sự kiện theo danh mục
+              </CardTitle>
+              <CardDescription>Phân bố sự kiện theo danh mục</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {eventsByCategoryData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Pie
+                      data={eventsByCategoryData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {eventsByCategoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => [value, 'Sự kiện']} />
+                    <Legend 
+                      verticalAlign="bottom" 
+                      height={36}
+                      formatter={(value) => <span className="text-sm text-gray-600">{value}</span>}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[280px] flex items-center justify-center text-gray-400">
+                  Chưa có dữ liệu
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Buyers by Event */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Users className="w-4 h-4 text-amber-600" />
+                Người mua theo sự kiện
+              </CardTitle>
+              <CardDescription>Top 10 sự kiện có nhiều người mua nhất</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {buyersByEventData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={buyersByEventData} layout="vertical" margin={{ left: 20, right: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
+                    <XAxis type="number" />
+                    <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12 }} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar dataKey="buyers" fill={CHART_COLORS.success} radius={[0, 4, 4, 0]} name="Người mua" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[280px] flex items-center justify-center text-gray-400">
+                  Chưa có dữ liệu
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Check-ins by Event */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-violet-600" />
+                Check-in theo sự kiện
+              </CardTitle>
+              <CardDescription>Top 10 sự kiện có nhiều check-in nhất</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {checkInsByEventData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={checkInsByEventData} layout="vertical" margin={{ left: 20, right: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
+                    <XAxis type="number" />
+                    <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12 }} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar dataKey="checkIns" fill={CHART_COLORS.purple} radius={[0, 4, 4, 0]} name="Check-in" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[280px] flex items-center justify-center text-gray-400">
+                  Chưa có dữ liệu
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === 'revenue' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Revenue by Event */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-amber-600" />
+                Doanh thu theo sự kiện
+              </CardTitle>
+              <CardDescription>Top 10 sự kiện có doanh thu cao nhất</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {revenueByEventData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={350}>
+                  <BarChart data={revenueByEventData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis 
+                      dataKey="name" 
+                      angle={-45} 
+                      textAnchor="end" 
+                      height={80}
+                      tick={{ fontSize: 11 }}
+                    />
+                    <YAxis 
+                      tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <Tooltip 
+                      content={<CustomTooltip />}
+                      formatter={(value) => [formatCurrency(value), 'Doanh thu']}
+                    />
+                    <Bar dataKey="revenue" fill={CHART_COLORS.primary} radius={[4, 4, 0, 0]} name="Doanh thu" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[350px] flex items-center justify-center text-gray-400">
+                  Chưa có dữ liệu doanh thu
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Revenue by Category */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <FolderOpen className="w-4 h-4 text-cyan-600" />
+                Doanh thu theo danh mục
+              </CardTitle>
+              <CardDescription>Phân bố doanh thu theo danh mục sự kiện</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {revenueByCategoryData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={revenueByCategoryData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={90}
+                      paddingAngle={2}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      labelLine={false}
+                    >
+                      {revenueByCategoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => [formatCurrency(value), 'Doanh thu']} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-gray-400">
+                  Chưa có dữ liệu
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Revenue Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Wallet className="w-4 h-4 text-emerald-600" />
+                Tổng kết doanh thu
+              </CardTitle>
+              <CardDescription>So sánh doanh thu gộp và doanh thu ròng</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="p-4 bg-amber-50 rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-amber-700">Doanh thu gộp</span>
+                    <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">Gross</Badge>
+                  </div>
+                  <p className="text-2xl font-bold text-amber-900">
+                    {formatCurrency(revenueStatistics?.totalRevenue)}
+                  </p>
+                </div>
+                
+                <div className="p-4 bg-emerald-50 rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-emerald-700">Doanh thu ròng</span>
+                    <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Net</Badge>
+                  </div>
+                  <p className="text-2xl font-bold text-emerald-900">
+                    {formatCurrency(netRevenueStatistics?.totalNetRevenue)}
+                  </p>
+                </div>
+                
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-600">Phí nền tảng</span>
+                    <Badge variant="outline">Fee</Badge>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-700">
+                    {formatCurrency((revenueStatistics?.totalRevenue || 0) - (netRevenueStatistics?.totalNetRevenue || 0))}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === 'events' && (
+        <div className="grid grid-cols-1 gap-6">
+          {/* Events Over Time */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-indigo-600" />
+                Xu hướng sự kiện theo thời gian
+              </CardTitle>
+              <CardDescription>Số lượng sự kiện được tạo theo ngày</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {eventsByDateData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={eventsByDateData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={CHART_COLORS.primary} stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor={CHART_COLORS.primary} stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} />
+                    <Tooltip formatter={(value) => [value, 'Sự kiện']} />
+                    <Area 
+                      type="monotone" 
+                      dataKey="count" 
+                      stroke={CHART_COLORS.primary} 
+                      strokeWidth={2}
+                      fillOpacity={1} 
+                      fill="url(#colorCount)" 
+                      name="Số sự kiện"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-gray-400">
+                  Chưa có dữ liệu
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Event Status Summary Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <List className="w-4 h-4 text-slate-600" />
+                Chi tiết trạng thái sự kiện
+              </CardTitle>
+              <CardDescription>Bảng tổng hợp số lượng sự kiện theo từng trạng thái</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {eventsByStatusData.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4 font-medium text-gray-600">Trạng thái</th>
+                        <th className="text-right py-3 px-4 font-medium text-gray-600">Số lượng</th>
+                        <th className="text-right py-3 px-4 font-medium text-gray-600">Tỷ lệ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {eventsByStatusData.map((item, idx) => {
+                        const total = eventStatistics?.totalEvents || 1;
+                        const percentage = ((item.value / total) * 100).toFixed(1);
+                        return (
+                          <tr key={idx} className="border-b last:border-0 hover:bg-gray-50">
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-3 h-3 rounded-full" 
+                                  style={{ backgroundColor: item.fill }}
+                                />
+                                <span className="text-gray-900">{item.name}</span>
+                              </div>
+                            </td>
+                            <td className="text-right py-3 px-4 font-medium text-gray-900">
+                              {item.value}
+                            </td>
+                            <td className="text-right py-3 px-4">
+                              <Badge variant="outline" className="font-normal">
+                                {percentage}%
+                              </Badge>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-gray-50">
+                        <td className="py-3 px-4 font-semibold text-gray-900">Tổng cộng</td>
+                        <td className="text-right py-3 px-4 font-semibold text-gray-900">
+                          {eventStatistics?.totalEvents || 0}
+                        </td>
+                        <td className="text-right py-3 px-4">
+                          <Badge className="bg-indigo-100 text-indigo-700 hover:bg-indigo-100">100%</Badge>
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              ) : (
+                <div className="h-[200px] flex items-center justify-center text-gray-400">
+                  Chưa có dữ liệu
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

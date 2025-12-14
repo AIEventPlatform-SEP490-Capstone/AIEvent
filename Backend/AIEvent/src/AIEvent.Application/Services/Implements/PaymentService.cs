@@ -202,14 +202,16 @@ namespace AIEvent.Application.Services.Implements
             if (user == null || user.IsDeleted)
                 return ErrorResponse.FailureResult("User not found or inactive", ErrorCodes.Unauthorized);
 
-            var existingActive = await _unitOfWork.PaymentInformationRepository
+            var userPaymentList = await _unitOfWork.PaymentInformationRepository
                                             .Query()
-                                            .FirstOrDefaultAsync(pi => pi.AccountNumber == request.AccountNumber
-                                                                    && pi.UserId == userId
-                                                                    && !pi.IsDeleted);
+                                            .Where(pi => pi.UserId == userId && !pi.IsDeleted)
+                                            .ToListAsync();
 
-            if (existingActive != null)
-                return ErrorResponse.FailureResult("This account is currently in use", ErrorCodes.InvalidInput);
+            if (userPaymentList.Any())
+                return ErrorResponse.FailureResult("Only one payment information is allowed", ErrorCodes.InvalidInput);
+
+            if (userPaymentList.Any(pi => pi.AccountNumber == request.AccountNumber))
+                return ErrorResponse.FailureResult("This account number is already in use", ErrorCodes.InvalidInput);
 
             var paymentInfo = _mapper.Map<PaymentInformation>(request);
             
@@ -238,11 +240,11 @@ namespace AIEvent.Application.Services.Implements
             if (paymentInfor == null || paymentInfor.IsDeleted)
                 return ErrorResponse.FailureResult("Payment Infor not found or inactive", ErrorCodes.NotFound);
 
-            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
-            {
-                await _unitOfWork.PaymentInformationRepository.DeleteAsync(paymentInfor);
-                return Result.Success();
-            });
+            _unitOfWork.DisableSoftDelete();
+            await _unitOfWork.PaymentInformationRepository.DeleteAsync(paymentInfor);
+            await _unitOfWork.SaveChangesAsync();
+            _unitOfWork.EnableSoftDelete();
+            return Result.Success();
         }
 
         public async Task<Result<BasePaginated<PaymentInformationResponse>>> GetPaymendInformationsAsync(Guid userId, int pageNumber = 1, int pageSize = 5)

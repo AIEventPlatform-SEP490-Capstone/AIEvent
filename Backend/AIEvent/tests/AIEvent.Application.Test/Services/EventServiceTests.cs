@@ -25,6 +25,7 @@ namespace AIEvent.Application.Test.Services
        // Test constants
        private static readonly Guid TestOrganizerId = new Guid("22222222-2222-2222-2222-222222222222");
        private static readonly Guid TestEventCategoryId = new Guid("22222222-2222-2222-2222-222222222233");
+       private static readonly Guid TestEventId = new Guid("33333333-3333-3333-3333-333333333333");
 
        private readonly Mock<IUnitOfWork> _mockUnitOfWork;
        private readonly Mock<IPayOSService> _mockpayOSService;
@@ -1487,7 +1488,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -1543,7 +1544,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
 
            // Act
-           var result = await _eventService.GetEventAsync(userId, null, null, null!, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(userId, null, null, null, null!, null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -1589,7 +1590,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(userId, null, null, null!, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(userId, null, null, null!, null, null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -1651,7 +1652,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, "music", null, null!, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, "music", null, null!, null, null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -1716,7 +1717,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, categoryId1.ToString(), null!, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, categoryId1.ToString(), null!, null, null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -1790,7 +1791,7 @@ namespace AIEvent.Application.Test.Services
            var tagRequest = new List<EventTagRequest> { new EventTagRequest { TagId = tagId1 } };
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, tagRequest, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, tagRequest, null, null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -1893,7 +1894,7 @@ namespace AIEvent.Application.Test.Services
            };
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, tagRequest, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, tagRequest, null, null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -1956,7 +1957,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, "Quan 1", null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, "Quan 1", null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2019,7 +2020,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, TimeLine.Today, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, TimeLine.Today, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2082,7 +2083,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, TimeLine.Tomorrow, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, TimeLine.Tomorrow, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2151,7 +2152,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, TimeLine.ThisWeek, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, TimeLine.ThisWeek, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2215,7 +2216,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, TimeLine.ThisMonth, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, TimeLine.ThisMonth, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2278,7 +2279,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2320,7 +2321,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, null, null, null,null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2401,7 +2402,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2470,7 +2471,7 @@ namespace AIEvent.Application.Test.Services
            var tagRequest = new List<EventTagRequest> { new EventTagRequest { TagId = tagId } };
 
            // Act
-           var result = await _eventService.GetEventAsync(null, "rock", categoryId.ToString(), tagRequest, "Quan 1", null, 1, 5);
+           var result = await _eventService.GetEventAsync(null, "rock", categoryId.ToString(), tagRequest, "Quan 1", null, null, null, null, null, null, 1, 5);
 
            // Assert
            result.Should().NotBeNull();
@@ -2532,7 +2533,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
 
            // Act
-           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, 1, 1);
+           var result = await _eventService.GetEventAsync(null, null, null, null!, null, null, null, null, null, null, null, 1, 1);
 
            // Assert
            result.Should().NotBeNull();
@@ -7635,5 +7636,1321 @@ namespace AIEvent.Application.Test.Services
 
        #endregion
 
-   }
+       #region CancelEventAsync Tests
+
+       [Fact]
+       public async Task UTCID01_CancelEventAsync_WithEmptyEventId_ShouldReturnFailure()
+       {
+           // Arrange
+           var eventId = Guid.Empty;
+           var request = new CancelEventRequest
+           {
+               ReasonCancel = "Test reason"
+           };
+
+           // Act
+           var result = await _eventService.CancelEventAsync(eventId, request);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Invalid eventId");
+       }
+
+       [Fact]
+       public async Task UTCID02_CancelEventAsync_WithNullRequest_ShouldReturnFailure()
+       {
+           // Arrange
+           var eventId = TestEventId;
+           CancelEventRequest request = null!;
+
+           // Act
+           var result = await _eventService.CancelEventAsync(eventId, request);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Request cannot be null");
+       }
+
+       [Fact]
+       public async Task UTCID03_CancelEventAsync_WithEventNotFound_ShouldReturnFailure()
+       {
+           // Arrange
+           var eventId = TestEventId;
+           var request = new CancelEventRequest
+           {
+               ReasonCancel = "Test reason"
+           };
+
+           var mockEventQueryable = new List<Event>().AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+           // Act
+           var result = await _eventService.CancelEventAsync(eventId, request);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Event not found or inactive");
+       }
+
+       [Fact]
+       public async Task UTCID04_CancelEventAsync_WithDeletedEvent_ShouldReturnFailure()
+       {
+           // Arrange
+           var eventId = TestEventId;
+           var organizerId = TestOrganizerId;
+           var request = new CancelEventRequest
+           {
+               ReasonCancel = "Test reason"
+           };
+
+            var existingEvent = new Event
+            {
+                Id = eventId,
+                Title = "Test Event",
+                Description = "Test Description",
+                StartTime = DateTime.UtcNow.AddDays(5),
+                EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
+                OrganizerProfileId = organizerId,
+                DeletedAt = DateTime.UtcNow,
+                IsDeleted = true,
+                Status = EventStatus.PendingApproval,
+                Bookings = new List<Booking>()
+            };
+
+            var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+            // Act
+            var result = await _eventService.CancelEventAsync(eventId, request);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Event not found or inactive");
+        }
+
+        [Fact]
+       public async Task UTCID05_CancelEventAsync_WithAlreadyCancelledEvent_ShouldReturnFailure()
+       {
+           // Arrange
+           var eventId = TestEventId;
+           var organizerId = TestOrganizerId;
+           var organizerUserId = Guid.NewGuid();
+           var request = new CancelEventRequest
+           {
+               ReasonCancel = "Test reason"
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
+               OrganizerProfileId = organizerId,
+               DeletedAt = null,
+               IsDeleted = false,
+               Status = EventStatus.Cancelled,
+               Bookings = new List<Booking>(),
+               OrganizerProfile = new OrganizerProfile
+               {
+                   Id = organizerId,
+                   UserId = organizerUserId,
+                   ContactName = "Test Organizer",
+                   ContactEmail = "test@test.com",
+                   ContactPhone = "123456789",
+                   Address = "Test Address",
+                   OrganizationType = OrganizationType.PrivateCompany,
+                   EventFrequency = EventFrequency.Occasionally,
+                   EventSize = EventSize.Small,
+                   OrganizerType = OrganizerType.Individual,
+                   EventExperienceLevel = EventExperienceLevel.Beginner,
+                   User = new User
+                   {
+                       Id = organizerUserId,
+                       Email = "organizer@test.com",
+                       FullName = "Test Organizer"
+                   }
+               }
+           };
+
+           var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+           // Act
+           var result = await _eventService.CancelEventAsync(eventId, request);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Event cancelled cannot cancel");
+       }
+
+       [Fact]
+       public async Task UTCID06_CancelEventAsync_WithPublishedEventAndBookingsButNoReason_ShouldReturnFailure()
+       {
+           // Arrange
+           var eventId = TestEventId;
+           var organizerId = TestOrganizerId;
+           var organizerUserId = Guid.NewGuid();
+           var userId = Guid.NewGuid();
+           var request = new CancelEventRequest
+           {
+               ReasonCancel = null
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
+               OrganizerProfileId = organizerId,
+               DeletedAt = null,
+               IsDeleted = false,
+               Status = EventStatus.Approved,
+               Publish = true,
+               Bookings = new List<Booking>
+               {
+                   new Booking
+                   {
+                       Id = Guid.NewGuid(),
+                       UserId = userId,
+                       EventId = eventId,
+                       Status = BookingStatus.Completed,
+                       TotalAmount = 100
+                   }
+               },
+               OrganizerProfile = new OrganizerProfile
+               {
+                   Id = organizerId,
+                   UserId = organizerUserId,
+                   ContactName = "Test Organizer",
+                   ContactEmail = "test@test.com",
+                   ContactPhone = "123456789",
+                   Address = "Test Address",
+                   OrganizationType = OrganizationType.PrivateCompany,
+                   EventFrequency = EventFrequency.Occasionally,
+                   EventSize = EventSize.Small,
+                   OrganizerType = OrganizerType.Individual,
+                   EventExperienceLevel = EventExperienceLevel.Beginner,
+                   User = new User
+                   {
+                       Id = organizerUserId,
+                       Email = "organizer@test.com",
+                       FullName = "Test Organizer"
+                   }
+               }
+           };
+
+           var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+           // Act
+           var result = await _eventService.CancelEventAsync(eventId, request);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Cancellation of a published event with existing bookings must have a reason.");
+       }
+
+       [Fact]
+       public async Task UTCID07_CancelEventAsync_WithBookingsAndReason_ShouldEnqueueCancelJobAndReturnSuccess()
+       {
+           // Arrange
+           var eventId = TestEventId;
+           var organizerId = TestOrganizerId;
+           var organizerUserId = Guid.NewGuid();
+           var userId = Guid.NewGuid();
+           var reasonCancel = "Test cancellation reason";
+           var request = new CancelEventRequest
+           {
+               ReasonCancel = reasonCancel
+           };
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
+               OrganizerProfileId = organizerId,
+               DeletedAt = null,
+               IsDeleted = false,
+               Status = EventStatus.Approved,
+               Publish = true,
+               ImgListEvent = "image1.jpg, image2.jpg",
+               Bookings = new List<Booking>
+               {
+                   new Booking
+                   {
+                       Id = Guid.NewGuid(),
+                       UserId = userId,
+                       EventId = eventId,
+                       Status = BookingStatus.Completed,
+                       TotalAmount = 100
+                   }
+               },
+               OrganizerProfile = new OrganizerProfile
+               {
+                   Id = organizerId,
+                   UserId = organizerUserId,
+                   TotalEventFlags = 0,
+                   ContactName = "Test Organizer",
+                   ContactEmail = "test@test.com",
+                   ContactPhone = "123456789",
+                   Address = "Test Address",
+                   OrganizationType = OrganizationType.PrivateCompany,
+                   EventFrequency = EventFrequency.Occasionally,
+                   EventSize = EventSize.Small,
+                   OrganizerType = OrganizerType.Individual,
+                   EventExperienceLevel = EventExperienceLevel.Beginner,
+                   User = new User
+                   {
+                       Id = organizerUserId,
+                       Email = "organizer@test.com",
+                       FullName = "Test Organizer",
+                       IsEmailNotificationEnabled = true
+                   }
+               }
+           };
+
+           var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+           _mockUnitOfWork.Setup(x => x.OrganizerProfileRepository.UpdateAsync(It.IsAny<OrganizerProfile>()))
+               .Returns<OrganizerProfile>(profile => Task.FromResult(profile));
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()))
+               .Returns<Event>(evt => Task.FromResult(evt));
+           _mockHangfireJobService.Setup(x => x.EnqueueCancelEventJobAsync(eventId, reasonCancel))
+               .Returns(Task.CompletedTask);
+           _mockHangfireJobService.Setup(x => x.EnqueueCancelEventNotificationJobAsync(It.IsAny<CancelEventNotificationRequest>()))
+               .Returns(Task.CompletedTask);
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(async func => await func());
+
+           // Act
+           var result = await _eventService.CancelEventAsync(eventId, request);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeTrue();
+           _mockUnitOfWork.Verify(x => x.OrganizerProfileRepository.UpdateAsync(It.Is<OrganizerProfile>(p => 
+               p.TotalEventFlags == 1)), Times.Once);
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.Is<Event>(e => 
+               e.Status == EventStatus.Cancelled && 
+               e.IsFlagWarning == true && 
+               e.ReasonCancel == reasonCancel.Trim())), Times.Once);
+           _mockHangfireJobService.Verify(x => x.EnqueueCancelEventJobAsync(eventId, reasonCancel), Times.Once);
+           _mockHangfireJobService.Verify(x => x.EnqueueCancelEventNotificationJobAsync(It.Is<CancelEventNotificationRequest>(r => 
+               r.EventId == eventId && 
+               r.OrganizerUserId == organizerUserId &&
+               r.ReasonCancel == reasonCancel)), Times.Once);
+       }
+
+        #endregion
+
+       #region ResolveErrorPaymentAsync Tests
+
+       [Fact]
+       public async Task UTREPA01_ResolveErrorPaymentAsync_WithEmptyEventId_ShouldReturnFailure()
+       {
+           // Arrange
+           var eventId = Guid.Empty;
+
+           // Act
+           var result = await _eventService.ResolveErrorPaymentAsync(eventId);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Invalid eventId");
+       }
+
+       [Fact]
+       public async Task UTREPA02_ResolveErrorPaymentAsync_WithEventNotFound_ShouldReturnFailure()
+       {
+           // Arrange
+           var eventId = TestEventId;
+
+           var mockEventQueryable = new List<Event>().AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+           // Act
+           var result = await _eventService.ResolveErrorPaymentAsync(eventId);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Event not found");
+       }
+
+       [Fact]
+       public async Task UTREPA03_ResolveErrorPaymentAsync_WithEventNotInErrorPaymentStatus_ShouldReturnFailure()
+       {
+           // Arrange
+           var eventId = TestEventId;
+           var organizerId = TestOrganizerId;
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
+               OrganizerProfileId = organizerId,
+               DeletedAt = null,
+               IsDeleted = false,
+               Status = EventStatus.Approved,
+               TotalAmount = 1000000,
+               SaleStartTime = DateTime.UtcNow.AddDays(1)
+           };
+
+           var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+           // Act
+           var result = await _eventService.ResolveErrorPaymentAsync(eventId);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Event not found");
+       }
+
+       [Fact]
+       public async Task UTREPA04_ResolveErrorPaymentAsync_WithSystemSettingNotFound_ShouldReturnFailure()
+       {
+           // Arrange
+           var eventId = TestEventId;
+           var organizerId = TestOrganizerId;
+           var organizerUserId = Guid.NewGuid();
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
+               OrganizerProfileId = organizerId,
+               DeletedAt = null,
+               IsDeleted = false,
+               Status = EventStatus.ErrorPayment,
+               TotalAmount = 1000000,
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               OrganizerProfile = new OrganizerProfile
+               {
+                   Id = organizerId,
+                   UserId = organizerUserId,
+                   ContactName = "Test Organizer",
+                   ContactEmail = "test@test.com",
+                   ContactPhone = "123456789",
+                   Address = "Test Address",
+                   OrganizationType = OrganizationType.PrivateCompany,
+                   EventFrequency = EventFrequency.Occasionally,
+                   EventSize = EventSize.Small,
+                   OrganizerType = OrganizerType.Individual,
+                   EventExperienceLevel = EventExperienceLevel.Beginner
+               }
+           };
+
+           var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+           var mockSystemSettingQueryable = new List<SystemSetting>().AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(false)).Returns(mockSystemSettingQueryable);
+
+           // Act
+           var result = await _eventService.ResolveErrorPaymentAsync(eventId);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("System setting not found");
+       }
+
+       [Fact]
+       public async Task UTREPA05_ResolveErrorPaymentAsync_WithOrganizerProfileNotFound_ShouldReturnFailure()
+       {
+           // Arrange
+           var eventId = TestEventId;
+           var organizerId = TestOrganizerId;
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
+               OrganizerProfileId = organizerId,
+               DeletedAt = null,
+               IsDeleted = false,
+               Status = EventStatus.ErrorPayment,
+               TotalAmount = 1000000,
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               OrganizerProfile = null
+           };
+
+           var systemSetting = new SystemSetting
+           {
+               Id = Guid.NewGuid(),
+               FlatformFee = 0.07m,
+               FixFee = 45000m,
+               DatePayout = 7,
+               EventReminderHours = 3,
+               UpdatedAt = DateTime.UtcNow.AddDays(-1),
+               IsDeleted = false
+           };
+
+           var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+           var mockSystemSettingQueryable = new List<SystemSetting> { systemSetting }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(false)).Returns(mockSystemSettingQueryable);
+
+           // Act
+           var result = await _eventService.ResolveErrorPaymentAsync(eventId);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Organizer profile not found");
+       }
+
+       [Fact]
+       public async Task UTREPA06_ResolveErrorPaymentAsync_WithPaymentInformationNotFound_ShouldReturnFailure()
+       {
+           // Arrange
+           var eventId = TestEventId;
+           var organizerId = TestOrganizerId;
+           var organizerUserId = Guid.NewGuid();
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
+               OrganizerProfileId = organizerId,
+               DeletedAt = null,
+               IsDeleted = false,
+               Status = EventStatus.ErrorPayment,
+               TotalAmount = 1000000,
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               OrganizerProfile = new OrganizerProfile
+               {
+                   Id = organizerId,
+                   UserId = organizerUserId,
+                   ContactName = "Test Organizer",
+                   ContactEmail = "test@test.com",
+                   ContactPhone = "123456789",
+                   Address = "Test Address",
+                   OrganizationType = OrganizationType.PrivateCompany,
+                   EventFrequency = EventFrequency.Occasionally,
+                   EventSize = EventSize.Small,
+                   OrganizerType = OrganizerType.Individual,
+                   EventExperienceLevel = EventExperienceLevel.Beginner
+               }
+           };
+
+           var systemSetting = new SystemSetting
+           {
+               Id = Guid.NewGuid(),
+               FlatformFee = 0.07m,
+               FixFee = 45000m,
+               DatePayout = 7,
+               EventReminderHours = 3,
+               UpdatedAt = DateTime.UtcNow.AddDays(-1),
+               IsDeleted = false
+           };
+
+           var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+           var mockSystemSettingQueryable = new List<SystemSetting> { systemSetting }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(false)).Returns(mockSystemSettingQueryable);
+
+           var mockPaymentInfoQueryable = new List<PaymentInformation>().AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(false)).Returns(mockPaymentInfoQueryable);
+
+           // Act
+           var result = await _eventService.ResolveErrorPaymentAsync(eventId);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Payment information not found. Organizer needs to add payment information first.");
+       }
+
+       [Fact]
+       public async Task UTREPA07_ResolveErrorPaymentAsync_WithNegativeNetRevenue_ShouldReturnFailure()
+       {
+           // Arrange
+           var eventId = TestEventId;
+           var organizerId = TestOrganizerId;
+           var organizerUserId = Guid.NewGuid();
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
+               OrganizerProfileId = organizerId,
+               DeletedAt = null,
+               IsDeleted = false,
+               Status = EventStatus.ErrorPayment,
+               TotalAmount = 10000, // Very small amount
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               OrganizerProfile = new OrganizerProfile
+               {
+                   Id = organizerId,
+                   UserId = organizerUserId,
+                   ContactName = "Test Organizer",
+                   ContactEmail = "test@test.com",
+                   ContactPhone = "123456789",
+                   Address = "Test Address",
+                   OrganizationType = OrganizationType.PrivateCompany,
+                   EventFrequency = EventFrequency.Occasionally,
+                   EventSize = EventSize.Small,
+                   OrganizerType = OrganizerType.Individual,
+                   EventExperienceLevel = EventExperienceLevel.Beginner
+               }
+           };
+
+           var systemSetting = new SystemSetting
+           {
+               Id = Guid.NewGuid(),
+               FlatformFee = 0.07m,
+               FixFee = 50000m, // High fix fee that makes netRevenue negative
+               DatePayout = 7,
+               EventReminderHours = 3,
+               UpdatedAt = DateTime.UtcNow.AddDays(-1),
+               IsDeleted = false
+           };
+
+           var paymentInfo = new PaymentInformation
+           {
+               Id = Guid.NewGuid(),
+               UserId = organizerUserId,
+               AccountHolderName = "Test Organizer",
+               AccountNumber = "1234567890",
+               BankName = "Vietcombank",
+               BankBin = "970436",
+               IsDeleted = false
+           };
+
+           var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+           var mockSystemSettingQueryable = new List<SystemSetting> { systemSetting }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(false)).Returns(mockSystemSettingQueryable);
+
+           var mockPaymentInfoQueryable = new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(false)).Returns(mockPaymentInfoQueryable);
+
+           var mockRevenueReportQueryable = new List<RevenueReport>().AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.RevenueReportRepository.Query(false)).Returns(mockRevenueReportQueryable);
+            // Act
+            var result = await _eventService.ResolveErrorPaymentAsync(eventId);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Be("Payout amount is negative");
+       }
+
+       [Fact]
+       public async Task UTREPA08_ResolveErrorPaymentAsync_WithPayoutFailed_ShouldReturnFailure()
+       {
+           // Arrange
+           var eventId = TestEventId;
+           var organizerId = TestOrganizerId;
+           var organizerUserId = Guid.NewGuid();
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
+               OrganizerProfileId = organizerId,
+               DeletedAt = null,
+               IsDeleted = false,
+               Status = EventStatus.ErrorPayment,
+               TotalAmount = 1000000,
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               OrganizerProfile = new OrganizerProfile
+               {
+                   Id = organizerId,
+                   UserId = organizerUserId,
+                   ContactName = "Test Organizer",
+                   ContactEmail = "test@test.com",
+                   ContactPhone = "123456789",
+                   Address = "Test Address",
+                   OrganizationType = OrganizationType.PrivateCompany,
+                   EventFrequency = EventFrequency.Occasionally,
+                   EventSize = EventSize.Small,
+                   OrganizerType = OrganizerType.Individual,
+                   EventExperienceLevel = EventExperienceLevel.Beginner
+               }
+           };
+
+           var systemSetting = new SystemSetting
+           {
+               Id = Guid.NewGuid(),
+               FlatformFee = 0.07m,
+               FixFee = 45000m,
+               DatePayout = 7,
+               EventReminderHours = 3,
+               UpdatedAt = DateTime.UtcNow.AddDays(-1),
+               IsDeleted = false
+           };
+
+           var paymentInfo = new PaymentInformation
+           {
+               Id = Guid.NewGuid(),
+               UserId = organizerUserId,
+               AccountHolderName = "Test Organizer",
+               AccountNumber = "1234567890",
+               BankName = "Vietcombank",
+               BankBin = "970436",
+               IsDeleted = false
+           };
+
+           var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+           var mockSystemSettingQueryable = new List<SystemSetting> { systemSetting }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(false)).Returns(mockSystemSettingQueryable);
+
+           var mockPaymentInfoQueryable = new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(false)).Returns(mockPaymentInfoQueryable);
+
+           var mockRevenueReportQueryable = new List<RevenueReport>().AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.RevenueReportRepository.Query(false)).Returns(mockRevenueReportQueryable);
+
+           var payoutResponse = new PayOS.Models.V1.Payouts.Payout
+           {
+               ApprovalState = PayOS.Models.V1.Payouts.PayoutApprovalState.Rejected
+           };
+
+           _mockpayOSService.Setup(x => x.CreatePayoutAsync(It.IsAny<PayOS.Models.V1.Payouts.PayoutRequest>()))
+               .ReturnsAsync(payoutResponse);
+
+           // Act
+           var result = await _eventService.ResolveErrorPaymentAsync(eventId);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeFalse();
+           result.Error!.Message.Should().Contain("Payout transaction failed");
+       }
+
+       [Fact]
+       public async Task UTREPA09_ResolveErrorPaymentAsync_WithSuccess_CreateNewRevenueReport_ShouldReturnSuccess()
+       {
+           // Arrange
+           var eventId = TestEventId;
+           var organizerId = TestOrganizerId;
+           var organizerUserId = Guid.NewGuid();
+
+           var existingEvent = new Event
+           {
+               Id = eventId,
+               Title = "Test Event",
+               Description = "Test Description",
+               StartTime = DateTime.UtcNow.AddDays(5),
+               EndTime = DateTime.UtcNow.AddDays(5).AddHours(3),
+               OrganizerProfileId = organizerId,
+               DeletedAt = null,
+               IsDeleted = false,
+               Status = EventStatus.ErrorPayment,
+               TotalAmount = 1000000,
+               SaleStartTime = DateTime.UtcNow.AddDays(1),
+               OrganizerProfile = new OrganizerProfile
+               {
+                   Id = organizerId,
+                   UserId = organizerUserId,
+                   ContactName = "Test Organizer",
+                   ContactEmail = "test@test.com",
+                   ContactPhone = "123456789",
+                   Address = "Test Address",
+                   OrganizationType = OrganizationType.PrivateCompany,
+                   EventFrequency = EventFrequency.Occasionally,
+                   EventSize = EventSize.Small,
+                   OrganizerType = OrganizerType.Individual,
+                   EventExperienceLevel = EventExperienceLevel.Beginner
+               }
+           };
+
+           var systemSetting = new SystemSetting
+           {
+               Id = Guid.NewGuid(),
+               FlatformFee = 0.07m,
+               FixFee = 45000m,
+               DatePayout = 7,
+               EventReminderHours = 3,
+               UpdatedAt = DateTime.UtcNow.AddDays(-1),
+               IsDeleted = false
+           };
+
+           var paymentInfo = new PaymentInformation
+           {
+               Id = Guid.NewGuid(),
+               UserId = organizerUserId,
+               AccountHolderName = "Test Organizer",
+               AccountNumber = "1234567890",
+               BankName = "Vietcombank",
+               BankBin = "970436",
+               IsDeleted = false
+           };
+
+           var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+           var mockSystemSettingQueryable = new List<SystemSetting> { systemSetting }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(false)).Returns(mockSystemSettingQueryable);
+
+           var mockPaymentInfoQueryable = new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(false)).Returns(mockPaymentInfoQueryable);
+
+           var mockRevenueReportQueryable = new List<RevenueReport>().AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.RevenueReportRepository.Query(false)).Returns(mockRevenueReportQueryable);
+
+           var payoutResponse = new PayOS.Models.V1.Payouts.Payout
+           {
+               ApprovalState = PayOS.Models.V1.Payouts.PayoutApprovalState.Completed
+           };
+
+           _mockpayOSService.Setup(x => x.CreatePayoutAsync(It.IsAny<PayOS.Models.V1.Payouts.PayoutRequest>()))
+               .ReturnsAsync(payoutResponse);
+
+           _mockUnitOfWork.Setup(x => x.RevenueReportRepository.AddAsync(It.IsAny<RevenueReport>()))
+               .Returns<RevenueReport>(report => Task.FromResult(report));
+           _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()))
+               .Returns<Event>(evt => Task.FromResult(evt));
+           _mockUnitOfWork.Setup(x => x.SaveChangesAsync())
+               .ReturnsAsync(1);
+           _mockNotificationService.Setup(x => x.CreateNotificationAsync(It.IsAny<CreateNotificationRequest>()))
+               .ReturnsAsync(Result.Success());
+           _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
+               .Returns<Func<Task<Result>>>(async func => await func());
+
+           // Act
+           var result = await _eventService.ResolveErrorPaymentAsync(eventId);
+
+           // Assert
+           result.Should().NotBeNull();
+           result.IsSuccess.Should().BeTrue();
+           _mockUnitOfWork.Verify(x => x.RevenueReportRepository.AddAsync(It.IsAny<RevenueReport>()), Times.Once);
+           _mockUnitOfWork.Verify(x => x.EventRepository.UpdateAsync(It.Is<Event>(e => 
+               e.Status == EventStatus.PaidOut && 
+               e.PaidOutAt.HasValue)), Times.Once);
+           _mockNotificationService.Verify(x => x.CreateNotificationAsync(It.Is<CreateNotificationRequest>(n => 
+               n.UserId == organizerUserId && 
+               n.Type == NotificationType.PayoutCompleted)), Times.Once);
+       }
+
+        #endregion
+
+        #region ReportEventAsyncs Tests
+        [Fact]
+        public async Task UTCID01_ReportEventAsync_InvalidEventIdFormat_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var request = new ReportEventRequest
+            {
+                EventId = "abc",
+                Type = EventReportType.Scam,
+                Reason = "Test reason",
+                AttachmentUrl = null
+            };
+
+            // Act
+            var result = await _eventService.ReportEventAsyncs(userId, request);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Invalid event ID format");
+            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+
+            _mockUnitOfWork.VerifyNoOtherCalls();
+            _mockNotificationService.VerifyNoOtherCalls();
+        }
+
+
+        [Fact]
+        public async Task UTCID02_ReportEventAsync_EventNotFound_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var eventId = Guid.NewGuid();
+            var request = new ReportEventRequest
+            {
+                EventId = eventId.ToString(),
+                Type = EventReportType.Scam,
+                Reason = "Test reason"
+            };
+
+            var mockEventQueryable = new List<Event>().AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+            // Act
+            var result = await _eventService.ReportEventAsyncs(userId, request);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Event not found or unavailable");
+            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+
+        [Fact]
+        public async Task UTCID03_ReportEventAsync_EventDeleted_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var eventId = Guid.NewGuid();
+            var request = new ReportEventRequest
+            {
+                EventId = eventId.ToString(),
+                Type = EventReportType.Scam,
+                Reason = "Test reason"
+            };
+
+            var existingEvent = new Event
+            {
+                Id = eventId,
+                Title = "Test Event",
+                IsDeleted = true,
+                Description = "test",
+                Status = EventStatus.PendingApproval,
+                Publish = true,
+                StartTime = DateTime.UtcNow.AddDays(-2),
+                EndTime = DateTime.UtcNow.AddDays(-1)
+            };
+
+            var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+            // Act
+            var result = await _eventService.ReportEventAsyncs(userId, request);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Event not found or unavailable");
+            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+
+        [Fact]
+        public async Task UTCID04_ReportEventAsync_EventNotPublished_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var eventId = Guid.NewGuid();
+            var request = new ReportEventRequest
+            {
+                EventId = eventId.ToString(),
+                Type = EventReportType.Scam,
+                Reason = "Test reason"
+            };
+
+            var existingEvent = new Event
+            {
+                Id = eventId,
+                Title = "Test Event",
+                IsDeleted = false,
+                Description = "test",
+                Status = EventStatus.PendingApproval,
+                Publish = false,
+                StartTime = DateTime.UtcNow.AddDays(-2),
+                EndTime = DateTime.UtcNow.AddDays(-1)
+            };
+
+            var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+            // Act
+            var result = await _eventService.ReportEventAsyncs(userId, request);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Event not found or unavailable");
+            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+
+        [Fact]
+        public async Task UTCID05_ReportEventAsync_EventCancelled_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var eventId = Guid.NewGuid();
+            var request = new ReportEventRequest
+            {
+                EventId = eventId.ToString(),
+                Type = EventReportType.Scam,
+                Reason = "Test reason"
+            };
+
+            var existingEvent = new Event
+            {
+                Id = eventId,
+                Title = "Test Event",
+                Description = "test",
+                IsDeleted = false,
+                Status = EventStatus.Cancelled,
+                Publish = true,
+                StartTime = DateTime.UtcNow.AddDays(-2),
+                EndTime = DateTime.UtcNow.AddDays(-1)
+            };
+
+            var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+            // Act
+            var result = await _eventService.ReportEventAsyncs(userId, request);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("Event not found or unavailable");
+            result.Error.StatusCode.Should().Be(ErrorCodes.NotFound);
+        }
+
+
+        [Fact]
+        public async Task UTCID06_ReportEventAsync_EventNotEnded_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var eventId = Guid.NewGuid();
+            var request = new ReportEventRequest
+            {
+                EventId = eventId.ToString(),
+                Type = EventReportType.Scam,
+                Reason = "Test reason",
+                AttachmentUrl = null
+            };
+
+            var existingEvent = new Event
+            {
+                Id = eventId,
+                Title = "Test Event",
+                Description = "test",
+                StartTime = DateTime.Now.AddHours(-1),
+                EndTime = DateTime.Now.AddHours(2),
+                IsDeleted = false,
+                Publish = true,
+                Status = EventStatus.Approved
+            };
+
+            var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+            _mockUnitOfWork.Setup(x => x.TicketRepository.Query(false))
+                .Returns(new List<Ticket>().AsQueryable().BuildMock());
+
+            _mockUnitOfWork.Setup(x => x.EventReportRepository.Query(false))
+                .Returns(new List<EventReport>().AsQueryable().BuildMock());
+
+            _mockUnitOfWork.Setup(x => x.RoleRepository.Query(false))
+                .Returns(new List<Role>().AsQueryable().BuildMock());
+
+
+            // Act
+            var result = await _eventService.ReportEventAsyncs(userId, request);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("You can only report after the event has ended");
+            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+
+            _mockUnitOfWork.Verify(x => x.EventRepository.Query(false), Times.Once);
+            _mockUnitOfWork.VerifyNoOtherCalls();
+            _mockNotificationService.VerifyNoOtherCalls();
+        }
+
+
+        [Fact]
+        public async Task UTCID07_ReportEventAsync_UserHasNotBooked_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var eventId = Guid.NewGuid();
+            var request = new ReportEventRequest
+            {
+                EventId = eventId.ToString(),
+                Type = EventReportType.Scam,
+                Reason = "Test reason",
+                AttachmentUrl = null
+            };
+
+            var existingEvent = new Event
+            {
+                Id = eventId,
+                Title = "Test Event",
+                Description = "test",
+                StartTime = DateTime.Now.AddDays(-2),
+                EndTime = DateTime.Now.AddDays(-1),
+                IsDeleted = false,
+                Publish = true,
+                Status = EventStatus.Approved
+            };
+
+            var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+            var mockTicketQueryable = new List<Ticket>().AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.TicketRepository.Query(false)).Returns(mockTicketQueryable);
+
+            var mockEventReportQueryable = new List<EventReport>().AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventReportRepository.Query(false)).Returns(mockEventReportQueryable);
+
+            // Act
+            var result = await _eventService.ReportEventAsyncs(userId, request);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("You can only report events you booked and join");
+            result.Error.StatusCode.Should().Be(ErrorCodes.PermissionDenied);
+        }
+
+
+        [Fact]
+        public async Task UTCID08_ReportEventAsync_UserHasTicketButNotUsed_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var eventId = Guid.NewGuid();
+            var request = new ReportEventRequest
+            {
+                EventId = eventId.ToString(),
+                Type = EventReportType.Scam,
+                Reason = "Test reason",
+                AttachmentUrl = null
+            };
+
+            var existingEvent = new Event
+            {
+                Id = eventId,
+                Title = "Test Event",
+                Description = "test",
+                StartTime = DateTime.Now.AddDays(-2),
+                EndTime = DateTime.Now.AddDays(-1),
+                IsDeleted = false,
+                Publish = true,
+                Status = EventStatus.Approved
+            };
+
+            var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+            var ticket = new Ticket
+            {
+                UserId = userId,
+                Status = TicketStatus.Valid,
+                EventName = "test",
+                QrCodeUrl = "",
+                TicketCode = "test",
+                TicketType = new TicketType
+                {
+                    EventId = eventId,
+                    TicketName = "test",
+                    TicketQuantity = 100,
+                }
+            };
+
+            var mockTicketQueryable = new List<Ticket> { ticket }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.TicketRepository.Query(false)).Returns(mockTicketQueryable);
+
+            var mockEventReportQueryable = new List<EventReport>().AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventReportRepository.Query(false)).Returns(mockEventReportQueryable);
+
+            // Act
+            var result = await _eventService.ReportEventAsyncs(userId, request);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("You can only report events you booked and join");
+            result.Error.StatusCode.Should().Be(ErrorCodes.PermissionDenied);
+        }
+
+
+        [Fact]
+        public async Task UTCID09_ReportEventAsync_AlreadyReported_ShouldReturnFailure()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var eventId = Guid.NewGuid();
+            var request = new ReportEventRequest
+            {
+                EventId = eventId.ToString(),
+                Type = EventReportType.Scam,
+                Reason = "Test reason",
+                AttachmentUrl = null
+            };
+
+            var existingEvent = new Event
+            {
+                Id = eventId,
+                Title = "Test Event",
+                Description = "test",
+                StartTime = DateTime.Now.AddDays(-2),
+                EndTime = DateTime.Now.AddDays(-1),
+                IsDeleted = false,
+                Publish = true,
+                Status = EventStatus.Approved
+            };
+
+            var mockEventQueryable = new List<Event> { existingEvent }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventRepository.Query(false)).Returns(mockEventQueryable);
+
+            var ticket = new Ticket
+            {
+                UserId = userId,
+                Status = TicketStatus.Used,
+                EventName = "test",
+                QrCodeUrl = "",
+                TicketCode = "test",
+                TicketType = new TicketType
+                {
+                    EventId = eventId,
+                    TicketName = "test",
+                    TicketQuantity = 100,
+                }
+            };
+
+            var mockTicketQueryable = new List<Ticket> { ticket }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.TicketRepository.Query(false)).Returns(mockTicketQueryable);
+
+            var eventReport = new EventReport
+            {
+                EventId = eventId,
+                UserId = userId,
+                IsDeleted = false,
+                Type = EventReportType.Scam,
+                Reason = "Previous report"
+            };
+
+            var mockEventReportQueryable = new List<EventReport> { eventReport }.AsQueryable().BuildMock();
+            _mockUnitOfWork.Setup(x => x.EventReportRepository.Query(false)).Returns(mockEventReportQueryable);
+
+            // Act
+            var result = await _eventService.ReportEventAsyncs(userId, request);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Message.Should().Be("You have already reported this event");
+            result.Error.StatusCode.Should().Be(ErrorCodes.InvalidInput);
+        }
+
+
+        [Fact]
+        public async Task UTCID01_ReportEventAsyncs_ShouldSucceed_WhenAllValid()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var eventId = Guid.NewGuid();
+
+            var request = new ReportEventRequest
+            {
+                EventId = eventId.ToString(),
+                Type = EventReportType.Scam,
+                Reason = "Some issue",
+                AttachmentUrl = "http://example.com/file.png"
+            };
+
+            var now = DateTime.UtcNow;
+
+            var eventEntity = new Event
+            {
+                Id = eventId,
+                Description = "test",
+                StartTime = DateTime.Now.AddDays(-2),
+                EndTime = DateTime.Now.AddDays(-1),
+                Title = "AIEvent 2025",
+                IsDeleted = false,
+                Publish = true,
+                Status = EventStatus.Approved
+            };
+
+            var ticket = new Ticket
+            {
+                UserId = userId,
+                Status = TicketStatus.Used,
+                EventName = "test",
+                TicketCode = "asd",
+                QrCodeUrl = "asdasd",
+                TicketType = new TicketType
+                {
+                    EventId = eventId,
+                    TicketQuantity = 100,
+                    TicketName = "Test",
+                }
+            };
+
+            var managerRole = new Role
+            {
+                Id = Guid.NewGuid(),
+                Name = "Manager",
+                IsDeleted = false
+            };
+
+            _mockUnitOfWork.Setup(u => u.EventRepository.Query(false))
+                .Returns(new List<Event> { eventEntity }.AsQueryable().BuildMockDbSet().Object);
+
+            _mockUnitOfWork.Setup(u => u.TicketRepository.Query(false))
+                .Returns(new List<Ticket> { ticket }.AsQueryable().BuildMockDbSet().Object);
+
+            _mockUnitOfWork.Setup(u => u.EventReportRepository.Query(false))
+                .Returns(new List<EventReport>().AsQueryable().BuildMockDbSet().Object);
+
+            _mockUnitOfWork.Setup(u => u.EventReportRepository.AddAsync(It.IsAny<EventReport>()))
+                .ReturnsAsync((EventReport r) => r);
+
+            _mockUnitOfWork.Setup(u => u.RoleRepository.Query(false))
+                .Returns(new List<Role> { managerRole }.AsQueryable().BuildMockDbSet().Object);
+
+            _mockNotificationService.Setup(n => n.CreateNotificationToAllAsync(It.IsAny<CreateNotificationToAllRequest>()))
+                .ReturnsAsync(Result.Success());
+
+            _mockUnitOfWork.Setup(u => u.SaveChangesAsync())
+                .ReturnsAsync(1);
+
+            // Act
+            var result = await _eventService.ReportEventAsyncs(userId, request);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            _mockUnitOfWork.Verify(u => u.EventReportRepository.AddAsync(It.IsAny<EventReport>()), Times.Once);
+            _mockNotificationService.Verify(n => n.CreateNotificationToAllAsync(It.IsAny<CreateNotificationToAllRequest>()), Times.Once);
+            _mockUnitOfWork.Verify(u => u.SaveChangesAsync(), Times.Once);
+        }
+        #endregion
+
+    }
 }

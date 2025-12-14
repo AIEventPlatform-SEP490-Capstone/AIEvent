@@ -1,5 +1,25 @@
 import AuthService from './AuthService';
 
+// Business error status codes that should be logged as warnings, not errors
+const BUSINESS_ERROR_CODES = [
+  'AIE40001', // Ticket already checked in
+  'AIE40002', // Ticket not found
+  'AIE40003', // Event not found
+  'AIE40004', // User not found
+  'AIE40005', // Invalid ticket status
+  // Add more business error codes as needed
+];
+
+// Check if an error is a business error (expected) vs technical error (unexpected)
+const isBusinessError = (statusCode) => {
+  if (!statusCode) return false;
+  // Check if it's a known business error code
+  if (BUSINESS_ERROR_CODES.includes(statusCode)) return true;
+  // Check if it starts with 'AIE4' (business validation errors)
+  if (typeof statusCode === 'string' && statusCode.startsWith('AIE4')) return true;
+  return false;
+};
+
 class BaseApiService {
   static async getAuthHeaders(hasBody = true) {
     const accessToken = await AuthService.getAccessToken();
@@ -48,7 +68,6 @@ class BaseApiService {
       try {
         // Read response as text first to avoid body consumption issues
         const textData = await response.text();
-        console.error('API 400 Error Body (text):', textData);
         
         let errorData = null;
         let errorMessage = 'Bad Request: Invalid data provided';
@@ -57,7 +76,6 @@ class BaseApiService {
         // Try to parse as JSON
         try {
           errorData = JSON.parse(textData);
-          console.error('API 400 Error Body (parsed):', errorData);
           
           // Extract message from parsed data
           if (errorData && errorData.message) {
@@ -68,11 +86,17 @@ class BaseApiService {
           
           statusCode = errorData?.statusCode || '400';
         } catch (parseError) {
-          console.error('Failed to parse 400 response as JSON:', parseError);
           // If parsing fails, try to use textData if it looks like an error message
           if (textData && textData.length < 500 && !textData.includes('<!DOCTYPE')) {
             errorMessage = textData;
           }
+        }
+        
+        // Log as warning for business errors, error for technical issues
+        if (isBusinessError(statusCode)) {
+          console.warn('API Business Error:', { statusCode, message: errorMessage });
+        } else {
+          console.error('API 400 Error:', { statusCode, message: errorMessage, data: errorData });
         }
         
         // Create error object with proper properties
@@ -80,6 +104,7 @@ class BaseApiService {
         error.statusCode = statusCode;
         error.errors = errorData?.errors;
         error.originalData = errorData;
+        error.isBusinessError = isBusinessError(statusCode);
 
         throw error;
       } catch (error) {
@@ -115,7 +140,7 @@ class BaseApiService {
         return await this.handleApiResponse(retryResponse, null);
       });
     } catch (error) {
-      console.error('Error in GET request:', error);
+      // Don't log here - already logged in handleApiResponse, just re-throw
       throw error;
     }
   }
@@ -154,7 +179,7 @@ class BaseApiService {
         return await this.handleApiResponse(retryResponse, null);
       });
     } catch (error) {
-      console.error('Error in POST request:', error);
+      // Don't log here - already logged in handleApiResponse, just re-throw
       throw error;
     }
   }
@@ -224,7 +249,7 @@ class BaseApiService {
         return await this.handleApiResponse(retryResponse, null);
       });
     } catch (error) {
-      console.error('Error in PATCH request:', error);
+      // Don't log here - already logged in handleApiResponse, just re-throw
       throw error;
     }
   }
@@ -263,7 +288,7 @@ class BaseApiService {
         return await this.handleApiResponse(retryResponse, null);
       });
     } catch (error) {
-      console.error('Error in PUT request:', error);
+      // Don't log here - already logged in handleApiResponse, just re-throw
       throw error;
     }
   }
@@ -287,7 +312,7 @@ class BaseApiService {
         return await this.handleApiResponse(retryResponse, null);
       });
     } catch (error) {
-      console.error('Error in DELETE request:', error);
+      // Don't log here - already logged in handleApiResponse, just re-throw
       throw error;
     }
   }

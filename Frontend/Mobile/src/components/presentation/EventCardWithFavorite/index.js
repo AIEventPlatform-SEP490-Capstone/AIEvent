@@ -1,18 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity, Image } from 'react-native';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import Toast from 'react-native-toast-message';
 import { styles } from '../EventCard/styles';
 import CustomText from '../../common/customTextRN';
 import SaleStatusBadge from '../SaleStatusBadge';
 import Images from '../../../constants/Images';
 import Colors from '../../../constants/Colors';
-import Fonts from '../../../constants/Fonts';
-import { addFavoriteEvent, removeFavoriteEvent } from '../../../redux/slices/favoriteEventsSlice';
+import { addFavoriteEvent, removeFavoriteEvent, selectFavoriteEvents } from '../../../redux/slices/favoriteEventsSlice';
 
-const EventCardWithFavorite = ({ event, onPress, isRecommended = false }) => {
+const EventCardWithFavorite = ({ event, onPress, isRecommended = false, isStaff = false }) => {
   const dispatch = useDispatch();
-  const [isFavorite, setIsFavorite] = useState(event.isFavorite || false);
+  const favoriteEvents = useSelector(selectFavoriteEvents);
+  
+  // Check if event is in favorite list from Redux store
+  const eventId = event.eventId || event.EventId || event.id;
+  const isInFavoriteList = favoriteEvents.some(
+    fav => fav.eventId === eventId || fav.id === eventId
+  );
+  
+  const [isFavorite, setIsFavorite] = useState(isInFavoriteList);
+  
+  // Sync local state with Redux store
+  useEffect(() => {
+    setIsFavorite(isInFavoriteList);
+  }, [isInFavoriteList]);
 
   const getEventImage = () => {
     // If event has an image URI, use it
@@ -177,17 +189,19 @@ const EventCardWithFavorite = ({ event, onPress, isRecommended = false }) => {
           </View>
         )}
         
-        {/* Favorite Button */}
-        <TouchableOpacity 
-          style={styles.favoriteButton} 
-          onPress={toggleFavorite}
-          activeOpacity={0.7}
-        >
-          <Image 
-            source={isFavorite ? Images.heart : Images.heartOutline} 
-            style={[styles.favoriteIcon, isFavorite && { tintColor: Colors.error }]} 
-          />
-        </TouchableOpacity>
+        {/* Favorite Button - Hidden for staff */}
+        {!isStaff && (
+          <TouchableOpacity 
+            style={styles.favoriteButton} 
+            onPress={toggleFavorite}
+            activeOpacity={0.7}
+          >
+            <Image 
+              source={isFavorite ? Images.heart : Images.heartOutline} 
+              style={[styles.favoriteIcon, isFavorite && { tintColor: Colors.error }]} 
+            />
+          </TouchableOpacity>
+        )}
       </View>
       
       {/* Information Section */}
@@ -262,11 +276,14 @@ const EventCardWithFavorite = ({ event, onPress, isRecommended = false }) => {
             </CustomText>
           </View>
           
-          <View style={styles.priceContainer}>
-            <CustomText variant="button" color="white" style={styles.priceText}>
-              {formatPrice(event.price)}
-            </CustomText>
-          </View>
+          {/* Price - Hidden for staff */}
+          {!isStaff && (
+            <View style={styles.priceContainer}>
+              <CustomText variant="button" color="white" style={styles.priceText}>
+                {formatPrice(event.price)}
+              </CustomText>
+            </View>
+          )}
         </View>
       </View>
     </TouchableOpacity>
