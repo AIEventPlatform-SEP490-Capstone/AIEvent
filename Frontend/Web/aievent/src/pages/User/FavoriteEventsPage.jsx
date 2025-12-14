@@ -1,35 +1,36 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { 
-  Calendar, 
-  MapPin, 
-  Users, 
   Heart, 
-  Clock, 
   Filter,
   Search,
-  X,
-  Sparkles,
   ChevronUp,
   ChevronDown,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  SlidersHorizontal,
+  RotateCcw
 } from "lucide-react";
 import { useFavoriteEvents } from "../../hooks/useFavoriteEvents";
-import { useCategories } from "../../hooks/useCategories"; // Add this import
+import { useCategories } from "../../hooks/useCategories";
 import { Input } from "../../components/ui/input";
 import LoadingSpinner from "../../components/LoadingSpinner/LoadingSpinner";
 import { useSelector } from "react-redux";
-import { SaleStatusBadge } from "../../components/HomePage/SaleStatusBadge";
 import { EventCard } from "../../components/HomePage/EventCard";
 
 const FavoriteEventsPage = () => {
   const navigate = useNavigate();
-  const { favoriteEvents, loading, error, getFavoriteEvents } = useFavoriteEvents();
-  const { categories, loading: categoriesLoading, refreshCategories } = useCategories(); // Add categories hook
+  const { 
+    favoriteEvents, 
+    loading, 
+    error, 
+    getFavoriteEvents, 
+    removeFavoriteEvent,
+    totalRecords,
+    totalPages: apiTotalPages
+  } = useFavoriteEvents();
+  const { categories, loading: categoriesLoading, refreshCategories } = useCategories();
   const { isAuthenticated } = useSelector((state) => state.auth);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -37,9 +38,8 @@ const FavoriteEventsPage = () => {
   const [locationFilter, setLocationFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
   const [showAllLocations, setShowAllLocations] = useState(false);
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const pageSize = 12;
 
   // Ensure favoriteEvents is always an array
@@ -50,6 +50,31 @@ const FavoriteEventsPage = () => {
   useEffect(() => {
     refreshCategories();
   }, []);
+
+  // Fetch favorite events with pagination when page or filters change
+  useEffect(() => {
+    if (isAuthenticated) {
+      const params = {
+        pageNumber: currentPage,
+        pageSize: pageSize
+      };
+      
+      if (searchQuery) {
+        params.search = searchQuery;
+      }
+      
+      if (selectedCategory !== "all") {
+        params.eventCategoryId = selectedCategory;
+      }
+      
+      getFavoriteEvents(params);
+    }
+  }, [isAuthenticated, currentPage, searchQuery, selectedCategory]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory, priceFilter, locationFilter, dateFilter]);
 
   // If user is not authenticated, redirect to login page
   useEffect(() => {
@@ -171,277 +196,408 @@ const FavoriteEventsPage = () => {
   
   const locationFilters = getLocationFilters();
 
-  // Create filter object with useMemo to prevent unnecessary re-renders
-  const filters = useMemo(() => ({
-    searchQuery,
-    selectedCategory,
-    priceFilter,
-    locationFilter,
-    dateFilter
-  }), [searchQuery, selectedCategory, priceFilter, locationFilter, dateFilter]);
+  // Filter favorite events based on all filters
+  // safeFavoriteEvents is already filtered by search and category from API
+  const filteredFavoriteEvents = safeFavoriteEvents;
 
-  // Calculate pagination for favorite events
-  const totalResults = safeFavoriteEvents.length;
-  const totalPageCount = Math.ceil(totalResults / pageSize);
-  
-  useEffect(() => {
-    setTotalPages(Math.max(1, totalPageCount));
-    // Reset to page 1 when filters change
-    setCurrentPage(1);
-  }, [filters, safeFavoriteEvents.length]);
+  // Use API pagination info, with client-side filtering for price/location/date
+  const displayTotalRecords = totalRecords || filteredFavoriteEvents.length;
+  const totalPages = apiTotalPages || Math.max(1, Math.ceil(displayTotalRecords / pageSize));
 
-  // Get paginated events for current page
-  const paginatedFavoriteEvents = safeFavoriteEvents.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  // For client-side filters (price, location, date), we still need to filter the current page data
+  const paginatedFavoriteEvents = useMemo(() => {
+    return filteredFavoriteEvents.filter((event) => {
+      // Price filter (client-side only)
+      if (priceFilter !== "all") {
+        const price = event.ticketPrice || event.minPrice || 0;
+        if (priceFilter === "free" && price > 0) return false;
+        if (priceFilter === "paid" && price === 0) return false;
+      }
+
+      // Location filter (client-side only)
+      if (locationFilter !== "all") {
+        const eventLocation = (event.locationName || event.location || "").toLowerCase();
+        if (!eventLocation.includes(locationFilter.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // Date filter (client-side only)
+      if (dateFilter !== "all") {
+        const eventDate = new Date(event.startTime || event.date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const endOfWeek = new Date(today);
+        endOfWeek.setDate(endOfWeek.getDate() + (7 - endOfWeek.getDay()));
+        
+        const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+        switch (dateFilter) {
+          case "today":
+            if (eventDate.toDateString() !== today.toDateString()) return false;
+            break;
+          case "tomorrow":
+            if (eventDate.toDateString() !== tomorrow.toDateString()) return false;
+            break;
+          case "this_week":
+            if (eventDate < today || eventDate > endOfWeek) return false;
+            break;
+          case "this_month":
+            if (eventDate < today || eventDate > endOfMonth) return false;
+            break;
+        }
+      }
+
+      return true;
+    });
+  }, [filteredFavoriteEvents, priceFilter, locationFilter, dateFilter]);
 
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Count active filters
+  const activeFilterCount = [
+    selectedCategory !== "all",
+    locationFilter !== "all",
+    dateFilter !== "all",
+    priceFilter !== "all"
+  ].filter(Boolean).length;
+
+  // Reset all filters
+  const resetFilters = () => {
+    setSelectedCategory("all");
+    setLocationFilter("all");
+    setDateFilter("all");
+    setPriceFilter("all");
+    setSearchQuery("");
+  };
+
   // Show loading spinner while checking authentication
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-rose-50 to-white">
         <LoadingSpinner size="lg" />
       </div>
     );
   }
 
-  if (loading || categoriesLoading) { // Add categoriesLoading check
+  if (loading || categoriesLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-rose-50 to-white">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center animate-pulse">
+            <Heart className="w-8 h-8 text-white" />
+          </div>
+          <p className="text-gray-500">Đang tải sự kiện yêu thích...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-rose-50 to-white">
+        <div className="text-center bg-white rounded-2xl shadow-lg p-8 max-w-md">
+          <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
+            <Heart className="w-8 h-8 text-red-500" />
+          </div>
           <p className="text-red-500 mb-4">{error}</p>
-          <Button onClick={() => getFavoriteEvents()}>Thử lại</Button>
+          <Button 
+            onClick={() => getFavoriteEvents()}
+            className="bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-xl px-6 py-2.5"
+          >
+            Thử lại
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Sự kiện yêu thích</h1>
-        <p className="text-muted-foreground">
-          Danh sách các sự kiện bạn đã lưu vào danh sách yêu thích
-        </p>
+    <div className="min-h-screen bg-gradient-to-b from-rose-50 to-white">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-rose-500 via-pink-500 to-purple-500 pt-12 pb-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm mb-4">
+              <Heart className="w-8 h-8 text-white fill-white" />
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
+              Sự kiện yêu thích
+            </h1>
+            <p className="text-rose-100 text-lg">
+              Danh sách các sự kiện bạn đã lưu
+            </p>
+          </div>
+
+          {/* Search Bar */}
+          <div className="max-w-3xl mx-auto">
+            <div className="relative">
+              <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-400 w-6 h-6" />
+              <Input
+                placeholder="Tìm kiếm trong sự kiện yêu thích..."
+                className="pl-14 pr-5 h-14 text-lg rounded-2xl border-0 shadow-xl bg-white/95 backdrop-blur-sm focus:bg-white transition-all"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="mb-8 space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-          <Input
-            placeholder="Tìm kiếm sự kiện yêu thích..."
-            className="pl-12 h-12"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+      {/* Main Content */}
+      <div className="container mx-auto px-4 -mt-8">
+        {/* Filter Card */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 mb-8 overflow-hidden">
+          {/* Filter Header */}
+          <div 
+            className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center">
+                <SlidersHorizontal className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Bộ lọc</h3>
+                <p className="text-sm text-gray-500">
+                  {activeFilterCount > 0 ? `${activeFilterCount} bộ lọc đang áp dụng` : "Lọc sự kiện yêu thích"}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {activeFilterCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => { e.stopPropagation(); resetFilters(); }}
+                  className="text-gray-500 hover:text-red-500"
+                >
+                  <RotateCcw className="w-4 h-4 mr-1" />
+                  Đặt lại
+                </Button>
+              )}
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${showFilters ? 'bg-rose-100' : 'bg-gray-100'}`}>
+                {showFilters ? (
+                  <ChevronUp className="w-5 h-5 text-rose-600" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-gray-600" />
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Filter Content */}
+          {showFilters && (
+            <div className="border-t border-gray-100 p-5 space-y-6 bg-gradient-to-b from-gray-50/50 to-white">
+              {/* Category Filter */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                  Danh mục
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {displayCategories.map((category) => (
+                    <button
+                      key={category.id}
+                      onClick={() => setSelectedCategory(category.id)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        selectedCategory === category.id
+                          ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-md shadow-rose-200'
+                          : 'bg-white border border-gray-200 text-gray-700 hover:border-rose-300 hover:text-rose-600'
+                      }`}
+                    >
+                      {category.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Location Filter */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                  Địa điểm
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {(showAllLocations ? locationFilters : locationFilters.slice(0, 6)).map((filter) => (
+                    <button
+                      key={filter.value}
+                      onClick={() => setLocationFilter(filter.value)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        locationFilter === filter.value
+                          ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-md shadow-purple-200'
+                          : 'bg-white border border-gray-200 text-gray-700 hover:border-purple-300 hover:text-purple-600'
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                  {locationFilters.length > 6 && (
+                    <button
+                      onClick={() => setShowAllLocations(!showAllLocations)}
+                      className="px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all"
+                    >
+                      {showAllLocations ? 'Thu gọn' : `+${locationFilters.length - 6}`}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Date Filter */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                  Thời gian
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {dateFilters.map((filter) => (
+                    <button
+                      key={filter.value}
+                      onClick={() => setDateFilter(filter.value)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        dateFilter === filter.value
+                          ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-200'
+                          : 'bg-white border border-gray-200 text-gray-700 hover:border-orange-300 hover:text-orange-600'
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        <Button 
-          variant="ghost" 
-          className="flex items-center gap-2 p-0 hover:bg-transparent"
-          onClick={() => setShowFilters(!showFilters)}
-        >
-          <Filter className="w-4 h-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Bộ lọc:</span>
-          {showFilters ? (
-            <ChevronUp className="w-4 h-4 text-muted-foreground" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-          )}
-        </Button>
+        {/* Results Header */}
+        {(safeFavoriteEvents.length > 0 || displayTotalRecords > 0) && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-pink-600">{displayTotalRecords}</span> sự kiện yêu thích
+              </h2>
+            </div>
+            {totalPages > 1 && (
+              <div className="text-sm text-gray-500 bg-gray-100 px-4 py-2 rounded-full">
+                Trang <span className="font-semibold text-gray-700">{currentPage}</span> / {totalPages}
+              </div>
+            )}
+          </div>
+        )}
 
-        {showFilters && (
+        {/* Events Grid */}
+        {paginatedFavoriteEvents.length > 0 ? (
           <>
-            {/* Category Filter */}
-            <div className="space-y-2">
-              <span className="text-sm text-muted-foreground">Danh mục:</span>
-              <div className="flex flex-wrap gap-2">
-                {displayCategories.map((category) => ( // Use displayCategories instead of categories derived from events
-                  <Button
-                    key={category.id}
-                    variant={selectedCategory === category.id ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedCategory(category.id)}
-                  >
-                    {category.name}
-                  </Button>
-                ))}
-              </div>
-            </div>
-        
-            {/* Location Filter */}
-            <div className="space-y-2">
-              <span className="text-sm text-muted-foreground">Địa điểm:</span>
-              <div className="flex gap-2 flex-wrap">
-                {(showAllLocations ? locationFilters : locationFilters.slice(0, 5)).map((filter) => (
-                  <Button
-                    key={filter.value}
-                    variant={locationFilter === filter.value ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setLocationFilter(filter.value)}
-                  >
-                    {filter.label}
-                  </Button>
-                ))}
-                {locationFilters.length > 5 && !showAllLocations && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowAllLocations(true)}
-                  >
-                    +{locationFilters.length - 5}
-                  </Button>
-                )}
-                {showAllLocations && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowAllLocations(false)}
-                  >
-                    Thu gọn
-                  </Button>
-                )}
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+              {paginatedFavoriteEvents.map((event) => (
+                <EventCard
+                  key={event.eventId || event.id}
+                  event={event}
+                  isLiked={true}
+                  onLike={handleRemoveFavorite}
+                  onViewDetail={handleViewDetail}
+                  showReason={false}
+                />
+              ))}
             </div>
 
-            {/* Date Filter */}
-            <div className="space-y-2">
-              <span className="text-sm text-muted-foreground">Thời gian:</span>
-              <div className="flex gap-2">
-                {dateFilters.map((filter) => (
-                  <Button
-                    key={filter.value}
-                    variant={dateFilter === filter.value ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setDateFilter(filter.value)}
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center mt-12 mb-8">
+                <div className="inline-flex items-center gap-1 bg-white rounded-2xl shadow-lg border border-gray-100 p-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="flex items-center gap-1 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                   >
-                    {filter.label}
-                  </Button>
-                ))}
+                    <ChevronLeft className="w-4 h-4" />
+                    <span className="hidden sm:inline">Trước</span>
+                  </button>
+                  
+                  <div className="flex items-center gap-1 px-2">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                      const isCurrentPage = pageNum === currentPage;
+                      const isNearCurrent = Math.abs(pageNum - currentPage) <= 1;
+                      const isFirst = pageNum === 1;
+                      const isLast = pageNum === totalPages;
+
+                      if (!isCurrentPage && !isNearCurrent && !isFirst && !isLast) {
+                        if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
+                          return <span key={pageNum} className="px-1 text-gray-400">•••</span>;
+                        }
+                        return null;
+                      }
+
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`min-w-[40px] h-10 rounded-xl text-sm font-semibold transition-all ${
+                            isCurrentPage
+                              ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-lg shadow-rose-200'
+                              : 'text-gray-600 hover:bg-gray-100'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="flex items-center gap-1 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  >
+                    <span className="hidden sm:inline">Sau</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center mb-6">
+              <Heart className="w-12 h-12 text-rose-400" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              {searchQuery || selectedCategory !== "all" 
+                ? "Không tìm thấy sự kiện" 
+                : "Chưa có sự kiện yêu thích"}
+            </h3>
+            <p className="text-gray-500 text-center max-w-md mb-6">
+              {searchQuery || selectedCategory !== "all" 
+                ? "Thử thay đổi bộ lọc để tìm sự kiện phù hợp" 
+                : "Khám phá và thêm sự kiện vào danh sách yêu thích của bạn"}
+            </p>
+            {(searchQuery || selectedCategory !== "all") ? (
+              <Button
+                onClick={resetFilters}
+                className="bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-xl px-6 py-2.5 hover:shadow-lg hover:shadow-rose-200 transition-all"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Đặt lại bộ lọc
+              </Button>
+            ) : (
+              <Button
+                onClick={() => navigate('/search')}
+                className="bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-xl px-6 py-2.5 hover:shadow-lg hover:shadow-rose-200 transition-all"
+              >
+                <Search className="w-4 h-4 mr-2" />
+                Khám phá sự kiện
+              </Button>
+            )}
+          </div>
         )}
       </div>
-
-      {/* Results Info */}
-      {safeFavoriteEvents.length > 0 && (
-        <div className="mb-6 text-sm text-gray-600">
-          Tìm thấy <span className="font-bold text-gray-900">{totalResults}</span> sự kiện yêu thích
-          {totalPages > 1 && <span className="ml-2">• Trang {currentPage}/{totalPages}</span>}
-        </div>
-      )}
-
-      {/* Events Grid */}
-      {paginatedFavoriteEvents.length > 0 ? (
-        <div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {paginatedFavoriteEvents.map((event) => (
-              <EventCard
-                key={event.eventId || event.id}
-                event={event}
-                isLiked={true}
-                onLike={handleRemoveFavorite}
-                onViewDetail={handleViewDetail}
-                showReason={false}
-              />
-            ))}
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-1 mt-8 mb-4">
-              {/* Previous Button */}
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5 text-gray-600" />
-              </button>
-
-              {/* Page Numbers */}
-              <div className="flex gap-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
-                  const isCurrentPage = pageNum === currentPage;
-                  const isNearCurrent = Math.abs(pageNum - currentPage) <= 1;
-                  const isFirst = pageNum === 1;
-                  const isLast = pageNum === totalPages;
-
-                  if (!isCurrentPage && !isNearCurrent && !isFirst && !isLast) {
-                    return null;
-                  }
-
-                  if (
-                    !isCurrentPage &&
-                    !isNearCurrent &&
-                    !isFirst &&
-                    !isLast &&
-                    pageNum === (isNearCurrent ? currentPage + 2 : 2)
-                  ) {
-                    return (
-                      <span key={`ellipsis-${pageNum}`} className="px-2 text-gray-400">
-                        ...
-                      </span>
-                    );
-                  }
-
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      className={
-                        isCurrentPage
-                          ? "px-3 py-2 rounded bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium transition-all"
-                          : "px-3 py-2 rounded hover:bg-gray-100 text-gray-700 transition-colors"
-                      }
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Next Button */}
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors"
-              >
-                <ChevronRight className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-12">
-          <div className="w-16 h-16 mb-4 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
-            <Heart className="w-8 h-8 text-blue-600" />
-          </div>
-          <p className="text-gray-600 text-center">
-            {searchQuery || selectedCategory !== "all" 
-              ? "Không tìm thấy sự kiện nào trong danh sách yêu thích của bạn." 
-              : "Bạn chưa thêm sự kiện nào vào danh sách yêu thích."}
-          </p>
-          <p className="text-sm text-gray-500 mt-2">
-            Khám phá các sự kiện và thêm chúng vào danh sách yêu thích của bạn
-          </p>
-        </div>
-      )}
     </div>
   );
 };

@@ -299,7 +299,7 @@ namespace AIEvent.Application.Services.Implements
                             sb.AppendLine($"<p>Xin chào {user.FullName ?? user.Email},</p>")
                               .AppendLine($"<p>Sự kiện <strong>{eventItem.Title}</strong> sẽ diễn ra vào <strong>{eventItem.StartTime.AddHours(7):HH:mm dd/MM/yyyy}</strong>.</p>")
                               .AppendLine("<p>Đừng quên tham gia sự kiện nhé!</p>")
-                              .AppendLine($"<p><a href=\"https://ai-event-alpha.vercel.app/event/{eventItem.Id}\">Xem chi tiết sự kiện</a></p>")
+                              .AppendLine($"<p><a href=\"https://aievent.vercel.app/event/{eventItem.Id}\">Xem chi tiết sự kiện</a></p>")
                               .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
 
                             await _emailService.SendEmailAsync(user.Email, new MimeMessage
@@ -388,7 +388,7 @@ namespace AIEvent.Application.Services.Implements
                             sb.AppendLine($"<p>Xin chào {user.FullName ?? user.Email},</p>")
                               .AppendLine($"<p>Sự kiện <strong>{eventItem.Title}</strong> sẽ mở bán vé vào <strong>{eventItem.SaleStartTime.Value.AddHours(7):HH:mm dd/MM/yyyy}</strong>.</p>")
                               .AppendLine("<p>Đừng bỏ lỡ cơ hội sở hữu vé cho sự kiện yêu thích của bạn!</p>")
-                              .AppendLine($"<p><a href=\"https://ai-event-alpha.vercel.app/event/{eventItem.Id}\">Xem chi tiết và đặt vé ngay</a></p>")
+                              .AppendLine($"<p><a href=\"https://aievent.vercel.app/event/{eventItem.Id}\">Xem chi tiết và đặt vé ngay</a></p>")
                               .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
 
                             var message = new MimeMessage

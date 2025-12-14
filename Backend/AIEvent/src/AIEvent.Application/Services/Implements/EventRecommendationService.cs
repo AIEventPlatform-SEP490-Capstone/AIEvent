@@ -98,7 +98,7 @@ namespace AIEvent.Application.Services.Implements
                 if (endRaw is DateTime endDt)
                     endTime = endDt.AddHours(7).ToString("dd/MM/yyyy HH:mm");
 
-                var eventUrl = eventId != null ? $"https://ai-event-alpha.vercel.app/event/{eventId}" : "#";
+                var eventUrl = eventId != null ? $"https://aievent.vercel.app/event/{eventId}" : "#";
                 return $@"
                     - {title ?? "Sự kiện"} ({category ?? "Không rõ danh mục"})
                       Địa điểm: {(location ?? address ?? "Không rõ")} - {district ?? ""}

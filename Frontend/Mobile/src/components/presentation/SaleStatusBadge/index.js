@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Colors from '../../../constants/Colors';
 
 const SaleStatusBadge = ({ 
   saleStartTime, 
@@ -70,24 +69,10 @@ const SaleStatusBadge = ({
 
       // Sale hasn't started yet
       if (now < saleStart) {
-        const diff = saleStart - now;
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-        const minutes = Math.floor((diff / 1000 / 60) % 60);
-
-        let timeText = '';
-        if (days > 0) {
-          timeText = `${days}d`;
-        } else if (hours > 0) {
-          timeText = `${hours}h`;
-        } else {
-          timeText = `${minutes}m`;
-        }
-
         setTimeStatus({
           status: 'not-started',
-          label: 'Chưa bán vé',
-          description: timeText,
+          label: 'Sắp mở',
+          description: '',
         });
         return;
       }

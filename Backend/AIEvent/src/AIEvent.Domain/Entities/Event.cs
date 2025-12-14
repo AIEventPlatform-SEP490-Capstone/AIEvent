@@ -53,7 +53,6 @@ namespace AIEvent.Domain.Entities
         public int TotalRatings { get; set; } = 0; 
         public int PayoutAttemptCount { get; set; } = 0;
         public ICollection<EventInvitation> Invitations { get; set; } = new List<EventInvitation>();
-        public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
         public virtual ICollection<EventReport> EventReports { get; set; } = new List<EventReport>();
     }
 }
