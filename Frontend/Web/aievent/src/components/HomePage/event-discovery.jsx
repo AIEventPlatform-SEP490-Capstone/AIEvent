@@ -1,5 +1,5 @@
 import React from "react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader } from "../ui/card";
@@ -112,6 +112,47 @@ export function EventDiscovery({
   const { getFavoriteEvents, addFavoriteEvent, removeFavoriteEvent } = useFavoriteEvents();
   const { isAuthenticated } = useSelector((state) => state.auth);
   const { categories: dbCategories, loading: categoriesLoading } = useCategories();
+
+  // Drag to scroll for category chips
+  const categoryScrollRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+
+  const handleMouseDown = useCallback((e) => {
+    if (!categoryScrollRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - categoryScrollRef.current.offsetLeft);
+    setScrollLeft(categoryScrollRef.current.scrollLeft);
+    categoryScrollRef.current.style.cursor = 'grabbing';
+    categoryScrollRef.current.style.userSelect = 'none';
+  }, []);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+    if (categoryScrollRef.current) {
+      categoryScrollRef.current.style.cursor = 'grab';
+      categoryScrollRef.current.style.userSelect = '';
+    }
+  }, []);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!isDragging || !categoryScrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - categoryScrollRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5; // Scroll speed multiplier
+    categoryScrollRef.current.scrollLeft = scrollLeft - walk;
+  }, [isDragging, startX, scrollLeft]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (isDragging) {
+      setIsDragging(false);
+      if (categoryScrollRef.current) {
+        categoryScrollRef.current.style.cursor = 'grab';
+        categoryScrollRef.current.style.userSelect = '';
+      }
+    }
+  }, [isDragging]);
 
   // Filter options
   const eventProgressStatusOptions = [
@@ -824,15 +865,23 @@ export function EventDiscovery({
           )}
         </div>
 
-        {/* Category Filter Chips - Modern Style */}
-        <div className="flex space-x-2 overflow-x-auto pb-4 mb-10 scrollbar-hide">
+        {/* Category Filter Chips - Drag to Scroll */}
+        <div 
+          ref={categoryScrollRef}
+          className="flex space-x-2 overflow-x-auto pb-4 mb-10 scrollbar-hide select-none"
+          style={{ cursor: 'grab', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+        >
           {categories.map((category) => {
             const Icon = category.icon;
             const isSelected = selectedCategory === category.id;
             return (
               <Button
                 key={category.id}
-                onClick={() => handleCategoryChange(category.id)}
+                onClick={() => !isDragging && handleCategoryChange(category.id)}
                 className={`whitespace-nowrap min-w-fit px-5 py-2.5 rounded-full font-semibold transition-all duration-300 flex-shrink-0 flex items-center gap-2 ${
                   isSelected
                     ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-indigo-700"
