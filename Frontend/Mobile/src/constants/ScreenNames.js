@@ -7,6 +7,7 @@ const ScreenNames = {
   LOGIN_SCREEN: 'LoginScreen',
   REGISTER_SCREEN: 'RegisterScreen',
   OTP_VERIFY_SCREEN: 'OtpVerifyScreen',
+  FORGOT_PASSWORD_SCREEN: 'ForgotPasswordScreen',
   
   // Event Screens
   EVENT_DETAIL_SCREEN: 'EventDetailScreen',
