@@ -1349,7 +1349,7 @@ namespace AIEvent.Application.Test.Services
 
 
         [Fact]
-        public async Task UTCID08_CreateSystemSetting_ShouldSucceed_WhenInputIsValidAndNoExistingSetting()
+        public async Task UTCID07_CreateSystemSetting_ShouldSucceed_WhenInputIsValidAndNoExistingSetting()
         {
             // Arrange
             var adminId = Guid.NewGuid();

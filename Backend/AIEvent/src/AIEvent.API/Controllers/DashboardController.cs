@@ -132,7 +132,7 @@ namespace AIEvent.API.Controllers
 
         [HttpPost("system-setting")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<SuccessResponse<object>>> UpdateSystemSetting(SystemSettingRequest request)
+        public async Task<ActionResult<SuccessResponse<object>>> CreateSystemSetting(SystemSettingRequest request)
         {
             var userId = User.GetRequiredUserId();
             var result = await _dashboardService.CreateSystemSetting(userId, request);

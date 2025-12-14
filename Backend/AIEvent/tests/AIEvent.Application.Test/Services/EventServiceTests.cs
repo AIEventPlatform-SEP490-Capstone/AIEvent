@@ -8871,7 +8871,7 @@ namespace AIEvent.Application.Test.Services
 
 
         [Fact]
-        public async Task UTCID01_ReportEventAsyncs_ShouldSucceed_WhenAllValid()
+        public async Task UTCID10_ReportEventAsyncs_ShouldSucceed_WhenAllValid()
         {
             // Arrange
             var userId = Guid.NewGuid();
