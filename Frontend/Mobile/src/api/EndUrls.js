@@ -12,6 +12,9 @@ const EndUrls = {
   REFRESH_TOKEN: `${BASE_URL}/auth/refresh-token`,
   REVOKE_TOKEN: `${BASE_URL}/auth/revoke-token`,
   CHANGE_PASSWORD: `${BASE_URL}/auth/change-password`,
+  FORGOT_PASSWORD: `${BASE_URL}/auth/forgot-password`,
+  FORGOT_PASSWORD_VERIFY_OTP: `${BASE_URL}/auth/forgot-password/verify-otp`,
+  RESET_PASSWORD: `${BASE_URL}/auth/reset-password`,
 
   // Events
   EVENTS: `${BASE_URL}/event`,

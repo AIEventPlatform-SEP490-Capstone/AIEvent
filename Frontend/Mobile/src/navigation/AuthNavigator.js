@@ -4,6 +4,7 @@ import LoginScreen from '../screens/loginScreen';
 import RegisterScreen from '../screens/registerScreen';
 import OtpVerifyScreen from '../screens/otpVerifyScreen';
 import ScreenNames from '../constants/ScreenNames';
+import ForgotPasswordScreen from '../screens/forgotPasswordScreen';
 
 const Stack = createStackNavigator();
 
@@ -26,6 +27,10 @@ const AuthNavigator = () => {
       <Stack.Screen 
         name={ScreenNames.OTP_VERIFY_SCREEN} 
         component={OtpVerifyScreen} 
+      />
+            <Stack.Screen 
+        name={ScreenNames.FORGOT_PASSWORD_SCREEN} 
+        component={ForgotPasswordScreen} 
       />
     </Stack.Navigator>
   );
