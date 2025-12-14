@@ -436,7 +436,7 @@ namespace AIEvent.Application.Services.Implements
               .AppendLine($"<p>Bạn được <strong>{request.InviterFullName}</strong> mời tham gia sự kiện <b>{request.EventTitle}</b>.</p>")
               .AppendLine($"<p><em>\"{request.Message}\"</em></p>")
               .AppendLine("<p>Nhấn để xem chi tiết:</p>")
-              .AppendLine($"<p><a href=\"https://ai-event-alpha.vercel.app/event/{request.EventId}\">Xem sự kiện</a></p>")
+              .AppendLine($"<p><a href=\"https://aievent.vercel.app/event/{request.EventId}\">Xem sự kiện</a></p>")
               .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
 
             var message = new MimeMessage
@@ -467,7 +467,7 @@ namespace AIEvent.Application.Services.Implements
             sb.AppendLine($"<p>Xin chào {request.InviterFullName},</p>")
               .AppendLine($"<p><strong>{request.InvitedUserFullName}</strong> đã <strong>{action}</strong> lời mời tham gia sự kiện <b>{request.EventTitle}</b>.</p>")
               .AppendLine($"<p><em>\"{request.Message}\"</em></p>")
-              .AppendLine($"<p><a href=\"https://ai-event-alpha.vercel.app/event/{request.EventId}\">Xem sự kiện</a></p>")
+              .AppendLine($"<p><a href=\"https://aievent.vercel.app/event/{request.EventId}\">Xem sự kiện</a></p>")
               .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
 
             var message = new MimeMessage
@@ -708,7 +708,7 @@ namespace AIEvent.Application.Services.Implements
                           ? "" 
                           : $"<p><strong>Lý do:</strong> {request.ReasonCancel}</p>")
                       .AppendLine("<p>Vui lòng kiểm tra và liên hệ với chúng tôi nếu bạn có thắc mắc.</p>")
-                      .AppendLine($"<p><a href=\"https://ai-event-alpha.vercel.app/event/{request.EventId}\">Xem chi tiết sự kiện</a></p>")
+                      .AppendLine($"<p><a href=\"https://aievent.vercel.app/event/{request.EventId}\">Xem chi tiết sự kiện</a></p>")
                       .AppendLine("<p>Trân trọng,<br/>AIEvent Team</p>");
 
                     var message = new MimeMessage
@@ -841,7 +841,7 @@ namespace AIEvent.Application.Services.Implements
 
                     <!-- CTA -->
                     <div style='text-align:center;margin-top:28px'>
-                        <a href='https://ai-event-alpha.vercel.app'
+                        <a href='https://aievent.vercel.app'
                            style='display:inline-block;background:#0057ff;color:#ffffff;padding:12px 30px;
                                   font-size:15px;border-radius:6px;text-decoration:none;font-weight:600;
                                   box-shadow:0 4px 10px rgba(0,0,0,0.15)'>
