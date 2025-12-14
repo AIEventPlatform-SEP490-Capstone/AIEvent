@@ -556,6 +556,136 @@ class AuthService {
     }
   }
 
+// Forgot password - Step 1: Request OTP
+static async forgotPassword(email) {
+  try {
+    const response = await fetch(EndUrls.FORGOT_PASSWORD, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (
+      response.ok &&
+      (data.statusCode === 'AIE20000' || data.statusCode === 'AIE20001')
+    ) {
+      return {
+        success: true,
+        data: data.data,
+        message: data.message || 'Mã OTP đã được gửi đến email của bạn!',
+      };
+    } else {
+      return {
+        success: false,
+        data: null,
+        message: data.message || 'Không thể gửi mã OTP. Vui lòng thử lại!',
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      data: null,
+      message: 'Lỗi kết nối, vui lòng thử lại!',
+      error: error.message,
+    };
+  }
+}
+
+// Forgot password - Step 2: Verify OTP
+static async verifyForgotPasswordOtp(email, otp) {
+  try {
+    const response = await fetch(EndUrls.FORGOT_PASSWORD_VERIFY_OTP, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        otp,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (
+      response.ok &&
+      (data.statusCode === 'AIE20000' || data.statusCode === 'AIE20001')
+    ) {
+      return {
+        success: true,
+        data: data.data,
+        message: data.message || 'Xác thực OTP thành công!',
+      };
+    } else {
+      return {
+        success: false,
+        data: null,
+        message: data.message || 'Mã OTP không hợp lệ hoặc đã hết hạn!',
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      data: null,
+      message: 'Lỗi kết nối, vui lòng thử lại!',
+      error: error.message,
+    };
+  }
+}
+
+// Forgot password - Step 3: Reset password
+static async resetPassword(email, resetCode, newPassword) {
+  try {
+    const response = await fetch(EndUrls.RESET_PASSWORD, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        resetCode,
+        newPassword,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (
+      response.ok &&
+      (data.statusCode === 'AIE20000' || data.statusCode === 'AIE20001')
+    ) {
+      return {
+        success: true,
+        data: data.data,
+        message: data.message || 'Đặt lại mật khẩu thành công!',
+      };
+    } else {
+      return {
+        success: false,
+        data: null,
+        message: data.message || 'Không thể đặt lại mật khẩu. Vui lòng thử lại!',
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      data: null,
+      message: 'Lỗi kết nối, vui lòng thử lại!',
+      error: error.message,
+    };
+  }
+}
+
+
   // Change password method
   static async changePassword(currentPassword, newPassword, confirmPassword) {
     try {

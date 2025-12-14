@@ -18,6 +18,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { login } from '../../redux/actions/Action';
 import { styles } from './styles';
 import { LoadingScreen } from '../../components/common';
+import ScreenNames from '../../constants/ScreenNames';
 
 const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
@@ -224,7 +225,9 @@ const LoginScreen = ({ navigation }) => {
                             </Animated.View>
 
                             <View style={styles.linksRow}>
-                                <TouchableOpacity activeOpacity={0.7}>
+                            <TouchableOpacity 
+                                    activeOpacity={0.7}
+                                    onPress={() => navigation.navigate(ScreenNames.FORGOT_PASSWORD_SCREEN)}>
                                     <Text style={styles.linkText}>Quên mật khẩu?</Text>
                                 </TouchableOpacity>
                             </View>
