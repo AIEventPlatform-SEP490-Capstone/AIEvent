@@ -94,16 +94,46 @@ export function EventDiscovery({
   totalPages = 1,
   onPageChange,
   pageSize = 6,
-  onCategoryChange // Prop for handling category change
+  filters = {},
+  onFiltersChange
 }) {
   const navigate = useNavigate();
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState(filters.selectedCategory || "all");
+  const [searchQuery, setSearchQuery] = useState(filters.searchQuery || "");
+  const [minPrice, setMinPrice] = useState(filters.minPrice || "");
+  const [maxPrice, setMaxPrice] = useState(filters.maxPrice || "");
+  const [eventProgressStatus, setEventProgressStatus] = useState(filters.eventProgressStatus || "all");
+  const [ticketSaleStatus, setTicketSaleStatus] = useState(filters.ticketSaleStatus || "all");
+  const [sortBy, setSortBy] = useState(filters.sortBy || "NearestTime");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [likedEvents, setLikedEvents] = useState(new Set([2, 4]));
   const [isAIEventsExpanded, setIsAIEventsExpanded] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
   const { getFavoriteEvents, addFavoriteEvent, removeFavoriteEvent } = useFavoriteEvents();
   const { isAuthenticated } = useSelector((state) => state.auth);
   const { categories: dbCategories, loading: categoriesLoading } = useCategories();
+
+  // Filter options
+  const eventProgressStatusOptions = [
+    { value: "all", label: "Tất cả" },
+    { value: "Upcoming", label: "Sắp diễn ra" },
+    { value: "Ongoing", label: "Đang diễn ra" },
+    { value: "Ended", label: "Đã kết thúc" },
+  ];
+
+  const ticketSaleStatusOptions = [
+    { value: "all", label: "Tất cả" },
+    { value: "NotStarted", label: "Chưa mở bán" },
+    { value: "OnSale", label: "Đang bán" },
+    { value: "SaleEnded", label: "Hết vé" },
+  ];
+
+  const sortByOptions = [
+    { value: "NearestTime", label: "Gần nhất" },
+    { value: "LatestTime", label: "Mới nhất" },
+    { value: "LowestPrice", label: "Giá thấp nhất" },
+    { value: "HighestPrice", label: "Giá cao nhất" },
+  ];
 
   // Build categories list from DB with "All" option
   const categories = useMemo(() => {
@@ -213,11 +243,162 @@ export function EventDiscovery({
     );
   };
 
-  // Handle category change
+  // Handle filter changes
+  const handleFilterChange = (filterName, value) => {
+    const setters = {
+      selectedCategory: setSelectedCategory,
+      searchQuery: setSearchQuery,
+      minPrice: setMinPrice,
+      maxPrice: setMaxPrice,
+      eventProgressStatus: setEventProgressStatus,
+      ticketSaleStatus: setTicketSaleStatus,
+      sortBy: setSortBy,
+    };
+    
+    if (setters[filterName]) {
+      setters[filterName](value);
+    }
+  };
+
+  // Apply filters with debounce for search
+  const applyFilters = () => {
+    if (onFiltersChange) {
+      onFiltersChange({
+        selectedCategory,
+        searchQuery,
+        minPrice,
+        maxPrice,
+        eventProgressStatus,
+        ticketSaleStatus,
+        sortBy,
+      });
+    }
+  };
+
+
+
+  // Handle other filter changes immediately
   const handleCategoryChange = (categoryId) => {
     setSelectedCategory(categoryId);
-    if (onCategoryChange) {
-      onCategoryChange(categoryId);
+    if (onFiltersChange) {
+      onFiltersChange({
+        selectedCategory: categoryId,
+        searchQuery,
+        minPrice,
+        maxPrice,
+        eventProgressStatus,
+        ticketSaleStatus,
+        sortBy,
+      });
+    }
+  };
+
+  const handleStatusChange = (filterName, value) => {
+    handleFilterChange(filterName, value);
+    if (onFiltersChange) {
+      onFiltersChange({
+        selectedCategory,
+        searchQuery,
+        minPrice,
+        maxPrice,
+        eventProgressStatus: filterName === 'eventProgressStatus' ? value : eventProgressStatus,
+        ticketSaleStatus: filterName === 'ticketSaleStatus' ? value : ticketSaleStatus,
+        sortBy: filterName === 'sortBy' ? value : sortBy,
+      });
+    }
+  };
+
+  const handlePriceFilter = () => {
+    if (onFiltersChange) {
+      onFiltersChange({
+        selectedCategory,
+        searchQuery,
+        minPrice,
+        maxPrice,
+        eventProgressStatus,
+        ticketSaleStatus,
+        sortBy,
+      });
+    }
+  };
+
+  // Check if any filter is active
+  const hasActiveFilters = () => {
+    return (
+      searchQuery !== '' ||
+      eventProgressStatus !== 'all' ||
+      ticketSaleStatus !== 'all' ||
+      minPrice !== '' ||
+      maxPrice !== '' ||
+      sortBy !== 'NearestTime'
+    );
+  };
+
+  // Clear all filters
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setEventProgressStatus('all');
+    setTicketSaleStatus('all');
+    setMinPrice('');
+    setMaxPrice('');
+    setSortBy('NearestTime');
+    if (onFiltersChange) {
+      onFiltersChange({
+        selectedCategory,
+        searchQuery: '',
+        minPrice: '',
+        maxPrice: '',
+        eventProgressStatus: 'all',
+        ticketSaleStatus: 'all',
+        sortBy: 'NearestTime',
+      });
+    }
+  };
+
+  // Remove single filter and apply immediately
+  const removeFilter = (filterName) => {
+    let newSearchQuery = searchQuery;
+    let newEventProgressStatus = eventProgressStatus;
+    let newTicketSaleStatus = ticketSaleStatus;
+    let newMinPrice = minPrice;
+    let newMaxPrice = maxPrice;
+    let newSortBy = sortBy;
+
+    switch (filterName) {
+      case 'searchQuery':
+        newSearchQuery = '';
+        setSearchQuery('');
+        break;
+      case 'eventProgressStatus':
+        newEventProgressStatus = 'all';
+        setEventProgressStatus('all');
+        break;
+      case 'ticketSaleStatus':
+        newTicketSaleStatus = 'all';
+        setTicketSaleStatus('all');
+        break;
+      case 'price':
+        newMinPrice = '';
+        newMaxPrice = '';
+        setMinPrice('');
+        setMaxPrice('');
+        break;
+      case 'sortBy':
+        newSortBy = 'NearestTime';
+        setSortBy('NearestTime');
+        break;
+    }
+
+    if (onFiltersChange) {
+      onFiltersChange({
+        selectedCategory,
+        searchQuery: newSearchQuery,
+        minPrice: newMinPrice,
+        maxPrice: newMaxPrice,
+        eventProgressStatus: newEventProgressStatus,
+        ticketSaleStatus: newTicketSaleStatus,
+        sortBy: newSortBy,
+      });
     }
   };
 
@@ -446,6 +627,184 @@ export function EventDiscovery({
             </h2>
             <p className="text-sm text-gray-600 mt-1">Tìm những sự kiện phù hợp với bạn</p>
           </div>
+        </div>
+
+        {/* Filter Button with Dropdown */}
+        <div className="flex items-center gap-3 mb-8">
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className={`flex items-center gap-2 rounded-full px-4 py-2.5 transition-all ${
+                showAdvancedFilters || hasActiveFilters()
+                  ? "bg-blue-50 border-blue-300 text-blue-600"
+                  : "border-gray-200 text-gray-600 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50"
+              }`}
+            >
+              <Search className="w-4 h-4" />
+              <span className="text-sm font-medium">Tìm kiếm & Lọc</span>
+              {hasActiveFilters() && (
+                <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+              )}
+            </Button>
+
+            {/* Filter Dropdown */}
+            {showAdvancedFilters && (
+              <>
+                {/* Backdrop to close dropdown when clicking outside */}
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setShowAdvancedFilters(false)}
+                />
+                <div className="absolute left-0 top-full mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-200 z-50 max-h-[70vh] overflow-hidden">
+                  <div className="p-4 border-b border-gray-100 bg-gray-50 rounded-t-xl">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-gray-800 text-sm">Tìm kiếm & Lọc</span>
+                      <button
+                        onClick={clearAllFilters}
+                        className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        Xóa tất cả
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="p-4 overflow-y-auto max-h-[calc(70vh-120px)]">
+                    {/* Search Input */}
+                    <div className="mb-3">
+                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Tìm kiếm</span>
+                      <div className="relative mt-1">
+                        <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
+                        <input
+                          type="text"
+                          placeholder="Nhập tên sự kiện..."
+                          className="w-full pl-8 pr-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none bg-white"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Sort By */}
+                    <div className="mb-3">
+                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Sắp xếp</span>
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none bg-white"
+                      >
+                        {sortByOptions.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Event Progress Status */}
+                    <div className="mb-3">
+                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Trạng thái sự kiện</span>
+                      <select
+                        value={eventProgressStatus}
+                        onChange={(e) => setEventProgressStatus(e.target.value)}
+                        className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none bg-white"
+                      >
+                        {eventProgressStatusOptions.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Ticket Sale Status */}
+                    <div className="mb-3">
+                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Trạng thái vé</span>
+                      <select
+                        value={ticketSaleStatus}
+                        onChange={(e) => setTicketSaleStatus(e.target.value)}
+                        className="w-full mt-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none bg-white"
+                      >
+                        {ticketSaleStatusOptions.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Price Range */}
+                    <div className="mb-3">
+                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Khoảng giá (VNĐ)</span>
+                      <div className="flex flex-col gap-2 mt-1">
+                        <input
+                          type="number"
+                          placeholder="Từ"
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none bg-white"
+                          value={minPrice}
+                          onChange={(e) => setMinPrice(e.target.value)}
+                          min="0"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Đến"
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none bg-white"
+                          value={maxPrice}
+                          onChange={(e) => setMaxPrice(e.target.value)}
+                          min="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Apply Button - Fixed at bottom */}
+                  <div className="p-4 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        applyFilters();
+                        setShowAdvancedFilters(false);
+                      }}
+                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg py-2 font-medium text-sm"
+                    >
+                      Áp dụng
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Active Filters Tags */}
+          {hasActiveFilters() && (
+            <div className="flex flex-wrap gap-2">
+              {searchQuery && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-medium">
+                  "{searchQuery}"
+                  <button onClick={() => removeFilter('searchQuery')} className="hover:text-blue-900">×</button>
+                </span>
+              )}
+              {eventProgressStatus !== 'all' && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-medium">
+                  {eventProgressStatusOptions.find(o => o.value === eventProgressStatus)?.label}
+                  <button onClick={() => removeFilter('eventProgressStatus')} className="hover:text-blue-900">×</button>
+                </span>
+              )}
+              {ticketSaleStatus !== 'all' && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-medium">
+                  {ticketSaleStatusOptions.find(o => o.value === ticketSaleStatus)?.label}
+                  <button onClick={() => removeFilter('ticketSaleStatus')} className="hover:text-blue-900">×</button>
+                </span>
+              )}
+              {(minPrice || maxPrice) && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-medium">
+                  Giá: {minPrice || '0'} - {maxPrice || '∞'}
+                  <button onClick={() => removeFilter('price')} className="hover:text-blue-900">×</button>
+                </span>
+              )}
+              {sortBy !== 'NearestTime' && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-medium">
+                  {sortByOptions.find(o => o.value === sortBy)?.label}
+                  <button onClick={() => removeFilter('sortBy')} className="hover:text-blue-900">×</button>
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Category Filter Chips - Modern Style */}
