@@ -90,6 +90,11 @@ export default function SearchPage() {
     sortBy
   }), [searchQuery, selectedCategory, locationFilter, dateFilter, ticketSaleStatus, eventProgressStatus, minPrice, maxPrice, sortBy]);
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory, locationFilter, dateFilter, ticketSaleStatus, eventProgressStatus, minPrice, maxPrice, sortBy]);
+
   // Fetch events when filters change or page changes
   useEffect(() => {
     let isMounted = true;
@@ -153,28 +158,37 @@ export default function SearchPage() {
         
         const response = await getEvents(params);
         
+        // Debug: log response structure
+        console.log("API Response:", response);
+        
         // Handle different response structures
+        // Note: eventAPI.getEvents already returns response.data?.data || response.data
         let eventData = [];
         let total = 0;
         let pages = 1;
         
-        if (response && response.data && response.data.items) {
-          eventData = response.data.items;
-          total = response.data.totalRecords || response.data.items.length;
-          pages = Math.ceil(total / pageSize);
-        } else if (response && response.items) {
+        if (response && response.items) {
+          // Paginated response: { items: [], totalRecords: N, totalPages: N }
           eventData = response.items;
-          total = response.totalRecords || response.items.length;
-          pages = Math.ceil(total / pageSize);
+          total = response.totalRecords || response.totalCount || response.total || response.items.length;
+          pages = response.totalPages || Math.ceil(total / pageSize);
         } else if (response && Array.isArray(response)) {
+          // Array response (no pagination info from API)
           eventData = response;
           total = response.length;
           pages = Math.ceil(total / pageSize);
+        } else if (response && response.data && response.data.items) {
+          // Nested data structure
+          eventData = response.data.items;
+          total = response.data.totalRecords || response.data.totalCount || response.data.items.length;
+          pages = response.data.totalPages || Math.ceil(total / pageSize);
         } else if (response && response.data && Array.isArray(response.data)) {
           eventData = response.data;
-          total = eventData.length;
-          pages = Math.ceil(total / pageSize);
+          total = response.totalRecords || response.totalCount || eventData.length;
+          pages = response.totalPages || Math.ceil(total / pageSize);
         }
+        
+        console.log("Parsed - Events:", eventData.length, "Total:", total, "Pages:", pages);
         
         // Only update state if component is still mounted
         if (isMounted) {
@@ -186,6 +200,8 @@ export default function SearchPage() {
         console.error("Error fetching events:", error);
         if (isMounted) {
           setEvents([]);
+          setTotalResults(0);
+          setTotalPages(1);
         }
       }
     };

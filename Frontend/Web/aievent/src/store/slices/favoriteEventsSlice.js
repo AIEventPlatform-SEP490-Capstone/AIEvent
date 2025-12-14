@@ -8,13 +8,28 @@ export const fetchFavoriteEvents = createAsyncThunk(
   async (params = {}, { rejectWithValue }) => {
     try {
       const response = await favoriteEventAPI.getFavoriteEvents(params);
-      // Ensure we always return an array
-      if (response && Array.isArray(response.items)) {
-        return response.items;
+      // Handle paginated response
+      if (response && response.items) {
+        return {
+          items: Array.isArray(response.items) ? response.items : [],
+          totalRecords: response.totalRecords || response.totalCount || response.items.length,
+          totalPages: response.totalPages || Math.ceil((response.totalRecords || response.items.length) / (params.pageSize || 12)),
+          currentPage: params.pageNumber || 1
+        };
       } else if (Array.isArray(response)) {
-        return response;
+        return {
+          items: response,
+          totalRecords: response.length,
+          totalPages: 1,
+          currentPage: 1
+        };
       } else {
-        return [];
+        return {
+          items: [],
+          totalRecords: 0,
+          totalPages: 1,
+          currentPage: 1
+        };
       }
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to fetch favorite events');
@@ -53,6 +68,9 @@ export const removeFavoriteEvent = createAsyncThunk(
 // Initial state
 const initialState = {
   items: [],
+  totalRecords: 0,
+  totalPages: 1,
+  currentPage: 1,
   loading: false,
   error: null,
 };
@@ -79,8 +97,10 @@ const favoriteEventsSlice = createSlice({
       })
       .addCase(fetchFavoriteEvents.fulfilled, (state, action) => {
         state.loading = false;
-        // Ensure items is always an array
-        state.items = Array.isArray(action.payload) ? action.payload : [];
+        state.items = action.payload.items || [];
+        state.totalRecords = action.payload.totalRecords || 0;
+        state.totalPages = action.payload.totalPages || 1;
+        state.currentPage = action.payload.currentPage || 1;
       })
       .addCase(fetchFavoriteEvents.rejected, (state, action) => {
         state.loading = false;
@@ -133,5 +153,8 @@ export const { clearError, clearFavoriteEvents } = favoriteEventsSlice.actions;
 export const selectFavoriteEvents = (state) => state.favoriteEvents.items;
 export const selectFavoriteEventsLoading = (state) => state.favoriteEvents.loading;
 export const selectFavoriteEventsError = (state) => state.favoriteEvents.error;
+export const selectFavoriteEventsTotalRecords = (state) => state.favoriteEvents.totalRecords;
+export const selectFavoriteEventsTotalPages = (state) => state.favoriteEvents.totalPages;
+export const selectFavoriteEventsCurrentPage = (state) => state.favoriteEvents.currentPage;
 
 export default favoriteEventsSlice.reducer;

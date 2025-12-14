@@ -21,8 +21,16 @@ import { EventCard } from "../../components/HomePage/EventCard";
 
 const FavoriteEventsPage = () => {
   const navigate = useNavigate();
-  const { favoriteEvents, loading, error, getFavoriteEvents } = useFavoriteEvents();
-  const { categories, loading: categoriesLoading, refreshCategories } = useCategories(); // Add categories hook
+  const { 
+    favoriteEvents, 
+    loading, 
+    error, 
+    getFavoriteEvents, 
+    removeFavoriteEvent,
+    totalRecords,
+    totalPages: apiTotalPages
+  } = useFavoriteEvents();
+  const { categories, loading: categoriesLoading, refreshCategories } = useCategories();
   const { isAuthenticated } = useSelector((state) => state.auth);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -32,7 +40,6 @@ const FavoriteEventsPage = () => {
   const [showAllLocations, setShowAllLocations] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const pageSize = 12;
 
   // Ensure favoriteEvents is always an array
@@ -43,6 +50,31 @@ const FavoriteEventsPage = () => {
   useEffect(() => {
     refreshCategories();
   }, []);
+
+  // Fetch favorite events with pagination when page or filters change
+  useEffect(() => {
+    if (isAuthenticated) {
+      const params = {
+        pageNumber: currentPage,
+        pageSize: pageSize
+      };
+      
+      if (searchQuery) {
+        params.search = searchQuery;
+      }
+      
+      if (selectedCategory !== "all") {
+        params.eventCategoryId = selectedCategory;
+      }
+      
+      getFavoriteEvents(params);
+    }
+  }, [isAuthenticated, currentPage, searchQuery, selectedCategory]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory, priceFilter, locationFilter, dateFilter]);
 
   // If user is not authenticated, redirect to login page
   useEffect(() => {
@@ -165,45 +197,24 @@ const FavoriteEventsPage = () => {
   const locationFilters = getLocationFilters();
 
   // Filter favorite events based on all filters
-  const filteredFavoriteEvents = useMemo(() => {
-    return safeFavoriteEvents.filter((event) => {
-      // Search query filter
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const title = (event.title || event.eventName || "").toLowerCase();
-        const description = (event.description || "").toLowerCase();
-        const location = (event.locationName || event.location || "").toLowerCase();
-        if (!title.includes(query) && !description.includes(query) && !location.includes(query)) {
-          return false;
-        }
-      }
+  // safeFavoriteEvents is already filtered by search and category from API
+  const filteredFavoriteEvents = safeFavoriteEvents;
 
-      // Category filter - so sánh theo id hoặc name
-      if (selectedCategory !== "all") {
-        const eventCategoryId = event.eventCategoryId || event.categoryId;
-        const eventCategoryName = event.eventCategoryName || event.category || "";
-        
-        // Tìm category được chọn để lấy name
-        const selectedCat = displayCategories.find(cat => String(cat.id) === String(selectedCategory));
-        const selectedCategoryName = selectedCat?.name || "";
-        
-        // So sánh theo id hoặc name
-        const matchById = eventCategoryId && String(eventCategoryId) === String(selectedCategory);
-        const matchByName = eventCategoryName && eventCategoryName.toLowerCase() === selectedCategoryName.toLowerCase();
-        
-        if (!matchById && !matchByName) {
-          return false;
-        }
-      }
+  // Use API pagination info, with client-side filtering for price/location/date
+  const displayTotalRecords = totalRecords || filteredFavoriteEvents.length;
+  const totalPages = apiTotalPages || Math.max(1, Math.ceil(displayTotalRecords / pageSize));
 
-      // Price filter
+  // For client-side filters (price, location, date), we still need to filter the current page data
+  const paginatedFavoriteEvents = useMemo(() => {
+    return filteredFavoriteEvents.filter((event) => {
+      // Price filter (client-side only)
       if (priceFilter !== "all") {
         const price = event.ticketPrice || event.minPrice || 0;
         if (priceFilter === "free" && price > 0) return false;
         if (priceFilter === "paid" && price === 0) return false;
       }
 
-      // Location filter
+      // Location filter (client-side only)
       if (locationFilter !== "all") {
         const eventLocation = (event.locationName || event.location || "").toLowerCase();
         if (!eventLocation.includes(locationFilter.toLowerCase())) {
@@ -211,7 +222,7 @@ const FavoriteEventsPage = () => {
         }
       }
 
-      // Date filter
+      // Date filter (client-side only)
       if (dateFilter !== "all") {
         const eventDate = new Date(event.startTime || event.date);
         const today = new Date();
@@ -243,23 +254,7 @@ const FavoriteEventsPage = () => {
 
       return true;
     });
-  }, [safeFavoriteEvents, searchQuery, selectedCategory, priceFilter, locationFilter, dateFilter]);
-
-  // Calculate pagination for filtered favorite events
-  const totalResults = filteredFavoriteEvents.length;
-  const totalPageCount = Math.ceil(totalResults / pageSize);
-  
-  useEffect(() => {
-    setTotalPages(Math.max(1, totalPageCount));
-    // Reset to page 1 when filters change
-    setCurrentPage(1);
-  }, [searchQuery, selectedCategory, priceFilter, locationFilter, dateFilter, totalPageCount]);
-
-  // Get paginated events for current page
-  const paginatedFavoriteEvents = filteredFavoriteEvents.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  }, [filteredFavoriteEvents, priceFilter, locationFilter, dateFilter]);
 
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
@@ -482,11 +477,11 @@ const FavoriteEventsPage = () => {
         </div>
 
         {/* Results Header */}
-        {safeFavoriteEvents.length > 0 && (
+        {(safeFavoriteEvents.length > 0 || displayTotalRecords > 0) && (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
               <h2 className="text-xl font-bold text-gray-900">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-pink-600">{totalResults}</span> sự kiện yêu thích
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-pink-600">{displayTotalRecords}</span> sự kiện yêu thích
               </h2>
             </div>
             {totalPages > 1 && (

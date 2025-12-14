@@ -152,7 +152,7 @@ export function EventCard({
       <div className="p-5 flex flex-col flex-grow">
         {/* Category */}
         <div className="mb-3">
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/10 px-3 py-1.5 rounded-full">
+          <span className="inline-block text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
             {event.category || event.eventCategoryName || "Event"}
           </span>
         </div>
