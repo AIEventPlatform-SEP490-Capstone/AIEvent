@@ -481,7 +481,7 @@ export function EventDiscovery({
                 <TrendingUp className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Nổi bật</h2>
+                <h2 className="text-2xl font-bold text-gray-900">Sự kiện nổi bật</h2>
                 <p className="text-gray-500 text-sm mt-0.5">Sự kiện được quan tâm nhất</p>
               </div>
             </div>
@@ -583,7 +583,7 @@ export function EventDiscovery({
             <Calendar className="w-7 h-7 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Khám phá</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Khám phá sự kiện</h2>
             <p className="text-gray-500 text-sm mt-0.5">Tìm sự kiện phù hợp với bạn</p>
           </div>
         </div>
