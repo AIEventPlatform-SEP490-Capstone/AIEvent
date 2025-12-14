@@ -1,23 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useCategories } from "../../hooks/useCategories";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../../components/ui/card";
+import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +12,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "../../components/ui/dialog";
 import {
   DropdownMenu,
@@ -42,7 +28,6 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
-  RefreshCw,
   AlertTriangle,
   FolderOpen,
   X,
@@ -50,6 +35,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { showSuccess, showError } from "../../lib/toastUtils";
+import { getCategoryStyle } from "../../constants/categoryStyles";
 
 const EventCategory = () => {
   const {
@@ -63,15 +49,11 @@ const EventCategory = () => {
     clearCategoriesError,
   } = useCategories();
 
-  // Search and filter states
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "eventCategoryName", direction: "asc" });
-
-  // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12; // Fixed items per page
+  const itemsPerPage = 12;
 
-  // Dialog states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -80,42 +62,28 @@ const EventCategory = () => {
   const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [isSubmittingCreate, setIsSubmittingCreate] = useState(false);
   const [isSubmittingUpdate, setIsSubmittingUpdate] = useState(false);
-  // Form data
-  const [formData, setFormData] = useState({
-    eventCategoryName: "",
-  });
-  
-  // Loading states for form submissions
+
+  const [formData, setFormData] = useState({ eventCategoryName: "" });
   const [isCreating, setIsCreating] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Filter and sort categories
   const filteredAndSortedCategories = useMemo(() => {
     let filtered = categories.filter((category) =>
-      category.eventCategoryName
-        ?.toLowerCase()
-        .includes(searchTerm.toLowerCase())
+      category.eventCategoryName?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-
-    // Sort categories
     filtered.sort((a, b) => {
       if (sortConfig.key === "eventCategoryName") {
         const aValue = (a.eventCategoryName || "").toLowerCase();
         const bValue = (b.eventCategoryName || "").toLowerCase();
-        if (sortConfig.direction === "asc") {
-          return aValue.localeCompare(bValue);
-        } else {
-          return bValue.localeCompare(aValue);
-        }
+        return sortConfig.direction === "asc"
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
       }
       return 0;
     });
-
     return filtered;
   }, [categories, searchTerm, sortConfig]);
 
-  // Handle sorting
   const handleSort = (key) => {
     let direction = "asc";
     if (sortConfig.key === key && sortConfig.direction === "asc") {
@@ -124,49 +92,33 @@ const EventCategory = () => {
     setSortConfig({ key, direction });
   };
 
-  // Client-side pagination
   const totalFiltered = filteredAndSortedCategories.length;
   const totalPages = Math.ceil(totalFiltered / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedCategories = filteredAndSortedCategories.slice(
-    startIndex,
-    endIndex
-  );
+  const paginatedCategories = filteredAndSortedCategories.slice(startIndex, endIndex);
 
-  // Reset to first page when search term changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, sortConfig]);
 
-  // Adjust page if current page becomes empty after delete
   useEffect(() => {
     if (paginatedCategories.length === 0 && currentPage > 1) {
       setCurrentPage(currentPage - 1);
     }
   }, [paginatedCategories.length, currentPage]);
 
-  // Reset form data
   const resetForm = () => {
-    setFormData({
-      eventCategoryName: "",
-    });
+    setFormData({ eventCategoryName: "" });
   };
 
-  // Handle create new category
   const handleCreate = async () => {
-    // Prevent multiple submissions
-    if (isCreating || !formData.eventCategoryName.trim()) {
-      return;
-    }
-    
+    if (isCreating || !formData.eventCategoryName.trim()) return;
     setIsCreating(true);
     try {
       setIsSubmittingCreate(true);
-      await createNewCategory({
-        eventCategoryName: formData.eventCategoryName,
-      });
-      await refreshCategories(); //  Refresh ngay sau khi tạo
+      await createNewCategory({ eventCategoryName: formData.eventCategoryName });
+      await refreshCategories();
       showSuccess("Tạo danh mục sự kiện thành công!");
       setIsCreateDialogOpen(false);
       resetForm();
@@ -179,14 +131,8 @@ const EventCategory = () => {
     }
   };
 
-  // Handle update category
   const handleUpdate = async () => {
-    // Prevent multiple submissions
-    if (isUpdating || !formData.eventCategoryName.trim()) {
-      return;
-    }
-    
-    setIsUpdating(true);
+    if (!formData.eventCategoryName.trim()) return;
     try {
       setIsSubmittingUpdate(true);
       await updateExistingCategory(selectedCategory.eventCategoryId, {
@@ -197,22 +143,15 @@ const EventCategory = () => {
       setSelectedCategory(null);
       resetForm();
     } catch (err) {
-      showError(
-        "Lỗi khi cập nhật danh mục: " + (err.message || "Unknown error")
-      );
+      showError("Lỗi khi cập nhật danh mục: " + (err.message || "Unknown error"));
       clearCategoriesError();
     } finally {
       setIsSubmittingUpdate(false);
     }
   };
 
-  // Handle delete category
   const handleDelete = async (categoryId) => {
-    // Prevent multiple submissions
-    if (isDeleting) {
-      return;
-    }
-    
+    if (isDeleting) return;
     setIsDeleting(true);
     try {
       await deleteExistingCategory(categoryId);
@@ -225,16 +164,12 @@ const EventCategory = () => {
     }
   };
 
-  // Handle edit category
   const handleEdit = (category) => {
     setSelectedCategory(category);
-    setFormData({
-      eventCategoryName: category.eventCategoryName || "",
-    });
+    setFormData({ eventCategoryName: category.eventCategoryName || "" });
     setIsEditDialogOpen(true);
   };
 
-  // Handle view category
   const handleView = (category) => {
     setSelectedCategory(category);
     setIsViewDialogOpen(true);
@@ -242,186 +177,134 @@ const EventCategory = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950/30">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <p className="text-muted-foreground">Đang tải...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-accent/5">
-      <div className="container mx-auto px-4 py-8 space-y-8 animate-fade-in">
-        {/* Header Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-gradient-primary rounded-xl shadow-lg">
-              <FolderOpen className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-4xl font-bold text-foreground">
-                Quản Lý Danh Mục Sự Kiện
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                Quản lý và tổ chức các danh mục cho sự kiện của bạn
-              </p>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950/30">
+      {/* Decorative Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-primary/20 to-purple-500/20 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 -left-40 w-96 h-96 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 right-1/3 w-72 h-72 bg-gradient-to-br from-indigo-500/15 to-pink-500/10 rounded-full blur-3xl" />
+      </div>
 
-          {/* Quick Actions */}
-          <div className="flex flex-wrap gap-2">
+      <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Hero Header */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary via-indigo-600 to-purple-600 p-8 sm:p-10 shadow-2xl shadow-primary/25">
+          <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,white)]" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
+          
+          <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="p-4 bg-white/20 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20">
+                <FolderOpen className="h-8 w-8 text-white" />
+              </div>
+              <div className="space-y-2">
+                <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+                  Quản Lý Danh Mục
+                </h1>
+                <p className="text-white/80 text-base sm:text-lg max-w-md">
+                  Tổ chức và quản lý các danh mục cho sự kiện của bạn
+                </p>
+              </div>
+            </div>
+            
             <Button 
-              className="bg-gradient-primary hover:opacity-90 transition-opacity"
+              size="lg"
+              className="bg-white text-primary hover:bg-white/90 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 font-semibold px-6 rounded-xl"
               onClick={() => setIsCreateDialogOpen(true)}
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-5 w-5 mr-2" />
               Tạo Danh Mục Mới
             </Button>
           </div>
         </div>
 
-        {/* Search and Filter Section */}
-        <Card className="border-primary/10 shadow-lg backdrop-blur-sm bg-card/95 animate-scale-in">
-          <CardContent className="pt-6">
+        {/* Search & Filter */}
+        <Card className="border-0 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl shadow-xl">
+          <CardContent className="p-6">
             <div className="flex flex-col lg:flex-row gap-4">
-              {/* Search Input */}
               <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-foreground h-5 w-5" />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-primary/10 rounded-lg">
+                  <Search className="text-primary h-4 w-4" />
+                </div>
                 <Input
                   placeholder="Tìm kiếm danh mục theo tên..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-12 h-12 text-base border-primary/20 focus:border-primary transition-colors text-foreground placeholder:text-foreground/70"
+                  className="pl-14 h-12 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200/50 dark:border-slate-700/50 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl text-base transition-all"
                 />
               </div>
 
-              {/* Sort Button */}
               <Button
                 variant="outline"
                 onClick={() => handleSort("eventCategoryName")}
-                className="flex items-center gap-2 h-12 border-primary/20 hover:bg-primary/5 transition-colors whitespace-nowrap text-foreground"
+                className="h-12 px-5 bg-white/50 dark:bg-slate-800/50 border-slate-200/50 dark:border-slate-700/50 hover:bg-primary/5 hover:border-primary/30 rounded-xl transition-all"
               >
-                <ArrowUpDown className="h-4 w-4" />
-                Sắp Xếp
-                {sortConfig.key === "eventCategoryName" && (
-                  <span className="text-xs text-primary">
-                    {sortConfig.direction === "asc" ? "A-Z" : "Z-A"}
-                  </span>
-                )}
+                <ArrowUpDown className="h-4 w-4 mr-2 text-primary" />
+                <span className="font-medium">{sortConfig.direction === "asc" ? "A → Z" : "Z → A"}</span>
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Categories Display */}
-        <Card className="border-primary/10 shadow-xl backdrop-blur-sm bg-card/95 animate-scale-in">
-          <CardContent className="p-6">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-2xl font-semibold text-foreground">
-                Danh Sách Danh Mục
-              </h2>
-              <Badge variant="secondary" className="px-3 py-1 text-foreground">
-                {filteredAndSortedCategories.length} danh mục
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0" />
+            <span className="text-red-700 dark:text-red-400 text-sm flex-1">{error}</span>
+            <button 
+              onClick={clearCategoriesError}
+              className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-lg transition-colors"
+            >
+              <X className="h-4 w-4 text-red-500" />
+            </button>
+          </div>
+        )}
+
+        {/* Categories List */}
+        <Card className="border-0 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl shadow-xl overflow-hidden">
+          <div className="p-6 border-b border-slate-200/50 dark:border-slate-700/50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-primary/20 to-indigo-500/20 rounded-lg">
+                  <FolderOpen className="h-5 w-5 text-primary" />
+                </div>
+                <h2 className="text-xl font-semibold text-foreground">Danh Sách Danh Mục</h2>
+              </div>
+              <Badge className="bg-primary/10 text-primary border-0 px-3 py-1.5 text-sm font-medium">
+                {totalFiltered} danh mục
               </Badge>
             </div>
-
-          <Dialog
-            open={isCreateDialogOpen}
-            onOpenChange={setIsCreateDialogOpen}
-          >
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Tạo Danh Mục Mới</DialogTitle>
-                <DialogDescription>Nhập tên danh mục sự kiện mới</DialogDescription>
-              </DialogHeader>
-
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="eventCategoryName">Tên danh mục</Label>
-                  <Input
-                    id="eventCategoryName"
-                    value={formData.eventCategoryName}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        eventCategoryName: e.target.value,
-                      }))
-                    }
-                    placeholder="Nhập tên danh mục sự kiện"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleCreate();
-                      }
-                    }}
-                    autoFocus
-                  />
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsCreateDialogOpen(false)}
-                  disabled={isSubmittingCreate}
-                >
-                  Hủy
-                </Button>
-                <Button onClick={handleCreate} disabled={isSubmittingCreate}>
-                  {isSubmittingCreate && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  {isSubmittingCreate ? "Đang tạo..." : "Tạo Danh Mục"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-      {/* Error Display - Improved error handling */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4 flex items-start">
-          <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 mr-2 flex-shrink-0" />
-          <div className="text-red-700 text-sm">{error}</div>
-          <button 
-            onClick={clearCategoriesError}
-            className="ml-auto text-red-500 hover:text-red-700 text-sm font-medium"
-          >
-            Đóng
-          </button>
-        </div>
-      )}
-
-            {/* Error Display */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-4 flex items-start mb-4">
-                <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 mr-2 flex-shrink-0" />
-                <div className="text-red-700 text-sm">{error}</div>
-                <button 
-                  onClick={clearCategoriesError}
-                  className="ml-auto text-red-500 hover:text-red-700 text-sm font-medium"
-                >
-                  Đóng
-                </button>
-              </div>
-            )}
-
-            {/* Categories Grid */}
+          </div>
+          
+          <CardContent className="p-6">
             {paginatedCategories.length === 0 ? (
               <div className="text-center py-16">
-                <div className="inline-block p-6 bg-muted/30 rounded-2xl mb-4">
-                  <FolderOpen className="h-16 w-16 text-muted-foreground" />
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-2xl mb-4">
+                  <FolderOpen className="h-10 w-10 text-muted-foreground" />
                 </div>
                 <p className="text-lg font-semibold text-foreground mb-2">
-                  {searchTerm
-                    ? "Không tìm thấy danh mục nào"
-                    : "Chưa có danh mục sự kiện"}
+                  {searchTerm ? "Không tìm thấy danh mục nào" : "Chưa có danh mục sự kiện"}
                 </p>
-                <p className="text-sm text-foreground/80 mb-4">
+                <p className="text-sm text-muted-foreground mb-6">
                   {searchTerm
-                    ? "Thử tìm kiếm với từ khóa khác hoặc tạo danh mục mới"
+                    ? "Thử tìm kiếm với từ khóa khác"
                     : "Tạo danh mục sự kiện đầu tiên để bắt đầu"}
                 </p>
                 {!searchTerm && (
-                  <Button onClick={() => setIsCreateDialogOpen(true)}>
+                  <Button 
+                    onClick={() => setIsCreateDialogOpen(true)}
+                    className="bg-gradient-to-r from-primary to-indigo-600 hover:opacity-90 rounded-xl"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Tạo Danh Mục Đầu Tiên
                   </Button>
@@ -430,67 +313,40 @@ const EventCategory = () => {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {paginatedCategories.map((category, index) => {
-                  // Generate color based on category ID for consistency
-                  const getColorFromClass = (categoryId) => {
-                    let hash = 0;
-                    const idStr = categoryId?.toString() || "";
-                    for (let i = 0; i < idStr.length; i++) {
-                      hash = idStr.charCodeAt(i) + ((hash << 5) - hash);
-                    }
-                    const colors = [
-                      "bg-blue-500",
-                      "bg-red-500",
-                      "bg-yellow-500",
-                      "bg-purple-500",
-                      "bg-pink-500",
-                      "bg-indigo-500",
-                      "bg-teal-500",
-                      "bg-cyan-500",
-                      "bg-orange-500",
-                    ];
-                    const index = Math.abs(hash) % colors.length;
-                    return colors[index];
-                  };
-                  const colorClass = getColorFromClass(category.eventCategoryId);
-
+                  const style = getCategoryStyle(category.eventCategoryName);
+                  const IconComponent = style.icon;
                   return (
                     <div
                       key={category.eventCategoryId}
-                      className="group relative p-5 rounded-2xl border-2 border-primary/10 bg-gradient-to-br from-card to-card/50 hover:border-primary/40 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-scale-in overflow-hidden"
+                      className="group relative p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 hover:border-primary/30 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden"
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
-                      {/* Background Gradient Effect */}
-                      <div className={`absolute inset-0 ${colorClass} opacity-5 group-hover:opacity-10 transition-opacity`} />
+                      {/* Gradient accent */}
+                      <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${style.gradient}`} />
                       
                       {/* Actions Menu */}
-                      <div className="absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 w-7 p-0 bg-background/80 backdrop-blur-sm hover:bg-background"
+                              className="h-8 w-8 p-0 bg-slate-100/80 dark:bg-slate-700/80 backdrop-blur-sm hover:bg-slate-200 dark:hover:bg-slate-600"
                             >
-                              <MoreVertical className="h-4 w-4 text-foreground" />
+                              <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start" className="w-48">
-                            <DropdownMenuItem 
-                              className="cursor-pointer"
-                              onClick={() => handleEdit(category)}
-                            >
+                          <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuItem onClick={() => handleView(category)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Xem Chi Tiết
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEdit(category)}>
                               <Edit className="h-4 w-4 mr-2" />
                               Chỉnh Sửa
                             </DropdownMenuItem>
                             <DropdownMenuItem 
-                              className="cursor-pointer"
-                              onClick={() => handleView(category)}
-                            >
-                              <Eye className="h-4 w-4 mr-2" />
-                              Xem Chi Tiết
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className="cursor-pointer text-destructive"
+                              className="text-destructive focus:text-destructive"
                               onClick={() => {
                                 setDeleteTargetId(category.eventCategoryId);
                                 setIsDeleteDialogOpen(true);
@@ -503,19 +359,15 @@ const EventCategory = () => {
                         </DropdownMenu>
                       </div>
 
-                      {/* Category Content */}
-                      <div className="relative space-y-4 mt-2">
-                        {/* Color Indicator & Name */}
-                        <div className="flex items-center gap-3">
-                          <div className={`w-4 h-4 rounded-lg ${colorClass} shadow-lg group-hover:scale-110 transition-transform`} />
-                          <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors truncate">
-                            {category.eventCategoryName}
-                          </h3>
+                      {/* Content */}
+                      <div className="flex items-center gap-3 mt-2">
+                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${style.gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
+                          <IconComponent className="h-6 w-6 text-white" />
                         </div>
+                        <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors truncate flex-1">
+                          {category.eventCategoryName}
+                        </h3>
                       </div>
-
-                      {/* Hover Effect Border */}
-                      <div className="absolute inset-0 rounded-2xl bg-gradient-primary opacity-0 group-hover:opacity-10 transition-opacity pointer-events-none" />
                     </div>
                   );
                 })}
@@ -524,25 +376,23 @@ const EventCategory = () => {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="mt-6 pt-6 border-t border-border/50">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-foreground/80">
-                    Hiển thị {startIndex + 1}-{Math.min(endIndex, totalFiltered)}{" "}
-                    trong {totalFiltered} danh mục
-                  </div>
-                  <div className="flex items-center space-x-2">
+              <div className="mt-8 pt-6 border-t border-slate-200/50 dark:border-slate-700/50">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <p className="text-sm text-muted-foreground">
+                    Hiển thị {startIndex + 1}-{Math.min(endIndex, totalFiltered)} trong {totalFiltered} danh mục
+                  </p>
+                  <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.max(prev - 1, 1))
-                      }
+                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                       disabled={currentPage === 1}
+                      className="rounded-lg"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
 
-                    <div className="flex items-center space-x-1">
+                    <div className="flex items-center gap-1">
                       {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                         let pageNum;
                         if (totalPages <= 5) {
@@ -554,16 +404,17 @@ const EventCategory = () => {
                         } else {
                           pageNum = currentPage - 2 + i;
                         }
-
                         return (
                           <Button
                             key={pageNum}
-                            variant={
-                              currentPage === pageNum ? "default" : "outline"
-                            }
+                            variant={currentPage === pageNum ? "default" : "outline"}
                             size="sm"
                             onClick={() => setCurrentPage(pageNum)}
-                            className="w-8 h-8 p-0"
+                            className={`w-9 h-9 p-0 rounded-lg ${
+                              currentPage === pageNum 
+                                ? "bg-gradient-to-r from-primary to-indigo-600" 
+                                : ""
+                            }`}
                           >
                             {pageNum}
                           </Button>
@@ -574,10 +425,9 @@ const EventCategory = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                      }
+                      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                       disabled={currentPage === totalPages}
+                      className="rounded-lg"
                     >
                       <ChevronRight className="h-4 w-4" />
                     </Button>
@@ -589,48 +439,92 @@ const EventCategory = () => {
         </Card>
       </div>
 
+      {/* Create Dialog */}
+      {isCreateDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsCreateDialogOpen(false)} />
+          <div className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md border border-slate-200/50 dark:border-slate-700/50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="h-2 bg-gradient-to-r from-primary via-indigo-500 to-purple-500" />
+            <div className="p-6 sm:p-8">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-gradient-to-br from-primary to-indigo-600 rounded-xl shadow-lg">
+                    <Plus className="h-5 w-5 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground">Tạo Danh Mục Mới</h3>
+                </div>
+                <button onClick={() => setIsCreateDialogOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                  <X className="h-5 w-5 text-muted-foreground" />
+                </button>
+              </div>
+              
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Tên Danh Mục</Label>
+                  <Input
+                    value={formData.eventCategoryName}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, eventCategoryName: e.target.value }))}
+                    placeholder="Nhập tên danh mục..."
+                    onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+                    className="h-12 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl text-base"
+                    autoFocus
+                  />
+                  <p className="text-xs text-muted-foreground">Danh mục sẽ được sử dụng để phân loại sự kiện</p>
+                </div>
+                
+                <div className="flex justify-end gap-3 pt-2">
+                  <Button variant="ghost" onClick={() => setIsCreateDialogOpen(false)} className="px-5 rounded-xl">
+                    Hủy
+                  </Button>
+                  <Button 
+                    onClick={handleCreate} 
+                    disabled={isSubmittingCreate || !formData.eventCategoryName.trim()}
+                    className="px-6 bg-gradient-to-r from-primary to-indigo-600 hover:opacity-90 shadow-lg hover:shadow-xl transition-all rounded-xl"
+                  >
+                    {isSubmittingCreate ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Đang tạo...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Tạo Danh Mục
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="rounded-2xl">
           <DialogHeader>
             <DialogTitle>Chỉnh Sửa Danh Mục</DialogTitle>
-            <DialogDescription>
-              Cập nhật thông tin danh mục sự kiện
-            </DialogDescription>
+            <DialogDescription>Cập nhật thông tin danh mục sự kiện</DialogDescription>
           </DialogHeader>
-
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="edit-eventCategoryName">Tên danh mục</Label>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Tên danh mục</Label>
               <Input
-                id="edit-eventCategoryName"
+                id="edit-name"
                 value={formData.eventCategoryName}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    eventCategoryName: e.target.value,
-                  }))
-                }
-                placeholder="Nhập tên danh mục sự kiện"
+                onChange={(e) => setFormData((prev) => ({ ...prev, eventCategoryName: e.target.value }))}
+                placeholder="Nhập tên danh mục"
+                className="rounded-xl"
               />
             </div>
           </div>
-
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsEditDialogOpen(false);
-                setSelectedCategory(null);
-              }}
-              disabled={isSubmittingUpdate}
-            >
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={isSubmittingUpdate} className="rounded-xl">
               Hủy
             </Button>
-            <Button onClick={handleUpdate} disabled={isSubmittingUpdate}>
-              {isSubmittingUpdate && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+            <Button onClick={handleUpdate} disabled={isSubmittingUpdate} className="rounded-xl bg-gradient-to-r from-primary to-indigo-600">
+              {isSubmittingUpdate && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isSubmittingUpdate ? "Đang cập nhật..." : "Cập nhật"}
             </Button>
           </DialogFooter>
@@ -639,55 +533,34 @@ const EventCategory = () => {
 
       {/* View Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent>
+        <DialogContent className="rounded-2xl">
           <DialogHeader>
             <DialogTitle>{selectedCategory?.eventCategoryName}</DialogTitle>
-            <DialogDescription>
-              Chi tiết danh mục sự kiện
-            </DialogDescription>
+            <DialogDescription>Chi tiết danh mục sự kiện</DialogDescription>
           </DialogHeader>
-
-          <div className="space-y-4">
-            <div>
-              <h4 className="font-medium mb-2">Thông tin:</h4>
-              <Card className="p-4">
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium">Tên danh mục:</span>
-                    <span className="text-sm">
-                      {selectedCategory?.eventCategoryName}
-                    </span>
-                  </div>
-                </div>
-              </Card>
+          <div className="py-4">
+            <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+              <p className="text-sm text-muted-foreground mb-1">Tên danh mục</p>
+              <p className="font-medium">{selectedCategory?.eventCategoryName}</p>
             </div>
           </div>
-
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsViewDialogOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)} className="rounded-xl">
               Đóng
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* Delete Confirm Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Bạn có chắc muốn xóa?</DialogTitle>
-            <DialogDescription>
-              Hành động này không thể hoàn tác. Danh mục sẽ bị xóa vĩnh viễn.
-            </DialogDescription>
-          </DialogHeader>
 
+      {/* Delete Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Xác nhận xóa</DialogTitle>
+            <DialogDescription>Hành động này không thể hoàn tác. Danh mục sẽ bị xóa vĩnh viễn.</DialogDescription>
+          </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsDeleteDialogOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} className="rounded-xl">
               Hủy
             </Button>
             <Button
@@ -697,8 +570,16 @@ const EventCategory = () => {
                 setIsDeleteDialogOpen(false);
               }}
               disabled={isDeleting}
+              className="rounded-xl"
             >
-              {isDeleting ? 'Đang xóa...' : 'Xóa'}
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Đang xóa...
+                </>
+              ) : (
+                "Xóa"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
