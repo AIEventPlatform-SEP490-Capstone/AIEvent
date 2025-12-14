@@ -164,27 +164,99 @@ const FavoriteEventsPage = () => {
   
   const locationFilters = getLocationFilters();
 
-  // Create filter object with useMemo to prevent unnecessary re-renders
-  const filters = useMemo(() => ({
-    searchQuery,
-    selectedCategory,
-    priceFilter,
-    locationFilter,
-    dateFilter
-  }), [searchQuery, selectedCategory, priceFilter, locationFilter, dateFilter]);
+  // Filter favorite events based on all filters
+  const filteredFavoriteEvents = useMemo(() => {
+    return safeFavoriteEvents.filter((event) => {
+      // Search query filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const title = (event.title || event.eventName || "").toLowerCase();
+        const description = (event.description || "").toLowerCase();
+        const location = (event.locationName || event.location || "").toLowerCase();
+        if (!title.includes(query) && !description.includes(query) && !location.includes(query)) {
+          return false;
+        }
+      }
 
-  // Calculate pagination for favorite events
-  const totalResults = safeFavoriteEvents.length;
+      // Category filter - so sánh theo id hoặc name
+      if (selectedCategory !== "all") {
+        const eventCategoryId = event.eventCategoryId || event.categoryId;
+        const eventCategoryName = event.eventCategoryName || event.category || "";
+        
+        // Tìm category được chọn để lấy name
+        const selectedCat = displayCategories.find(cat => String(cat.id) === String(selectedCategory));
+        const selectedCategoryName = selectedCat?.name || "";
+        
+        // So sánh theo id hoặc name
+        const matchById = eventCategoryId && String(eventCategoryId) === String(selectedCategory);
+        const matchByName = eventCategoryName && eventCategoryName.toLowerCase() === selectedCategoryName.toLowerCase();
+        
+        if (!matchById && !matchByName) {
+          return false;
+        }
+      }
+
+      // Price filter
+      if (priceFilter !== "all") {
+        const price = event.ticketPrice || event.minPrice || 0;
+        if (priceFilter === "free" && price > 0) return false;
+        if (priceFilter === "paid" && price === 0) return false;
+      }
+
+      // Location filter
+      if (locationFilter !== "all") {
+        const eventLocation = (event.locationName || event.location || "").toLowerCase();
+        if (!eventLocation.includes(locationFilter.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // Date filter
+      if (dateFilter !== "all") {
+        const eventDate = new Date(event.startTime || event.date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const endOfWeek = new Date(today);
+        endOfWeek.setDate(endOfWeek.getDate() + (7 - endOfWeek.getDay()));
+        
+        const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+        switch (dateFilter) {
+          case "today":
+            if (eventDate.toDateString() !== today.toDateString()) return false;
+            break;
+          case "tomorrow":
+            if (eventDate.toDateString() !== tomorrow.toDateString()) return false;
+            break;
+          case "this_week":
+            if (eventDate < today || eventDate > endOfWeek) return false;
+            break;
+          case "this_month":
+            if (eventDate < today || eventDate > endOfMonth) return false;
+            break;
+        }
+      }
+
+      return true;
+    });
+  }, [safeFavoriteEvents, searchQuery, selectedCategory, priceFilter, locationFilter, dateFilter]);
+
+  // Calculate pagination for filtered favorite events
+  const totalResults = filteredFavoriteEvents.length;
   const totalPageCount = Math.ceil(totalResults / pageSize);
   
   useEffect(() => {
     setTotalPages(Math.max(1, totalPageCount));
     // Reset to page 1 when filters change
     setCurrentPage(1);
-  }, [filters, safeFavoriteEvents.length]);
+  }, [searchQuery, selectedCategory, priceFilter, locationFilter, dateFilter, totalPageCount]);
 
   // Get paginated events for current page
-  const paginatedFavoriteEvents = safeFavoriteEvents.slice(
+  const paginatedFavoriteEvents = filteredFavoriteEvents.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );

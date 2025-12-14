@@ -373,32 +373,37 @@ export function EventDiscovery({
     );
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-full border-4 border-violet-100 border-t-violet-600 animate-spin mx-auto mb-6" />
-          <p className="text-gray-500 font-medium text-lg">Đang tải sự kiện...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-center max-w-md">
-          <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-6">
-            <X className="w-10 h-10 text-red-500" />
+  // Loading skeleton cho phần events grid
+  const EventsLoadingSkeleton = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {[...Array(6)].map((_, i) => (
+        <div key={i} className="bg-white dark:bg-gray-800 rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-700 animate-pulse">
+          <div className="h-48 bg-gray-200 dark:bg-gray-700" />
+          <div className="p-5 space-y-3">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4" />
+            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
           </div>
-          <p className="text-red-600 mb-6 font-medium text-lg">{error}</p>
-          <Button onClick={onRefresh} className="bg-violet-600 hover:bg-violet-700 text-white rounded-xl px-8 py-3">
-            Thử lại
-          </Button>
         </div>
+      ))}
+    </div>
+  );
+
+  // Error component inline
+  const ErrorDisplay = () => (
+    <div className="flex justify-center items-center py-16">
+      <div className="text-center max-w-md">
+        <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-6">
+          <X className="w-10 h-10 text-red-500" />
+        </div>
+        <p className="text-red-600 mb-6 font-medium text-lg">{error}</p>
+        <Button onClick={onRefresh} className="bg-violet-600 hover:bg-violet-700 text-white rounded-xl px-8 py-3">
+          Thử lại
+        </Button>
       </div>
-    );
-  }
+    </div>
+  );
 
   const paginatedEvents = allEvents;
 
@@ -793,7 +798,11 @@ export function EventDiscovery({
         </div>
 
         {/* Events Grid */}
-        {paginatedEvents.length > 0 ? (
+        {loading ? (
+          <EventsLoadingSkeleton />
+        ) : error ? (
+          <ErrorDisplay />
+        ) : paginatedEvents.length > 0 ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {paginatedEvents.map((event) => (
