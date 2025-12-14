@@ -2075,10 +2075,11 @@ const CreateEventPage = () => {
                 // Stage 1: Đóng bán vé (Ticket sale end)
                 if (watch('saleEndTime') && now < new Date(watch('saleEndTime'))) return 0; // Sale is ongoing
                 // Stage 2: Sự kiện bắt đầu (Event start)
-                if (now < new Date(watch('startTime'))) return 1;
+                if (watch('startTime') && now < new Date(watch('startTime'))) return 1;
                 // Stage 3: Sự kiện kết thúc (Event end)
-                if (now < new Date(watch('endTime'))) return 2;
-                return 2; // Event has ended
+                if (watch('endTime') && now < new Date(watch('endTime'))) return 2;
+                // Stage 4: Sự kiện đã kết thúc
+                return 3; // Event has ended
               })()}
               isEditable={true}
               minDateTime={minDateTime}

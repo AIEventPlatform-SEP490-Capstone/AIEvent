@@ -27,7 +27,9 @@ const HomePage = () => {
     currentPage,
     totalPages,
     goToPage,
-    loadEvents
+    loadEvents,
+    filters,
+    updateFilters
   } = useHomepageEvents();
   
   const { profile, getUserProfile } = useUserProfile();
@@ -35,7 +37,6 @@ const HomePage = () => {
   const [aiRecommendedEvents, setAiRecommendedEvents] = useState([]);
   const [loadingAIEvents, setLoadingAIEvents] = useState(false);
   const [showAIEvents, setShowAIEvents] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState("all");
 
   // Load user profile when authenticated
   useEffect(() => {
@@ -44,10 +45,9 @@ const HomePage = () => {
     }
   }, [isAuthenticated, profile, getUserProfile]);
 
-  // Handle category filtering
-  const handleCategoryChange = (category = selectedCategory) => {
-    setSelectedCategory(category);
-    loadEvents(1, category); // Reset to first page when filtering
+  // Handle filters change from EventDiscovery
+  const handleFiltersChange = (newFilters) => {
+    updateFilters(newFilters);
   };
 
   // Handle view all AI recommendations
@@ -151,7 +151,8 @@ const HomePage = () => {
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={goToPage}
-          onCategoryChange={handleCategoryChange}
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
         />
       </div>
       <Footer />

@@ -35,9 +35,13 @@ export default function SearchPage() {
   const { isAuthenticated } = useSelector((state) => state.auth);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [priceFilter, setPriceFilter] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
+  const [ticketSaleStatus, setTicketSaleStatus] = useState("all");
+  const [eventProgressStatus, setEventProgressStatus] = useState("all");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [sortBy, setSortBy] = useState("NearestTime");
   const [showAllLocations, setShowAllLocations] = useState(false);
   const [showFilters, setShowFilters] = useState(true);
   const [events, setEvents] = useState([]);
@@ -83,10 +87,14 @@ export default function SearchPage() {
   const filters = useMemo(() => ({
     searchQuery,
     selectedCategory,
-    priceFilter,
     locationFilter,
-    dateFilter
-  }), [searchQuery, selectedCategory, priceFilter, locationFilter, dateFilter]);
+    dateFilter,
+    ticketSaleStatus,
+    eventProgressStatus,
+    minPrice,
+    maxPrice,
+    sortBy
+  }), [searchQuery, selectedCategory, locationFilter, dateFilter, ticketSaleStatus, eventProgressStatus, minPrice, maxPrice, sortBy]);
 
   // Fetch events when filters change or page changes
   useEffect(() => {
@@ -109,11 +117,6 @@ export default function SearchPage() {
           params.eventCategoryId = filters.selectedCategory;
         }
         
-        // Add price filter if not "all"
-        if (filters.priceFilter !== "all") {
-          params.ticketType = filters.priceFilter === "free" ? "free" : "paid"; // "free" = Free, "paid" = Paid
-        }
-        
         // Add district filter if not "all"
         if (filters.locationFilter !== "all") {
           params.district = filters.locationFilter;
@@ -129,6 +132,29 @@ export default function SearchPage() {
             "this_month": "ThisMonth"
           };
           params.timeLine = timeLineMap[filters.dateFilter] || filters.dateFilter;
+        }
+        
+        // Add ticket sale status filter if not "all"
+        if (filters.ticketSaleStatus !== "all") {
+          params.ticketSaleStatus = filters.ticketSaleStatus;
+        }
+        
+        // Add event progress status filter if not "all"
+        if (filters.eventProgressStatus !== "all") {
+          params.eventProgressStatus = filters.eventProgressStatus;
+        }
+        
+        // Add price range filters
+        if (filters.minPrice !== "" && !isNaN(parseFloat(filters.minPrice))) {
+          params.minPrice = parseFloat(filters.minPrice);
+        }
+        if (filters.maxPrice !== "" && !isNaN(parseFloat(filters.maxPrice))) {
+          params.maxPrice = parseFloat(filters.maxPrice);
+        }
+        
+        // Add sort by
+        if (filters.sortBy) {
+          params.sortBy = filters.sortBy;
         }
         
         const response = await getEvents(params);
@@ -238,6 +264,25 @@ export default function SearchPage() {
     }).format(price);
   };
 
+  // Format number with thousand separators (e.g., 100000 -> 100.000)
+  const formatNumberInput = (value) => {
+    if (!value) return '';
+    const numericValue = value.toString().replace(/\D/g, '');
+    return new Intl.NumberFormat('vi-VN').format(numericValue);
+  };
+
+  // Parse formatted number back to raw number (e.g., 100.000 -> 100000)
+  const parseFormattedNumber = (formattedValue) => {
+    if (!formattedValue) return '';
+    return formattedValue.replace(/\./g, '');
+  };
+
+  // Handle price input change
+  const handlePriceInputChange = (setter, value) => {
+    const rawValue = parseFormattedNumber(value);
+    setter(rawValue);
+  };
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("vi-VN");
   };
@@ -249,10 +294,25 @@ export default function SearchPage() {
     });
   };
 
-  const priceFilters = [
+  const ticketSaleStatusFilters = [
     { value: "all", label: "Tất cả" },
-    { value: "free", label: "Miễn phí" },
-    { value: "paid", label: "Có phí" },
+    { value: "NotStarted", label: "Chưa mở bán" },
+    { value: "OnSale", label: "Đang bán" },
+    { value: "SaleEnded", label: "Hết vé" },
+  ];
+
+  const eventProgressStatusFilters = [
+    { value: "all", label: "Tất cả" },
+    { value: "Upcoming", label: "Sắp diễn ra" },
+    { value: "Ongoing", label: "Đang diễn ra" },
+    { value: "Ended", label: "Đã kết thúc" },
+  ];
+
+  const sortByOptions = [
+    { value: "NearestTime", label: "Gần nhất" },
+    { value: "LatestTime", label: "Mới nhất" },
+    { value: "LowestPrice", label: "Giá thấp nhất" },
+    { value: "HighestPrice", label: "Giá cao nhất" },
   ];
 
   const allLocationFilters = [
@@ -465,7 +525,7 @@ export default function SearchPage() {
               {/* Date Filter */}
               <div className="space-y-2">
                 <span className="text-sm text-muted-foreground">Thời gian:</span>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   {dateFilters.map((filter) => (
                     <Button
                       key={filter.value}
@@ -474,6 +534,79 @@ export default function SearchPage() {
                       onClick={() => setDateFilter(filter.value)}
                     >
                       {filter.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Ticket Sale Status Filter */}
+              <div className="space-y-2">
+                <span className="text-sm text-muted-foreground">Trạng thái vé:</span>
+                <div className="flex gap-2 flex-wrap">
+                  {ticketSaleStatusFilters.map((filter) => (
+                    <Button
+                      key={filter.value}
+                      variant={ticketSaleStatus === filter.value ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setTicketSaleStatus(filter.value)}
+                    >
+                      {filter.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Event Progress Status Filter */}
+              <div className="space-y-2">
+                <span className="text-sm text-muted-foreground">Trạng thái sự kiện:</span>
+                <div className="flex gap-2 flex-wrap">
+                  {eventProgressStatusFilters.map((filter) => (
+                    <Button
+                      key={filter.value}
+                      variant={eventProgressStatus === filter.value ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setEventProgressStatus(filter.value)}
+                    >
+                      {filter.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Price Range Filter */}
+              <div className="space-y-2">
+                <span className="text-sm text-muted-foreground">Khoảng giá (VNĐ):</span>
+                <div className="flex gap-2 items-center flex-wrap">
+                  <Input
+                    type="text"
+                    placeholder="Giá tối thiểu"
+                    className="w-36 h-9"
+                    value={formatNumberInput(minPrice)}
+                    onChange={(e) => handlePriceInputChange(setMinPrice, e.target.value)}
+                  />
+                  <span className="text-muted-foreground">-</span>
+                  <Input
+                    type="text"
+                    placeholder="Giá tối đa"
+                    className="w-36 h-9"
+                    value={formatNumberInput(maxPrice)}
+                    onChange={(e) => handlePriceInputChange(setMaxPrice, e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Sort By */}
+              <div className="space-y-2">
+                <span className="text-sm text-muted-foreground">Sắp xếp theo:</span>
+                <div className="flex gap-2 flex-wrap">
+                  {sortByOptions.map((option) => (
+                    <Button
+                      key={option.value}
+                      variant={sortBy === option.value ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSortBy(option.value)}
+                    >
+                      {option.label}
                     </Button>
                   ))}
                 </div>

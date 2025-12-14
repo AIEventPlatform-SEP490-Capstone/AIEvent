@@ -84,6 +84,11 @@ export const eventAPI = {
     if (params.eventCategoryId) queryParams.append('eventCategoryId', params.eventCategoryId);
     if (params.district) queryParams.append('district', params.district);
     if (params.timeLine) queryParams.append('timeLine', params.timeLine);
+    if (params.ticketSaleStatus) queryParams.append('ticketSaleStatus', params.ticketSaleStatus);
+    if (params.eventProgressStatus) queryParams.append('eventProgressStatus', params.eventProgressStatus);
+    if (params.minPrice !== undefined && params.minPrice !== null) queryParams.append('minPrice', params.minPrice);
+    if (params.maxPrice !== undefined && params.maxPrice !== null) queryParams.append('maxPrice', params.maxPrice);
+    if (params.sortBy) queryParams.append('sortBy', params.sortBy);
     if (params.pageNumber) queryParams.append('pageNumber', params.pageNumber);
     if (params.pageSize) queryParams.append('pageSize', params.pageSize);
     

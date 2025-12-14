@@ -240,11 +240,11 @@ namespace AIEvent.Application.Services.Implements
             if (paymentInfor == null || paymentInfor.IsDeleted)
                 return ErrorResponse.FailureResult("Payment Infor not found or inactive", ErrorCodes.NotFound);
 
-            return await _transactionHelper.ExecuteInTransactionAsync(async () =>
-            {
-                await _unitOfWork.PaymentInformationRepository.DeleteAsync(paymentInfor);
-                return Result.Success();
-            });
+            _unitOfWork.DisableSoftDelete();
+            await _unitOfWork.PaymentInformationRepository.DeleteAsync(paymentInfor);
+            await _unitOfWork.SaveChangesAsync();
+            _unitOfWork.EnableSoftDelete();
+            return Result.Success();
         }
 
         public async Task<Result<BasePaginated<PaymentInformationResponse>>> GetPaymendInformationsAsync(Guid userId, int pageNumber = 1, int pageSize = 5)
