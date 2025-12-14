@@ -85,14 +85,24 @@ namespace AIEvent.Application.Services.Implements
                 meta.TryGetValue("LocationName", out var location);
                 meta.TryGetValue("District", out var district);
                 meta.TryGetValue("Address", out var address);
-                meta.TryGetValue("StartTime", out var start);
-                meta.TryGetValue("EndTime", out var end);
+                meta.TryGetValue("StartTime", out var startRaw);
+                meta.TryGetValue("EndTime", out var endRaw);
                 meta.TryGetValue("Tickets", out var tickets);
+
+                string? startTime = null;
+                string? endTime = null;
+
+                if (startRaw is DateTime startDt)
+                    startTime = startDt.AddHours(7).ToString("dd/MM/yyyy HH:mm");
+
+                if (endRaw is DateTime endDt)
+                    endTime = endDt.AddHours(7).ToString("dd/MM/yyyy HH:mm");
+
                 var eventUrl = eventId != null ? $"https://ai-event-alpha.vercel.app/event/{eventId}" : "#";
                 return $@"
                     - {title ?? "Sự kiện"} ({category ?? "Không rõ danh mục"})
                       Địa điểm: {(location ?? address ?? "Không rõ")} - {district ?? ""}
-                      Thời gian: {start ?? ""} → {end ?? ""}
+                      Thời gian: {startTime ?? ""} → {endTime ?? ""}
                       Mô tả: {description ?? "Không có mô tả"}
                       Thẻ: {tags ?? "Không có"}
                       Vé: {tickets ?? "Không có thông tin vé"}
