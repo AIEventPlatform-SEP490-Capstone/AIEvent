@@ -37,7 +37,7 @@ export default function SearchPage() {
   const [maxPrice, setMaxPrice] = useState("");
   const [sortBy, setSortBy] = useState("NearestTime");
   const [showAllLocations, setShowAllLocations] = useState(false);
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
   const [events, setEvents] = useState([]);
   const [favoriteEvents, setFavoriteEvents] = useState(new Set());
   const [currentPage, setCurrentPage] = useState(1);
