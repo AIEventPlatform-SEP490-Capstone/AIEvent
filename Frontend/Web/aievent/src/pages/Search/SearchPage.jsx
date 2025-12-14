@@ -264,6 +264,25 @@ export default function SearchPage() {
     }).format(price);
   };
 
+  // Format number with thousand separators (e.g., 100000 -> 100.000)
+  const formatNumberInput = (value) => {
+    if (!value) return '';
+    const numericValue = value.toString().replace(/\D/g, '');
+    return new Intl.NumberFormat('vi-VN').format(numericValue);
+  };
+
+  // Parse formatted number back to raw number (e.g., 100.000 -> 100000)
+  const parseFormattedNumber = (formattedValue) => {
+    if (!formattedValue) return '';
+    return formattedValue.replace(/\./g, '');
+  };
+
+  // Handle price input change
+  const handlePriceInputChange = (setter, value) => {
+    const rawValue = parseFormattedNumber(value);
+    setter(rawValue);
+  };
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("vi-VN");
   };
@@ -559,21 +578,19 @@ export default function SearchPage() {
                 <span className="text-sm text-muted-foreground">Khoảng giá (VNĐ):</span>
                 <div className="flex gap-2 items-center flex-wrap">
                   <Input
-                    type="number"
+                    type="text"
                     placeholder="Giá tối thiểu"
                     className="w-36 h-9"
-                    value={minPrice}
-                    onChange={(e) => setMinPrice(e.target.value)}
-                    min="0"
+                    value={formatNumberInput(minPrice)}
+                    onChange={(e) => handlePriceInputChange(setMinPrice, e.target.value)}
                   />
                   <span className="text-muted-foreground">-</span>
                   <Input
-                    type="number"
+                    type="text"
                     placeholder="Giá tối đa"
                     className="w-36 h-9"
-                    value={maxPrice}
-                    onChange={(e) => setMaxPrice(e.target.value)}
-                    min="0"
+                    value={formatNumberInput(maxPrice)}
+                    onChange={(e) => handlePriceInputChange(setMaxPrice, e.target.value)}
                   />
                 </div>
               </div>

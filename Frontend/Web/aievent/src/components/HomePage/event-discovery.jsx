@@ -411,6 +411,25 @@ export function EventDiscovery({
     }).format(actualPrice);
   };
 
+  // Format number with thousand separators (e.g., 100000 -> 100.000)
+  const formatNumberInput = (value) => {
+    if (!value) return '';
+    const numericValue = value.toString().replace(/\D/g, '');
+    return new Intl.NumberFormat('vi-VN').format(numericValue);
+  };
+
+  // Parse formatted number back to raw number (e.g., 100.000 -> 100000)
+  const parseFormattedNumber = (formattedValue) => {
+    if (!formattedValue) return '';
+    return formattedValue.replace(/\./g, '');
+  };
+
+  // Handle price input change
+  const handlePriceInputChange = (setter, value) => {
+    const rawValue = parseFormattedNumber(value);
+    setter(rawValue);
+  };
+
   // Get featured events (first 10 events)
   const featuredEvents = allEvents.slice(0, Math.min(10, allEvents.length));
 
@@ -733,20 +752,18 @@ export function EventDiscovery({
                       <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Khoảng giá (VNĐ)</span>
                       <div className="flex flex-col gap-2 mt-1">
                         <input
-                          type="number"
+                          type="text"
                           placeholder="Từ"
                           className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none bg-white"
-                          value={minPrice}
-                          onChange={(e) => setMinPrice(e.target.value)}
-                          min="0"
+                          value={formatNumberInput(minPrice)}
+                          onChange={(e) => handlePriceInputChange(setMinPrice, e.target.value)}
                         />
                         <input
-                          type="number"
+                          type="text"
                           placeholder="Đến"
                           className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none bg-white"
-                          value={maxPrice}
-                          onChange={(e) => setMaxPrice(e.target.value)}
-                          min="0"
+                          value={formatNumberInput(maxPrice)}
+                          onChange={(e) => handlePriceInputChange(setMaxPrice, e.target.value)}
                         />
                       </div>
                     </div>
