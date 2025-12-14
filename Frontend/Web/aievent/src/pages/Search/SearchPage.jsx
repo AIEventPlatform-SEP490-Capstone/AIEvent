@@ -158,11 +158,6 @@ export default function SearchPage() {
         
         const response = await getEvents(params);
         
-        // Debug: log response structure
-        console.log("API Response:", response);
-        
-        // Handle different response structures
-        // Note: eventAPI.getEvents already returns response.data?.data || response.data
         let eventData = [];
         let total = 0;
         let pages = 1;
@@ -187,10 +182,7 @@ export default function SearchPage() {
           total = response.totalRecords || response.totalCount || eventData.length;
           pages = response.totalPages || Math.ceil(total / pageSize);
         }
-        
-        console.log("Parsed - Events:", eventData.length, "Total:", total, "Pages:", pages);
-        
-        // Only update state if component is still mounted
+
         if (isMounted) {
           setEvents(eventData);
           setTotalResults(total);
