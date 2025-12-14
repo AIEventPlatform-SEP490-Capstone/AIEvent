@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
 import {
-  Calendar,
   MapPin,
   Users,
   Heart,
@@ -72,13 +71,13 @@ export function EventCard({
   return (
     <div
       onClick={handleCardClick}
-      className="group relative bg-white dark:bg-gray-900 rounded-3xl overflow-hidden cursor-pointer transition-all duration-500 hover:-translate-y-2"
+      className="group relative h-full flex flex-col bg-white dark:bg-gray-900 rounded-3xl overflow-hidden cursor-pointer transition-all duration-500 hover:-translate-y-2"
       style={{
         boxShadow: "0 4px 24px -4px rgba(0,0,0,0.08)",
       }}
     >
       {/* Image Container */}
-      <div className="relative aspect-[16/10] overflow-hidden">
+      <div className="relative aspect-[16/10] overflow-hidden flex-shrink-0">
         <img
           src={event.image || (event.imgListEvent && event.imgListEvent[0]) || "/placeholder.svg"}
           alt={event.title}
@@ -150,7 +149,7 @@ export function EventCard({
       </div>
 
       {/* Content */}
-      <div className="p-5">
+      <div className="p-5 flex flex-col flex-grow">
         {/* Category */}
         <div className="mb-3">
           <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/10 px-3 py-1.5 rounded-full">
@@ -158,8 +157,8 @@ export function EventCard({
           </span>
         </div>
 
-        {/* Title */}
-        <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors leading-snug">
+        {/* Title - Fixed height with line-clamp */}
+        <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-3 line-clamp-2 min-h-[3.5rem] group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors leading-snug">
           {event.title}
         </h3>
 
@@ -181,7 +180,7 @@ export function EventCard({
         {/* Event Info */}
         <div className="space-y-2.5 mb-5">
           <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-            <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0">
               <Clock className="w-4 h-4 text-gray-500" />
             </div>
             <span>
@@ -193,12 +192,15 @@ export function EventCard({
             </span>
           </div>
           <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-            <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0">
               <MapPin className="w-4 h-4 text-gray-500" />
             </div>
             <span className="truncate">{event.locationName || event.location}</span>
           </div>
         </div>
+
+        {/* Spacer to push content below to bottom */}
+        <div className="flex-grow" />
 
         {/* Progress */}
         <div className="mb-5">
@@ -227,7 +229,7 @@ export function EventCard({
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3">
+        <div className="flex gap-3 mt-auto">
           <Button
             onClick={handleRegisterClick}
             disabled={isLoading || isSoldOut || isNotOnSale}
