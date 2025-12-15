@@ -312,16 +312,16 @@ const HomeScreen = () => {
 
   const renderLatestEventCard = ({ item, index }) => (
     <TouchableOpacity
-      style={[styles.latestEventCard, { marginLeft: index === 0 ? 0 : 15 }]}
+      style={[styles.latestEventCard, { marginLeft: index === 0 ? 0 : 16 }]}
       onPress={() => handleEventPress(item)}
-      activeOpacity={0.9}
+      activeOpacity={0.95}
     >
       <Image
         source={getEventImage(item)}
         style={styles.latestEventImage}
       />
       <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.7)']}
+        colors={['transparent', 'rgba(0,0,0,0.75)']}
         style={styles.latestEventGradient}
       >
         <View style={styles.latestEventContent}>
@@ -329,7 +329,7 @@ const HomeScreen = () => {
             {item.title}
           </CustomText>
           <View style={styles.latestEventInfo}>
-            <View style={[styles.latestEventInfoRow, { marginBottom: 8 }]}>
+            <View style={styles.latestEventInfoRow}>
               <Image source={Images.location} style={styles.latestEventIcon} />
               <CustomText variant="caption" color="white" style={styles.latestEventText} numberOfLines={1}>
                 {item.location}
@@ -417,11 +417,11 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* Modern Header with gradient */}
       <LinearGradient
-        colors={Colors.gradientHeaderTitle}
+        colors={['#1565C0', '#1976D2', '#2196F3']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={styles.header}
       >
         <View style={styles.headerContent}>
