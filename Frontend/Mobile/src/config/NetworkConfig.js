@@ -1,33 +1,53 @@
-export const NETWORK_CONFIG = {
-  // IP address của máy tính chạy backend
-  // Lấy IP bằng cách chạy: ipconfig (Windows) hoặc ifconfig (Mac/Linux)
-  // IP_ADDRESS: '192.168.1.253',
-  IP_ADDRESS: '10.38.1.40',
-
-  // Port của backend API
-  HTTP_PORT: '5059',
-  HTTPS_PORT: '7777',
-
-  USE_HTTPS: false,
-  REQUEST_TIMEOUT: 10000,
-  DEBUG_MODE: false,
+export const ENV = {
+  LOCAL: 'local',
+  PROD: 'prod',
 };
 
+export const CURRENT_ENV = ENV.LOCAL;
+// export const CURRENT_ENV = ENV.PROD;
+
+export const NETWORK_CONFIG = {
+  [ENV.LOCAL]: {
+    IP_ADDRESS: '192.168.1.253', // IP máy backend local
+    HTTP_PORT: '5059',
+    HTTPS_PORT: '7777',
+    USE_HTTPS: false,
+    REQUEST_TIMEOUT: 10000,
+    DEBUG_MODE: true,
+  },
+
+  [ENV.PROD]: {
+    HOST: 'https://aievent.duckdns.org', // domain prod
+    USE_HTTPS: true,
+    REQUEST_TIMEOUT: 10000,
+    DEBUG_MODE: false,
+  },
+};
+
+export const CURRENT_CONFIG = NETWORK_CONFIG[CURRENT_ENV];
+
 export const getBaseUrl = () => {
-  const protocol = NETWORK_CONFIG.USE_HTTPS ? 'https' : 'http';
-  const port = NETWORK_CONFIG.USE_HTTPS
-    ? NETWORK_CONFIG.HTTPS_PORT
-    : NETWORK_CONFIG.HTTP_PORT;
-  return `${protocol}://${NETWORK_CONFIG.IP_ADDRESS}:${port}/api`;
+  if (CURRENT_ENV === ENV.PROD) {
+    return `${CURRENT_CONFIG.HOST}/api`;
+  }
+
+  const protocol = CURRENT_CONFIG.USE_HTTPS ? 'https' : 'http';
+  const port = CURRENT_CONFIG.USE_HTTPS
+    ? CURRENT_CONFIG.HTTPS_PORT
+    : CURRENT_CONFIG.HTTP_PORT;
+
+  return `${protocol}://${CURRENT_CONFIG.IP_ADDRESS}:${port}/api`;
 };
 
 export const getSignalRBaseUrl = () => {
-  const protocol = NETWORK_CONFIG.USE_HTTPS ? 'https' : 'http';
-  const port = NETWORK_CONFIG.USE_HTTPS
-    ? NETWORK_CONFIG.HTTPS_PORT
-    : NETWORK_CONFIG.HTTP_PORT;
-  return `${protocol}://${NETWORK_CONFIG.IP_ADDRESS}:${port}`;
-};
+  if (CURRENT_ENV === ENV.PROD) {
+    return CURRENT_CONFIG.HOST;
+  }
 
-if (NETWORK_CONFIG.DEBUG_MODE) {
-}
+  const protocol = CURRENT_CONFIG.USE_HTTPS ? 'https' : 'http';
+  const port = CURRENT_CONFIG.USE_HTTPS
+    ? CURRENT_CONFIG.HTTPS_PORT
+    : CURRENT_CONFIG.HTTP_PORT;
+
+  return `${protocol}://${CURRENT_CONFIG.IP_ADDRESS}:${port}`;
+};
