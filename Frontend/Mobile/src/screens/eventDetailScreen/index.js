@@ -709,11 +709,13 @@ const EventDetailScreen = () => {
             variant="h1"
             color="primary"
             style={{
-              fontSize: 28,
+              fontSize: 26,
               fontWeight: '800',
               fontFamily: Fonts.bold,
-              marginBottom: 12,
-              lineHeight: 36,
+              marginBottom: 14,
+              lineHeight: 34,
+              color: '#1E293B',
+              letterSpacing: 0.3,
             }}>
             {event.title}
           </CustomText>
@@ -721,20 +723,18 @@ const EventDetailScreen = () => {
             <Image source={Images.star} style={styles.starIcon} />
             <CustomText
               variant="body"
-              color="primary"
-              style={{fontSize: Fonts.md, fontWeight: '700', marginRight: 6}}>
+              style={{fontSize: Fonts.md, fontWeight: '700', marginRight: 6, color: '#F59E0B'}}>
               {event.rating}
             </CustomText>
             <CustomText
               variant="caption"
-              color="secondary"
-              style={{fontSize: Fonts.sm}}>
+              style={{fontSize: Fonts.sm, color: '#64748B'}}>
               ({event.attendees} {Strings.EVENT_ATTENDEES_COUNT})
             </CustomText>
           </View>
         </View>
 
-        {/* Premium Price Badge */}
+        {/* Modern Price Badge */}
         <View style={styles.priceBadge}>
           <CustomText
             variant="button"
@@ -743,43 +743,35 @@ const EventDetailScreen = () => {
               fontSize: Fonts.lg,
               fontWeight: '800',
               fontFamily: Fonts.bold,
+              letterSpacing: 0.5,
             }}>
             {event.price}
           </CustomText>
         </View>
 
-        {/* Stats Section */}
+        {/* Modern Stats Section */}
         <View style={styles.statsContainer}>
           <View style={styles.statBox}>
-            <CustomText variant="h3" color="primary" style={styles.statValue}>
+            <CustomText variant="h3" style={styles.statValue}>
               {event.attendees || 0}
             </CustomText>
-            <CustomText
-              variant="body"
-              color="secondary"
-              style={styles.statLabel}>
+            <CustomText variant="body" style={styles.statLabel}>
               Người tham gia
             </CustomText>
           </View>
           <View style={styles.statBox}>
-            <CustomText variant="h3" color="primary" style={styles.statValue}>
+            <CustomText variant="h3" style={styles.statValue}>
               {totalAvailableTickets}
             </CustomText>
-            <CustomText
-              variant="body"
-              color="secondary"
-              style={styles.statLabel}>
+            <CustomText variant="body" style={styles.statLabel}>
               Vé còn lại
             </CustomText>
           </View>
           <View style={styles.statBox}>
-            <CustomText variant="h3" color="primary" style={styles.statValue}>
+            <CustomText variant="h3" style={styles.statValue}>
               {event.ticketDetails?.length || 0}
             </CustomText>
-            <CustomText
-              variant="body"
-              color="secondary"
-              style={styles.statLabel}>
+            <CustomText variant="body" style={styles.statLabel}>
               Loại vé
             </CustomText>
           </View>
@@ -830,9 +822,9 @@ const EventDetailScreen = () => {
           </View>
         )}
 
-        {/* Program Schedule Section */}
+        {/* Modern Program Schedule Section */}
         <View style={styles.programSection}>
-          <CustomText variant="h3" color="primary" style={styles.sectionTitle}>
+          <CustomText variant="h3" style={styles.sectionTitle}>
             Lịch trình sự kiện
           </CustomText>
 
@@ -846,16 +838,10 @@ const EventDetailScreen = () => {
               </CustomText>
             </View>
             <View style={styles.programContent}>
-              <CustomText
-                variant="body"
-                color="primary"
-                style={styles.programTitle}>
+              <CustomText variant="body" style={styles.programTitle}>
                 Khai mạc và giới thiệu
               </CustomText>
-              <CustomText
-                variant="caption"
-                color="secondary"
-                style={styles.programDescription}>
+              <CustomText variant="caption" style={styles.programDescription}>
                 Lễ khai mạc và giới thiệu chương trình sự kiện
               </CustomText>
             </View>
@@ -871,16 +857,10 @@ const EventDetailScreen = () => {
               </CustomText>
             </View>
             <View style={styles.programContent}>
-              <CustomText
-                variant="body"
-                color="primary"
-                style={styles.programTitle}>
+              <CustomText variant="body" style={styles.programTitle}>
                 Buổi thuyết trình chính
               </CustomText>
-              <CustomText
-                variant="caption"
-                color="secondary"
-                style={styles.programDescription}>
+              <CustomText variant="caption" style={styles.programDescription}>
                 Các bài thuyết trình quan trọng của sự kiện
               </CustomText>
             </View>
@@ -896,72 +876,54 @@ const EventDetailScreen = () => {
               </CustomText>
             </View>
             <View style={styles.programContent}>
-              <CustomText
-                variant="body"
-                color="primary"
-                style={styles.programTitle}>
+              <CustomText variant="body" style={styles.programTitle}>
                 Nghỉ trưa và giao lưu
               </CustomText>
-              <CustomText
-                variant="caption"
-                color="secondary"
-                style={styles.programDescription}>
+              <CustomText variant="caption" style={styles.programDescription}>
                 Thời gian nghỉ ngơi và giao lưu với các khách mời
               </CustomText>
             </View>
           </View>
         </View>
 
-        {/* Benefits Section */}
+        {/* Modern Benefits Section */}
         <View style={styles.benefitsSection}>
-          <CustomText variant="h3" color="primary" style={styles.benefitsTitle}>
+          <CustomText variant="h3" style={styles.benefitsTitle}>
             Lợi ích khi tham gia
           </CustomText>
 
           <View style={styles.benefitItem}>
             <Image source={Images.check} style={styles.benefitIcon} />
-            <CustomText
-              variant="body"
-              color="primary"
-              style={styles.benefitText}>
+            <CustomText variant="body" style={styles.benefitText}>
               Kết nối với chuyên gia trong ngành
             </CustomText>
           </View>
 
           <View style={styles.benefitItem}>
             <Image source={Images.check} style={styles.benefitIcon} />
-            <CustomText
-              variant="body"
-              color="primary"
-              style={styles.benefitText}>
+            <CustomText variant="body" style={styles.benefitText}>
               Học hỏi kiến thức mới và cập nhật
             </CustomText>
           </View>
 
           <View style={styles.benefitItem}>
             <Image source={Images.check} style={styles.benefitIcon} />
-            <CustomText
-              variant="body"
-              color="primary"
-              style={styles.benefitText}>
+            <CustomText variant="body" style={styles.benefitText}>
               Cơ hội nghề nghiệp và việc làm
             </CustomText>
           </View>
 
           <View style={styles.benefitItem}>
             <Image source={Images.check} style={styles.benefitIcon} />
-            <CustomText
-              variant="body"
-              color="primary"
-              style={styles.benefitText}>
+            <CustomText variant="body" style={styles.benefitText}>
               Nhận chứng chỉ tham dự sự kiện
             </CustomText>
           </View>
         </View>
 
-        {/* Premium Event Details */}
+        {/* Modern Event Details */}
         <View style={styles.detailsSection}>
-          <CustomText variant="h3" color="primary" style={styles.sectionTitle}>
+          <CustomText variant="h3" style={styles.sectionTitle}>
             Thông tin sự kiện
           </CustomText>
 
@@ -970,21 +932,21 @@ const EventDetailScreen = () => {
             <View style={styles.detailInfo}>
               <CustomText
                 variant="caption"
-                color="secondary"
                 style={{
                   fontSize: Fonts.xs,
-                  marginBottom: 4,
+                  marginBottom: 6,
                   fontFamily: Fonts.medium,
+                  color: '#64748B',
                 }}>
                 {Strings.EVENT_DATE}
               </CustomText>
               <CustomText
                 variant="body"
-                color="primary"
                 style={{
                   fontSize: Fonts.md,
                   fontWeight: '600',
                   fontFamily: Fonts.semiBold,
+                  color: '#1E293B',
                 }}>
                 {event.date}
               </CustomText>
@@ -996,21 +958,21 @@ const EventDetailScreen = () => {
             <View style={styles.detailInfo}>
               <CustomText
                 variant="caption"
-                color="secondary"
                 style={{
                   fontSize: Fonts.xs,
-                  marginBottom: 4,
+                  marginBottom: 6,
                   fontFamily: Fonts.medium,
+                  color: '#64748B',
                 }}>
                 {Strings.EVENT_TIME}
               </CustomText>
               <CustomText
                 variant="body"
-                color="primary"
                 style={{
                   fontSize: Fonts.md,
                   fontWeight: '600',
                   fontFamily: Fonts.semiBold,
+                  color: '#1E293B',
                 }}>
                 {formatTime(event.startTime)} - {formatTime(event.endTime)}
               </CustomText>
@@ -1022,29 +984,28 @@ const EventDetailScreen = () => {
             <View style={styles.detailInfo}>
               <CustomText
                 variant="caption"
-                color="secondary"
                 style={{
                   fontSize: Fonts.xs,
-                  marginBottom: 4,
+                  marginBottom: 6,
                   fontFamily: Fonts.medium,
+                  color: '#64748B',
                 }}>
                 {Strings.EVENT_LOCATION}
               </CustomText>
               <CustomText
                 variant="body"
-                color="primary"
                 style={{
                   fontSize: Fonts.md,
                   fontWeight: '600',
                   fontFamily: Fonts.semiBold,
+                  color: '#1E293B',
                 }}>
                 {event.location}
               </CustomText>
               {event.address ? (
                 <CustomText
                   variant="caption"
-                  color="secondary"
-                  style={{fontSize: Fonts.sm, marginTop: 2}}>
+                  style={{fontSize: Fonts.sm, marginTop: 4, color: '#64748B'}}>
                   {event.address}
                 </CustomText>
               ) : null}
@@ -1057,21 +1018,21 @@ const EventDetailScreen = () => {
               <View style={styles.detailInfo}>
                 <CustomText
                   variant="caption"
-                  color="secondary"
                   style={{
                     fontSize: Fonts.xs,
-                    marginBottom: 4,
+                    marginBottom: 6,
                     fontFamily: Fonts.medium,
+                    color: '#64748B',
                   }}>
                   {Strings.EVENT_ORGANIZER}
                 </CustomText>
                 <CustomText
                   variant="body"
-                  color="primary"
                   style={{
                     fontSize: Fonts.md,
                     fontWeight: '600',
                     fontFamily: Fonts.semiBold,
+                    color: '#1E293B',
                   }}>
                   {event.organizer}
                 </CustomText>
@@ -1083,27 +1044,27 @@ const EventDetailScreen = () => {
             <View
               style={[
                 styles.detailRow,
-                {borderBottomWidth: 0, marginBottom: 0},
+                {borderBottomWidth: 0, marginBottom: 0, paddingBottom: 0},
               ]}>
               <Image source={Images.calendar} style={styles.detailIcon} />
               <View style={styles.detailInfo}>
                 <CustomText
                   variant="caption"
-                  color="secondary"
                   style={{
                     fontSize: Fonts.xs,
-                    marginBottom: 4,
+                    marginBottom: 6,
                     fontFamily: Fonts.medium,
+                    color: '#64748B',
                   }}>
                   {Strings.EVENT_CATEGORY}
                 </CustomText>
                 <CustomText
                   variant="body"
-                  color="primary"
                   style={{
                     fontSize: Fonts.md,
                     fontWeight: '600',
                     fontFamily: Fonts.semiBold,
+                    color: '#1E293B',
                   }}>
                   {event.category}
                 </CustomText>
@@ -1122,13 +1083,10 @@ const EventDetailScreen = () => {
           />
         )}
 
-        {/* Ticket Information Section */}
+        {/* Modern Ticket Information Section */}
         {event.ticketDetails && event.ticketDetails.length > 0 && (
           <View style={styles.detailsSection}>
-            <CustomText
-              variant="h3"
-              color="primary"
-              style={styles.sectionTitle}>
+            <CustomText variant="h3" style={styles.sectionTitle}>
               Loại vé có sẵn
             </CustomText>
             {event.ticketDetails.map((ticket, index) => {
@@ -1144,41 +1102,25 @@ const EventDetailScreen = () => {
                     !isAvailable && styles.ticketRowUnavailable,
                   ]}>
                   <View style={styles.ticketInfo}>
-                    <CustomText
-                      variant="body"
-                      color="primary"
-                      style={styles.ticketName}>
+                    <CustomText variant="body" style={styles.ticketName}>
                       {ticket.ticketName}
                     </CustomText>
                     {ticket.ticketDescription ? (
-                      <CustomText
-                        variant="caption"
-                        color="secondary"
-                        style={styles.ticketDescription}>
+                      <CustomText variant="caption" style={styles.ticketDescription}>
                         {ticket.ticketDescription}
                       </CustomText>
                     ) : null}
                     <View style={styles.ticketStats}>
-                      <CustomText
-                        variant="caption"
-                        color="secondary"
-                        style={styles.ticketStat}>
-                        Đã bán: {ticket.soldQuantity || 0}/
-                        {ticket.ticketQuantity}
+                      <CustomText variant="caption" style={styles.ticketStat}>
+                        Đã bán: {ticket.soldQuantity || 0}/{ticket.ticketQuantity}
                       </CustomText>
-                      <CustomText
-                        variant="caption"
-                        color="secondary"
-                        style={styles.ticketStat}>
+                      <CustomText variant="caption" style={styles.ticketStat}>
                         Còn lại: {availableTickets} vé
                       </CustomText>
                     </View>
                   </View>
                   <View style={styles.ticketPriceContainer}>
-                    <CustomText
-                      variant="body"
-                      color="primary"
-                      style={styles.ticketPrice}>
+                    <CustomText variant="body" style={styles.ticketPrice}>
                       {ticket.ticketPrice === 0 || ticket.ticketPrice === undefined
                         ? '0đ'
                         : `${ticket.ticketPrice.toLocaleString('vi-VN')}đ`}
@@ -1190,9 +1132,9 @@ const EventDetailScreen = () => {
           </View>
         )}
 
-        {/* Premium Description */}
+        {/* Modern Description */}
         <View style={styles.descriptionSection}>
-          <CustomText variant="h3" color="primary" style={styles.sectionTitle}>
+          <CustomText variant="h3" style={styles.sectionTitle}>
             {Strings.EVENT_DESCRIPTION}
           </CustomText>
           {event.detailedDescription ? (
@@ -1304,9 +1246,9 @@ const EventDetailScreen = () => {
           )}
         </View>
 
-        {/* Related Events Section */}
+        {/* Modern Related Events Section */}
         <View style={styles.relatedEventsSection}>
-          <CustomText variant="h3" color="primary" style={styles.sectionTitle}>
+          <CustomText variant="h3" style={styles.sectionTitle}>
             Sự kiện liên quan
           </CustomText>
 
@@ -1315,21 +1257,14 @@ const EventDetailScreen = () => {
             <View style={styles.relatedEventInfo}>
               <CustomText
                 variant="body"
-                color="primary"
                 style={styles.relatedEventTitle}
                 numberOfLines={1}>
                 Workshop Công nghệ mới 2023
               </CustomText>
-              <CustomText
-                variant="caption"
-                color="secondary"
-                style={styles.relatedEventDate}>
+              <CustomText variant="caption" style={styles.relatedEventDate}>
                 15 Tháng 12, 2023
               </CustomText>
-              <CustomText
-                variant="caption"
-                color="primary"
-                style={styles.relatedEventPrice}>
+              <CustomText variant="caption" style={styles.relatedEventPrice}>
                 250.000đ
               </CustomText>
             </View>
@@ -1340,21 +1275,14 @@ const EventDetailScreen = () => {
             <View style={styles.relatedEventInfo}>
               <CustomText
                 variant="body"
-                color="primary"
                 style={styles.relatedEventTitle}
                 numberOfLines={1}>
                 Hội thảo AI và Tương lai
               </CustomText>
-              <CustomText
-                variant="caption"
-                color="secondary"
-                style={styles.relatedEventDate}>
+              <CustomText variant="caption" style={styles.relatedEventDate}>
                 20 Tháng 12, 2023
               </CustomText>
-              <CustomText
-                variant="caption"
-                color="primary"
-                style={styles.relatedEventPrice}>
+              <CustomText variant="caption" style={styles.relatedEventPrice}>
                 Miễn phí
               </CustomText>
             </View>

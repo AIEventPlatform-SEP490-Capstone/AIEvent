@@ -28,7 +28,7 @@ export const useHomepageEvents = (initialPage = 1, pageSize = 6) => {
     maxPrice: '',
     eventProgressStatus: 'all',
     ticketSaleStatus: 'all',
-    sortBy: 'NearestTime'
+    sortBy: 'LatestTime'
   });
   
   const { getEvents } = useEvents();
