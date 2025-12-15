@@ -654,11 +654,11 @@ export function EventDiscovery({
 
         {/* Filter Panel */}
         {showAdvancedFilters && (
-          <div className="mb-8 p-6 bg-white dark:bg-gray-800 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-xl">
+          <div className="mb-8 p-6 bg-white rounded-3xl border border-gray-200 shadow-xl">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
               {/* Search */}
               <div>
-                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                   Tìm kiếm
                 </label>
                 <div className="relative">
@@ -666,7 +666,7 @@ export function EventDiscovery({
                   <input
                     type="text"
                     placeholder="Tên sự kiện..."
-                    className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-500/20 outline-none bg-gray-50 dark:bg-gray-700 dark:text-white transition-all"
+                    className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none bg-gray-50 transition-all placeholder:text-gray-400"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -675,13 +675,13 @@ export function EventDiscovery({
 
               {/* Sort */}
               <div>
-                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                   Sắp xếp
                 </label>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-500/20 outline-none bg-gray-50 dark:bg-gray-700 dark:text-white appearance-none cursor-pointer transition-all"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none bg-gray-50 appearance-none cursor-pointer transition-all"
                 >
                   {sortByOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -693,13 +693,13 @@ export function EventDiscovery({
 
               {/* Event Status */}
               <div>
-                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                   Trạng thái
                 </label>
                 <select
                   value={eventProgressStatus}
                   onChange={(e) => setEventProgressStatus(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-500/20 outline-none bg-gray-50 dark:bg-gray-700 dark:text-white appearance-none cursor-pointer transition-all"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none bg-gray-50 appearance-none cursor-pointer transition-all"
                 >
                   {eventProgressStatusOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -711,13 +711,13 @@ export function EventDiscovery({
 
               {/* Ticket Status */}
               <div>
-                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                   Trạng thái vé
                 </label>
                 <select
                   value={ticketSaleStatus}
                   onChange={(e) => setTicketSaleStatus(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-500/20 outline-none bg-gray-50 dark:bg-gray-700 dark:text-white appearance-none cursor-pointer transition-all"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none bg-gray-50 appearance-none cursor-pointer transition-all"
                 >
                   {ticketSaleStatusOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -729,14 +729,14 @@ export function EventDiscovery({
 
               {/* Price Range */}
               <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                   Khoảng giá (VNĐ)
                 </label>
                 <div className="flex gap-3 items-center">
                   <input
                     type="text"
                     placeholder="Từ"
-                    className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-500/20 outline-none bg-gray-50 dark:bg-gray-700 dark:text-white transition-all"
+                    className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none bg-gray-50 transition-all placeholder:text-gray-400"
                     value={formatNumberInput(minPrice)}
                     onChange={(e) => handlePriceInputChange(setMinPrice, e.target.value)}
                   />
@@ -744,7 +744,7 @@ export function EventDiscovery({
                   <input
                     type="text"
                     placeholder="Đến"
-                    className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-500/20 outline-none bg-gray-50 dark:bg-gray-700 dark:text-white transition-all"
+                    className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none bg-gray-50 transition-all placeholder:text-gray-400"
                     value={formatNumberInput(maxPrice)}
                     onChange={(e) => handlePriceInputChange(setMaxPrice, e.target.value)}
                   />
