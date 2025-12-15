@@ -1080,66 +1080,72 @@ const ManagerEventsPage = () => {
                   />
                 </div>
                 
-                <div className="h-8 w-px bg-slate-200 dark:bg-slate-700" />
-                
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                >
-                  <Filter className="w-4 h-4" />
-                  Bộ lọc
-                  {hasActiveFilters && (
-                    <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-indigo-600 rounded-full">
-                      !
-                    </span>
-                  )}
-                  {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </button>
-                
-                {hasActiveFilters && (
-                  <button
-                    onClick={handleClearFilters}
-                    className="text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium flex items-center gap-1"
-                  >
-                    <X className="w-3 h-3" />
-                    Xóa tất cả
-                  </button>
+                {activeTab !== 'flagged' && (
+                  <>
+                    <div className="h-8 w-px bg-slate-200 dark:bg-slate-700" />
+                    
+                    <button
+                      onClick={() => setShowFilters(!showFilters)}
+                      className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                    >
+                      <Filter className="w-4 h-4" />
+                      Bộ lọc
+                      {hasActiveFilters && (
+                        <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-indigo-600 rounded-full">
+                          !
+                        </span>
+                      )}
+                      {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
+                    
+                    {hasActiveFilters && (
+                      <button
+                        onClick={handleClearFilters}
+                        className="text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium flex items-center gap-1"
+                      >
+                        <X className="w-3 h-3" />
+                        Xóa tất cả
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
               
-              <div className="flex items-center gap-2">
-                {/* View Mode Toggle */}
-                <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+              {activeTab !== 'flagged' && (
+                <div className="flex items-center gap-2">
+                  {/* View Mode Toggle */}
+                  <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+                    <button
+                      onClick={() => setViewMode('list')}
+                      className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm' : 'hover:bg-white/50 dark:hover:bg-slate-700/50'}`}
+                      title="Chế độ danh sách"
+                    >
+                      <List className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode('compact')}
+                      className={`p-1.5 rounded-md transition-colors ${viewMode === 'compact' ? 'bg-white dark:bg-slate-700 shadow-sm' : 'hover:bg-white/50 dark:hover:bg-slate-700/50'}`}
+                      title="Chế độ thu gọn"
+                    >
+                      <LayoutGrid className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                    </button>
+                  </div>
+                  
+                  {/* Refresh Button */}
                   <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm' : 'hover:bg-white/50 dark:hover:bg-slate-700/50'}`}
-                    title="Chế độ danh sách"
+                    onClick={handleRefresh}
+                    disabled={isRefreshing}
+                    className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+                    title="Làm mới"
                   >
-                    <List className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('compact')}
-                    className={`p-1.5 rounded-md transition-colors ${viewMode === 'compact' ? 'bg-white dark:bg-slate-700 shadow-sm' : 'hover:bg-white/50 dark:hover:bg-slate-700/50'}`}
-                    title="Chế độ thu gọn"
-                  >
-                    <LayoutGrid className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                    <RefreshCw className={`w-4 h-4 text-slate-600 dark:text-slate-400 ${isRefreshing ? 'animate-spin' : ''}`} />
                   </button>
                 </div>
-                
-                {/* Refresh Button */}
-                <button
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
-                  title="Làm mới"
-                >
-                  <RefreshCw className={`w-4 h-4 text-slate-600 dark:text-slate-400 ${isRefreshing ? 'animate-spin' : ''}`} />
-                </button>
-              </div>
+              )}
             </div>
             
-            {/* Collapsible Filter Content */}
-            <div className={`transition-all duration-300 ease-in-out ${showFilters ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+            {/* Collapsible Filter Content - Hidden when on flagged tab */}
+            <div className={`transition-all duration-300 ease-in-out ${showFilters && activeTab !== 'flagged' ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
               <div className="p-6 space-y-4">
                 {/* Quick Filter Chips */}
                 <QuickFilterChips
