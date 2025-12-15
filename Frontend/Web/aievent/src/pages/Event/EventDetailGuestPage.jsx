@@ -27,7 +27,8 @@ import {
   X,
   Link2,
   Flag,
-  Target  // Add Target icon
+  Target,
+  Layers  // Icon for related events
 } from "lucide-react";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
@@ -1165,7 +1166,7 @@ const EventDetailGuestPage = ({ previewData }) => {
               )}
 
             {/* Related Events - Enhanced */}
-            <SidebarCard title="Sự kiện cùng danh mục" icon={<Sparkles className="w-4 h-4" />}>
+            <SidebarCard title="Sự kiện cùng danh mục" icon={<Layers className="w-4 h-4" />}>
               <div className="space-y-3">
                 {relatedEvents.length > 0 ? (
                   relatedEvents.map((relatedEvent) => (
@@ -1224,7 +1225,7 @@ const EventDetailGuestPage = ({ previewData }) => {
                 ) : (
                   <div className="text-center py-6">
                     <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                      <Sparkles className="w-6 h-6 text-gray-400" />
+                      <Layers className="w-6 h-6 text-gray-400" />
                     </div>
                     <p className="text-gray-500 text-sm">
                       Không có sự kiện tương tự
