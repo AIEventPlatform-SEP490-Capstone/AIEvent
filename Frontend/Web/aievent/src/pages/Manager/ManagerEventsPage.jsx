@@ -119,6 +119,9 @@ const ManagerEventsPage = () => {
   const [expandedMetrics, setExpandedMetrics] = useState({});
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // State for expanded flagged organizers (to show/hide their events list)
+  const [expandedFlaggedOrganizers, setExpandedFlaggedOrganizers] = useState({});
+
   // State for organizer filter
   const [organizers, setOrganizers] = useState([]);
   const [selectedOrganizerId, setSelectedOrganizerId] = useState('');
@@ -1296,63 +1299,98 @@ const ManagerEventsPage = () => {
                 </div>
               ) : (
                 <div className="mt-4 space-y-4">
-                  {filteredFlaggedOrganizers.map((org) => (
-                    <Card key={org.id} className="border-slate-200/60 dark:border-slate-800/60">
-                      <CardContent className="p-4 space-y-3">
-                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-                          <div>
-                            <h4 className="text-base font-semibold text-slate-900 dark:text-white">
-                              {org.companyName || org.contactName || 'Organizer'}
-                            </h4>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">
-                              {org.contactEmail || 'Không có email'} • {org.contactPhone || 'Không có SĐT'}
-                            </p>
-                            <p className="text-sm text-slate-500">
-                              Tổng số sự kiện bị gán cờ: {org.totalEventFlags ?? 0}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {org.isBanned && (
-                              <Badge variant="destructive" className="px-3 py-1">
-                                Đã cấm
-                              </Badge>
-                            )}
-                            <Badge variant="outline" className="px-3 py-1">
-                              {org.organizationType || 'Organizer'}
-                            </Badge>
-                          </div>
-                        </div>
+                  {filteredFlaggedOrganizers.map((org) => {
+                    const isExpanded = expandedFlaggedOrganizers[org.id] === true;
+                    const flaggedEventsCount = org.flaggedEvents?.length || 0;
+                    const maxVisibleEvents = 2; // Show only 2 events by default
+                    const hasMoreEvents = flaggedEventsCount > maxVisibleEvents;
+                    const visibleEvents = isExpanded 
+                      ? org.flaggedEvents 
+                      : (org.flaggedEvents?.slice(0, maxVisibleEvents) || []);
 
-                        <div className="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-2">
-                          {org.flaggedEvents && org.flaggedEvents.length > 0 ? (
-                            org.flaggedEvents.map((fe) => (
-                              <div
-                                key={fe.eventId}
-                                className="rounded-lg border border-slate-100 dark:border-slate-800 p-3 bg-white/70 dark:bg-slate-900/40"
-                              >
-                                <div className="flex items-start justify-between gap-3">
-                                  <div>
-                                    <p className="font-semibold text-slate-900 dark:text-white">{fe.title || 'Sự kiện'}</p>
-                                    <p className="text-xs text-slate-500">
-                                      {fe.startTime ? formatDate(fe.startTime) : 'Chưa có thời gian'}
-                                    </p>
-                                    {fe.reasonCancel && (
-                                      <p className="text-xs text-red-500 mt-1">Lý do hủy: {fe.reasonCancel}</p>
-                                    )}
+                    return (
+                      <Card key={org.id} className="border-slate-200/60 dark:border-slate-800/60">
+                        <CardContent className="p-4 space-y-3">
+                          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                            <div>
+                              <h4 className="text-base font-semibold text-slate-900 dark:text-white">
+                                {org.companyName || org.contactName || 'Organizer'}
+                              </h4>
+                              <p className="text-sm text-slate-600 dark:text-slate-400">
+                                {org.contactEmail || 'Không có email'} • {org.contactPhone || 'Không có SĐT'}
+                              </p>
+                              <p className="text-sm text-slate-500">
+                                Tổng số sự kiện bị gán cờ: {org.totalEventFlags ?? 0}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {org.isBanned && (
+                                <Badge variant="destructive" className="px-3 py-1">
+                                  Đã cấm
+                                </Badge>
+                              )}
+                              <Badge variant="outline" className="px-3 py-1">
+                                {org.organizationType || 'Organizer'}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          <div className="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-2">
+                            {flaggedEventsCount > 0 ? (
+                              <>
+                                {visibleEvents.map((fe) => (
+                                  <div
+                                    key={fe.eventId}
+                                    className="rounded-lg border border-slate-100 dark:border-slate-800 p-3 bg-white/70 dark:bg-slate-900/40"
+                                  >
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div>
+                                        <p className="font-semibold text-slate-900 dark:text-white">{fe.title || 'Sự kiện'}</p>
+                                        <p className="text-xs text-slate-500">
+                                          {fe.startTime ? formatDate(fe.startTime) : 'Chưa có thời gian'}
+                                        </p>
+                                        {fe.reasonCancel && (
+                                          <p className="text-xs text-red-500 mt-1">Lý do hủy: {fe.reasonCancel}</p>
+                                        )}
+                                      </div>
+                                      <Badge variant="outline" className="whitespace-nowrap">
+                                        {EventStatusDisplay[fe.status] || fe.status || 'Đã hủy'}
+                                      </Badge>
+                                    </div>
                                   </div>
-                                  <Badge variant="outline" className="whitespace-nowrap">
-                                    {EventStatusDisplay[fe.status] || fe.status || 'Đã hủy'}
-                                  </Badge>
-                                </div>
-                              </div>
-                            ))
-                          ) : (
-                            <p className="text-sm text-slate-500">Không có sự kiện bị gán cờ.</p>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                                ))}
+                                
+                                {/* Expand/Collapse button */}
+                                {hasMoreEvents && (
+                                  <button
+                                    onClick={() => setExpandedFlaggedOrganizers(prev => ({
+                                      ...prev,
+                                      [org.id]: !prev[org.id]
+                                    }))}
+                                    className="w-full flex items-center justify-center gap-2 py-2 px-4 mt-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
+                                  >
+                                    {isExpanded ? (
+                                      <>
+                                        <ChevronUp className="w-4 h-4" />
+                                        Thu gọn
+                                      </>
+                                    ) : (
+                                      <>
+                                        <ChevronDown className="w-4 h-4" />
+                                        Xem thêm {flaggedEventsCount - maxVisibleEvents} sự kiện
+                                      </>
+                                    )}
+                                  </button>
+                                )}
+                              </>
+                            ) : (
+                              <p className="text-sm text-slate-500">Không có sự kiện bị gán cờ.</p>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
             </div>
