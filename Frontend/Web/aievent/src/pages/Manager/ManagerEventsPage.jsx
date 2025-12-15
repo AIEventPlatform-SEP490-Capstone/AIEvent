@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
@@ -20,6 +20,12 @@ import {
   Flag,
   Loader2,
   X,
+  ChevronDown,
+  ChevronUp,
+  LayoutGrid,
+  List,
+  Filter,
+  RefreshCw,
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
@@ -48,6 +54,11 @@ import { EventStatus, EventStatusDisplay } from '../../constants/eventConstants'
 
 // Import the new SaleCountdown component
 import SaleCountdown from '../../components/Event/SaleCountdown';
+
+// Import new UI enhancement components
+import EventCardSkeleton from '../../components/Event/EventCardSkeleton';
+import EmptyEventState from '../../components/Event/EmptyEventState';
+import QuickFilterChips from '../../components/Event/QuickFilterChips';
 
 const ManagerEventsPage = () => {
   const navigate = useNavigate();
@@ -99,6 +110,13 @@ const ManagerEventsPage = () => {
   // New state for storing all events for statistics
   const [allEventsForStats, setAllEventsForStats] = useState([]);
   const [loadingStats, setLoadingStats] = useState(true);
+
+  // UI Enhancement states
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'compact'
+  const [showFilters, setShowFilters] = useState(false);
+  const [quickFilter, setQuickFilter] = useState(null);
+  const [expandedMetrics, setExpandedMetrics] = useState({});
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // State for organizer filter
   const [organizers, setOrganizers] = useState([]);
@@ -621,7 +639,64 @@ const ManagerEventsPage = () => {
     setStartDate('');
     setEndDate('');
     setDateError('');
+    setQuickFilter(null);
+    setSelectedOrganizerId('');
   };
+
+  // Handle quick filter change
+  const handleQuickFilterChange = (range, filter) => {
+    setStartDate(range.start);
+    setEndDate(range.end);
+    setQuickFilter(filter);
+    setDateError('');
+  };
+
+  // Toggle metrics expansion for a specific event
+  const toggleMetrics = (eventId) => {
+    setExpandedMetrics(prev => ({
+      ...prev,
+      [eventId]: !prev[eventId]
+    }));
+  };
+
+  // Handle refresh
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await loadEvents(currentPage);
+    setIsRefreshing(false);
+    toast.success('Đã cập nhật danh sách sự kiện');
+  };
+
+  // Get tab count for badge display
+  const getTabCount = useCallback((tab) => {
+    if (!allEventsForStats.length) return 0;
+    
+    switch (tab) {
+      case 'all':
+        return allEventsForStats.length;
+      case EventStatus.PendingApproval:
+        return allEventsForStats.filter(e => e.status === EventStatus.PendingApproval).length;
+      case EventStatus.Approved:
+        return allEventsForStats.filter(e => e.status === EventStatus.Approved).length;
+      case EventStatus.Rejected:
+        return allEventsForStats.filter(e => e.status === EventStatus.Rejected).length;
+      case EventStatus.Cancelled:
+        return allEventsForStats.filter(e => e.status === EventStatus.Cancelled).length;
+      case EventStatus.WaitingForPayout:
+        return allEventsForStats.filter(e => e.status === EventStatus.WaitingForPayout).length;
+      case EventStatus.PaidOut:
+        return allEventsForStats.filter(e => e.status === EventStatus.PaidOut).length;
+      case EventStatus.ErrorPayment:
+        return allEventsForStats.filter(e => e.status === EventStatus.ErrorPayment).length;
+      default:
+        return 0;
+    }
+  }, [allEventsForStats]);
+
+  // Check if any filters are active
+  const hasActiveFilters = useMemo(() => {
+    return searchTerm || startDate || endDate || sortBy !== 'newest' || selectedOrganizerId;
+  }, [searchTerm, startDate, endDate, sortBy, selectedOrganizerId]);
 
   const handleSearchFlagged = () => {
     const trimmed = flaggedSearchTerm.trim();
@@ -970,307 +1045,380 @@ const ManagerEventsPage = () => {
           )}
 
           {/* Filters Section */}
-          <div className="mb-8 backdrop-blur-sm bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-2xl p-6 shadow-lg">
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-              {/* Search */}
-              <div className="relative md:col-span-2">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-                <Input
-                  placeholder="Tìm kiếm sự kiện..."
-                  className="pl-11 py-2.5 rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                  value={searchTerm}
-                  onChange={handleSearchChange}
-                />
-              </div>
-
-              {/* Organizer Filter */}
-              <Select value={selectedOrganizerId || "all"} onValueChange={(value) => setSelectedOrganizerId(value === "all" ? "" : value)}>
-                <SelectTrigger className="rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
-                  <SelectValue placeholder="Nhà tổ chức" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả nhà tổ chức</SelectItem>
-                  {organizers.map((organizer, index) => {
-                    // Try different possible field names from backend - prioritize companyName
-                    const displayName = organizer.companyName || 
-                                       organizer.CompanyName || 
-                                       organizer.organizerName || 
-                                       organizer.OrganizerName || 
-                                       organizer.name || 
-                                       organizer.Name ||
-                                       organizer.fullName ||
-                                       organizer.FullName ||
-                                       organizer.contactEmail || 
-                                       organizer.email || 
-                                       organizer.Email ||
-                                       `Organizer ${index + 1}`;
-                    
-                    // Use 'id' field as the value since that's what the backend returns
-                    const organizerId = organizer.id || organizer.organizerProfileId || organizer.OrganizerProfileId || `organizer-${index}`;
-                    
-                    return (
-                      <SelectItem 
-                        key={organizerId} 
-                        value={organizerId}
-                      >
-                        {displayName}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-
-              {/* Start Date */}
-              <div className="relative">
-                <Input
-                  type="date"
-                  placeholder="Từ ngày"
-                  className={`py-2.5 rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${dateError ? 'border-red-500 focus:border-red-500' : ''}`}
-                  value={startDate}
-                  onChange={(e) => handleStartDateChange(e.target.value)}
-                  max={endDate || undefined}
-                />
-                {startDate && (
+          <div className="mb-8 backdrop-blur-sm bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-2xl shadow-lg overflow-hidden">
+            {/* Filter Header */}
+            <div className="flex items-center justify-between p-4 border-b border-white/20 dark:border-white/10">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                >
+                  <Filter className="w-4 h-4" />
+                  Bộ lọc
+                  {hasActiveFilters && (
+                    <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-indigo-600 rounded-full">
+                      !
+                    </span>
+                  )}
+                  {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+                
+                {hasActiveFilters && (
                   <button
-                    onClick={() => {
-                      setStartDate('');
-                      setDateError('');
-                    }}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                    onClick={handleClearFilters}
+                    className="text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium flex items-center gap-1"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3 h-3" />
+                    Xóa tất cả
                   </button>
                 )}
               </div>
-
-              {/* End Date */}
-              <div className="relative">
-                <Input
-                  type="date"
-                  placeholder="Đến ngày"
-                  className={`py-2.5 rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${dateError ? 'border-red-500 focus:border-red-500' : ''}`}
-                  value={endDate}
-                  onChange={(e) => handleEndDateChange(e.target.value)}
-                  min={startDate || undefined}
-                />
-                {endDate && (
+              
+              <div className="flex items-center gap-2">
+                {/* View Mode Toggle */}
+                <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
                   <button
-                    onClick={() => {
-                      setEndDate('');
-                      setDateError('');
-                    }}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                    onClick={() => setViewMode('list')}
+                    className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm' : 'hover:bg-white/50 dark:hover:bg-slate-700/50'}`}
+                    title="Chế độ danh sách"
                   >
-                    <X className="w-4 h-4" />
+                    <List className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                   </button>
-                )}
+                  <button
+                    onClick={() => setViewMode('compact')}
+                    className={`p-1.5 rounded-md transition-colors ${viewMode === 'compact' ? 'bg-white dark:bg-slate-700 shadow-sm' : 'hover:bg-white/50 dark:hover:bg-slate-700/50'}`}
+                    title="Chế độ thu gọn"
+                  >
+                    <LayoutGrid className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                  </button>
+                </div>
+                
+                {/* Refresh Button */}
+                <button
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                  className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+                  title="Làm mới"
+                >
+                  <RefreshCw className={`w-4 h-4 text-slate-600 dark:text-slate-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+                </button>
               </div>
-
-              {/* Sort */}
-              <Select value={sortBy} onValueChange={handleSortChange}>
-                <SelectTrigger className="rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
-                  <SelectValue placeholder="Sắp xếp" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">Mới nhất</SelectItem>
-                  <SelectItem value="oldest">Cũ nhất</SelectItem>
-                  <SelectItem value="name">Theo tên A-Z</SelectItem>
-                  <SelectItem value="startTime">Theo ngày bắt đầu</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
-            {/* Error message */}
-            {dateError && (
-              <div className="mt-4 flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
-                <AlertTriangle className="w-4 h-4" />
-                <span>{dateError}</span>
+            
+            {/* Collapsible Filter Content */}
+            <div className={`transition-all duration-300 ease-in-out ${showFilters ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+              <div className="p-6 space-y-4">
+                {/* Quick Filter Chips */}
+                <QuickFilterChips
+                  onFilterChange={handleQuickFilterChange}
+                  activeFilter={quickFilter}
+                  startDate={startDate}
+                  endDate={endDate}
+                />
+                
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                  {/* Search */}
+                  <div className="relative md:col-span-2">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                    <Input
+                      placeholder="Tìm kiếm sự kiện..."
+                      className="pl-11 py-2.5 rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                      value={searchTerm}
+                      onChange={handleSearchChange}
+                    />
+                  </div>
+
+                  {/* Organizer Filter */}
+                  <Select value={selectedOrganizerId || "all"} onValueChange={(value) => setSelectedOrganizerId(value === "all" ? "" : value)}>
+                    <SelectTrigger className="rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                      <SelectValue placeholder="Nhà tổ chức" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất cả nhà tổ chức</SelectItem>
+                      {organizers.map((organizer, index) => {
+                        const displayName = organizer.companyName || 
+                                           organizer.CompanyName || 
+                                           organizer.organizerName || 
+                                           organizer.OrganizerName || 
+                                           organizer.name || 
+                                           organizer.Name ||
+                                           organizer.fullName ||
+                                           organizer.FullName ||
+                                           organizer.contactEmail || 
+                                           organizer.email || 
+                                           organizer.Email ||
+                                           `Organizer ${index + 1}`;
+                        
+                        const organizerId = organizer.id || organizer.organizerProfileId || organizer.OrganizerProfileId || `organizer-${index}`;
+                        
+                        return (
+                          <SelectItem key={organizerId} value={organizerId}>
+                            {displayName}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Start Date */}
+                  <div className="relative">
+                    <Input
+                      type="date"
+                      placeholder="Từ ngày"
+                      className={`py-2.5 rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${dateError ? 'border-red-500 focus:border-red-500' : ''}`}
+                      value={startDate}
+                      onChange={(e) => { handleStartDateChange(e.target.value); setQuickFilter(null); }}
+                      max={endDate || undefined}
+                    />
+                    {startDate && (
+                      <button
+                        onClick={() => { setStartDate(''); setDateError(''); setQuickFilter(null); }}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* End Date */}
+                  <div className="relative">
+                    <Input
+                      type="date"
+                      placeholder="Đến ngày"
+                      className={`py-2.5 rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${dateError ? 'border-red-500 focus:border-red-500' : ''}`}
+                      value={endDate}
+                      onChange={(e) => { handleEndDateChange(e.target.value); setQuickFilter(null); }}
+                      min={startDate || undefined}
+                    />
+                    {endDate && (
+                      <button
+                        onClick={() => { setEndDate(''); setDateError(''); setQuickFilter(null); }}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Sort */}
+                  <Select value={sortBy} onValueChange={handleSortChange}>
+                    <SelectTrigger className="rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                      <SelectValue placeholder="Sắp xếp" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">Mới nhất</SelectItem>
+                      <SelectItem value="oldest">Cũ nhất</SelectItem>
+                      <SelectItem value="name">Theo tên A-Z</SelectItem>
+                      <SelectItem value="startTime">Theo ngày bắt đầu</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Error message */}
+                {dateError && (
+                  <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span>{dateError}</span>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
 
           {/* Tabs Section */}
-          <div className="mb-6">
-            <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-lg w-fit">
-              <button
-                onClick={() => {
-                  setActiveTab('all');
-                  setShowInitiationDropdown(false);
-                  setShowCompletionDropdown(false);
-                  navigate(`${PATH.MANAGER_EVENTS}?tab=all`);
-                }}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'all'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-                  }`}
-              >
-                Tất cả sự kiện
-              </button>
-
-              {/* Event Initiation Dropdown */}
-              <div className="relative" ref={initiationDropdownRef}>
+          <div className="mb-6 relative z-30">
+            <div className="overflow-visible">
+              <div className="flex gap-2 p-1.5 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/40 dark:border-slate-700/40 rounded-xl shadow-sm flex-wrap">
                 <button
                   onClick={() => {
-                    setShowInitiationDropdown(!showInitiationDropdown);
-                    setShowCompletionDropdown(false);
-                  }}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${[EventStatus.PendingApproval, EventStatus.Approved, EventStatus.Rejected].includes(activeTab)
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                >
-                  {initiationDropdownLabel}
-                  <svg className={`ml-1 w-4 h-4 transition-transform ${showInitiationDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                {showInitiationDropdown && (
-                  <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10">
-                    <button
-                      onClick={() => {
-                        setActiveTab(EventStatus.PendingApproval);
-                        setShowInitiationDropdown(false);
-                        navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.PendingApproval}`);
-                      }}
-                      className={`block w-full text-left px-4 py-2 text-sm ${activeTab === EventStatus.PendingApproval
-                        ? 'bg-blue-50 text-blue-600'
-                        : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                    >
-                      Chờ phê duyệt
-                      {stats.pendingApprovals > 0 && (
-                        <span className="ml-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 inline-flex items-center justify-center">
-                          {stats.pendingApprovals}
-                        </span>
-                      )}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setActiveTab(EventStatus.Approved);
-                        setShowInitiationDropdown(false);
-                        navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.Approved}`);
-                      }}
-                      className={`block w-full text-left px-4 py-2 text-sm ${activeTab === EventStatus.Approved
-                        ? 'bg-blue-50 text-blue-600'
-                        : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                    >
-                      Đã phê duyệt
-                    </button>
-                    <button
-                      onClick={() => {
-                        setActiveTab(EventStatus.Rejected);
-                        setShowInitiationDropdown(false);
-                        navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.Rejected}`);
-                      }}
-                      className={`block w-full text-left px-4 py-2 text-sm ${activeTab === EventStatus.Rejected
-                        ? 'bg-blue-50 text-blue-600'
-                        : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                    >
-                      Bị từ chối
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Event Completion Dropdown */}
-              <div className="relative" ref={completionDropdownRef}>
-                <button
-                  onClick={() => {
-                    setShowCompletionDropdown(!showCompletionDropdown);
+                    setActiveTab('all');
                     setShowInitiationDropdown(false);
+                    setShowCompletionDropdown(false);
+                    navigate(`${PATH.MANAGER_EVENTS}?tab=all`);
                   }}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${
-                    [EventStatus.WaitingForPayout, EventStatus.PaidOut, EventStatus.ErrorPayment].includes(activeTab)
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 whitespace-nowrap ${activeTab === 'all'
+                    ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-md shadow-indigo-500/25'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50'
                   }`}
                 >
-                  {completionDropdownLabel}
-                  <svg className={`ml-1 w-4 h-4 transition-transform ${showCompletionDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  <LayoutGrid className="w-4 h-4" />
+                  Tất cả
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300'}`}>
+                    {getTabCount('all')}
+                  </span>
                 </button>
 
-                {showCompletionDropdown && (
-                  <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10">
-                    <button
-                      onClick={() => {
-                        setActiveTab(EventStatus.WaitingForPayout);
-                        setShowCompletionDropdown(false);
-                        navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.WaitingForPayout}`);
-                      }}
-                      className={`block w-full text-left px-4 py-2 text-sm ${activeTab === EventStatus.WaitingForPayout
-                        ? 'bg-blue-50 text-blue-600'
-                        : 'text-gray-700 hover:bg-gray-100'
+                {/* Event Initiation Dropdown */}
+                <div className="relative" ref={initiationDropdownRef}>
+                  <button
+                    onClick={() => {
+                      setShowInitiationDropdown(!showInitiationDropdown);
+                      setShowCompletionDropdown(false);
+                    }}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 whitespace-nowrap ${[EventStatus.PendingApproval, EventStatus.Approved, EventStatus.Rejected].includes(activeTab)
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50'
+                    }`}
+                  >
+                    <Clock className="w-4 h-4" />
+                    {initiationDropdownLabel}
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showInitiationDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {showInitiationDropdown && (
+                    <div className="absolute top-full left-0 mt-2 w-52 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
+                      <button
+                        onClick={() => {
+                          setActiveTab(EventStatus.PendingApproval);
+                          setShowInitiationDropdown(false);
+                          navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.PendingApproval}`);
+                        }}
+                        className={`flex items-center gap-3 w-full text-left px-4 py-3 text-sm transition-colors ${activeTab === EventStatus.PendingApproval
+                          ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
                         }`}
-                    >
-                      Chờ thanh toán
-                    </button>
-                    <button
-                      onClick={() => {
-                        setActiveTab(EventStatus.PaidOut);
-                        setShowCompletionDropdown(false);
-                        navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.PaidOut}`);
-                      }}
-                      className={`block w-full text-left px-4 py-2 text-sm ${
-                        activeTab === EventStatus.PaidOut
-                          ? 'bg-blue-50 text-blue-600'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      Đã thanh toán
-                    </button>
-                    <button
-                      onClick={() => {
-                        setActiveTab(EventStatus.ErrorPayment);
-                        setShowCompletionDropdown(false);
-                        navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.ErrorPayment}`);
-                      }}
-                      className={`block w-full text-left px-4 py-2 text-sm ${
-                        activeTab === EventStatus.ErrorPayment
-                          ? 'bg-blue-50 text-blue-600'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      Lỗi thanh toán
-                    </button>
-                  </div>
-                )}
-              </div>
+                      >
+                        <Clock className="w-4 h-4 text-amber-500" />
+                        Chờ phê duyệt
+                        {stats.pendingApproval > 0 && (
+                          <span className="ml-auto bg-red-500 text-white text-xs rounded-full h-5 min-w-[20px] px-1.5 inline-flex items-center justify-center">
+                            {stats.pendingApproval}
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActiveTab(EventStatus.Approved);
+                          setShowInitiationDropdown(false);
+                          navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.Approved}`);
+                        }}
+                        className={`flex items-center gap-3 w-full text-left px-4 py-3 text-sm transition-colors ${activeTab === EventStatus.Approved
+                          ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                        }`}
+                      >
+                        <CheckCircle className="w-4 h-4 text-emerald-500" />
+                        Đã phê duyệt
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActiveTab(EventStatus.Rejected);
+                          setShowInitiationDropdown(false);
+                          navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.Rejected}`);
+                        }}
+                        className={`flex items-center gap-3 w-full text-left px-4 py-3 text-sm transition-colors ${activeTab === EventStatus.Rejected
+                          ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                        }`}
+                      >
+                        <XCircle className="w-4 h-4 text-red-500" />
+                        Bị từ chối
+                      </button>
+                    </div>
+                  )}
+                </div>
 
-              <button
-                onClick={() => {
-                  setActiveTab(EventStatus.Cancelled);
-                  setShowInitiationDropdown(false);
-                  setShowCompletionDropdown(false);
-                  navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.Cancelled}`);
-                }}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === EventStatus.Cancelled
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                {/* Event Completion Dropdown */}
+                <div className="relative" ref={completionDropdownRef}>
+                  <button
+                    onClick={() => {
+                      setShowCompletionDropdown(!showCompletionDropdown);
+                      setShowInitiationDropdown(false);
+                    }}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 whitespace-nowrap ${
+                      [EventStatus.WaitingForPayout, EventStatus.PaidOut, EventStatus.ErrorPayment].includes(activeTab)
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md shadow-blue-500/25'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50'
+                    }`}
+                  >
+                    <TrendingUp className="w-4 h-4" />
+                    {completionDropdownLabel}
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showCompletionDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {showCompletionDropdown && (
+                    <div className="absolute top-full left-0 mt-2 w-52 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
+                      <button
+                        onClick={() => {
+                          setActiveTab(EventStatus.WaitingForPayout);
+                          setShowCompletionDropdown(false);
+                          navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.WaitingForPayout}`);
+                        }}
+                        className={`flex items-center gap-3 w-full text-left px-4 py-3 text-sm transition-colors ${activeTab === EventStatus.WaitingForPayout
+                          ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                        }`}
+                      >
+                        <Clock className="w-4 h-4 text-indigo-500" />
+                        Chờ thanh toán
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActiveTab(EventStatus.PaidOut);
+                          setShowCompletionDropdown(false);
+                          navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.PaidOut}`);
+                        }}
+                        className={`flex items-center gap-3 w-full text-left px-4 py-3 text-sm transition-colors ${
+                          activeTab === EventStatus.PaidOut
+                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
+                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                        }`}
+                      >
+                        <CheckCircle className="w-4 h-4 text-blue-500" />
+                        Đã thanh toán
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActiveTab(EventStatus.ErrorPayment);
+                          setShowCompletionDropdown(false);
+                          navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.ErrorPayment}`);
+                        }}
+                        className={`flex items-center gap-3 w-full text-left px-4 py-3 text-sm transition-colors ${
+                          activeTab === EventStatus.ErrorPayment
+                            ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400'
+                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                        }`}
+                      >
+                        <AlertTriangle className="w-4 h-4 text-orange-500" />
+                        Lỗi thanh toán
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => {
+                    setActiveTab(EventStatus.Cancelled);
+                    setShowInitiationDropdown(false);
+                    setShowCompletionDropdown(false);
+                    navigate(`${PATH.MANAGER_EVENTS}?tab=${EventStatus.Cancelled}`);
+                  }}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 whitespace-nowrap ${activeTab === EventStatus.Cancelled
+                    ? 'bg-gradient-to-r from-gray-500 to-gray-600 text-white shadow-md shadow-gray-500/25'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50'
                   }`}
-              >
-                Đã hủy
-              </button>
+                >
+                  <XCircle className="w-4 h-4" />
+                  Đã hủy
+                </button>
 
-              <button
-                onClick={() => {
-                  setActiveTab('flagged');
-                  setShowInitiationDropdown(false);
-                  setShowCompletionDropdown(false);
-                  navigate(`${PATH.MANAGER_EVENTS}?tab=flagged`);
-                }}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ${
-                  activeTab === 'flagged'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <Flag className="w-4 h-4 text-red-500" />
-                Bị gán cờ
-              </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('flagged');
+                    setShowInitiationDropdown(false);
+                    setShowCompletionDropdown(false);
+                    navigate(`${PATH.MANAGER_EVENTS}?tab=flagged`);
+                  }}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 whitespace-nowrap ${
+                    activeTab === 'flagged'
+                      ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-md shadow-red-500/25'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50'
+                  }`}
+                >
+                  <Flag className="w-4 h-4" />
+                  Bị gán cờ
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1379,28 +1527,16 @@ const ManagerEventsPage = () => {
             <>
               {/* Events List */}
               {isLoading ? (
-                <div className="flex flex-col justify-center items-center py-20">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-                  <p className="text-gray-500">Đang tải sự kiện...</p>
-                </div>
+                <EventCardSkeleton count={3} />
               ) : events.length === 0 ? (
-                <div className="backdrop-blur-sm bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-2xl p-12 text-center shadow-lg">
-                  <div className="text-5xl mb-4">📭</div>
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                    {allEvents.length === 0
-                      ? 'Chưa có sự kiện nào'
-                      : 'Không có sự kiện'
-                    }
-                  </h3>
-                  <p className="text-slate-600 dark:text-slate-400 mb-6">
-                    {allEvents.length === 0
-                      ? 'Bắt đầu quản lý sự kiện trong hệ thống!'
-                      : `Không có sự kiện nào trong danh mục "${getTabDisplayName(activeTab)}".`
-                    }
-                  </p>
-                </div>
+                <EmptyEventState
+                  type={hasActiveFilters ? 'no-results' : (allEventsForStats.length === 0 ? 'no-events' : 'no-category')}
+                  categoryName={getTabDisplayName(activeTab)}
+                  onClearFilters={handleClearFilters}
+                  showCreateButton={false}
+                />
               ) : (
-                <div className="space-y-4">
+                <div className={`${viewMode === 'compact' ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'space-y-4'}`}>
                   {paginatedEvents.map((event) => {
                 const eventImage = getEventImage(event);
                 const eventStatus = 'status' in event ? event.status : null;
@@ -1410,6 +1546,7 @@ const ManagerEventsPage = () => {
                 const occupancyRate = event.totalPerson && event.totalPerson > 0 
                   ? Math.round((event.totalPersonJoin || 0) / event.totalPerson * 100) 
                   : 0;
+                const isMetricsExpanded = expandedMetrics[event.eventId] === true; // Default to collapsed
 
                 return (
                   <div
@@ -1420,14 +1557,15 @@ const ManagerEventsPage = () => {
                         : 'bg-white/60 dark:bg-white/5 border-white/60 dark:border-white/10'
                     } border rounded-2xl overflow-hidden hover:border-indigo-300 dark:hover:border-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300 shadow-lg`}
                   >
-                    <div className="flex flex-col lg:flex-row gap-0">
+                    <div className={`flex ${viewMode === 'compact' ? 'flex-col' : 'flex-col lg:flex-row'} gap-0`}>
                       {/* Event thumbnail */}
-                      <div className="flex-shrink-0 lg:w-100 w-full h-48 lg:h-auto overflow-hidden relative">
+                      <div className={`flex-shrink-0 ${viewMode === 'compact' ? 'w-full aspect-[16/9]' : 'lg:w-[420px] w-full h-56 lg:h-auto lg:min-h-[280px]'} overflow-hidden relative`}>
                         {eventImage ? (
                           <>
                             <img
                               src={eventImage}
                               alt={event.title}
+                              loading="lazy"
                               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                             />
                             <SaleCountdown saleStartTime={event.saleStartTime} variant="thumbnail" />
