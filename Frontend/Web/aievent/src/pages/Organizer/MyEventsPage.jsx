@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
@@ -19,7 +19,13 @@ import {
   CheckCircle,
   XCircle,
   Copy,
-  X
+  X,
+  ChevronDown,
+  ChevronUp,
+  LayoutGrid,
+  List,
+  Filter,
+  RefreshCw
 } from 'lucide-react';
 
 import { Button } from '../../components/ui/button';
@@ -38,6 +44,12 @@ import { EventStatus, EventStatusDisplay } from '../../constants/eventConstants'
 
 // Import the new SaleCountdown component
 import SaleCountdown from '../../components/Event/SaleCountdown';
+
+// Import new UI enhancement components
+import EventCardSkeleton from '../../components/Event/EventCardSkeleton';
+import EmptyEventState from '../../components/Event/EmptyEventState';
+import QuickFilterChips from '../../components/Event/QuickFilterChips';
+import RadialStatusMenu from '../../components/Event/RadialStatusMenu';
 
 const MyEventsPage = () => {
   const navigate = useNavigate();
@@ -72,6 +84,13 @@ const MyEventsPage = () => {
   // New state for storing all events for statistics
   const [allEventsForStats, setAllEventsForStats] = useState([]);
   const [loadingStats, setLoadingStats] = useState(true);
+
+  // UI Enhancement states
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'compact'
+  const [showFilters, setShowFilters] = useState(false);
+  const [quickFilter, setQuickFilter] = useState(null);
+  const [expandedMetrics, setExpandedMetrics] = useState({});
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -406,7 +425,65 @@ const MyEventsPage = () => {
     setStartDate('');
     setEndDate('');
     setDateError('');
+    setQuickFilter(null);
   };
+
+  // Handle quick filter change
+  const handleQuickFilterChange = (range, filter) => {
+    setStartDate(range.start);
+    setEndDate(range.end);
+    setQuickFilter(filter);
+    setDateError('');
+  };
+
+  // Toggle metrics expansion for a specific event
+  const toggleMetrics = (eventId) => {
+    setExpandedMetrics(prev => ({
+      ...prev,
+      [eventId]: !prev[eventId]
+    }));
+  };
+
+  // Handle refresh
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await loadEvents(currentPage);
+    setIsRefreshing(false);
+    toast.success('Đã cập nhật danh sách sự kiện');
+  };
+
+  // Get tab count for badge display
+  const getTabCount = useCallback((tab) => {
+    if (!allEventsForStats.length) return 0;
+    
+    switch (tab) {
+      case 'all':
+        return allEventsForStats.length;
+      case 'draft':
+        return allEventsForStats.filter(e => !e.status).length;
+      case EventStatus.PendingApproval:
+        return allEventsForStats.filter(e => e.status === EventStatus.PendingApproval).length;
+      case EventStatus.Approved:
+        return allEventsForStats.filter(e => e.status === EventStatus.Approved).length;
+      case EventStatus.Rejected:
+        return allEventsForStats.filter(e => e.status === EventStatus.Rejected).length;
+      case EventStatus.Cancelled:
+        return allEventsForStats.filter(e => e.status === EventStatus.Cancelled).length;
+      case EventStatus.WaitingForPayout:
+        return allEventsForStats.filter(e => e.status === EventStatus.WaitingForPayout).length;
+      case EventStatus.PaidOut:
+        return allEventsForStats.filter(e => e.status === EventStatus.PaidOut).length;
+      case EventStatus.ErrorPayment:
+        return allEventsForStats.filter(e => e.status === EventStatus.ErrorPayment).length;
+      default:
+        return 0;
+    }
+  }, [allEventsForStats]);
+
+  // Check if any filters are active
+  const hasActiveFilters = useMemo(() => {
+    return searchTerm || startDate || endDate || sortBy !== 'newest';
+  }, [searchTerm, startDate, endDate, sortBy]);
 
   // Handle start date change with validation
   const handleStartDateChange = (value) => {
@@ -680,297 +757,195 @@ const MyEventsPage = () => {
           )}
 
           {/* Filters Section */}
-          <div className="mb-8 backdrop-blur-sm bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-2xl p-6 shadow-lg">
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-              {/* Search */}
-              <div className="relative md:col-span-3">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-                <Input
-                  placeholder="Tìm kiếm sự kiện..."
-                  className="pl-11 py-2.5 rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                  value={searchTerm}
-                  onChange={handleSearchChange}
-                />
-              </div>
-
-              {/* Start Date */}
-              <div className="relative">
-                <Input
-                  type="date"
-                  placeholder="Từ ngày"
-                  className={`py-2.5 rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${dateError ? 'border-red-500 focus:border-red-500' : ''}`}
-                  value={startDate}
-                  onChange={(e) => handleStartDateChange(e.target.value)}
-                  max={endDate || undefined}
-                />
-                {startDate && (
-                  <button
-                    onClick={() => {
-                      setStartDate('');
-                      setDateError('');
+          <div className="mb-8 backdrop-blur-sm bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-2xl shadow-lg overflow-visible">
+            {/* Filter Header */}
+            <div className="flex items-center justify-between p-4 border-b border-white/20 dark:border-white/10">
+              <div className="flex items-center gap-4 flex-wrap">
+                {/* Radial Status Menu */}
+                <div className="relative z-50">
+                  <RadialStatusMenu
+                    activeTab={activeTab}
+                    onTabChange={(tab) => {
+                      setActiveTab(tab);
+                      setShowInitiationDropdown(false);
+                      setShowCompletionDropdown(false);
                     }}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                    stats={{
+                      total: getTabCount('all'),
+                      draft: getTabCount('draft'),
+                      pendingApproval: getTabCount(EventStatus.PendingApproval),
+                      approved: getTabCount(EventStatus.Approved),
+                      rejected: getTabCount(EventStatus.Rejected),
+                      cancelled: getTabCount(EventStatus.Cancelled),
+                      waitingForPayout: getTabCount(EventStatus.WaitingForPayout),
+                      paidOut: getTabCount(EventStatus.PaidOut),
+                      errorPayment: getTabCount(EventStatus.ErrorPayment),
+                    }}
+                    showDraft={true}
+                    showFlagged={false}
+                    EventStatus={EventStatus}
+                  />
+                </div>
+                
+                <div className="h-8 w-px bg-slate-200 dark:bg-slate-700" />
+                
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                >
+                  <Filter className="w-4 h-4" />
+                  Bộ lọc
+                  {hasActiveFilters && (
+                    <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-indigo-600 rounded-full">
+                      !
+                    </span>
+                  )}
+                  {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+                
+                {hasActiveFilters && (
+                  <button
+                    onClick={handleClearFilters}
+                    className="text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium flex items-center gap-1"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3 h-3" />
+                    Xóa tất cả
                   </button>
                 )}
               </div>
-
-              {/* End Date */}
-              <div className="relative">
-                <Input
-                  type="date"
-                  placeholder="Đến ngày"
-                  className={`py-2.5 rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${dateError ? 'border-red-500 focus:border-red-500' : ''}`}
-                  value={endDate}
-                  onChange={(e) => handleEndDateChange(e.target.value)}
-                  min={startDate || undefined}
-                />
-                {endDate && (
+              
+              <div className="flex items-center gap-2">
+                {/* View Mode Toggle */}
+                <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
                   <button
-                    onClick={() => {
-                      setEndDate('');
-                      setDateError('');
-                    }}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                    onClick={() => setViewMode('list')}
+                    className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm' : 'hover:bg-white/50 dark:hover:bg-slate-700/50'}`}
+                    title="Chế độ danh sách"
                   >
-                    <X className="w-4 h-4" />
+                    <List className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                   </button>
-                )}
+                  <button
+                    onClick={() => setViewMode('compact')}
+                    className={`p-1.5 rounded-md transition-colors ${viewMode === 'compact' ? 'bg-white dark:bg-slate-700 shadow-sm' : 'hover:bg-white/50 dark:hover:bg-slate-700/50'}`}
+                    title="Chế độ thu gọn"
+                  >
+                    <LayoutGrid className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                  </button>
+                </div>
+                
+                {/* Refresh Button */}
+                <button
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                  className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+                  title="Làm mới"
+                >
+                  <RefreshCw className={`w-4 h-4 text-slate-600 dark:text-slate-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+                </button>
               </div>
-
-              {/* Sort */}
-              <Select value={sortBy} onValueChange={handleSortChange}>
-                <SelectTrigger className="rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
-                  <SelectValue placeholder="Sắp xếp" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">Mới nhất</SelectItem>
-                  <SelectItem value="oldest">Cũ nhất</SelectItem>
-                  <SelectItem value="name">Theo tên A-Z</SelectItem>
-                  <SelectItem value="startTime">Theo ngày bắt đầu</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
-            {/* Error message */}
-            {dateError && (
-              <div className="mt-4 flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
-                <AlertTriangle className="w-4 h-4" />
-                <span>{dateError}</span>
-              </div>
-            )}
-          </div>
+            
+            {/* Collapsible Filter Content */}
+            <div className={`transition-all duration-300 ease-in-out ${showFilters ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+              <div className="p-6 space-y-4">
+                {/* Quick Filter Chips */}
+                <QuickFilterChips
+                  onFilterChange={handleQuickFilterChange}
+                  activeFilter={quickFilter}
+                  startDate={startDate}
+                  endDate={endDate}
+                />
+                
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                  {/* Search */}
+                  <div className="relative md:col-span-3">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                    <Input
+                      placeholder="Tìm kiếm sự kiện..."
+                      className="pl-11 py-2.5 rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                      value={searchTerm}
+                      onChange={handleSearchChange}
+                    />
+                  </div>
 
-          {/* Tabs Section */}
-          <div className="mb-6">
-            <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
-              <button
-                onClick={() => {
-                  setActiveTab('all');
-                  setShowInitiationDropdown(false);
-                  setShowCompletionDropdown(false);
-                }}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === 'all'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Tất cả sự kiện
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab('draft');
-                  setShowInitiationDropdown(false);
-                  setShowCompletionDropdown(false);
-                }}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === 'draft'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Bản nháp
-              </button>
-              
-              {/* Event Initiation Dropdown */}
-              <div className="relative" ref={initiationDropdownRef}>
-                <button
-                  onClick={() => {
-                    setShowInitiationDropdown(!showInitiationDropdown);
-                    setShowCompletionDropdown(false);
-                  }}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${
-                    [EventStatus.PendingApproval, EventStatus.Approved, EventStatus.Rejected].includes(activeTab)
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  {initiationDropdownLabel}
-                  <svg className={`ml-1 w-4 h-4 transition-transform ${showInitiationDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
+                  {/* Start Date */}
+                  <div className="relative">
+                    <Input
+                      type="date"
+                      placeholder="Từ ngày"
+                      className={`py-2.5 rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${dateError ? 'border-red-500 focus:border-red-500' : ''}`}
+                      value={startDate}
+                      onChange={(e) => { handleStartDateChange(e.target.value); setQuickFilter(null); }}
+                      max={endDate || undefined}
+                    />
+                    {startDate && (
+                      <button
+                        onClick={() => { setStartDate(''); setDateError(''); setQuickFilter(null); }}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* End Date */}
+                  <div className="relative">
+                    <Input
+                      type="date"
+                      placeholder="Đến ngày"
+                      className={`py-2.5 rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all ${dateError ? 'border-red-500 focus:border-red-500' : ''}`}
+                      value={endDate}
+                      onChange={(e) => { handleEndDateChange(e.target.value); setQuickFilter(null); }}
+                      min={startDate || undefined}
+                    />
+                    {endDate && (
+                      <button
+                        onClick={() => { setEndDate(''); setDateError(''); setQuickFilter(null); }}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Sort */}
+                  <Select value={sortBy} onValueChange={handleSortChange}>
+                    <SelectTrigger className="rounded-xl border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                      <SelectValue placeholder="Sắp xếp" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">Mới nhất</SelectItem>
+                      <SelectItem value="oldest">Cũ nhất</SelectItem>
+                      <SelectItem value="name">Theo tên A-Z</SelectItem>
+                      <SelectItem value="startTime">Theo ngày bắt đầu</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 
-                {showInitiationDropdown && (
-                  <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10">
-                    <button
-                      onClick={() => {
-                        setActiveTab(EventStatus.PendingApproval);
-                        setShowInitiationDropdown(false);
-                      }}
-                      className={`block w-full text-left px-4 py-2 text-sm ${
-                        activeTab === EventStatus.PendingApproval
-                          ? 'bg-blue-50 text-blue-600'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      Chờ phê duyệt
-                    </button>
-                    <button
-                      onClick={() => {
-                        setActiveTab(EventStatus.Approved);
-                        setShowInitiationDropdown(false);
-                      }}
-                      className={`block w-full text-left px-4 py-2 text-sm ${
-                        activeTab === EventStatus.Approved
-                          ? 'bg-blue-50 text-blue-600'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      Đã phê duyệt
-                    </button>
-                    <button
-                      onClick={() => {
-                        setActiveTab(EventStatus.Rejected);
-                        setShowInitiationDropdown(false);
-                      }}
-                      className={`block w-full text-left px-4 py-2 text-sm ${
-                        activeTab === EventStatus.Rejected
-                          ? 'bg-blue-50 text-blue-600'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      Bị từ chối
-                    </button>
+                {/* Error message */}
+                {dateError && (
+                  <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span>{dateError}</span>
                   </div>
                 )}
               </div>
-              
-              {/* Event Completion Dropdown */}
-              <div className="relative" ref={completionDropdownRef}>
-                <button
-                  onClick={() => {
-                    setShowCompletionDropdown(!showCompletionDropdown);
-                    setShowInitiationDropdown(false);
-                  }}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center ${
-                    [EventStatus.WaitingForPayout, EventStatus.PaidOut, EventStatus.ErrorPayment].includes(activeTab)
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  {completionDropdownLabel}
-                  <svg className={`ml-1 w-4 h-4 transition-transform ${showCompletionDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                
-                {showCompletionDropdown && (
-                  <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10">
-                    <button
-                      onClick={() => {
-                        setActiveTab(EventStatus.WaitingForPayout);
-                        setShowCompletionDropdown(false);
-                      }}
-                      className={`block w-full text-left px-4 py-2 text-sm ${
-                        activeTab === EventStatus.WaitingForPayout
-                          ? 'bg-blue-50 text-blue-600'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      Chờ thanh toán
-                    </button>
-                    <button
-                      onClick={() => {
-                        setActiveTab(EventStatus.PaidOut);
-                        setShowCompletionDropdown(false);
-                      }}
-                      className={`block w-full text-left px-4 py-2 text-sm ${
-                        activeTab === EventStatus.PaidOut
-                          ? 'bg-blue-50 text-blue-600'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      Đã thanh toán
-                    </button>
-                    <button
-                      onClick={() => {
-                        setActiveTab(EventStatus.ErrorPayment);
-                        setShowCompletionDropdown(false);
-                      }}
-                      className={`block w-full text-left px-4 py-2 text-sm ${
-                        activeTab === EventStatus.ErrorPayment
-                          ? 'bg-blue-50 text-blue-600'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      Lỗi thanh toán
-                    </button>
-                  </div>
-                )}
-              </div>
-              
-              <button
-                onClick={() => {
-                  setActiveTab(EventStatus.Cancelled);
-                  setShowInitiationDropdown(false);
-                  setShowCompletionDropdown(false);
-                }}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === EventStatus.Cancelled
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Đã hủy
-              </button>
             </div>
           </div>
 
           {/* Events List */}
           {isLoading ? (
-            <div className="flex flex-col justify-center items-center py-20">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-              <p className="text-gray-500">Đang tải sự kiện...</p>
-            </div>
+            <EventCardSkeleton count={3} />
           ) : events.length === 0 ? (
-            <div className="backdrop-blur-sm bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-2xl p-12 text-center shadow-lg">
-              <div className="text-5xl mb-4">📭</div>
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                {allEvents.length === 0 
-                  ? 'Chưa có sự kiện nào' 
-                  : 'Không có sự kiện'
-                }
-              </h3>
-              <p className="text-slate-600 dark:text-slate-400 mb-6">
-                {allEvents.length === 0 
-                  ? 'Bắt đầu tạo sự kiện đầu tiên của bạn ngay bây giờ!'
-                  : `Không có sự kiện nào trong danh mục "${getTabDisplayName(activeTab)}".`
-                }
-              </p>
-              {allEvents.length === 0 && (
-                <Button
-                  onClick={() => navigate(PATH.ORGANIZER_CREATE)}
-                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 rounded-xl px-5 py-2.5 h-auto font-semibold transition-all duration-300 flex items-center gap-2"
-                >
-                  <Plus className="h-5 w-5" />
-                  Tạo sự kiện mới
-                </Button>
-              )}
-            </div>
+            <EmptyEventState
+              type={hasActiveFilters ? 'no-results' : (allEventsForStats.length === 0 ? 'no-events' : 'no-category')}
+              categoryName={getTabDisplayName(activeTab)}
+              onCreateEvent={() => navigate(PATH.ORGANIZER_CREATE)}
+              onClearFilters={handleClearFilters}
+              showCreateButton={!hasActiveFilters}
+            />
           ) : (
-            <div className="space-y-4">
+            <div className={`${viewMode === 'compact' ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'space-y-4'}`}>
               {paginatedEvents.map((event) => {
                 const eventImage = getEventImage(event);
                 const eventStatus = 'status' in event ? event.status : null;
@@ -978,6 +953,7 @@ const MyEventsPage = () => {
                 const occupancyRate = event.totalPerson && event.totalPerson > 0 
                   ? Math.round((event.totalPersonJoin || 0) / event.totalPerson * 100) 
                   : 0;
+                const isMetricsExpanded = expandedMetrics[event.eventId] === true; // Default to collapsed
 
                 return (
                   <div
@@ -988,37 +964,46 @@ const MyEventsPage = () => {
                         : 'bg-white/60 dark:bg-white/5 border-white/60 dark:border-white/10'
                     } border rounded-2xl overflow-hidden hover:border-indigo-300 dark:hover:border-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300 shadow-lg`}
                   >
-                    <div className="flex flex-col lg:flex-row gap-0">
+                    <div className={`flex ${viewMode === 'compact' ? 'flex-col' : 'flex-col lg:flex-row'} gap-0`}>
                       {/* Event thumbnail */}
-                      <div className="flex-shrink-0 lg:w-100 w-full h-48 lg:h-auto overflow-hidden relative">
+                      <div className={`flex-shrink-0 ${viewMode === 'compact' ? 'w-full aspect-[16/9]' : 'lg:w-[420px] w-full h-56 lg:h-auto lg:min-h-[280px]'} overflow-hidden relative`}>
                         {eventImage ? (
                           <>
                             <img
                               src={eventImage}
                               alt={event.title}
                               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                              loading="lazy"
                             />
                             <SaleCountdown saleStartTime={event.saleStartTime} variant="thumbnail" />
                           </>
                         ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
+                          <div className="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 flex items-center justify-center">
                             <Calendar className="h-12 w-12 text-blue-400" />
+                          </div>
+                        )}
+                        {/* Quick status indicator on image */}
+                        {eventStatus && viewMode === 'compact' && (
+                          <div className="absolute top-2 right-2">
+                            <Badge className={`${statusConfig.badge} border-0 rounded-full px-2 py-0.5 text-xs font-semibold shadow-lg`}>
+                              {statusConfig.icon && <statusConfig.icon className="w-3 h-3" />}
+                            </Badge>
                           </div>
                         )}
                       </div>
 
                       {/* Content */}
-                      <div className="flex-1 p-6 lg:p-8 flex flex-col justify-between">
+                      <div className={`flex-1 ${viewMode === 'compact' ? 'p-4' : 'p-6 lg:p-8'} flex flex-col justify-between`}>
                         {/* Header */}
-                        <div className="mb-4">
-                          <div className="flex items-start justify-between gap-4 mb-3">
+                        <div className={viewMode === 'compact' ? 'mb-2' : 'mb-4'}>
+                          <div className="flex items-start justify-between gap-2 mb-2">
                             <h3 
-                              className="text-lg font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
+                              className={`${viewMode === 'compact' ? 'text-base line-clamp-1' : 'text-lg'} font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer`}
                               onClick={() => handleViewEvent(event.eventId)}
                             >
                               {event.title}
                             </h3>
-                            {eventStatus && activeTab !== 'draft' && (
+                            {eventStatus && activeTab !== 'draft' && viewMode !== 'compact' && (
                               <Badge
                                 className={`${statusConfig.badge} border-0 whitespace-nowrap flex-shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-all group-hover:shadow-lg group-hover:${statusConfig.glow}`}
                               >
@@ -1029,26 +1014,28 @@ const MyEventsPage = () => {
                           </div>
 
                           {/* Event details */}
-                          <div className="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-400">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-4 h-4 text-indigo-500/70" />
+                          <div className={`flex flex-wrap ${viewMode === 'compact' ? 'gap-2 text-xs' : 'gap-4 text-sm'} text-slate-600 dark:text-slate-400`}>
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className={`${viewMode === 'compact' ? 'w-3 h-3' : 'w-4 h-4'} text-indigo-500/70`} />
                               <span>
-                                {formatDate(event.startTime).split(' ')[0]} • {formatDate(event.startTime).split(' ')[1]}
+                                {formatDate(event.startTime).split(' ')[0]}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-4 h-4 text-indigo-500/70" />
-                              <span className="truncate">
+                            <div className="flex items-center gap-1.5">
+                              <MapPin className={`${viewMode === 'compact' ? 'w-3 h-3' : 'w-4 h-4'} text-indigo-500/70`} />
+                              <span className={`truncate ${viewMode === 'compact' ? 'max-w-[100px]' : ''}`}>
                                 {event.locationName || 'Không có địa điểm'}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Users className="w-4 h-4 text-indigo-500/70" />
-                              <span>
-                                {event.totalPersonJoin || event.soldQuantity || 0}/
-                                {event.totalPerson || event.totalTickets || 0} người
-                              </span>
-                            </div>
+                            {viewMode !== 'compact' && (
+                              <div className="flex items-center gap-1.5">
+                                <Users className="w-4 h-4 text-indigo-500/70" />
+                                <span>
+                                  {event.totalPersonJoin || event.soldQuantity || 0}/
+                                  {event.totalPerson || event.totalTickets || 0} người
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -1061,19 +1048,19 @@ const MyEventsPage = () => {
                           </div>
                         )}
 
-                        {eventStatus === EventStatus.Cancelled && event.reasonCancel && (
+                        {/* {eventStatus === EventStatus.Cancelled && event.reasonCancel && (
                           <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
                             <p className="text-gray-800 text-sm">
                               <strong>Lý do hủy:</strong> {event.reasonCancel}
                             </p>
                           </div>
-                        )}
+                        )} */}
 
                         {event.isFlagWarning && (
                           <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4 flex items-start gap-2">
                             <AlertTriangle className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
                             <p className="text-orange-800 text-sm">
-                              <strong>Cảnh báo:</strong> Sự kiện này có báo cáo vi phạm
+                              <strong>Sự kiện đã bị hủy với lý do:</strong> {event.reasonCancel}
                             </p>
                           </div>
                         )}
@@ -1087,83 +1074,149 @@ const MyEventsPage = () => {
                           )}
                         </div>
 
-                        {/* Metrics grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-4 pb-4 border-b border-white/10">
-                          <div className="backdrop-blur-sm bg-gradient-to-br from-slate-100/50 to-slate-50/30 dark:from-slate-800/50 dark:to-slate-700/30 rounded-xl p-3 text-center hover:scale-105 transition-transform">
-                            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Lượt xem</p>
-                            <p className="text-base font-bold text-slate-900 dark:text-white">{event.viewCount || 0}</p>
-                          </div>
-                          <div className="backdrop-blur-sm bg-gradient-to-br from-blue-100/50 to-blue-50/30 dark:from-blue-900/50 dark:to-blue-800/30 rounded-xl p-3 text-center hover:scale-105 transition-transform">
-                            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Đăng ký</p>
-                            <p className="text-base font-bold text-blue-700 dark:text-blue-400">
-                              {event.totalPersonJoin || event.soldQuantity || 0}
-                            </p>
-                          </div>
-                          <div className="backdrop-blur-sm bg-gradient-to-br from-green-100/50 to-green-50/30 dark:from-green-900/50 dark:to-green-800/30 rounded-xl p-3 text-center hover:scale-105 transition-transform">
-                            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Doanh thu</p>
-                            <p className="text-base font-bold text-green-700 dark:text-green-400">
-                              {formatCurrency(event.totalAmount)}
-                            </p>
-                          </div>
-                          <div className="backdrop-blur-sm bg-gradient-to-br from-emerald-100/50 to-emerald-50/30 dark:from-emerald-900/50 dark:to-emerald-800/30 rounded-xl p-3 text-center hover:scale-105 transition-transform">
-                            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Thanh toán</p>
-                            <p className="text-base font-bold text-emerald-700 dark:text-emerald-400">
-                              {formatCurrency(event.payoutAmount)}
-                            </p>
-                          </div>
-                          <div className="backdrop-blur-sm bg-gradient-to-br from-purple-100/50 to-purple-50/30 dark:from-purple-900/50 dark:to-purple-800/30 rounded-xl p-3 text-center hover:scale-105 transition-transform">
-                            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Sức chứa</p>
-                            <p className="text-base font-bold text-purple-700 dark:text-purple-400">{occupancyRate}%</p>
+                        {/* Collapsible Metrics grid */}
+                        <div className="mb-4">
+                          {viewMode !== 'compact' && (
+                            <button
+                              onClick={() => toggleMetrics(event.eventId)}
+                              className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 mb-2 transition-colors"
+                            >
+                              {isMetricsExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                              {isMetricsExpanded ? 'Ẩn thống kê' : 'Xem thống kê'}
+                            </button>
+                          )}
+                          
+                          <div className={`transition-all duration-300 ease-in-out ${isMetricsExpanded || viewMode === 'compact' ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+                            <div className={`grid ${viewMode === 'compact' ? 'grid-cols-3 gap-2' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3'} pb-4 border-b border-white/10`}>
+                              <div className="backdrop-blur-sm bg-gradient-to-br from-slate-100/50 to-slate-50/30 dark:from-slate-800/50 dark:to-slate-700/30 rounded-xl p-2 sm:p-3 text-center hover:scale-105 transition-transform">
+                                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Lượt xem</p>
+                                <p className={`${viewMode === 'compact' ? 'text-sm' : 'text-base'} font-bold text-slate-900 dark:text-white`}>{event.viewCount || 0}</p>
+                              </div>
+                              <div className="backdrop-blur-sm bg-gradient-to-br from-blue-100/50 to-blue-50/30 dark:from-blue-900/50 dark:to-blue-800/30 rounded-xl p-2 sm:p-3 text-center hover:scale-105 transition-transform">
+                                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Đăng ký</p>
+                                <p className={`${viewMode === 'compact' ? 'text-sm' : 'text-base'} font-bold text-blue-700 dark:text-blue-400`}>
+                                  {event.totalPersonJoin || event.soldQuantity || 0}
+                                </p>
+                              </div>
+                              <div className="backdrop-blur-sm bg-gradient-to-br from-green-100/50 to-green-50/30 dark:from-green-900/50 dark:to-green-800/30 rounded-xl p-2 sm:p-3 text-center hover:scale-105 transition-transform">
+                                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Doanh thu</p>
+                                <p className={`${viewMode === 'compact' ? 'text-sm' : 'text-base'} font-bold text-green-700 dark:text-green-400`}>
+                                  {formatCurrency(event.totalAmount)}
+                                </p>
+                              </div>
+                              {viewMode !== 'compact' && (
+                                <>
+                                  <div className="backdrop-blur-sm bg-gradient-to-br from-emerald-100/50 to-emerald-50/30 dark:from-emerald-900/50 dark:to-emerald-800/30 rounded-xl p-2 sm:p-3 text-center hover:scale-105 transition-transform">
+                                    <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Thanh toán</p>
+                                    <p className="text-base font-bold text-emerald-700 dark:text-emerald-400">
+                                      {formatCurrency(event.payoutAmount)}
+                                    </p>
+                                  </div>
+                                  <div className="backdrop-blur-sm bg-gradient-to-br from-purple-100/50 to-purple-50/30 dark:from-purple-900/50 dark:to-purple-800/30 rounded-xl p-2 sm:p-3 text-center hover:scale-105 transition-transform">
+                                    <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Sức chứa</p>
+                                    <p className="text-base font-bold text-purple-700 dark:text-purple-400">{occupancyRate}%</p>
+                                  </div>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
 
                         {/* Actions */}
-                        <div className="flex items-center justify-end gap-2">
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            className="text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-200 rounded-lg transition-colors h-9"
-                            onClick={() => handleViewEvent(event.eventId)}
-                          >
-                            <Eye className="w-4 h-4 mr-1" />
-                            Xem
-                          </Button>
-                          {eventStatus === EventStatus.PendingApproval && (
-                            <Button 
-                              size="sm" 
-                              variant="ghost"
-                              className="text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-200 rounded-lg transition-colors h-9"
-                              onClick={() => handleEditEvent(event.eventId)}
-                            >
-                              <Edit className="w-4 h-4 mr-1" />
-                              Sửa
-                            </Button>
+                        <div className={`flex items-center ${viewMode === 'compact' ? 'justify-between' : 'justify-end'} gap-2`}>
+                          {viewMode === 'compact' ? (
+                            <>
+                              {/* Compact view: Icon-only buttons */}
+                              <div className="flex items-center gap-1">
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost"
+                                  className="text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-200 rounded-lg transition-colors h-8 w-8 p-0"
+                                  onClick={() => handleViewEvent(event.eventId)}
+                                  title="Xem chi tiết"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                {eventStatus === EventStatus.PendingApproval && (
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost"
+                                    className="text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-200 rounded-lg transition-colors h-8 w-8 p-0"
+                                    onClick={() => handleEditEvent(event.eventId)}
+                                    title="Chỉnh sửa"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                )}
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost"
+                                  className="text-slate-600 dark:text-slate-400 hover:bg-red-100/50 dark:hover:bg-red-900/50 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-colors h-8 w-8 p-0"
+                                  onClick={() => handleDeleteEvent(event.eventId)}
+                                  title="Hủy sự kiện"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400 rounded-lg transition-colors h-8 w-8 p-0"
+                                title="Thêm tùy chọn"
+                              >
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              {/* List view: Full buttons with labels */}
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                className="text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-200 rounded-lg transition-colors h-9"
+                                onClick={() => handleViewEvent(event.eventId)}
+                              >
+                                <Eye className="w-4 h-4 mr-1" />
+                                Xem
+                              </Button>
+                              {eventStatus === EventStatus.PendingApproval && (
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost"
+                                  className="text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-200 rounded-lg transition-colors h-9"
+                                  onClick={() => handleEditEvent(event.eventId)}
+                                >
+                                  <Edit className="w-4 h-4 mr-1" />
+                                  Sửa
+                                </Button>
+                              )}
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                className="text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-200 rounded-lg transition-colors h-9"
+                                onClick={() => handleDeleteEvent(event.eventId)}
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                Hủy
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                className="text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-200 rounded-lg transition-colors h-9"
+                                onClick={() => handleCloneEvent(event)}
+                              >
+                                <Copy className="w-4 h-4 mr-1" />
+                                Clone
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400 rounded-lg transition-colors h-9"
+                              >
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </>
                           )}
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            className="text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-200 rounded-lg transition-colors h-9"
-                            onClick={() => handleDeleteEvent(event.eventId)}
-                          >
-                            <Trash2 className="w-4 h-4 mr-1" />
-                            Hủy
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            className="text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-200 rounded-lg transition-colors h-9"
-                            onClick={() => handleCloneEvent(event)}
-                          >
-                            <Copy className="w-4 h-4 mr-1" />
-                            Clone
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400 rounded-lg transition-colors h-9"
-                          >
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
                         </div>
                       </div>
                     </div>

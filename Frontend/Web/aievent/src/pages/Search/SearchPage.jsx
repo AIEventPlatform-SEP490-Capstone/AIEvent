@@ -35,7 +35,7 @@ export default function SearchPage() {
   const [eventProgressStatus, setEventProgressStatus] = useState("all");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
-  const [sortBy, setSortBy] = useState("NearestTime");
+  const [sortBy, setSortBy] = useState("LatestTime");
   const [showAllLocations, setShowAllLocations] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [events, setEvents] = useState([]);
@@ -440,7 +440,7 @@ export default function SearchPage() {
     setEventProgressStatus("all");
     setMinPrice("");
     setMaxPrice("");
-    setSortBy("NearestTime");
+    setSortBy("LatestTime");
   };
 
   return (

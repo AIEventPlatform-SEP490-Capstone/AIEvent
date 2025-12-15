@@ -9,10 +9,11 @@ import {
   ActivityIndicator,
   Image,
   Linking,
+  StatusBar,
 } from 'react-native';
 import { styles, enhancedStyles } from './styles';
 import CustomText from '../../components/common/customTextRN';
-import { GoogleCalendarButton, LocationRow, GradientBackground } from '../../components/common';
+import { GoogleCalendarButton, LocationRow } from '../../components/common';
 import { LinearGradient } from 'expo-linear-gradient';
 import Images from '../../constants/Images';
 import Colors from '../../constants/Colors';
@@ -934,15 +935,17 @@ const TimelineScreen = () => {
   };
 
   return (
-    <GradientBackground style={styles.container}>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#1E88E5" />
       <LinearGradient
-        colors={Colors.gradientHeaderTitle}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
+        colors={['#1E88E5', '#1976D2']}
         style={styles.header}
       >
         <CustomText variant="h2" color="white" style={{ fontSize: Fonts.xxl, fontWeight: '700', fontFamily: Fonts.bold }}>
           Timeline Sự Kiện
+        </CustomText>
+        <CustomText variant="body" color="white" style={{ marginTop: 4, opacity: 0.9 }}>
+          Quản lý lịch trình sự kiện của bạn
         </CustomText>
       </LinearGradient>
 
@@ -996,7 +999,7 @@ const TimelineScreen = () => {
 
       {renderEventModal()}
       {renderStatsModal()}
-    </GradientBackground>
+    </View>
   );
 };
 

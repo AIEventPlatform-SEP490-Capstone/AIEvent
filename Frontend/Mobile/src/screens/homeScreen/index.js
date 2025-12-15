@@ -9,6 +9,7 @@ import {
   Dimensions,
   Alert,
   RefreshControl,
+  StatusBar,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -16,9 +17,7 @@ import { styles } from './styles';
 import CustomText from '../../components/common/customTextRN';
 import NotificationBadge from '../../components/common/NotificationBadge';
 import { LinearGradient } from 'expo-linear-gradient';
-import EventCard from '../../components/presentation/EventCard';
 import EventCardWithFavorite from '../../components/presentation/EventCardWithFavorite';
-import CompactEventCard from '../../components/presentation/CompactEventCard';
 import Images from '../../constants/Images';
 import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
@@ -27,25 +26,70 @@ import ScreenNames from '../../constants/ScreenNames';
 import { useEvents } from '../../hooks/useEvents';
 import { useCategories } from '../../hooks/useCategories';
 import { useFavoriteEvents } from '../../hooks/useFavoriteEvents';
-import { selectEvents, selectEventsLoading, selectEventsError } from '../../redux/slices/eventsSlice';
+import { selectEvents, selectEventsLoading } from '../../redux/slices/eventsSlice';
 import { selectCategories, selectCategoriesLoading } from '../../redux/slices/categoriesSlice';
 import { EventService } from '../../api/services';
 import { isStaffUser } from '../../utils/jwtUtils';
 import AIChatFloating from '../../components/presentation/AIChatFloating';
+import {
+  Music,
+  Palette,
+  Briefcase,
+  GraduationCap,
+  Heart,
+  Utensils,
+  Plane,
+  Trophy,
+  Camera,
+  Gamepad2,
+  Sparkles,
+  Users,
+  Mic2,
+  Film,
+  BookOpen,
+  Dumbbell,
+  ShoppingBag,
+  Landmark,
+  Leaf,
+  Baby,
+  FolderOpen,
+} from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
+
+const categoryStylesMap = [
+  { icon: Music, keywords: ["âm nhạc", "nhạc", "music", "ca nhạc", "concert", "hòa nhạc"] },
+  { icon: Palette, keywords: ["nghệ thuật", "art", "hội họa", "triển lãm", "mỹ thuật", "sáng tạo"] },
+  { icon: Briefcase, keywords: ["kinh doanh", "business", "doanh nghiệp", "công ty", "hội nghị", "networking"] },
+  { icon: GraduationCap, keywords: ["giáo dục", "education", "học", "đào tạo", "workshop", "khóa học", "seminar"] },
+  { icon: Heart, keywords: ["từ thiện", "charity", "tình nguyện", "quyên góp", "thiện nguyện"] },
+  { icon: Utensils, keywords: ["ẩm thực", "food", "đồ ăn", "nấu ăn", "nhà hàng", "ăn uống", "cooking"] },
+  { icon: Plane, keywords: ["du lịch", "travel", "tour", "khám phá", "phượt", "trip"] },
+  { icon: Trophy, keywords: ["thể thao", "sport", "giải đấu", "thi đấu", "bóng đá", "chạy bộ", "marathon"] },
+  { icon: Camera, keywords: ["nhiếp ảnh", "photo", "chụp ảnh", "photography", "hình ảnh"] },
+  { icon: Gamepad2, keywords: ["trò chơi", "game", "gaming", "esport", "giải trí điện tử"] },
+  { icon: Sparkles, keywords: ["giải trí", "entertainment", "vui chơi", "lễ hội", "festival", "party", "tiệc"] },
+  { icon: Users, keywords: ["cộng đồng", "community", "giao lưu", "meetup", "offline", "họp mặt"] },
+  { icon: Mic2, keywords: ["hội thảo", "conference", "talk", "diễn thuyết", "thuyết trình", "speaker"] },
+  { icon: Film, keywords: ["phim", "movie", "điện ảnh", "cinema", "film", "chiếu phim"] },
+  { icon: BookOpen, keywords: ["văn học", "sách", "book", "đọc sách", "thơ", "viết"] },
+  { icon: Dumbbell, keywords: ["sức khỏe", "health", "fitness", "gym", "yoga", "thể dục"] },
+  { icon: ShoppingBag, keywords: ["mua sắm", "shopping", "sale", "chợ", "hội chợ", "bazaar"] },
+  { icon: Landmark, keywords: ["văn hóa", "culture", "di sản", "lịch sử", "truyền thống", "heritage"] },
+  { icon: Leaf, keywords: ["môi trường", "environment", "xanh", "eco", "thiên nhiên", "bảo vệ"] },
+  { icon: Baby, keywords: ["trẻ em", "kids", "children", "gia đình", "family", "thiếu nhi"] },
+];
 
 const HomeScreen = () => {
   const navigation = useNavigation();
   const { accessToken } = useSelector(state => state.auth);
+  const user = useSelector(state => state.auth.user);
 
-  // Use Redux selectors
   const events = useSelector(selectEvents);
   const eventsLoading = useSelector(selectEventsLoading);
   const categories = useSelector(selectCategories);
   const categoriesLoading = useSelector(selectCategoriesLoading);
 
-  // Use custom hooks
   const { getEvents, getEventsForStaff, searchEvents } = useEvents();
   const { refreshCategories } = useCategories();
   const { addFavoriteEvent, removeFavoriteEvent } = useFavoriteEvents();
@@ -53,8 +97,6 @@ const HomeScreen = () => {
   const [searchText, setSearchText] = useState('');
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
-  // Remove the local loading state since we're using Redux loading states
-  // const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [aiEvents, setAiEvents] = useState([]);
   const [loadingAIEvents, setLoadingAIEvents] = useState(false);
@@ -62,18 +104,15 @@ const HomeScreen = () => {
   const [aiRequestCount, setAiRequestCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
-
   useEffect(() => {
     loadEvents();
     refreshCategories();
   }, []);
 
-  // Pull-to-refresh handler
   const onRefresh = async () => {
     setRefreshing(true);
     try {
       await Promise.all([loadEvents(), refreshCategories()]);
-      // Reset AI events state on refresh
       setAiEvents([]);
       setShowAIEvents(false);
       setAiRequestCount(0);
@@ -86,8 +125,6 @@ const HomeScreen = () => {
 
   useEffect(() => {
     if (searchText.trim() === '' && !selectedCategory) {
-      // When no filter is applied, use the events from Redux
-      // Transform all events to ensure consistent structure
       const transformedEvents = events.map(event => transformEventData(event));
       setFilteredEvents(transformedEvents);
     } else {
@@ -95,40 +132,25 @@ const HomeScreen = () => {
     }
   }, [searchText, events, selectedCategory]);
 
-  // Remove this useEffect as it creates a circular dependency
-  // useEffect(() => {
-  //   // Update loading state based on Redux loading states
-  //   setLoading(eventsLoading || categoriesLoading);
-  // }, [eventsLoading, categoriesLoading]);
-
   const loadEvents = async () => {
     try {
-      // setLoading(true); // Remove manual loading state management
       console.log('Loading events...');
-
-      // Check if user is staff
       const isStaff = isStaffUser(accessToken);
 
       let response;
       if (isStaff) {
-        // Use staff-specific endpoint for staff users
         response = await getEventsForStaff({
           pageNumber: 1,
           pageSize: 20
         });
       } else {
-        // Use regular endpoint for non-staff users
         response = await getEvents({
           pageNumber: 1,
           pageSize: 20
         });
       }
 
-      // The data transformation is now handled in the Redux slice
-      // We just need to check if the call was successful
       if (response && response.success) {
-        // The events are already transformed in the Redux store
-        // The useEffect will handle updating filteredEvents
         console.log('Events loaded successfully');
       } else if (response && response.message) {
         console.error('Failed to load events:', response.message);
@@ -138,15 +160,9 @@ const HomeScreen = () => {
       console.error('Error loading events:', error);
       Alert.alert('Error', 'Failed to load events: ' + error.message);
     }
-    // Remove finally block since we're relying on Redux loading states
-    // finally {
-    //   setLoading(false);
-    // }
   };
 
-  // Calculate display price based on ticket details
   const calculateDisplayPrice = (eventData) => {
-    // If we have ticket details, calculate from them
     if (eventData.ticketDetails && eventData.ticketDetails.length > 0) {
       const prices = eventData.ticketDetails.map(ticket => ticket.ticketPrice || 0);
       const minPrice = Math.min(...prices);
@@ -161,17 +177,13 @@ const HomeScreen = () => {
       }
     }
 
-    // Fallback to direct ticketPrice property
     if (eventData.ticketPrice !== undefined && eventData.ticketPrice > 0) {
       return `${eventData.ticketPrice.toLocaleString('vi-VN')}đ`;
     }
-    // Default to Miễn phí if no price information
     return '0đ';
   };
 
-  // Transform event data to ensure consistent structure
   const transformEventData = (eventData) => {
-    // Transform tags to ensure they are strings
     const transformTags = (tags) => {
       if (!tags || !Array.isArray(tags)) return [];
       return tags.map(tag => {
@@ -186,7 +198,6 @@ const HomeScreen = () => {
       ...eventData,
       price: calculateDisplayPrice(eventData),
       tags: transformTags(eventData.tags || eventData.Tags || eventData.eventTags || []),
-      // Include sale times for SaleStatusBadge and EventTimeline
       saleStartTime: eventData.saleStartTime || eventData.SaleStartTime,
       saleEndTime: eventData.saleEndTime || eventData.SaleEndTime,
       startTime: eventData.startTime || eventData.StartTime,
@@ -197,7 +208,6 @@ const HomeScreen = () => {
   const filterEvents = () => {
     let result = events.map(event => transformEventData(event));
 
-    // Filter by search text
     if (searchText.trim() !== '') {
       result = result.filter(event =>
         (event.title && event.title.toLowerCase().includes(searchText.toLowerCase())) ||
@@ -205,7 +215,6 @@ const HomeScreen = () => {
       );
     }
 
-    // Filter by category
     if (selectedCategory) {
       result = result.filter(event =>
         (event.categoryId && event.categoryId === selectedCategory.eventCategoryId) ||
@@ -220,11 +229,7 @@ const HomeScreen = () => {
     try {
       const response = await searchEvents(query);
       console.log('Search response:', response);
-      // The data transformation is now handled in the Redux slice
-      // We just need to check if the call was successful
       if (response && response.success) {
-        // The events are already transformed in the Redux store
-        // The useEffect will handle updating filteredEvents
         console.log('Search completed successfully');
       }
     } catch (error) {
@@ -234,10 +239,8 @@ const HomeScreen = () => {
   };
 
   const handleEventPress = (event) => {
-    // Use the correct ID property - events have eventId, not id
     const eventId = event.eventId || event.EventId || event.id;
 
-    // Only navigate if we have a valid eventId
     if (eventId) {
       navigation.navigate(ScreenNames.EVENT_DETAIL_SCREEN, {
         eventId: eventId,
@@ -250,7 +253,7 @@ const HomeScreen = () => {
 
   const handleCategoryPress = (category) => {
     if (selectedCategory && selectedCategory.eventCategoryId === category.eventCategoryId) {
-      setSelectedCategory(null); // Deselect if same category is pressed
+      setSelectedCategory(null);
     } else {
       setSelectedCategory(category);
     }
@@ -258,17 +261,14 @@ const HomeScreen = () => {
 
   const handleAISuggestionPress = async () => {
     if (showAIEvents && aiEvents.length > 0) {
-      // If already showing AI events, hide them
       setShowAIEvents(false);
       return;
     }
 
-    // Prevent request if already loading or exceeded request limit
     if (loadingAIEvents) {
       return;
     }
 
-    // Limit to maximum 2 requests
     if (aiRequestCount >= 2) {
       Alert.alert('Thông báo', 'Bạn đã tải sự kiện gợi ý tối đa 2 lần. Vui lòng làm mới trang để tiếp tục.');
       return;
@@ -297,51 +297,48 @@ const HomeScreen = () => {
     }
   };
 
-  // Robust keyExtractor that handles undefined IDs
   const keyExtractor = (item, index) => {
-    // Try multiple possible ID properties
     const id = item.id || item.eventId || item.EventId || index.toString();
     return id ? id.toString() : Math.random().toString();
   };
 
-  // Get latest events (first 3 events) - only show separate section if we have more than 3 events
   const shouldSplitEvents = filteredEvents.length > 3;
-  const latestEvents = shouldSplitEvents ? filteredEvents.slice(0, 3) : [];
-  // Show all events in the main list instead of splitting them
+  const featuredEvents = shouldSplitEvents ? filteredEvents.slice(0, 3) : [];
   const eventList = filteredEvents;
 
-  const renderLatestEventCard = ({ item, index }) => (
+  const renderFeaturedEventCard = ({ item, index }) => (
     <TouchableOpacity
-      style={[styles.latestEventCard, { marginLeft: index === 0 ? 0 : 15 }]}
+      style={[styles.featuredCard, { marginLeft: index === 0 ? 20 : 12 }]}
       onPress={() => handleEventPress(item)}
       activeOpacity={0.9}
     >
       <Image
         source={getEventImage(item)}
-        style={styles.latestEventImage}
+        style={styles.featuredImage}
       />
+
+      <View style={styles.featuredLocationBadge}>
+        <Image source={Images.location} style={styles.featuredIcon} />
+        <CustomText variant="caption" style={styles.featuredBadgeText} numberOfLines={1}>
+          {item.location}
+        </CustomText>
+      </View>
+
+      <View style={styles.featuredDateBadge}>
+        <Image source={Images.calendar} style={styles.featuredIcon} />
+        <CustomText variant="caption" style={styles.featuredBadgeText}>
+          {item.date}
+        </CustomText>
+      </View>
+
       <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.7)']}
-        style={styles.latestEventGradient}
+        colors={['transparent', 'rgba(0,0,0,0.85)']}
+        style={styles.featuredGradient}
       >
-        <View style={styles.latestEventContent}>
-          <CustomText variant="h3" color="white" style={styles.latestEventTitle} numberOfLines={2}>
+        <View style={styles.featuredContent}>
+          <CustomText variant="h3" style={styles.featuredTitle} numberOfLines={2}>
             {item.title}
           </CustomText>
-          <View style={styles.latestEventInfo}>
-            <View style={[styles.latestEventInfoRow, { marginBottom: 8 }]}>
-              <Image source={Images.location} style={styles.latestEventIcon} />
-              <CustomText variant="caption" color="white" style={styles.latestEventText} numberOfLines={1}>
-                {item.location}
-              </CustomText>
-            </View>
-            <View style={styles.latestEventInfoRow}>
-              <Image source={Images.calendar} style={styles.latestEventIcon} />
-              <CustomText variant="caption" color="white" style={styles.latestEventText}>
-                {item.date}
-              </CustomText>
-            </View>
-          </View>
         </View>
       </LinearGradient>
     </TouchableOpacity>
@@ -362,50 +359,41 @@ const HomeScreen = () => {
   };
 
   const renderEventCard = ({ item }) => (
-    <EventCardWithFavorite 
-      event={item} 
-      onPress={handleEventPress} 
+    <EventCardWithFavorite
+      event={item}
+      onPress={handleEventPress}
       isStaff={isStaffUser(accessToken)}
     />
   );
 
-  const renderCategoryButton = (category, index) => {
+  const renderCategoryChip = (category, index) => {
     const isSelected = selectedCategory && selectedCategory.eventCategoryId === category.eventCategoryId;
-    const categoryColors = [
-      { bg: '#E3F2FD', icon: '#2196F3' },
-      { bg: '#F3E5F5', icon: '#9C27B0' },
-      { bg: '#E8F5E9', icon: '#4CAF50' },
-      { bg: '#FFF3E0', icon: '#FF9800' },
-      { bg: '#FCE4EC', icon: '#E91E63' },
-    ];
-    const colorIndex = index % categoryColors.length;
-    const colors = isSelected
-      ? { bg: Colors.primary, icon: Colors.white }
-      : categoryColors[colorIndex];
+
+    const matched = categoryStylesMap.find(item =>
+      item.keywords.some(kw => category.eventCategoryName?.toLowerCase().includes(kw.toLowerCase()))
+    );
+    const IconComponent = matched ? matched.icon : FolderOpen;
 
     return (
       <TouchableOpacity
-        key={category.eventCategoryId || category.id || Math.random().toString()}
+        key={category.eventCategoryId || index}
         style={[
-          styles.categoryButton,
-          { backgroundColor: colors.bg },
-          isSelected && styles.categoryButtonSelected
+          styles.categoryChip,
+          isSelected && styles.categoryChipSelected,
         ]}
         onPress={() => handleCategoryPress(category)}
-        activeOpacity={0.8}
+        activeOpacity={0.7}
       >
-        <View style={[styles.categoryIconContainer, { backgroundColor: colors.icon + '20' }]}>
-          <Image
-            source={Images.calendar}
-            style={[styles.categoryIcon, { tintColor: colors.icon }]}
-          />
-        </View>
+        <IconComponent
+          size={18}
+          strokeWidth={2}
+          color={isSelected ? '#1E293B' : '#64748B'}
+        />
         <CustomText
-          variant="caption"
+          variant="body"
           style={[
-            styles.categoryButtonText,
-            { color: colors.icon },
-            isSelected && styles.categoryButtonTextSelected
+            styles.categoryChipText,
+            isSelected && styles.categoryChipTextSelected,
           ]}
           numberOfLines={1}
         >
@@ -417,99 +405,93 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      <StatusBar barStyle="light-content" backgroundColor="#1E88E5" />
+
       <LinearGradient
-        colors={Colors.gradientHeaderTitle}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
+        colors={['#1E88E5', '#1976D2']}
         style={styles.header}
       >
-        <View style={styles.headerContent}>
-          <CustomText variant="h2" color="white" style={styles.headerTitle}>
-            Khám phá sự kiện
-          </CustomText>
-          <NotificationBadge 
+        <View style={styles.headerTop}>
+          <View style={styles.headerLeft}>
+            <CustomText variant="caption" style={styles.headerGreeting}>
+              Hãy khám phá sự kiện!
+            </CustomText>
+            <CustomText variant="h1" style={styles.headerTitle}>
+              Xin chào, {user?.fullName || user?.name || 'Bạn'} 👋
+            </CustomText>
+          </View>
+          <NotificationBadge
             onPress={() => {
               navigation.navigate(ScreenNames.NOTIFICATIONS_SCREEN);
             }}
           />
         </View>
+
+        <View style={styles.searchWrapper}>
+          <View style={styles.searchContainer}>
+            <Image source={Images.search} style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Tìm sự kiện, địa điểm..."
+              placeholderTextColor="#94A3B8"
+              value={searchText}
+              onChangeText={setSearchText}
+            />
+            {!isStaffUser(accessToken) && (
+              <TouchableOpacity
+                onPress={handleAISuggestionPress}
+                style={[
+                  styles.aiButton,
+                  showAIEvents && styles.aiButtonActive,
+                  (loadingAIEvents || aiRequestCount >= 2) && styles.aiButtonDisabled
+                ]}
+                activeOpacity={0.7}
+                disabled={loadingAIEvents || aiRequestCount >= 2}
+              >
+                <Image
+                  source={Images.robotCycle}
+                  style={styles.aiButtonIcon}
+                />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
       </LinearGradient>
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <Image source={Images.search} style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Tìm kiếm sự kiện..."
-          placeholderTextColor={Colors.textLight}
-          value={searchText}
-          onChangeText={setSearchText}
-        />
-
-        {/* Chỉ hiện nút AI với user thường */}
-        {!isStaffUser(accessToken) && (
-          <TouchableOpacity
-            onPress={handleAISuggestionPress}
-            style={styles.aiIconButton}
-            activeOpacity={0.7}
-            disabled={loadingAIEvents || aiRequestCount >= 2}
-          >
-            <Image
-              source={Images.robotCycle}
-              style={[
-                styles.aiIcon,
-                showAIEvents && styles.aiIconActive,
-                (loadingAIEvents || aiRequestCount >= 2) && styles.aiIconDisabled
-              ]}
-            />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Category Section */}
       <View style={styles.categorySection}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryScrollContent}
+          contentContainerStyle={styles.categoryList}
         >
           <TouchableOpacity
             style={[
-              styles.categoryButton,
-              { backgroundColor: selectedCategory ? '#F5F5F5' : Colors.primary },
+              styles.categoryChip,
+              !selectedCategory && styles.categoryChipSelected,
             ]}
             onPress={() => setSelectedCategory(null)}
-            activeOpacity={0.8}
+            activeOpacity={0.7}
           >
-            <View style={[
-              styles.categoryIconContainer,
-              { backgroundColor: selectedCategory ? Colors.primary + '20' : Colors.white + '40' }
-            ]}>
-              <Image
-                source={Images.calendar}
-                style={[
-                  styles.categoryIcon,
-                  { tintColor: selectedCategory ? Colors.primary : Colors.white }
-                ]}
-              />
-            </View>
+            <Sparkles
+              size={18}
+              strokeWidth={2}
+              color={!selectedCategory ? '#1E293B' : '#64748B'}
+            />
             <CustomText
-              variant="caption"
+              variant="body"
               style={[
-                styles.categoryButtonText,
-                { color: selectedCategory ? Colors.primary : Colors.white }
+                styles.categoryChipText,
+                !selectedCategory && styles.categoryChipTextSelected,
               ]}
             >
               Tất cả
             </CustomText>
           </TouchableOpacity>
 
-          {categories.map((category, index) => renderCategoryButton(category, index))}
+          {categories.map((category, index) => renderCategoryChip(category, index))}
         </ScrollView>
       </View>
 
-      {/* Main Content */}
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
@@ -523,20 +505,19 @@ const HomeScreen = () => {
           />
         }
       >
-        {/* AI Recommended Events Section */}
         {showAIEvents && (
-          <View style={styles.aiEventsSection}>
+          <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <View style={styles.aiSectionTitleContainer}>
-                <Image source={Images.robotCycle} style={styles.aiSectionIcon} />
-                <CustomText variant="h2" color="primary" style={styles.sectionTitle}>
-                  Sự kiện gợi ý
+              <View style={styles.sectionTitleContainer}>
+                <Image source={Images.robotCycle} style={styles.sectionIcon} />
+                <CustomText variant="h2" style={styles.sectionTitle}>
+                  Gợi ý cho bạn
                 </CustomText>
               </View>
             </View>
             {loadingAIEvents ? (
-              <View style={styles.loadingContainer}>
-                <CustomText variant="body" color="secondary" align="center">
+              <View style={styles.loadingState}>
+                <CustomText variant="body" style={styles.loadingText}>
                   {Strings.LOADING}
                 </CustomText>
               </View>
@@ -547,10 +528,11 @@ const HomeScreen = () => {
                 keyExtractor={keyExtractor}
                 showsVerticalScrollIndicator={false}
                 scrollEnabled={false}
+                contentContainerStyle={styles.eventsList}
               />
             ) : (
-              <View style={styles.emptyContainer}>
-                <CustomText variant="body" color="secondary" align="center">
+              <View style={styles.emptyState}>
+                <CustomText variant="body" style={styles.emptyText}>
                   Không có sự kiện gợi ý
                 </CustomText>
               </View>
@@ -558,44 +540,48 @@ const HomeScreen = () => {
           </View>
         )}
 
-        {/* Latest Events Section */}
-        {shouldSplitEvents && latestEvents.length > 0 && (
-          <View style={styles.latestEventsSection}>
-            <View style={styles.sectionHeader}>
-              <CustomText variant="h2" color="primary" style={styles.sectionTitle}>
-                Sự kiện mới nhất
+        {shouldSplitEvents && featuredEvents.length > 0 && (
+          <View style={styles.featuredSection}>
+            <View style={[styles.sectionHeader, { paddingHorizontal: 20 }]}>
+              <CustomText variant="h2" style={styles.sectionTitle}>
+                Sự kiện nổi bật
               </CustomText>
             </View>
             <FlatList
-              data={latestEvents}
-              renderItem={renderLatestEventCard}
+              data={featuredEvents}
+              renderItem={renderFeaturedEventCard}
               keyExtractor={keyExtractor}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.latestEventsList}
+              contentContainerStyle={styles.featuredList}
             />
           </View>
         )}
 
-        {/* Events List Section */}
-        <View style={styles.eventsListSection}>
+        <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <CustomText variant="h2" color="primary" style={styles.sectionTitle}>
-              Danh sách sự kiện
+            <CustomText variant="h2" style={styles.sectionTitle}>
+              {selectedCategory ? selectedCategory.eventCategoryName : 'Tất cả sự kiện'}
+            </CustomText>
+            <CustomText variant="caption" style={styles.sectionCount}>
+              {eventList.length} sự kiện
             </CustomText>
           </View>
 
           {eventsLoading || categoriesLoading ? (
-            <View style={styles.loadingContainer}>
-              <CustomText variant="body" color="secondary" align="center">
+            <View style={styles.loadingState}>
+              <CustomText variant="body" style={styles.loadingText}>
                 {Strings.LOADING}
               </CustomText>
             </View>
           ) : eventList.length === 0 ? (
-            <View style={styles.emptyContainer}>
+            <View style={styles.emptyState}>
               <Image source={Images.calendar} style={styles.emptyIcon} />
-              <CustomText variant="h3" color="secondary" align="center" style={styles.emptyText}>
-                Không tìm thấy sự kiện nào
+              <CustomText variant="h3" style={styles.emptyTitle}>
+                Không tìm thấy sự kiện
+              </CustomText>
+              <CustomText variant="body" style={styles.emptyText}>
+                Thử tìm kiếm với từ khóa khác
               </CustomText>
             </View>
           ) : (
@@ -605,10 +591,12 @@ const HomeScreen = () => {
               keyExtractor={keyExtractor}
               showsVerticalScrollIndicator={false}
               scrollEnabled={false}
+              contentContainerStyle={styles.eventsList}
             />
           )}
         </View>
       </ScrollView>
+
       <AIChatFloating />
     </View>
   );

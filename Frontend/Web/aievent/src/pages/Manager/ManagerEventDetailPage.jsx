@@ -742,35 +742,139 @@ Nhấn OK để xác nhận xóa.`;
               </div>
             )}
 
-            {/* Ticket Options */}
+            {/* Ticket Options - Ticket-style Design */}
             {event.ticketDetails && event.ticketDetails.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="text-xl font-bold text-foreground">Loại vé có sẵn</h3>
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+                  <Ticket className="w-5 h-5 text-primary" />
+                  Loại vé có sẵn
+                </h3>
                 {event.ticketDetails.map((ticket, index) => {
                   const availableTickets = ticket.ticketQuantity - (ticket.soldQuantity || 0);
                   const isAvailable = availableTickets > 0;
                   const soldPercentage = ticket.soldQuantity ? (ticket.soldQuantity / ticket.ticketQuantity) * 100 : 0;
+                  const isSoldOut = availableTickets <= 0;
 
                   return (
                     <div
                       key={index}
-                      className="bg-white rounded-xl p-6 border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all duration-300"
+                      className={`relative group ${isSoldOut ? 'opacity-60' : ''}`}
                     >
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h4 className="font-semibold text-foreground mb-1">{ticket.ticketName}</h4>
-                          <p className="text-sm text-muted-foreground">{ticket.ticketDescription}</p>
+                      {/* Ticket Container */}
+                      <div className="flex bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100">
+                        {/* Left Section - Price */}
+                        <div className={`relative w-32 flex-shrink-0 flex flex-col items-center justify-center p-4 ${
+                          isSoldOut 
+                            ? 'bg-gray-400' 
+                            : ticket.ticketPrice === 0 
+                              ? 'bg-gradient-to-br from-green-500 to-emerald-600' 
+                              : 'bg-gradient-to-br from-blue-500 to-indigo-600'
+                        }`}>
+                          {/* Decorative circles for ticket perforation effect */}
+                          <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-background rounded-full"></div>
+                          
+                          {/* Price Display */}
+                          <div className="text-white text-center">
+                            {ticket.ticketPrice === 0 ? (
+                              <>
+                                <span className="text-2xl font-bold">MIỄN</span>
+                                <span className="block text-lg font-semibold">PHÍ</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-2xl font-bold">
+                                  {new Intl.NumberFormat('vi-VN').format(ticket.ticketPrice / 1000)}K
+                                </span>
+                                <span className="block text-xs opacity-80">VNĐ</span>
+                              </>
+                            )}
+                          </div>
+                          
+                          {/* Ticket Icon */}
+                          <Ticket className="w-5 h-5 text-white/50 mt-2" />
                         </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-primary">
-                            {ticket.ticketPrice === 0 ? "" : formatTicketPrice(ticket)}
-                          </p>
+
+                        {/* Dashed Separator */}
+                        <div className="relative flex items-center">
+                          <div className="absolute left-0 top-0 bottom-0 border-l-2 border-dashed border-gray-200"></div>
+                        </div>
+
+                        {/* Right Section - Details */}
+                        <div className="flex-1 p-4 pl-6">
+                          {/* Ticket Header */}
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-bold text-foreground text-lg">{ticket.ticketName}</h4>
+                                {isSoldOut && (
+                                  <Badge className="bg-red-100 text-red-700 text-xs">Hết vé</Badge>
+                                )}
+                                {!isSoldOut && availableTickets <= 10 && (
+                                  <Badge className="bg-orange-100 text-orange-700 text-xs animate-pulse">
+                                    Sắp hết
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-sm text-muted-foreground line-clamp-2">
+                                {ticket.ticketDescription || "Vé tham dự sự kiện"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Ticket Stats */}
+                          <div className="mt-3 pt-3 border-t border-dashed border-gray-200">
+                            <div className="flex items-center justify-between text-sm">
+                              <div className="flex items-center gap-4">
+                                <span className="flex items-center gap-1 text-muted-foreground">
+                                  <Users className="w-4 h-4" />
+                                  <span className="font-medium">{ticket.soldQuantity || 0}</span>
+                                  <span className="text-xs">/ {ticket.ticketQuantity}</span>
+                                </span>
+                                <span className={`font-semibold ${
+                                  isSoldOut ? 'text-red-500' : availableTickets <= 10 ? 'text-orange-500' : 'text-green-600'
+                                }`}>
+                                  {isSoldOut ? 'Đã bán hết' : `Còn ${availableTickets} vé`}
+                                </span>
+                              </div>
+                              
+                              {/* Progress indicator */}
+                              <div className="flex items-center gap-2">
+                                <div className="w-20 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                  <div 
+                                    className={`h-full rounded-full transition-all duration-500 ${
+                                      soldPercentage >= 90 ? 'bg-red-500' : 
+                                      soldPercentage >= 70 ? 'bg-orange-500' : 'bg-green-500'
+                                    }`}
+                                    style={{ width: `${Math.min(soldPercentage, 100)}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs text-muted-foreground font-medium">
+                                  {soldPercentage.toFixed(0)}%
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Barcode Effect */}
+                          <div className="mt-3 flex items-center gap-0.5 opacity-30">
+                            {[...Array(30)].map((_, i) => (
+                              <div 
+                                key={i} 
+                                className="bg-gray-800 rounded-sm"
+                                style={{ 
+                                  width: Math.random() > 0.5 ? '2px' : '3px', 
+                                  height: `${12 + Math.random() * 8}px` 
+                                }}
+                              />
+                            ))}
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>{ticket.soldQuantity || 0} / {ticket.ticketQuantity} đã bán</span>
-                        <span className="font-medium">{availableTickets} còn lại</span>
-                      </div>
+
+                      {/* Hover Effect Overlay */}
+                      {!isSoldOut && (
+                        <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-primary/30 transition-all duration-300 pointer-events-none"></div>
+                      )}
                     </div>
                   );
                 })}
@@ -795,23 +899,60 @@ Nhấn OK để xác nhận xóa.`;
 
             {/* Organizer */}
             {event.organizerEvent && (
-              <div className="bg-white rounded-xl p-8 border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all duration-300">
-                <h2 className="text-xl font-bold text-foreground mb-6">Nhà tổ chức</h2>
-                <div className="flex items-start gap-4">
-                  {event.organizerEvent.imgCompany ? (
-                    <img
-                      src={event.organizerEvent.imgCompany}
-                      alt={event.organizerEvent.companyName || "Organizer"}
-                      className="w-16 h-16 rounded-lg object-cover border border-gray-200"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-lg bg-blue-100 flex items-center justify-center">
-                      <User className="h-8 w-8 text-blue-600" />
+              <div className="space-y-4">
+                <h2 className="text-2xl font-bold text-foreground">Nhà tổ chức</h2>
+                <div className="group relative flex items-center">
+                  {/* Avatar overlapping the card */}
+                  <div className="relative z-20 flex-shrink-0">
+                    <div className="relative">
+                      {/* Animated ring on hover */}
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 animate-pulse opacity-0 group-hover:opacity-100 transition-opacity duration-300 scale-110" />
+                      {/* White border ring */}
+                      <div className="relative w-28 h-28 rounded-full bg-white p-1.5 shadow-lg group-hover:shadow-xl transition-all duration-300">
+                        {event.organizerEvent.imgCompany ? (
+                          <img
+                            src={event.organizerEvent.imgCompany}
+                            alt={event.organizerEvent.companyName || "Organizer"}
+                            className="w-full h-full rounded-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-all duration-300">
+                            <User className="h-12 w-12 text-blue-600" />
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
-                  <div>
-                    <h3 className="font-semibold text-foreground text-lg">{event.organizerEvent.companyName || "Nhà tổ chức"}</h3>
-                    <p className="text-muted-foreground mt-1">{event.organizerEvent.companyDescription || "Thông tin về nhà tổ chức chưa được cập nhật."}</p>
+                  </div>
+
+                  {/* Rectangle card - positioned behind avatar */}
+                  <div className="relative z-10 -ml-14 flex-1 bg-white rounded-2xl shadow-lg group-hover:shadow-xl transition-all duration-500 border border-blue-100 group-hover:border-blue-300 overflow-hidden">
+                    <div className="relative flex items-center justify-between pl-20 pr-6 py-6">
+                      {/* Content */}
+                      <div className="flex-1">
+                        <h3 className="font-bold text-gray-800 text-xl group-hover:text-blue-700 transition-colors duration-300">
+                          {event.organizerEvent.companyName || "Nhà tổ chức"}
+                        </h3>
+                        <p className="text-gray-500 text-sm mt-1 line-clamp-1 group-hover:text-gray-600 transition-colors duration-300">
+                          {event.organizerEvent.companyDescription || "Nhà tổ chức sự kiện"}
+                        </p>
+                      </div>
+
+                      {/* Action button */}
+                      <div className="flex-shrink-0 ml-4">
+                        <div className="w-12 h-12 rounded-full bg-blue-100 group-hover:bg-blue-500 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-180">
+                          <div className="space-y-1.5 group-hover:space-y-2 transition-all duration-300">
+                            <div className="w-5 h-0.5 bg-blue-400 group-hover:bg-white rounded-full transition-colors duration-300" />
+                            <div className="w-5 h-0.5 bg-blue-400 group-hover:bg-white rounded-full transition-colors duration-300" />
+                            <div className="w-5 h-0.5 bg-blue-400 group-hover:bg-white rounded-full transition-colors duration-300" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Hover shine effect */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1111,9 +1252,6 @@ Nhấn OK để xác nhận xóa.`;
                     {/* Location Info */}
                     <div className="space-y-2">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0 shadow-sm">
-                          <MapPin className="w-5 h-5 text-white" />
-                        </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="font-bold text-foreground text-sm mb-1">
                             {event.locationName}
