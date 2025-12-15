@@ -1507,19 +1507,19 @@ const ManagerEventsPage = () => {
                           </div>
                         )}
 
-                        {eventStatus === EventStatus.Cancelled && event.reasonCancel && (
+                        {/* {eventStatus === EventStatus.Cancelled && event.reasonCancel && (
                           <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
                             <p className="text-gray-800 text-sm">
                               <strong>Lý do hủy:</strong> {event.reasonCancel}
                             </p>
                           </div>
-                        )}
+                        )} */}
 
                         {event.isFlagWarning && (
                           <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4 flex items-start gap-2">
                             <AlertTriangle className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
                             <p className="text-orange-800 text-sm">
-                              <strong>Cảnh báo:</strong> Sự kiện này có báo cáo vi phạm
+                              <strong> Sự kiện bị hủy với lý do:</strong> {event.reasonCancel}
                             </p>
                           </div>
                         )}
