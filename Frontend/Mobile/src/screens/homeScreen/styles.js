@@ -2,160 +2,135 @@ import { StyleSheet, Dimensions, Platform } from 'react-native';
 import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
 
-const { width, height } = Dimensions.get('window');
-const CARD_WIDTH = width * 0.82;
+const { width } = Dimensions.get('window');
+const FEATURED_CARD_WIDTH = width * 0.85;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FAFBFC',
   },
-  
-  // Modern Header with glassmorphism effect
+
+  // ===== HEADER SECTION =====
   header: {
-    paddingTop: Platform.OS === 'ios' ? 56 : 48,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
+    paddingTop: Platform.OS === 'ios' ? 56 : 44,
+    paddingBottom: 28,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
-  headerContent: {
+  headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerGreeting: {
+    fontSize: 13,
+    fontFamily: Fonts.medium,
+    color: 'rgba(255, 255, 255, 0.85)',
+    marginBottom: 4,
+    letterSpacing: 0.3,
   },
   headerTitle: {
     fontSize: 26,
     fontFamily: Fonts.bold,
-    color: Colors.white,
-    letterSpacing: 0.5,
-  },
-  notificationButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  notificationIcon: {
-    width: 22,
-    height: 22,
-    tintColor: Colors.white,
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
   },
 
-  // Modern Search Bar with floating effect
+  // ===== SEARCH SECTION =====
+  searchWrapper: {
+    paddingHorizontal: 20,
+  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
-    marginHorizontal: 20,
-    paddingHorizontal: 18,
-    borderRadius: 16,
-    marginTop: -20,
-    marginBottom: 20,
-    shadowColor: '#1976D2',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(33, 150, 243, 0.08)',
-  },
-  searchIcon: {
-    width: 20,
-    height: 20,
-    tintColor: Colors.primary,
-    marginRight: 14,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: Fonts.md,
-    fontFamily: Fonts.regular,
-    color: Colors.textPrimary,
-    paddingVertical: 16,
-  },
-  aiIconButton: {
-    padding: 10,
-    marginLeft: 8,
-    backgroundColor: 'rgba(33, 150, 243, 0.08)',
-    borderRadius: 12,
-  },
-  aiIcon: {
-    width: 28,
-    height: 28,
-  },
-  aiIconActive: {
-    opacity: 1,
-  },
-  aiIconDisabled: {
-    opacity: 0.4,
-  },
-  clearButton: {
-    padding: 8,
-  },
-  clearButtonText: {
-    fontSize: Fonts.sm,
-    fontFamily: Fonts.medium,
-  },
-
-  // Modern Category Section with pill design
-  categorySection: {
-    marginBottom: 24,
-  },
-  categoryScrollContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-  },
-  categoryButton: {
-    width: 100,
-    height: 100,
-    borderRadius: 20,
-    marginRight: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.04)',
   },
-  categoryButtonSelected: {
-    shadowColor: Colors.primary,
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 8,
-    borderColor: Colors.primary,
-    borderWidth: 2,
+  searchIcon: {
+    width: 18,
+    height: 18,
+    tintColor: '#94A3B8',
+    marginRight: 10,
   },
-  categoryIconContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: Fonts.regular,
+    color: '#1E293B',
+    padding: 0,
+  },
+  aiButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginLeft: 8,
   },
-  categoryIcon: {
-    width: 26,
-    height: 26,
+  aiButtonActive: {
+    backgroundColor: '#DBEAFE',
   },
-  categoryButtonText: {
-    fontSize: Fonts.xs,
-    fontFamily: Fonts.semiBold,
-    textAlign: 'center',
-    letterSpacing: 0.2,
+  aiButtonDisabled: {
+    opacity: 0.4,
   },
-  categoryButtonTextSelected: {
-    color: Colors.white,
+  aiButtonIcon: {
+    width: 22,
+    height: 22,
   },
 
-  // Content Area
+  // ===== CATEGORY SECTION =====
+  categorySection: {
+    paddingVertical: 18,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  categoryList: {
+    paddingHorizontal: 20,
+    gap: 10,
+  },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 24,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    gap: 7,
+  },
+  categoryChipSelected: {
+    backgroundColor: '#F8FAFC',
+    borderColor: '#64748B',
+    borderWidth: 1.5,
+  },
+  categoryChipText: {
+    fontSize: 14,
+    fontFamily: Fonts.medium,
+    color: '#64748B',
+    letterSpacing: 0.1,
+  },
+  categoryChipTextSelected: {
+    color: '#1E293B',
+    fontFamily: Fonts.semiBold,
+  },
+
+  // ===== CONTENT SECTION =====
   content: {
     flex: 1,
   },
@@ -163,58 +138,185 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
 
-  // Modern Latest Events Section
-  latestEventsSection: {
-    marginBottom: 32,
+  // ===== FEATURED SECTION =====
+  featuredSection: {
+    marginTop: 24,
+    marginBottom: 28,
   },
-  aiEventsSection: {
-    paddingHorizontal: 20,
-    marginBottom: 32,
-    backgroundColor: 'rgba(33, 150, 243, 0.04)',
-    paddingVertical: 20,
-    marginHorizontal: 0,
-    borderRadius: 0,
+  featuredList: {
+    paddingLeft: 0,
+    paddingRight: 10,
   },
-  aiSectionTitleContainer: {
+  featuredCard: {
+    width: FEATURED_CARD_WIDTH,
+    height: 200,
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    marginRight: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  featuredImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  featuredGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '60%',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 18,
+    paddingBottom: 18,
+  },
+  featuredBadge: {
+    position: 'absolute',
+    top: 14,
+    left: 14,
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  featuredBadgeText: {
+    fontSize: 10,
+    fontFamily: Fonts.semiBold,
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  featuredContent: {
+    gap: 10,
+  },
+  featuredTitle: {
+    fontSize: 17,
+    fontFamily: Fonts.bold,
+    color: '#FFFFFF',
+    lineHeight: 23,
+  },
+  featuredInfo: {
+    gap: 7,
+  },
+  featuredInfoItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
   },
-  aiSectionIcon: {
-    width: 26,
-    height: 26,
-    marginRight: 10,
+  featuredIcon: {
+    width: 13,
+    height: 13,
+    tintColor: '#FFFFFF',
+    marginRight: 6,
+    resizeMode: 'contain',
   },
-  eventsListSection: {
-    paddingHorizontal: 20,
+  featuredText: {
+    fontSize: 12,
+    fontFamily: Fonts.medium,
+    color: '#FFFFFF',
   },
 
-  // Modern Section Header
+  // ===== SECTION COMMON =====
+  section: {
+    marginBottom: 32,
+    paddingHorizontal: 20,
+  },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 18,
-    paddingHorizontal: 20,
+  },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  sectionIcon: {
+    width: 24,
+    height: 24,
+    tintColor: '#64748B',
   },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 19,
     fontFamily: Fonts.bold,
     color: '#1E293B',
-    letterSpacing: 0.3,
+    letterSpacing: -0.3,
   },
-  viewAllText: {
-    fontSize: Fonts.sm,
-    fontFamily: Fonts.semiBold,
-    color: Colors.primary,
+  sectionCount: {
+    fontSize: 13,
+    fontFamily: Fonts.medium,
+    color: '#94A3B8',
   },
 
-  // Modern Latest Event Cards with glassmorphism
+  // ===== EVENTS LIST =====
+  eventsList: {
+    gap: 14,
+  },
+
+  // ===== LOADING & EMPTY STATES =====
+  loadingState: {
+    paddingVertical: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    fontSize: 15,
+    fontFamily: Fonts.regular,
+    color: '#64748B',
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 32,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderStyle: 'dashed',
+  },
+  emptyIcon: {
+    width: 72,
+    height: 72,
+    tintColor: '#CBD5E1',
+    marginBottom: 16,
+    opacity: 0.6,
+  },
+  emptyTitle: {
+    fontSize: 17,
+    fontFamily: Fonts.semiBold,
+    color: '#475569',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    fontFamily: Fonts.regular,
+    color: '#94A3B8',
+    textAlign: 'center',
+    lineHeight: 21,
+  },
+
+  // ===== LEGACY SUPPORT =====
+  latestEventsSection: {
+    marginBottom: 32,
+  },
   latestEventsList: {
     paddingHorizontal: 20,
     paddingRight: 8,
   },
   latestEventCard: {
-    width: CARD_WIDTH,
+    width: FEATURED_CARD_WIDTH,
     height: 240,
     borderRadius: 24,
     overflow: 'hidden',
@@ -274,12 +376,158 @@ const styles = StyleSheet.create({
     color: Colors.white,
     flex: 1,
   },
-
-  // Loading & Empty States
+  eventsListSection: {
+    paddingHorizontal: 20,
+  },
+  categoryButton: {
+    width: 100,
+    height: 100,
+    borderRadius: 20,
+    marginRight: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.04)',
+  },
+  categoryButtonSelected: {
+    shadowColor: Colors.primary,
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 8,
+    borderColor: Colors.primary,
+    borderWidth: 2,
+  },
+  categoryIconContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  categoryIcon: {
+    width: 26,
+    height: 26,
+  },
+  categoryButtonText: {
+    fontSize: Fonts.xs,
+    fontFamily: Fonts.semiBold,
+    textAlign: 'center',
+    letterSpacing: 0.2,
+  },
+  categoryButtonTextSelected: {
+    color: Colors.white,
+  },
+  categoryScrollContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  notificationButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  notificationIcon: {
+    width: 22,
+    height: 22,
+    tintColor: Colors.white,
+  },
+  clearButton: {
+    padding: 8,
+  },
+  clearButtonText: {
+    fontSize: Fonts.sm,
+    fontFamily: Fonts.medium,
+  },
+  aiIconButton: {
+    padding: 10,
+    marginLeft: 8,
+    backgroundColor: 'rgba(33, 150, 243, 0.08)',
+    borderRadius: 12,
+  },
+  aiIcon: {
+    width: 28,
+    height: 28,
+  },
+  aiIconActive: {
+    opacity: 1,
+  },
+  aiIconDisabled: {
+    opacity: 0.4,
+  },
   loadingContainer: {
     paddingVertical: 60,
     alignItems: 'center',
   },
+  featuredLocationBadge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+
+    backgroundColor: 'rgba(255, 255, 255, 0.75)', // mờ hơn
+    paddingHorizontal: 8,
+    paddingVertical: 4, // giảm để icon không bị đụng
+    borderRadius: 10,
+    gap: 4,
+
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+
+  featuredDateBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+
+    backgroundColor: 'rgba(255, 255, 255, 0.75)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    gap: 4,
+
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  featuredIcon: {
+    width: 12,
+    height: 12,
+    tintColor: '#64748B',
+    resizeMode: 'contain',
+    opacity: 0.8, // mềm hơn
+  },
+  featuredBadgeText: {
+    fontSize: 11, // nhỏ hơn
+    fontFamily: Fonts.medium,
+    color: '#334155',
+    opacity: 0.9,
+  },
+
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: 60,
@@ -291,134 +539,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 12,
     elevation: 3,
-  },
-  emptyIcon: {
-    width: 100,
-    height: 100,
-    tintColor: '#CBD5E1',
-    marginBottom: 24,
-  },
-  emptyText: {
-    fontSize: Fonts.lg,
-    fontFamily: Fonts.medium,
-    color: '#64748B',
-  },
-
-  // Featured Events Section
-  featuredEventsSection: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
-  },
-
-  // Greeting Section
-  greetingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  greetingText: {
-    fontSize: 22,
-    fontFamily: Fonts.bold,
-    color: '#1E293B',
-    marginRight: 8,
-  },
-  userName: {
-    fontSize: 22,
-    fontFamily: Fonts.bold,
-    color: Colors.primary,
-  },
-  dateContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
-  dateText: {
-    fontSize: 14,
-    fontFamily: Fonts.medium,
-    color: '#64748B',
-  },
-
-  // Enhanced category chips
-  categoryChipWebStyle: {
-    paddingHorizontal: 22,
-    paddingVertical: 12,
-    borderRadius: 30,
-    marginRight: 12,
-    backgroundColor: Colors.white,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  categoryChipWebStyleSelected: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  categoryTextWebStyle: {
-    fontSize: Fonts.md,
-    fontFamily: Fonts.medium,
-    color: '#64748B',
-  },
-  categoryTextWebStyleSelected: {
-    color: Colors.white,
-    fontWeight: '600',
-  },
-
-  // Filter button
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.white,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 24,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-    marginLeft: 12,
-  },
-  filterButtonText: {
-    fontSize: Fonts.sm,
-    fontFamily: Fonts.medium,
-    color: '#64748B',
-    marginLeft: 8,
-  },
-  filterIcon: {
-    width: 18,
-    height: 18,
-    tintColor: '#64748B',
-  },
-
-  // Section header with divider
-  sectionTitleWithDivider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sectionTitleText: {
-    fontSize: 22,
-    fontFamily: Fonts.bold,
-    color: '#1E293B',
-    marginRight: 14,
-  },
-  divider: {
-    flex: 1,
-    height: 2,
-    backgroundColor: '#E2E8F0',
-    borderRadius: 1,
   },
 });
 

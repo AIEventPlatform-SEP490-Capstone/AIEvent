@@ -63,28 +63,6 @@ export const styles = StyleSheet.create({
     height: 22,
     tintColor: '#1E293B',
   },
-  qrButton: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 54 : 44,
-    right: 20,
-    zIndex: 10,
-    width: 46,
-    height: 46,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  qrIcon: {
-    width: 22,
-    height: 22,
-    tintColor: Colors.primary,
-  },
 
   // Modern Content Card with floating effect
   content: {
