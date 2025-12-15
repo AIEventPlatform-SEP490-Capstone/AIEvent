@@ -657,7 +657,7 @@ namespace AIEvent.Application.Services.Implements
                         if (string.IsNullOrEmpty(transaction.Description))
                             transaction.Description = "Giao dịch đã hết hạn (quá 15 phút)";
                         else
-                            transaction.Description += "<br>Giao dịch đã hết hạn (quá 15 phút)";
+                            transaction.Description += ". Giao dịch đã hết hạn (quá 15 phút)";
   
                         transactionUpdate.Add(transaction);
                         _logger.LogInformation("Expired pending transaction {TransactionId} marked as Failed", transaction.Id);
