@@ -49,6 +49,7 @@ import SaleCountdown from '../../components/Event/SaleCountdown';
 import EventCardSkeleton from '../../components/Event/EventCardSkeleton';
 import EmptyEventState from '../../components/Event/EmptyEventState';
 import QuickFilterChips from '../../components/Event/QuickFilterChips';
+import RadialStatusMenu from '../../components/Event/RadialStatusMenu';
 
 const MyEventsPage = () => {
   const navigate = useNavigate();
@@ -756,10 +757,38 @@ const MyEventsPage = () => {
           )}
 
           {/* Filters Section */}
-          <div className="mb-8 backdrop-blur-sm bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-2xl shadow-lg overflow-hidden">
+          <div className="mb-8 backdrop-blur-sm bg-white/60 dark:bg-white/5 border border-white/60 dark:border-white/10 rounded-2xl shadow-lg overflow-visible">
             {/* Filter Header */}
             <div className="flex items-center justify-between p-4 border-b border-white/20 dark:border-white/10">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4 flex-wrap">
+                {/* Radial Status Menu */}
+                <div className="relative z-50">
+                  <RadialStatusMenu
+                    activeTab={activeTab}
+                    onTabChange={(tab) => {
+                      setActiveTab(tab);
+                      setShowInitiationDropdown(false);
+                      setShowCompletionDropdown(false);
+                    }}
+                    stats={{
+                      total: getTabCount('all'),
+                      draft: getTabCount('draft'),
+                      pendingApproval: getTabCount(EventStatus.PendingApproval),
+                      approved: getTabCount(EventStatus.Approved),
+                      rejected: getTabCount(EventStatus.Rejected),
+                      cancelled: getTabCount(EventStatus.Cancelled),
+                      waitingForPayout: getTabCount(EventStatus.WaitingForPayout),
+                      paidOut: getTabCount(EventStatus.PaidOut),
+                      errorPayment: getTabCount(EventStatus.ErrorPayment),
+                    }}
+                    showDraft={true}
+                    showFlagged={false}
+                    EventStatus={EventStatus}
+                  />
+                </div>
+                
+                <div className="h-8 w-px bg-slate-200 dark:bg-slate-700" />
+                
                 <button
                   onClick={() => setShowFilters(!showFilters)}
                   className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
@@ -900,200 +929,6 @@ const MyEventsPage = () => {
                     <span>{dateError}</span>
                   </div>
                 )}
-              </div>
-            </div>
-          </div>
-
-          {/* Tabs Section */}
-          <div className="mb-6 relative z-30">
-            <div className="overflow-visible">
-              <div className="flex gap-2 p-1.5 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/40 dark:border-slate-700/40 rounded-xl shadow-sm flex-wrap">
-                <button
-                  onClick={() => {
-                    setActiveTab('all');
-                    setShowInitiationDropdown(false);
-                    setShowCompletionDropdown(false);
-                  }}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 whitespace-nowrap ${
-                    activeTab === 'all'
-                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-md shadow-indigo-500/25'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50'
-                  }`}
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                  Tất cả
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300'}`}>
-                    {getTabCount('all')}
-                  </span>
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveTab('draft');
-                    setShowInitiationDropdown(false);
-                    setShowCompletionDropdown(false);
-                  }}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 whitespace-nowrap ${
-                    activeTab === 'draft'
-                      ? 'bg-gradient-to-r from-slate-500 to-slate-600 text-white shadow-md shadow-slate-500/25'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50'
-                  }`}
-                >
-                  <Edit className="w-4 h-4" />
-                  Bản nháp
-                  {getTabCount('draft') > 0 && (
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === 'draft' ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300'}`}>
-                      {getTabCount('draft')}
-                    </span>
-                  )}
-                </button>
-                
-                {/* Event Initiation Dropdown */}
-                <div className="relative" ref={initiationDropdownRef}>
-                  <button
-                    onClick={() => {
-                      setShowInitiationDropdown(!showInitiationDropdown);
-                      setShowCompletionDropdown(false);
-                    }}
-                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 whitespace-nowrap ${
-                      [EventStatus.PendingApproval, EventStatus.Approved, EventStatus.Rejected].includes(activeTab)
-                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/25'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50'
-                    }`}
-                  >
-                    <Clock className="w-4 h-4" />
-                    {initiationDropdownLabel}
-                    <ChevronDown className={`w-4 h-4 transition-transform ${showInitiationDropdown ? 'rotate-180' : ''}`} />
-                  </button>
-                  
-                  {showInitiationDropdown && (
-                    <div className="absolute top-full left-0 mt-2 w-52 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
-                      <button
-                        onClick={() => {
-                          setActiveTab(EventStatus.PendingApproval);
-                          setShowInitiationDropdown(false);
-                        }}
-                        className={`flex items-center gap-3 w-full text-left px-4 py-3 text-sm transition-colors ${
-                          activeTab === EventStatus.PendingApproval
-                            ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400'
-                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                        }`}
-                      >
-                        <Clock className="w-4 h-4 text-amber-500" />
-                        Chờ phê duyệt
-                      </button>
-                      <button
-                        onClick={() => {
-                          setActiveTab(EventStatus.Approved);
-                          setShowInitiationDropdown(false);
-                        }}
-                        className={`flex items-center gap-3 w-full text-left px-4 py-3 text-sm transition-colors ${
-                          activeTab === EventStatus.Approved
-                            ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
-                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                        }`}
-                      >
-                        <CheckCircle className="w-4 h-4 text-emerald-500" />
-                        Đã phê duyệt
-                      </button>
-                      <button
-                        onClick={() => {
-                          setActiveTab(EventStatus.Rejected);
-                          setShowInitiationDropdown(false);
-                        }}
-                        className={`flex items-center gap-3 w-full text-left px-4 py-3 text-sm transition-colors ${
-                          activeTab === EventStatus.Rejected
-                            ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
-                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                        }`}
-                      >
-                        <XCircle className="w-4 h-4 text-red-500" />
-                        Bị từ chối
-                      </button>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Event Completion Dropdown */}
-                <div className="relative" ref={completionDropdownRef}>
-                  <button
-                    onClick={() => {
-                      setShowCompletionDropdown(!showCompletionDropdown);
-                      setShowInitiationDropdown(false);
-                    }}
-                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 whitespace-nowrap ${
-                      [EventStatus.WaitingForPayout, EventStatus.PaidOut, EventStatus.ErrorPayment].includes(activeTab)
-                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md shadow-blue-500/25'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50'
-                    }`}
-                  >
-                    <TrendingUp className="w-4 h-4" />
-                    {completionDropdownLabel}
-                    <ChevronDown className={`w-4 h-4 transition-transform ${showCompletionDropdown ? 'rotate-180' : ''}`} />
-                  </button>
-                  
-                  {showCompletionDropdown && (
-                    <div className="absolute top-full left-0 mt-2 w-52 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
-                      <button
-                        onClick={() => {
-                          setActiveTab(EventStatus.WaitingForPayout);
-                          setShowCompletionDropdown(false);
-                        }}
-                        className={`flex items-center gap-3 w-full text-left px-4 py-3 text-sm transition-colors ${
-                          activeTab === EventStatus.WaitingForPayout
-                            ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400'
-                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                        }`}
-                      >
-                        <Clock className="w-4 h-4 text-indigo-500" />
-                        Chờ thanh toán
-                      </button>
-                      <button
-                        onClick={() => {
-                          setActiveTab(EventStatus.PaidOut);
-                          setShowCompletionDropdown(false);
-                        }}
-                        className={`flex items-center gap-3 w-full text-left px-4 py-3 text-sm transition-colors ${
-                          activeTab === EventStatus.PaidOut
-                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
-                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                        }`}
-                      >
-                        <CheckCircle className="w-4 h-4 text-blue-500" />
-                        Đã thanh toán
-                      </button>
-                      <button
-                        onClick={() => {
-                          setActiveTab(EventStatus.ErrorPayment);
-                          setShowCompletionDropdown(false);
-                        }}
-                        className={`flex items-center gap-3 w-full text-left px-4 py-3 text-sm transition-colors ${
-                          activeTab === EventStatus.ErrorPayment
-                            ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400'
-                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                        }`}
-                      >
-                        <AlertTriangle className="w-4 h-4 text-orange-500" />
-                        Lỗi thanh toán
-                      </button>
-                    </div>
-                  )}
-                </div>
-                
-                <button
-                  onClick={() => {
-                    setActiveTab(EventStatus.Cancelled);
-                    setShowInitiationDropdown(false);
-                    setShowCompletionDropdown(false);
-                  }}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 whitespace-nowrap ${
-                    activeTab === EventStatus.Cancelled
-                      ? 'bg-gradient-to-r from-gray-500 to-gray-600 text-white shadow-md shadow-gray-500/25'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50'
-                  }`}
-                >
-                  <XCircle className="w-4 h-4" />
-                  Đã hủy
-                </button>
               </div>
             </div>
           </div>
