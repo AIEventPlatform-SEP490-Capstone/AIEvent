@@ -90,7 +90,7 @@ export function EventDiscovery({
   const [maxPrice, setMaxPrice] = useState(filters.maxPrice || "");
   const [eventProgressStatus, setEventProgressStatus] = useState(filters.eventProgressStatus || "all");
   const [ticketSaleStatus, setTicketSaleStatus] = useState(filters.ticketSaleStatus || "all");
-  const [sortBy, setSortBy] = useState(filters.sortBy || "NearestTime");
+  const [sortBy, setSortBy] = useState(filters.sortBy || "LatestTime");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [likedEvents, setLikedEvents] = useState(new Set([2, 4]));
   const [isAIEventsExpanded, setIsAIEventsExpanded] = useState(true);
@@ -275,7 +275,7 @@ export function EventDiscovery({
       ticketSaleStatus !== "all" ||
       minPrice !== "" ||
       maxPrice !== "" ||
-      sortBy !== "NearestTime"
+      sortBy !== "LatestTime"
     );
   };
 
@@ -285,7 +285,7 @@ export function EventDiscovery({
     setTicketSaleStatus("all");
     setMinPrice("");
     setMaxPrice("");
-    setSortBy("NearestTime");
+    setSortBy("LatestTime");
     if (onFiltersChange) {
       onFiltersChange({
         selectedCategory,
@@ -294,7 +294,7 @@ export function EventDiscovery({
         maxPrice: "",
         eventProgressStatus: "all",
         ticketSaleStatus: "all",
-        sortBy: "NearestTime",
+        sortBy: "LatestTime",
       });
     }
   };
@@ -327,8 +327,8 @@ export function EventDiscovery({
         setMaxPrice("");
         break;
       case "sortBy":
-        newSortBy = "NearestTime";
-        setSortBy("NearestTime");
+        newSortBy = "LatestTime";
+        setSortBy("LatestTime");
         break;
     }
 
@@ -594,7 +594,7 @@ export function EventDiscovery({
             Bộ lọc
             {hasActiveFilters() && (
               <span className="w-5 h-5 rounded-full bg-white text-violet-600 text-xs flex items-center justify-center font-bold">
-                {[searchQuery, eventProgressStatus !== "all", ticketSaleStatus !== "all", minPrice || maxPrice, sortBy !== "NearestTime"].filter(Boolean).length}
+                {[searchQuery, eventProgressStatus !== "all", ticketSaleStatus !== "all", minPrice || maxPrice, sortBy !== "LatestTime"].filter(Boolean).length}
               </span>
             )}
           </button>
@@ -635,7 +635,7 @@ export function EventDiscovery({
                   </button>
                 </span>
               )}
-              {sortBy !== "NearestTime" && (
+              {sortBy !== "LatestTime" && (
                 <span className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-medium">
                   {sortByOptions.find((o) => o.value === sortBy)?.label}
                   <button onClick={() => removeFilter("sortBy")} className="hover:text-gray-900">
