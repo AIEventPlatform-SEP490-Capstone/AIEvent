@@ -77,9 +77,9 @@ export default function ChatPage() {
 
   // Suggested questions
   const suggestedQuestions = [
-    "Tìm các sự kiện âm nhạc sắp diễn ra ở TP.HCM",
+    "Tìm các sự kiện thể thao sắp tới",
     "Các sự kiện công nghệ tháng này",
-    "Hướng dẫn đặt vé sự kiện",
+    "Tìm các sự kiện mức giá trong khoảng 500k - 1 triệu đồng",
     "Tìm sự kiện gần khu vực Thủ Đức",
     "Các workshop sắp tới",
   ];
@@ -146,6 +146,17 @@ export default function ChatPage() {
     if (remaining) parts.push(remaining);
 
     return parts;
+  };
+
+  const cleanMarkdownAsterisks = (text) => {
+    if (!text) return text;
+
+    return text
+      .replace(/\*\*\*\*([^*]+)\*\*\*\*/g, '$1') // ****text**** → text
+      .replace(/\*\*\*([^*]+)\*\*\*/g, '$1')     // ***text*** → text (italic + bold)
+      .replace(/\*\*([^*]+)\*\*/g, '$1')         // **text** → text
+      .replace(/\*([^*]+)\*/g, '$1')             // *text* → text
+      .replace(/\\\*/g, '*');                    // bỏ escape nếu có \*
   };
 
   const handleSpeechResult = useCallback((text) => {
@@ -282,7 +293,7 @@ export default function ChatPage() {
           // Add AI response
           messagesWithPrompts.push({
             id: item.id || `ai-${index}`,
-            content: item.response || "",
+            content: cleanMarkdownAsterisks(item.response || ""),
             sender: "ai",
             timestamp: new Date(item.createdAt),
             eventInfo: parseEventFromResponse(item.response || ""),
@@ -356,11 +367,12 @@ export default function ChatPage() {
 
       // Extract response text - data is a string, not an object
       const responseText = response?.data || response?.message || "";
+      const cleanedResponseText = cleanMarkdownAsterisks(responseText);
       const eventInfo = parseEventFromResponse(responseText);
 
       const aiMessage = {
         id: (Date.now() + 1).toString(),
-        content: responseText,
+        content: cleanedResponseText,
         sender: "ai",
         timestamp: new Date(),
         eventInfo: eventInfo,
@@ -660,60 +672,85 @@ export default function ChatPage() {
                                 <div className="flex items-start gap-2">
                                   <div
                                     className={`rounded-xl break-words shadow-sm relative overflow-hidden ${isUserMessage
-                                      ? "bg-gradient-to-br from-blue-600 to-cyan-600 text-white rounded-tr-md px-3 py-2.5"
-                                      : "bg-gradient-to-br from-white to-blue-50/30 dark:from-gray-800 dark:to-blue-950/20 border border-blue-100/60 dark:border-blue-900/40 rounded-tl-md px-3.5 py-2.5 shadow-md backdrop-blur-sm"
+                                      ? "bg-gradient-to-br from-blue-600 to-cyan-600 text-white rounded-tr-md px-2 py-1.5"
+                                      : "bg-gradient-to-br from-white to-blue-50/30 dark:from-gray-800 dark:to-blue-950/20 border border-blue-100/60 dark:border-blue-900/40 rounded-tl-md px-2 py-1.5 shadow-md backdrop-blur-sm"
                                       }`}
                                   >
                                     {/* Subtle gradient overlay for AI messages */}
                                     {!isUserMessage && (
                                       <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5 pointer-events-none" />
                                     )}
-                                    <div className={`relative ${isUserMessage ? "text-white" : "text-slate-700 dark:text-slate-200"}`}>
-                                      <div className="text-sm leading-relaxed space-y-1.5">
-                                        {message.content
-                                          .split("\n")
-                                          .map((line, index) => {
-                                            if (
-                                              line.startsWith("**") &&
-                                              line.endsWith("**")
-                                            ) {
-                                              return (
-                                                <div
-                                                  key={index}
-                                                  className="font-bold text-base mb-1.5 flex items-center gap-2 text-blue-700 dark:text-blue-300"
-                                                >
-                                                  <Sparkles className="h-3.5 w-3.5 text-yellow-500 dark:text-yellow-400 flex-shrink-0" />
-                                                  <span>{line.slice(2, -2)}</span>
+                                    <div className="text-base leading-relaxed space-y-1">
+                                      {message.content.split("\n").map((line, index) => {
+                                        const trimmedLine = line.trim();
+
+                                        if (!trimmedLine) {
+                                          return null;
+                                        }
+
+                                        if (
+                                          trimmedLine.match(/^\d+\.\s*\*\*.*\*\*$/) ||
+                                          (trimmedLine.startsWith("**") && trimmedLine.endsWith("**"))
+                                        ) {
+                                          const title = trimmedLine
+                                            .replace(/^\d+\.\s*\*\*/, "")
+                                            .replace(/\*\*$/, "")
+                                            .trim();
+
+                                          return (
+                                            <h5
+                                              key={index}
+                                              className="text-lg font-semibold text-slate-900 dark:text-slate-100 mt-5 mb-2"
+                                            >
+                                              {title}
+                                            </h5>
+                                          );
+                                        }
+
+                                        // Bullet points
+                                        if (trimmedLine.startsWith("- ") || trimmedLine.startsWith("• ")) {
+                                          const content = trimmedLine.replace(/^[-•]\s*/, "").trim();
+
+                                          const boldLabelMatch = content.match(/^\*\*(.*?):\*\*\s*(.*)/);
+                                          if (boldLabelMatch) {
+                                            const label = boldLabelMatch[1] + ":";
+                                            const value = boldLabelMatch[2];
+
+                                            return (
+                                              <div key={index} className="flex gap-3 my-1.5">
+                                                <span className="text-sm mt-0.5 flex-shrink-0 text-slate-500">•</span>
+                                                <div>
+                                                  <span className="font-medium text-slate-900 dark:text-slate-100">
+                                                    {label}
+                                                  </span>{" "}
+                                                  <span className="{textColorClass}">
+                                                    {renderLineWithLink(value)}
+                                                  </span>
                                                 </div>
-                                              );
-                                            }
-                                            if (
-                                              line.startsWith("• ") ||
-                                              line.startsWith("- ")
-                                            ) {
-                                              return (
-                                                <div
-                                                  key={index}
-                                                  className="flex items-start gap-2 my-1.5 pl-1"
-                                                >
-                                                  <div className="mt-1.5 flex-shrink-0">
-                                                    <div className="h-1.5 w-1.5 rounded-full bg-blue-500 dark:bg-blue-400" />
-                                                  </div>
-                                                  <span className="flex-1">{line.slice(2)}</span>
-                                                </div>
-                                              );
-                                            }
-                                            return line ? (
-                                              <div key={index} className="my-1.5 first:mt-0 last:mb-0">
-                                                {renderLineWithLink(line)}
                                               </div>
-                                            ) : (
-                                              <div key={index} className="h-2" />
                                             );
-                                          })}
-                                      </div>
+                                          }
+
+                                          return (
+                                            <div key={index} className="flex gap-3 my-1.5">
+                                              <span className="text-sm mt-0.5 flex-shrink-0 text-slate-500">•</span>
+                                              <span className="{textColorClass}">
+                                                {renderLineWithLink(content)}
+                                              </span>
+                                            </div>
+                                          );
+                                        }
+
+                                        return (
+                                          <p key={index} className="my-2 ${textColorClass}">
+                                            {renderLineWithLink(trimmedLine)}
+                                          </p>
+                                        );
+                                      })}
                                     </div>
                                   </div>
+
+                                  {/* Show voice */}
                                   {message.sender === "ai" && (
                                     <button className="h-6 w-6 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors flex items-center justify-center">
                                       <DropdownMenu>
