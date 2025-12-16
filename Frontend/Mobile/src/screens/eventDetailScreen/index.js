@@ -570,7 +570,7 @@ const EventDetailScreen = () => {
         )}
 
         {/* Đánh giá */}
-        <RatingSectionMobile eventId={eventId} />
+        <RatingSectionMobile eventId={eventId} eventEndTime={event?.endTime} />
       </View>
 
       {/* Modal Chia sẻ */}
