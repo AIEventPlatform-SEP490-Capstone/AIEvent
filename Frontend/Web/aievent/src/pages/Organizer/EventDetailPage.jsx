@@ -60,6 +60,7 @@ import { EventTimeline } from '../../components/Event/EventTimeline';
 import { SidebarCard } from '../../components/Event/SidebarCard';
 import { ActionButton } from '../../components/Event/ActionButton';
 import { StatCard } from '../../components/Event/StatCard';
+import { RegistrationStats } from '../../components/Event/RegistrationStats';
 
 const EventDetailPage = () => {
   const { eventId } = useParams();
@@ -852,46 +853,7 @@ Nhấn OK để xác nhận xóa.`;
 
             {/* Registration Statistics - Enhanced */}
             <SidebarCard title="Thống kê đăng ký" icon={<Users className="w-4 h-4" />} gradient>
-              <div className="space-y-4">
-                {/* Main Stats Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <StatCard
-                    icon={Users}
-                    label="Đã đăng ký"
-                    value={event.soldQuantity || 0}
-                    color="blue"
-                  />
-                  <StatCard
-                    icon={Target}
-                    label="Còn lại"
-                    value={totalAvailableTickets}
-                    color="green"
-                  />
-                  <StatCard
-                    icon={Heart}
-                    label="Yêu thích"
-                    value={event.favoriteCount || 0}
-                    color="red"
-                  />
-                </div>
-
-                {/* Progress Bar */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium text-gray-700">Tiến độ</span>
-                    <span className="font-bold text-primary">{occupancyPercent.toFixed(0)}%</span>
-                  </div>
-                  <div className="relative w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-                    <div 
-                      className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-500 shadow-sm"
-                      style={{ width: `${occupancyPercent}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 text-center">
-                    {event.soldQuantity || 0} / {event.totalTickets} vé
-                  </p>
-                </div>
-              </div>
+              <RegistrationStats event={event} />
             </SidebarCard>
 
             {/* Location Card - Enhanced */}
