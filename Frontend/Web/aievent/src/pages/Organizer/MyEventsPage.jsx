@@ -1208,13 +1208,6 @@ const MyEventsPage = () => {
                                 <Copy className="w-4 h-4 mr-1" />
                                 Clone
                               </Button>
-                              <Button 
-                                size="sm" 
-                                variant="ghost"
-                                className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400 rounded-lg transition-colors h-9"
-                              >
-                                <MoreHorizontal className="w-4 h-4" />
-                              </Button>
                             </>
                           )}
                         </div>

@@ -64,6 +64,7 @@ import { EventTimeline } from '../../components/Event/EventTimeline';
 import { SidebarCard } from '../../components/Event/SidebarCard';
 import { ActionButton } from '../../components/Event/ActionButton';
 import { StatCard } from '../../components/Event/StatCard';
+import { RegistrationStats } from '../../components/Event/RegistrationStats';
 
 const ManagerEventDetailPage = () => {
   const { eventId } = useParams();
@@ -883,7 +884,7 @@ Nhấn OK để xác nhận xóa.`;
 
             {/* About Event */}
             <div className="bg-white rounded-xl p-8 border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all duration-300">
-              <h2 className="text-2xl font-bold text-foreground mb-6">Về sự kiện</h2>
+              <h2 className="text-2xl font-bold text-foreground mb-6">Chi tiết sự kiện</h2>
               {event.detailedDescription || event.description ? (
                 <div 
                   className="prose max-w-none text-muted-foreground leading-relaxed mb-6 ql-editor"
@@ -1070,7 +1071,7 @@ Nhấn OK để xác nhận xóa.`;
             )}
 
             {/* Quick Actions - Enhanced */}
-            <SidebarCard title="Hành động nhanh" gradient>
+            <SidebarCard title="Tác Vụ" icon={<Activity className="w-4 h-4" />} gradient>
               <div className="space-y-3">
                 <ActionButton
                   icon={Eye}
@@ -1078,13 +1079,7 @@ Nhấn OK để xác nhận xóa.`;
                   onClick={handleViewPublicPage}
                   variant="secondary"
                 />
-                
-                {/* <ActionButton
-                  icon={Copy}
-                  label="Sao chép sự kiện"
-                  onClick={handleCloneEvent}
-                  variant="secondary"
-                /> */}
+
                 
                 {(event.status === EventStatus.Approved || event.status === EventStatus.WaitingForPayout) && (
                   <>
@@ -1199,49 +1194,8 @@ Nhấn OK để xác nhận xóa.`;
             </SidebarCard>
 
             {/* Registration Statistics - Enhanced */}
-            <SidebarCard title="Thống kê đăng ký" gradient>
-              <div className="space-y-4">
-                {/* Main Stats Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <StatCard
-                    icon={Users}
-                    label="Đã đăng ký"
-                    value={event.soldQuantity || 0}
-                    color="blue"
-                  />
-                  <StatCard
-                    icon={Target}
-                    label="Còn lại"
-                    value={totalAvailableTickets}
-                    color="green"
-                  />
-                  <StatCard
-                    icon={Heart}
-                    label="Yêu thích"
-                    value={event.favoriteCount || 0}
-                    color="red"
-                  />
-                </div>
-
-                {/* Progress Bar */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium text-gray-700">Tiến độ</span>
-                    <span className="font-bold text-primary">{occupancyPercent.toFixed(0)}%</span>
-                  </div>
-                  <div className="relative w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-                    <div 
-                      className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-500 shadow-sm"
-                      style={{ width: `${occupancyPercent}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 text-center">
-                    {event.soldQuantity || 0} / {event.totalTickets} vé
-                  </p>
-                </div>
-
-                
-              </div>
+            <SidebarCard title="Thống kê đăng ký" icon={<Users className="w-4 h-4" />} gradient>
+              <RegistrationStats event={event} />
             </SidebarCard>
 
             {/* Location Card - Enhanced */}

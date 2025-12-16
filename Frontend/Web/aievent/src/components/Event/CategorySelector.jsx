@@ -151,16 +151,6 @@ const CategorySelector = ({ selectedCategories, onCategoriesChange, className })
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg shadow-lg">
-          <Calendar className="h-6 w-6 text-white" />
-        </div>
-        <div>
-          <h3 className="text-lg font-bold text-foreground">Danh mục sự kiện</h3>
-          <p className="text-sm text-muted-foreground">Chọn danh mục phù hợp cho sự kiện của bạn</p>
-        </div>
-      </div>
 
       {/* Selected Categories Badge */}
       {selectedCategories.length > 0 && (

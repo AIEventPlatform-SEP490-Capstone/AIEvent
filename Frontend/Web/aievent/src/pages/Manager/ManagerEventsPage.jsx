@@ -156,8 +156,6 @@ const ManagerEventsPage = () => {
         
         if (response) {
           const organizersData = response.items || response || [];
-          console.log('Organizers data:', organizersData);
-          console.log('First organizer:', organizersData[0]);
           setOrganizers(organizersData);
         } else {
           setOrganizers([]);
@@ -1618,7 +1616,7 @@ const ManagerEventsPage = () => {
                           {eventStatus === EventStatus.ErrorPayment && (
                             <Button
                               size="sm"
-                              className="bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors h-9 shadow-md"
+                              className="bg-orange-100 text-orange-700 hover:bg-orange-200 border border-orange-200 rounded-lg h-9 disabled:bg-orange-50 disabled:text-orange-400 transition-colors"
                               onClick={() => {
                                 setSelectedEventForPayment(event);
                                 setIsResolvePaymentDialogOpen(true);
@@ -1644,7 +1642,8 @@ const ManagerEventsPage = () => {
                               <Button
                                 size="sm"
                                 onClick={() => handleApproveEvent(event.eventId)}
-                                className="bg-green-600 hover:bg-green-700"
+                                className=
+                                "bg-green-100 text-green-700 hover:bg-green-200 disabled:bg-green-50 disabled:text-green-400"
                                 disabled={approvingEventId === event.eventId}
                               >
                                 {approvingEventId === event.eventId ? (
@@ -1664,7 +1663,7 @@ const ManagerEventsPage = () => {
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="bg-red-600 hover:bg-red-700 text-white border-red-600"
+                                    className="bg-red-100 text-red-700 hover:bg-red-200 border border-red-200 disabled:bg-red-50 disabled:text-red-400"
                                     disabled={rejectingEventId === event.eventId}
                                   >
                                     {rejectingEventId === event.eventId ? (
@@ -1724,14 +1723,6 @@ const ManagerEventsPage = () => {
                               </Dialog>
                             </>
                           )}
-
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400 rounded-lg transition-colors h-9"
-                          >
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
                         </div>
                       </div>
                     </div>

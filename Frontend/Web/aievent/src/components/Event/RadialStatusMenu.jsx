@@ -342,10 +342,16 @@ const RadialStatusMenu = ({
           }}
         />
         
-        {!isOpen && stats.pendingApproval > 0 && activeTab !== EventStatus?.PendingApproval && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse border-2 border-white">
-            {stats.pendingApproval > 9 ? '9+' : stats.pendingApproval}
+        {/* Show count badge for active tab when menu is closed */}
+        {!isOpen && activeItem.count > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-slate-900 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+            {activeItem.count > 99 ? '99+' : activeItem.count}
           </span>
+        )}
+        
+        {/* Show pending approval notification when not on pending tab */}
+        {!isOpen && stats.pendingApproval > 0 && activeTab !== EventStatus?.PendingApproval && activeTab !== 'all' && (
+          <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-amber-500 rounded-full animate-pulse border border-white" />
         )}
       </button>
 

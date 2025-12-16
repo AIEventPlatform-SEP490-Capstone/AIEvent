@@ -74,13 +74,13 @@ const DateTimePicker = ({
     maxDateStr = maxDate.toISOString().slice(0, 10);
   }
 
-  const validateAndEmit = (dateVal, h, m) => {
+  const validateAndEmit = (dateVal, h, m, shouldBlockInvalid = true) => {
     if (!dateVal) {
       onChange('');
       if (onErrorChange) {
         onErrorChange('');
       }
-      return;
+      return { isValid: true };
     }
     
     const [year, month, day] = dateVal.split('-');
@@ -94,20 +94,28 @@ const DateTimePicker = ({
     
     // Kiểm tra strictly sau thời gian hiện tại (không bằng)
     if (selected <= minDate) {
+      const errorMsg = `${fieldName} phải sau ${minDate.toLocaleString('vi-VN')}`;
       if (onErrorChange) {
-        onErrorChange(`${fieldName} phải sau ${minDate.toLocaleString('vi-VN')}`);
+        onErrorChange(errorMsg);
       }
-      return;
+      // Nếu shouldBlockInvalid = true, không emit giá trị không hợp lệ
+      if (shouldBlockInvalid) {
+        return { isValid: false, error: errorMsg };
+      }
     }
     
     // Kiểm tra trước thời gian kết thúc nếu có
     if (max) {
       const maxDate = new Date(max);
-      if (selected > maxDate) {
+      if (selected >= maxDate) {
+        const errorMsg = `${fieldName} phải trước ${maxDate.toLocaleString('vi-VN')}`;
         if (onErrorChange) {
-          onErrorChange(`${fieldName} không được sau ${maxDate.toLocaleString('vi-VN')}`);
+          onErrorChange(errorMsg);
         }
-        return;
+        // Nếu shouldBlockInvalid = true, không emit giá trị không hợp lệ
+        if (shouldBlockInvalid) {
+          return { isValid: false, error: errorMsg };
+        }
       }
     }
     
@@ -116,24 +124,36 @@ const DateTimePicker = ({
     }
     
     onChange(selected.toISOString());
+    return { isValid: true };
   };
 
   const handleDate = (e) => {
     const val = e.target.value;
-    setDate(val);
-    validateAndEmit(val, hours, minutes);
+    // Validate trước khi cập nhật state
+    const result = validateAndEmit(val, hours, minutes, true);
+    // Chỉ cập nhật state nếu giá trị hợp lệ hoặc rỗng
+    if (result.isValid || !val) {
+      setDate(val);
+    } else {
+      // Nếu không hợp lệ, vẫn cập nhật date để hiển thị nhưng không emit
+      setDate(val);
+    }
   };
 
   const handleHourChange = (e) => {
     const h = Math.max(0, Math.min(23, parseInt(e.target.value) || 0));
+    // Validate trước khi cập nhật state
+    const result = validateAndEmit(date, h, minutes, true);
+    // Luôn cập nhật state để UI responsive
     setHours(h);
-    validateAndEmit(date, h, minutes);
   };
 
   const handleMinuteChange = (e) => {
     const m = Math.max(0, Math.min(59, parseInt(e.target.value) || 0));
+    // Validate trước khi cập nhật state
+    const result = validateAndEmit(date, hours, m, true);
+    // Luôn cập nhật state để UI responsive
     setMinutes(m);
-    validateAndEmit(date, hours, m);
   };
 
   // Format display
