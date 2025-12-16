@@ -14,6 +14,7 @@ const CustomButton = ({
   loading = false,
   variant = 'primary', // primary, secondary, outline
   size = 'medium', // small, medium, large
+  colors, // custom gradient colors for primary variant
 }) => {
   const getButtonStyle = () => {
     const baseStyle = [styles.button, styles[`${variant}Button`], styles[`${size}Button`]];
@@ -24,7 +25,8 @@ const CustomButton = ({
 
   const getTextStyle = () => {
     const baseStyle = [styles.buttonText, styles[`${variant}Text`], styles[`${size}Text`]];
-    if (disabled) baseStyle.push(styles.disabledText);
+    // Don't apply disabledText for primary variant to keep white color
+    if (disabled && variant !== 'primary') baseStyle.push(styles.disabledText);
     if (textStyle) baseStyle.push(textStyle);
     return baseStyle;
   };
@@ -40,6 +42,7 @@ const CustomButton = ({
   );
 
   if (variant === 'primary') {
+    const gradientColors = colors || ['#2196F3', '#1976D2', '#1565C0'];
     return (
       <TouchableOpacity
         onPress={onPress}
@@ -47,7 +50,7 @@ const CustomButton = ({
         activeOpacity={0.8}
       >
         <LinearGradient
-          colors={Colors.gradientPrimary}
+          colors={gradientColors}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={[

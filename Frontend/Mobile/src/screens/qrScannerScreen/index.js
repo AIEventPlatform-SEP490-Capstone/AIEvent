@@ -5,9 +5,14 @@ import {
   Alert,
   Dimensions,
   ActivityIndicator,
+  Animated,
+  Easing,
+  TouchableOpacity,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
 import CustomButton from '../../components/common/customButtonRN';
@@ -15,7 +20,8 @@ import CustomText from '../../components/common/customTextRN';
 import Colors from '../../constants/Colors';
 import BookingService from '../../api/services/BookingService';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+const SCAN_AREA_SIZE = width * 0.7;
 
 const QrScannerScreen = () => {
   const navigation = useNavigation();
@@ -25,51 +31,70 @@ const QrScannerScreen = () => {
   const [permission, requestPermission] = useCameraPermissions();
   const [showLoading, setShowLoading] = useState(false);
 
+  // Animation cho scan line
+  const scanLineAnim = useRef(new Animated.Value(0)).current;
+
   // useRef để kiểm soát trạng thái xử lý
   const isProcessingRef = useRef(false);
-  // useRef để chống spam quét cùng 1 mã
   const lastScannedRef = useRef({ data: null, timestamp: 0 });
 
-  // Throttle function: chỉ cho phép xử lý 1 lần mỗi 3 giây
+  // Animation scan line
+  useEffect(() => {
+    const animateScanLine = () => {
+      scanLineAnim.setValue(0);
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(scanLineAnim, {
+            toValue: 1,
+            duration: 2000,
+            easing: Easing.linear,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scanLineAnim, {
+            toValue: 0,
+            duration: 2000,
+            easing: Easing.linear,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    };
+    animateScanLine();
+  }, []);
+
+  const scanLineTranslate = scanLineAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, SCAN_AREA_SIZE - 4],
+  });
+
+  // Throttle function
   const throttle = (func, delay) => {
     let inThrottle = false;
     return (...args) => {
       if (!inThrottle) {
         func(...args);
         inThrottle = true;
-        setTimeout(() => {
-          inThrottle = false;
-        }, delay);
+        setTimeout(() => { inThrottle = false; }, delay);
       }
     };
   };
 
-  // Hàm xử lý quét QR
   const handleBarCodeScanned = async ({ data }) => {
     const now = Date.now();
-
-    // 1. Kiểm tra nếu đang xử lý → bỏ qua
     if (isProcessingRef.current) return;
+    if (lastScannedRef.current.data === data && (now - lastScannedRef.current.timestamp) < 3000) return;
 
-    // 2. Kiểm tra nếu cùng mã QR trong vòng 3 giây → bỏ qua
-    if (lastScannedRef.current.data === data && (now - lastScannedRef.current.timestamp) < 3000) {
-      return;
-    }
-
-    // Đánh dấu bắt đầu xử lý
     isProcessingRef.current = true;
     lastScannedRef.current = { data, timestamp: now };
     setShowLoading(true);
 
-    console.log('QR Scanned:', data.substring(0, 30) + '...');
+    // Haptic feedback khi quét được
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      // First, get ticket information
       const response = await BookingService.checkInfor(data);
-      console.log('Check-in information response:', response);
       
       if (response.success) {
-        // Navigate to confirmation screen with ticket info
         navigation.navigate('CheckInConfirmationScreen', {
           ticketInfo: response.data,
           qrContent: data
@@ -78,10 +103,8 @@ const QrScannerScreen = () => {
         showErrorAlert(response.message || 'Không thể lấy thông tin vé');
       }
     } catch (error) {
-      // Error already logged in BaseApiService, just show alert to user
       showErrorAlert(error.message || 'Lỗi không xác định');
     } finally {
-      // Reset processing state after a delay to allow navigation
       setTimeout(() => {
         isProcessingRef.current = false;
         setShowLoading(false);
@@ -89,30 +112,24 @@ const QrScannerScreen = () => {
     }
   };
 
-  // Hiển thị lỗi với message phù hợp
   const showErrorAlert = (rawMessage) => {
     let errorMessage = 'Không thể xác nhận vé. Vui lòng thử lại.';
-
     const msg = rawMessage.toLowerCase();
 
     if (msg.includes('invalid data') || msg.includes('bad request')) {
-      errorMessage = 'Mã QR không hợp lệ hoặc đã hết hạn. Vui lòng kiểm tra lại.';
+      errorMessage = 'Mã QR không hợp lệ hoặc đã hết hạn.';
     } else if (msg.includes('not found')) {
-      errorMessage = 'Không tìm thấy thông tin vé. Vui lòng kiểm tra lại.';
+      errorMessage = 'Không tìm thấy thông tin vé.';
     } else if (msg.includes('already') || msg.includes('used') || msg.includes('checked in')) {
       errorMessage = 'Vé này đã được sử dụng trước đó.';
     } else if (msg.includes('permission')) {
-      errorMessage = 'Bạn không có quyền thực hiện check-in cho vé này.';
+      errorMessage = 'Bạn không có quyền thực hiện check-in.';
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-
-    Alert.alert('Lỗi', errorMessage, [
-      { text: 'OK', onPress: resetProcessing },
-    ]);
+    Alert.alert('Lỗi', errorMessage, [{ text: 'OK', onPress: resetProcessing }]);
   };
 
-  // Reset trạng thái để quét tiếp
   const resetProcessing = () => {
     setTimeout(() => {
       isProcessingRef.current = false;
@@ -120,32 +137,29 @@ const QrScannerScreen = () => {
     }, 1500);
   };
 
-  // Phát âm thanh thành công (tùy chọn)
-  const playSuccessSound = async () => {
-    try {
-      const { sound } = await Audio.Sound.createAsync(
-        require('../../assets/sounds/success.mp3') // Thay bằng file bạn có
-      );
-      await sound.playAsync();
-      setTimeout(() => sound.unloadAsync(), 1000);
-    } catch (e) {
-      console.log('Sound not played (optional)');
-    }
-  };
-
-  // Throttled handler: chỉ xử lý 1 lần mỗi 3 giây
   const throttledScan = useRef(throttle(handleBarCodeScanned, 3000)).current;
 
   useEffect(() => {
     requestPermission();
   }, [requestPermission]);
 
-  // --- Giao diện ---
+  // Corner component
+  const Corner = ({ position }) => {
+    const cornerStyles = {
+      topLeft: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4 },
+      topRight: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4 },
+      bottomLeft: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4 },
+      bottomRight: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4 },
+    };
+    return <View style={[styles.corner, cornerStyles[position]]} />;
+  };
+
   if (!permission) {
     return (
-      <View style={styles.container}>
-        <CustomText variant="body" color="primary">
-          Đang yêu cầu quyền truy cập camera...
+      <View style={styles.permissionContainer}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <CustomText variant="body" style={styles.permissionText}>
+          Đang yêu cầu quyền camera...
         </CustomText>
       </View>
     );
@@ -153,15 +167,21 @@ const QrScannerScreen = () => {
 
   if (!permission.granted) {
     return (
-      <View style={styles.container}>
-        <CustomText variant="body" color="primary">
-          Không có quyền truy cập camera. Vui lòng cấp quyền trong cài đặt.
+      <View style={styles.permissionContainer}>
+        <View style={styles.permissionIcon}>
+          <Ionicons name="camera-outline" size={60} color={Colors.primary} />
+        </View>
+        <CustomText variant="h2" style={styles.permissionTitle}>
+          Cần quyền Camera
+        </CustomText>
+        <CustomText variant="body" style={styles.permissionText}>
+          Vui lòng cấp quyền camera để quét mã QR
         </CustomText>
         <CustomButton
-          title="Yêu cầu lại"
+          title="Cấp quyền Camera"
           onPress={requestPermission}
           variant="primary"
-          style={{ marginTop: 20 }}
+          style={styles.permissionButton}
         />
       </View>
     );
@@ -169,110 +189,265 @@ const QrScannerScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Chỉ hiển thị camera khi KHÔNG đang xử lý */}
       {!showLoading && (
         <CameraView
           style={StyleSheet.absoluteFillObject}
           onBarcodeScanned={throttledScan}
-          barcodeScannerSettings={{
-            barcodeTypes: ['qr'],
-          }}
+          barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
         />
       )}
 
       {/* Loading overlay */}
       {showLoading && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={Colors.white} />
-          <CustomText variant="h3" color="white" style={styles.loadingText}>
-            Đang xử lý check-in...
-          </CustomText>
+          <View style={styles.loadingBox}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+            <CustomText style={styles.loadingText}>Đang xử lý...</CustomText>
+          </View>
         </View>
       )}
 
-      {/* Overlay hướng dẫn */}
+      {/* Main overlay */}
       <View style={styles.overlay}>
-        <View style={styles.topOverlay} />
+        {/* Top section với gradient */}
+        <LinearGradient
+          colors={['rgba(0,0,0,0.8)', 'rgba(0,0,0,0.5)']}
+          style={styles.topSection}
+        >
+          <View style={styles.header}>
+            <View style={{ width: 44 }} />
+            <View style={styles.headerCenter}>
+              <Ionicons name="qr-code" size={28} color="#fff" />
+              <CustomText style={styles.headerTitle}>Quét mã QR</CustomText>
+            </View>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.headerBtn}
+            >
+              <Ionicons name="close" size={26} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
 
-        <View style={styles.centerOverlay}>
-          <View style={styles.leftOverlay} />
-          <View style={styles.scanArea} />
-          <View style={styles.rightOverlay} />
+        {/* Center scan area */}
+        <View style={styles.centerSection}>
+          <View style={styles.sideOverlay} />
+          
+          <View style={styles.scanAreaWrapper}>
+            <View style={styles.scanArea}>
+              <Corner position="topLeft" />
+              <Corner position="topRight" />
+              <Corner position="bottomLeft" />
+              <Corner position="bottomRight" />
+              
+              {/* Animated scan line */}
+              <Animated.View
+                style={[
+                  styles.scanLine,
+                  { transform: [{ translateY: scanLineTranslate }] },
+                ]}
+              >
+                <LinearGradient
+                  colors={['transparent', Colors.primary, 'transparent']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.scanLineGradient}
+                />
+              </Animated.View>
+            </View>
+          </View>
+          
+          <View style={styles.sideOverlay} />
         </View>
 
-        <View style={styles.bottomOverlay}>
-          <CustomText variant="h3" color="white" style={styles.instructionText}>
-            Quét mã QR trên vé của khách
-          </CustomText>
-
-          <CustomButton
-            title="Quay lại"
-            onPress={() => navigation.goBack()}
-            variant="outline"
-            style={styles.backButton}
-          />
-        </View>
+        {/* Bottom section */}
+        <LinearGradient
+          colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0.9)']}
+          style={styles.bottomSection}
+        >
+          <View style={styles.instructionBox}>
+            <Ionicons name="scan-outline" size={24} color={Colors.primary} />
+            <CustomText style={styles.instructionText}>
+              Đưa mã QR vào khung để quét
+            </CustomText>
+          </View>
+          
+          <View style={styles.tipsContainer}>
+            <View style={styles.tipItem}>
+              <Ionicons name="sunny-outline" size={18} color="#aaa" />
+              <CustomText style={styles.tipText}>Đảm bảo đủ ánh sáng</CustomText>
+            </View>
+            <View style={styles.tipItem}>
+              <Ionicons name="move-outline" size={18} color="#aaa" />
+              <CustomText style={styles.tipText}>Giữ camera ổn định</CustomText>
+            </View>
+          </View>
+        </LinearGradient>
       </View>
     </View>
   );
 };
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
+    backgroundColor: '#000',
+  },
+  permissionContainer: {
+    flex: 1,
+    backgroundColor: '#F5F7FA',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30,
+  },
+  permissionIcon: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#E3F2FD',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  permissionTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#37474F',
+    marginBottom: 12,
+  },
+  permissionText: {
+    fontSize: 15,
+    color: '#78909C',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  permissionButton: {
+    width: '100%',
+    borderRadius: 12,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(0,0,0,0.85)',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 20,
+    zIndex: 100,
+  },
+  loadingBox: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 40,
+    paddingVertical: 30,
+    borderRadius: 16,
+    alignItems: 'center',
   },
   loadingText: {
-    marginTop: 20,
-    fontSize: 18,
+    marginTop: 16,
+    fontSize: 16,
+    color: '#37474F',
+    fontWeight: '500',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 10,
   },
-  topOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+  topSection: {
+    paddingTop: 50,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
   },
-  centerOverlay: {
+  header: {
     flexDirection: 'row',
-    height: width * 0.7,
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  leftOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  scanArea: {
-    width: width * 0.7,
-    height: width * 0.7,
-    borderWidth: 2,
-    borderColor: Colors.primary,
-    borderRadius: 10,
-  },
-  rightOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  bottomOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+  headerBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+  },
+  headerCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#fff',
+    marginLeft: 10,
+  },
+  centerSection: {
+    flexDirection: 'row',
+    height: SCAN_AREA_SIZE,
+  },
+  sideOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  scanAreaWrapper: {
+    width: SCAN_AREA_SIZE,
+    height: SCAN_AREA_SIZE,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scanArea: {
+    width: SCAN_AREA_SIZE,
+    height: SCAN_AREA_SIZE,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  corner: {
+    position: 'absolute',
+    width: 30,
+    height: 30,
+    borderColor: Colors.primary,
+    borderRadius: 4,
+  },
+  scanLine: {
+    position: 'absolute',
+    left: 10,
+    right: 10,
+    height: 3,
+  },
+  scanLineGradient: {
+    flex: 1,
+    borderRadius: 2,
+  },
+  bottomSection: {
+    flex: 1,
+    paddingHorizontal: 30,
+    paddingTop: 40,
+    alignItems: 'center',
+  },
+  instructionBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 30,
+    marginBottom: 30,
   },
   instructionText: {
-    marginBottom: 30,
-    textAlign: 'center',
+    fontSize: 15,
+    color: '#fff',
+    marginLeft: 10,
+    fontWeight: '500',
   },
-  backButton: {
-    width: '80%',
+  tipsContainer: {
+    width: '100%',
+  },
+  tipItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  tipText: {
+    fontSize: 13,
+    color: '#aaa',
+    marginLeft: 10,
   },
 });
 

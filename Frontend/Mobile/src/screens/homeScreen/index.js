@@ -10,6 +10,7 @@ import {
   Alert,
   RefreshControl,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -31,6 +32,7 @@ import { selectCategories, selectCategoriesLoading } from '../../redux/slices/ca
 import { EventService } from '../../api/services';
 import { isStaffUser } from '../../utils/jwtUtils';
 import AIChatFloating from '../../components/presentation/AIChatFloating';
+import FilterModal, { EventSortBy } from '../../components/presentation/FilterModal';
 import {
   Music,
   Palette,
@@ -53,6 +55,7 @@ import {
   Leaf,
   Baby,
   FolderOpen,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -90,7 +93,7 @@ const HomeScreen = () => {
   const categories = useSelector(selectCategories);
   const categoriesLoading = useSelector(selectCategoriesLoading);
 
-  const { getEvents, getEventsForStaff, searchEvents } = useEvents();
+  const { getEvents, getEventsForStaff, searchEvents, clearEvents } = useEvents();
   const { refreshCategories } = useCategories();
   const { addFavoriteEvent, removeFavoriteEvent } = useFavoriteEvents();
 
@@ -103,6 +106,21 @@ const HomeScreen = () => {
   const [showAIEvents, setShowAIEvents] = useState(false);
   const [aiRequestCount, setAiRequestCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [activeFilters, setActiveFilters] = useState({
+    timeLine: null,
+    ticketSaleStatus: null,
+    eventProgressStatus: null,
+    minPrice: null,
+    maxPrice: null,
+    sortBy: EventSortBy.NearestTime,
+  });
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreEvents, setHasMoreEvents] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const PAGE_SIZE = 20;
 
   useEffect(() => {
     loadEvents();
@@ -112,7 +130,18 @@ const HomeScreen = () => {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([loadEvents(), refreshCategories()]);
+      setCurrentPage(1);
+      setHasMoreEvents(true);
+      const defaultFilters = {
+        timeLine: null,
+        ticketSaleStatus: null,
+        eventProgressStatus: null,
+        minPrice: null,
+        maxPrice: null,
+        sortBy: EventSortBy.NearestTime,
+      };
+      setActiveFilters(defaultFilters);
+      await Promise.all([loadEvents(1, true, defaultFilters), refreshCategories()]);
       setAiEvents([]);
       setShowAIEvents(false);
       setAiRequestCount(0);
@@ -132,26 +161,37 @@ const HomeScreen = () => {
     }
   }, [searchText, events, selectedCategory]);
 
-  const loadEvents = async () => {
+  const loadEvents = async (page = 1, isRefresh = false, filters = activeFilters) => {
     try {
-      console.log('Loading events...');
       const isStaff = isStaffUser(accessToken);
-
       let response;
       if (isStaff) {
         response = await getEventsForStaff({
-          pageNumber: 1,
-          pageSize: 20
+          pageNumber: page,
+          pageSize: PAGE_SIZE,
+          append: !isRefresh && page > 1
         });
       } else {
-        response = await getEvents({
-          pageNumber: 1,
-          pageSize: 20
-        });
+        const params = {
+          pageNumber: page,
+          pageSize: PAGE_SIZE,
+          append: !isRefresh && page > 1,
+          timeLine: filters.timeLine,
+          ticketSaleStatus: filters.ticketSaleStatus,
+          eventProgressStatus: filters.eventProgressStatus,
+          minPrice: filters.minPrice,
+          maxPrice: filters.maxPrice,
+          sortBy: filters.sortBy,
+        };
+        response = await getEvents(params);
       }
 
       if (response && response.success) {
-        console.log('Events loaded successfully');
+        // Check if there are more events to load
+        const loadedCount = response.data?.length || 0;
+        if (loadedCount < PAGE_SIZE) {
+          setHasMoreEvents(false);
+        }
       } else if (response && response.message) {
         console.error('Failed to load events:', response.message);
         Alert.alert('Error', response.message);
@@ -160,6 +200,42 @@ const HomeScreen = () => {
       console.error('Error loading events:', error);
       Alert.alert('Error', 'Failed to load events: ' + error.message);
     }
+  };
+
+  const loadMoreEvents = async () => {
+    if (loadingMore || !hasMoreEvents || eventsLoading || searchText.trim() !== '' || selectedCategory) {
+      return;
+    }
+
+    setLoadingMore(true);
+    const nextPage = currentPage + 1;
+    
+    try {
+      await loadEvents(nextPage, false, activeFilters);
+      setCurrentPage(nextPage);
+    } catch (error) {
+      console.error('Error loading more events:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const handleApplyFilters = async (filters) => {
+    setActiveFilters(filters);
+    setCurrentPage(1);
+    setHasMoreEvents(true);
+    clearEvents(); // Clear existing events before loading with new filters
+    await loadEvents(1, true, filters);
+  };
+
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (activeFilters.timeLine !== null) count++;
+    if (activeFilters.ticketSaleStatus !== null) count++;
+    if (activeFilters.eventProgressStatus !== null) count++;
+    if (activeFilters.minPrice !== null || activeFilters.maxPrice !== null) count++;
+    if (activeFilters.sortBy !== EventSortBy.NearestTime) count++;
+    return count;
   };
 
   const calculateDisplayPrice = (eventData) => {
@@ -228,7 +304,6 @@ const HomeScreen = () => {
   const handleSearch = async (query) => {
     try {
       const response = await searchEvents(query);
-      console.log('Search response:', response);
       if (response && response.success) {
         console.log('Search completed successfully');
       }
@@ -438,21 +513,44 @@ const HomeScreen = () => {
               onChangeText={setSearchText}
             />
             {!isStaffUser(accessToken) && (
-              <TouchableOpacity
-                onPress={handleAISuggestionPress}
-                style={[
-                  styles.aiButton,
-                  showAIEvents && styles.aiButtonActive,
-                  (loadingAIEvents || aiRequestCount >= 2) && styles.aiButtonDisabled
-                ]}
-                activeOpacity={0.7}
-                disabled={loadingAIEvents || aiRequestCount >= 2}
-              >
-                <Image
-                  source={Images.robotCycle}
-                  style={styles.aiButtonIcon}
-                />
-              </TouchableOpacity>
+              <>
+                <TouchableOpacity
+                  onPress={() => setFilterModalVisible(true)}
+                  style={[
+                    styles.filterButton,
+                    getActiveFilterCount() > 0 && styles.filterButtonActive
+                  ]}
+                  activeOpacity={0.7}
+                >
+                  <SlidersHorizontal
+                    size={20}
+                    color={getActiveFilterCount() > 0 ? '#FFFFFF' : '#64748B'}
+                    strokeWidth={2}
+                  />
+                  {getActiveFilterCount() > 0 && (
+                    <View style={styles.filterBadge}>
+                      <CustomText variant="caption" style={styles.filterBadgeText}>
+                        {getActiveFilterCount()}
+                      </CustomText>
+                    </View>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleAISuggestionPress}
+                  style={[
+                    styles.aiButton,
+                    showAIEvents && styles.aiButtonActive,
+                    (loadingAIEvents || aiRequestCount >= 2) && styles.aiButtonDisabled
+                  ]}
+                  activeOpacity={0.7}
+                  disabled={loadingAIEvents || aiRequestCount >= 2}
+                >
+                  <Image
+                    source={Images.robotCycle}
+                    style={styles.aiButtonIcon}
+                  />
+                </TouchableOpacity>
+              </>
             )}
           </View>
         </View>
@@ -504,6 +602,14 @@ const HomeScreen = () => {
             tintColor={Colors.primary}
           />
         }
+        onScroll={({ nativeEvent }) => {
+          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+          const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 100;
+          if (isCloseToBottom) {
+            loadMoreEvents();
+          }
+        }}
+        scrollEventThrottle={400}
       >
         {showAIEvents && (
           <View style={styles.section}>
@@ -540,7 +646,7 @@ const HomeScreen = () => {
           </View>
         )}
 
-        {shouldSplitEvents && featuredEvents.length > 0 && (
+        {!isStaffUser(accessToken) && shouldSplitEvents && featuredEvents.length > 0 && (
           <View style={styles.featuredSection}>
             <View style={[styles.sectionHeader, { paddingHorizontal: 20 }]}>
               <CustomText variant="h2" style={styles.sectionTitle}>
@@ -585,19 +691,44 @@ const HomeScreen = () => {
               </CustomText>
             </View>
           ) : (
-            <FlatList
-              data={eventList}
-              renderItem={renderEventCard}
-              keyExtractor={keyExtractor}
-              showsVerticalScrollIndicator={false}
-              scrollEnabled={false}
-              contentContainerStyle={styles.eventsList}
-            />
+            <>
+              <FlatList
+                data={eventList}
+                renderItem={renderEventCard}
+                keyExtractor={keyExtractor}
+                showsVerticalScrollIndicator={false}
+                scrollEnabled={false}
+                contentContainerStyle={styles.eventsList}
+              />
+              {loadingMore ? (
+                <View style={styles.loadMoreContainer}>
+                  <ActivityIndicator size="small" color={Colors.primary} />
+                  <CustomText variant="caption" style={styles.loadMoreText}>
+                    Đang tải thêm...
+                  </CustomText>
+                </View>
+              ) : !hasMoreEvents && eventList.length > 0 ? (
+                <View style={styles.loadMoreContainer}>
+                  <CustomText variant="caption" style={styles.loadMoreText}>
+                    Đã hiển thị tất cả sự kiện
+                  </CustomText>
+                </View>
+              ) : null}
+            </>
           )}
         </View>
       </ScrollView>
 
       <AIChatFloating />
+
+      {!isStaffUser(accessToken) && (
+        <FilterModal
+          visible={filterModalVisible}
+          onClose={() => setFilterModalVisible(false)}
+          onApply={handleApplyFilters}
+          initialFilters={activeFilters}
+        />
+      )}
     </View>
   );
 };

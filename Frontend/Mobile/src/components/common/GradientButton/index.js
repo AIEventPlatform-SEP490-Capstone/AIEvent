@@ -9,9 +9,13 @@ const GradientButton = ({
   disabled = false, 
   loading = false,
   style,
+  gradientStyle,
   textStyle,
+  colors,
   children 
 }) => {
+  const defaultColors = ['#2196F3', '#1976D2', '#1565C0'];
+  
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -20,13 +24,13 @@ const GradientButton = ({
       style={style}
     >
       <LinearGradient
-        colors={['#546E7A', '#37474F', '#90A4AE', '#9C27B0']}
+        colors={colors || defaultColors}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={[
           styles.gradient,
           disabled && styles.disabled,
-          style
+          gradientStyle
         ]}
       >
         {loading ? (

@@ -90,7 +90,12 @@ class EventService {
         pageNumber = 1,
         pageSize = 10,
         district = '',
-        timeLine = null
+        timeLine = null,
+        ticketSaleStatus = null,
+        eventProgressStatus = null,
+        minPrice = null,
+        maxPrice = null,
+        sortBy = null,
       } = params;
 
       // Build query parameters
@@ -101,10 +106,17 @@ class EventService {
       if (pageSize) queryParams.append('pageSize', pageSize);
       if (district) queryParams.append('district', district);
       if (timeLine !== null) queryParams.append('timeLine', timeLine);
+      if (ticketSaleStatus !== null) queryParams.append('ticketSaleStatus', ticketSaleStatus);
+      if (eventProgressStatus !== null) queryParams.append('eventProgressStatus', eventProgressStatus);
+      if (minPrice !== null) queryParams.append('minPrice', minPrice);
+      if (maxPrice !== null) queryParams.append('maxPrice', maxPrice);
+      if (sortBy !== null) queryParams.append('sortBy', sortBy);
 
+      // Add timestamp to prevent caching
+      queryParams.append('_t', Date.now());
       const url = `${EndUrls.EVENTS}?${queryParams.toString()}`;
-      const response = await BaseApiService.get(url);
-
+      const response = await BaseApiService.get(url); 
+      const firstItem = response?.data?.data?.items?.[0] || response?.data?.items?.[0];
       // Extract data from the paginated response
       // The backend returns SuccessResponse<BasePaginated<EventsResponse>>
       let data = response;
