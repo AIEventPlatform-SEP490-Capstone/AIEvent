@@ -2078,171 +2078,148 @@ const EditEventPage = () => {
           </div>
           
           {/* Sidebar - Form Controls */}
-          <div className="lg:col-span-1 space-y-5">
-            {/* Main Card */}
-            <div className="sticky top-24">
-              {/* Header Section */}
-              <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 rounded-t-2xl p-6 text-white shadow-lg">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1">
-                    <h3 className="text-2xl font-bold mb-1 flex items-center gap-2">
-                      <Pen className="w-5 h-5" />
-                      Thông tin sự kiện
-                    </h3>
-                    <p className="text-blue-100 text-sm">Cập nhật sự kiện của bạn một cách dễ dàng</p>
-                  </div>
-                </div>
-              </div>
+          <div className="lg:col-span-1">
+            <div className="sticky top-24 space-y-4">
 
-              {/* Form Content */}
-              <Card className="border-0 rounded-t-none shadow-2xl">
-                <CardContent className="space-y-1 pt-6 pb-6">
+              {/* Main Form Card */}
+              <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl overflow-hidden">
+                <CardContent className="p-0">
                   {/* Category Section */}
-                  <div className="mb-6 pb-6 border-b border-gray-200 dark:border-gray-800">
+                  <div className="p-5 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2.5 rounded-lg shadow-md">
-                        <Tag className="w-4 h-4 text-white" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-foreground text-sm">Danh mục sự kiện</h4>
-                        <p className="text-xs text-muted-foreground">Chọn loại sự kiện của bạn</p>
-                      </div>
-                    </div>
-                    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-200 dark:border-indigo-800 rounded-xl p-5">
-                      <CategorySelector 
-                        selectedCategories={selectedCategory ? [selectedCategory] : []}
-                        onCategoriesChange={(categories) => {
-                          if (categories.length > 0) {
-                            const category = categories[0];
-                            setSelectedCategory(category);
-                            setValue('eventCategoryId', category.eventCategoryId);
-                            setFieldErrors(prev => ({
-                              ...prev,
-                              eventCategoryId: ''
-                            }));
-                          } else {
-                            setSelectedCategory(null);
-                            setValue('eventCategoryId', '');
-                          }
-                        }}
-                      />
-                      {(fieldErrors.eventCategoryId || (errors.eventCategoryId && hasValidated)) && (
-                        <div className="mt-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-3 flex gap-2">
-                          <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                          <p className="text-red-600 dark:text-red-400 text-xs">
-                            {fieldErrors.eventCategoryId || errors.eventCategoryId?.message}
-                          </p>
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-purple-500 rounded-xl blur-md opacity-40" />
+                        <div className="relative p-2.5 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-lg">
+                          <Tag className="w-4 h-4 text-white" />
                         </div>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground text-sm">Danh mục</h4>
+                        <p className="text-xs text-muted-foreground">Phân loại sự kiện</p>
+                      </div>
+                      {watch('eventCategoryId') && (
+                        <CheckCircle className="w-5 h-5 text-green-500" />
                       )}
                     </div>
+                    <CategorySelector 
+                      selectedCategories={selectedCategory ? [selectedCategory] : []}
+                      onCategoriesChange={(categories) => {
+                        if (categories.length > 0) {
+                          const category = categories[0];
+                          setSelectedCategory(category);
+                          setValue('eventCategoryId', category.eventCategoryId);
+                          setFieldErrors(prev => ({
+                            ...prev,
+                            eventCategoryId: ''
+                          }));
+                        } else {
+                          setSelectedCategory(null);
+                          setValue('eventCategoryId', '');
+                        }
+                      }}
+                    />
+                    {(fieldErrors.eventCategoryId || (errors.eventCategoryId && hasValidated)) && (
+                      <div className="mt-3 flex items-center gap-2 text-red-500 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded-lg">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <p className="text-xs">{fieldErrors.eventCategoryId || errors.eventCategoryId?.message}</p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Location Section */}
-                  <div className="mb-6 pb-6 border-b border-gray-200 dark:border-gray-800">
+                  <div className="p-5 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="bg-gradient-to-br from-orange-500 to-amber-600 p-2.5 rounded-lg shadow-md">
-                        <MapPin className="w-4 h-4 text-white" />
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-orange-500 rounded-xl blur-md opacity-40" />
+                        <div className="relative p-2.5 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl shadow-lg">
+                          <MapPin className="w-4 h-4 text-white" />
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-semibold text-foreground text-sm">Địa điểm tổ chức</h4>
-                        <p className="text-xs text-muted-foreground">Quán lý vị trí sự kiện</p>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground text-sm">Địa điểm</h4>
+                        <p className="text-xs text-muted-foreground">Vị trí tổ chức sự kiện</p>
                       </div>
+                      {watch('district') && watch('locationName') && watch('address') && (
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                      )}
                     </div>
-                    <div className="bg-orange-50/40 dark:bg-orange-950/10 border border-orange-100 dark:border-orange-900/30 rounded-xl p-5 space-y-4">
-                      <div className="space-y-2">
-                        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Quận/Huyện</Label>
+                    
+                    <div className="space-y-3">
+                      {/* District Select */}
+                      <div className="relative">
                         <Select 
                           value={watch('district')} 
                           onValueChange={(value) => {
                             setValue('district', value);
-                            setFieldErrors(prev => ({
-                              ...prev,
-                              district: ''
-                            }));
+                            setFieldErrors(prev => ({ ...prev, district: '' }));
                           }}
                         >
-                          <SelectTrigger className={`rounded-lg h-9 border-gray-200 dark:border-gray-800 ${fieldErrors.district ? 'border-red-500' : ''}`}>
-                            <SelectValue placeholder="Chọn quận/huyện" />
+                          <SelectTrigger className={`h-11 rounded-xl bg-gray-50 dark:bg-gray-800 border-2 transition-all ${fieldErrors.district ? 'border-red-400 bg-red-50 dark:bg-red-950/20' : 'border-transparent hover:border-orange-200 dark:hover:border-orange-800 focus:border-orange-400'}`}>
+                            <div className="flex items-center gap-2">
+                              <Globe className="w-4 h-4 text-muted-foreground" />
+                              <SelectValue placeholder="Chọn quận/huyện" />
+                            </div>
                           </SelectTrigger>
                           <SelectContent>
                             {PredefinedCities.map((city) => (
-                              <SelectItem key={city} value={city}>
-                                {city}
-                              </SelectItem>
+                              <SelectItem key={city} value={city}>{city}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                         {(fieldErrors.district || (errors.district && hasValidated)) && (
-                          <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                          <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
                             <AlertCircle className="w-3 h-3" />
                             {fieldErrors.district || errors.district?.message}
                           </p>
                         )}
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                          Tên địa điểm
-                        </Label>
+                      {/* Location Name Input */}
+                      <div className="relative">
                         <Input
-                          placeholder="Ví dụ: Trung tâm hội nghị thành phố"
+                          placeholder="Tên địa điểm (VD: Nhà văn hóa Thanh niên)"
                           value={watch('locationName') || ''}
                           onChange={(e) => {
                             setValue('locationName', e.target.value);
-                            setFieldErrors(prev => ({
-                              ...prev,
-                              locationName: ''
-                            }));
+                            setFieldErrors(prev => ({ ...prev, locationName: '' }));
                           }}
                           onBlur={() => {
                             const value = watch('locationName');
-                            let error = '';
                             if (!value || value.trim() === '') {
-                              error = 'Địa điểm là bắt buộc';
+                              setFieldErrors(prev => ({ ...prev, locationName: 'Địa điểm là bắt buộc' }));
                             }
-                            setFieldErrors(prev => ({
-                              ...prev,
-                              locationName: error
-                            }));
                           }}
-                          className={`rounded-lg h-9 border-gray-200 dark:border-gray-800 focus:border-blue-400 ${fieldErrors.locationName ? 'border-red-500' : ''}`}
+                          className={`h-11 rounded-xl bg-gray-50 dark:bg-gray-800 border-2 transition-all pl-10 ${fieldErrors.locationName ? 'border-red-400 bg-red-50 dark:bg-red-950/20' : 'border-transparent hover:border-orange-200 dark:hover:border-orange-800 focus:border-orange-400'}`}
                         />
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         {(fieldErrors.locationName || (errors.locationName && hasValidated)) && (
-                          <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                          <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
                             <AlertCircle className="w-3 h-3" />
                             {fieldErrors.locationName || errors.locationName?.message}
                           </p>
                         )}
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Địa chỉ chi tiết</Label>
+                      {/* Address Textarea */}
+                      <div className="relative">
                         <Textarea
-                          placeholder="Nhập địa chỉ đầy đủ"
+                          placeholder="Địa chỉ chi tiết..."
                           rows={2}
                           value={watch('address') || ''}
                           onChange={(e) => {
                             setValue('address', e.target.value);
-                            setFieldErrors(prev => ({
-                              ...prev,
-                              address: ''
-                            }));
+                            setFieldErrors(prev => ({ ...prev, address: '' }));
                           }}
                           onBlur={() => {
                             const value = watch('address');
-                            let error = '';
                             if (!value || value.trim() === '') {
-                              error = 'Địa chỉ chi tiết là bắt buộc';
+                              setFieldErrors(prev => ({ ...prev, address: 'Địa chỉ chi tiết là bắt buộc' }));
                             }
-                            setFieldErrors(prev => ({
-                              ...prev,
-                              address: error
-                            }));
                           }}
-                          className={`rounded-lg border-gray-200 dark:border-gray-800 resize-none focus:border-blue-400 text-sm ${fieldErrors.address ? 'border-red-500' : ''}`}
+                          className={`rounded-xl bg-gray-50 dark:bg-gray-800 border-2 transition-all resize-none text-sm ${fieldErrors.address ? 'border-red-400 bg-red-50 dark:bg-red-950/20' : 'border-transparent hover:border-orange-200 dark:hover:border-orange-800 focus:border-orange-400'}`}
                         />
                         {(fieldErrors.address || (errors.address && hasValidated)) && (
-                          <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                          <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
                             <AlertCircle className="w-3 h-3" />
                             {fieldErrors.address || errors.address?.message}
                           </p>
@@ -2252,130 +2229,145 @@ const EditEventPage = () => {
                   </div>
 
                   {/* Tags Section */}
-                  <div className="mb-6 pb-6 border-b border-gray-200 dark:border-gray-800">
+                  <div className="p-5 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="bg-gradient-to-br from-indigo-500 to-pink-600 p-2.5 rounded-lg shadow-md">
-                        <Tag className="w-4 h-4 text-white" />
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-pink-500 rounded-xl blur-md opacity-40" />
+                        <div className="relative p-2.5 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl shadow-lg">
+                          <Tag className="w-4 h-4 text-white" />
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-semibold text-foreground text-sm">Thẻ gắn sự kiện</h4>
-                        <p className="text-xs text-muted-foreground">Giúp người dùng tìm kiếm sự kiện dễ dàng</p>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground text-sm">Thẻ tag</h4>
+                        <p className="text-xs text-muted-foreground">Tăng khả năng tìm kiếm</p>
                       </div>
+                      {reduxSelectedTags?.length > 0 && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-medium text-pink-600 bg-pink-100 dark:bg-pink-950/50 px-2 py-0.5 rounded-full">
+                            {reduxSelectedTags.length} tag
+                          </span>
+                          <CheckCircle className="w-5 h-5 text-green-500" />
+                        </div>
+                      )}
                     </div>
-                    <div className="bg-indigo-50/40 dark:bg-indigo-950/10 border border-indigo-100 dark:border-indigo-900/30 p-5 rounded-xl">
-                      <TagSelector />
-                    </div>
-                    {/* Display tag validation error */}
+                    <TagSelector />
                     {hasValidated && tagError && (
-                      <p className="text-red-500 text-xs mt-3 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" />
-                        {tagError}
-                      </p>
+                      <div className="mt-3 flex items-center gap-2 text-red-500 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded-lg">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <p className="text-xs">{tagError}</p>
+                      </div>
                     )}
                   </div>
 
                   {/* Evidence Images Section */}
-                  <div className="mb-6 pb-6 border-b border-gray-200 dark:border-gray-800">
+                  <div className="p-5 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="bg-gradient-to-br from-pink-500 to-red-600 p-2.5 rounded-lg shadow-md">
-                        <Upload className="w-4 h-4 text-white" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-foreground text-sm">Hình ảnh bằng chứng</h4>
-                        <p className="text-xs text-muted-foreground">Tối đa 5 hình ảnh</p>
-                      </div>
-                    </div>
-
-                    <div className="relative group">
-                      <label htmlFor="evidence-image-input" className="block cursor-pointer">
-                        <div className="bg-gradient-to-br from-pink-50 to-orange-50 dark:from-pink-950/20 dark:to-orange-950/20 border-2 border-dashed border-pink-200 dark:border-pink-800 rounded-xl p-6 text-center hover:border-pink-400 dark:hover:border-pink-600 transition-all hover:bg-pink-50/80 dark:hover:bg-pink-950/30">
-                          <div className="text-4xl mb-3">📸</div>
-                          <p className="text-sm font-semibold text-foreground">
-                            Thêm hình ảnh bằng chứng
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            PNG, JPG, GIF (Tối đa 5MB mỗi ảnh)
-                          </p>
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-emerald-500 rounded-xl blur-md opacity-40" />
+                        <div className="relative p-2.5 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-lg">
+                          <Upload className="w-4 h-4 text-white" />
                         </div>
-                        <Input
-                          type="file"
-                          multiple
-                          accept="image/*"
-                          onChange={handleEvidenceImageChange}
-                          className="hidden"
-                          id="evidence-image-input"
-                        />
-                      </label>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground text-sm">Bằng chứng</h4>
+                        <p className="text-xs text-muted-foreground">Hình ảnh xác thực</p>
+                      </div>
+                      {evidenceImagePreview.filter(img => img).length > 0 && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-medium text-emerald-600 bg-emerald-100 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full">
+                            {evidenceImagePreview.filter(img => img).length}/5
+                          </span>
+                          <CheckCircle className="w-5 h-5 text-green-500" />
+                        </div>
+                      )}
                     </div>
 
+                    {/* Upload Area */}
+                    <label htmlFor="evidence-image-input-edit" className="block cursor-pointer group">
+                      <div className="relative overflow-hidden rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 p-4 text-center transition-all hover:border-emerald-400 dark:hover:border-emerald-600 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20">
+                        <div className="flex items-center justify-center gap-3">
+                          <div className="p-2 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg group-hover:scale-110 transition-transform">
+                            <Upload className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                          </div>
+                          <div className="text-left">
+                            <p className="text-sm font-medium text-foreground">Tải ảnh bằng chứng</p>
+                            <p className="text-xs text-muted-foreground">PNG, JPG • Tối đa 5MB</p>
+                          </div>
+                        </div>
+                      </div>
+                      <Input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={handleEvidenceImageChange}
+                        className="hidden"
+                        id="evidence-image-input-edit"
+                      />
+                    </label>
+
+                    {/* Image Preview Grid */}
                     {evidenceImagePreview.length > 0 && (
-                      <div className="mt-4">
-                        <p className="text-xs font-semibold text-muted-foreground mb-3">Đã tải lên ({evidenceImagePreview.filter(img => img).length}/5)</p>
-                        <div className="grid grid-cols-3 gap-2">
-                          {evidenceImagePreview.filter(img => img !== null && img !== undefined && img !== '').map((img, index) => (
-                            <div key={index} className="relative group rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 ring-1 ring-gray-300 dark:ring-gray-600">
-                              <img
-                                src={img}
-                                alt={`Evidence Preview ${index + 1}`}
-                                className="w-full h-24 object-cover"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => removeEvidenceImage(index)}
-                                className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-lg"
-                              >
-                                <X className="w-5 h-5 text-white" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
+                      <div className="mt-3 grid grid-cols-4 gap-2">
+                        {evidenceImagePreview.filter(img => img !== null && img !== undefined && img !== '').map((img, index) => (
+                          <div key={index} className="relative aspect-square rounded-lg overflow-hidden group ring-2 ring-gray-200 dark:ring-gray-700 hover:ring-emerald-400 transition-all">
+                            <img src={img} alt={`Evidence ${index + 1}`} className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => removeEvidenceImage(index)}
+                              className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all"
+                            >
+                              <X className="w-5 h-5 text-white" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     )}
-                    {/* Display error for evidence images if needed */}
-                    {hasValidated && errors.evidenceImages && (
-                      <p className="text-red-500 text-xs mt-3 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" />
-                        {errors.evidenceImages.message}
-                      </p>
-                    )}
-                    {/* Display custom evidence image error if needed */}
-                    {hasValidated && evidenceImageError && (
-                      <p className="text-red-500 text-xs mt-3 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" />
-                        {evidenceImageError}
-                      </p>
+                    
+                    {hasValidated && (errors.evidenceImages || evidenceImageError) && (
+                      <div className="mt-3 flex items-center gap-2 text-red-500 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded-lg">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <p className="text-xs">{errors.evidenceImages?.message || evidenceImageError}</p>
+                      </div>
                     )}
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex flex-col gap-3 pt-2 space-y-0">
-                    {!watch('publish') && (
+                  <div className="p-5 bg-gradient-to-t from-gray-50 dark:from-gray-900 to-transparent">
+                    <div className="space-y-3">
+                      {!watch('publish') && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full h-12 rounded-xl font-semibold border-2 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all group"
+                          onClick={() => {
+                            validateAllFields();
+                            handleSubmit((data) => onSubmit(data, false))();
+                          }}
+                          disabled={isSaving}
+                        >
+                          <Save className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
+                          {isSaving ? "Đang lưu..." : "Lưu nháp"}
+                        </Button>
+                      )}
+                      
                       <Button
                         type="button"
-                        variant="outline"
-                        className="h-11 rounded-lg font-medium border-2 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/50 bg-white dark:bg-transparent transition-all hover:border-gray-400 dark:hover:border-gray-600"
+                        className="w-full h-12 rounded-xl font-semibold bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 hover:from-blue-700 hover:via-blue-800 hover:to-indigo-800 text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all group"
                         onClick={() => {
                           validateAllFields();
-                          handleSubmit((data) => onSubmit(data, false))();
+                          handleSubmit((data) => onSubmit(data, true))();
                         }}
                         disabled={isSaving}
                       >
-                        <Save className="w-4 h-4 mr-2" />
-                        {isSaving ? "Đang lưu..." : "Lưu nháp"}
+                        <Send className="w-4 h-4 mr-2 group-hover:translate-x-1 transition-transform" />
+                        {isSaving ? "Đang cập nhật..." : "Cập nhật sự kiện"}
                       </Button>
-                    )}
-                    <Button
-                      type="button"
-                      className="h-11 rounded-lg font-medium bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all"
-                      onClick={() => {
-                        validateAllFields();
-                        handleSubmit((data) => onSubmit(data, true))();
-                      }}
-                      disabled={isSaving}
-                    >
-                      <Send className="w-4 h-4 mr-2" />
-                      {isSaving ? "Đang cập nhật..." : "Cập nhật"}
-                    </Button>
+                    </div>
+                    
+                    {/* Helper Text */}
+                    <p className="text-center text-xs text-muted-foreground mt-3">
+                      Lưu nháp để chỉnh sửa sau hoặc cập nhật ngay
+                    </p>
                   </div>
                 </CardContent>
               </Card>
