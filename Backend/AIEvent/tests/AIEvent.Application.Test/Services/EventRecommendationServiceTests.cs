@@ -708,7 +708,7 @@ namespace AIEvent.Application.Test.Services
                 CreatedAt = DateTime.UtcNow,
                 StartTime = DateTime.UtcNow,
                 EndTime = DateTime.UtcNow,
-                TicketTypes = new List<TicketType> // Thêm phần này
+                TicketTypes = new List<TicketType> 
                 {
                     new TicketType 
                     { 
@@ -905,7 +905,7 @@ namespace AIEvent.Application.Test.Services
         }
         #endregion
 
-        #region
+        #region GetFriendsByEvent Test
         [Fact]
         public async Task UTCID01_GetFriendsByEvent_UserNotFound_ShouldReturnError()
         {
