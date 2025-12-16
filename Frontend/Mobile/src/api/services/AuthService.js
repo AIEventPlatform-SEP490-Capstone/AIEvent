@@ -258,8 +258,6 @@ class AuthService {
         participationFrequency = 'Weekly',
         budgetOption = 'Flexible',
         isEmailNotificationEnabled = true,
-        isPushNotificationEnabled = true,
-        isSmsNotificationEnabled = true,
       } = registerData;
 
       // Process userInterests - handle both array of strings and array of objects

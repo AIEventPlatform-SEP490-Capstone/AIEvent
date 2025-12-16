@@ -87,8 +87,6 @@ const RegisterScreen = ({navigation}) => {
     participationFrequency: 'Weekly',
     budgetOption: 'Flexible',
     isEmailNotificationEnabled: true,
-    isPushNotificationEnabled: true,
-    isSmsNotificationEnabled: true,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showFrequencyDropdown, setShowFrequencyDropdown] = useState(false);
@@ -248,14 +246,6 @@ const RegisterScreen = ({navigation}) => {
         isEmailNotificationEnabled:
           formData.isEmailNotificationEnabled !== undefined
             ? formData.isEmailNotificationEnabled
-            : true,
-        isPushNotificationEnabled:
-          formData.isPushNotificationEnabled !== undefined
-            ? formData.isPushNotificationEnabled
-            : true,
-        isSmsNotificationEnabled:
-          formData.isSmsNotificationEnabled !== undefined
-            ? formData.isSmsNotificationEnabled
             : true,
       };
 
@@ -710,38 +700,6 @@ const RegisterScreen = ({navigation}) => {
                       trackColor={{false: '#E8ECF0', true: '#2196F3'}}
                       thumbColor={
                         formData.isEmailNotificationEnabled
-                          ? '#FFFFFF'
-                          : '#F4F3F4'
-                      }
-                    />
-                  </View>
-
-                  <View style={styles.switchRow}>
-                    <Text style={styles.switchLabel}>Thông báo Push</Text>
-                    <Switch
-                      value={formData.isPushNotificationEnabled}
-                      onValueChange={value =>
-                        handleInputChange('isPushNotificationEnabled', value)
-                      }
-                      trackColor={{false: '#E8ECF0', true: '#2196F3'}}
-                      thumbColor={
-                        formData.isPushNotificationEnabled
-                          ? '#FFFFFF'
-                          : '#F4F3F4'
-                      }
-                    />
-                  </View>
-
-                  <View style={styles.switchRow}>
-                    <Text style={styles.switchLabel}>Thông báo SMS</Text>
-                    <Switch
-                      value={formData.isSmsNotificationEnabled}
-                      onValueChange={value =>
-                        handleInputChange('isSmsNotificationEnabled', value)
-                      }
-                      trackColor={{false: '#E8ECF0', true: '#2196F3'}}
-                      thumbColor={
-                        formData.isSmsNotificationEnabled
                           ? '#FFFFFF'
                           : '#F4F3F4'
                       }
