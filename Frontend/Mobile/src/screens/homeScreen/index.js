@@ -32,6 +32,7 @@ import { selectCategories, selectCategoriesLoading } from '../../redux/slices/ca
 import { EventService } from '../../api/services';
 import { isStaffUser } from '../../utils/jwtUtils';
 import AIChatFloating from '../../components/presentation/AIChatFloating';
+import FilterModal, { EventSortBy } from '../../components/presentation/FilterModal';
 import {
   Music,
   Palette,
@@ -54,6 +55,7 @@ import {
   Leaf,
   Baby,
   FolderOpen,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -91,7 +93,7 @@ const HomeScreen = () => {
   const categories = useSelector(selectCategories);
   const categoriesLoading = useSelector(selectCategoriesLoading);
 
-  const { getEvents, getEventsForStaff, searchEvents } = useEvents();
+  const { getEvents, getEventsForStaff, searchEvents, clearEvents } = useEvents();
   const { refreshCategories } = useCategories();
   const { addFavoriteEvent, removeFavoriteEvent } = useFavoriteEvents();
 
@@ -104,6 +106,15 @@ const HomeScreen = () => {
   const [showAIEvents, setShowAIEvents] = useState(false);
   const [aiRequestCount, setAiRequestCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [activeFilters, setActiveFilters] = useState({
+    timeLine: null,
+    ticketSaleStatus: null,
+    eventProgressStatus: null,
+    minPrice: null,
+    maxPrice: null,
+    sortBy: EventSortBy.NearestTime,
+  });
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -121,7 +132,16 @@ const HomeScreen = () => {
     try {
       setCurrentPage(1);
       setHasMoreEvents(true);
-      await Promise.all([loadEvents(1, true), refreshCategories()]);
+      const defaultFilters = {
+        timeLine: null,
+        ticketSaleStatus: null,
+        eventProgressStatus: null,
+        minPrice: null,
+        maxPrice: null,
+        sortBy: EventSortBy.NearestTime,
+      };
+      setActiveFilters(defaultFilters);
+      await Promise.all([loadEvents(1, true, defaultFilters), refreshCategories()]);
       setAiEvents([]);
       setShowAIEvents(false);
       setAiRequestCount(0);
@@ -141,10 +161,9 @@ const HomeScreen = () => {
     }
   }, [searchText, events, selectedCategory]);
 
-  const loadEvents = async (page = 1, isRefresh = false) => {
+  const loadEvents = async (page = 1, isRefresh = false, filters = activeFilters) => {
     try {
       const isStaff = isStaffUser(accessToken);
-
       let response;
       if (isStaff) {
         response = await getEventsForStaff({
@@ -153,11 +172,18 @@ const HomeScreen = () => {
           append: !isRefresh && page > 1
         });
       } else {
-        response = await getEvents({
+        const params = {
           pageNumber: page,
           pageSize: PAGE_SIZE,
-          append: !isRefresh && page > 1
-        });
+          append: !isRefresh && page > 1,
+          timeLine: filters.timeLine,
+          ticketSaleStatus: filters.ticketSaleStatus,
+          eventProgressStatus: filters.eventProgressStatus,
+          minPrice: filters.minPrice,
+          maxPrice: filters.maxPrice,
+          sortBy: filters.sortBy,
+        };
+        response = await getEvents(params);
       }
 
       if (response && response.success) {
@@ -185,13 +211,31 @@ const HomeScreen = () => {
     const nextPage = currentPage + 1;
     
     try {
-      await loadEvents(nextPage, false);
+      await loadEvents(nextPage, false, activeFilters);
       setCurrentPage(nextPage);
     } catch (error) {
       console.error('Error loading more events:', error);
     } finally {
       setLoadingMore(false);
     }
+  };
+
+  const handleApplyFilters = async (filters) => {
+    setActiveFilters(filters);
+    setCurrentPage(1);
+    setHasMoreEvents(true);
+    clearEvents(); // Clear existing events before loading with new filters
+    await loadEvents(1, true, filters);
+  };
+
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (activeFilters.timeLine !== null) count++;
+    if (activeFilters.ticketSaleStatus !== null) count++;
+    if (activeFilters.eventProgressStatus !== null) count++;
+    if (activeFilters.minPrice !== null || activeFilters.maxPrice !== null) count++;
+    if (activeFilters.sortBy !== EventSortBy.NearestTime) count++;
+    return count;
   };
 
   const calculateDisplayPrice = (eventData) => {
@@ -260,7 +304,6 @@ const HomeScreen = () => {
   const handleSearch = async (query) => {
     try {
       const response = await searchEvents(query);
-      console.log('Search response:', response);
       if (response && response.success) {
         console.log('Search completed successfully');
       }
@@ -470,21 +513,44 @@ const HomeScreen = () => {
               onChangeText={setSearchText}
             />
             {!isStaffUser(accessToken) && (
-              <TouchableOpacity
-                onPress={handleAISuggestionPress}
-                style={[
-                  styles.aiButton,
-                  showAIEvents && styles.aiButtonActive,
-                  (loadingAIEvents || aiRequestCount >= 2) && styles.aiButtonDisabled
-                ]}
-                activeOpacity={0.7}
-                disabled={loadingAIEvents || aiRequestCount >= 2}
-              >
-                <Image
-                  source={Images.robotCycle}
-                  style={styles.aiButtonIcon}
-                />
-              </TouchableOpacity>
+              <>
+                <TouchableOpacity
+                  onPress={() => setFilterModalVisible(true)}
+                  style={[
+                    styles.filterButton,
+                    getActiveFilterCount() > 0 && styles.filterButtonActive
+                  ]}
+                  activeOpacity={0.7}
+                >
+                  <SlidersHorizontal
+                    size={20}
+                    color={getActiveFilterCount() > 0 ? '#FFFFFF' : '#64748B'}
+                    strokeWidth={2}
+                  />
+                  {getActiveFilterCount() > 0 && (
+                    <View style={styles.filterBadge}>
+                      <CustomText variant="caption" style={styles.filterBadgeText}>
+                        {getActiveFilterCount()}
+                      </CustomText>
+                    </View>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleAISuggestionPress}
+                  style={[
+                    styles.aiButton,
+                    showAIEvents && styles.aiButtonActive,
+                    (loadingAIEvents || aiRequestCount >= 2) && styles.aiButtonDisabled
+                  ]}
+                  activeOpacity={0.7}
+                  disabled={loadingAIEvents || aiRequestCount >= 2}
+                >
+                  <Image
+                    source={Images.robotCycle}
+                    style={styles.aiButtonIcon}
+                  />
+                </TouchableOpacity>
+              </>
             )}
           </View>
         </View>
@@ -654,6 +720,15 @@ const HomeScreen = () => {
       </ScrollView>
 
       <AIChatFloating />
+
+      {!isStaffUser(accessToken) && (
+        <FilterModal
+          visible={filterModalVisible}
+          onClose={() => setFilterModalVisible(false)}
+          onApply={handleApplyFilters}
+          initialFilters={activeFilters}
+        />
+      )}
     </View>
   );
 };
