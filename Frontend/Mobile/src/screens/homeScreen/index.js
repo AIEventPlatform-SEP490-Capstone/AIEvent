@@ -10,6 +10,7 @@ import {
   Alert,
   RefreshControl,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
@@ -103,6 +104,12 @@ const HomeScreen = () => {
   const [showAIEvents, setShowAIEvents] = useState(false);
   const [aiRequestCount, setAiRequestCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreEvents, setHasMoreEvents] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const PAGE_SIZE = 20;
 
   useEffect(() => {
     loadEvents();
@@ -112,7 +119,9 @@ const HomeScreen = () => {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([loadEvents(), refreshCategories()]);
+      setCurrentPage(1);
+      setHasMoreEvents(true);
+      await Promise.all([loadEvents(1, true), refreshCategories()]);
       setAiEvents([]);
       setShowAIEvents(false);
       setAiRequestCount(0);
@@ -132,26 +141,33 @@ const HomeScreen = () => {
     }
   }, [searchText, events, selectedCategory]);
 
-  const loadEvents = async () => {
+  const loadEvents = async (page = 1, isRefresh = false) => {
     try {
-      console.log('Loading events...');
+      console.log(`Loading events... Page: ${page}`);
       const isStaff = isStaffUser(accessToken);
 
       let response;
       if (isStaff) {
         response = await getEventsForStaff({
-          pageNumber: 1,
-          pageSize: 20
+          pageNumber: page,
+          pageSize: PAGE_SIZE,
+          append: !isRefresh && page > 1
         });
       } else {
         response = await getEvents({
-          pageNumber: 1,
-          pageSize: 20
+          pageNumber: page,
+          pageSize: PAGE_SIZE,
+          append: !isRefresh && page > 1
         });
       }
 
       if (response && response.success) {
         console.log('Events loaded successfully');
+        // Check if there are more events to load
+        const loadedCount = response.data?.length || 0;
+        if (loadedCount < PAGE_SIZE) {
+          setHasMoreEvents(false);
+        }
       } else if (response && response.message) {
         console.error('Failed to load events:', response.message);
         Alert.alert('Error', response.message);
@@ -159,6 +175,24 @@ const HomeScreen = () => {
     } catch (error) {
       console.error('Error loading events:', error);
       Alert.alert('Error', 'Failed to load events: ' + error.message);
+    }
+  };
+
+  const loadMoreEvents = async () => {
+    if (loadingMore || !hasMoreEvents || eventsLoading || searchText.trim() !== '' || selectedCategory) {
+      return;
+    }
+
+    setLoadingMore(true);
+    const nextPage = currentPage + 1;
+    
+    try {
+      await loadEvents(nextPage, false);
+      setCurrentPage(nextPage);
+    } catch (error) {
+      console.error('Error loading more events:', error);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -504,6 +538,14 @@ const HomeScreen = () => {
             tintColor={Colors.primary}
           />
         }
+        onScroll={({ nativeEvent }) => {
+          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+          const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 100;
+          if (isCloseToBottom) {
+            loadMoreEvents();
+          }
+        }}
+        scrollEventThrottle={400}
       >
         {showAIEvents && (
           <View style={styles.section}>
@@ -585,14 +627,30 @@ const HomeScreen = () => {
               </CustomText>
             </View>
           ) : (
-            <FlatList
-              data={eventList}
-              renderItem={renderEventCard}
-              keyExtractor={keyExtractor}
-              showsVerticalScrollIndicator={false}
-              scrollEnabled={false}
-              contentContainerStyle={styles.eventsList}
-            />
+            <>
+              <FlatList
+                data={eventList}
+                renderItem={renderEventCard}
+                keyExtractor={keyExtractor}
+                showsVerticalScrollIndicator={false}
+                scrollEnabled={false}
+                contentContainerStyle={styles.eventsList}
+              />
+              {loadingMore ? (
+                <View style={styles.loadMoreContainer}>
+                  <ActivityIndicator size="small" color={Colors.primary} />
+                  <CustomText variant="caption" style={styles.loadMoreText}>
+                    Đang tải thêm...
+                  </CustomText>
+                </View>
+              ) : !hasMoreEvents && eventList.length > 0 ? (
+                <View style={styles.loadMoreContainer}>
+                  <CustomText variant="caption" style={styles.loadMoreText}>
+                    Đã hiển thị tất cả sự kiện
+                  </CustomText>
+                </View>
+              ) : null}
+            </>
           )}
         </View>
       </ScrollView>

@@ -540,6 +540,20 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 3,
   },
+
+  // ===== LOAD MORE =====
+  loadMoreContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    gap: 8,
+  },
+  loadMoreText: {
+    fontSize: 13,
+    fontFamily: Fonts.regular,
+    color: '#94A3B8',
+  },
 });
 
 export { styles };
