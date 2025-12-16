@@ -31,7 +31,6 @@ const EventActionsSection = ({
 
       <View style={styles.secondaryActions}>
         <CustomButton title="Mời bạn bè" onPress={onOpenInviteModal} variant="outline" style={styles.actionButton} />
-        <CustomButton title={Strings.SHARE_EVENT} onPress={onOpenShareModal} variant="outline" style={styles.actionButton} />
         <CustomButton title={Strings.EVENT_LOCATION_MAP} onPress={onViewMap} variant="outline" style={styles.actionButton} />
       </View>
     </View>

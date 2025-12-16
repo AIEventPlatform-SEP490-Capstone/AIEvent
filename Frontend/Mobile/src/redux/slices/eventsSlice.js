@@ -7,7 +7,7 @@ export const fetchEvents = createAsyncThunk(
   async (params = {}, { rejectWithValue }) => {
     try {
       const response = await EventService.getEvents(params);
-      return response;
+      return { ...response, append: params.append || false };
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to fetch events');
     }
@@ -19,7 +19,7 @@ export const fetchEventsForStaff = createAsyncThunk(
   async (params = {}, { rejectWithValue }) => {
     try {
       const response = await EventService.getEventsForStaff(params);
-      return response;
+      return { ...response, append: params.append || false };
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to fetch events for staff');
     }
@@ -139,8 +139,16 @@ const eventsSlice = createSlice({
             endTime: event.endTime || event.EndTime,
           }));
           
-          state.events = transformedEvents;
-          state.totalCount = action.payload.data?.length || 0;
+          // Append or replace events based on append flag
+          if (action.payload.append) {
+            // Filter out duplicates when appending
+            const existingIds = new Set(state.events.map(e => e.eventId));
+            const newEvents = transformedEvents.filter(e => !existingIds.has(e.eventId));
+            state.events = [...state.events, ...newEvents];
+          } else {
+            state.events = transformedEvents;
+          }
+          state.totalCount = state.events.length;
         } else {
           state.error = action.payload?.message || 'Failed to fetch events';
         }
@@ -191,8 +199,16 @@ const eventsSlice = createSlice({
             endTime: event.endTime || event.EndTime,
           }));
           
-          state.events = transformedEvents;
-          state.totalCount = action.payload.data?.length || 0;
+          // Append or replace events based on append flag
+          if (action.payload.append) {
+            // Filter out duplicates when appending
+            const existingIds = new Set(state.events.map(e => e.eventId));
+            const newEvents = transformedEvents.filter(e => !existingIds.has(e.eventId));
+            state.events = [...state.events, ...newEvents];
+          } else {
+            state.events = transformedEvents;
+          }
+          state.totalCount = state.events.length;
         } else {
           state.error = action.payload?.message || 'Failed to fetch events for staff';
         }

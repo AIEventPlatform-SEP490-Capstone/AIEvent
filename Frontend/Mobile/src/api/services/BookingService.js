@@ -162,9 +162,7 @@ class BookingService {
 
   static async checkInfor(qrContent) {
     try {
-      console.log('Fetching check-in information with QR content:', qrContent);
       const response = await BaseApiService.get(EndUrls.CHECK_INFOR(qrContent));
-      console.log('Check-in information response:', response);
       
       // Handle different response structures: response.data?.data || response.data || response
       let data = response?.data?.data || response?.data || response;
@@ -182,10 +180,7 @@ class BookingService {
 
   static async checkInTicket(qrContent) {
     try {
-      console.log('Sending check-in request with QR content:', qrContent);
-      const response = await BaseApiService.patch(EndUrls.CHECK_IN, { qrContent });
-      console.log('Check-in response:', response);
-      
+      const response = await BaseApiService.patch(EndUrls.CHECK_IN, { qrContent });      
       // Handle different response structures: response.data?.data || response.data || response
       let data = response?.data?.data || response?.data || response;
       

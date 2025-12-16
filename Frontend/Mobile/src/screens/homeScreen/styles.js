@@ -91,6 +91,35 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
   },
+  filterButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  filterButtonActive: {
+    backgroundColor: Colors.primary,
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#EF4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  filterBadgeText: {
+    fontSize: 10,
+    fontFamily: Fonts.bold,
+    color: '#FFFFFF',
+  },
 
   // ===== CATEGORY SECTION =====
   categorySection: {
@@ -539,6 +568,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 12,
     elevation: 3,
+  },
+
+  // ===== LOAD MORE =====
+  loadMoreContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    gap: 8,
+  },
+  loadMoreText: {
+    fontSize: 13,
+    fontFamily: Fonts.regular,
+    color: '#94A3B8',
   },
 });
 

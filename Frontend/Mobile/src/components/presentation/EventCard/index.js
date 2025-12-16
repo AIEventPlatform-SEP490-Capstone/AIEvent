@@ -55,15 +55,6 @@ const EventCard = ({ event, onPress, isRecommended = false }) => {
       // Get the event ID
       const eventId = event.eventId || event.EventId || event.id;
       
-      // Log detailed event information for debugging
-      console.log('Event object details:', {
-        event: event,
-        eventId: eventId,
-        eventIdType: typeof eventId,
-        hasEventId: !!eventId,
-        eventIdLength: eventId ? eventId.length : 0
-      });
-      
       // Validate eventId before making the request
       if (!eventId) {
         throw new Error('Event ID is required');
