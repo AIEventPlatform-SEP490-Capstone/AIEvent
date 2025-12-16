@@ -599,6 +599,7 @@ namespace AIEvent.Application.Services.Implements
                 .AsNoTracking()
                 .Include(e => e.EventCategory)
                 .Include(e => e.EventTags)
+                    .ThenInclude(et => et.Tag)
                 .Include(e => e.TicketTypes)
                 .FirstOrDefaultAsync(e => e.Id == eventId 
                     && !e.IsDeleted 
