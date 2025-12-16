@@ -7,7 +7,10 @@ import {
   removeFavoriteEvent,
   selectFavoriteEvents,
   selectFavoriteEventsLoading,
-  selectFavoriteEventsError
+  selectFavoriteEventsError,
+  selectFavoriteEventsTotalRecords,
+  selectFavoriteEventsTotalPages,
+  selectFavoriteEventsCurrentPage
 } from '../store/slices/favoriteEventsSlice';
 import { useSelector as useAuthSelector } from 'react-redux';
 
@@ -16,6 +19,9 @@ export const useFavoriteEvents = () => {
   const favoriteEvents = useSelector(selectFavoriteEvents);
   const loading = useSelector(selectFavoriteEventsLoading);
   const error = useSelector(selectFavoriteEventsError);
+  const totalRecords = useSelector(selectFavoriteEventsTotalRecords);
+  const totalPages = useSelector(selectFavoriteEventsTotalPages);
+  const currentPage = useSelector(selectFavoriteEventsCurrentPage);
   const { isAuthenticated } = useAuthSelector((state) => state.auth);
 
   // Automatically fetch favorite events when user is authenticated
@@ -99,6 +105,9 @@ export const useFavoriteEvents = () => {
     favoriteEvents: safeFavoriteEvents,
     loading,
     error,
+    totalRecords,
+    totalPages,
+    currentPage,
     getFavoriteEvents,
     addFavoriteEvent: addFavoriteEventHandler,
     removeFavoriteEvent: removeFavoriteEventHandler,

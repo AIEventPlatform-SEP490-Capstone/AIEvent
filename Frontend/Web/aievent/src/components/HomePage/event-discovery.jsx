@@ -90,7 +90,7 @@ export function EventDiscovery({
   const [maxPrice, setMaxPrice] = useState(filters.maxPrice || "");
   const [eventProgressStatus, setEventProgressStatus] = useState(filters.eventProgressStatus || "all");
   const [ticketSaleStatus, setTicketSaleStatus] = useState(filters.ticketSaleStatus || "all");
-  const [sortBy, setSortBy] = useState(filters.sortBy || "NearestTime");
+  const [sortBy, setSortBy] = useState(filters.sortBy || "LatestTime");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [likedEvents, setLikedEvents] = useState(new Set([2, 4]));
   const [isAIEventsExpanded, setIsAIEventsExpanded] = useState(true);
@@ -275,7 +275,7 @@ export function EventDiscovery({
       ticketSaleStatus !== "all" ||
       minPrice !== "" ||
       maxPrice !== "" ||
-      sortBy !== "NearestTime"
+      sortBy !== "LatestTime"
     );
   };
 
@@ -285,7 +285,7 @@ export function EventDiscovery({
     setTicketSaleStatus("all");
     setMinPrice("");
     setMaxPrice("");
-    setSortBy("NearestTime");
+    setSortBy("LatestTime");
     if (onFiltersChange) {
       onFiltersChange({
         selectedCategory,
@@ -294,7 +294,7 @@ export function EventDiscovery({
         maxPrice: "",
         eventProgressStatus: "all",
         ticketSaleStatus: "all",
-        sortBy: "NearestTime",
+        sortBy: "LatestTime",
       });
     }
   };
@@ -327,8 +327,8 @@ export function EventDiscovery({
         setMaxPrice("");
         break;
       case "sortBy":
-        newSortBy = "NearestTime";
-        setSortBy("NearestTime");
+        newSortBy = "LatestTime";
+        setSortBy("LatestTime");
         break;
     }
 
@@ -373,32 +373,37 @@ export function EventDiscovery({
     );
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-full border-4 border-violet-100 border-t-violet-600 animate-spin mx-auto mb-6" />
-          <p className="text-gray-500 font-medium text-lg">Đang tải sự kiện...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-center max-w-md">
-          <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-6">
-            <X className="w-10 h-10 text-red-500" />
+  // Loading skeleton cho phần events grid
+  const EventsLoadingSkeleton = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {[...Array(6)].map((_, i) => (
+        <div key={i} className="bg-white dark:bg-gray-800 rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-700 animate-pulse">
+          <div className="h-48 bg-gray-200 dark:bg-gray-700" />
+          <div className="p-5 space-y-3">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4" />
+            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
           </div>
-          <p className="text-red-600 mb-6 font-medium text-lg">{error}</p>
-          <Button onClick={onRefresh} className="bg-violet-600 hover:bg-violet-700 text-white rounded-xl px-8 py-3">
-            Thử lại
-          </Button>
         </div>
+      ))}
+    </div>
+  );
+
+  // Error component inline
+  const ErrorDisplay = () => (
+    <div className="flex justify-center items-center py-16">
+      <div className="text-center max-w-md">
+        <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-6">
+          <X className="w-10 h-10 text-red-500" />
+        </div>
+        <p className="text-red-600 mb-6 font-medium text-lg">{error}</p>
+        <Button onClick={onRefresh} className="bg-violet-600 hover:bg-violet-700 text-white rounded-xl px-8 py-3">
+          Thử lại
+        </Button>
       </div>
-    );
-  }
+    </div>
+  );
 
   const paginatedEvents = allEvents;
 
@@ -589,7 +594,7 @@ export function EventDiscovery({
             Bộ lọc
             {hasActiveFilters() && (
               <span className="w-5 h-5 rounded-full bg-white text-violet-600 text-xs flex items-center justify-center font-bold">
-                {[searchQuery, eventProgressStatus !== "all", ticketSaleStatus !== "all", minPrice || maxPrice, sortBy !== "NearestTime"].filter(Boolean).length}
+                {[searchQuery, eventProgressStatus !== "all", ticketSaleStatus !== "all", minPrice || maxPrice, sortBy !== "LatestTime"].filter(Boolean).length}
               </span>
             )}
           </button>
@@ -630,7 +635,7 @@ export function EventDiscovery({
                   </button>
                 </span>
               )}
-              {sortBy !== "NearestTime" && (
+              {sortBy !== "LatestTime" && (
                 <span className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-medium">
                   {sortByOptions.find((o) => o.value === sortBy)?.label}
                   <button onClick={() => removeFilter("sortBy")} className="hover:text-gray-900">
@@ -649,11 +654,11 @@ export function EventDiscovery({
 
         {/* Filter Panel */}
         {showAdvancedFilters && (
-          <div className="mb-8 p-6 bg-white dark:bg-gray-800 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-xl">
+          <div className="mb-8 p-6 bg-white rounded-3xl border border-gray-200 shadow-xl">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
               {/* Search */}
               <div>
-                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                   Tìm kiếm
                 </label>
                 <div className="relative">
@@ -661,7 +666,7 @@ export function EventDiscovery({
                   <input
                     type="text"
                     placeholder="Tên sự kiện..."
-                    className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-500/20 outline-none bg-gray-50 dark:bg-gray-700 dark:text-white transition-all"
+                    className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none bg-gray-50 transition-all placeholder:text-gray-400"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -670,13 +675,13 @@ export function EventDiscovery({
 
               {/* Sort */}
               <div>
-                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                   Sắp xếp
                 </label>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-500/20 outline-none bg-gray-50 dark:bg-gray-700 dark:text-white appearance-none cursor-pointer transition-all"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none bg-gray-50 appearance-none cursor-pointer transition-all"
                 >
                   {sortByOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -688,13 +693,13 @@ export function EventDiscovery({
 
               {/* Event Status */}
               <div>
-                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                   Trạng thái
                 </label>
                 <select
                   value={eventProgressStatus}
                   onChange={(e) => setEventProgressStatus(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-500/20 outline-none bg-gray-50 dark:bg-gray-700 dark:text-white appearance-none cursor-pointer transition-all"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none bg-gray-50 appearance-none cursor-pointer transition-all"
                 >
                   {eventProgressStatusOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -706,13 +711,13 @@ export function EventDiscovery({
 
               {/* Ticket Status */}
               <div>
-                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                   Trạng thái vé
                 </label>
                 <select
                   value={ticketSaleStatus}
                   onChange={(e) => setTicketSaleStatus(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-500/20 outline-none bg-gray-50 dark:bg-gray-700 dark:text-white appearance-none cursor-pointer transition-all"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none bg-gray-50 appearance-none cursor-pointer transition-all"
                 >
                   {ticketSaleStatusOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -724,14 +729,14 @@ export function EventDiscovery({
 
               {/* Price Range */}
               <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                   Khoảng giá (VNĐ)
                 </label>
                 <div className="flex gap-3 items-center">
                   <input
                     type="text"
                     placeholder="Từ"
-                    className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-500/20 outline-none bg-gray-50 dark:bg-gray-700 dark:text-white transition-all"
+                    className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none bg-gray-50 transition-all placeholder:text-gray-400"
                     value={formatNumberInput(minPrice)}
                     onChange={(e) => handlePriceInputChange(setMinPrice, e.target.value)}
                   />
@@ -739,7 +744,7 @@ export function EventDiscovery({
                   <input
                     type="text"
                     placeholder="Đến"
-                    className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-sm focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:focus:ring-violet-500/20 outline-none bg-gray-50 dark:bg-gray-700 dark:text-white transition-all"
+                    className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-sm text-gray-900 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none bg-gray-50 transition-all placeholder:text-gray-400"
                     value={formatNumberInput(maxPrice)}
                     onChange={(e) => handlePriceInputChange(setMaxPrice, e.target.value)}
                   />
@@ -793,7 +798,11 @@ export function EventDiscovery({
         </div>
 
         {/* Events Grid */}
-        {paginatedEvents.length > 0 ? (
+        {loading ? (
+          <EventsLoadingSkeleton />
+        ) : error ? (
+          <ErrorDisplay />
+        ) : paginatedEvents.length > 0 ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {paginatedEvents.map((event) => (

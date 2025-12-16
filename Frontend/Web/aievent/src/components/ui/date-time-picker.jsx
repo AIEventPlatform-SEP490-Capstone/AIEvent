@@ -156,7 +156,7 @@ const DateTimePicker = ({
   return (
     <div className={className}>
       {label && (
-        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
+        <label className="block text-sm font-semibold text-gray-700 mb-2">
           {label}
         </label>
       )}
@@ -170,19 +170,19 @@ const DateTimePicker = ({
             w-full px-4 py-2.5 rounded-lg border-2 transition-all text-left
             flex items-center gap-3 font-medium
             ${hasError
-              ? 'border-red-300 bg-red-50 text-red-900 dark:bg-red-950/20 dark:border-red-700'
+              ? 'border-red-300 bg-red-50 text-red-900'
               : isOpen
-              ? 'border-blue-400 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-600 text-gray-900 dark:text-gray-100'
+              ? 'border-blue-400 bg-blue-50 text-gray-900'
               : isValid
-              ? 'border-green-300 bg-green-50 dark:bg-green-950/20 dark:border-green-700 text-gray-900 dark:text-gray-100'
-              : 'border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400'
+              ? 'border-green-300 bg-green-50 text-gray-900'
+              : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
             }
           `}
         >
           <div className="flex items-center gap-2">
             {hasError && <AlertCircleIcon className="text-red-500" />}
             {isValid && !hasError && <CheckCircleIcon className="text-green-500" />}
-            {!hasError && !isValid && <CalendarIcon className="text-gray-500 dark:text-gray-400" />}
+            {!hasError && !isValid && <CalendarIcon className="text-gray-500" />}
           </div>
           <span className="flex-1">
             {displayValue || 'Chọn ngày giờ...'}
@@ -194,11 +194,11 @@ const DateTimePicker = ({
 
         {/* Dropdown Panel */}
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-900 border-2 border-blue-200 dark:border-blue-800 rounded-lg shadow-xl z-50 p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-blue-200 rounded-lg shadow-xl z-50 p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
             
             {/* Date Section */}
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
+              <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-2">
                 <CalendarIcon className="w-4 h-4" />
                 Chọn Ngày
               </label>
@@ -208,38 +208,38 @@ const DateTimePicker = ({
                 onChange={handleDate}
                 min={minDateStr}
                 max={maxDateStr}
-                className="w-full h-10 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                className="w-full h-10 border-2 border-gray-200 bg-white text-gray-900"
               />
             </div>
 
             {/* Time Section */}
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
+              <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-2">
                 <ClockIcon className="w-4 h-4" />
                 Chọn Giờ
               </label>
               <div className="flex gap-3 items-end">
                 <div className="flex-1">
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-medium">Giờ</div>
+                  <div className="text-xs text-gray-500 mb-1.5 font-medium">Giờ</div>
                   <input
                     type="number"
                     value={hours}
                     onChange={handleHourChange}
                     min="0"
                     max="23"
-                    className="w-full h-10 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white text-center font-semibold text-lg rounded-md focus:border-blue-400 focus:outline-none"
+                    className="w-full h-10 border-2 border-gray-200 bg-white text-gray-900 text-center font-semibold text-lg rounded-md focus:border-blue-400 focus:outline-none"
                   />
                 </div>
                 <div className="text-2xl font-light text-gray-400">:</div>
                 <div className="flex-1">
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-medium">Phút</div>
+                  <div className="text-xs text-gray-500 mb-1.5 font-medium">Phút</div>
                   <input
                     type="number"
                     value={minutes}
                     onChange={handleMinuteChange}
                     min="0"
                     max="59"
-                    className="w-full h-10 border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white text-center font-semibold text-lg rounded-md focus:border-blue-400 focus:outline-none"
+                    className="w-full h-10 border-2 border-gray-200 bg-white text-gray-900 text-center font-semibold text-lg rounded-md focus:border-blue-400 focus:outline-none"
                   />
                 </div>
               </div>
@@ -247,14 +247,14 @@ const DateTimePicker = ({
 
             {/* Info */}
             {(min || max) && (
-              <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 p-2.5 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="text-xs text-gray-500 bg-gray-50 p-2.5 rounded-lg border border-gray-200">
                 {min && <div>📌 Từ: {new Date(min).toLocaleString('vi-VN')}</div>}
                 {max && <div>📌 Đến: {new Date(max).toLocaleString('vi-VN')}</div>}
               </div>
             )}
 
             {/* Actions */}
-            <div className="flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex gap-2 pt-2 border-t border-gray-200">
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
@@ -265,7 +265,7 @@ const DateTimePicker = ({
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="px-3 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors font-medium text-sm"
+                className="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors font-medium text-sm"
               >
                 Hủy
               </button>
@@ -275,9 +275,9 @@ const DateTimePicker = ({
 
         {/* Error Message */}
         {hasError && (
-          <div className="mt-2 flex items-start gap-2 px-3 py-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
+          <div className="mt-2 flex items-start gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
             <AlertCircleIcon className="text-red-500 mt-0.5" />
-            <span className="text-sm text-red-700 dark:text-red-300 font-medium">{error}</span>
+            <span className="text-sm text-red-700 font-medium">{error}</span>
           </div>
         )}
       </div>
