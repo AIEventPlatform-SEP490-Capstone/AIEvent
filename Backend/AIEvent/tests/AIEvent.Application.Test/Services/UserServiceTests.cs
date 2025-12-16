@@ -633,6 +633,23 @@ namespace AIEvent.Application.Test.Services
         [Fact]
         public async Task UTCID01_GetAllUsersAsync_WithValidParameters_ShouldReturnSuccess()
         {
+            var roles = new List<Role>
+            {
+                new Role
+                {
+                    Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                    Name = "Admin",
+                    IsDeleted = false
+                }
+            };
+
+            var mockRoleDbSet = roles.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork
+                .Setup(x => x.RoleRepository.Query(false))
+                .Returns(mockRoleDbSet.Object);
+
+
             // Arrange
             var users = new List<User>
             {
@@ -660,6 +677,22 @@ namespace AIEvent.Application.Test.Services
         [Fact]
         public async Task UTCID02_GetAllUsersAsync_WithDefaultParameters_ShouldReturnFirstPage()
         {
+            var roles = new List<Role>
+            {
+                new Role
+                {
+                    Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                    Name = "Admin",
+                    IsDeleted = false
+                }
+            };
+
+            var mockRoleDbSet = roles.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork
+                .Setup(x => x.RoleRepository.Query(false))
+                .Returns(mockRoleDbSet.Object);
+
             // Arrange
             var users = new List<User>();
             for (int i = 1; i <= 15; i++)
@@ -695,6 +728,22 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID03_GetAllUsersAsync_WithSecondPage_ShouldReturnCorrectPage()
         {
             // Arrange
+            var roles = new List<Role>
+            {
+                new Role
+                {
+                    Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                    Name = "Admin",
+                    IsDeleted = false
+                }
+            };
+
+            var mockRoleDbSet = roles.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork
+                .Setup(x => x.RoleRepository.Query(false))
+                .Returns(mockRoleDbSet.Object);
+
             var users = new List<User>();
             for (int i = 1; i <= 15; i++)
             {
@@ -729,6 +778,22 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID04_GetAllUsersAsync_WithLastPage_ShouldReturnRemainingItems()
         {
             // Arrange
+            var roles = new List<Role>
+            {
+                new Role
+                {
+                    Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                    Name = "Admin",
+                    IsDeleted = false
+                }
+            };
+
+            var mockRoleDbSet = roles.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork
+                .Setup(x => x.RoleRepository.Query(false))
+                .Returns(mockRoleDbSet.Object);
+
             var users = new List<User>();
             for (int i = 1; i <= 7; i++)
             {
@@ -763,6 +828,22 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID05_GetAllUsersAsync_WithNoUsers_ShouldReturnEmptyList()
         {
             // Arrange
+            var roles = new List<Role>
+            {
+                new Role
+                {
+                    Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                    Name = "Admin",
+                    IsDeleted = false
+                }
+            };
+
+            var mockRoleDbSet = roles.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork
+                .Setup(x => x.RoleRepository.Query(false))
+                .Returns(mockRoleDbSet.Object);
+
             var users = new List<User>();
             var mockDbSet = users.AsQueryable().BuildMockDbSet();
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(false)).Returns(mockDbSet.Object);
@@ -785,6 +866,22 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID06_GetAllUsersAsync_WithPageNumberOne_ShouldReturnFirstPage()
         {
             // Arrange
+            var roles = new List<Role>
+            {
+                new Role
+                {
+                    Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                    Name = "Admin",
+                    IsDeleted = false
+                }
+            };
+
+            var mockRoleDbSet = roles.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork
+                .Setup(x => x.RoleRepository.Query(false))
+                .Returns(mockRoleDbSet.Object);
+
             var users = new List<User>();
             for (int i = 1; i <= 5; i++)
             {
@@ -819,6 +916,22 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID07_GetAllUsersAsync_WithMinimumPageSize_ShouldReturnSuccess()
         {
             // Arrange
+            var roles = new List<Role>
+            {
+                new Role
+                {
+                    Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                    Name = "Admin",
+                    IsDeleted = false
+                }
+            };
+
+            var mockRoleDbSet = roles.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork
+                .Setup(x => x.RoleRepository.Query(false))
+                .Returns(mockRoleDbSet.Object);
+
             var users = new List<User>();
             for (int i = 1; i <= 3; i++)
             {
@@ -853,6 +966,22 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID08_GetAllUsersAsync_WithLargePageSize_ShouldReturnAllItems()
         {
             // Arrange
+            var roles = new List<Role>
+            {
+                new Role
+                {
+                    Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                    Name = "Admin",
+                    IsDeleted = false
+                }
+            };
+
+            var mockRoleDbSet = roles.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork
+                .Setup(x => x.RoleRepository.Query(false))
+                .Returns(mockRoleDbSet.Object);
+
             var users = new List<User>();
             for (int i = 1; i <= 5; i++)
             {
@@ -887,6 +1016,22 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID09_GetAllUsersAsync_WithPageBeyondData_ShouldReturnEmptyPage()
         {
             // Arrange
+            var roles = new List<Role>
+            {
+                new Role
+                {
+                    Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                    Name = "Admin",
+                    IsDeleted = false
+                }
+            };
+
+            var mockRoleDbSet = roles.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork
+                .Setup(x => x.RoleRepository.Query(false))
+                .Returns(mockRoleDbSet.Object);
+
             var users = new List<User>();
             for (int i = 1; i <= 5; i++)
             {
@@ -921,6 +1066,22 @@ namespace AIEvent.Application.Test.Services
         public async Task UTCID10_GetAllUsersAsync_WithDifferentCreationDates_ShouldReturnOrderedResults()
         {
             // Arrange
+            var roles = new List<Role>
+            {
+                new Role
+                {
+                    Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                    Name = "Admin",
+                    IsDeleted = false
+                }
+            };
+
+            var mockRoleDbSet = roles.AsQueryable().BuildMockDbSet();
+
+            _mockUnitOfWork
+                .Setup(x => x.RoleRepository.Query(false))
+                .Returns(mockRoleDbSet.Object);
+
             var users = new List<User>
             {
                 new User

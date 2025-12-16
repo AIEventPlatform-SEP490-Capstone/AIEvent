@@ -61,27 +61,27 @@ export default function ModernAIChat() {
     "Hướng dẫn đặt vé",
     "Sự kiện miễn phí",
   ];
-  
+
   const renderLineWithLink = (line) => {
     const parts = [];
-  
+
     // 1) Bắt markdown link [text](url)
     const markdownRegex = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
-  
+
     // 2) Bắt plain URL (url không có markdown)
     const urlRegex = /(https?:\/\/[^\s]+)/g;
-  
+
     let lastIndex = 0;
     let match;
-  
+
     // Ưu tiên markdown link
     while ((match = markdownRegex.exec(line)) !== null) {
       const before = line.slice(lastIndex, match.index);
       if (before) parts.push(before);
-  
+
       const text = match[1];
       const url = match[2];
-  
+
       parts.push(
         <a
           key={url}
@@ -94,10 +94,10 @@ export default function ModernAIChat() {
           <ExternalLink className="h-4 w-4" />
         </a>
       );
-  
+
       lastIndex = match.index + match[0].length;
     }
-  
+
     // Nếu không có markdown link → kiểm tra plain URL
     if (parts.length === 0 && urlRegex.test(line)) {
       return line.split(urlRegex).map((part, index) => {
@@ -118,15 +118,15 @@ export default function ModernAIChat() {
         return part;
       });
     }
-  
+
     // Phần còn lại sau markdown
     const remaining = line.slice(lastIndex);
     if (remaining) parts.push(remaining);
-  
+
     return parts;
   };
-  
-  
+
+
   const { sendMessage, isLoading, resetSession, setCurrentSessionId: setHookSessionId, getChatSessions } = useAiChat();
 
   const handleSpeechResult = useCallback((text) => {
@@ -209,10 +209,10 @@ export default function ModernAIChat() {
     try {
       // API response structure: { statusCode, message, data: "response text" }
       const response = await sendMessage(userPrompt, sessionIdToUse);
-      
+
       // Extract response text - data is a string, not an object
       const responseText = response?.data || response?.message || "";
-      
+
       // Parse event information if available
       const eventInfo = parseEventFromResponse(responseText);
 
@@ -232,7 +232,7 @@ export default function ModernAIChat() {
         try {
           const sessionsResponse = await getChatSessions(1, 10);
           const sessionsList = sessionsResponse?.data?.items || sessionsResponse?.items || [];
-          
+
           // Get the newest session (first in list, as API returns newest first)
           if (sessionsList.length > 0) {
             const newestSession = sessionsList[0];
@@ -303,44 +303,44 @@ export default function ModernAIChat() {
   }
 
   return (
-<Card className="fixed bottom-6 right-6 w-[360px] h-[520px] shadow-xl z-50 flex flex-col border border-slate-200/60 dark:border-slate-700/60 overflow-hidden p-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl">
-  {/* Header */}
-  <CardHeader className="px-4 py-3 !pb-3 border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-r from-slate-50/50 to-blue-50/30 dark:from-gray-800/50 dark:to-gray-700/30">
-  <div className="flex h-12 items-center justify-between">
-    <div className="flex items-center gap-2.5">
-      <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl blur-md opacity-20" />
-        <div className="relative bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl p-2 shadow-sm">
-          <Bot className="h-5 w-5 text-white" />
-        </div>
-      </div>
-      <div className="flex flex-col justify-center">
-        <span className="text-base font-semibold text-slate-800 dark:text-slate-100 leading-tight">
-          AI Assistant
-        </span>
-        <span className="text-xs text-slate-500 dark:text-slate-400 leading-tight">
-          Luôn sẵn sàng hỗ trợ
-        </span>
-      </div>
-    </div>
+    <Card className="fixed bottom-6 right-6 w-[360px] h-[520px] shadow-xl z-50 flex flex-col border border-slate-200/60 dark:border-slate-700/60 overflow-hidden p-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl">
+      {/* Header */}
+      <CardHeader className="px-4 py-3 !pb-3 border-b border-slate-200/60 dark:border-slate-700/60 bg-gradient-to-r from-slate-50/50 to-blue-50/30 dark:from-gray-800/50 dark:to-gray-700/30">
+        <div className="flex h-12 items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl blur-md opacity-20" />
+              <div className="relative bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl p-2 shadow-sm">
+                <Bot className="h-5 w-5 text-white" />
+              </div>
+            </div>
+            <div className="flex flex-col justify-center">
+              <span className="text-base font-semibold text-slate-800 dark:text-slate-100 leading-tight">
+                AI Assistant
+              </span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 leading-tight">
+                Luôn sẵn sàng hỗ trợ
+              </span>
+            </div>
+          </div>
 
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={handleCloseChat}
-      disabled={isLoading}
-      className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      <X className="h-4 w-4" />
-    </Button>
-  </div>
-</CardHeader>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleCloseChat}
+            disabled={isLoading}
+            className="h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardHeader>
       <CardContent className="relative flex-1 flex flex-col p-4 min-h-0 overflow-hidden">
         <ScrollArea className="flex-1 pr-2 overflow-y-auto max-h-full" ref={scrollAreaRef}>
           <div className="space-y-4 pb-2">
             {/* Show suggested questions only when there's only the welcome message */}
             {messages.length === 1 && messages[0].sender === "ai" && (
-              <div className="px-2 py-3">           
+              <div className="px-2 py-3">
                 <div className="flex flex-wrap gap-2">
                   {suggestedQuestions.map((question, index) => (
                     <button
@@ -393,98 +393,142 @@ export default function ModernAIChat() {
                         </div>
                       )}
                       <div className="flex flex-col gap-1">
-                         <div className="flex items-start gap-2">
-                        <div
-                          className={`rounded-xl break-words shadow-sm relative overflow-hidden ${
-                            isUserMessage
+                        <div className="flex items-start gap-2">
+                          <div
+                            className={`rounded-xl break-words shadow-sm relative overflow-hidden ${isUserMessage
                               ? "bg-gradient-to-br from-blue-600 to-cyan-600 text-white rounded-tr-md px-3 py-2.5"
                               : "bg-gradient-to-br from-white to-blue-50/30 dark:from-gray-800 dark:to-blue-950/20 border border-blue-100/60 dark:border-blue-900/40 rounded-tl-md px-3.5 py-2.5 shadow-md backdrop-blur-sm"
-                          }`}
-                        >
-                          {/* Subtle gradient overlay for AI messages */}
-                          {!isUserMessage && (
-                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5 pointer-events-none" />
-                          )}
-                          <div className={`relative ${isUserMessage ? "text-white" : "text-slate-700 dark:text-slate-200"}`}>
-                            <div className="text-sm leading-relaxed space-y-1.5">
-                              {message.content.split("\n").map((line, index) => {
-                                if (line.startsWith("**") && line.endsWith("**")) {
-                                  return (
-                                    <div key={index} className="font-bold text-base mb-1.5 flex items-center gap-2 text-blue-700 dark:text-blue-300">
-                                      <Sparkles className="h-3.5 w-3.5 text-yellow-500 dark:text-yellow-400 flex-shrink-0" />
-                                      <span>{line.slice(2, -2)}</span>
-                                    </div>
-                                  );
-                                }
-                                if (line.startsWith("• ") || line.startsWith("- ")) {
-                                  return (
-                                    <div key={index} className="flex items-start gap-2 my-1.5 pl-1">
-                                      <div className="mt-1.5 flex-shrink-0">
-                                        <div className="h-1.5 w-1.5 rounded-full bg-blue-500 dark:bg-blue-400" />
+                              }`}
+                          >
+                            {/* Subtle gradient overlay for AI messages */}
+                            {!isUserMessage && (
+                              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5 pointer-events-none" />
+                            )}
+                            <div className={`relative ${isUserMessage ? "text-white" : "text-slate-700 dark:text-slate-200"}`}>
+                              <div className="text-sm leading-relaxed space-y-2">
+                                {message.content.split("\n").map((line, index) => {
+                                  const trimmedLine = line.trim();
+
+                                  // Tiêu đề sự kiện: **Tên sự kiện**
+                                  if (trimmedLine.startsWith("**") && trimmedLine.endsWith("**")) {
+                                    const title = trimmedLine.slice(2, -2).trim();
+                                    return (
+                                      <div
+                                        key={index}
+                                        className="font-bold text-lg mt-4 mb-4 flex items-center gap-3 text-blue-700 dark:text-blue-300"
+                                      >
+                                        <Sparkles className="h-5 w-5 text-yellow-500 dark:text-yellow-400 flex-shrink-0" />
+                                        <span>{title}</span>
                                       </div>
-                                      <span className="flex-1">{line.slice(2)}</span>
-                                    </div>
-                                  );
-                                }
-                                return line ? (
-                                  <div key={index} className="my-1.5 first:mt-0 last:mb-0">
-                                    {renderLineWithLink(line)}
-                                  </div>
-                                ) : (
-                                  <div key={index} className="h-2" />
-                                );
-                              })}
+                                    );
+                                  }
+
+                                  // Bullet points: bắt đầu bằng - hoặc •
+                                  if (trimmedLine.startsWith("- ") || trimmedLine.startsWith("• ")) {
+                                    let bulletText = trimmedLine.slice(2).trim();
+                                    let icon = null;
+                                    let iconColor = "";
+
+                                    // Phát hiện loại thông tin để chọn icon phù hợp
+                                    const lowerText = bulletText.toLowerCase();
+
+                                    if (lowerText.includes("địa điểm") || lowerText.includes("tại") || lowerText.includes("thành phố") || lowerText.includes("quận")) {
+                                      icon = <MapPin className="h-4.5 w-4.5" />;
+                                      iconColor = "text-red-500 dark:text-red-400";
+                                    }
+                                    else if (lowerText.includes("thời gian") || lowerText.includes("ngày") || lowerText.includes("giờ") || bulletText.includes(":")) {
+                                      icon = <Calendar className="h-4.5 w-4.5" />;
+                                      iconColor = "text-green-600 dark:text-green-400";
+                                    }
+                                    else if (lowerText.includes("giá vé") || lowerText.includes("vé") || lowerText.includes("vnd") || lowerText.includes("đồng")) {
+                                      icon = <Zap className="h-4.5 w-4.5" />;
+                                      iconColor = "text-orange-500 dark:text-orange-400";
+                                    }
+                                    else if (lowerText.includes("xem chi tiết") || lowerText.includes("tại đây") || lowerText.includes("link")) {
+                                      icon = <ExternalLink className="h-4.5 w-4.5" />;
+                                      iconColor = "text-blue-600 dark:text-blue-400";
+                                    }
+                                    else {
+                                      // Mặc định: chấm tròn hoặc ngôi sao nhỏ
+                                      icon = <div className="h-2 w-2 rounded-full bg-blue-500 dark:bg-blue-400 mt-1.5" />;
+                                      iconColor = "";
+                                    }
+
+                                    return (
+                                      <div key={index} className="flex items-start gap-3 my-2.5">
+                                        <div className={`flex-shrink-0 ${iconColor}`}>
+                                          {icon}
+                                        </div>
+                                        <span className="flex-1 leading-relaxed">
+                                          {renderLineWithLink(bulletText)}
+                                        </span>
+                                      </div>
+                                    );
+                                  }
+
+                                  // Dòng văn bản thường (không phải bullet)
+                                  if (trimmedLine) {
+                                    return (
+                                      <div key={index} className="my-2">
+                                        {renderLineWithLink(trimmedLine)}
+                                      </div>
+                                    );
+                                  }
+
+                                  // Dòng trống → khoảng cách
+                                  return <div key={index} className="h-4" />;
+                                })}
+                              </div>
                             </div>
                           </div>
+                          {message.sender === "ai" && (
+                            <button className="h-6 w-6 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors flex items-center justify-center">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button className="h-6 w-6 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors flex items-center justify-center">
+                                    <MoreVertical className="h-3 w-3" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-40">
+                                  {isSpeechSynthesisSupported ? (
+                                    <DropdownMenuItem
+                                      className="gap-2 text-base"
+                                      onClick={() =>
+                                        isSpeakingThisMessage
+                                          ? handleStopSpeaking()
+                                          : handleSpeakMessage(message.id, message.content)
+                                      }
+                                    >
+                                      {isSpeakingThisMessage ? (
+                                        <>
+                                          <VolumeX className="h-4 w-4 text-red-500" />
+                                          Dừng đọc
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Volume2 className="h-4 w-4 text-blue-500" />
+                                          Đọc to
+                                        </>
+                                      )}
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem disabled className="gap-2 opacity-70 text-base">
+                                      <VolumeX className="h-4 w-4" />
+                                      Không hỗ trợ đọc
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </button>
+                          )}
                         </div>
-                                  {message.sender === "ai" && (
-                          <button className="h-6 w-6 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors flex items-center justify-center">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <button className="h-6 w-6 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors flex items-center justify-center">
-                                  <MoreVertical className="h-3 w-3" />
-                                </button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-40">
-                            {isSpeechSynthesisSupported ? (
-                              <DropdownMenuItem
-                                className="gap-2 text-base"
-                                onClick={() =>
-                                  isSpeakingThisMessage
-                                    ? handleStopSpeaking()
-                                    : handleSpeakMessage(message.id, message.content)
-                                }
-                              >
-                                {isSpeakingThisMessage ? (
-                                  <>
-                                    <VolumeX className="h-4 w-4 text-red-500" />
-                                    Dừng đọc
-                                  </>
-                                ) : (
-                                  <>
-                                    <Volume2 className="h-4 w-4 text-blue-500" />
-                                    Đọc to
-                                  </>
-                                )}
-                              </DropdownMenuItem>
-                            ) : (
-                              <DropdownMenuItem disabled className="gap-2 opacity-70 text-base">
-                                <VolumeX className="h-4 w-4" />
-                                Không hỗ trợ đọc
-                              </DropdownMenuItem>
-                            )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </button>
-                        )}
                       </div>
-                    </div>
                     </div>
                   </div>
 
 
-              </div>
-            );
+                </div>
+              );
             })}
 
             {isLoading && (
@@ -538,11 +582,10 @@ export default function ModernAIChat() {
                 size="icon"
                 onClick={isRecording ? stopRecording : startRecording}
                 disabled={isLoading}
-                className={`h-9 w-9 rounded-lg border border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all flex-shrink-0 ${
-                  isRecording
-                    ? "border-red-400 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-600"
-                    : ""
-                }`}
+                className={`h-9 w-9 rounded-lg border border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all flex-shrink-0 ${isRecording
+                  ? "border-red-400 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-600"
+                  : ""
+                  }`}
               >
                 {isRecording ? <Square className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
               </Button>
@@ -566,8 +609,8 @@ export default function ModernAIChat() {
               {isRecording && interimTranscript
                 ? `Đang nghe: "${interimTranscript}"`
                 : speechError
-                ? `Không thể thu âm: ${speechError}`
-                : "Nhấn mic để nói câu hỏi của bạn"}
+                  ? `Không thể thu âm: ${speechError}`
+                  : "Nhấn mic để nói câu hỏi của bạn"}
             </p>
           )}
           {!isSpeechSupported && (

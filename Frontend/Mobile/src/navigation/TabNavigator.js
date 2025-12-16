@@ -1,9 +1,9 @@
-import React, {useEffect, useMemo, useRef} from 'react';
-import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {createStackNavigator} from '@react-navigation/stack';
-import {Image, View} from 'react-native';
-import {useSelector} from 'react-redux';
-import {isStaffUser} from '../utils/jwtUtils';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
+import { Image, View } from 'react-native';
+import { useSelector } from 'react-redux';
+import { isStaffUser } from '../utils/jwtUtils';
 
 import HomeScreen from '../screens/homeScreen';
 import EventDetailScreen from '../screens/eventDetailScreen';
@@ -13,6 +13,7 @@ import QrScannerScreen from '../screens/qrScannerScreen';
 import CheckInConfirmationScreen from '../screens/qrScannerScreen/CheckInConfirmationScreen';
 import BookingScreen from '../screens/bookingScreen';
 import NotificationsScreen from '../screens/notificationsScreen';
+import { NearbyEventsStack } from './NearbyEventsNavigator';
 
 import ScreenNames from '../constants/ScreenNames';
 import Images from '../constants/Images';
@@ -117,7 +118,7 @@ const HomeStack = () => {
 
 // Stack cho Profile (cả user và staff đều vào được Settings)
 const ProfileStack = () => (
-  <Stack.Navigator screenOptions={{headerShown: false}}>
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="ProfileMain" component={ProfileScreen} />
     <Stack.Screen
       name={ScreenNames.SETTINGS_SCREEN}
@@ -144,7 +145,7 @@ const ProfileStack = () => (
     <Stack.Screen
       name={ScreenNames.QR_SCANNER_SCREEN}
       component={QrScannerScreen}
-      options={{headerShown: false}}
+      options={{ headerShown: false }}
     />
     <Stack.Screen
       name={ScreenNames.CHECK_IN_CONFIRMATION_SCREEN}
@@ -172,7 +173,7 @@ const getTimelineStack = () => {
   try {
     const TimelineScreen = require('../screens/timelineScreen').default;
     return () => (
-      <Stack.Navigator screenOptions={{headerShown: false}}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen
           name={ScreenNames.TIMELINE_SCREEN}
           component={TimelineScreen}
@@ -198,7 +199,7 @@ const getTimelineStack = () => {
         <Stack.Screen
           name={ScreenNames.QR_SCANNER_SCREEN}
           component={QrScannerScreen}
-          options={{headerShown: false}}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name={ScreenNames.CHECK_IN_CONFIRMATION_SCREEN}
@@ -229,7 +230,7 @@ const getTicketsStack = () => {
   try {
     const TicketsScreen = require('../screens/ticketsScreen').default;
     return () => (
-      <Stack.Navigator screenOptions={{headerShown: false}}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="TicketsMain" component={TicketsScreen} />
         <Stack.Screen
           name={ScreenNames.EVENT_DETAIL_SCREEN}
@@ -252,7 +253,7 @@ const getTicketsStack = () => {
         <Stack.Screen
           name={ScreenNames.QR_SCANNER_SCREEN}
           component={QrScannerScreen}
-          options={{headerShown: false}}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name={ScreenNames.CHECK_IN_CONFIRMATION_SCREEN}
@@ -284,7 +285,7 @@ const getFavoriteEventsStack = () => {
     const FavoriteEventsScreen =
       require('../screens/favoriteEventsScreen').default;
     return () => (
-      <Stack.Navigator screenOptions={{headerShown: false}}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen
           name="FavoriteEventsMain"
           component={FavoriteEventsScreen}
@@ -310,7 +311,7 @@ const getFavoriteEventsStack = () => {
         <Stack.Screen
           name={ScreenNames.QR_SCANNER_SCREEN}
           component={QrScannerScreen}
-          options={{headerShown: false}}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name={ScreenNames.CHECK_IN_CONFIRMATION_SCREEN}
@@ -338,7 +339,7 @@ const getFavoriteEventsStack = () => {
 };
 
 const TabNavigator = () => {
-  const {accessToken, isLoggedIn} = useSelector(state => state.auth);
+  const { accessToken, isLoggedIn } = useSelector(state => state.auth);
   const isStaff = accessToken ? isStaffUser(accessToken) : false;
   const prevIsLoggedInRef = useRef(isLoggedIn);
 
@@ -356,13 +357,13 @@ const TabNavigator = () => {
         {
           name: 'HomeTab',
           component: HomeStack,
-          options: {title: 'Danh sách sự kiện'},
+          options: { title: 'Danh sách sự kiện' },
           icon: Images.home,
         },
         {
           name: 'Profile',
           component: ProfileStack,
-          options: {title: 'Hồ sơ'},
+          options: { title: 'Hồ sơ' },
           icon: Images.profile,
         },
       ];
@@ -373,31 +374,31 @@ const TabNavigator = () => {
       {
         name: 'HomeTab',
         component: HomeStack,
-        options: {title: 'Trang chủ'},
+        options: { title: 'Trang chủ' },
         icon: Images.home,
       },
       {
         name: 'Timeline',
         component: getTimelineStack(),
-        options: {title: 'Timeline'},
+        options: { title: 'Timeline' },
         icon: Images.calendar,
       },
       {
-        name: 'MyEvents',
-        component: getTicketsStack(),
-        options: {title: 'Vé của tôi'},
-        icon: Images.ticket,
+        name: 'Nearby',
+        component: NearbyEventsStack,
+        options: { title: 'Gần tôi' },
+        icon: Images.location,
       },
       {
         name: 'FavoriteEvents',
         component: getFavoriteEventsStack(),
-        options: {title: 'Yêu thích'},
+        options: { title: 'Yêu thích' },
         icon: Images.heart,
       },
       {
         name: 'Profile',
         component: ProfileStack,
-        options: {title: 'Hồ sơ'},
+        options: { title: 'Hồ sơ' },
         icon: Images.profile,
       },
     ];
@@ -405,19 +406,26 @@ const TabNavigator = () => {
 
   return (
     <Tab.Navigator
-      screenOptions={({route}) => ({
+      screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarIcon: ({focused, color, size}) => {
+        tabBarIcon: ({ focused, color }) => {
           const tab = tabScreens.find(t => t.name === route.name);
           const iconSource = tab?.icon;
 
           if (!iconSource) return null;
 
           return (
-            <Image
-              source={iconSource}
-              style={{width: size, height: size, tintColor: color}}
-            />
+            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+              <Image
+                source={iconSource}
+                style={{
+                  width: 24,   
+                  height: 24,
+                  tintColor: color,
+                  resizeMode: 'contain',
+                }}
+              />
+            </View>
           );
         },
         tabBarActiveTintColor: Colors.primary,
@@ -426,8 +434,8 @@ const TabNavigator = () => {
           backgroundColor: Colors.white,
           borderTopColor: Colors.border,
           borderTopWidth: 1,
-          height: 73,
-          paddingBottom: 8,
+          height: 90,
+          paddingBottom: 12,
           paddingTop: 8,
         },
         tabBarLabelStyle: {
