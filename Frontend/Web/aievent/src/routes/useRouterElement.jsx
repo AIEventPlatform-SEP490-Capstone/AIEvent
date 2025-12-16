@@ -222,7 +222,14 @@ export default function useRouterElement() {
         { path: "events", element: <div>Organizer Events Page</div> },
         { path: "my-events", element: <MyEventsPage /> },
         { path: "event/:eventId", element: <EventDetailPage /> },
-        { path: "event/:eventId/edit", element: <EditEventPage /> },
+        { 
+          path: "event/:eventId/edit", 
+          element: (
+            <ProtectedRoute allowedRoles={["Organizer"]}>
+              <EditEventPage />
+            </ProtectedRoute>
+          )
+        },
         {
           path: "profile",
           element: (

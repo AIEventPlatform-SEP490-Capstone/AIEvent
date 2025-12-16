@@ -2393,7 +2393,7 @@ const CreateEventPage = () => {
             )}
             {/* About Event */}
             <div className="bg-white rounded-xl p-8 border border-gray-100">
-              <h2 className="text-2xl font-bold text-foreground mb-6">Về sự kiện</h2>
+              <h2 className="text-2xl font-bold text-foreground mb-6">Chi tiết sự kiện</h2>
               <div className="space-y-4 mb-6">
                 <RichTextEditor
                   value={watch('detailedDescription')}

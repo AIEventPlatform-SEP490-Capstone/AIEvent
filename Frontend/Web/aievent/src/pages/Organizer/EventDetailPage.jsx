@@ -738,7 +738,7 @@ Nhấn OK để xác nhận xóa.`;
 
             {/* About Event */}
             <div className="bg-white rounded-xl p-8 border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all duration-300">
-              <h2 className="text-2xl font-bold text-foreground mb-6">Về sự kiện</h2>
+              <h2 className="text-2xl font-bold text-foreground mb-6">Chi tiết sự kiện</h2>
               {event.detailedDescription || event.description ? (
                 <div 
                   className="prose max-w-none text-muted-foreground leading-relaxed mb-6 ql-editor"
@@ -816,7 +816,7 @@ Nhấn OK để xác nhận xóa.`;
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             {/* Quick Actions - Enhanced */}
-            <SidebarCard title="Hành động nhanh" icon={<Activity className="w-4 h-4" />} gradient>
+            <SidebarCard title="Tác vụ" icon={<Activity className="w-4 h-4" />} gradient>
               <div className="space-y-3">
                 {event?.status === EventStatus.PendingApproval && (
                   <ActionButton
