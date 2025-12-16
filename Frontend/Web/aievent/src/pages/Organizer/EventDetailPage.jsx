@@ -596,26 +596,6 @@ Nhấn OK để xác nhận xóa.`;
               })()}
             />
 
-            {/* Ticket Information */}
-            {event.ticketDetails && event.ticketDetails.length > 0 && (
-              <div className="bg-white rounded-xl p-6 border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all duration-300">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-foreground flex items-center gap-2">
-                    <Ticket className="w-5 h-5 text-primary" />
-                    Tình trạng vé
-                  </h3>
-                  <span className="text-sm font-medium text-primary">{occupancyPercent.toFixed(0)}% Đã bán</span>
-                </div>
-                <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-500"
-                    style={{ width: `${occupancyPercent}%` }}
-                  />
-                </div>
-                <p className="text-sm text-muted-foreground mt-3">{totalAvailableTickets} chỗ còn lại</p>
-              </div>
-            )}
-
             {/* Ticket Options - Ticket-style Design */}
             {event.ticketDetails && event.ticketDetails.length > 0 && (
               <div className="space-y-4">

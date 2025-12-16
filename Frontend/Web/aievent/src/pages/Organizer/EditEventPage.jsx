@@ -1735,34 +1735,6 @@ const EditEventPage = () => {
               </div>
             )}
             
-            {/* Ticket Information */}
-            {previewData.ticketTypes && previewData.ticketTypes.length > 0 && (
-              <div className="bg-white rounded-xl p-6 border border-gray-100">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-foreground flex items-center gap-2">
-                    <Ticket className="w-5 h-5 text-primary" />
-                    Tình trạng vé
-                  </h3>
-                  <span className="text-sm font-medium text-primary">
-                    {previewData.ticketTypes.reduce((acc, ticket) => acc + (ticket.soldQuantity || 0), 0) / 
-                     previewData.ticketTypes.reduce((acc, ticket) => acc + (ticket.ticketQuantity || 0), 0) * 100 || 0}% Đã bán
-                  </span>
-                </div>
-                <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-500"
-                    style={{ 
-                      width: `${(previewData.ticketTypes.reduce((acc, ticket) => acc + (ticket.soldQuantity || 0), 0) / 
-                                previewData.ticketTypes.reduce((acc, ticket) => acc + (ticket.ticketQuantity || 0), 0) * 100) || 0}%` 
-                    }}
-                  />
-                </div>
-                <p className="text-sm text-muted-foreground mt-3">
-                  {previewData.ticketTypes.reduce((acc, ticket) => acc + (ticket.ticketQuantity - (ticket.soldQuantity || 0)), 0)} chỗ còn lại
-                </p>
-              </div>
-            )}
-            
             {/* Ticket Options - Ticket-style Design */}
             {previewData.ticketTypes && previewData.ticketTypes.length > 0 && (
               <div className="space-y-4">
