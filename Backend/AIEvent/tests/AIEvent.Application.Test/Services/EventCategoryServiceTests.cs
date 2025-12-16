@@ -52,6 +52,10 @@ namespace AIEvent.Application.Test.Services
             _categoryRepoMock.Setup(r => r.AddAsync(It.IsAny<EventCategory>()))
                 .ReturnsAsync((EventCategory c) => c);
 
+            _contentModerationServiceMock
+                .Setup(x => x.ProfanityChecker(It.IsAny<string>()))
+                .ReturnsAsync(Result<string>.Success("OK"));
+
             _transactionHelperMock.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(func => func());
 
@@ -74,15 +78,20 @@ namespace AIEvent.Application.Test.Services
             };
 
             var existing = new List<EventCategory>
-        {
-            new EventCategory 
-            { 
-                Id = Guid.NewGuid(), 
-                CategoryName = "Technology" }
+            {
+                new EventCategory 
+                    { 
+                        Id = Guid.NewGuid(), 
+                        CategoryName = "Technology" 
+                    }
             }
             .AsQueryable().BuildMock();
 
             _categoryRepoMock.Setup(r => r.Query(It.IsAny<bool>())).Returns(existing);
+
+            _contentModerationServiceMock
+                .Setup(x => x.ProfanityChecker(It.IsAny<string>()))
+                .ReturnsAsync(Result<string>.Success("OK"));
 
             _transactionHelperMock.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
                 .Returns<Func<Task<Result>>>(func => func());
@@ -342,6 +351,10 @@ namespace AIEvent.Application.Test.Services
             _categoryRepoMock.Setup(r => r.Query(false)).Returns(mockQueryable);
             _categoryRepoMock.Setup(r => r.UpdateAsync(It.IsAny<EventCategory>())).ReturnsAsync((EventCategory c) => c);
 
+            _contentModerationServiceMock
+                .Setup(x => x.ProfanityChecker(It.IsAny<string>()))
+                .ReturnsAsync(Result<string>.Success("OK"));
+
             _transactionHelperMock
                 .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result<EventCategoryResponse>>>>()))
                 .Returns<Func<Task<Result<EventCategoryResponse>>>>(func => func());
@@ -399,6 +412,10 @@ namespace AIEvent.Application.Test.Services
                 .Setup(r => r.Query(It.IsAny<bool>()))
                 .Returns(mockQueryable);
 
+            _contentModerationServiceMock
+                .Setup(x => x.ProfanityChecker(It.IsAny<string>()))
+                .ReturnsAsync(Result<string>.Success("OK"));
+
             // Act
             var result = await _eventCategoryService.UpdateEventCategoryAsync(TestCategoryId.ToString(), request);
 
@@ -429,6 +446,10 @@ namespace AIEvent.Application.Test.Services
 
             var request = new EventCategoryRequest { EventCategoryName = "New Name" };
 
+            _contentModerationServiceMock
+                .Setup(x => x.ProfanityChecker(It.IsAny<string>()))
+                .ReturnsAsync(Result<string>.Success("OK"));
+
             _transactionHelperMock
                 .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result<EventCategoryResponse>>>>()))
                 .Returns<Func<Task<Result<EventCategoryResponse>>>>(func => func());
@@ -450,6 +471,10 @@ namespace AIEvent.Application.Test.Services
             _transactionHelperMock
                 .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result<EventCategoryResponse>>>>()))
                 .Returns<Func<Task<Result<EventCategoryResponse>>>>(func => func());
+
+            _contentModerationServiceMock
+                .Setup(x => x.ProfanityChecker(It.IsAny<string>()))
+                .ReturnsAsync(Result<string>.Success("OK"));
 
             // Arrange
             var invalidId = "not-a-guid";
@@ -486,6 +511,10 @@ namespace AIEvent.Application.Test.Services
 
             var mockQueryable = new List<EventCategory> { category, category1 }.AsQueryable().BuildMock();
             _categoryRepoMock.Setup(r => r.Query(false)).Returns(mockQueryable);
+
+            _contentModerationServiceMock
+                .Setup(x => x.ProfanityChecker(It.IsAny<string>()))
+                .ReturnsAsync(Result<string>.Success("OK"));
 
             var request = new EventCategoryRequest { EventCategoryName = "New Name" };
 

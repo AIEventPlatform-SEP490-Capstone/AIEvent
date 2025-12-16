@@ -56,6 +56,10 @@ namespace AIEvent.Application.Test.Services
 
             _tagRepoMock.Setup(r => r.Query(false)).Returns(tags.AsNoTracking());
 
+            _contentModerationServiceMock
+                .Setup(x => x.ProfanityChecker(It.IsAny<string>()))
+                .ReturnsAsync(Result<string>.Success("OK"));
+
             // Act
             var result = await _tagService.CreateTagAsync(request, "Organizer");
 
@@ -87,6 +91,10 @@ namespace AIEvent.Application.Test.Services
                 .Setup(r => r.AddAsync(It.IsAny<Tag>()))
                 .Callback<Tag>(t => addedTag = t)
                 .ReturnsAsync(() => addedTag);
+
+            _contentModerationServiceMock
+                .Setup(x => x.ProfanityChecker(It.IsAny<string>()))
+                .ReturnsAsync(Result<string>.Success("OK"));
 
             _transactionHelperMock
                 .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>()))
@@ -207,6 +215,10 @@ namespace AIEvent.Application.Test.Services
             _tagRepoMock.Setup(r => r.UpdateAsync(It.IsAny<Tag>()))
                 .ReturnsAsync((Tag t) => t);
 
+            _contentModerationServiceMock
+                .Setup(x => x.ProfanityChecker(It.IsAny<string>()))
+                .ReturnsAsync(Result<string>.Success("OK"));
+
             _transactionHelperMock
                 .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result<TagResponse>>>>()))
                 .Returns<Func<Task<Result<TagResponse>>>>(func => func());
@@ -238,6 +250,10 @@ namespace AIEvent.Application.Test.Services
             var mockQueryable = tags.BuildMock();
 
             _tagRepoMock.Setup(r => r.Query(false)).Returns(mockQueryable);
+
+            _contentModerationServiceMock
+                .Setup(x => x.ProfanityChecker(It.IsAny<string>()))
+                .ReturnsAsync(Result<string>.Success("OK"));
 
             _transactionHelperMock
                 .Setup(t => t.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result<TagResponse>>>>()))
