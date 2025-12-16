@@ -27,7 +27,7 @@ import FriendService from '../../api/services/FriendService';
 import AuthService from '../../api/services/AuthService';
 import { isStaffUser } from '../../utils/jwtUtils';
 
-import StaffQRButton from '../../components/presentation/eventDetail/staff/StaffQRButton';
+
 import RatingSectionMobile from '../../components/presentation/RatingSectionMobile';
 import EventTimeline from '../../components/presentation/EventTimeline';
 import EventShareSection from '../../components/presentation/eventDetail/EventShareSection';
@@ -255,7 +255,7 @@ const EventDetailScreen = () => {
     }
   };
 
-  const handleScanQR = () => navigation.navigate('QrScannerScreen', { eventId });
+
 
   const getEventImage = () => {
     if (event?.image && typeof event.image === 'object' && event.image.uri) {
@@ -301,7 +301,7 @@ const EventDetailScreen = () => {
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Image source={Images.logout} style={styles.backIcon} />
         </TouchableOpacity>
-        {isStaff && <StaffQRButton onPress={handleScanQR} />}
+
       </View>
 
       <View style={styles.content}>

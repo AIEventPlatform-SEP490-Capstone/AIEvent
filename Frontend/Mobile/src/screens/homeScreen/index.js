@@ -540,7 +540,7 @@ const HomeScreen = () => {
           </View>
         )}
 
-        {shouldSplitEvents && featuredEvents.length > 0 && (
+        {!isStaffUser(accessToken) && shouldSplitEvents && featuredEvents.length > 0 && (
           <View style={styles.featuredSection}>
             <View style={[styles.sectionHeader, { paddingHorizontal: 20 }]}>
               <CustomText variant="h2" style={styles.sectionTitle}>
