@@ -3,12 +3,13 @@ export const ENV = {
   PROD: 'prod',
 };
 
+// lấy IP : ipconfig 
 export const CURRENT_ENV = ENV.LOCAL;
 // export const CURRENT_ENV = ENV.PROD;
 
 export const NETWORK_CONFIG = {
   [ENV.LOCAL]: {
-    IP_ADDRESS: '192.168.1.253', // IP máy backend local
+    IP_ADDRESS: '192.168.101.10', // IP máy backend local
     HTTP_PORT: '5059',
     HTTPS_PORT: '7777',
     USE_HTTPS: false,

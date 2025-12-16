@@ -36,7 +36,6 @@ import { parseEventFromResponse } from "../../utils/aiResponseParser";
 import aiChatGif from "../../assets/ai-chat-2.gif";
 
 export default function ModernAIChat() {
-
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
@@ -61,6 +60,17 @@ export default function ModernAIChat() {
     "Hướng dẫn đặt vé",
     "Sự kiện miễn phí",
   ];
+
+  const cleanMarkdownAsterisks = (text) => {
+    if (!text) return text;
+
+    return text
+      .replace(/\*\*\*\*([^*]+)\*\*\*\*/g, "$1") // ****text**** → text
+      .replace(/\*\*\*([^*]+)\*\*\*/g, "$1") // ***text*** → text (italic + bold)
+      .replace(/\*\*([^*]+)\*\*/g, "$1") // **text** → text
+      .replace(/\*([^*]+)\*/g, "$1") // *text* → text
+      .replace(/\\\*/g, "*"); // bỏ escape nếu có \*
+  };
 
   const renderLineWithLink = (line) => {
     const parts = [];
@@ -126,8 +136,13 @@ export default function ModernAIChat() {
     return parts;
   };
 
-
-  const { sendMessage, isLoading, resetSession, setCurrentSessionId: setHookSessionId, getChatSessions } = useAiChat();
+  const {
+    sendMessage,
+    isLoading,
+    resetSession,
+    setCurrentSessionId: setHookSessionId,
+    getChatSessions,
+  } = useAiChat();
 
   const handleSpeechResult = useCallback((text) => {
     if (!text) return;
@@ -161,9 +176,13 @@ export default function ModernAIChat() {
       speak(text, {
         onStart: () => setSpeakingMessageId(messageId),
         onEnd: () =>
-          setSpeakingMessageId((current) => (current === messageId ? null : current)),
+          setSpeakingMessageId((current) =>
+            current === messageId ? null : current
+          ),
         onError: () =>
-          setSpeakingMessageId((current) => (current === messageId ? null : current)),
+          setSpeakingMessageId((current) =>
+            current === messageId ? null : current
+          ),
       });
     },
     [speak]
@@ -212,13 +231,14 @@ export default function ModernAIChat() {
 
       // Extract response text - data is a string, not an object
       const responseText = response?.data || response?.message || "";
+      const cleanedResponseText = cleanMarkdownAsterisks(responseText);
 
       // Parse event information if available
       const eventInfo = parseEventFromResponse(responseText);
 
       const aiMessage = {
         id: (Date.now() + 1).toString(),
-        content: responseText,
+        content: cleanedResponseText,
         sender: "ai",
         timestamp: new Date(),
         eventInfo: eventInfo,
@@ -231,7 +251,8 @@ export default function ModernAIChat() {
       if (wasNewSession && getChatSessions) {
         try {
           const sessionsResponse = await getChatSessions(1, 10);
-          const sessionsList = sessionsResponse?.data?.items || sessionsResponse?.items || [];
+          const sessionsList =
+            sessionsResponse?.data?.items || sessionsResponse?.items || [];
 
           // Get the newest session (first in list, as API returns newest first)
           if (sessionsList.length > 0) {
@@ -250,14 +271,14 @@ export default function ModernAIChat() {
       console.error("Error sending message:", error);
       const errorMessage = {
         id: (Date.now() + 1).toString(),
-        content: "Xin lỗi, đã xảy ra lỗi khi xử lý yêu cầu của bạn. Vui lòng thử lại sau.",
+        content:
+          "Xin lỗi, đã xảy ra lỗi khi xử lý yêu cầu của bạn. Vui lòng thử lại sau.",
         sender: "ai",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
     }
   };
-
 
   // Không hiển thị icon nếu user chưa đăng nhập
   if (!isAuthenticated) {
@@ -336,7 +357,10 @@ export default function ModernAIChat() {
         </div>
       </CardHeader>
       <CardContent className="relative flex-1 flex flex-col p-4 min-h-0 overflow-hidden">
-        <ScrollArea className="flex-1 pr-2 overflow-y-auto max-h-full" ref={scrollAreaRef}>
+        <ScrollArea
+          className="flex-1 pr-2 overflow-y-auto max-h-full"
+          ref={scrollAreaRef}
+        >
           <div className="space-y-4 pb-2">
             {/* Show suggested questions only when there's only the welcome message */}
             {messages.length === 1 && messages[0].sender === "ai" && (
@@ -360,9 +384,20 @@ export default function ModernAIChat() {
               const isSpeakingThisMessage = speakingMessageId === message.id;
 
               return (
-                <div key={message.id} className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div className={`flex ${isUserMessage ? "justify-end" : "justify-start"}`}>
-                    <div className={`flex items-start gap-2 ${isUserMessage ? "flex-row-reverse" : ""} max-w-[85%]`}>
+                <div
+                  key={message.id}
+                  className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300"
+                >
+                  <div
+                    className={`flex ${
+                      isUserMessage ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`flex items-start gap-2 ${
+                        isUserMessage ? "flex-row-reverse" : ""
+                      } max-w-[85%]`}
+                    >
                       {message.sender === "ai" && (
                         <div className="relative flex-shrink-0">
                           <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full blur-md opacity-20" />
@@ -395,89 +430,141 @@ export default function ModernAIChat() {
                       <div className="flex flex-col gap-1">
                         <div className="flex items-start gap-2">
                           <div
-                            className={`rounded-xl break-words shadow-sm relative overflow-hidden ${isUserMessage
-                              ? "bg-gradient-to-br from-blue-600 to-cyan-600 text-white rounded-tr-md px-3 py-2.5"
-                              : "bg-gradient-to-br from-white to-blue-50/30 dark:from-gray-800 dark:to-blue-950/20 border border-blue-100/60 dark:border-blue-900/40 rounded-tl-md px-3.5 py-2.5 shadow-md backdrop-blur-sm"
-                              }`}
+                            className={`rounded-xl break-words shadow-sm relative overflow-hidden ${
+                              isUserMessage
+                                ? "bg-gradient-to-br from-blue-600 to-cyan-600 text-white rounded-tr-md px-3 py-2.5"
+                                : "bg-gradient-to-br from-white to-blue-50/30 dark:from-gray-800 dark:to-blue-950/20 border border-blue-100/60 dark:border-blue-900/40 rounded-tl-md px-3.5 py-2.5 shadow-md backdrop-blur-sm"
+                            }`}
                           >
                             {/* Subtle gradient overlay for AI messages */}
                             {!isUserMessage && (
                               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5 pointer-events-none" />
                             )}
-                            <div className={`relative ${isUserMessage ? "text-white" : "text-slate-700 dark:text-slate-200"}`}>
+                            <div
+                              className={`relative ${
+                                isUserMessage
+                                  ? "text-white"
+                                  : "text-slate-700 dark:text-slate-200"
+                              }`}
+                            >
                               <div className="text-sm leading-relaxed space-y-2">
-                                {message.content.split("\n").map((line, index) => {
-                                  const trimmedLine = line.trim();
+                                {message.content
+                                  .split("\n")
+                                  .map((line, index) => {
+                                    const trimmedLine = line.trim();
 
-                                  // Tiêu đề sự kiện: **Tên sự kiện**
-                                  if (trimmedLine.startsWith("**") && trimmedLine.endsWith("**")) {
-                                    const title = trimmedLine.slice(2, -2).trim();
-                                    return (
-                                      <div
-                                        key={index}
-                                        className="font-bold text-lg mt-4 mb-4 flex items-center gap-3 text-blue-700 dark:text-blue-300"
-                                      >
-                                        <Sparkles className="h-5 w-5 text-yellow-500 dark:text-yellow-400 flex-shrink-0" />
-                                        <span>{title}</span>
-                                      </div>
-                                    );
-                                  }
-
-                                  // Bullet points: bắt đầu bằng - hoặc •
-                                  if (trimmedLine.startsWith("- ") || trimmedLine.startsWith("• ")) {
-                                    let bulletText = trimmedLine.slice(2).trim();
-                                    let icon = null;
-                                    let iconColor = "";
-
-                                    // Phát hiện loại thông tin để chọn icon phù hợp
-                                    const lowerText = bulletText.toLowerCase();
-
-                                    if (lowerText.includes("địa điểm") || lowerText.includes("tại") || lowerText.includes("thành phố") || lowerText.includes("quận")) {
-                                      icon = <MapPin className="h-4.5 w-4.5" />;
-                                      iconColor = "text-red-500 dark:text-red-400";
-                                    }
-                                    else if (lowerText.includes("thời gian") || lowerText.includes("ngày") || lowerText.includes("giờ") || bulletText.includes(":")) {
-                                      icon = <Calendar className="h-4.5 w-4.5" />;
-                                      iconColor = "text-green-600 dark:text-green-400";
-                                    }
-                                    else if (lowerText.includes("giá vé") || lowerText.includes("vé") || lowerText.includes("vnd") || lowerText.includes("đồng")) {
-                                      icon = <Zap className="h-4.5 w-4.5" />;
-                                      iconColor = "text-orange-500 dark:text-orange-400";
-                                    }
-                                    else if (lowerText.includes("xem chi tiết") || lowerText.includes("tại đây") || lowerText.includes("link")) {
-                                      icon = <ExternalLink className="h-4.5 w-4.5" />;
-                                      iconColor = "text-blue-600 dark:text-blue-400";
-                                    }
-                                    else {
-                                      // Mặc định: chấm tròn hoặc ngôi sao nhỏ
-                                      icon = <div className="h-2 w-2 rounded-full bg-blue-500 dark:bg-blue-400 mt-1.5" />;
-                                      iconColor = "";
-                                    }
-
-                                    return (
-                                      <div key={index} className="flex items-start gap-3 my-2.5">
-                                        <div className={`flex-shrink-0 ${iconColor}`}>
-                                          {icon}
+                                    // Tiêu đề sự kiện: **Tên sự kiện**
+                                    if (
+                                      trimmedLine.startsWith("**") &&
+                                      trimmedLine.endsWith("**")
+                                    ) {
+                                      const title = trimmedLine
+                                        .slice(2, -2)
+                                        .trim();
+                                      return (
+                                        <div
+                                          key={index}
+                                          className="font-bold text-lg mt-4 mb-4 flex items-center gap-3 text-blue-700 dark:text-blue-300"
+                                        >
+                                          <Sparkles className="h-5 w-5 text-yellow-500 dark:text-yellow-400 flex-shrink-0" />
+                                          <span>{title}</span>
                                         </div>
-                                        <span className="flex-1 leading-relaxed">
-                                          {renderLineWithLink(bulletText)}
-                                        </span>
-                                      </div>
-                                    );
-                                  }
+                                      );
+                                    }
 
-                                  // Dòng văn bản thường (không phải bullet)
-                                  if (trimmedLine) {
-                                    return (
-                                      <div key={index} className="my-2">
-                                        {renderLineWithLink(trimmedLine)}
-                                      </div>
-                                    );
-                                  }
+                                    // Bullet points: bắt đầu bằng - hoặc •
+                                    if (
+                                      trimmedLine.startsWith("- ") ||
+                                      trimmedLine.startsWith("• ")
+                                    ) {
+                                      let bulletText = trimmedLine
+                                        .slice(2)
+                                        .trim();
+                                      let icon = null;
+                                      let iconColor = "";
 
-                                  // Dòng trống → khoảng cách
-                                  return <div key={index} className="h-4" />;
-                                })}
+                                      // Phát hiện loại thông tin để chọn icon phù hợp
+                                      const lowerText =
+                                        bulletText.toLowerCase();
+
+                                      if (
+                                        lowerText.includes("địa điểm") ||
+                                        lowerText.includes("tại") ||
+                                        lowerText.includes("thành phố") ||
+                                        lowerText.includes("quận")
+                                      ) {
+                                        icon = (
+                                          <MapPin className="h-4.5 w-4.5" />
+                                        );
+                                        iconColor =
+                                          "text-red-500 dark:text-red-400";
+                                      } else if (
+                                        lowerText.includes("thời gian") ||
+                                        lowerText.includes("ngày") ||
+                                        lowerText.includes("giờ") ||
+                                        bulletText.includes(":")
+                                      ) {
+                                        icon = (
+                                          <Calendar className="h-4.5 w-4.5" />
+                                        );
+                                        iconColor =
+                                          "text-green-600 dark:text-green-400";
+                                      } else if (
+                                        lowerText.includes("giá vé") ||
+                                        lowerText.includes("vé") ||
+                                        lowerText.includes("vnd") ||
+                                        lowerText.includes("đồng")
+                                      ) {
+                                        icon = <Zap className="h-4.5 w-4.5" />;
+                                        iconColor =
+                                          "text-orange-500 dark:text-orange-400";
+                                      } else if (
+                                        lowerText.includes("xem chi tiết") ||
+                                        lowerText.includes("tại đây") ||
+                                        lowerText.includes("link")
+                                      ) {
+                                        icon = (
+                                          <ExternalLink className="h-4.5 w-4.5" />
+                                        );
+                                        iconColor =
+                                          "text-blue-600 dark:text-blue-400";
+                                      } else {
+                                        // Mặc định: chấm tròn hoặc ngôi sao nhỏ
+                                        icon = (
+                                          <div className="h-2 w-2 rounded-full bg-blue-500 dark:bg-blue-400 mt-1.5" />
+                                        );
+                                        iconColor = "";
+                                      }
+
+                                      return (
+                                        <div
+                                          key={index}
+                                          className="flex items-start gap-3 my-2.5"
+                                        >
+                                          <div
+                                            className={`flex-shrink-0 ${iconColor}`}
+                                          >
+                                            {icon}
+                                          </div>
+                                          <span className="flex-1 leading-relaxed">
+                                            {renderLineWithLink(bulletText)}
+                                          </span>
+                                        </div>
+                                      );
+                                    }
+
+                                    // Dòng văn bản thường (không phải bullet)
+                                    if (trimmedLine) {
+                                      return (
+                                        <div key={index} className="my-2">
+                                          {renderLineWithLink(trimmedLine)}
+                                        </div>
+                                      );
+                                    }
+
+                                    // Dòng trống → khoảng cách
+                                    return <div key={index} className="h-4" />;
+                                  })}
                               </div>
                             </div>
                           </div>
@@ -489,14 +576,20 @@ export default function ModernAIChat() {
                                     <MoreVertical className="h-3 w-3" />
                                   </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="w-40"
+                                >
                                   {isSpeechSynthesisSupported ? (
                                     <DropdownMenuItem
                                       className="gap-2 text-base"
                                       onClick={() =>
                                         isSpeakingThisMessage
                                           ? handleStopSpeaking()
-                                          : handleSpeakMessage(message.id, message.content)
+                                          : handleSpeakMessage(
+                                              message.id,
+                                              message.content
+                                            )
                                       }
                                     >
                                       {isSpeakingThisMessage ? (
@@ -512,7 +605,10 @@ export default function ModernAIChat() {
                                       )}
                                     </DropdownMenuItem>
                                   ) : (
-                                    <DropdownMenuItem disabled className="gap-2 opacity-70 text-base">
+                                    <DropdownMenuItem
+                                      disabled
+                                      className="gap-2 opacity-70 text-base"
+                                    >
                                       <VolumeX className="h-4 w-4" />
                                       Không hỗ trợ đọc
                                     </DropdownMenuItem>
@@ -525,8 +621,6 @@ export default function ModernAIChat() {
                       </div>
                     </div>
                   </div>
-
-
                 </div>
               );
             })}
@@ -582,12 +676,17 @@ export default function ModernAIChat() {
                 size="icon"
                 onClick={isRecording ? stopRecording : startRecording}
                 disabled={isLoading}
-                className={`h-9 w-9 rounded-lg border border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all flex-shrink-0 ${isRecording
-                  ? "border-red-400 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-600"
-                  : ""
-                  }`}
+                className={`h-9 w-9 rounded-lg border border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all flex-shrink-0 ${
+                  isRecording
+                    ? "border-red-400 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:border-red-600"
+                    : ""
+                }`}
               >
-                {isRecording ? <Square className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+                {isRecording ? (
+                  <Square className="h-3.5 w-3.5" />
+                ) : (
+                  <Mic className="h-3.5 w-3.5" />
+                )}
               </Button>
             )}
             <Button
@@ -609,8 +708,8 @@ export default function ModernAIChat() {
               {isRecording && interimTranscript
                 ? `Đang nghe: "${interimTranscript}"`
                 : speechError
-                  ? `Không thể thu âm: ${speechError}`
-                  : "Nhấn mic để nói câu hỏi của bạn"}
+                ? `Không thể thu âm: ${speechError}`
+                : "Nhấn mic để nói câu hỏi của bạn"}
             </p>
           )}
           {!isSpeechSupported && (
@@ -623,4 +722,3 @@ export default function ModernAIChat() {
     </Card>
   );
 }
-

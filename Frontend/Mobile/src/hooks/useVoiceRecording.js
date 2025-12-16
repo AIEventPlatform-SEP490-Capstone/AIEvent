@@ -1,43 +1,52 @@
-import { useState, useRef, useEffect } from 'react';
-import { Audio } from 'expo-av';
-import { Alert, Platform } from 'react-native';
+import {useState, useRef, useEffect} from 'react';
+import {Audio} from 'expo-av';
+import {Alert, Platform} from 'react-native';
+import recordingManager from '../utils/recordingManager';
 
 /**
  * Hook for voice recording and speech-to-text conversion
  * Note: For full speech-to-text functionality, you may need to integrate
  * with a service like Google Speech-to-Text API or use a library like
  * @react-native-voice/voice (requires native modules)
+ *
+ * Sử dụng global RecordingManager để đảm bảo chỉ có một Recording object active tại một thời điểm
  */
 export const useVoiceRecording = () => {
   const [isRecording, setIsRecording] = useState(false);
-  const [recording, setRecording] = useState(null);
   const [audioUri, setAudioUri] = useState(null);
   const [transcription, setTranscription] = useState('');
   const [permissionGranted, setPermissionGranted] = useState(false);
-  const recordingRef = useRef(null);
 
   useEffect(() => {
     // Request permissions on mount
     requestPermissions();
 
+    // Subscribe to recording manager để sync state
+    const unsubscribe = recordingManager.subscribe(recordingState => {
+      setIsRecording(recordingState);
+    });
+
+    // Sync initial state
+    setIsRecording(recordingManager.getIsRecording());
+
     // Cleanup on unmount
     return () => {
-      if (recordingRef.current) {
-        stopRecording();
-      }
+      unsubscribe();
+      // Không cleanup recording ở đây vì có thể component khác đang sử dụng
+      // RecordingManager sẽ tự quản lý cleanup
     };
   }, []);
 
   const requestPermissions = async () => {
     try {
-      const { status } = await Audio.requestPermissionsAsync();
+      const {status} = await Audio.requestPermissionsAsync();
       if (status === 'granted') {
         setPermissionGranted(true);
       } else {
         Alert.alert(
           'Quyền truy cập',
           'Ứng dụng cần quyền truy cập microphone để ghi âm giọng nói.',
-          [{ text: 'OK' }]
+          [{text: 'OK'}],
         );
         setPermissionGranted(false);
       }
@@ -56,49 +65,37 @@ export const useVoiceRecording = () => {
         }
       }
 
-      // Configure audio mode
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
+      // Sử dụng RecordingManager để bắt đầu recording
+      // Manager sẽ tự động cleanup recording cũ nếu có
+      const recording = await recordingManager.startRecording();
 
-      // Create and start recording
-      const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-
-      setRecording(newRecording);
-      setIsRecording(true);
-      recordingRef.current = newRecording;
-
+      // State sẽ được update tự động qua subscription
       return true;
     } catch (error) {
       console.error('Error starting recording:', error);
-      Alert.alert('Lỗi', 'Không thể bắt đầu ghi âm. Vui lòng thử lại.');
+
+      // Parse error message để hiển thị thông báo phù hợp
+      let errorMessage = 'Không thể bắt đầu ghi âm. Vui lòng thử lại.';
+      if (error.message && error.message.includes('Only one Recording')) {
+        errorMessage =
+          'Đang có một bản ghi âm khác đang chạy. Vui lòng đợi hoặc dừng bản ghi âm đó trước.';
+      }
+
+      Alert.alert('Lỗi', errorMessage);
       return false;
     }
   };
 
   const stopRecording = async () => {
     try {
-      if (!recording) {
-        return null;
+      // Sử dụng RecordingManager để dừng recording
+      const uri = await recordingManager.stopRecording();
+
+      if (uri) {
+        setAudioUri(uri);
       }
 
-      setIsRecording(false);
-      
-      await recording.stopAndUnloadAsync();
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-      });
-
-      const uri = recording.getURI();
-      setAudioUri(uri);
-      setRecording(null);
-      recordingRef.current = null;
-
-      // Here you would typically send the audio to a speech-to-text service
-      // For now, we'll return the URI so it can be processed elsewhere
+      // State sẽ được update tự động qua subscription
       return uri;
     } catch (error) {
       console.error('Error stopping recording:', error);
@@ -116,7 +113,7 @@ export const useVoiceRecording = () => {
    * 3. AWS Transcribe
    * 4. @react-native-voice/voice (for on-device recognition)
    */
-  const transcribeAudio = async (audioUri) => {
+  const transcribeAudio = async audioUri => {
     try {
       // TODO: Implement actual speech-to-text conversion
       // Example with Google Cloud Speech-to-Text:
@@ -152,7 +149,7 @@ export const useVoiceRecording = () => {
       // In production, replace this with actual STT service call
       Alert.alert(
         'Thông báo',
-        'Tính năng chuyển đổi giọng nói thành văn bản đang được phát triển. Vui lòng nhập văn bản trực tiếp.'
+        'Tính năng chuyển đổi giọng nói thành văn bản đang được phát triển. Vui lòng nhập văn bản trực tiếp.',
       );
       return '';
     } catch (error) {
@@ -181,4 +178,3 @@ export const useVoiceRecording = () => {
 };
 
 export default useVoiceRecording;
-
