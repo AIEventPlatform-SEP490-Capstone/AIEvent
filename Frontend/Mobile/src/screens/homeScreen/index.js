@@ -143,7 +143,6 @@ const HomeScreen = () => {
 
   const loadEvents = async (page = 1, isRefresh = false) => {
     try {
-      console.log(`Loading events... Page: ${page}`);
       const isStaff = isStaffUser(accessToken);
 
       let response;
@@ -162,7 +161,6 @@ const HomeScreen = () => {
       }
 
       if (response && response.success) {
-        console.log('Events loaded successfully');
         // Check if there are more events to load
         const loadedCount = response.data?.length || 0;
         if (loadedCount < PAGE_SIZE) {
