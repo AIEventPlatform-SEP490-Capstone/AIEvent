@@ -156,8 +156,6 @@ const ManagerEventsPage = () => {
         
         if (response) {
           const organizersData = response.items || response || [];
-          console.log('Organizers data:', organizersData);
-          console.log('First organizer:', organizersData[0]);
           setOrganizers(organizersData);
         } else {
           setOrganizers([]);
