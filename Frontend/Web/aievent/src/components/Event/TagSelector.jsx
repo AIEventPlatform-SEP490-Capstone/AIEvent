@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 
 import { useTags } from '../../hooks/useTags';
 
-const TagSelector = ({ className = '' }) => {
+const TagSelector = ({ className = '', minimal = false }) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newTagName, setNewTagName] = useState('');
   
@@ -87,6 +87,125 @@ const TagSelector = ({ className = '' }) => {
     }
   };
 
+  // Render tag content (shared between minimal and full versions)
+  const renderTagContent = () => (
+    <div className="space-y-4">
+      {/* Selected Tags */}
+      {selectedTags.length > 0 && (
+        <div>
+          <Label className="text-sm font-medium text-muted-foreground">Tags đã chọn:</Label>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {selectedTags.map((tag) => (
+              <Badge key={tag.tagId} className="bg-pink-100 text-pink-700 border-0 flex items-center gap-1 px-3 py-1">
+                {tag.tagName || tag.nameTag}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-4 w-4 p-0 hover:bg-pink-200 hover:text-pink-900 ml-1"
+                  onClick={() => handleRemoveTag(tag.tagId)}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Available Tags */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <Label className="text-sm font-medium text-muted-foreground">Tags có sẵn:</Label>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button type="button" variant="outline" size="sm" className="flex items-center gap-1 h-8 text-xs rounded-lg border-gray-200 hover:border-pink-300 hover:bg-pink-50">
+                <Plus className="h-3 w-3" />
+                Tạo tag mới
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-white">
+              <DialogHeader>
+                <DialogTitle>Tạo tag mới</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="newTagName">Tên tag</Label>
+                  <Input
+                    id="newTagName"
+                    value={newTagName}
+                    onChange={(e) => setNewTagName(e.target.value)}
+                    placeholder="Nhập tên tag"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleCreateTag();
+                      }
+                    }}
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsCreateDialogOpen(false);
+                      setNewTagName('');
+                    }}
+                  >
+                    Hủy
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleCreateTag}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Đang tạo...' : 'Tạo tag'}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {isLoading ? (
+          <div className="text-center py-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-pink-500 mx-auto"></div>
+            <p className="text-sm text-muted-foreground mt-2">Đang tải tags...</p>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto" key={`tags-${availableTags.length}`}>
+            {availableTags
+              .filter(tag => !selectedTags.some(selectedTag => selectedTag.tagId === tag.tagId))
+              .map((tag) => (
+                <Badge
+                  key={`${tag.tagId}-${tag.tagName || tag.nameTag}`}
+                  variant="outline"
+                  className="cursor-pointer hover:bg-pink-100 hover:text-pink-700 hover:border-pink-300 transition-colors px-3 py-1 rounded-full"
+                  onClick={() => handleAddTag(tag)}
+                >
+                  {tag.tagName || tag.nameTag}
+                </Badge>
+              ))}
+            {availableTags.filter(tag => !selectedTags.some(selectedTag => selectedTag.tagId === tag.tagId)).length === 0 && (
+              <p className="text-sm text-muted-foreground">Không có tags nào khả dụng</p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // Minimal version - no Card wrapper
+  if (minimal) {
+    return (
+      <div className={className}>
+        {renderTagContent()}
+      </div>
+    );
+  }
+
+  // Full version with Card wrapper
   return (
     <Card className={className}>
       <CardHeader>
@@ -95,110 +214,8 @@ const TagSelector = ({ className = '' }) => {
           Tags sự kiện
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Selected Tags */}
-        {selectedTags.length > 0 && (
-          <div>
-            <Label className="text-sm font-medium">Tags đã chọn:</Label>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {selectedTags.map((tag) => (
-                <Badge key={tag.tagId} variant="secondary" className="flex items-center gap-1">
-                  {tag.tagName}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                    onClick={() => handleRemoveTag(tag.tagId)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Available Tags */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <Label className="text-sm font-medium">Tags có sẵn:</Label>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button type="button" variant="outline" size="sm" className="flex items-center gap-1">
-                  <Plus className="h-3 w-3" />
-                  Tạo tag mới
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-white">
-                <DialogHeader>
-                  <DialogTitle>Tạo tag mới</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="newTagName">Tên tag</Label>
-                    <Input
-                      id="newTagName"
-                      value={newTagName}
-                      onChange={(e) => setNewTagName(e.target.value)}
-                      placeholder="Nhập tên tag"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleCreateTag();
-                        }
-                      }}
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setIsCreateDialogOpen(false);
-                        setNewTagName('');
-                      }}
-                    >
-                      Hủy
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={handleCreateTag}
-                      disabled={isLoading}
-                    >
-                      {isLoading ? 'Đang tạo...' : 'Tạo tag'}
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          {isLoading ? (
-            <div className="text-center py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
-              <p className="text-sm text-muted-foreground mt-2">Đang tải tags...</p>
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto" key={`tags-${availableTags.length}`}>
-              {availableTags
-                .filter(tag => !selectedTags.some(selectedTag => selectedTag.tagId === tag.tagId))
-                .map((tag) => (
-                  <Badge
-                    key={`${tag.tagId}-${tag.tagName || tag.nameTag}`}
-                    variant="outline"
-                    className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
-                    onClick={() => handleAddTag(tag)}
-                  >
-                    {tag.tagName || tag.nameTag}
-                  </Badge>
-                ))}
-              {availableTags.filter(tag => !selectedTags.some(selectedTag => selectedTag.tagId === tag.tagId)).length === 0 && (
-                <p className="text-sm text-muted-foreground">Không có tags nào khả dụng</p>
-              )}
-            </div>
-          )}
-        </div>
+      <CardContent>
+        {renderTagContent()}
       </CardContent>
     </Card>
   );
