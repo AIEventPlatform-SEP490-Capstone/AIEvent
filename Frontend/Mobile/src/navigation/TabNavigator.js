@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { Image, View } from 'react-native';
+import { Image, View, StyleSheet } from 'react-native';
 import { useSelector } from 'react-redux';
 import { isStaffUser } from '../utils/jwtUtils';
+import { Ionicons } from '@expo/vector-icons';
 
 import HomeScreen from '../screens/homeScreen';
 import EventDetailScreen from '../screens/eventDetailScreen';
@@ -110,6 +111,38 @@ const HomeStack = () => {
         component={NotificationsScreen}
         options={{
           headerShown: false,
+        }}
+      />
+    </Stack.Navigator>
+  );
+};
+
+// Stack Navigator cho QR Scanner tab (chỉ dành cho staff)
+const QrScannerStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen
+        name={ScreenNames.QR_SCANNER_SCREEN}
+        component={QrScannerScreen}
+      />
+      <Stack.Screen
+        name={ScreenNames.CHECK_IN_CONFIRMATION_SCREEN}
+        component={CheckInConfirmationScreen}
+        options={{
+          headerShown: true,
+          title: 'Xác nhận Check-in',
+          headerStyle: {
+            backgroundColor: Colors.white,
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: Colors.border,
+          },
+          headerTitleStyle: {
+            color: Colors.textPrimary,
+            fontSize: 18,
+            fontWeight: '600',
+          },
         }}
       />
     </Stack.Navigator>
@@ -357,8 +390,15 @@ const TabNavigator = () => {
         {
           name: 'HomeTab',
           component: HomeStack,
-          options: { title: 'Danh sách sự kiện' },
+          options: { title: 'Sự kiện' },
           icon: Images.home,
+        },
+        {
+          name: 'QrScanner',
+          component: QrScannerStack,
+          options: { title: 'Quét QR' },
+          icon: 'qr-code-outline', // Special icon for center tab
+          isCenter: true,
         },
         {
           name: 'Profile',
@@ -414,6 +454,24 @@ const TabNavigator = () => {
 
           if (!iconSource) return null;
 
+          // Center tab với icon đặc biệt (QR Scanner cho staff)
+          if (tab?.isCenter) {
+            return (
+              <View style={tabStyles.centerTabContainer}>
+                <View style={[
+                  tabStyles.centerTabButton,
+                  focused && tabStyles.centerTabButtonActive
+                ]}>
+                  <Ionicons 
+                    name={iconSource} 
+                    size={28} 
+                    color="#fff" 
+                  />
+                </View>
+              </View>
+            );
+          }
+
           return (
             <View style={{ alignItems: 'center', justifyContent: 'center' }}>
               <Image
@@ -453,5 +511,30 @@ const TabNavigator = () => {
     </Tab.Navigator>
   );
 };
+
+const tabStyles = StyleSheet.create({
+  centerTabContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    top: -15,
+  },
+  centerTabButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  centerTabButtonActive: {
+    backgroundColor: Colors.secondary,
+    transform: [{ scale: 1.05 }],
+  },
+});
 
 export default TabNavigator;

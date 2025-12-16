@@ -80,14 +80,6 @@ const EventCardWithFavorite = ({ event, onPress, isRecommended = false, isStaff 
     try {
       const eventId = event.eventId || event.EventId || event.id;
 
-      console.log('Event object details:', {
-        event: event,
-        eventId: eventId,
-        eventIdType: typeof eventId,
-        hasEventId: !!eventId,
-        eventIdLength: eventId ? eventId.length : 0
-      });
-
       if (!eventId) {
         throw new Error('Event ID is required');
       }

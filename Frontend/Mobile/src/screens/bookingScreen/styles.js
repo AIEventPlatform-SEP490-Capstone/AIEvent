@@ -219,7 +219,8 @@ export default StyleSheet.create({
     color: Colors.primary,
   },
   bookButton: {
-    width: 160,
+    width: 200,
+    marginLeft: 12,
   },
   errorContainer: {
     backgroundColor: '#FEE2E2',
