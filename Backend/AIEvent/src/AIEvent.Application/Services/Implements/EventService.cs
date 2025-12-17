@@ -1547,7 +1547,7 @@ namespace AIEvent.Application.Services.Implements
 				.Include(e => e.OrganizerProfile)
 				.FirstOrDefaultAsync(e => e.Id == eventId
                  && e.Status == EventStatus.ErrorPayment
-                 && !e.IsDeleted);
+                 && !e.IsDeleted && e.Publish == true);
 
 			if (ev == null)
 				return ErrorResponse.FailureResult("Event not found", ErrorCodes.NotFound);
