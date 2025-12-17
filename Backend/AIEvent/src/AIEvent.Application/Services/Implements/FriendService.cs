@@ -168,7 +168,7 @@ namespace AIEvent.Application.Services.Implements
                         FriendId = f.SenderId == userId ? f.ReceiverId : f.SenderId,
                         FriendName = f.SenderId == userId ? f.Receiver.FullName : f.Sender.FullName,
                         Image = f.SenderId == userId ? f.Receiver.AvatarImgUrl : f.Sender.AvatarImgUrl,
-                        District = f.SenderId == userId ? f.Receiver.District : f.Sender.District,
+                        District = f.SenderId == userId ? f.Receiver.Address : f.Sender.Address,
                         InterestsJson = f.SenderId == userId ? f.Receiver.UserInterestsJson : f.Sender.UserInterestsJson
                     })
                     .ToListAsync();
