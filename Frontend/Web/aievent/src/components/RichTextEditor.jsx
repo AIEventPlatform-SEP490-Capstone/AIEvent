@@ -1,10 +1,20 @@
-import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'quill/dist/quill.snow.css';
-import { Pencil, Image as ImageIcon } from 'lucide-react';
+import { Pencil, Wand2, Loader2, Sparkles, RotateCcw } from 'lucide-react';
 import { Button } from './ui/button';
 import { cn } from '../lib/utils';
 import { uploadImageToCloudinary } from '../utils/cloudinary';
+import { formatRichTextContent } from '../utils/cloudflareAI';
+import { toast } from 'react-hot-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from './ui/dropdown-menu';
 
 // Custom styles for the editor
 const customStyles = `
@@ -235,13 +245,16 @@ const RichTextEditor = ({
   placeholder = 'Nhập nội dung chi tiết...', 
   minHeight = '200px',
   viewMode = false,
-  className = ''
+  className = '',
+  enableAIFormat = true // Enable AI formatting by default
 }) => {
   // All hooks must be called unconditionally at the top level
   const [isEditing, setIsEditing] = useState(false);
   const editorRef = useRef(null);
   const quillRef = useRef(null);
   const [localValue, setLocalValue] = useState(value || '');
+  const [isFormatting, setIsFormatting] = useState(false);
+  const [previousContent, setPreviousContent] = useState(null); // For undo functionality
 
   // Update local value when prop changes
   useEffect(() => {
@@ -250,6 +263,94 @@ const RichTextEditor = ({
 
   // Create file input ref for image uploads
   const fileInputRef = useRef(null);
+
+  // AI Format content handler
+  const handleAIFormat = useCallback(async (formatStyle = 'professional') => {
+    const currentContent = localValue;
+    
+    // Debug: Log the raw content from Quill
+    console.log('=== AI Format Debug ===');
+    console.log('Raw content from Quill:', currentContent);
+    
+    // Check if content is empty
+    if (!currentContent || currentContent.trim() === '' || currentContent === '<p><br></p>') {
+      toast.error('Vui lòng nhập nội dung trước khi format');
+      return;
+    }
+    
+    // Check for images using multiple patterns (Quill may use different formats)
+    const imgPatterns = [
+      /<img[^>]*>/gi,                    // Standard img tags
+      /<img\s+[^>]*src="[^"]*"[^>]*>/gi, // img with src attribute
+      /<img\s+[^>]*src='[^']*'[^>]*>/gi, // img with src attribute (single quotes)
+    ];
+    
+    let hasImages = false;
+    let imageMatches = [];
+    for (const pattern of imgPatterns) {
+      const matches = currentContent.match(pattern);
+      if (matches && matches.length > 0) {
+        hasImages = true;
+        imageMatches = matches;
+        console.log('Found images with pattern:', pattern);
+        console.log('Image matches:', matches);
+        break;
+      }
+    }
+    
+    // Check if content has text (not just images)
+    const plainText = currentContent?.replace(/<[^>]*>/g, '').trim();
+    console.log('Plain text extracted:', plainText);
+    console.log('Has images:', hasImages, 'Image count:', imageMatches.length);
+    
+    // Allow formatting if there's text OR images
+    if (!plainText && !hasImages) {
+      toast.error('Vui lòng nhập nội dung trước khi format');
+      return;
+    }
+
+    setIsFormatting(true);
+    setPreviousContent(currentContent); // Save for undo
+
+    try {
+      const result = await formatRichTextContent(currentContent, formatStyle);
+      
+      console.log('Format result:', result);
+      
+      if (result.success && result.formattedContent) {
+        // Verify images are preserved in the result
+        const resultImages = result.formattedContent.match(/<img[^>]*>/gi) || [];
+        console.log('Images in result:', resultImages.length);
+        console.log('Formatted content:', result.formattedContent);
+        
+        setLocalValue(result.formattedContent);
+        if (onChange) {
+          onChange(result.formattedContent);
+        }
+        const imageMsg = result.preservedImages ? ` (giữ nguyên ${result.preservedImages} ảnh)` : '';
+        toast.success(`Đã format nội dung thành công!${imageMsg}`);
+      } else {
+        toast.error(result.error || 'Không thể format nội dung');
+      }
+    } catch (error) {
+      console.error('Error formatting content:', error);
+      toast.error('Đã xảy ra lỗi khi format nội dung');
+    } finally {
+      setIsFormatting(false);
+    }
+  }, [localValue, onChange]);
+
+  // Undo AI format
+  const handleUndoFormat = useCallback(() => {
+    if (previousContent) {
+      setLocalValue(previousContent);
+      if (onChange) {
+        onChange(previousContent);
+      }
+      setPreviousContent(null);
+      toast.success('Đã hoàn tác format');
+    }
+  }, [previousContent, onChange]);
 
   // Handle image upload to Cloudinary
   const handleImageUpload = useCallback(async () => {
@@ -354,14 +455,6 @@ const RichTextEditor = ({
     setIsEditing(false);
   };
 
-  // Create a plain text version of the content
-  const getPlainText = (html) => {
-    if (!html) return '';
-    const tmp = document.createElement('div');
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || '';
-  };
-
   // If in view mode and not editing, show read-only content
   if (viewMode && !isEditing) {
     return (
@@ -432,19 +525,99 @@ const RichTextEditor = ({
           style={{ minHeight }}
           className="focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-lg overflow-hidden"
         />
-        {viewMode && (
-          <div className="flex justify-end p-3 border-t border-gray-100 bg-gray-50 rounded-b-lg">
+        
+        {/* AI Format & Action Buttons */}
+        <div className="flex items-center justify-between p-3 border-t border-gray-100 bg-gray-50 rounded-b-lg">
+          {/* AI Format Dropdown */}
+          {enableAIFormat && (
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isFormatting}
+                    className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200 hover:from-purple-100 hover:to-blue-100 hover:border-purple-300 text-purple-700"
+                  >
+                    {isFormatting ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                        <span>Đang format...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="h-3.5 w-3.5 mr-1.5" />
+                        <span>AI Format</span>
+                        <Sparkles className="h-3 w-3 ml-1 text-purple-500" />
+                      </>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">
+                    Chọn phong cách format
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => handleAIFormat('professional')}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium">Chuyên nghiệp</span>
+                      <span className="text-xs text-muted-foreground">Rõ ràng, có cấu trúc, dễ đọc</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => handleAIFormat('creative')}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium">Sáng tạo</span>
+                      <span className="text-xs text-muted-foreground">Sinh động, hấp dẫn, thu hút</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => handleAIFormat('minimal')}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium">Tối giản</span>
+                      <span className="text-xs text-muted-foreground">Ngắn gọn, súc tích, trọng tâm</span>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              {/* Undo Button */}
+              {previousContent && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleUndoFormat}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                  <span>Hoàn tác</span>
+                </Button>
+              )}
+            </div>
+          )}
+          
+          {/* Save Button for viewMode */}
+          {viewMode && (
             <Button 
               type="button"
               variant="default"
               size="sm"
               onClick={handleSaveClick}
-              className="px-4 py-1.5 text-sm font-medium bg-primary hover:bg-primary/90 transition-colors"
+              className="px-4 py-1.5 text-sm font-medium bg-primary hover:bg-primary/90 transition-colors ml-auto"
             >
               Lưu thay đổi
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
