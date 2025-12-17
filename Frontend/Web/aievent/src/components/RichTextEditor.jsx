@@ -538,7 +538,7 @@ const RichTextEditor = ({
                     variant="outline"
                     size="sm"
                     disabled={isFormatting}
-                    className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200 hover:from-purple-100 hover:to-blue-100 hover:border-purple-300 text-purple-700"
+                    className="border-purple-200 hover:bg-purple-50 hover:border-purple-300 text-purple-700"
                   >
                     {isFormatting ? (
                       <>
@@ -549,7 +549,7 @@ const RichTextEditor = ({
                       <>
                         <Wand2 className="h-3.5 w-3.5 mr-1.5" />
                         <span>AI Format</span>
-                        <Sparkles className="h-3 w-3 ml-1 text-purple-500" />
+                        <Sparkles className="h-3 w-3 ml-1 text-purple-400" />
                       </>
                     )}
                   </Button>
