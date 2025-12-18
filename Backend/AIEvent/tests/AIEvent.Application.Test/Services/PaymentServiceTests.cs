@@ -2551,8 +2551,8 @@ namespace AIEvent.Application.Test.Services
                 Id = Guid.NewGuid(),
                 FlatformFee = 0.07m,
                 FixFee = 45000,
-                DatePayout = 7, // 7 days (but calculated in minutes: 7 * 24 * 60 = 10080 minutes)
-                UpdatedAt = now.AddDays(-10), // Match event's SaleStartTime month
+                DatePayout = 7, // 7 days
+                UpdatedAt = now.AddDays(-10), // Match event's SaleStartTime
                 IsDeleted = false
             };
 
@@ -2582,7 +2582,7 @@ namespace AIEvent.Application.Test.Services
                 EndTime = now.AddDays(1).AddHours(2),
                 SaleStartTime = now.AddDays(-10),
                 Status = EventStatus.WaitingForPayout,
-                CompletedAt = now.AddMinutes(-5), // Not meeting deadline (needs to be <= now.AddMinutes(-7))
+                CompletedAt = now.AddDays(-5), // Not meeting deadline (needs to be <= now.AddDays(-7))
                 PayoutAttemptCount = 0,
                 IsDeleted = false,
                 TotalAmount = 200000,
@@ -2668,11 +2668,13 @@ namespace AIEvent.Application.Test.Services
             var notifications = new List<Notification>().AsQueryable().BuildMockDbSet();
             var revenueReports = new List<RevenueReport>().AsQueryable().BuildMockDbSet();
 
+            var roles = new List<Role>().AsQueryable().BuildMockDbSet();
             _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings.Object);
             _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
             _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>())).Returns(paymentInfos.Object);
             _mockUnitOfWork.Setup(x => x.NotificationRepository.Query(It.IsAny<bool>())).Returns(notifications.Object);
             _mockUnitOfWork.Setup(x => x.RevenueReportRepository.Query(It.IsAny<bool>())).Returns(revenueReports.Object);
+            _mockUnitOfWork.Setup(x => x.RoleRepository.Query(It.IsAny<bool>())).Returns(roles.Object);
             _mockUnitOfWork.Setup(x => x.NotificationRepository.AddAsync(It.IsAny<Notification>()))
                 .ReturnsAsync((Notification n) => n);
             _mockUnitOfWork.Setup(x => x.SaveChangesAsync()).ReturnsAsync(1);
@@ -2765,10 +2767,12 @@ namespace AIEvent.Application.Test.Services
             var paymentInfos = new List<PaymentInformation> { paymentInfo }.AsQueryable().BuildMockDbSet();
             var revenueReports = new List<RevenueReport>().AsQueryable().BuildMockDbSet();
 
+            var roles = new List<Role>().AsQueryable().BuildMockDbSet();
             _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings.Object);
             _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events.Object);
             _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.Query(It.IsAny<bool>())).Returns(paymentInfos.Object);
             _mockUnitOfWork.Setup(x => x.RevenueReportRepository.Query(It.IsAny<bool>())).Returns(revenueReports.Object);
+            _mockUnitOfWork.Setup(x => x.RoleRepository.Query(It.IsAny<bool>())).Returns(roles.Object);
             _mockUnitOfWork.Setup(x => x.RevenueReportRepository.AddAsync(It.IsAny<RevenueReport>()))
                 .ReturnsAsync((RevenueReport r) => r);
             _mockUnitOfWork.Setup(x => x.EventRepository.UpdateAsync(It.IsAny<Event>()))
