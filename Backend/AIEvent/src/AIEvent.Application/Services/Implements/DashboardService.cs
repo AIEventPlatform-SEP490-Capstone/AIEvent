@@ -656,8 +656,8 @@ namespace AIEvent.Application.Services.Implements
 
                 response.RevenueThisMonth = allCompletedEvents
                     .Where(e => e.CompletedAt.HasValue && 
-                               new DateTimeOffset(e.CompletedAt.Value) >= selectedMonthStart && 
-                               new DateTimeOffset(e.CompletedAt.Value) <= selectedMonthEnd)
+                               e.CompletedAt.Value >= selectedMonthStart.UtcDateTime && 
+                               e.CompletedAt.Value <= selectedMonthEnd.UtcDateTime)
                     .Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount, e.SaleStartTime, allSystemSettings, defaultSetting));
                  
                 var startDate = now.AddMonths(-12);
@@ -728,7 +728,7 @@ namespace AIEvent.Application.Services.Implements
                 
                 if (endDate.HasValue)
                     revenueEventsForMonth = revenueEventsForMonth
-                        .Where(e => e.CompletedAt.HasValue && new DateTimeOffset(e.CompletedAt.Value) <= endDate.Value)
+                        .Where(e => e.CompletedAt.HasValue && e.CompletedAt.Value <= endDate.Value.UtcDateTime)
                         .ToList();
                 
                 var revenueByMonth = revenueEventsForMonth
@@ -959,7 +959,7 @@ namespace AIEvent.Application.Services.Implements
                    .Where(e => !e.IsDeleted && 
                               e.CompletedAt.HasValue &&
                               e.TotalAmount > 0 &&
-                              new DateTimeOffset(e.CompletedAt.Value) >= currentMonthStart)
+                              e.CompletedAt.Value >= currentMonthStart.UtcDateTime)
                    .Select(e => new { e.PlatformFee, e.TotalAmount, e.SaleStartTime })
                    .ToListAsync();
 
