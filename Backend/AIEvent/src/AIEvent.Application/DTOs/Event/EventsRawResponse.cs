@@ -22,6 +22,9 @@ namespace AIEvent.Application.DTOs.Event
         public decimal? TotalAmount { get; set; } = 0;
         public decimal? PayoutAmount { get; set; } = 0;
         public decimal? PlatformFee { get; set; } = 0;
+        public decimal? FlatformFee { get; set; }
+        public decimal? FixFee { get; set; }
+        public int? DatePayout { get; set; }
         public int FavoriteCount { get; set; }
         public DateTime? SaleStartTime { get; set; }
         public DateTime? SaleEndTime { get; set; }

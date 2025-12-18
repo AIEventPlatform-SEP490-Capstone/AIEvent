@@ -857,6 +857,32 @@ namespace AIEvent.Application.Services.Implements
                 })
                 .ToListAsync();
 
+            var allSystemSettings = await _unitOfWork.SystemSettingRepository
+                .Query()
+                .AsNoTracking()
+                .Where(s => !s.IsDeleted)
+                .OrderByDescending(s => s.UpdatedAt)
+                .ToListAsync();
+
+            foreach (var eventResponse in result)
+            {
+                SystemSetting? setting = null;
+                if (eventResponse.SaleStartTime.HasValue)
+                {
+                    setting = allSystemSettings
+                        .Where(s => s.UpdatedAt <= eventResponse.SaleStartTime.Value)
+                        .OrderByDescending(s => s.UpdatedAt)
+                        .FirstOrDefault();
+                }
+                
+                if (setting != null)
+                {
+                    eventResponse.FlatformFee = setting.FlatformFee;
+                    eventResponse.FixFee = setting.FixFee;
+                    eventResponse.DatePayout = setting.DatePayout;
+                }
+            }
+
             return new BasePaginated<EventsRawResponse>(result, totalCount, pageNumber, pageSize);
         }
 
