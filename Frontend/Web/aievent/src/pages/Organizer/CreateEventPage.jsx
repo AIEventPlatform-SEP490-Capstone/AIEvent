@@ -65,13 +65,12 @@ import { EventStatus } from '../../constants/eventConstants';
 import { uploadImagesToCloudinary } from '../../utils/cloudinary';
 // Import date utility
 import { convertUTC7ToUTC, convertUTCToUTC7 } from '../../utils/dateUtils';
-// Import geocoding utility
-import { geocodeAddress } from '../../utils/geocoding';
+
 // Import predefined cities
 import { PredefinedCities } from '../../constants/userConstants';
 // Import EventTimeline component
 import { EventTimeline } from '../../components/Event/EventTimeline';
-import { useSidebar } from '../../components/ui/sidebar'; // Add this import
+
 // Import datetime validation utility
 import datetimeValidation from '../../utils/datetimeValidation';
 import { stripHtml } from '../../utils/stripHtml';
@@ -81,6 +80,8 @@ import { formatNumberWithSeparator, removeNumberFormatting } from '../../utils/n
 import ImportEventTextDialog from '../../components/Event/ImportEventTextDialog';
 // Import Wand2 icon for AI button
 import { Wand2 } from 'lucide-react';
+// Import LocationMapPicker component
+import LocationMapPicker from '../../components/Event/LocationMapPicker';
 // Validation schema
 const createEventSchema = z.object({
   title: z.string().min(1, 'Tiêu đề sự kiện là bắt buộc').max(200, 'Tiêu đề không được vượt quá 200 ký tự'),
@@ -132,7 +133,7 @@ const createEventSchema = z.object({
 const CreateEventPage = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
-  const { state } = useSidebar(); // Add this line to get sidebar state
+
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
@@ -201,6 +202,10 @@ const CreateEventPage = () => {
   
   // Add state for AI import dialog
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  
+  // Add state for map picker dialog
+  const [isMapPickerOpen, setIsMapPickerOpen] = useState(false);
+  const [selectedCoordinates, setSelectedCoordinates] = useState(null);
   
   // Redux hooks
   const { categories, loading: categoriesLoading } = useCategories();
@@ -409,6 +414,14 @@ const CreateEventPage = () => {
         setSelectedCategory(category);
       }
     }
+    
+    // Set coordinates from cloned event data
+    if (cloneData.latitude && cloneData.longitude) {
+      setSelectedCoordinates({
+        lat: cloneData.latitude,
+        lng: cloneData.longitude
+      });
+    }
   };
   // Load event data for cloning
   const loadCloneEventData = async (cloneEventId) => {
@@ -523,6 +536,14 @@ const CreateEventPage = () => {
         // Set selected category
         if (event.eventCategory) {
           setSelectedCategory(event.eventCategory);
+        }
+        
+        // Set coordinates from cloned event data
+        if (event.latitude && event.longitude) {
+          setSelectedCoordinates({
+            lat: event.latitude,
+            lng: event.longitude
+          });
         }
       } else {
         toast.error('Không tìm thấy sự kiện để sao chép');
@@ -1118,10 +1139,9 @@ const CreateEventPage = () => {
         return;
       }
       
-      // Geocode the address to get latitude and longitude
-      const geocodeResult = await geocodeAddress(data.locationName, data.district, data.address);
-      if (!geocodeResult) {
-        toast.error('Không thể xác định tọa độ địa chỉ. Vui lòng kiểm tra lại thông tin địa chỉ.');
+      // Validate that coordinates have been selected from map
+      if (!selectedCoordinates) {
+        toast.error('Vui lòng chọn vị trí trên bản đồ trước khi tạo sự kiện');
         hideLoading();
         setIsSubmitting(false);
         return;
@@ -1184,8 +1204,8 @@ const CreateEventPage = () => {
         locationName: data.locationName || '',
         address: data.address || '',
         district: data.district || '',
-        latitude: geocodeResult.latitude,
-        longitude: geocodeResult.longitude,
+        latitude: selectedCoordinates.lat,
+        longitude: selectedCoordinates.lng,
         totalTickets: totalTickets,
         requireApproval: data.requireApproval,
         publish: data.publish || false, // This will be false for drafts
@@ -1728,9 +1748,8 @@ const CreateEventPage = () => {
   
   // Generate preview data for the WYSIWYG interface
   const previewData = generatePreviewData(watch());
-   const sidebarState = state === "collapsed" ? "lg:pl-20" : "lg:pl-0.2";
   return (
-    <div className={`min-h-screen bg-background transition-all duration-300 ${sidebarState}`}>
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -1755,6 +1774,48 @@ const CreateEventPage = () => {
           onOpenChange={setIsImportDialogOpen}
           onImport={handleImportFromAI}
         />
+        
+        {/* Location Map Picker Dialog */}
+        <LocationMapPicker
+          open={isMapPickerOpen}
+          onOpenChange={setIsMapPickerOpen}
+          initialLocation={selectedCoordinates}
+          currentDistrict={watch('district')}
+          currentAddress={watch('address')}
+          currentLocationName={watch('locationName')}
+          onLocationSelect={(location) => {
+            // Update coordinates
+            setSelectedCoordinates({ lat: location.latitude, lng: location.longitude });
+            
+            // Update form fields if we got valid data
+            if (location.district) {
+              // Find matching district in PredefinedCities
+              const matchedDistrict = PredefinedCities.find(city => 
+                city.toLowerCase().includes(location.district.toLowerCase()) ||
+                location.district.toLowerCase().includes(city.toLowerCase().replace(/, tp\.hcm/i, ''))
+              );
+              if (matchedDistrict) {
+                setValue('district', matchedDistrict);
+                setFieldErrors(prev => ({ ...prev, district: '' }));
+              }
+            }
+            
+            // Use full address (includes ward, district info)
+            if (location.address) {
+              setValue('address', location.address);
+              setFieldErrors(prev => ({ ...prev, address: '' }));
+            }
+            
+            // If locationName is empty, use short address as location name hint
+            if (!watch('locationName') && location.shortAddress) {
+              setValue('locationName', location.shortAddress);
+              setFieldErrors(prev => ({ ...prev, locationName: '' }));
+            }
+            
+            toast.success('Đã cập nhật vị trí từ bản đồ');
+          }}
+        />
+        
         {/* Event Banner with Editable Image */}
          <div className="relative h-96 w-full overflow-hidden bg-gray-100 mb-6">
               {imagePreview && imagePreview.length > 0 ? (
@@ -2529,13 +2590,54 @@ const CreateEventPage = () => {
                         <h4 className="font-semibold text-foreground text-sm">Địa điểm</h4>
                         <p className="text-xs text-muted-foreground">Vị trí tổ chức sự kiện</p>
                       </div>
-                      {watch('district') && watch('locationName') && watch('address') && (
+                      {selectedCoordinates && watch('district') && watch('locationName') && watch('address') && (
                         <CheckCircle className="w-5 h-5 text-green-500" />
                       )}
                     </div>
                     
                     <div className="space-y-3">
-                      {/* District Select */}
+                      {/* Map Picker Button - FIRST, required to enable other fields */}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsMapPickerOpen(true)}
+                        className={`w-full h-12 rounded-xl border-2 transition-all ${
+                          selectedCoordinates 
+                            ? 'border-green-300 bg-green-50 hover:bg-green-100 dark:bg-green-950/20 dark:hover:bg-green-950/30' 
+                            : 'border-dashed border-orange-300 hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/20'
+                        }`}
+                      >
+                        <MapPin className={`w-4 h-4 mr-2 ${selectedCoordinates ? 'text-green-600' : 'text-orange-500'}`} />
+                        <span className={selectedCoordinates ? 'text-green-700 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}>
+                          {selectedCoordinates ? 'Đã chọn vị trí - Nhấn để thay đổi' : 'Chọn vị trí trên bản đồ (bắt buộc)'}
+                        </span>
+                      </Button>
+                      
+                      {/* Show selected coordinates */}
+                      {selectedCoordinates && (
+                        <div className="space-y-2">
+                          <div className="text-xs text-green-700 bg-green-100 dark:bg-green-950/30 dark:text-green-400 px-3 py-2 rounded-lg flex items-center gap-2">
+                            <CheckCircle className="w-3 h-3" />
+                            <span className="font-medium">Tọa độ:</span>
+                              {selectedCoordinates.lat.toFixed(6)}, {selectedCoordinates.lng.toFixed(6)}
+                          </div>
+                          <div className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 px-3 py-2 rounded-lg flex items-center gap-2">
+                            <AlertCircle className="w-3 h-3" />
+                              Vui lòng kiểm tra thông tin Quận, Huyện, Thành Phố và Tên Địa Điểm. 
+                              <br></br>Tọa độ được lưu chính xác nhưng sẽ có sự sai lệch thông tin.
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Show hint if no coordinates selected */}
+                      {!selectedCoordinates && (
+                        <div className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 px-3 py-2 rounded-lg flex items-center gap-2">
+                          <AlertCircle className="w-3 h-3" />
+                          Vui lòng chọn vị trí trên bản đồ trước để mở khóa các trường bên dưới
+                        </div>
+                      )}
+
+                      {/* District Select - disabled until coordinates selected */}
                       <div className="relative">
                         <Select 
                           value={watch('district')} 
@@ -2543,8 +2645,17 @@ const CreateEventPage = () => {
                             setValue('district', value);
                             setFieldErrors(prev => ({ ...prev, district: '' }));
                           }}
+                          disabled={!selectedCoordinates}
                         >
-                          <SelectTrigger className={`h-11 rounded-xl bg-gray-50 dark:bg-gray-800 border-2 transition-all ${fieldErrors.district ? 'border-red-400 bg-red-50 dark:bg-red-950/20' : 'border-transparent hover:border-orange-200 dark:hover:border-orange-800 focus:border-orange-400'}`}>
+                          <SelectTrigger 
+                            className={`h-11 rounded-xl border-2 transition-all ${
+                              !selectedCoordinates 
+                                ? 'bg-gray-100 dark:bg-gray-900 cursor-not-allowed opacity-60' 
+                                : fieldErrors.district 
+                                  ? 'border-red-400 bg-red-50 dark:bg-red-950/20' 
+                                  : 'bg-gray-50 dark:bg-gray-800 border-transparent hover:border-orange-200 dark:hover:border-orange-800 focus:border-orange-400'
+                            }`}
+                          >
                             <div className="flex items-center gap-2">
                               <Globe className="w-4 h-4 text-muted-foreground" />
                               <SelectValue placeholder="Chọn quận/huyện" />
@@ -2564,7 +2675,7 @@ const CreateEventPage = () => {
                         )}
                       </div>
 
-                      {/* Location Name Input */}
+                      {/* Location Name Input - disabled until coordinates selected */}
                       <div className="relative">
                         <Input
                           placeholder="Tên địa điểm (VD: Nhà văn hóa Thanh niên)"
@@ -2575,11 +2686,18 @@ const CreateEventPage = () => {
                           }}
                           onBlur={() => {
                             const value = watch('locationName');
-                            if (!value || value.trim() === '') {
+                            if (selectedCoordinates && (!value || value.trim() === '')) {
                               setFieldErrors(prev => ({ ...prev, locationName: 'Địa điểm là bắt buộc' }));
                             }
                           }}
-                          className={`h-11 rounded-xl bg-gray-50 dark:bg-gray-800 border-2 transition-all pl-10 ${fieldErrors.locationName ? 'border-red-400 bg-red-50 dark:bg-red-950/20' : 'border-transparent hover:border-orange-200 dark:hover:border-orange-800 focus:border-orange-400'}`}
+                          disabled={!selectedCoordinates}
+                          className={`h-11 rounded-xl border-2 transition-all pl-10 ${
+                            !selectedCoordinates 
+                              ? 'bg-gray-100 dark:bg-gray-900 cursor-not-allowed opacity-60' 
+                              : fieldErrors.locationName 
+                                ? 'border-red-400 bg-red-50 dark:bg-red-950/20' 
+                                : 'bg-gray-50 dark:bg-gray-800 border-transparent hover:border-orange-200 dark:hover:border-orange-800 focus:border-orange-400'
+                          }`}
                         />
                         <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         {(fieldErrors.locationName || (errors.locationName && hasValidated)) && (
@@ -2590,7 +2708,7 @@ const CreateEventPage = () => {
                         )}
                       </div>
 
-                      {/* Address Textarea */}
+                      {/* Address Textarea - disabled until coordinates selected */}
                       <div className="relative">
                         <Textarea
                           placeholder="Địa chỉ chi tiết..."
@@ -2602,11 +2720,18 @@ const CreateEventPage = () => {
                           }}
                           onBlur={() => {
                             const value = watch('address');
-                            if (!value || value.trim() === '') {
+                            if (selectedCoordinates && (!value || value.trim() === '')) {
                               setFieldErrors(prev => ({ ...prev, address: 'Địa chỉ chi tiết là bắt buộc' }));
                             }
                           }}
-                          className={`rounded-xl bg-gray-50 dark:bg-gray-800 border-2 transition-all resize-none text-sm ${fieldErrors.address ? 'border-red-400 bg-red-50 dark:bg-red-950/20' : 'border-transparent hover:border-orange-200 dark:hover:border-orange-800 focus:border-orange-400'}`}
+                          disabled={!selectedCoordinates}
+                          className={`rounded-xl border-2 transition-all resize-none text-sm ${
+                            !selectedCoordinates 
+                              ? 'bg-gray-100 dark:bg-gray-900 cursor-not-allowed opacity-60' 
+                              : fieldErrors.address 
+                                ? 'border-red-400 bg-red-50 dark:bg-red-950/20' 
+                                : 'bg-gray-50 dark:bg-gray-800 border-transparent hover:border-orange-200 dark:hover:border-orange-800 focus:border-orange-400'
+                          }`}
                         />
                         {(fieldErrors.address || (errors.address && hasValidated)) && (
                           <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
