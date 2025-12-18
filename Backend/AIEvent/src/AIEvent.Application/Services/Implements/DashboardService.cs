@@ -722,7 +722,7 @@ namespace AIEvent.Application.Services.Implements
                     .Where(e => !e.IsDeleted && 
                                e.CompletedAt.HasValue &&
                                e.TotalAmount > 0 &&
-                               new DateTimeOffset(e.CompletedAt.Value) >= startDate)
+                               e.CompletedAt.Value >= startDate.UtcDateTime)
                     .Select(e => new { e.PlatformFee, e.TotalAmount, e.SaleStartTime, e.CompletedAt })
                     .ToListAsync();
                 
