@@ -47,21 +47,20 @@ namespace AIEvent.API.Controllers
         [HttpPost("webhook")]
         public async Task<ActionResult<SuccessResponse<object>>> ReceiveWebhook([FromBody] Webhook webhookBody)
         {
-            // if (webhookBody == null)
-            //     return BadRequest("Webhook payload is null.");
+            if (webhookBody == null)
+                return BadRequest("Webhook payload is null.");
 
-            // var result = await _paymentService.PaymentWebhookAsync(webhookBody);
+            var result = await _paymentService.PaymentWebhookAsync(webhookBody);
 
-            // if (!result.IsSuccess)
-            // {
-            //     return BadRequest(result.Error!);
-            // }
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
 
-            // return Ok(SuccessResponse<object>.SuccessResult(
-            //     new { },
-            //     SuccessCodes.Created,
-            //     "Payment successfuly"));
-            return Ok();
+            return Ok(SuccessResponse<object>.SuccessResult(
+                new { },
+                SuccessCodes.Created,
+                "Payment successfuly"));
         }
 
         [HttpGet("informations")]
