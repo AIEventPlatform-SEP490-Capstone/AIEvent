@@ -6283,8 +6283,10 @@ namespace AIEvent.Application.Test.Services
            };
 
            var events = new List<Event> { PendingApprovalEvent, approvedEvent }.AsQueryable().BuildMock();
+           var systemSettings = new List<SystemSetting>().AsQueryable().BuildMock();
 
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings);
 
            // Act
            var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.PendingApproval, null, null, 1, 10);
@@ -6380,8 +6382,10 @@ namespace AIEvent.Application.Test.Services
            };
 
            var events = new List<Event> { approvedEvent, PendingApprovalEvent }.AsQueryable().BuildMock();
+           var systemSettings = new List<SystemSetting>().AsQueryable().BuildMock();
 
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings);
 
            // Act
            var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.Approved, null, null, 1, 10);
@@ -6477,8 +6481,10 @@ namespace AIEvent.Application.Test.Services
            };
 
            var events = new List<Event> { rejectedEvent, approvedEvent }.AsQueryable().BuildMock();
+           var systemSettings = new List<SystemSetting>().AsQueryable().BuildMock();
 
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings);
 
            // Act
            var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.Rejected, null, null, 1, 10);
@@ -6575,8 +6581,10 @@ namespace AIEvent.Application.Test.Services
            };
 
            var events = new List<Event> { organizerEvent, otherEvent }.AsQueryable().BuildMock();
+           var systemSettings = new List<SystemSetting>().AsQueryable().BuildMock();
 
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings);
 
            // Act
            var result = await _eventService.GetAllEventStatusAsync(organizerId, null, EventStatus.Approved, null, null, 1, 10);
@@ -6633,8 +6641,10 @@ namespace AIEvent.Application.Test.Services
            };
 
            var events = new List<Event> { event1, event2 }.AsQueryable().BuildMock();
+           var systemSettings = new List<SystemSetting>().AsQueryable().BuildMock();
 
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings);
 
            // Act
            var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.Approved, null, null, 1, 10);
@@ -6690,8 +6700,10 @@ namespace AIEvent.Application.Test.Services
            };
 
            var events = new List<Event> { matchingEvent, nonMatchingEvent }.AsQueryable().BuildMock();
+           var systemSettings = new List<SystemSetting>().AsQueryable().BuildMock();
 
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings);
 
            // Act
            var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "rock", EventStatus.Approved, null, null, 1, 10);
@@ -6750,8 +6762,10 @@ namespace AIEvent.Application.Test.Services
            };
 
            var events = new List<Event> { matchingEvent, nonMatchingEvent }.AsQueryable().BuildMock();
+           var systemSettings = new List<SystemSetting>().AsQueryable().BuildMock();
 
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings);
 
            // Act
            var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "minh", EventStatus.Approved, null, null, 1, 10);
@@ -6808,8 +6822,10 @@ namespace AIEvent.Application.Test.Services
            };
 
            var events = new List<Event> { matchingEvent, nonMatchingEvent }.AsQueryable().BuildMock();
+           var systemSettings = new List<SystemSetting>().AsQueryable().BuildMock();
 
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings);
 
            // Act
            var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "music", EventStatus.Approved, null, null, 1, 10);
@@ -6866,8 +6882,10 @@ namespace AIEvent.Application.Test.Services
            };
 
            var events = new List<Event> { event1, event2 }.AsQueryable().BuildMock();
+           var systemSettings = new List<SystemSetting>().AsQueryable().BuildMock();
 
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings);
 
            // Act
            var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, "", EventStatus.Approved, null, null, 1, 10);
@@ -6923,8 +6941,10 @@ namespace AIEvent.Application.Test.Services
            };
 
            var events = new List<Event> { publishedEvent, unpublishedEvent }.AsQueryable().BuildMock();
+           var systemSettings = new List<SystemSetting>().AsQueryable().BuildMock();
 
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings);
 
            // Act
            var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.Approved, null, null, 1, 10);
@@ -6981,8 +7001,10 @@ namespace AIEvent.Application.Test.Services
            };
 
            var events = new List<Event> { activeEvent, deletedEvent }.AsQueryable().BuildMock();
+           var systemSettings = new List<SystemSetting>().AsQueryable().BuildMock();
 
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings);
 
            // Act
            var result = await _eventService.GetAllEventStatusAsync(Guid.Empty, null, EventStatus.Approved, null, null, 1, 10);
@@ -7059,8 +7081,10 @@ namespace AIEvent.Application.Test.Services
            };
 
            var events = new List<Event> { matchingEvent, nonMatchingEvent1, nonMatchingEvent2 }.AsQueryable().BuildMock();
+           var systemSettings = new List<SystemSetting>().AsQueryable().BuildMock();
 
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings);
 
            // Act
            var result = await _eventService.GetAllEventStatusAsync(organizerId, "rock", EventStatus.Approved, null, null, 1, 10);
@@ -7136,8 +7160,10 @@ namespace AIEvent.Application.Test.Services
            };
 
            var events = new List<Event> { approvedEvent, rejectedEvent, PendingApprovalEvent }.AsQueryable().BuildMock();
+           var systemSettings = new List<SystemSetting>().AsQueryable().BuildMock();
 
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings);
 
            // Act
            var result = await _eventService.GetAllEventStatusAsync(null, null, null, null, null, 1, 10);
@@ -7198,8 +7224,10 @@ namespace AIEvent.Application.Test.Services
            };
 
            var events = new List<Event> { event1, event2 }.AsQueryable().BuildMock();
+           var systemSettings = new List<SystemSetting>().AsQueryable().BuildMock();
 
            _mockUnitOfWork.Setup(x => x.EventRepository.Query(It.IsAny<bool>())).Returns(events);
+           _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>())).Returns(systemSettings);
 
            // Act
            var result = await _eventService.GetAllEventStatusAsync(null, null, EventStatus.Approved, null, null, 1, 10);
@@ -8043,6 +8071,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                DeletedAt = null,
                IsDeleted = false,
+               Publish = true,
                Status = EventStatus.ErrorPayment,
                TotalAmount = 1000000,
                SaleStartTime = DateTime.UtcNow.AddDays(1),
@@ -8094,6 +8123,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                DeletedAt = null,
                IsDeleted = false,
+               Publish = true,
                Status = EventStatus.ErrorPayment,
                TotalAmount = 1000000,
                SaleStartTime = DateTime.UtcNow.AddDays(1),
@@ -8144,6 +8174,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                DeletedAt = null,
                IsDeleted = false,
+               Publish = true,
                Status = EventStatus.ErrorPayment,
                TotalAmount = 1000000,
                SaleStartTime = DateTime.UtcNow.AddDays(1),
@@ -8210,6 +8241,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                DeletedAt = null,
                IsDeleted = false,
+               Publish = true,
                Status = EventStatus.ErrorPayment,
                TotalAmount = 10000, // Very small amount
                SaleStartTime = DateTime.UtcNow.AddDays(1),
@@ -8289,6 +8321,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                DeletedAt = null,
                IsDeleted = false,
+               Publish = true,
                Status = EventStatus.ErrorPayment,
                TotalAmount = 1000000,
                SaleStartTime = DateTime.UtcNow.AddDays(1),
@@ -8377,6 +8410,7 @@ namespace AIEvent.Application.Test.Services
                OrganizerProfileId = organizerId,
                DeletedAt = null,
                IsDeleted = false,
+               Publish = true,
                Status = EventStatus.ErrorPayment,
                TotalAmount = 1000000,
                SaleStartTime = DateTime.UtcNow.AddDays(1),
