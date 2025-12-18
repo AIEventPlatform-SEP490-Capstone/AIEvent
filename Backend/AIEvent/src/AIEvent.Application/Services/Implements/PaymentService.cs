@@ -416,19 +416,20 @@ namespace AIEvent.Application.Services.Implements
                 pendingEvents = pendingEvents
                     .Where(ev =>
                     {
-                        var key = $"{ev.SaleStartTime!.Value:yyyy-MM}";
+                        var key = ev.SaleStartTime!.Value.ToString("yyyy-MM-dd");
 
                         if (!settingCache.TryGetValue(key, out var setting))
                         {
-                            setting = allSettings.FirstOrDefault(s =>
-                                s.UpdatedAt!.Value.Year == ev.SaleStartTime.Value.Year &&
-                                s.UpdatedAt.Value.Month == ev.SaleStartTime.Value.Month)
+                             setting = allSettings
+                                .Where(s => s.UpdatedAt <= ev.SaleStartTime)
+                                .OrderByDescending(s => s.UpdatedAt)
+                                .FirstOrDefault()
                                 ?? defaultSetting;
 
                             settingCache[key] = setting;
                         }
 
-                        var deadline = DateTime.UtcNow.AddMinutes(-setting.DatePayout);
+                        var deadline = DateTime.UtcNow.AddDays(-setting.DatePayout);
                         return ev.CompletedAt <= deadline;
                     })
                     .Take(50)
@@ -439,16 +440,24 @@ namespace AIEvent.Application.Services.Implements
                     _logger.LogInformation("No events meet payout deadline after applying month-based SystemSetting.");
                     return;
                 }
- 
-                foreach (var ev in pendingEvents)
+
+            var managerRole = await _unitOfWork.RoleRepository
+                                    .Query()
+                                    .AsNoTracking()
+                                    .Where(r => r.Name == "Manager" && !r.IsDeleted)
+                                    .Select(r => r.Id)
+                                    .FirstOrDefaultAsync();
+
+            foreach (var ev in pendingEvents)
                 {
-                    var key = $"{ev.SaleStartTime!.Value:yyyy-MM}";
+                    var key = ev.SaleStartTime!.Value.ToString("yyyy-MM-dd");
 
                     if (!settingCache.TryGetValue(key, out var setting))
                     {
-                        setting = allSettings.FirstOrDefault(s =>
-                            s.UpdatedAt!.Value.Year == ev.SaleStartTime.Value.Year &&
-                            s.UpdatedAt.Value.Month == ev.SaleStartTime.Value.Month)
+                        setting = allSettings
+                            .Where(s => s.UpdatedAt <= ev.SaleStartTime)
+                            .OrderByDescending(s => s.UpdatedAt)
+                            .FirstOrDefault()
                             ?? defaultSetting;
 
                         settingCache[key] = setting;
@@ -480,13 +489,6 @@ namespace AIEvent.Application.Services.Implements
                                 EventId = ev.Id
                             });
                         }
-                         
-                        var managerRole = await _unitOfWork.RoleRepository
-                            .Query()
-                            .AsNoTracking()
-                            .Where(r => r.Name == "Manager" && !r.IsDeleted)
-                            .Select(r => r.Id)
-                            .FirstOrDefaultAsync();
                         
                         if (managerRole != Guid.Empty)
                         {
