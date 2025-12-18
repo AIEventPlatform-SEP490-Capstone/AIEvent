@@ -643,7 +643,7 @@ namespace AIEvent.Application.Services.Implements
                 var allCompletedEvents = await _unitOfWork.EventRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(e => !e.IsDeleted && e.CompletedAt.HasValue && e.TotalAmount > 0)
+                    .Where(e => !e.IsDeleted && e.CompletedAt.HasValue && e.TotalAmount > 0 && e.Status == EventStatus.PaidOut)
                     .Select(e => new { e.PlatformFee, e.TotalAmount, e.SaleStartTime, e.CompletedAt })
                     .ToListAsync();
 
@@ -676,7 +676,7 @@ namespace AIEvent.Application.Services.Implements
                 var bookingsQuery = _unitOfWork.BookingRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(b => !b.IsDeleted && b.CreatedAt >= startDate);
+                    .Where(b => !b.IsDeleted && b.CreatedAt >= startDate && b.Status == BookingStatus.Completed);
                 
                 if (endDate.HasValue)
                     bookingsQuery = bookingsQuery.Where(b => b.CreatedAt <= endDate.Value);
@@ -722,6 +722,7 @@ namespace AIEvent.Application.Services.Implements
                     .Where(e => !e.IsDeleted && 
                                e.CompletedAt.HasValue &&
                                e.TotalAmount > 0 &&
+                               e.Status == EventStatus.PaidOut &&
                                e.CompletedAt.Value >= startDate.UtcDateTime)
                     .Select(e => new { e.PlatformFee, e.TotalAmount, e.SaleStartTime, e.CompletedAt })
                     .ToListAsync();
