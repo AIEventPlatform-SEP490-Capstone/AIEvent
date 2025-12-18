@@ -631,20 +631,34 @@ namespace AIEvent.Application.Services.Implements
                 response.ValidTickets = ticketsByStatus.FirstOrDefault(x => x.Status == TicketStatus.Valid)?.Count ?? 0;
                 response.UsedTickets = ticketsByStatus.FirstOrDefault(x => x.Status == TicketStatus.Used)?.Count ?? 0;
                  
-                var revenueBaseQuery = _unitOfWork.BookingRepository
+                var allSystemSettings = await _unitOfWork.SystemSettingRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(b => !b.IsDeleted && b.Status == BookingStatus.Completed);
+                    .Where(s => !s.IsDeleted)
+                    .OrderByDescending(s => s.UpdatedAt)
+                    .ToListAsync();
 
-                response.TotalRevenue = await revenueBaseQuery.SumAsync(b => (decimal?)b.TotalAmount) ?? 0;
+                var defaultSetting = allSystemSettings.FirstOrDefault();
 
-                response.RevenueToday = await revenueBaseQuery
-                    .Where(b => b.CreatedAt >= todayStart && b.CreatedAt <= todayEnd)
-                    .SumAsync(b => (decimal?)b.TotalAmount) ?? 0;
+                var allCompletedEvents = await _unitOfWork.EventRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(e => !e.IsDeleted && e.CompletedAt.HasValue && e.TotalAmount > 0)
+                    .Select(e => new { e.PlatformFee, e.TotalAmount, e.SaleStartTime, e.CompletedAt })
+                    .ToListAsync();
 
-                response.RevenueThisMonth = await revenueBaseQuery
-                    .Where(b => b.CreatedAt >= selectedMonthStart && b.CreatedAt <= selectedMonthEnd)
-                    .SumAsync(b => (decimal?)b.TotalAmount) ?? 0;
+                response.TotalRevenue = allCompletedEvents
+                    .Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount, e.SaleStartTime, allSystemSettings, defaultSetting));
+
+                response.RevenueToday = allCompletedEvents
+                    .Where(e => e.CompletedAt.HasValue && e.CompletedAt.Value.Date == now.Date)
+                    .Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount, e.SaleStartTime, allSystemSettings, defaultSetting));
+
+                response.RevenueThisMonth = allCompletedEvents
+                    .Where(e => e.CompletedAt.HasValue && 
+                               new DateTimeOffset(e.CompletedAt.Value) >= selectedMonthStart && 
+                               new DateTimeOffset(e.CompletedAt.Value) <= selectedMonthEnd)
+                    .Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount, e.SaleStartTime, allSystemSettings, defaultSetting));
                  
                 var startDate = now.AddMonths(-12);
                 DateTimeOffset? endDate = null;
@@ -702,27 +716,32 @@ namespace AIEvent.Application.Services.Implements
                     .ThenBy(x => x.Month)
                     .ToListAsync();
                  
-                var revenueQuery = _unitOfWork.BookingRepository
+                var revenueEventsForMonth = await _unitOfWork.EventRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(b => !b.IsDeleted && 
-                               b.Status == BookingStatus.Completed &&
-                               b.CreatedAt >= startDate);
+                    .Where(e => !e.IsDeleted && 
+                               e.CompletedAt.HasValue &&
+                               e.TotalAmount > 0 &&
+                               new DateTimeOffset(e.CompletedAt.Value) >= startDate)
+                    .Select(e => new { e.PlatformFee, e.TotalAmount, e.SaleStartTime, e.CompletedAt })
+                    .ToListAsync();
                 
                 if (endDate.HasValue)
-                    revenueQuery = revenueQuery.Where(b => b.CreatedAt <= endDate.Value);
+                    revenueEventsForMonth = revenueEventsForMonth
+                        .Where(e => e.CompletedAt.HasValue && new DateTimeOffset(e.CompletedAt.Value) <= endDate.Value)
+                        .ToList();
                 
-                var revenueByMonth = await revenueQuery
-                    .GroupBy(b => new { b.CreatedAt.Year, b.CreatedAt.Month })
+                var revenueByMonth = revenueEventsForMonth
+                    .GroupBy(e => new { e.CompletedAt!.Value.Year, e.CompletedAt.Value.Month })
                     .Select(g => new
                     {
                         Year = g.Key.Year,
                         Month = g.Key.Month,
-                        Revenue = g.Sum(b => b.TotalAmount)
+                        Revenue = g.Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount, e.SaleStartTime, allSystemSettings, defaultSetting))
                     })
                     .OrderBy(x => x.Year)
                     .ThenBy(x => x.Month)
-                    .ToListAsync();
+                    .ToList();
                  
                 var monthlyStatsDict = new Dictionary<(int Year, int Month), MonthlyStatisticsResponse>();
 
@@ -925,11 +944,27 @@ namespace AIEvent.Application.Services.Implements
                     .Where(e => !e.IsDeleted && e.CreatedAt >= currentMonthStart)
                     .CountAsync();
 
-                monthlyStats.Revenue = await _unitOfWork.EventRepository
+                var systemSettingsForMonthly = await _unitOfWork.SystemSettingRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(s => !s.IsDeleted)
+                    .OrderByDescending(s => s.UpdatedAt)
+                    .ToListAsync();
+
+                var defaultSettingForMonthly = systemSettingsForMonthly.FirstOrDefault();
+
+                var monthlyEvents = await _unitOfWork.EventRepository
                    .Query()
                    .AsNoTracking()
-                   .Where(e => !e.IsDeleted && e.CreatedAt >= currentMonthStart)
-                   .SumAsync(e => e.TotalAmount);
+                   .Where(e => !e.IsDeleted && 
+                              e.CompletedAt.HasValue &&
+                              e.TotalAmount > 0 &&
+                              new DateTimeOffset(e.CompletedAt.Value) >= currentMonthStart)
+                   .Select(e => new { e.PlatformFee, e.TotalAmount, e.SaleStartTime })
+                   .ToListAsync();
+
+                monthlyStats.Revenue = monthlyEvents
+                    .Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount, e.SaleStartTime, systemSettingsForMonthly, defaultSettingForMonthly));
 
                 response.MonthlyStatistics = monthlyStats;
 
@@ -1335,5 +1370,36 @@ namespace AIEvent.Application.Services.Implements
             return new BasePaginated<PayoutHistoryResponse>(paginatedResult, totalCount, pageNumber, pageSize);
         }
 
+        private decimal CalculatePlatformFeeForEvent(
+            decimal? platformFee, 
+            decimal totalAmount, 
+            DateTime? saleStartTime,
+            List<SystemSetting> allSystemSettings,
+            SystemSetting? defaultSetting)
+        {
+            if (platformFee.HasValue && platformFee.Value > 0)
+                return platformFee.Value;
+
+            if (totalAmount <= 0)
+                return 0;
+
+            SystemSetting? setting = null;
+            if (saleStartTime.HasValue)
+                setting = allSystemSettings
+                        .FirstOrDefault(s => s.UpdatedAt <= saleStartTime.Value && !s.IsDeleted);
+
+            setting ??= defaultSetting;
+
+            if (setting == null)
+                return 0;
+
+            decimal calculatedPlatformFee = totalAmount * setting.FlatformFee + setting.FixFee;
+            decimal netRevenue = totalAmount - calculatedPlatformFee;
+
+            if (netRevenue < 0)
+                return totalAmount;
+
+            return calculatedPlatformFee;
+        }
     }
 }
