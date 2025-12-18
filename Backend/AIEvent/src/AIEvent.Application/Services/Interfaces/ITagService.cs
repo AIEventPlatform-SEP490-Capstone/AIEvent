@@ -13,5 +13,6 @@ namespace AIEvent.Application.Services.Interfaces
         Task<Result<TagResponse>> GetTagByIdAsync(string id);
         Task<Result<TagResponse>> UpdateTagAsync(string id, UpdateTagRequest request);
         Task<Result<BasePaginated<TagResponse>>> GetListTagByUserIdAsync(int pageNumber, int pageSize, Guid userId);
+        Task<Result<BasePaginated<TagResponse>>> GetListPopularTagAsync(int pageNumber, int pageSize);
     }
 }
