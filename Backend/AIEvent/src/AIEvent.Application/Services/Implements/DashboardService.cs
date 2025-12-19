@@ -942,7 +942,10 @@ namespace AIEvent.Application.Services.Implements
                 monthlyStats.NewEvents = await _unitOfWork.EventRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(e => !e.IsDeleted && e.CreatedAt >= currentMonthStart && e.Status != EventStatus.PendingApproval)
+                    .Where(e => !e.IsDeleted 
+                            && e.CreatedAt >= currentMonthStart 
+                            && e.Status != EventStatus.PendingApproval
+                            && e.Publish == true)
                     .CountAsync();
 
                 var systemSettingsForMonthly = await _unitOfWork.SystemSettingRepository
@@ -960,7 +963,7 @@ namespace AIEvent.Application.Services.Implements
                    .Where(e => !e.IsDeleted && 
                               e.CompletedAt.HasValue &&
                               e.TotalAmount > 0 &&
-                              e.Status == EventStatus.PaidOut &&
+                              e.Status == EventStatus.PaidOut && 
                               e.CompletedAt.Value >= currentMonthStart.UtcDateTime)
                    .Select(e => new { e.PlatformFee, e.TotalAmount, e.SaleStartTime })
                    .ToListAsync();
@@ -1237,7 +1240,7 @@ namespace AIEvent.Application.Services.Implements
                 var totalApprovedEvents = await _unitOfWork.EventRepository
                     .Query(false)
                     .AsNoTracking()
-                    .CountAsync(e => e.Status == EventStatus.Approved && !e.IsDeleted && e.Publish == true);
+                    .CountAsync(e => e.Status != EventStatus.PendingApproval && !e.IsDeleted);
 
                 var result = new ApprovedSummaryResponse
                 {
