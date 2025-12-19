@@ -211,7 +211,7 @@ namespace AIEvent.Application.Services.Implements
                       && et.Event.Publish == true
                 group et by et.TagId
                 into g
-                where g.Count() > 5
+                //where g.Count() > 5
                 select new
                 {
                     TagId = g.Key,
@@ -222,8 +222,8 @@ namespace AIEvent.Application.Services.Implements
                 from t in _unitOfWork.TagRepository.Query().AsNoTracking()
                 join tu in tagUsageQuery on t.Id equals tu.TagId
                 where !t.DeletedAt.HasValue
-                orderby t.CreatedAt descending
-                select new TagResponse
+				orderby tu.QuantityUsed descending
+				select new TagResponse
                 {
                     TagId = t.Id.ToString(),
                     TagName = t.NameTag,
@@ -231,8 +231,8 @@ namespace AIEvent.Application.Services.Implements
                     UpdatedDate = t.UpdatedAt,
                     QuantityUsed = tu.QuantityUsed
                 };
-
-            var totalCount = await query.CountAsync();
+			query = query.Take(20);
+			var totalCount = await query.CountAsync();
 
             var result = await query
                 .Skip((pageNumber - 1) * pageSize)

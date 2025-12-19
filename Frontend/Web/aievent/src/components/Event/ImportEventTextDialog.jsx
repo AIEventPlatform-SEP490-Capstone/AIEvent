@@ -326,8 +326,8 @@ const ImportEventTextDialog = ({ open, onOpenChange, onImport }) => {
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
-            <div className="bg-gradient-to-br from-purple-500 to-blue-600 p-2 rounded-lg">
-              <Wand2 className="w-5 h-5 text-white" />
+            <div className="bg-purple-100 p-2 rounded-lg">
+              <Wand2 className="w-5 h-5 text-purple-600" />
             </div>
             Import thông tin sự kiện bằng AI
           </DialogTitle>
@@ -398,7 +398,7 @@ const ImportEventTextDialog = ({ open, onOpenChange, onImport }) => {
               type="button"
               onClick={handleParse}
               disabled={isLoading || !text.trim()}
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+              className="w-full bg-purple-600 hover:bg-purple-700"
             >
               {isLoading ? (
                 <>
@@ -730,7 +730,7 @@ const ImportEventTextDialog = ({ open, onOpenChange, onImport }) => {
             className={`${
               hasErrors
                 ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
+                : 'bg-green-600 hover:bg-green-700'
             }`}
             title={hasErrors ? 'Vui lòng sửa các lỗi trước khi import' : ''}
           >

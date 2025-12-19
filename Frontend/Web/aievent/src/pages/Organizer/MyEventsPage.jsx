@@ -198,8 +198,8 @@ const MyEventsPage = () => {
           pageNumber: page,
           pageSize: pageSize,
           search: searchTerm || '',
-          startDate: startDate ? new Date(startDate).toISOString() : '',
-          endDate: endDate ? new Date(endDate).toISOString() : '',
+          startDate: convertToUTC(startDate, false),
+          endDate: convertToUTC(endDate, true),
         });
       } else {
         // Load events by status for other tabs
@@ -209,8 +209,8 @@ const MyEventsPage = () => {
           status: statusParam,
           pageNumber: page,
           pageSize: pageSize,
-          startDate: startDate ? new Date(startDate).toISOString() : '',
-          endDate: endDate ? new Date(endDate).toISOString() : '',
+          startDate: convertToUTC(startDate, false),
+          endDate: convertToUTC(endDate, true),
         });
       }
       
@@ -317,6 +317,20 @@ const MyEventsPage = () => {
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  // Convert local date (UTC+7) to UTC for API
+  const convertToUTC = (dateString, isEndDate = false) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isEndDate) {
+      // For end date, set to end of day (23:59:59) in local time, then convert to UTC
+      date.setHours(23, 59, 59, 999);
+    } else {
+      // For start date, set to start of day (00:00:00) in local time, then convert to UTC
+      date.setHours(0, 0, 0, 0);
+    }
+    return date.toISOString();
   };
   const formatCurrency = (amount) => {
   if (!amount || amount === 0) return '0đ';
@@ -710,7 +724,7 @@ const MyEventsPage = () => {
                       <div className="flex items-center gap-2 backdrop-blur-sm bg-white/10 px-3 py-1.5 rounded-full border border-white/20">
                         <Calendar className="w-4 h-4" />
                         <span className="text-sm font-medium">
-                          {formatDate(heroEvent.startTime).split(' ')[0]} • {formatDate(heroEvent.startTime).split(' ')[1]}
+                          {formatDate(heroEvent.startTime).replace(',', ' •')}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 backdrop-blur-sm bg-white/10 px-3 py-1.5 rounded-full border border-white/20">
@@ -722,11 +736,7 @@ const MyEventsPage = () => {
                     </div>
 
                     {/* Metrics pills */}
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                      <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-center hover:bg-white/20 transition-colors">
-                        <p className="text-xs text-white/70 mb-0.5">Lượt xem</p>
-                        <p className="text-lg font-bold text-white">{heroEvent.viewCount || 0}</p>
-                      </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-center hover:bg-white/20 transition-colors">
                         <p className="text-xs text-white/70 mb-0.5">Đăng ký</p>
                         <p className="text-lg font-bold text-white">
@@ -740,14 +750,16 @@ const MyEventsPage = () => {
                         </p>
                       </div>
                       <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-center hover:bg-white/20 transition-colors">
+                        <p className="text-xs text-white/70 mb-0.5">Phí nền tảng</p>
+                        <p className="text-lg font-bold text-white">
+                          {formatCurrency(heroEvent.platformFee)}
+                        </p>
+                      </div>
+                      <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-center hover:bg-white/20 transition-colors">
                         <p className="text-xs text-white/70 mb-0.5">Thanh toán</p>
                         <p className="text-lg font-bold text-white">
                           {formatCurrency(heroEvent.payoutAmount)}
                         </p>
-                      </div>
-                      <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-center hover:bg-white/20 transition-colors">
-                        <p className="text-xs text-white/70 mb-0.5">Sức chứa</p>
-                        <p className="text-lg font-bold text-white">{heroEventOccupancyRate}%</p>
                       </div>
                     </div>
                   </div>
@@ -1018,7 +1030,7 @@ const MyEventsPage = () => {
                             <div className="flex items-center gap-1.5">
                               <Calendar className={`${viewMode === 'compact' ? 'w-3 h-3' : 'w-4 h-4'} text-indigo-500/70`} />
                               <span>
-                                {formatDate(event.startTime).split(' ')[0]}
+                                {formatDate(event.startTime).replace(',', ' •')}
                               </span>
                             </div>
                             <div className="flex items-center gap-1.5">
@@ -1087,36 +1099,35 @@ const MyEventsPage = () => {
                           )}
                           
                           <div className={`transition-all duration-300 ease-in-out ${isMetricsExpanded || viewMode === 'compact' ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-                            <div className={`grid ${viewMode === 'compact' ? 'grid-cols-3 gap-2' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3'} pb-4 border-b border-white/10`}>
-                              <div className="backdrop-blur-sm bg-gradient-to-br from-slate-100/50 to-slate-50/30 dark:from-slate-800/50 dark:to-slate-700/30 rounded-xl p-2 sm:p-3 text-center hover:scale-105 transition-transform">
-                                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Lượt xem</p>
-                                <p className={`${viewMode === 'compact' ? 'text-sm' : 'text-base'} font-bold text-slate-900 dark:text-white`}>{event.viewCount || 0}</p>
-                              </div>
+                            <div className={`grid ${viewMode === 'compact' ? 'grid-cols-3 gap-2' : 'grid-cols-2 sm:grid-cols-4 gap-3'} pb-4 border-b border-white/10`}>
                               <div className="backdrop-blur-sm bg-gradient-to-br from-blue-100/50 to-blue-50/30 dark:from-blue-900/50 dark:to-blue-800/30 rounded-xl p-2 sm:p-3 text-center hover:scale-105 transition-transform">
-                                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Đăng ký</p>
-                                <p className={`${viewMode === 'compact' ? 'text-sm' : 'text-base'} font-bold text-blue-700 dark:text-blue-400`}>
-                                  {event.totalPersonJoin || event.soldQuantity || 0}
-                                </p>
-                              </div>
-                              <div className="backdrop-blur-sm bg-gradient-to-br from-green-100/50 to-green-50/30 dark:from-green-900/50 dark:to-green-800/30 rounded-xl p-2 sm:p-3 text-center hover:scale-105 transition-transform">
                                 <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Doanh thu</p>
-                                <p className={`${viewMode === 'compact' ? 'text-sm' : 'text-base'} font-bold text-green-700 dark:text-green-400`}>
+                                <p className={`${viewMode === 'compact' ? 'text-sm' : 'text-base'} font-bold text-blue-700 dark:text-blue-400`}>
                                   {formatCurrency(event.totalAmount)}
                                 </p>
                               </div>
+                              <div className="backdrop-blur-sm bg-gradient-to-br from-orange-100/50 to-orange-50/30 dark:from-orange-900/50 dark:to-orange-800/30 rounded-xl p-2 sm:p-3 text-center hover:scale-105 transition-transform">
+                                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Phí nền tảng</p>
+                                <p className={`${viewMode === 'compact' ? 'text-sm' : 'text-base'} font-bold text-orange-700 dark:text-orange-400`}>
+                                  {formatCurrency(event.platformFee)}
+                                </p>
+                              </div>
+                              <div className="backdrop-blur-sm bg-gradient-to-br from-emerald-100/50 to-emerald-50/30 dark:from-emerald-900/50 dark:to-emerald-800/30 rounded-xl p-2 sm:p-3 text-center hover:scale-105 transition-transform">
+                                <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Thanh toán</p>
+                                <p className={`${viewMode === 'compact' ? 'text-sm' : 'text-base'} font-bold text-emerald-700 dark:text-emerald-400`}>
+                                  {formatCurrency(event.payoutAmount)}
+                                </p>
+                              </div>
                               {viewMode !== 'compact' && (
-                                <>
-                                  <div className="backdrop-blur-sm bg-gradient-to-br from-emerald-100/50 to-emerald-50/30 dark:from-emerald-900/50 dark:to-emerald-800/30 rounded-xl p-2 sm:p-3 text-center hover:scale-105 transition-transform">
-                                    <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Thanh toán</p>
-                                    <p className="text-base font-bold text-emerald-700 dark:text-emerald-400">
-                                      {formatCurrency(event.payoutAmount)}
-                                    </p>
-                                  </div>
-                                  <div className="backdrop-blur-sm bg-gradient-to-br from-purple-100/50 to-purple-50/30 dark:from-purple-900/50 dark:to-purple-800/30 rounded-xl p-2 sm:p-3 text-center hover:scale-105 transition-transform">
-                                    <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Sức chứa</p>
-                                    <p className="text-base font-bold text-purple-700 dark:text-purple-400">{occupancyRate}%</p>
-                                  </div>
-                                </>
+                                <div className="backdrop-blur-sm bg-gradient-to-br from-slate-100/50 to-slate-50/30 dark:from-slate-800/50 dark:to-slate-700/30 rounded-xl p-2 sm:p-3 text-center hover:scale-105 transition-transform">
+                                  <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Cấu hình phí</p>
+                                  <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                    {event.flatformFee ? `${(event.flatformFee * 100).toFixed(0)}%` : '7%'} + {formatCurrency(event.fixFee || 45000)}
+                                  </p>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    Thanh toán sau {event.datePayout || 7} ngày
+                                  </p>
+                                </div>
                               )}
                             </div>
                           </div>

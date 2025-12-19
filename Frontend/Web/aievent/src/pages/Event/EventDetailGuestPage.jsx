@@ -857,7 +857,7 @@ const EventDetailGuestPage = ({ previewData }) => {
               <h2 className="text-2xl font-bold text-foreground mb-6">Chi tiết sự kiện</h2>
               {event.detailedDescription || event.description ? (
                 <div 
-                  className="prose max-w-none text-muted-foreground leading-relaxed mb-6 ql-editor"
+                  className="prose prose-neutral max-w-none leading-relaxed mb-6 ql-editor [&_*]:text-inherit"
                   dangerouslySetInnerHTML={{ __html: event.detailedDescription || event.description }} 
                 />
               ) : (

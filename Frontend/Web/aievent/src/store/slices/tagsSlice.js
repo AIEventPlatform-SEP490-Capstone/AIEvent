@@ -3,6 +3,26 @@ import { tagAPI } from '../../api/tagAPI';
 import { handleApiError } from '../../lib/toastUtils'; // Import the error handler
 
 // Async thunks
+export const fetchPopularTags = createAsyncThunk(
+  'tags/fetchPopular',
+  async ({ pageNumber = 1, pageSize = 10 } = {}, { rejectWithValue }) => {
+    try {
+      const response = await tagAPI.getPopularTags(pageNumber, pageSize);
+      
+      // Handle the paginated response structure
+      if (response && response.items) {
+        return response.items;
+      }
+      
+      // Fallback for older response structures
+      return response.data?.items || response.data || response || [];
+    } catch (error) {
+      handleApiError(error);
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const fetchTags = createAsyncThunk(
   'tags/fetchAll',
   async (userRole = null, { rejectWithValue }) => {
@@ -79,9 +99,12 @@ const tagsSlice = createSlice({
   name: 'tags',
   initialState: {
     items: [],
+    popularTags: [],
     loading: false,
+    loadingPopular: false,
     error: null,
     lastFetched: null,
+    lastFetchedPopular: null,
     creating: false,
     updating: false,
     deleting: false,
@@ -110,14 +133,37 @@ const tagsSlice = createSlice({
     invalidateTags: (state) => {
       state.lastFetched = null;
     },
+    invalidatePopularTags: (state) => {
+      state.lastFetchedPopular = null;
+    },
     // Clear all tags data
     clearTags: (state) => {
       state.items = [];
       state.lastFetched = null;
+    },
+    clearPopularTags: (state) => {
+      state.popularTags = [];
+      state.lastFetchedPopular = null;
     }
   },
   extraReducers: (builder) => {
     builder
+      // Fetch popular tags
+      .addCase(fetchPopularTags.pending, (state) => {
+        state.loadingPopular = true;
+        state.error = null;
+      })
+      .addCase(fetchPopularTags.fulfilled, (state, action) => {
+        state.loadingPopular = false;
+        state.popularTags = action.payload;
+        state.lastFetchedPopular = Date.now();
+        state.error = null;
+      })
+      .addCase(fetchPopularTags.rejected, (state, action) => {
+        state.loadingPopular = false;
+        state.error = action.payload;
+      })
+      
       // Fetch tags
       .addCase(fetchTags.pending, (state) => {
         state.loading = true;
@@ -216,12 +262,16 @@ export const {
   unselectTag, 
   clearSelectedTags,
   invalidateTags,
-  clearTags
+  invalidatePopularTags,
+  clearTags,
+  clearPopularTags
 } = tagsSlice.actions;
 
 // Selectors
 export const selectTags = (state) => state.tags.items;
+export const selectPopularTags = (state) => state.tags.popularTags;
 export const selectTagsLoading = (state) => state.tags.loading;
+export const selectPopularTagsLoading = (state) => state.tags.loadingPopular;
 export const selectTagsError = (state) => state.tags.error;
 export const selectSelectedTags = (state) => state.tags.selectedTags;
 export const selectTagById = (state, tagId) => 
@@ -233,6 +283,12 @@ export const selectShouldFetchTags = (state) => {
   const { lastFetched, items } = state.tags;
   if (!lastFetched || items.length === 0) return true;
   return Date.now() - lastFetched > 10 * 60 * 1000; // 10 minutes
+};
+
+export const selectShouldFetchPopularTags = (state) => {
+  const { lastFetchedPopular, popularTags } = state.tags;
+  if (!lastFetchedPopular || popularTags.length === 0) return true;
+  return Date.now() - lastFetchedPopular > 10 * 60 * 1000; // 10 minutes
 };
 
 export default tagsSlice.reducer;
