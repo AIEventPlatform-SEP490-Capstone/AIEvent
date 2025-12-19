@@ -198,8 +198,8 @@ const MyEventsPage = () => {
           pageNumber: page,
           pageSize: pageSize,
           search: searchTerm || '',
-          startDate: startDate ? new Date(startDate).toISOString() : '',
-          endDate: endDate ? new Date(endDate).toISOString() : '',
+          startDate: convertToUTC(startDate, false),
+          endDate: convertToUTC(endDate, true),
         });
       } else {
         // Load events by status for other tabs
@@ -209,8 +209,8 @@ const MyEventsPage = () => {
           status: statusParam,
           pageNumber: page,
           pageSize: pageSize,
-          startDate: startDate ? new Date(startDate).toISOString() : '',
-          endDate: endDate ? new Date(endDate).toISOString() : '',
+          startDate: convertToUTC(startDate, false),
+          endDate: convertToUTC(endDate, true),
         });
       }
       
@@ -317,6 +317,20 @@ const MyEventsPage = () => {
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  // Convert local date (UTC+7) to UTC for API
+  const convertToUTC = (dateString, isEndDate = false) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isEndDate) {
+      // For end date, set to end of day (23:59:59) in local time, then convert to UTC
+      date.setHours(23, 59, 59, 999);
+    } else {
+      // For start date, set to start of day (00:00:00) in local time, then convert to UTC
+      date.setHours(0, 0, 0, 0);
+    }
+    return date.toISOString();
   };
   const formatCurrency = (amount) => {
   if (!amount || amount === 0) return '0đ';
