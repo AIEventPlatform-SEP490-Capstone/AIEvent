@@ -19,6 +19,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "This app needs access to camera to take photos for your profile avatar.",
         "NSPhotoLibraryUsageDescription": "This app needs access to photo library to select photos for your profile avatar."
+        ,
+        "NSMicrophoneUsageDescription": "This app needs access to the microphone to record voice messages for AI chat."
       }
     },
     "android": {

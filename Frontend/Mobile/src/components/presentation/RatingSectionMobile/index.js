@@ -39,6 +39,7 @@ const RatingItem = ({
   onDelete,
   onOpenMenu,
   allowModify = true,
+  isAuthenticated = false,
 }) => (
   <View
     style={{
@@ -66,7 +67,7 @@ const RatingItem = ({
         style={{fontSize: 18, fontWeight: '600'}}>
         {item.userName || 'Người dùng'}
       </CustomText>
-      {isCurrentUser && allowModify && (
+      {isCurrentUser && allowModify && isAuthenticated && (
         <TouchableOpacity
           onPress={() => onOpenMenu && onOpenMenu(item)}
           style={{paddingHorizontal: 8, paddingVertical: 4}}>
@@ -119,7 +120,7 @@ const RatingItem = ({
   </View>
 );
 
-const RatingSectionMobile = ({eventId}) => {
+const RatingSectionMobile = ({eventId, eventEndTime}) => {
   const {
     ratings,
     loading,
@@ -132,6 +133,9 @@ const RatingSectionMobile = ({eventId}) => {
   const auth = useSelector(state => state.auth || {});
   const isAuthenticated = !!auth.isLoggedIn;
   const user = auth.user || null;
+
+  // Check if event has ended
+  const isEventEnded = eventEndTime ? new Date() > new Date(eventEndTime) : false;
 
   const [userExistingRating, setUserExistingRating] = useState(null);
 
@@ -373,9 +377,23 @@ const RatingSectionMobile = ({eventId}) => {
         loading ? (
           <ActivityIndicator style={{marginTop: 12}} />
         ) : hasPurchasedTicket ? (
-          // If user already rated but is editing, show the form (allow update).
-          // Otherwise show the lightweight message.
-          userExistingRating && !editingRatingId ? (
+          // Check if event has ended - only allow rating after event ends
+          !isEventEnded ? (
+            // Event chưa kết thúc → không hiện form, thông báo cho người dùng
+            <View
+              style={{
+                backgroundColor: '#FFFBEB',
+                borderWidth: 1,
+                borderColor: '#FDE68A',
+                padding: 12,
+                borderRadius: 8,
+                marginTop: 12,
+              }}>
+              <CustomText variant="body" color="secondary">
+                Sự kiện chưa kết thúc. Bạn chỉ có thể đánh giá sau khi sự kiện kết thúc.
+              </CustomText>
+            </View>
+          ) : userExistingRating && !editingRatingId ? (
             // ĐÃ ĐÁNH GIÁ → ẨN FORM, CHỈ HIỂN THỊ THÔNG BÁO NHẸ
             <View
               style={{
@@ -500,12 +518,52 @@ const RatingSectionMobile = ({eventId}) => {
           </CustomText>
         ) : (
           ratings.map(item => {
-            const isCurrentUser =
-              isAuthenticated &&
-              (item.userId === user?.userId ||
-                item.accountId === user?.accountId ||
-                item.userName === user?.userName ||
-                item.email === user?.email);
+            // Xác định isCurrentUser với logic giống như trong useEffect
+            // Chỉ người dùng đã đăng nhập và là tác giả của bình luận mới thấy menu
+            let isCurrentUser = false;
+            
+            if (isAuthenticated && user) {
+              // Compare by userId
+              if (
+                item.userId &&
+                user?.userId &&
+                String(item.userId) === String(user.userId)
+              ) {
+                isCurrentUser = true;
+              }
+              // Compare by accountId
+              else if (
+                item.accountId &&
+                user?.accountId &&
+                String(item.accountId) === String(user.accountId)
+              ) {
+                isCurrentUser = true;
+              }
+              // Compare by email
+              else if (
+                item.email &&
+                user?.email &&
+                item.email.toLowerCase() === user.email.toLowerCase()
+              ) {
+                isCurrentUser = true;
+              }
+              // Compare by userName (normalized)
+              else {
+                const ratingName = (item.userName || '').trim().toLowerCase();
+                const userName = (
+                  user?.userName ||
+                  user?.displayName ||
+                  user?.fullName ||
+                  user?.name ||
+                  ''
+                )
+                  .trim()
+                  .toLowerCase();
+                if (ratingName && userName && ratingName === userName) {
+                  isCurrentUser = true;
+                }
+              }
+            }
 
             return (
               <RatingItem
@@ -515,6 +573,7 @@ const RatingSectionMobile = ({eventId}) => {
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onOpenMenu={openMenu}
+                isAuthenticated={isAuthenticated}
               />
             );
           })

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
@@ -12,6 +12,7 @@ import {
 import { toast } from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 import useOrganizers from "../../hooks/useOrganizers";
+import { useAuth } from "../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -26,6 +27,8 @@ export default function BecomeOrganizerPage() {
 
   const { createOrganizer } = useOrganizers();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { user } = useAuth();
 
   // ✅ Dữ liệu form (đúng theo Swagger)
   const [form, setForm] = useState({
@@ -143,6 +146,15 @@ export default function BecomeOrganizerPage() {
       setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    if (
+      user?.email &&
+      (!form.ContactEmail || form.ContactEmail.trim() === "")
+    ) {
+      setForm((prev) => ({ ...prev, ContactEmail: user.email }));
+    }
+  }, [user]);
 
   //  Helper hiển thị tên file hoặc placeholder
   const renderFileName = (file) => (
@@ -263,6 +275,7 @@ export default function BecomeOrganizerPage() {
                 <div>
                   <Label>Email *</Label>
                   <Input
+                    disabled
                     type="email"
                     name="ContactEmail"
                     value={form.ContactEmail}

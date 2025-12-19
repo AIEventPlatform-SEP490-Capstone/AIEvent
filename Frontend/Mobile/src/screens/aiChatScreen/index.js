@@ -153,10 +153,23 @@ const AIChatScreen = () => {
     Linking.openURL(link).catch(() => {});
   };
 
+  const cleanMarkdownAsterisks = (text) => {
+    if (!text) return text;
+    return text
+      .replace(/\*\*\*\*([^*]+)\*\*\*\*/g, "$1") // ****text**** → text
+      .replace(/\*\*\*([^*]+)\*\*\*/g, "$1") // ***text*** → text (italic + bold)
+      .replace(/\*\*([^*]+)\*\*/g, "$1") // **text** → text
+      .replace(/\*([^*]+)\*/g, "$1") // *text* → text
+      .replace(/\\\*/g, "*"); // bỏ escape nếu có \*
+  };
+
   const formatMessage = (content) => {
     if (!content) return [];
     
-    return content.split('\n').map((line, index) => {
+    // Clean markdown asterisks first
+    const cleanedContent = cleanMarkdownAsterisks(content);
+    
+    return cleanedContent.split('\n').map((line, index) => {
       if (line.toLowerCase().startsWith('xem chi tiết')) {
         const parts = line.split(':');
         const link = parts[1]?.trim();
@@ -376,7 +389,7 @@ const AIChatScreen = () => {
               Xin chào! 👋
             </CustomText>
             <CustomText variant="body" color="secondary" style={styles.emptyText} align="center">
-              Tôi là AI Assistant của AIEvent. Tôi có thể giúp bạn tìm kiếm sự kiện, đặt vé, hoặc trả lời các câu hỏi về nền tảng.
+            Tôi là AI Assistant của AIEvent. Tôi có thể giúp bạn tìm kiếm sự kiện theo nhu cầu của bạn, hoặc trả lời các câu hỏi về sự kiện bạn quan tâm. Bạn cần hỗ trợ gì?
             </CustomText>
             <CustomText variant="body" color="secondary" style={styles.emptyText} align="center">
               Bắt đầu cuộc trò chuyện bằng cách nhập câu hỏi của bạn!
