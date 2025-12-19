@@ -710,7 +710,7 @@ const MyEventsPage = () => {
                       <div className="flex items-center gap-2 backdrop-blur-sm bg-white/10 px-3 py-1.5 rounded-full border border-white/20">
                         <Calendar className="w-4 h-4" />
                         <span className="text-sm font-medium">
-                          {formatDate(heroEvent.startTime).split(' ')[0]} • {formatDate(heroEvent.startTime).split(' ')[1]}
+                          {formatDate(heroEvent.startTime).replace(',', ' •')}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 backdrop-blur-sm bg-white/10 px-3 py-1.5 rounded-full border border-white/20">
@@ -1018,7 +1018,7 @@ const MyEventsPage = () => {
                             <div className="flex items-center gap-1.5">
                               <Calendar className={`${viewMode === 'compact' ? 'w-3 h-3' : 'w-4 h-4'} text-indigo-500/70`} />
                               <span>
-                                {formatDate(event.startTime).split(' ')[0]}
+                                {formatDate(event.startTime).replace(',', ' •')}
                               </span>
                             </div>
                             <div className="flex items-center gap-1.5">
