@@ -1197,7 +1197,10 @@ namespace AIEvent.Application.Services.Implements
                     .Query(false)
                     .AsNoTracking()
                     .Where(e => e.CreatedAt.Year == year &&
-                                !e.IsDeleted && e.Status == EventStatus.Approved && e.Publish == true)
+                                !e.IsDeleted && 
+                                e.Status != EventStatus.PendingApproval && 
+                                e.Status != EventStatus.Rejected && 
+                                e.Publish == true)
                     .GroupBy(e => e.CreatedAt.Month)
                     .Select(g => new
                     {
