@@ -960,6 +960,7 @@ namespace AIEvent.Application.Services.Implements
                    .Where(e => !e.IsDeleted && 
                               e.CompletedAt.HasValue &&
                               e.TotalAmount > 0 &&
+                              e.Status == EventStatus.PaidOut &&
                               e.CompletedAt.Value >= currentMonthStart.UtcDateTime)
                    .Select(e => new { e.PlatformFee, e.TotalAmount, e.SaleStartTime })
                    .ToListAsync();
