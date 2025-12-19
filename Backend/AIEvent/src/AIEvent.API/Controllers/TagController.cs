@@ -118,5 +118,21 @@ namespace AIEvent.API.Controllers
                 SuccessCodes.Updated,
                 "Update Tag successfully"));
         }
+
+        [HttpGet("popular")]
+        [AllowAnonymous]
+        public async Task<ActionResult<SuccessResponse<BasePaginated<TagResponse>>>> GetTagPopular(int pageNumber = 1, int pageSize = 5)
+        {
+            var result = await _tagService.GetListPopularTagAsync(pageNumber, pageSize);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result.Error!);
+            }
+
+            return Ok(SuccessResponse<BasePaginated<TagResponse>>.SuccessResult(
+                result.Value!,
+                SuccessCodes.Success,
+                "Tag retrieved successfully"));
+        }
     }
 }

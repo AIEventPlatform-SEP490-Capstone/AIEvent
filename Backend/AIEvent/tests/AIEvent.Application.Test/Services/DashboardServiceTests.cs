@@ -62,6 +62,8 @@ namespace AIEvent.Application.Test.Services
                 .Returns(new List<Booking>().AsQueryable().BuildMockDbSet().Object);
             _mockUnitOfWork.Setup(x => x.TicketRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<Ticket>().AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<SystemSetting>().AsQueryable().BuildMockDbSet().Object);
 
             // Act
             var result = await _dashboardService.GetAdminDashboardAsync();
@@ -98,6 +100,8 @@ namespace AIEvent.Application.Test.Services
                 .Returns(new List<Booking>().AsQueryable().BuildMockDbSet().Object);
             _mockUnitOfWork.Setup(x => x.TicketRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<Ticket>().AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<SystemSetting>().AsQueryable().BuildMockDbSet().Object);
 
             // Act
             var result = await _dashboardService.GetAdminDashboardAsync(year, month);
@@ -125,6 +129,8 @@ namespace AIEvent.Application.Test.Services
                 .Returns(new List<Role> { adminRole }.AsQueryable().BuildMockDbSet().Object);
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<SystemSetting>().AsQueryable().BuildMockDbSet().Object);
 
             // Act
             var result = await _dashboardService.GetAdminDashboardAsync(year, month);
@@ -153,6 +159,8 @@ namespace AIEvent.Application.Test.Services
                 .Returns(new List<Role> { adminRole }.AsQueryable().BuildMockDbSet().Object);
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<SystemSetting>().AsQueryable().BuildMockDbSet().Object);
 
             // Act
             var result = await _dashboardService.GetAdminDashboardAsync(year, month);
@@ -181,6 +189,8 @@ namespace AIEvent.Application.Test.Services
                 .Returns(new List<Role> { adminRole }.AsQueryable().BuildMockDbSet().Object);
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<SystemSetting>().AsQueryable().BuildMockDbSet().Object);
 
             // Act
             var result = await _dashboardService.GetAdminDashboardAsync(year, month);
@@ -209,6 +219,8 @@ namespace AIEvent.Application.Test.Services
                 .Returns(new List<Role> { adminRole }.AsQueryable().BuildMockDbSet().Object);
             _mockUnitOfWork.Setup(x => x.UserRepository.Query(It.IsAny<bool>()))
                 .Returns(new List<User>().AsQueryable().BuildMockDbSet().Object);
+            _mockUnitOfWork.Setup(x => x.SystemSettingRepository.Query(It.IsAny<bool>()))
+                .Returns(new List<SystemSetting>().AsQueryable().BuildMockDbSet().Object);
 
             // Act
             var result = await _dashboardService.GetAdminDashboardAsync(year, month);

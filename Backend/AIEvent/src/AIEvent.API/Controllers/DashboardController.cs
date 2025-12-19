@@ -1,4 +1,4 @@
-﻿using AIEvent.API.Extensions;
+using AIEvent.API.Extensions;
 using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Common;
 using AIEvent.Application.DTOs.Dashboard;
