@@ -148,52 +148,6 @@ const AdminEventManagement = () => {
           </p>
         </div>
 
-        {/* STATS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Total events */}
-          <div className="border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 font-medium">Tổng sự kiện</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{list.totalItems}</p>
-              </div>
-              <div className="w-12 h-12 rounded-full border-2 border-blue-100 flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </div>
-
-          {/* Pending */}
-          <div className="border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 font-medium">Chờ duyệt</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {list.items.filter(i => i.status?.toLowerCase() === "pendingapproval").length}
-                </p>
-              </div>
-              <div className="w-12 h-12 rounded-full border-2 border-amber-100 flex items-center justify-center">
-                <Filter className="w-6 h-6 text-amber-600" />
-              </div>
-            </div>
-          </div>
-
-          {/* Participants */}
-          <div className="border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 font-medium">Người tham gia</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {list.items.reduce((sum, i) => sum + (i.participantCount || 0), 0)}
-                </p>
-              </div>
-              <div className="w-12 h-12 rounded-full border-2 border-emerald-100 flex items-center justify-center">
-                <Users className="w-6 h-6 text-emerald-600" />
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* FILTERS */}
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="relative flex-1">

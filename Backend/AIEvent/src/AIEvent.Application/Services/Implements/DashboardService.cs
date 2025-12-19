@@ -809,7 +809,7 @@ namespace AIEvent.Application.Services.Implements
                     .Query()
                     .AsNoTracking()
                     .Include(e => e.OrganizerProfile)
-                    .Where(e => !e.IsDeleted);
+                    .Where(e => !e.IsDeleted && e.Publish == true);
  
                 if (!string.IsNullOrWhiteSpace(search))
                 {
@@ -942,7 +942,7 @@ namespace AIEvent.Application.Services.Implements
                 monthlyStats.NewEvents = await _unitOfWork.EventRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(e => !e.IsDeleted && e.CreatedAt >= currentMonthStart)
+                    .Where(e => !e.IsDeleted && e.CreatedAt >= currentMonthStart && e.Status != EventStatus.PendingApproval)
                     .CountAsync();
 
                 var systemSettingsForMonthly = await _unitOfWork.SystemSettingRepository
@@ -1237,7 +1237,7 @@ namespace AIEvent.Application.Services.Implements
                 var totalApprovedEvents = await _unitOfWork.EventRepository
                     .Query(false)
                     .AsNoTracking()
-                    .CountAsync(e => e.Status == EventStatus.Approved);
+                    .CountAsync(e => e.Status == EventStatus.Approved && !e.IsDeleted && e.Publish == true);
 
                 var result = new ApprovedSummaryResponse
                 {
