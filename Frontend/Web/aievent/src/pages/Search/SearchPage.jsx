@@ -17,8 +17,10 @@ import {
 import { useEvents } from "../../hooks/useEvents";
 import { useCategories } from "../../hooks/useCategories";
 import { useFavoriteEvents } from "../../hooks/useFavoriteEvents";
+import { usePopularTags } from "../../hooks/usePopularTags";
 import { useSelector } from "react-redux";
 import { EventCard } from "../../components/HomePage/EventCard";
+import { Tag } from "lucide-react";
 
 export default function SearchPage() {
   const navigate = useNavigate();
@@ -26,9 +28,11 @@ export default function SearchPage() {
   const { getEvents, loading: eventsLoading } = useEvents();
   const { categories, loading: categoriesLoading, refreshCategories } = useCategories();
   const { getFavoriteEvents, addFavoriteEvent, removeFavoriteEvent } = useFavoriteEvents();
+  const { popularTags, loading: tagsLoading, refreshPopularTags } = usePopularTags();
   const { isAuthenticated } = useSelector((state) => state.auth);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedTags, setSelectedTags] = useState([]);
   const [locationFilter, setLocationFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
   const [ticketSaleStatus, setTicketSaleStatus] = useState("all");
@@ -66,14 +70,22 @@ export default function SearchPage() {
     loadFavoriteEvents();
   }, [isAuthenticated]);
 
-  // Fetch categories once on component mount
+  // Fetch categories and popular tags once on component mount
   useEffect(() => {
     refreshCategories();
+    refreshPopularTags(1, 15); // Fetch top 15 popular tags
     
     // Set initial search query from URL params
     const query = searchParams.get('q');
     if (query) {
       setSearchQuery(decodeURIComponent(query));
+    }
+    
+    // Set initial tag from URL params
+    const tagParam = searchParams.get('tag');
+    if (tagParam) {
+      const tagId = decodeURIComponent(tagParam);
+      setSelectedTags([{ tagId }]);
     }
   }, []);
 
@@ -81,6 +93,7 @@ export default function SearchPage() {
   const filters = useMemo(() => ({
     searchQuery,
     selectedCategory,
+    selectedTags,
     locationFilter,
     dateFilter,
     ticketSaleStatus,
@@ -88,12 +101,12 @@ export default function SearchPage() {
     minPrice,
     maxPrice,
     sortBy
-  }), [searchQuery, selectedCategory, locationFilter, dateFilter, ticketSaleStatus, eventProgressStatus, minPrice, maxPrice, sortBy]);
+  }), [searchQuery, selectedCategory, selectedTags, locationFilter, dateFilter, ticketSaleStatus, eventProgressStatus, minPrice, maxPrice, sortBy]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedCategory, locationFilter, dateFilter, ticketSaleStatus, eventProgressStatus, minPrice, maxPrice, sortBy]);
+  }, [searchQuery, selectedCategory, selectedTags, locationFilter, dateFilter, ticketSaleStatus, eventProgressStatus, minPrice, maxPrice, sortBy]);
 
   // Fetch events when filters change or page changes
   useEffect(() => {
@@ -154,6 +167,11 @@ export default function SearchPage() {
         // Add sort by
         if (filters.sortBy) {
           params.sortBy = filters.sortBy;
+        }
+        
+        // Add tags filter
+        if (filters.selectedTags && filters.selectedTags.length > 0) {
+          params.tags = filters.selectedTags;
         }
         
         const response = await getEvents(params);
@@ -420,9 +438,28 @@ export default function SearchPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Toggle tag selection
+  const toggleTagSelection = (tag) => {
+    const tagId = tag.tagId || tag.id;
+    const isSelected = selectedTags.some(t => (t.tagId || t.id) === tagId);
+    
+    if (isSelected) {
+      setSelectedTags(selectedTags.filter(t => (t.tagId || t.id) !== tagId));
+    } else {
+      setSelectedTags([...selectedTags, { tagId }]);
+    }
+  };
+
+  // Check if tag is selected
+  const isTagSelected = (tag) => {
+    const tagId = tag.tagId || tag.id;
+    return selectedTags.some(t => (t.tagId || t.id) === tagId);
+  };
+
   // Count active filters
   const activeFilterCount = [
     selectedCategory !== "all",
+    selectedTags.length > 0,
     locationFilter !== "all",
     dateFilter !== "all",
     ticketSaleStatus !== "all",
@@ -434,6 +471,7 @@ export default function SearchPage() {
   // Reset all filters
   const resetFilters = () => {
     setSelectedCategory("all");
+    setSelectedTags([]);
     setLocationFilter("all");
     setDateFilter("all");
     setTicketSaleStatus("all");
@@ -539,6 +577,47 @@ export default function SearchPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Popular Tags Filter */}
+              {popularTags && popularTags.length > 0 && (
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+                    Tags phổ biến
+                    {selectedTags.length > 0 && (
+                      <span className="ml-2 px-2 py-0.5 text-xs bg-teal-100 text-teal-700 rounded-full">
+                        {selectedTags.length} đã chọn
+                      </span>
+                    )}
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {popularTags.map((tag) => {
+                      const tagId = tag.tagId || tag.id;
+                      const tagName = tag.nameTag || tag.tagName || tag.name;
+                      const quantityUsed = tag.quantityUsed || 0;
+                      return (
+                        <button
+                          key={tagId}
+                          onClick={() => toggleTagSelection(tag)}
+                          className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
+                            isTagSelected(tag)
+                              ? 'bg-gradient-to-r from-teal-500 to-emerald-500 text-white shadow-md shadow-teal-200'
+                              : 'bg-white border border-gray-200 text-gray-700 hover:border-teal-300 hover:text-teal-600'
+                          }`}
+                        >
+                          <Tag className="w-3.5 h-3.5" />
+                          {tagName}
+                          {quantityUsed > 0 && (
+                            <span className={`text-xs ${isTagSelected(tag) ? 'text-teal-100' : 'text-gray-400'}`}>
+                              ({quantityUsed})
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Location Filter */}
               <div className="space-y-3">
