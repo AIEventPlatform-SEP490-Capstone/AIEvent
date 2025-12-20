@@ -11,11 +11,11 @@ import {
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
-import MapView, { Marker, PROVIDER_DEFAULT, Circle } from 'react-native-maps';
 import Toast from 'react-native-toast-message';
 
 import styles from './styles';
 import CustomText from '../../components/common/customTextRN';
+import LeafletMapView from '../../components/common/LeafletMapView';
 import EventService from '../../api/services/EventService';
 import CategoryService from '../../api/services/CategoryService';
 import Colors from '../../constants/Colors';
@@ -273,63 +273,15 @@ const NearbyEventsScreen = () => {
         <View style={styles.container}>
             {/* Map View - Full Screen */}
             {userLocation && (
-                <MapView
-                    ref={mapRef}
-                    provider={PROVIDER_DEFAULT}
+                <LeafletMapView
                     style={styles.map}
-                    initialRegion={{
-                        latitude: userLocation.latitude,
-                        longitude: userLocation.longitude,
-                        latitudeDelta: 0.05,
-                        longitudeDelta: 0.05,
-                    }}
-                    onMapReady={() => setMapReady(true)}
-                    showsUserLocation={true}
-                    showsMyLocationButton={false}
-                    showsCompass={false}
-                    loadingEnabled={true}
-                    customMapStyle={[]}
-                    onPress={() => setSelectedEvent(null)}
-                >
-                    {/* Radius Circle */}
-                    <Circle
-                        center={{
-                            latitude: userLocation.latitude,
-                            longitude: userLocation.longitude,
-                        }}
-                        radius={radius * 1000}
-                        strokeColor="rgba(59, 130, 246, 0.3)"
-                        fillColor="rgba(59, 130, 246, 0.1)"
-                        strokeWidth={2}
-                    />
-
-                    {/* Event Markers */}
-                    {events.map((event, index) => {
-                        if (!event.latitude || !event.longitude) return null;
-
-                        const isSelected = selectedEvent?.eventId === event.eventId;
-
-                        return (
-                            <Marker
-                                key={event.eventId || index}
-                                coordinate={{
-                                    latitude: event.latitude,
-                                    longitude: event.longitude,
-                                }}
-                                onPress={() => handleMarkerPress(event)}
-                            >
-                                <View style={[
-                                    styles.customMarker,
-                                    isSelected && styles.customMarkerSelected
-                                ]}>
-                                    <CustomText style={styles.markerText}>
-                                        {event.ticketPrice === 0 ? '🎉' : '🎫'}
-                                    </CustomText>
-                                </View>
-                            </Marker>
-                        );
-                    })}
-                </MapView>
+                    userLocation={userLocation}
+                    events={events}
+                    radius={radius}
+                    selectedEvent={selectedEvent}
+                    onMarkerPress={handleMarkerPress}
+                    onMapPress={() => setSelectedEvent(null)}
+                />
             )}
 
             {/* Top Controls Overlay */}

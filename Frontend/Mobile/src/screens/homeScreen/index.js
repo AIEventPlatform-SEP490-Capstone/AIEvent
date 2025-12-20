@@ -115,7 +115,7 @@ const HomeScreen = () => {
     maxPrice: null,
     sortBy: EventSortBy.NearestTime,
   });
-  
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMoreEvents, setHasMoreEvents] = useState(true);
@@ -209,7 +209,7 @@ const HomeScreen = () => {
 
     setLoadingMore(true);
     const nextPage = currentPage + 1;
-    
+
     try {
       await loadEvents(nextPage, false, activeFilters);
       setCurrentPage(nextPage);
@@ -719,7 +719,7 @@ const HomeScreen = () => {
         </View>
       </ScrollView>
 
-      <AIChatFloating />
+      {!isStaffUser(accessToken) && <AIChatFloating />}
 
       {!isStaffUser(accessToken) && (
         <FilterModal

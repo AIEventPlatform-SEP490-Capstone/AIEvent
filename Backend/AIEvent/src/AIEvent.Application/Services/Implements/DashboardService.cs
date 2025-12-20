@@ -61,18 +61,16 @@ namespace AIEvent.Application.Services.Implements
 
             try
             {
-                var eventsQuery = GetFilteredEvents(organizerProfileId, filter)
-                    .Include(e => e.EventTags)
-                    .ThenInclude(et => et.Tag)
-                    .Include(e => e.EventCategory);
+                // Base query without Include() to avoid duplicate counting issues
+                var baseEventsQuery = GetFilteredEvents(organizerProfileId, filter);
 
                 var response = new EventStatisticsResponse();
 
-                // Total Events
-                response.TotalEvents = await eventsQuery.CountAsync();
+                // Total Events - use base query without Include()
+                response.TotalEvents = await baseEventsQuery.CountAsync();
 
-                // Events By Status
-                var eventsByStatus = await eventsQuery
+                // Events By Status - use base query without Include() since Status is a direct property
+                var eventsByStatus = await baseEventsQuery
                     .GroupBy(e => e.Status)
                     .Select(g => new EventCountByStatusResponse
                     {
@@ -84,22 +82,29 @@ namespace AIEvent.Application.Services.Implements
 
                 response.EventsByStatus = eventsByStatus;
 
-                // Events By Tag
-                var eventsByTag = await eventsQuery
-                    .SelectMany(e => e.EventTags)
-                    .GroupBy(et => new { et.TagId, et.Tag.NameTag })
+                // Events By Tag - need Include() for navigation property
+                var eventsByTagQuery = GetFilteredEvents(organizerProfileId, filter)
+                    .Include(e => e.EventTags)
+                    .ThenInclude(et => et.Tag);
+
+                var eventsByTag = await eventsByTagQuery
+                    .SelectMany(e => e.EventTags.Select(et => new { EventId = e.Id, TagId = et.TagId, TagName = et.Tag.NameTag }))
+                    .GroupBy(x => new { x.TagId, x.TagName })
                     .Select(g => new EventCountByTagResponse
                     {
                         TagId = g.Key.TagId,
-                        TagName = g.Key.NameTag,
-                        Count = g.Count()
+                        TagName = g.Key.TagName,
+                        Count = g.Select(x => x.EventId).Distinct().Count()
                     })
                     .ToListAsync();
 
                 response.EventsByTag = eventsByTag;
 
-                // Events By Category
-                var eventsByCategory = await eventsQuery
+                // Events By Category - need Include() for navigation property
+                var eventsByCategoryQuery = GetFilteredEvents(organizerProfileId, filter)
+                    .Include(e => e.EventCategory);
+
+                var eventsByCategory = await eventsByCategoryQuery
                     .GroupBy(e => new { e.EventCategoryId, e.EventCategory.CategoryName })
                     .Select(g => new EventCountByCategoryResponse
                     {
@@ -111,8 +116,8 @@ namespace AIEvent.Application.Services.Implements
 
                 response.EventsByCategory = eventsByCategory;
 
-                // Events By Date
-                var eventsByDate = await eventsQuery
+                // Events By Date - use base query without Include()
+                var eventsByDate = await baseEventsQuery
                     .GroupBy(e => e.CreatedAt.Date)
                     .Select(g => new EventCountByDateResponse
                     {
@@ -144,18 +149,15 @@ namespace AIEvent.Application.Services.Implements
                 var bookingsQuery = _unitOfWork.BookingRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(b => b.Status == BookingStatus.Completed)
+                    .Where(b => b.Status == BookingStatus.Completed && !b.IsDeleted)
                     .Where(b => eventsQuery.Any(e => e.Id == b.EventId));
 
                 if (filter?.StartDate.HasValue == true)
-                {
                     bookingsQuery = bookingsQuery.Where(b => b.CreatedAt >= filter.StartDate.Value);
-                }
+            
 
                 if (filter?.EndDate.HasValue == true)
-                {
                     bookingsQuery = bookingsQuery.Where(b => b.CreatedAt <= filter.EndDate.Value);
-                }
 
                 var response = new BuyerStatisticsResponse();
 
@@ -200,18 +202,14 @@ namespace AIEvent.Application.Services.Implements
                     .Query()
                     .AsNoTracking()
                     .Include(t => t.TicketType)
-                    .Where(t => t.Status == TicketStatus.Used)
+                    .Where(t => t.Status == TicketStatus.Used && !t.IsDeleted)
                     .Where(t => eventsQuery.Any(e => e.Id == t.TicketType.EventId));
 
                 if (filter?.StartDate.HasValue == true)
-                {
                     ticketsQuery = ticketsQuery.Where(t => t.UseAt >= filter.StartDate.Value);
-                }
 
                 if (filter?.EndDate.HasValue == true)
-                {
                     ticketsQuery = ticketsQuery.Where(t => t.UseAt <= filter.EndDate.Value);
-                }
 
                 var response = new CheckInStatisticsResponse();
 
@@ -579,7 +577,7 @@ namespace AIEvent.Application.Services.Implements
                 response.CancelledEventsCount = await _unitOfWork.EventRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(e => !e.IsDeleted && e.Status == EventStatus.Cancelled)
+                    .Where(e => !e.IsDeleted && e.Status == EventStatus.Cancelled && e.Publish == false)
                     .CountAsync();
 
                 response.PendingOrganizerRequestsCount = await _unitOfWork.OrganizerProfileRepository
@@ -964,6 +962,7 @@ namespace AIEvent.Application.Services.Implements
                               e.CompletedAt.HasValue &&
                               e.TotalAmount > 0 &&
                               e.Status == EventStatus.PaidOut && 
+                              e.Status != EventStatus.Rejected &&
                               e.CompletedAt.Value >= currentMonthStart.UtcDateTime)
                    .Select(e => new { e.PlatformFee, e.TotalAmount, e.SaleStartTime })
                    .ToListAsync();
