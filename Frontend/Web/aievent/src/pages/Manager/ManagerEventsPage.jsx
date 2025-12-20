@@ -1026,29 +1026,23 @@ const ManagerEventsPage = () => {
                     </div>
 
                     {/* Metrics pills */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-center hover:bg-white/20 transition-colors">
-                        <p className="text-xs text-white/70 mb-0.5">Đăng ký</p>
-                        <p className="text-lg font-bold text-white">
-                          {heroEvent.totalPersonJoin || heroEvent.soldQuantity || 0}
-                        </p>
-                      </div>
+                    <div className="grid grid-cols-3 gap-2">
                       <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-center hover:bg-white/20 transition-colors">
                         <p className="text-xs text-white/70 mb-0.5">Doanh thu</p>
                         <p className="text-lg font-bold text-white">
-                          {formatCurrencyShort(heroEvent.totalAmount)}
+                          {formatCurrency(heroEvent.totalAmount)}
                         </p>
                       </div>
                       <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-center hover:bg-white/20 transition-colors">
                         <p className="text-xs text-white/70 mb-0.5">Phí nền tảng</p>
                         <p className="text-lg font-bold text-white">
-                          {formatCurrencyShort(heroEvent.platformFee)}
+                          {formatCurrency(heroEvent.platformFee)}
                         </p>
                       </div>
                       <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-center hover:bg-white/20 transition-colors">
                         <p className="text-xs text-white/70 mb-0.5">Thanh toán</p>
                         <p className="text-lg font-bold text-white">
-                          {formatCurrencyShort(heroEvent.payoutAmount)}
+                          {formatCurrency(heroEvent.payoutAmount)}
                         </p>
                       </div>
                     </div>
