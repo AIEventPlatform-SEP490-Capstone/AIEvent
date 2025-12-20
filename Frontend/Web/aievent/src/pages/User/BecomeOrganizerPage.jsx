@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
@@ -25,8 +25,11 @@ export default function BecomeOrganizerPage() {
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(null);
 
-  const { createOrganizer } = useOrganizers();
+  const { createOrganizer, getOrganizers } = useOrganizers();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [taxCodeError, setTaxCodeError] = useState("");
+  const [isCheckingTaxCode, setIsCheckingTaxCode] = useState(false);
+  const taxCodeTimeoutRef = useRef(null);
 
   const { user } = useAuth();
 
@@ -58,6 +61,42 @@ export default function BecomeOrganizerPage() {
     agreeDataProcessing: false,
   });
 
+  // Kiểm tra mã số thuế trùng lặp
+  const checkTaxCodeExists = async (taxCode) => {
+    if (!taxCode || taxCode.trim() === "") {
+      setTaxCodeError("");
+      return false;
+    }
+
+    setIsCheckingTaxCode(true);
+    try {
+      // Tìm kiếm organizer có mã số thuế trùng
+      const result = await getOrganizers({ search: taxCode });
+      // Response có thể là { items: [...], totalItems: ... } hoặc array trực tiếp
+      const organizers = result?.items || result?.data || result || [];
+      
+      // Kiểm tra xem có organizer nào có mã số thuế trùng không
+      const exists = organizers.some(
+        (org) => org.taxCode && org.taxCode.trim().toLowerCase() === taxCode.trim().toLowerCase()
+      );
+
+      if (exists) {
+        setTaxCodeError("Mã số thuế này đã được sử dụng. Vui lòng nhập mã số thuế khác.");
+        return true;
+      } else {
+        setTaxCodeError("");
+        return false;
+      }
+    } catch (error) {
+      console.error("Error checking tax code:", error);
+      // Nếu có lỗi, không chặn người dùng nhưng vẫn hiển thị cảnh báo
+      setTaxCodeError("");
+      return false;
+    } finally {
+      setIsCheckingTaxCode(false);
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
     if (type === "file") {
@@ -66,10 +105,26 @@ export default function BecomeOrganizerPage() {
       setForm((prev) => ({ ...prev, [name]: checked }));
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
+      
+      // Kiểm tra mã số thuế khi người dùng nhập
+      if (name === "TaxCode") {
+        // Clear timeout cũ nếu có
+        if (taxCodeTimeoutRef.current) {
+          clearTimeout(taxCodeTimeoutRef.current);
+        }
+        
+        // Xóa lỗi cũ khi người dùng đang gõ
+        setTaxCodeError("");
+        
+        // Debounce: đợi 500ms sau khi người dùng ngừng gõ
+        taxCodeTimeoutRef.current = setTimeout(() => {
+          checkTaxCodeExists(value);
+        }, 500);
+      }
     }
   };
 
-  const validate = () => {
+  const validate = async () => {
     const required = [
       "ContactName",
       "ContactEmail",
@@ -89,12 +144,21 @@ export default function BecomeOrganizerPage() {
       toast.error("Vui lòng đồng ý với Điều khoản và xử lý dữ liệu.");
       return false;
     }
+    // Kiểm tra mã số thuế trùng lặp trước khi submit
+    if (form.TaxCode && form.TaxCode.trim() !== "") {
+      const isDuplicate = await checkTaxCodeExists(form.TaxCode);
+      if (isDuplicate) {
+        toast.error("Mã số thuế đã được sử dụng. Vui lòng nhập mã số thuế khác.");
+        return false;
+      }
+    }
     return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    const isValid = await validate();
+    if (!isValid) return;
     setIsSubmitting(true);
 
     try {
@@ -114,8 +178,23 @@ export default function BecomeOrganizerPage() {
       const result = res?.payload || res; //  Lấy payload thực tế từ Redux Toolkit
       console.log("✅ Organizer API response:", result);
 
-      //  nhận diện phản hồi thành công (AIE20100)
+      // Nếu backend trả lỗi trùng mã số thuế
+      const duplicateTax =
+        result?.statusCode === "AIE40001" ||
+        (typeof result?.message === "string" &&
+          result.message.toLowerCase().includes("tax code"));
+      if (duplicateTax) {
+        const message =
+          result?.message ||
+          "Mã số thuế này đã được sử dụng. Vui lòng nhập mã số thuế khác.";
+        setTaxCodeError(
+          "Mã số thuế này đã được sử dụng. Vui lòng nhập mã số thuế khác."
+        );
+        toast.error(message);
+        return;
+      }
 
+      //  nhận diện phản hồi thành công (AIE20100)
       if (
         result?.statusCode === "AIE20000" ||
         result?.statusCode === "AIE20100" ||
@@ -130,15 +209,16 @@ export default function BecomeOrganizerPage() {
         return;
       }
 
-      if (res?.errors) {
-        const detail = Object.entries(res.errors)
+      const responseErrors = result?.errors || res?.errors;
+      if (responseErrors) {
+        const detail = Object.entries(responseErrors)
           .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
           .join(" | ");
-        toast.error(`${res.message || "Lỗi đăng ký"} — ${detail}`);
+        toast.error(`${result?.message || res?.message || "Lỗi đăng ký"} — ${detail}`);
         return;
       }
 
-      toast.error(res?.message || "Đăng ký thất bại.");
+      toast.error(result?.message || res?.message || "Đăng ký thất bại.");
     } catch (err) {
       console.error("Submit organizer error:", err);
       toast.error("Có lỗi xảy ra khi gửi đơn.");
@@ -155,6 +235,15 @@ export default function BecomeOrganizerPage() {
       setForm((prev) => ({ ...prev, ContactEmail: user.email }));
     }
   }, [user]);
+
+  // Cleanup timeout khi component unmount
+  useEffect(() => {
+    return () => {
+      if (taxCodeTimeoutRef.current) {
+        clearTimeout(taxCodeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   //  Helper hiển thị tên file hoặc placeholder
   const renderFileName = (file) => (
@@ -192,11 +281,20 @@ export default function BecomeOrganizerPage() {
                 </div>
                 <div>
                   <Label>Mã số thuế</Label>
-                  <Input
-                    name="TaxCode"
-                    value={form.TaxCode}
-                    onChange={handleChange}
-                  />
+                  <div className="relative">
+                    <Input
+                      name="TaxCode"
+                      value={form.TaxCode}
+                      onChange={handleChange}
+                      className={taxCodeError ? "border-red-500" : ""}
+                    />
+                    {isCheckingTaxCode && (
+                      <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                    )}
+                  </div>
+                  {taxCodeError && (
+                    <p className="text-sm text-red-500 mt-1">{taxCodeError}</p>
+                  )}
                 </div>
               </div>
 
@@ -645,7 +743,11 @@ export default function BecomeOrganizerPage() {
               type="submit"
               className="w-full mt-4"
               disabled={
-                isSubmitting || !form.agreeTerms || !form.agreeDataProcessing
+                isSubmitting || 
+                !form.agreeTerms || 
+                !form.agreeDataProcessing ||
+                !!taxCodeError ||
+                isCheckingTaxCode
               }
             >
               {isSubmitting ? (
