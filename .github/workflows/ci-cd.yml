@@ -18,7 +18,7 @@ jobs:
       - name: 🔐 Import .env to Windows Environment Variables (Machine)
         shell: powershell
         run: |
-          $envFile = "$GITHUB_WORKSPACE\.env"
+          $envFile = "C:\Users\Administrator\Desktop\aievent\.env"
 
           if (!(Test-Path $envFile)) {
             Write-Error ".env file not found at $envFile"
