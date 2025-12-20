@@ -346,24 +346,24 @@ const ManagerEventsPage = () => {
       setIsLoading(false);
     }
   };
+  // Format currency đầy đủ, chính xác (không làm tròn)
   const formatCurrency = (amount) => {
     if (!amount || amount === 0) return '0đ';
+    return `${Math.round(amount).toLocaleString('vi-VN')}đ`;
+  };
 
+  // Format currency rút gọn cho hero section
+  const formatCurrencyShort = (amount) => {
+    if (!amount || amount === 0) return '0đ';
     const absAmount = Math.abs(amount);
-
     if (absAmount >= 1_000_000_000) {
-      // Tỷ
       return `${(amount / 1_000_000_000).toFixed(1).replace('.0', '')} tỷ`;
     } else if (absAmount >= 1_000_000) {
-      // Triệu
       return `${(amount / 1_000_000).toFixed(1).replace('.0', '')}M`;
     } else if (absAmount >= 1_000) {
-      // Nghìn
       return `${(amount / 1_000).toFixed(0)}K`;
-    } else {
-      // Dưới 1 nghìn thì hiển thị đầy đủ
-      return `${amount.toLocaleString('vi-VN')}đ`;
     }
+    return `${amount.toLocaleString('vi-VN')}đ`;
   };
   // With server-side pagination, we no longer need client-side filtering
   // The filtering and sorting should be handled by the API
@@ -1036,19 +1036,19 @@ const ManagerEventsPage = () => {
                       <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-center hover:bg-white/20 transition-colors">
                         <p className="text-xs text-white/70 mb-0.5">Doanh thu</p>
                         <p className="text-lg font-bold text-white">
-                          {formatCurrency(heroEvent.totalAmount)}
+                          {formatCurrencyShort(heroEvent.totalAmount)}
                         </p>
                       </div>
                       <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-center hover:bg-white/20 transition-colors">
                         <p className="text-xs text-white/70 mb-0.5">Phí nền tảng</p>
                         <p className="text-lg font-bold text-white">
-                          {formatCurrency(heroEvent.platformFee)}
+                          {formatCurrencyShort(heroEvent.platformFee)}
                         </p>
                       </div>
                       <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-center hover:bg-white/20 transition-colors">
                         <p className="text-xs text-white/70 mb-0.5">Thanh toán</p>
                         <p className="text-lg font-bold text-white">
-                          {formatCurrency(heroEvent.payoutAmount)}
+                          {formatCurrencyShort(heroEvent.payoutAmount)}
                         </p>
                       </div>
                     </div>
@@ -1544,13 +1544,7 @@ const ManagerEventsPage = () => {
                         </div>
 
                         {/* Metrics grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4 pb-4 border-b border-white/10">
-                          <div className="backdrop-blur-sm bg-gradient-to-br from-blue-100/50 to-blue-50/30 dark:from-blue-900/50 dark:to-blue-800/30 rounded-xl p-3 text-center hover:scale-105 transition-transform">
-                            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Đăng ký</p>
-                            <p className="text-base font-bold text-blue-700 dark:text-blue-400">
-                              {('totalPersonJoin' in event) ? event.totalPersonJoin : (event.soldQuantity || 0)}
-                            </p>
-                          </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 pb-4 border-b border-white/10">
                           <div className="backdrop-blur-sm bg-gradient-to-br from-green-100/50 to-green-50/30 dark:from-green-900/50 dark:to-green-800/30 rounded-xl p-3 text-center hover:scale-105 transition-transform">
                             <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Doanh thu</p>
                             <p className="text-base font-bold text-green-700 dark:text-green-400">

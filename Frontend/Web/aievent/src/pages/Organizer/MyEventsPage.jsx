@@ -332,25 +332,25 @@ const MyEventsPage = () => {
     }
     return date.toISOString();
   };
+  // Format currency đầy đủ, chính xác (không làm tròn)
   const formatCurrency = (amount) => {
-  if (!amount || amount === 0) return '0đ';
+    if (!amount || amount === 0) return '0đ';
+    return `${Math.round(amount).toLocaleString('vi-VN')}đ`;
+  };
 
-  const absAmount = Math.abs(amount);
-
-  if (absAmount >= 1_000_000_000) {
-    // Tỷ
-    return `${(amount / 1_000_000_000).toFixed(1).replace('.0', '')} tỷ`;
-  } else if (absAmount >= 1_000_000) {
-    // Triệu
-    return `${(amount / 1_000_000).toFixed(1).replace('.0', '')}M`;
-  } else if (absAmount >= 1_000) {
-    // Nghìn
-    return `${(amount / 1_000).toFixed(0)}K`;
-  } else {
-    // Dưới 1 nghìn thì hiển thị đầy đủ
+  // Format currency rút gọn cho hero section
+  const formatCurrencyShort = (amount) => {
+    if (!amount || amount === 0) return '0đ';
+    const absAmount = Math.abs(amount);
+    if (absAmount >= 1_000_000_000) {
+      return `${(amount / 1_000_000_000).toFixed(1).replace('.0', '')} tỷ`;
+    } else if (absAmount >= 1_000_000) {
+      return `${(amount / 1_000_000).toFixed(1).replace('.0', '')}M`;
+    } else if (absAmount >= 1_000) {
+      return `${(amount / 1_000).toFixed(0)}K`;
+    }
     return `${amount.toLocaleString('vi-VN')}đ`;
-  }
-};
+  };
 
   const getTabDisplayName = (tab) => {
     switch (tab) {
@@ -746,19 +746,19 @@ const MyEventsPage = () => {
                       <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-center hover:bg-white/20 transition-colors">
                         <p className="text-xs text-white/70 mb-0.5">Doanh thu</p>
                         <p className="text-lg font-bold text-white">
-                          {formatCurrency(heroEvent.totalAmount)}
+                          {formatCurrencyShort(heroEvent.totalAmount)}
                         </p>
                       </div>
                       <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-center hover:bg-white/20 transition-colors">
                         <p className="text-xs text-white/70 mb-0.5">Phí nền tảng</p>
                         <p className="text-lg font-bold text-white">
-                          {formatCurrency(heroEvent.platformFee)}
+                          {formatCurrencyShort(heroEvent.platformFee)}
                         </p>
                       </div>
                       <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-center hover:bg-white/20 transition-colors">
                         <p className="text-xs text-white/70 mb-0.5">Thanh toán</p>
                         <p className="text-lg font-bold text-white">
-                          {formatCurrency(heroEvent.payoutAmount)}
+                          {formatCurrencyShort(heroEvent.payoutAmount)}
                         </p>
                       </div>
                     </div>
