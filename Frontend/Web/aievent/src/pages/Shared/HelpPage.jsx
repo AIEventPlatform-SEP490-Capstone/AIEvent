@@ -49,19 +49,17 @@ const HelpPage = () => {
           <CardContent className="space-y-4">
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Email</p>
-              <p className="font-medium">support@aievent.vn</p>
+              <p className="font-medium">https://www.facebook.com/doublenh2509</p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Hotline</p>
-              <p className="font-medium">1900 1234 (8:00 - 22:00)</p>
+              <p className="font-medium">https://www.facebook.com/doublenh2509 (8:00 - 22:00)</p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Trung tâm hỗ trợ</p>
-              <p className="font-medium">help.aievent.vn</p>
+              <p className="font-medium">https://www.facebook.com/doublenh2509</p>
             </div>
             <div className="flex gap-3">
-              <Button variant="default">Gửi yêu cầu</Button>
-              <Button variant="outline">Chat với hỗ trợ</Button>
             </div>
           </CardContent>
         </Card>

@@ -11,4 +11,8 @@
 -keep class com.swmansion.reanimated.** { *; }
 -keep class com.facebook.react.turbomodule.** { *; }
 
+# React Native WebView
+-keep class com.reactnativecommunity.webview.** { *; }
+-dontwarn com.reactnativecommunity.webview.**
+
 # Add any project specific keep options here:
