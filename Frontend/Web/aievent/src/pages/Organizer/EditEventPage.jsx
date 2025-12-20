@@ -59,6 +59,7 @@ import CategorySelector from '../../components/Event/CategorySelector'; // Add t
 import { useCategories } from '../../hooks/useCategories';
 import { useTags } from '../../hooks/useTags';
 import { useApp } from '../../hooks/useApp';
+import { useOrganizers } from '../../hooks/useOrganizers';
 
 // Import EventStatus enum
 import { EventStatus } from '../../constants/eventConstants';
@@ -228,12 +229,16 @@ const EditEventPage = () => {
   const [isMapPickerOpen, setIsMapPickerOpen] = useState(false);
   const [selectedCoordinates, setSelectedCoordinates] = useState(null);
   
+  // Add state for organizer profile
+  const [organizerProfile, setOrganizerProfile] = useState(null);
+  
   // Redux hooks
   const { categories, loading: categoriesLoading } = useCategories();
   const { selectedTags: reduxSelectedTags, clearAllSelectedTags, selectTagForForm } = useTags();
   // const { selectedRules, clearSelectedRefundRules, selectRuleForForm } = useRefundRules();
   const { showLoading, hideLoading, updatePageTitle } = useApp();
   const { getEventById, updateEvent: updateEventAPI, loading: eventLoading } = useEvents();
+  const { getOrganizerProfile } = useOrganizers();
 
   const {
     register,
@@ -284,6 +289,15 @@ const EditEventPage = () => {
     if (eventId) {
       loadEventData();
     }
+    
+    // Fetch organizer profile
+    const fetchOrganizerProfile = async () => {
+      const profile = await getOrganizerProfile();
+      if (profile) {
+        setOrganizerProfile(profile);
+      }
+    };
+    fetchOrganizerProfile();
     
     return () => {
       clearAllSelectedTags();
@@ -673,10 +687,10 @@ const EditEventPage = () => {
       eventTags: eventTags, // Only use selected tags
       ticketTypes: ticketTypes,
       organizerEvent: {
-        organizerId: user?.id || 'preview-organizer-id',
-        companyName: user?.fullName || 'Nhà tổ chức mẫu',
-        companyDescription: 'Mô tả nhà tổ chức mẫu',
-        imgCompany: null
+        organizerId: organizerProfile?.organizerProfileId || user?.id || 'preview-organizer-id',
+        companyName: organizerProfile?.companyName || user?.fullName || 'Nhà tổ chức',
+        companyDescription: organizerProfile?.companyDescription || 'Nhà tổ chức sự kiện',
+        imgCompany: organizerProfile?.imgCompany || null
       }
     };
     
@@ -2089,9 +2103,17 @@ const EditEventPage = () => {
                     <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 animate-pulse opacity-0 group-hover:opacity-100 transition-opacity duration-300 scale-110" />
                     {/* White border ring */}
                     <div className="relative w-28 h-28 rounded-full bg-white p-1.5 shadow-lg group-hover:shadow-xl transition-all duration-300">
-                      <div className="w-full h-full rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-all duration-300">
-                        <User className="h-12 w-12 text-blue-600" />
-                      </div>
+                      {organizerProfile?.imgCompany ? (
+                        <img
+                          src={organizerProfile.imgCompany}
+                          alt={organizerProfile.companyName || "Organizer"}
+                          className="w-full h-full rounded-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-all duration-300">
+                          <User className="h-12 w-12 text-blue-600" />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2102,10 +2124,10 @@ const EditEventPage = () => {
                     {/* Content */}
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-800 text-xl group-hover:text-blue-700 transition-colors duration-300">
-                        {user?.fullName || "Nhà tổ chức"}
+                        {organizerProfile?.companyName || user?.fullName || "Nhà tổ chức"}
                       </h3>
                       <p className="text-gray-500 text-sm mt-1 line-clamp-1 group-hover:text-gray-600 transition-colors duration-300">
-                        Nhà tổ chức sự kiện
+                        {organizerProfile?.companyDescription || "Nhà tổ chức sự kiện"}
                       </p>
                     </div>
 

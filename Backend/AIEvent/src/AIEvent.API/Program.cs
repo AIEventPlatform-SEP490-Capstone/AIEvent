@@ -20,17 +20,17 @@ namespace AIEvent.API
             var builder = WebApplication.CreateBuilder(args);
 
             // Chỉ cấu hình HTTPS khi chạy Production
-            //if (builder.Environment.IsProduction())
-            //{
-            //    builder.WebHost.ConfigureKestrel(options =>
-            //    {
-            //        options.ListenAnyIP(80); // HTTP để redirect hoặc ACME
-            //        options.ListenAnyIP(443, listenOptions =>
-            //        {
-            //            listenOptions.UseHttps("/https/aievent.duckdns.org.pfx", builder.Configuration["PFX_PASSWORD"]);
-            //        });
-            //    });
-            //}
+            // if (builder.Environment.IsProduction())
+            // {
+            //     builder.WebHost.ConfigureKestrel(options =>
+            //     {
+            //         options.ListenAnyIP(80); // HTTP để redirect hoặc ACME
+            //         options.ListenAnyIP(443, listenOptions =>
+            //         {
+            //             listenOptions.UseHttps("/https/aievent.duckdns.org.pfx", builder.Configuration["PFX_PASSWORD"]);
+            //         });
+            //     });
+            // }
 
             
             // Add services to the container.
@@ -118,18 +118,18 @@ namespace AIEvent.API
             app.UseAuthentication();
             app.UseAuthorization();
 
-            //var wellKnownPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", ".well-known");
-            //if (!Directory.Exists(wellKnownPath))
-            //{
-            //    Directory.CreateDirectory(wellKnownPath);
-            //}
+            // var wellKnownPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", ".well-known");
+            // if (!Directory.Exists(wellKnownPath))
+            // {
+            //     Directory.CreateDirectory(wellKnownPath);
+            // }
 
-            //app.UseStaticFiles(new StaticFileOptions
-            //{
-            //    ServeUnknownFileTypes = true,
-            //    FileProvider = new PhysicalFileProvider(wellKnownPath),
-            //    RequestPath = "/.well-known"
-            //});
+            // app.UseStaticFiles(new StaticFileOptions
+            // {
+            //     ServeUnknownFileTypes = true,
+            //     FileProvider = new PhysicalFileProvider(wellKnownPath),
+            //     RequestPath = "/.well-known"
+            // });
 
             app.UseHangfireDashboard("/hangfire");
 

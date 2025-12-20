@@ -1,41 +1,58 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { dashboardAPI } from "../../api/dashboardAPI";
+import { EventStatus, EventStatusDisplay } from "../../constants/eventConstants";
 
 import { Card } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
-import { 
-  Select, SelectContent, SelectItem, 
-  SelectTrigger, SelectValue 
+import {
+  Select, SelectContent, SelectItem,
+  SelectTrigger, SelectValue
 } from "../../components/ui/select";
 
-import { 
-  ChevronLeft, ChevronRight, Search, Calendar, 
-  Users, Eye, Filter, ArrowUpDown 
+import {
+  ChevronLeft, ChevronRight, Search, Calendar,
+  Users, Eye, Filter, ArrowUpDown
 } from "lucide-react";
 
 const StatusBadge = ({ status }) => {
   const normalized = String(status || "").toLowerCase();
 
   const configs = {
-    approved: { 
-      label: "Đã duyệt",
-      className: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" 
+    approved: {
+      label: EventStatusDisplay[EventStatus.Approved] || "Đã phê duyệt",
+      className: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
     },
-    pendingapproval: { 
-      label: "Chờ duyệt",
-      className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" 
+    pendingapproval: {
+      label: EventStatusDisplay[EventStatus.PendingApproval] || "Chờ phê duyệt",
+      className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
     },
-    rejected: { 
-      label: "Từ chối",
-      className: "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100" 
+    rejected: {
+      label: EventStatusDisplay[EventStatus.Rejected] || "Bị từ chối",
+      className: "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+    },
+    cancelled: {
+      label: EventStatusDisplay[EventStatus.Cancelled] || "Đã hủy",
+      className: "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+    },
+    waitingforpayout: {
+      label: EventStatusDisplay[EventStatus.WaitingForPayout] || "Chờ thanh toán",
+      className: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+    },
+    errorpayment: {
+      label: EventStatusDisplay[EventStatus.ErrorPayment] || "Lỗi thanh toán",
+      className: "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+    },
+    paidout: {
+      label: EventStatusDisplay[EventStatus.PaidOut] || "Đã thanh toán",
+      className: "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
     },
   };
 
-  const config = configs[normalized] || { 
-    label: status,
-    className: "bg-gray-50 text-gray-700 border-gray-200" 
+  const config = configs[normalized] || {
+    label: EventStatusDisplay[status] || status,
+    className: "bg-gray-50 text-gray-700 border-gray-200"
   };
 
   return (
@@ -204,21 +221,21 @@ const AdminEventManagement = () => {
           {!loading && !error && filteredSortedItems.length > 0 && (
             <div className="divide-y divide-gray-100">
               {filteredSortedItems.map((ev, idx) => (
-                <div 
-                  key={ev.eventId} 
+                <div
+                  key={ev.eventId}
                   className="p-6 hover:bg-gray-50/50 transition-all group"
                   style={{
                     animation: `fadeIn 0.3s ease-out ${idx * 0.05}s both`
                   }}
                 >
                   <div className="flex flex-col lg:flex-row gap-6">
-                    
+
                     {/* IMAGE */}
                     <div className="flex-shrink-0">
                       {ev.imageUrl ? (
-                        <img 
-                          src={ev.imageUrl} 
-                          alt={ev.title} 
+                        <img
+                          src={ev.imageUrl}
+                          alt={ev.title}
                           className="w-full lg:w-32 h-32 object-cover rounded-xl border border-gray-200"
                         />
                       ) : (
@@ -257,7 +274,7 @@ const AdminEventManagement = () => {
                           <StatusBadge status={ev.status} />
                         </div>
                       </div>
-                    </div>       
+                    </div>
 
                   </div>
                 </div>
@@ -273,25 +290,25 @@ const AdminEventManagement = () => {
               </div>
 
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
-                  disabled={!list.hasPreviousPage} 
+                  disabled={!list.hasPreviousPage}
                   onClick={() => setPageNumber(p => Math.max(1, p - 1))}
                   className="border-gray-200"
                 >
-                  <ChevronLeft className="h-4 w-4 mr-1" /> 
+                  <ChevronLeft className="h-4 w-4 mr-1" />
                   Trước
                 </Button>
 
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
-                  disabled={!list.hasNextPage} 
+                  disabled={!list.hasNextPage}
                   onClick={() => setPageNumber(p => p + 1)}
                   className="border-gray-200"
                 >
-                  Sau 
+                  Sau
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>
