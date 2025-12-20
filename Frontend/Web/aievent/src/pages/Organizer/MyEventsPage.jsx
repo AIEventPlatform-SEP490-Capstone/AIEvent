@@ -602,8 +602,15 @@ const MyEventsPage = () => {
     return config[status] || config.default;
   };
 
-  // Get hero event for featured display
-  const heroEvent = events.length > 0 ? events[0] : null;
+  // Get hero event for featured display - event with highest revenue from all events
+  const heroEvent = useMemo(() => {
+    if (!allEventsForStats.length) return null;
+    return allEventsForStats.reduce((best, current) => {
+      const currentRevenue = current.totalAmount || 0;
+      const bestRevenue = best?.totalAmount || 0;
+      return currentRevenue > bestRevenue ? current : best;
+    }, null);
+  }, [allEventsForStats]);
   const heroEventOccupancyRate = heroEvent ? Math.round((heroEvent.totalPersonJoin || 0) / (heroEvent.totalPerson || 1) * 100) : 0;
 
   return (
