@@ -9,6 +9,21 @@ import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Clock, ArrowLeft, Mail, Phone } from "lucide-react";
 
+// Hàm dịch loại hình tổ chức sang tiếng Việt
+const getOrganizationTypeLabel = (type) => {
+  const labels = {
+    PrivateCompany: "Công ty tư nhân",
+    StateEnterprise: "Doanh nghiệp nhà nước",
+    NonProfit: "Tổ chức phi lợi nhuận",
+    IndividualBusiness: "Hộ kinh doanh",
+    StartUp: "Start-up",
+    CommunityClub: "Cộng đồng / CLB",
+    SchoolUniversity: "Trường / Đại học",
+    Other: "Khác",
+  };
+  return labels[type] || type || "—";
+};
+
 export default function ApplicationStatusPage() {
   const [application, setApplication] = useState(null);
 
@@ -129,7 +144,7 @@ export default function ApplicationStatusPage() {
                 </div>
                 <div>
                   <Label className="font-semibold">Loại hình</Label>
-                  <p className="mt-1">{application.OrganizationType || "—"}</p>
+                  <p className="mt-1">{getOrganizationTypeLabel(application.OrganizationType)}</p>
                 </div>
                 <div>
                   <Label className="font-semibold">Địa chỉ</Label>
