@@ -1127,9 +1127,8 @@ namespace AIEvent.Application.Services.Implements
                     .Query(false)
                     .AsNoTracking()
                     .Where(o => o.Status == status &&
-                                o.ConfirmAt.HasValue &&
-                                o.ConfirmAt.Value.Year == year)
-                    .GroupBy(o => o.ConfirmAt!.Value.Month)
+                                o.CreatedAt.Year == year)
+                    .GroupBy(o => o.CreatedAt.Month)
                     .Select(g => new
                     {
                         Month = g.Key,
@@ -1164,9 +1163,8 @@ namespace AIEvent.Application.Services.Implements
                     .Query(false)
                     .AsNoTracking()
                     .Where(e => e.Status == status &&
-                                e.RequireApprovalAt.HasValue &&
-                                e.RequireApprovalAt.Value.Year == year)
-                    .GroupBy(e => e.RequireApprovalAt!.Value.Month)
+                                e.CreatedAt.Year == year)
+                    .GroupBy(e => e.CreatedAt.Month)
                     .Select(g => new
                     {
                         Month = g.Key,
@@ -1203,8 +1201,7 @@ namespace AIEvent.Application.Services.Implements
                     .Where(e => e.CreatedAt.Year == year &&
                                 !e.IsDeleted && 
                                 e.Status != EventStatus.PendingApproval && 
-                                e.Status != EventStatus.Rejected && 
-                                e.Publish == true)
+                                e.Status != EventStatus.Rejected)
                     .GroupBy(e => e.CreatedAt.Month)
                     .Select(g => new
                     {
