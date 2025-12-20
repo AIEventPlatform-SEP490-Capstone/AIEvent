@@ -537,6 +537,7 @@ namespace AIEvent.Application.Services.Implements
                 var selectedMonthEnd = selectedMonthStart.AddMonths(1).AddTicks(-1);
                 
                 var currentMonthStart = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero);
+                var currentMonthEnd = currentMonthStart.AddMonths(1).AddTicks(-1);
                 var lastMonthStart = currentMonthStart.AddMonths(-1);
                 var lastMonthEnd = currentMonthStart.AddTicks(-1);
 
@@ -559,6 +560,52 @@ namespace AIEvent.Application.Services.Implements
                     response.MonthlyUserGrowthPercentage = 100;
                 else
                     response.MonthlyUserGrowthPercentage = 0;
+
+                // Tính toán GrowthPercentage cho Tổ chức
+                var currentMonthOrganizers = await _unitOfWork.OrganizerProfileRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(o => !o.IsDeleted && o.Status == OrganizerProfileStatus.Approved && 
+                                o.ConfirmAt.HasValue && o.ConfirmAt.Value >= currentMonthStart)
+                    .CountAsync();
+
+                var lastMonthOrganizers = await _unitOfWork.OrganizerProfileRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(o => !o.IsDeleted && o.Status == OrganizerProfileStatus.Approved && 
+                                o.ConfirmAt.HasValue &&
+                                o.ConfirmAt.Value >= lastMonthStart && o.ConfirmAt.Value <= lastMonthEnd)
+                    .CountAsync();
+
+                if (lastMonthOrganizers > 0)
+                    response.MonthlyOrganizerGrowthPercentage = ((decimal)(currentMonthOrganizers - lastMonthOrganizers) / lastMonthOrganizers) * 100;
+                else if (currentMonthOrganizers > 0)
+                    response.MonthlyOrganizerGrowthPercentage = 100;
+                else
+                    response.MonthlyOrganizerGrowthPercentage = 0;
+
+                // Tính toán GrowthPercentage cho Sự kiện
+                var currentMonthEvents = await _unitOfWork.EventRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(e => !e.IsDeleted && e.Publish == true && e.Status == EventStatus.Approved &&
+                                e.RequireApprovalAt.HasValue && e.RequireApprovalAt.Value >= currentMonthStart)
+                    .CountAsync();
+
+                var lastMonthEvents = await _unitOfWork.EventRepository
+                    .Query()
+                    .AsNoTracking()
+                    .Where(e => !e.IsDeleted && e.Publish == true && e.Status == EventStatus.Approved &&
+                                e.RequireApprovalAt.HasValue &&
+                                e.RequireApprovalAt.Value >= lastMonthStart && e.RequireApprovalAt.Value <= lastMonthEnd)
+                    .CountAsync();
+
+                if (lastMonthEvents > 0)
+                    response.MonthlyEventGrowthPercentage = ((decimal)(currentMonthEvents - lastMonthEvents) / lastMonthEvents) * 100;
+                else if (currentMonthEvents > 0)
+                    response.MonthlyEventGrowthPercentage = 100;
+                else
+                    response.MonthlyEventGrowthPercentage = 0;
                  
                 response.TotalOrganizers = await _unitOfWork.OrganizerProfileRepository
                     .Query()
@@ -661,6 +708,26 @@ namespace AIEvent.Application.Services.Implements
                                e.CompletedAt.Value >= selectedMonthStart.UtcDateTime && 
                                e.CompletedAt.Value <= selectedMonthEnd.UtcDateTime)
                     .Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount, e.SaleStartTime, allSystemSettings, defaultSetting));
+
+                // Tính toán GrowthPercentage cho Doanh thu
+                var currentMonthRevenue = allCompletedEvents
+                    .Where(e => e.CompletedAt.HasValue && 
+                               e.CompletedAt.Value >= currentMonthStart.UtcDateTime && 
+                               e.CompletedAt.Value <= currentMonthEnd.UtcDateTime)
+                    .Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount, e.SaleStartTime, allSystemSettings, defaultSetting));
+
+                var lastMonthRevenue = allCompletedEvents
+                    .Where(e => e.CompletedAt.HasValue && 
+                               e.CompletedAt.Value >= lastMonthStart.UtcDateTime && 
+                               e.CompletedAt.Value <= lastMonthEnd.UtcDateTime)
+                    .Sum(e => CalculatePlatformFeeForEvent(e.PlatformFee, e.TotalAmount, e.SaleStartTime, allSystemSettings, defaultSetting));
+
+                if (lastMonthRevenue > 0)
+                    response.MonthlyRevenueGrowthPercentage = ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
+                else if (currentMonthRevenue > 0)
+                    response.MonthlyRevenueGrowthPercentage = 100;
+                else
+                    response.MonthlyRevenueGrowthPercentage = 0;
                  
                 var startDate = now.AddMonths(-12);
                 DateTimeOffset? endDate = null;
