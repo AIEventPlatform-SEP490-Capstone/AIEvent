@@ -7,7 +7,9 @@ namespace AIEvent.Application.DTOs.Dashboard
         public int TotalUsers { get; set; }
         public decimal MonthlyUserGrowthPercentage { get; set; }
         public int TotalOrganizers { get; set; }
+        public decimal MonthlyOrganizerGrowthPercentage { get; set; }
         public int TotalEvents { get; set; }
+        public decimal MonthlyEventGrowthPercentage { get; set; }
         public int PendingEventsCount { get; set; }
         public int CancelledEventsCount { get; set; }
         public int PendingOrganizerRequestsCount { get; set; }
@@ -26,6 +28,7 @@ namespace AIEvent.Application.DTOs.Dashboard
         public decimal TotalRevenue { get; set; }
         public decimal RevenueToday { get; set; }
         public decimal RevenueThisMonth { get; set; }
+        public decimal MonthlyRevenueGrowthPercentage { get; set; }
         
         public List<MonthlyStatisticsResponse> MonthlyStatistics { get; set; } = new List<MonthlyStatisticsResponse>();
     }

@@ -544,6 +544,7 @@ const AdminDashboard = () => {
             {activeSection === 'organizers' && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <SmallStatCard title="Tổng tổ chức" value={(overview?.totalOrganizers ?? 0).toLocaleString()} icon={Building2} />
+                <SmallStatCard title="Tăng trưởng tháng" value={`${overview?.monthlyOrganizerGrowthPercentage ?? 0}%`} icon={TrendingUp} />
                 <SmallStatCard title="Yêu cầu chờ duyệt" value={(overview?.pendingOrganizerRequestsCount ?? 0).toLocaleString()} icon={AlertCircle} />
               </div>
             )}
@@ -552,6 +553,7 @@ const AdminDashboard = () => {
               <div className="space-y-5">
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   <InlineStat label="Tổng sự kiện" value={(overview?.totalEvents ?? 0).toLocaleString()} icon={Calendar} />
+                  <InlineStat label="Tăng trưởng tháng" value={`${overview?.monthlyEventGrowthPercentage ?? 0}%`} icon={TrendingUp} />
                   <InlineStat label="Sự kiện chờ duyệt" value={(overview?.pendingEventsCount ?? 0).toLocaleString()} icon={AlertCircle} />
                   <InlineStat label="Sự kiện đã hủy" value={(overview?.cancelledEventsCount ?? 0).toLocaleString()} icon={XCircle} />
                   <InlineStat label="Booking hôm nay" value={(overview?.bookingsToday ?? 0).toLocaleString()} icon={Ticket} />
@@ -567,9 +569,10 @@ const AdminDashboard = () => {
 
             {activeSection === 'revenue' && (
               <div className="grid gap-4 sm:grid-cols-2">
-                <SmallStatCard title="Doanh thu hôm nay" value={`${(overview?.revenueToday ?? 0)} VNĐ`} icon={DollarSign} />
-                <SmallStatCard title="Doanh thu tháng" value={`${(overview?.revenueThisMonth ?? 0)} VNĐ`} icon={DollarSign} />
-                <SmallStatCard title="Tổng doanh thu" value={`${(overview?.totalRevenue ?? 0)} VNĐ`} icon={DollarSign} />
+                <SmallStatCard title="Doanh thu hôm nay" value={`${(overview?.revenueToday ?? 0).toLocaleString()} VNĐ`} icon={DollarSign} />
+                <SmallStatCard title="Doanh thu tháng" value={`${(overview?.revenueThisMonth ?? 0).toLocaleString()} VNĐ`} icon={DollarSign} />
+                <SmallStatCard title="Tổng doanh thu" value={`${(overview?.totalRevenue ?? 0).toLocaleString()} VNĐ`} icon={DollarSign} />
+                <SmallStatCard title="Tăng trưởng tháng" value={`${overview?.monthlyOrganizerGrowthPercentage ?? 0}%`} icon={TrendingUp} />
               </div>
             )}
           </div>
