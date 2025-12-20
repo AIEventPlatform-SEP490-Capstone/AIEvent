@@ -66,11 +66,15 @@ namespace AIEvent.Application.Services.Implements
 
                 var response = new EventStatisticsResponse();
 
-                // Total Events - use base query without Include()
-                response.TotalEvents = await baseEventsQuery.CountAsync();
+                response.TotalEvents = await baseEventsQuery
+                    .Select(e => e.Id)
+                    .Distinct()
+                    .CountAsync();
 
                 // Events By Status - use base query without Include() since Status is a direct property
                 var eventsByStatus = await baseEventsQuery
+                    .Select(e => new { e.Id, e.Status })
+                    .Distinct()
                     .GroupBy(e => e.Status)
                     .Select(g => new EventCountByStatusResponse
                     {
@@ -577,7 +581,7 @@ namespace AIEvent.Application.Services.Implements
                 response.CancelledEventsCount = await _unitOfWork.EventRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(e => !e.IsDeleted && e.Status == EventStatus.Cancelled && e.Publish == false)
+                    .Where(e => !e.IsDeleted && e.Status == EventStatus.Cancelled && e.Publish == true)
                     .CountAsync();
 
                 response.PendingOrganizerRequestsCount = await _unitOfWork.OrganizerProfileRepository
@@ -943,6 +947,7 @@ namespace AIEvent.Application.Services.Implements
                     .Where(e => !e.IsDeleted 
                             && e.CreatedAt >= currentMonthStart 
                             && e.Status != EventStatus.PendingApproval
+                            && e.Status != EventStatus.Rejected
                             && e.Publish == true)
                     .CountAsync();
 
@@ -1242,7 +1247,10 @@ namespace AIEvent.Application.Services.Implements
                 var totalApprovedEvents = await _unitOfWork.EventRepository
                     .Query(false)
                     .AsNoTracking()
-                    .CountAsync(e => e.Status != EventStatus.PendingApproval && !e.IsDeleted);
+                    .CountAsync(e => e.Status != EventStatus.PendingApproval 
+                                && !e.IsDeleted 
+                                && e.Status != EventStatus.Rejected
+                                && e.Publish == true);
 
                 var result = new ApprovedSummaryResponse
                 {
