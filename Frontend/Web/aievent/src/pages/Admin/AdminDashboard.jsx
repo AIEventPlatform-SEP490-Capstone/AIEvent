@@ -384,6 +384,7 @@ const AdminDashboard = () => {
           value={(overview?.totalUsers ?? 0).toLocaleString()}
           changeText={`${overview?.monthlyUserGrowthPercentage ?? 0}%`}
           icon={Users}
+          isNegative={(overview?.monthlyUserGrowthPercentage ?? 0) < 0}
           gradient="bg-gradient-to-br from-pink-400 via-pink-500 to-orange-400"
           onClick={() => openDetail('users')}
         />
@@ -393,7 +394,7 @@ const AdminDashboard = () => {
           changeText={`${overview?.monthlyOrganizerGrowthPercentage ?? 0}%`}
           icon={Building2}
           gradient="bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600"
-          isNegative
+          isNegative={(overview?.monthlyOrganizerGrowthPercentage ?? 0) < 0}
           onClick={() => openDetail('organizers')}
         />
         <GradientStatCard
@@ -401,6 +402,7 @@ const AdminDashboard = () => {
           value={(overview?.totalEvents ?? 0).toLocaleString()}
           changeText={`${overview?.monthlyEventGrowthPercentage ?? 0}%`}
           icon={Calendar}
+          isNegative={(overview?.monthlyEventGrowthPercentage ?? 0) < 0}
           gradient="bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-500"
           onClick={() => openDetail('events')}
         />
@@ -409,6 +411,7 @@ const AdminDashboard = () => {
           value={`${(overview?.totalRevenue ?? 0).toLocaleString()} VNĐ`}
           changeText={`${overview?.monthlyRevenueGrowthPercentage ?? 0}%`}
           icon={DollarSign}
+          isNegative={(overview?.monthlyRevenueGrowthPercentage ?? 0) < 0}
           gradient="bg-gradient-to-br from-purple-400 via-purple-500 to-indigo-500"
           onClick={() => openDetail('revenue')}
         />
