@@ -1016,7 +1016,7 @@ namespace AIEvent.Application.Services.Implements
                     else
                     {
                         var payoutDate = DateTime.UtcNow;
-                        ev.PlatformFee = 0;
+                        ev.PlatformFee = platformFee;
                         ev.PayoutAmount = 0;
                         ev.Status = EventStatus.PaidOut;
                         ev.PaidOutAt = payoutDate;
@@ -1027,7 +1027,7 @@ namespace AIEvent.Application.Services.Implements
                             EventId = ev.Id,
                             EventName = ev.Title,
                             GrossRevenue = 0,
-                            PlatformFee = 0,
+                            PlatformFee = platformFee,
                             NetRevenue = 0,
                             ReportMonth = payoutDate.Month,
                             ReportYear = payoutDate.Year,
