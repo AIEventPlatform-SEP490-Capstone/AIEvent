@@ -332,25 +332,25 @@ const MyEventsPage = () => {
     }
     return date.toISOString();
   };
+  // Format currency đầy đủ, chính xác (không làm tròn)
   const formatCurrency = (amount) => {
-  if (!amount || amount === 0) return '0đ';
+    if (!amount || amount === 0) return '0đ';
+    return `${Math.round(amount).toLocaleString('vi-VN')}đ`;
+  };
 
-  const absAmount = Math.abs(amount);
-
-  if (absAmount >= 1_000_000_000) {
-    // Tỷ
-    return `${(amount / 1_000_000_000).toFixed(1).replace('.0', '')} tỷ`;
-  } else if (absAmount >= 1_000_000) {
-    // Triệu
-    return `${(amount / 1_000_000).toFixed(1).replace('.0', '')}M`;
-  } else if (absAmount >= 1_000) {
-    // Nghìn
-    return `${(amount / 1_000).toFixed(0)}K`;
-  } else {
-    // Dưới 1 nghìn thì hiển thị đầy đủ
+  // Format currency rút gọn cho hero section
+  const formatCurrencyShort = (amount) => {
+    if (!amount || amount === 0) return '0đ';
+    const absAmount = Math.abs(amount);
+    if (absAmount >= 1_000_000_000) {
+      return `${(amount / 1_000_000_000).toFixed(1).replace('.0', '')} tỷ`;
+    } else if (absAmount >= 1_000_000) {
+      return `${(amount / 1_000_000).toFixed(1).replace('.0', '')}M`;
+    } else if (absAmount >= 1_000) {
+      return `${(amount / 1_000).toFixed(0)}K`;
+    }
     return `${amount.toLocaleString('vi-VN')}đ`;
-  }
-};
+  };
 
   const getTabDisplayName = (tab) => {
     switch (tab) {
@@ -602,8 +602,15 @@ const MyEventsPage = () => {
     return config[status] || config.default;
   };
 
-  // Get hero event for featured display
-  const heroEvent = events.length > 0 ? events[0] : null;
+  // Get hero event for featured display - event with highest revenue from all events
+  const heroEvent = useMemo(() => {
+    if (!allEventsForStats.length) return null;
+    return allEventsForStats.reduce((best, current) => {
+      const currentRevenue = current.totalAmount || 0;
+      const bestRevenue = best?.totalAmount || 0;
+      return currentRevenue > bestRevenue ? current : best;
+    }, null);
+  }, [allEventsForStats]);
   const heroEventOccupancyRate = heroEvent ? Math.round((heroEvent.totalPersonJoin || 0) / (heroEvent.totalPerson || 1) * 100) : 0;
 
   return (
@@ -736,13 +743,7 @@ const MyEventsPage = () => {
                     </div>
 
                     {/* Metrics pills */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-center hover:bg-white/20 transition-colors">
-                        <p className="text-xs text-white/70 mb-0.5">Đăng ký</p>
-                        <p className="text-lg font-bold text-white">
-                          {heroEvent.totalPersonJoin || heroEvent.soldQuantity || 0}
-                        </p>
-                      </div>
+                    <div className="grid grid-cols-3 gap-2">
                       <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-center hover:bg-white/20 transition-colors">
                         <p className="text-xs text-white/70 mb-0.5">Doanh thu</p>
                         <p className="text-lg font-bold text-white">
