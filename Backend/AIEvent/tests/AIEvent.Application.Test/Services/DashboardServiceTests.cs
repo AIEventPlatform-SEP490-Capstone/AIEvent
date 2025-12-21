@@ -1,4 +1,4 @@
-﻿using AIEvent.Application.Constants;
+using AIEvent.Application.Constants;
 using AIEvent.Application.DTOs.Dashboard;
 using AIEvent.Application.Services.Implements;
 using AIEvent.Application.Services.Interfaces;
@@ -266,7 +266,8 @@ namespace AIEvent.Application.Test.Services
                     },
                     ImgListEvent = "image1.jpg",
                     SoldQuantity = 10,
-                    Status = EventStatus.Approved
+                    Status = EventStatus.Approved,
+                    Publish = true
                 }
             };
 
@@ -315,7 +316,8 @@ namespace AIEvent.Application.Test.Services
                     },
                     ImgListEvent = "image1.jpg",
                     SoldQuantity = 10,
-                    Status = EventStatus.Approved
+                    Status = EventStatus.Approved,
+                    Publish = true
                 }
             };
 
@@ -363,7 +365,8 @@ namespace AIEvent.Application.Test.Services
                     },
                     ImgListEvent = "image1.jpg",
                     SoldQuantity = 10,
-                    Status = EventStatus.Approved
+                    Status = EventStatus.Approved,
+                    Publish = true
                 },
                 new Event
                 {
@@ -389,7 +392,8 @@ namespace AIEvent.Application.Test.Services
                     },
                     ImgListEvent = "image2.jpg",
                     SoldQuantity = 20,
-                    Status = EventStatus.Approved
+                    Status = EventStatus.Approved,
+                    Publish = true
                 },
                 new Event
                 {
@@ -415,7 +419,8 @@ namespace AIEvent.Application.Test.Services
                     },
                     ImgListEvent = "image3.jpg",
                     SoldQuantity = 30,
-                    Status = EventStatus.Approved
+                    Status = EventStatus.Approved,
+                    Publish = true
                 }
             };
 
