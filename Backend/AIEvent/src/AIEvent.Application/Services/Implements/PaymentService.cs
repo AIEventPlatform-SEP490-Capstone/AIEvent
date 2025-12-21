@@ -10,6 +10,8 @@ using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using AutoMapper;
+using Hangfire;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -310,8 +312,25 @@ namespace AIEvent.Application.Services.Implements
             if (paymentInfo == null || paymentInfo.IsDeleted)
                 return ErrorResponse.FailureResult("Payment information not found or inactive", ErrorCodes.NotFound);
             var referenceId = GenerateOrderCode().ToString();
+            var balanceBefore = wallet.Balance;
+            var balanceAfter = balanceBefore - request.Amount;
+
             try
             {
+                var affected = await _unitOfWork.ExecuteSqlRawAsync(@"
+                    UPDATE Wallets
+                    SET Balance = Balance - @amount
+                    WHERE UserId = @userId
+                      AND Balance >= @amount
+                      AND IsDeleted = 0",
+                    new SqlParameter("@amount", request.Amount),
+                    new SqlParameter("@userId", userId));
+
+                if (affected == 0)
+                    return ErrorResponse.FailureResult(
+                        "Insufficient balance or wallet is being processed",
+                        ErrorCodes.InternalServerError);
+
                 var amountAfterFees = request.Amount - 4000;
                 var payoutRequest = new PayoutRequest
                 {
@@ -324,17 +343,18 @@ namespace AIEvent.Application.Services.Implements
                 };
                 var payoutResponse = await _payOSService.CreatePayoutAsync(payoutRequest);
 
+                if (payoutResponse.ApprovalState != PayoutApprovalState.Completed)
+                    throw new Exception($"PayOS payout failed: {payoutResponse.ApprovalState}");
+
                 var result = await _transactionHelper.ExecuteInTransactionAsync(async () =>
                 {
-                    wallet.Balance -= request.Amount;
-
                     var transaction = new WalletTransaction
                     {
                         OrderCode = referenceId,
                         WalletId = wallet.Id,
                         Amount = request.Amount,
-                        BalanceBefore = wallet.Balance + request.Amount, 
-                        BalanceAfter = wallet.Balance,
+                        BalanceBefore = balanceBefore, 
+                        BalanceAfter = balanceAfter,
                         Type = TransactionType.Withdraw,
                         Direction = TransactionDirection.Out,
                         Status = TransactionStatus.Success,
@@ -346,8 +366,6 @@ namespace AIEvent.Application.Services.Implements
                     };
 
                     await _unitOfWork.WalletTransactionRepository.AddAsync(transaction);
-                    await _unitOfWork.WalletRepository.UpdateAsync(wallet);
-
                     return Result.Success();
                 });
 
@@ -358,13 +376,21 @@ namespace AIEvent.Application.Services.Implements
             }
             catch (Exception ex)
             {
-                var transaction = new WalletTransaction
+                await _unitOfWork.ExecuteSqlRawAsync(@"
+                    UPDATE Wallets
+                    SET Balance = Balance + @amount
+                    WHERE UserId = @userId
+                      AND IsDeleted = 0",
+                    new SqlParameter("@amount", request.Amount),
+                    new SqlParameter("@userId", userId));
+
+                var failedTransaction = new WalletTransaction
                 {
                     OrderCode = referenceId,
                     WalletId = wallet.Id,
                     Amount = request.Amount,
-                    BalanceBefore = wallet.Balance,
-                    BalanceAfter = wallet.Balance,
+                    BalanceBefore = balanceBefore,
+                    BalanceAfter = balanceBefore,
                     Type = TransactionType.Withdraw,
                     Direction = TransactionDirection.Out,
                     Status = TransactionStatus.Failed,
@@ -372,12 +398,13 @@ namespace AIEvent.Application.Services.Implements
                     ReferenceId = userId,
                     ReferenceType = ReferenceType.WithdrawRequest,
                 };
-                await _unitOfWork.WalletTransactionRepository.AddAsync(transaction);
+                await _unitOfWork.WalletTransactionRepository.AddAsync(failedTransaction);
                 await _unitOfWork.SaveChangesAsync();
                 return ErrorResponse.FailureResult($"Withdraw failed: {ex.Message}", ErrorCodes.InternalServerError);
             }
         }
 
+        [DisableConcurrentExecution(60 * 60 * 5)]
         public async Task ProcessPendingPayoutsAsync()
         {
                 var allSettings = await _unitOfWork.SystemSettingRepository
