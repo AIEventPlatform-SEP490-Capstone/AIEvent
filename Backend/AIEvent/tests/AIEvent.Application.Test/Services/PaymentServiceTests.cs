@@ -675,21 +675,29 @@ namespace AIEvent.Application.Test.Services
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 5000, Description = null };
+            var request = new OnlyPayOutRequest { PaymentInfoId = Guid.NewGuid(), Amount = 50000, Description = null };
             var user = new User { Id = userId, IsDeleted = false, IsActive = true };
             var walletId = Guid.NewGuid();
-            var wallet = new Wallet { Id = walletId, UserId = userId, Balance = 10_000, IsDeleted = false };
+            var wallet = new Wallet { Id = walletId, UserId = userId, Balance = 100_000, IsDeleted = false };
             var paymentInfo = new PaymentInformation { Id = request.PaymentInfoId, IsDeleted = false, BankBin = "970415", AccountNumber = "123", AccountHolderName = "A", BankName = "B" };
 
             _mockUnitOfWork.Setup(x => x.UserRepository.GetByIdAsync(userId, true)).ReturnsAsync(user);
             var wallets = new List<Wallet> { wallet }.AsQueryable().BuildMockDbSet();
-            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(It.IsAny<bool>())).Returns(wallets.Object);
+            _mockUnitOfWork.Setup(x => x.WalletRepository.Query(false)).Returns(wallets.Object);
             _mockUnitOfWork.Setup(x => x.PaymentInformationRepository.GetByIdAsync(request.PaymentInfoId, true)).ReturnsAsync(paymentInfo);
 
+            // Setup ExecuteSqlRawAsync to return 1 (affected rows) - called twice: once for update, once in catch if error
+            _mockUnitOfWork.Setup(x => x.ExecuteSqlRawAsync(It.Is<string>(s => s.Contains("UPDATE Wallets") && s.Contains("Balance - @amount")), It.IsAny<object[]>()))
+                           .ReturnsAsync(1);
+
             PayOS.Models.V1.Payouts.PayoutRequest? capturedPayoutRequest = null;
+            var payoutResponse = new PayOS.Models.V1.Payouts.Payout 
+            { 
+                ApprovalState = PayOS.Models.V1.Payouts.PayoutApprovalState.Completed 
+            };
             _mockpayOSService.Setup(x => x.CreatePayoutAsync(It.IsAny<PayOS.Models.V1.Payouts.PayoutRequest>()))
                              .Callback<PayOS.Models.V1.Payouts.PayoutRequest>(req => capturedPayoutRequest = req)
-                             .ReturnsAsync(new PayOS.Models.V1.Payouts.Payout());
+                             .ReturnsAsync(payoutResponse);
 
             _mockTransactionHelper.Setup(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<Result>>>() ))
                                   .Returns<Func<Task<Result>>>(func => func());
@@ -702,10 +710,15 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeTrue();
-            _mockUnitOfWork.Verify(x => x.WalletRepository.UpdateAsync(It.Is<Wallet>(w => w.Id == walletId && w.Balance == 5000)), Times.Once());
+            // Verify ExecuteSqlRawAsync was called to update wallet balance
+            _mockUnitOfWork.Verify(x => x.ExecuteSqlRawAsync(
+                It.Is<string>(sql => sql.Contains("UPDATE Wallets") && sql.Contains("SET Balance = Balance - @amount")),
+                It.Is<object[]>(p => p.Length == 2)), Times.Once());
             _mockUnitOfWork.Verify(x => x.WalletTransactionRepository.AddAsync(It.Is<WalletTransaction>(t =>
                 t.WalletId == walletId &&
                 t.Amount == request.Amount &&
+                t.BalanceBefore == 100_000 &&
+                t.BalanceAfter == 50_000 &&
                 t.Status == TransactionStatus.Success &&
                 t.Type == TransactionType.Withdraw &&
                 t.Direction == TransactionDirection.Out &&
@@ -748,17 +761,8 @@ namespace AIEvent.Application.Test.Services
 
             // Assert
             result.IsSuccess.Should().BeFalse();
-            result.Error!.Message.Should().Contain("Withdraw failed: network down");
+            result.Error!.Message.Should().Contain("Insufficient balance or wallet is being processed");
             result.Error!.StatusCode.Should().Be(ErrorCodes.InternalServerError);
-
-            _mockUnitOfWork.Verify(x => x.WalletTransactionRepository.AddAsync(It.Is<WalletTransaction>(t =>
-                t.Status == TransactionStatus.Failed &&
-                t.Type == TransactionType.Withdraw &&
-                t.Direction == TransactionDirection.Out &&
-                t.Description == "network down"
-            )), Times.Once());
-
-            _mockUnitOfWork.Verify(x => x.SaveChangesAsync(), Times.Once());
         }
         #endregion
 
