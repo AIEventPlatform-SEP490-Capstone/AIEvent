@@ -82,9 +82,7 @@ namespace AIEvent.Application.Services.Implements
                         .Count(et =>
                             et.TagId == p.Id &&
                             !et.Event.DeletedAt.HasValue &&
-                            et.Event.Status == EventStatus.Approved &&
-                            et.Event.Publish == true
-                        )
+                            et.Event.Status != EventStatus.Cancelled)
                 })
                 .ToListAsync();
 
@@ -94,10 +92,16 @@ namespace AIEvent.Application.Services.Implements
         public async Task<Result<BasePaginated<TagResponse>>> GetListTagByUserIdAsync(int pageNumber, int pageSize, Guid userId)
         {
             var Id = userId.ToString();
+            var managerUserIds = _unitOfWork.UserRepository
+                .Query()
+                .AsNoTracking()
+                .Where(u => u.Role.Name == "Manager")
+                .Select(u => u.Id.ToString());
+
             IQueryable<Tag> tagQuery = _unitOfWork.TagRepository
                 .Query()
                 .AsNoTracking()
-                .Where(p => !p.DeletedAt.HasValue && (p.CreatedBy == Id || p.CreatedBy == "System"))
+                .Where(p => !p.DeletedAt.HasValue && (p.CreatedBy == Id || managerUserIds.Contains(p.CreatedBy)))
                 .OrderByDescending(s => s.CreatedAt);
 
             int totalCount = await tagQuery.CountAsync();
@@ -115,9 +119,7 @@ namespace AIEvent.Application.Services.Implements
                         .Count(et =>
                             et.TagId == p.Id &&
                             !et.Event.DeletedAt.HasValue &&
-                            et.Event.Status == EventStatus.Approved &&
-                            et.Event.Publish == true
-                        )
+                            et.Event.Status != EventStatus.Cancelled)
                 })
                 .ToListAsync();
 
