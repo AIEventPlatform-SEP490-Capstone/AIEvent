@@ -494,7 +494,8 @@ namespace AIEvent.Application.Services.Implements
                 var user = await _unitOfWork.UserRepository.Query()
                     .AsNoTracking()
                     .Include(u => u.Role)
-                    .FirstOrDefaultAsync(x => x.Email == payload.Email && payload.EmailVerified && !x.IsDeleted && x.IsActive);
+					.Include(u => u.OrganizerProfile)
+					.FirstOrDefaultAsync(x => x.Email == payload.Email && payload.EmailVerified && !x.IsDeleted && x.IsActive);
 
                 if(user == null)
                 {
