@@ -616,9 +616,9 @@ namespace AIEvent.Application.Services.Implements
                 response.TotalEvents = await _unitOfWork.EventRepository
                     .Query()
                     .AsNoTracking()
-                    .Where(e => !e.IsDeleted && e.Publish == true && e.Status == EventStatus.Approved)
+                    .Where(e => !e.IsDeleted && e.Publish == true && e.Status != EventStatus.PendingApproval && e.Status != EventStatus.Rejected)
                     .CountAsync();
- 
+
                 response.PendingEventsCount = await _unitOfWork.EventRepository
                     .Query()
                     .AsNoTracking()

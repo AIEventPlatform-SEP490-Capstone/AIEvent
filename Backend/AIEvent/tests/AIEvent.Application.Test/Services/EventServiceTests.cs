@@ -7645,7 +7645,7 @@ namespace AIEvent.Application.Test.Services
            _mockUnitOfWork.Verify(x => x.RevenueReportRepository.AddAsync(It.Is<RevenueReport>(r => 
                r.EventId == eventItem.Id &&
                r.GrossRevenue == 0 &&
-               r.PlatformFee == 0 &&
+               r.PlatformFee == 45350m &&
                r.NetRevenue == 0)), Times.Once);
            _mockUnitOfWork.Verify(x => x.EventRepository.UpdateRangeAsync(It.Is<List<Event>>(e => 
                e.First().Status == EventStatus.PaidOut &&
