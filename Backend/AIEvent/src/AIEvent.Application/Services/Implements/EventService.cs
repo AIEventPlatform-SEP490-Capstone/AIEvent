@@ -8,6 +8,7 @@ using AIEvent.Application.Services.Interfaces;
 using AIEvent.Domain.Bases;
 using AIEvent.Domain.Entities;
 using AIEvent.Domain.Enums;
+using Microsoft.Data.SqlClient;
 using AIEvent.Infrastructure.Repositories.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions; 
@@ -1626,7 +1627,22 @@ namespace AIEvent.Application.Services.Implements
 
 			try
 			{
-				var referenceId = GenerateOrderCode().ToString();
+                var affected = await _unitOfWork.ExecuteSqlRawAsync(@"
+                    UPDATE Events
+                    SET PayoutAttemptCount  = PayoutAttemptCount + 1
+                    WHERE Id = @EventId
+                      AND Status = 5
+                      AND PayoutAttemptCount = @CurrentAttemptCount
+                      AND IsDeleted = 0",
+                    new SqlParameter("@EventId", eventId),
+                    new SqlParameter("@CurrentAttemptCount", ev.PayoutAttemptCount));
+
+                if (affected == 0)
+                    return ErrorResponse.FailureResult(
+                        "Event is being processed by another request",
+                        ErrorCodes.InternalServerError);
+
+                var referenceId = $"payout-{ev.Id}-{ev.PayoutAttemptCount}";
 				var payoutRequest = new PayoutRequest
 				{
 					ReferenceId = referenceId,
@@ -1684,14 +1700,22 @@ namespace AIEvent.Application.Services.Implements
 
 					if (ev.OrganizerProfile != null)
 					{
-						await _notificationService.CreateNotificationAsync(new CreateNotificationRequest
-						{
-							UserId = ev.OrganizerProfile.UserId,
-							Title = "Doanh thu đã được chuyển",
-							Message = $"Sự kiện <strong>{ev.Title}</strong> đã được chuyển <strong>{netRevenue:N0} VND</strong> vào tài khoản. Lỗi thanh toán đã được xử lý.",
-							Type = NotificationType.PayoutCompleted,
-							EventId = ev.Id
-						});
+                        var existsNotification = await _unitOfWork.NotificationRepository
+                                                            .Query()
+                                                            .AnyAsync(n => n.EventId == ev.Id 
+                                                                && n.Type == NotificationType.PayoutCompleted 
+                                                                && n.UserId == ev.OrganizerProfile.UserId);
+                        if (!existsNotification)
+                        {
+                            await _notificationService.CreateNotificationAsync(new CreateNotificationRequest
+                            {
+                                UserId = ev.OrganizerProfile.UserId,
+                                Title = "Doanh thu đã được chuyển",
+                                Message = $"Sự kiện <strong>{ev.Title}</strong> đã được chuyển <strong>{netRevenue:N0} VND</strong> vào tài khoản. Lỗi thanh toán đã được xử lý.",
+                                Type = NotificationType.PayoutCompleted,
+                                EventId = ev.Id
+                            });
+                        }
 					}
 
 					return Result.Success();
@@ -1701,14 +1725,6 @@ namespace AIEvent.Application.Services.Implements
 			{
 				return ErrorResponse.FailureResult($"Failed to process payout: {ex.Message}", ErrorCodes.InternalServerError);
 			}
-		}
-
-		private static long GenerateOrderCode()
-		{
-			var random = new Random();
-			var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-			var randomPart = random.Next(100, 999);
-			return long.Parse($"{timestamp}{randomPart}");
 		}
 	}
 }

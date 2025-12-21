@@ -8325,6 +8325,7 @@ namespace AIEvent.Application.Test.Services
                Status = EventStatus.ErrorPayment,
                TotalAmount = 1000000,
                SaleStartTime = DateTime.UtcNow.AddDays(1),
+               PayoutAttemptCount = 0,
                OrganizerProfile = new OrganizerProfile
                {
                    Id = organizerId,
@@ -8374,6 +8375,9 @@ namespace AIEvent.Application.Test.Services
 
            var mockRevenueReportQueryable = new List<RevenueReport>().AsQueryable().BuildMock();
            _mockUnitOfWork.Setup(x => x.RevenueReportRepository.Query(false)).Returns(mockRevenueReportQueryable);
+
+           _mockUnitOfWork.Setup(x => x.ExecuteSqlRawAsync(It.IsAny<string>(), It.IsAny<object[]>()))
+               .ReturnsAsync(1);
 
            var payoutResponse = new PayOS.Models.V1.Payouts.Payout
            {
@@ -8414,6 +8418,7 @@ namespace AIEvent.Application.Test.Services
                Status = EventStatus.ErrorPayment,
                TotalAmount = 1000000,
                SaleStartTime = DateTime.UtcNow.AddDays(1),
+               PayoutAttemptCount = 0,
                OrganizerProfile = new OrganizerProfile
                {
                    Id = organizerId,
@@ -8463,6 +8468,12 @@ namespace AIEvent.Application.Test.Services
 
            var mockRevenueReportQueryable = new List<RevenueReport>().AsQueryable().BuildMock();
            _mockUnitOfWork.Setup(x => x.RevenueReportRepository.Query(false)).Returns(mockRevenueReportQueryable);
+
+           var mockNotificationQueryable = new List<Notification>().AsQueryable().BuildMock();
+           _mockUnitOfWork.Setup(x => x.NotificationRepository.Query(It.IsAny<bool>())).Returns(mockNotificationQueryable);
+
+           _mockUnitOfWork.Setup(x => x.ExecuteSqlRawAsync(It.IsAny<string>(), It.IsAny<object[]>()))
+               .ReturnsAsync(1);
 
            var payoutResponse = new PayOS.Models.V1.Payouts.Payout
            {
